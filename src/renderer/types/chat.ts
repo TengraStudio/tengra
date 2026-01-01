@@ -30,6 +30,7 @@ export interface Chat {
     backend?: 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'gemini' | 'groq'
     createdAt: Date
     updatedAt?: Date
+    isPinned?: boolean
 }
 
 export interface Attachment {

@@ -22,6 +22,7 @@ export interface Chat {
     backend: 'ollama' | 'llama.cpp'
     createdAt: number
     updatedAt: number
+    isPinned?: number // 0 or 1
 }
 
 // Lazy load sql.js
@@ -70,9 +71,16 @@ export class DatabaseService {
           model TEXT,
           backend TEXT DEFAULT 'ollama',
           createdAt INTEGER NOT NULL,
-          updatedAt INTEGER NOT NULL
+          updatedAt INTEGER NOT NULL,
+          isPinned INTEGER DEFAULT 0
         )
       `)
+
+            try {
+                db.run("ALTER TABLE chats ADD COLUMN isPinned INTEGER DEFAULT 0")
+            } catch (e) {
+                // Column likely already exists
+            }
 
             db.run(`
         CREATE TABLE IF NOT EXISTS messages (
@@ -143,8 +151,8 @@ export class DatabaseService {
         console.log('Creating chat (DB):', chat)
 
         const stmt = db.prepare(`
-      INSERT INTO chats (id, title, model, backend, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO chats (id, title, model, backend, createdAt, updatedAt, isPinned)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `)
         const cleanChat = [
             chat.id,
@@ -152,7 +160,8 @@ export class DatabaseService {
             chat.model || '',
             chat.backend || 'ollama',
             typeof chat.createdAt === 'object' ? (chat.createdAt as any).getTime() : chat.createdAt || Date.now(),
-            typeof chat.updatedAt === 'object' ? (chat.updatedAt as any).getTime() : chat.updatedAt || Date.now()
+            typeof chat.updatedAt === 'object' ? (chat.updatedAt as any).getTime() : chat.updatedAt || Date.now(),
+            chat.isPinned ? 1 : 0
         ]
         stmt.run(cleanChat)
         stmt.free()
@@ -176,6 +185,10 @@ export class DatabaseService {
         if (updates.backend !== undefined) {
             fields.push('backend = ?')
             values.push(updates.backend)
+        }
+        if (updates.isPinned !== undefined) {
+            fields.push('isPinned = ?')
+            values.push(updates.isPinned ? 1 : 0)
         }
 
         fields.push('updatedAt = ?')
@@ -214,7 +227,7 @@ export class DatabaseService {
         if (!db) return []
 
         const results: Chat[] = []
-        const stmt = db.prepare('SELECT * FROM chats ORDER BY updatedAt DESC')
+        const stmt = db.prepare('SELECT * FROM chats ORDER BY isPinned DESC, updatedAt DESC')
 
         while (stmt.step()) {
             results.push(stmt.getAsObject() as Chat)

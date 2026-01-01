@@ -256,6 +256,29 @@ export default function App() {
         }
     }
 
+    const deleteChat = async (id: string) => {
+        if (!confirm('Bu sohbeti silmek istediğinize emin misiniz?')) return
+        try {
+            await window.electron.db.deleteChat(id)
+            setChats(prev => prev.filter(c => c.id !== id))
+            if (currentChatId === id) {
+                setCurrentChatId(null)
+            }
+        } catch (error) {
+            console.error('Failed to delete chat:', error)
+        }
+    }
+
+    const toggleChatPin = async (id: string, isPinned: boolean) => {
+        try {
+            await window.electron.db.updateChat(id, { isPinned })
+            // Reload to get correct sort order
+            loadChats()
+        } catch (error) {
+            console.error('Failed to pin chat:', error)
+        }
+    }
+
     const loadModels = async () => {
         try {
             const settings = await window.electron.getSettings()
@@ -337,18 +360,7 @@ export default function App() {
         }
     }, [selectedModel])
 
-    const deleteChat = useCallback(async (chatId: string) => {
-        try {
-            await window.electron.db.deleteChat(chatId)
-            setChats(prev => prev.filter(c => c.id !== chatId))
-            if (currentChatId === chatId) {
-                const remaining = chats.filter(c => c.id !== chatId)
-                setCurrentChatId(remaining.length > 0 ? remaining[0].id : null)
-            }
-        } catch (error) {
-            console.error('Failed to delete chat:', error)
-        }
-    }, [currentChatId, chats])
+
 
     const stopGeneration = async () => {
         if (!isLoading) return
@@ -752,6 +764,7 @@ TOOL USAGE PROTOCOL:
                             onSelectChat={setCurrentChatId}
                             onNewChat={createNewChat}
                             onDeleteChat={deleteChat}
+                            onTogglePin={toggleChatPin}
                             onSelectModel={setSelectedModel}
                             onRefreshModels={loadModels}
                             onOpenSSHManager={() => setShowSSHManager(true)}

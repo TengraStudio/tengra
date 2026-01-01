@@ -13,6 +13,7 @@ interface SidebarProps {
     onSelectChat: (id: string) => void
     onNewChat: () => void
     onDeleteChat: (id: string) => void
+    onTogglePin: (id: string, isPinned: boolean) => void
     onSelectModel: (model: string) => void
     onRefreshModels: () => void
     onOpenSSHManager: () => void
@@ -27,6 +28,7 @@ export function Sidebar({
     onSelectChat,
     onNewChat,
     onDeleteChat,
+    onTogglePin,
     onSelectModel,
     onRefreshModels,
     onOpenSSHManager,
@@ -94,15 +96,31 @@ export function Sidebar({
                                             )}
                                         >
                                             <span className="truncate flex-1 pr-6 text-left">{chat.title || 'Yeni Analiz'}</span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    onDeleteChat(chat.id)
-                                                }}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 text-red-400/60 hover:text-red-400 rounded-lg transition-all"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                                            </button>
+                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onTogglePin(chat.id, !chat.isPinned)
+                                                    }}
+                                                    className={cn(
+                                                        "p-1.5 rounded-lg transition-all",
+                                                        chat.isPinned
+                                                            ? "text-primary hover:bg-primary/20 bg-primary/10 opacity-100"
+                                                            : "text-muted-foreground/40 hover:text-white hover:bg-white/10"
+                                                    )}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onDeleteChat(chat.id)
+                                                    }}
+                                                    className="p-1.5 hover:bg-red-500/20 text-red-400/60 hover:text-red-400 rounded-lg transition-all"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                                                </button>
+                                            </div>
                                         </motion.button>
                                     ))}
                                 </div>
@@ -209,6 +227,7 @@ export function Sidebar({
 
 function groupChatsByDate(chats: Chat[]) {
     const groups: Record<string, Chat[]> = {
+        'SABİTLENENLER': [],
         'Bugün': [],
         'Dün': [],
         'Önceki 7 Gün': [],
@@ -225,6 +244,11 @@ function groupChatsByDate(chats: Chat[]) {
     lastWeek.setDate(lastWeek.getDate() - 7)
 
     chats.forEach(chat => {
+        if (chat.isPinned) {
+            groups['SABİTLENENLER'].push(chat)
+            return
+        }
+
         const date = new Date(chat.createdAt)
         date.setHours(0, 0, 0, 0)
 
