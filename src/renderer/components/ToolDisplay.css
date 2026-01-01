@@ -1,0 +1,149 @@
+/* Tool Display Premium Styles */
+.tool-container {
+    border: 1px solid hsl(var(--border) / 0.5);
+    border-radius: var(--radius);
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    overflow: hidden;
+    margin-top: 8px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+}
+
+/* Updated Class Name to match TSX */
+.tool-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: hsl(var(--muted) / 0.3);
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.tool-header-row:hover {
+    background: hsl(var(--muted) / 0.5);
+}
+
+.tool-status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.tool-name {
+    flex: 1;
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: hsl(var(--foreground));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tool-toggle {
+    color: hsl(var(--muted-foreground));
+    font-size: 10px;
+    width: 20px;
+    text-align: right;
+}
+
+.tool-body {
+    border-top: 1px solid hsl(var(--border) / 0.5);
+    padding: 12px;
+    font-size: 13px;
+    background: hsl(var(--card) / 0.5);
+}
+
+.tool-section {
+    margin-bottom: 12px;
+}
+
+.tool-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 6px;
+}
+
+/* Command Argument Style */
+.cmd-input {
+    font-family: 'JetBrains Mono', monospace;
+    color: #10b981;
+    /* Emerald 500 */
+    background: hsl(var(--background));
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid hsl(var(--border));
+}
+
+.file-path {
+    font-family: 'JetBrains Mono', monospace;
+    color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.json-tree {
+    background: hsl(var(--background));
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid hsl(var(--border));
+    margin: 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+}
+
+/* Standard Terminal Output (fallback if not using window) */
+.terminal-output {
+    background: #09090b;
+    color: #e4e4e7;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.stdout {
+    color: #e4e4e7;
+}
+
+.stderr {
+    color: #ef4444;
+}
+
+.no-output {
+    color: #71717a;
+    font-style: italic;
+}
+
+/* Spinner Animation */
+.spinner {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
