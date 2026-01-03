@@ -1,3 +1,4 @@
+
 import { app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -5,14 +6,34 @@ import * as fs from 'fs'
 export interface AppSettings {
     ollama: {
         url: string
+        numCtx?: number
     }
     general: {
         language: 'tr' | 'en'
-        theme: 'dark' | 'light'
+        theme: string
+        resolution: string
+        fontSize: number
+        fontFamily?: string
+        defaultModel?: string
+        lastModel?: string
+        lastProvider?: string
+        responseStyle?: 'concise' | 'balanced' | 'detailed'
+        responseTone?: 'neutral' | 'friendly' | 'professional'
+        responseFormat?: 'auto' | 'structured' | 'steps'
+        customInstructions?: string
+        contextMessageLimit?: number
+        agentMode?: 'adaptive' | 'speed' | 'accuracy'
+        agentSoftDeadlineMs?: number
+        agentHardDeadlineMs?: number
+        agentRequireLocalForActions?: boolean
+        agentAllowLateSuggestions?: boolean
+        favoriteModels?: string[]
+        recentModels?: string[]
+        hiddenModels?: string[]
     }
     github?: {
-        username: string
-        token: string
+        username?: string
+        token?: string
     }
     openai?: {
         apiKey: string
@@ -33,16 +54,47 @@ export interface AppSettings {
         enabled: boolean
         url: string
         key: string
+        authStoreKey: string
     }
+    window?: {
+        width: number
+        height: number
+        x: number
+        y: number
+    }
+    mcpDisabledServers?: string[]
+    mcpUserServers?: any[]
+    mcpSecurityAllowedHosts?: string[]
+    mcpReviewPolicy?: 'elevated' | 'trusted'
+    mcpAutoExecuteSafe?: boolean
+    userAvatar?: string
+    aiAvatar?: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
-        url: 'http://127.0.0.1:11434'
+        url: 'http://127.0.0.1:11434',
+        numCtx: 16384
     },
     general: {
-        language: 'tr',
-        theme: 'dark'
+        language: 'en',
+        theme: 'graphite',
+        resolution: '1280x800',
+        fontSize: 14,
+        defaultModel: 'gpt-4o',
+        lastModel: '',
+        lastProvider: '',
+        responseStyle: 'balanced',
+        responseTone: 'neutral',
+        responseFormat: 'auto',
+        customInstructions: '',
+        contextMessageLimit: 50,
+        agentMode: 'adaptive',
+        agentSoftDeadlineMs: 4000,
+        agentHardDeadlineMs: 25000,
+        agentRequireLocalForActions: true,
+        agentAllowLateSuggestions: true,
+        hiddenModels: []
     },
     github: {
         username: '',
@@ -50,7 +102,25 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     openai: {
         apiKey: '',
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-4o'
+    },
+    anthropic: {
+        apiKey: '',
+        model: 'claude-3-opus-20240229'
+    },
+    antigravity: {
+        connected: false
+    },
+    copilot: {
+        connected: false
+    },
+    gemini: {
+        apiKey: '',
+        model: 'gemini-1.5-pro'
+    },
+    groq: {
+        apiKey: '',
+        model: 'llama3-70b-8192'
     },
     anthropic: {
         apiKey: ''
@@ -66,8 +136,11 @@ const DEFAULT_SETTINGS: AppSettings = {
         url: 'http://localhost:8317/v1',
         key: 'proxypal-local'
     },
-    userAvatar: '👤',
-    aiAvatar: '🤖'
+    mcpDisabledServers: [],
+    mcpUserServers: [],
+    mcpSecurityAllowedHosts: [],
+    mcpReviewPolicy: 'elevated',
+    mcpAutoExecuteSafe: true
 }
 
 export class SettingsService {
@@ -83,7 +156,24 @@ export class SettingsService {
         try {
             if (fs.existsSync(this.settingsPath)) {
                 const data = fs.readFileSync(this.settingsPath, 'utf8')
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(data) }
+                const loaded = JSON.parse(data)
+                delete loaded.userAvatar
+                delete loaded.aiAvatar
+                return {
+                    ...DEFAULT_SETTINGS,
+                    ...loaded,
+                    ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
+                    general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
+                    github: { ...DEFAULT_SETTINGS.github, ...(loaded.github || {}) },
+                    openai: { ...DEFAULT_SETTINGS.openai, ...(loaded.openai || {}) },
+                    anthropic: { ...DEFAULT_SETTINGS.anthropic, ...(loaded.anthropic || {}) },
+                    antigravity: { ...DEFAULT_SETTINGS.antigravity, ...(loaded.antigravity || {}) },
+                    copilot: { ...DEFAULT_SETTINGS.copilot, ...(loaded.copilot || {}) },
+                    gemini: { ...DEFAULT_SETTINGS.gemini, ...(loaded.gemini || {}) },
+                    groq: { ...DEFAULT_SETTINGS.groq, ...(loaded.groq || {}) },
+                    proxy: { ...DEFAULT_SETTINGS.proxy, ...(loaded.proxy || {}) },
+                    window: { ...DEFAULT_SETTINGS.window, ...(loaded.window || {}) }
+                }
             }
         } catch (error) {
             console.error('Failed to load settings:', error)

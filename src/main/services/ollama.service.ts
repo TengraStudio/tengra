@@ -1,5 +1,6 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
+import { SettingsService } from './settings.service'
 
 interface Message {
     role: 'user' | 'assistant' | 'system' | 'tool'
@@ -22,6 +23,24 @@ interface OllamaModel {
     }
 }
 
+export interface OllamaResponse {
+    model: string
+    created_at: string
+    message?: {
+        role: string
+        content: string
+        images?: string[]
+        tool_calls?: any[]
+    }
+    done: boolean
+    total_duration?: number
+    load_duration?: number
+    prompt_eval_count?: number
+    prompt_eval_duration?: number
+    eval_count?: number
+    eval_duration?: number
+}
+
 interface LibraryModel {
     name: string
     description: string
@@ -32,6 +51,21 @@ export class OllamaService {
     private host: string = '127.0.0.1'
     private port: number = 11434
     private currentRequest: http.ClientRequest | null = null
+    private settingsService: SettingsService
+
+    constructor(settingsService: SettingsService) {
+        this.settingsService = settingsService
+        const settings = this.settingsService.getSettings()
+        if (settings.ollama?.url) {
+            try {
+                const url = new URL(settings.ollama.url)
+                this.host = url.hostname
+                this.port = parseInt(url.port) || 11434
+            } catch (e) {
+                console.error('Invalid Ollama URL provided, using default', e)
+            }
+        }
+    }
 
     abort() {
         if (this.currentRequest) {
@@ -112,9 +146,8 @@ export class OllamaService {
             })
 
             req.on('error', reject)
-            req.setTimeout(options.timeout || 300000, () => {
-                req.destroy()
-                reject(new Error('Request timeout'))
+            req.setTimeout(0, () => {
+                // No timeout
             })
 
             this.currentRequest = req
@@ -145,7 +178,7 @@ export class OllamaService {
                     messages,
                     stream: false,
                     options: {
-                        num_ctx: 4096,  // Reduced context for faster inference
+                        num_ctx: this.settingsService.getSettings().ollama?.numCtx || 16384,
                     },
                     keep_alive: '24h'  // Keep model loaded
                 })
@@ -166,6 +199,8 @@ export class OllamaService {
     ): Promise<any> {
         let fullResponse = ''
         let toolCalls: any[] = []
+        let promptTokens = 0
+        let completionTokens = 0
 
         try {
             await this.httpStreamRequest({
@@ -176,7 +211,7 @@ export class OllamaService {
                     stream: true,
                     tools: tools && tools.length > 0 ? tools : undefined,
                     options: {
-                        num_ctx: 4096,
+                        num_ctx: this.settingsService.getSettings().ollama?.numCtx || 16384,
                     },
                     keep_alive: '24h'
                 }),
@@ -184,13 +219,17 @@ export class OllamaService {
                     const lines = chunk.toString().split('\n').filter(Boolean)
                     for (const line of lines) {
                         try {
-                            const data = JSON.parse(line)
+                            const data = JSON.parse(line) as OllamaResponse
                             if (data.message?.content) {
                                 fullResponse += data.message.content
                                 onChunk?.(data.message.content)
                             }
                             if (data.message?.tool_calls) {
                                 toolCalls = data.message.tool_calls
+                            }
+                            if (data.done) {
+                                if (data.prompt_eval_count) promptTokens = data.prompt_eval_count
+                                if (data.eval_count) completionTokens = data.eval_count
                             }
                         } catch (e) {
                             // Ignore parse errors
@@ -203,7 +242,9 @@ export class OllamaService {
 
             return {
                 content: fullResponse,
-                tool_calls: toolCalls.length > 0 ? toolCalls : undefined
+                tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+                promptTokens,
+                completionTokens
             }
         } catch (error) {
             this.currentRequest = null
@@ -312,5 +353,9 @@ export class OllamaService {
         } catch {
             return false
         }
+    }
+
+    async isOllamaRunning(): Promise<boolean> {
+        return this.isAvailable()
     }
 }

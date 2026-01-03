@@ -101,8 +101,8 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     }
 
     return (
-        <div className="sftp-browser" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e', color: '#ccc' }}>
-            <div className="browser-toolbar" style={{ padding: '8px', borderBottom: '1px solid #333', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className="sftp-browser flex-1 flex flex-col bg-background text-foreground/90">
+            <div className="browser-toolbar p-2 border-b border-border/50 flex gap-2 items-center bg-muted/20">
                 <button onClick={handleBack} disabled={currentPath === '/'} style={{ padding: '4px 8px' }}>↑ Geri</button>
                 <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9em' }}>
                     {currentPath}
@@ -118,7 +118,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
             ) : (
                 <div className="file-list" style={{ flex: 1, overflowY: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9em' }}>
-                        <thead style={{ position: 'sticky', top: 0, backgroundColor: '#252525' }}>
+                        <thead className="sticky top-0 bg-muted/50 backdrop-blur-sm shadow-sm">
                             <tr>
                                 <th style={{ padding: '8px' }}>Ad</th>
                                 <th style={{ padding: '8px' }}>Boyut</th>
@@ -128,7 +128,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                         </thead>
                         <tbody>
                             {files.map(file => (
-                                <tr key={file.name} style={{ borderBottom: '1px solid #333' }} className="file-row">
+                                <tr key={file.name} className="file-row border-b border-border/30 hover:bg-muted/10 transition-colors">
                                     <td
                                         style={{ padding: '8px', cursor: file.type === 'directory' ? 'pointer' : 'default' }}
                                         onClick={() => file.type === 'directory' && handleNavigate(file.name)}
@@ -139,7 +139,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                                     <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{new Date(file.modified).toLocaleDateString()}</td>
                                     <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
                                         <button onClick={() => handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
-                                        <button onClick={() => handleDelete(file)} style={{ fontSize: '0.9em', color: '#f44336' }}>🗑</button>
+                                        <button onClick={() => handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-red-500 hover:text-red-400">🗑</button>
                                         {file.type === 'file' && <button onClick={() => handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
                                     </td>
                                 </tr>

@@ -190,7 +190,7 @@ export function ModelHubPage({
                                         )}
                                     </div>
                                     {installed && (
-                                        <span className="px-2 py-0.5 text-[10px] font-medium bg-accent/20 text-accent rounded-full">
+                                        <span className="px-2 py-0.5 text-sm font-medium bg-accent/20 text-accent rounded-full">
                                             Yüklü
                                         </span>
                                     )}
@@ -205,7 +205,7 @@ export function ModelHubPage({
                                                 style={{ width: `${downloadProgress}%` }}
                                             />
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground">
                                             İndiriliyor... {Math.round(downloadProgress)}%
                                         </p>
                                     </div>

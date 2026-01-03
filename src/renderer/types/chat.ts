@@ -6,6 +6,10 @@ export interface Message {
     toolCalls?: ToolCall[]
     toolResults?: ToolResult[]
     timestamp: Date
+    provider?: string
+    model?: string
+    isPinned?: boolean
+    reactions?: string[]
 }
 
 export interface ToolCall {
@@ -27,10 +31,20 @@ export interface Chat {
     title: string
     messages: Message[]
     model?: string
-    backend?: 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'gemini' | 'groq'
+    backend?: 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'claude' | 'gemini' | 'groq' | 'antigravity' | 'copilot'
     createdAt: Date
     updatedAt?: Date
     isPinned?: boolean
+    isArchived?: boolean
+    isFavorite?: boolean
+    folderId?: string
+}
+
+export interface Folder {
+    id: string
+    name: string
+    createdAt: number
+    updatedAt: number
 }
 
 export interface Attachment {

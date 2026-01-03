@@ -126,11 +126,15 @@ export class SSHService extends EventEmitter {
                 let stderr = ''
 
                 // Set timeout
-                const timeout = options?.timeout || 60000
-                const timer = setTimeout(() => {
-                    stream.close()
-                    resolve({ success: false, error: 'Command timeout' })
-                }, timeout)
+                const timeout = options?.timeout || 0 // No default timeout
+                let timer: NodeJS.Timeout | undefined
+
+                if (timeout > 0) {
+                    timer = setTimeout(() => {
+                        stream.close()
+                        resolve({ success: false, error: 'Command timeout' })
+                    }, timeout)
+                }
 
                 stream.on('data', (data: Buffer) => {
                     stdout += data.toString()
@@ -339,6 +343,60 @@ export class SSHService extends EventEmitter {
 
                     resolve({ success: true, files })
                 })
+            })
+        })
+    }
+
+    async readFile(connectionId: string, remotePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+        return new Promise((resolve) => {
+            const conn = this.connections.get(connectionId)
+            if (!conn) {
+                resolve({ success: false, error: 'Not connected' })
+                return
+            }
+
+            conn.client.sftp((err, sftp) => {
+                if (err) {
+                    resolve({ success: false, error: err.message })
+                    return
+                }
+
+                const chunks: Buffer[] = []
+                const stream = sftp.createReadStream(remotePath)
+                stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+                stream.on('error', (streamErr: Error) => {
+                    resolve({ success: false, error: streamErr.message })
+                })
+                stream.on('close', () => {
+                    const content = Buffer.concat(chunks).toString('utf-8')
+                    resolve({ success: true, content })
+                })
+            })
+        })
+    }
+
+    async writeFile(connectionId: string, remotePath: string, content: string): Promise<{ success: boolean; error?: string }> {
+        return new Promise((resolve) => {
+            const conn = this.connections.get(connectionId)
+            if (!conn) {
+                resolve({ success: false, error: 'Not connected' })
+                return
+            }
+
+            conn.client.sftp((err, sftp) => {
+                if (err) {
+                    resolve({ success: false, error: err.message })
+                    return
+                }
+
+                const stream = sftp.createWriteStream(remotePath)
+                stream.on('error', (streamErr: Error) => {
+                    resolve({ success: false, error: streamErr.message })
+                })
+                stream.on('close', () => {
+                    resolve({ success: true })
+                })
+                stream.end(content, 'utf-8')
             })
         })
     }

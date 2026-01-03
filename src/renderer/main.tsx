@@ -1,12 +1,15 @@
 import './web-bridge'
+import { installRendererLogger } from './logging'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './components/ToolDisplay.css'
-import AppRoot from './AppRoot'
+import App from './App'
 import './index.css'
+
+installRendererLogger()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <AppRoot />
+        <App />
     </React.StrictMode>
 )

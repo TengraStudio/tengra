@@ -119,7 +119,7 @@ export function HyperparameterPanel({
                                     "[&::-webkit-slider-thumb]:hover:scale-110"
                                 )}
                             />
-                            <p className="text-[10px] text-muted-foreground/60">
+                            <p className="text-sm text-muted-foreground/60">
                                 {slider.description}
                             </p>
                         </div>

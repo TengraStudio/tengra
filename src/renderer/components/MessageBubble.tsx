@@ -1,15 +1,48 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, isValidElement } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
-import { Message } from '../types'
-import { ToolDisplay } from './ToolDisplay'
+import { useTranslation, Language } from '../i18n'
 import { cn } from '@/lib/utils'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, ChevronDown, ChevronUp, Eye, Code2, AlertCircle, Clock } from 'lucide-react'
 import { Highlight, themes } from 'prism-react-renderer'
+import LogoAntigravity from '@/assets/antigravity.svg'
+import LogoClaude from '@/assets/claude.svg'
+import LogoOllama from '@/assets/ollama.svg'
+import LogoOpenAI from '@/assets/chatgpt.svg'
+import LogoGemini from '@/assets/gemini.png'
+import LogoCopilot from '@/assets/copilot.png'
+
+interface ToolCall {
+    id: string
+    name: string
+    arguments: any
+}
+
+interface ToolResult {
+    toolCallId: string
+    name: string
+    result: any
+    isImage?: boolean
+    error?: any
+}
+
+interface Message {
+    id: string
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    images?: string[]
+    toolCalls?: ToolCall[]
+    toolResults?: ToolResult[]
+    timestamp: Date
+    provider?: string
+    model?: string
+    isPinned?: boolean
+    reactions?: string[]
+}
 
 // Initialize mermaid
 mermaid.initialize({
@@ -30,231 +63,235 @@ function CopyButton({ text }: { text: string }) {
     }
 
     return (
-        <button
-            onClick={handleCopy}
-            className="p-1 rounded hover:bg-white/10 transition-colors text-zinc-400 hover:text-white"
-            title="Kopyala"
-        >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+        <button onClick={handleCopy} className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-zinc-400 hover:text-white" title="Kopyala">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     )
 }
 
-// Mermaid Diagram Component
-function MermaidDiagram({ code }: { code: string }) {
-    const containerRef = useRef<HTMLDivElement>(null)
+
+
+const MermaidDiagram = ({ code }: { code: string }) => {
     const [svg, setSvg] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
+    const id = useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, [])
 
     useEffect(() => {
-        const renderDiagram = async () => {
+        const render = async () => {
             try {
-                const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
                 const { svg } = await mermaid.render(id, code)
                 setSvg(svg)
                 setError(null)
-            } catch (e: any) {
-                setError(e.message || 'Diagram render hatası')
+            } catch (err: any) {
+                setError(err.message)
             }
         }
-        renderDiagram()
-    }, [code])
+        render()
+    }, [code, id])
 
-    if (error) {
-        return (
-            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                <div className="font-medium mb-1">Mermaid Hatası</div>
-                <div className="font-mono text-xs opacity-80">{error}</div>
-            </div>
-        )
-    }
-
-    return (
-        <div
-            ref={containerRef}
-            className="my-2 p-4 rounded-lg bg-zinc-900/50 border border-white/5 overflow-x-auto"
-            dangerouslySetInnerHTML={{ __html: svg }}
-        />
-    )
+    if (error) return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>
+    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />
 }
+
+const TypingDots = () => (
+    <div className="flex gap-1.5 items-center px-1 py-2">
+        <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+        <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+        <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+    </div>
+)
 
 interface MessageProps {
     message: Message
     isLast: boolean
-    userAvatar?: string
-    aiAvatar?: string
+    backend?: string
+    isStreaming?: boolean
+    language: Language
 }
 
-export function MessageBubble({ message, isLast, userAvatar, aiAvatar }: MessageProps) {
+export function MessageBubble({ message, isLast, backend, isStreaming, language }: MessageProps) {
+    const { t } = useTranslation(language)
     const isUser = message.role === 'user'
-    const [isSpeaking, setIsSpeaking] = useState(false)
     const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
+    const [showRawMarkdown, setShowRawMarkdown] = useState(false)
+    const [isContentExpanded, setIsContentExpanded] = useState(false)
 
-    const { thought, plan, displayContent } = React.useMemo(() => {
+    const COLLAPSE_THRESHOLD = 30
+
+    const getAssistantLogo = () => {
+        if (isUser) return null
+        const modelName = (message.model || '').toString().toLowerCase()
+        const inferredProvider = modelName.startsWith('gpt-') || modelName.startsWith('o1-')
+            ? 'openai'
+            : modelName.startsWith('claude-')
+                ? 'anthropic'
+                : modelName.startsWith('gemini-')
+                    ? 'gemini'
+                    : modelName.startsWith('grok-')
+                        ? 'groq'
+                        : modelName.startsWith('antigravity-')
+                            ? 'antigravity'
+                            : ''
+        const provider = message.provider || backend || inferredProvider || 'ollama'
+        const p = provider.toLowerCase()
+
+        if (p.includes('openai') || p.includes('codex') || p.includes('gpt')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1" title="OpenAI">
+                    <img src={LogoOpenAI} className="w-full h-full invert" alt="OpenAI" />
+                </div>
+            )
+        }
+        if (p.includes('anthropic') || p.includes('claude')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1" title="Claude">
+                    <img src={LogoClaude} className="w-full h-full invert" alt="Claude" />
+                </div>
+            )
+        }
+        if (p.includes('gemini')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-blue-600 border border-white/10 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-0 bg-gradient-to-br from-blue-500 to-purple-500" title="Gemini">
+                    <img src={LogoGemini} className="w-full h-full object-cover" alt="Gemini" />
+                </div>
+            )
+        }
+        if (p.includes('antigravity')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1" title="Antigravity">
+                    <img src={LogoAntigravity} className="w-full h-full" alt="Antigravity" />
+                </div>
+            )
+        }
+        if (p.includes('github') || p.includes('copilot')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1">
+                    <img src={LogoCopilot} className="w-full h-full object-cover" alt="Copilot" />
+                </div>
+            )
+        }
+        if (p.includes('groq')) {
+            return (
+                <div className="w-8 h-8 rounded-full bg-[#f55036] border border-white/10 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1">
+                    <span className="font-bold text-white text-xs">G</span>
+                </div>
+            )
+        }
+        return (
+            <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden p-1.5" title="Ollama/Local">
+                <img src={LogoOllama} className="w-full h-full" alt="Ollama" />
+            </div>
+        )
+    }
+
+    const { thought, plan, displayContent } = useMemo(() => {
         if (!message.content) return { thought: null, plan: null, displayContent: '' }
-
         let content = message.content
         let thought = null
         let plan = null
-
-        // Extract Thought
         const thinkMatch = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content)
         if (thinkMatch) {
             thought = thinkMatch[1]
             content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, '')
         }
-
-        // Extract Plan
         const planMatch = /<plan>([\s\S]*?)(?:<\/plan>|$)/.exec(content)
         if (planMatch) {
             plan = planMatch[1]
             content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, '')
         }
-
         return { thought, plan, displayContent: content.trim() }
     }, [message.content])
 
-    React.useEffect(() => {
-        // Auto-expand if we are strictly in thinking phase (no content yet)
+    useEffect(() => {
         if (isLast && thought && !displayContent && !isThoughtExpanded) {
             setIsThoughtExpanded(true)
         }
-    }, [isLast, thought, displayContent])
+    }, [isLast, thought, displayContent, isThoughtExpanded])
 
-    return (
-        <div className={cn(
-            "flex w-full animate-fade-in",
-            isUser ? "justify-end" : "justify-start"
-        )}>
-            <div className={cn(
-                "flex max-w-[85%] md:max-w-[75%] gap-3",
-                isUser ? "flex-row-reverse" : "flex-row"
-            )}>
-                {/* Assistant Avatar */}
-                {!isUser && (
-                    <div className="w-8 h-8 rounded-full bg-background/20 backdrop-blur-md border border-white/10 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden">
-                        {aiAvatar?.startsWith('http') ? (
-                            <img src={aiAvatar} className="w-full h-full object-cover" alt="AI" />
-                        ) : (
-                            <span className="text-sm">{aiAvatar || '✨'}</span>
-                        )}
+    const lineCount = displayContent?.split('\n').length || 0
+    const isLongContent = lineCount > COLLAPSE_THRESHOLD
+    const shouldShowCollapsed = isLongContent && !isContentExpanded && !isUser
+    const visibleContent = shouldShowCollapsed
+        ? displayContent?.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...'
+        : displayContent
+
+    const is429Error = displayContent.includes('429') && (displayContent.includes('usage_limit_reached') || displayContent.includes('usage limit'))
+
+    const contentNode = (
+        <div className="flex flex-col gap-2">
+            {is429Error ? (
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 max-w-md animate-in fade-in zoom-in duration-300">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-full bg-red-500/20">
+                            <AlertCircle className="w-5 h-5" />
+                        </div>
+                        <div className="font-bold text-sm uppercase tracking-tight">Kullanım Sınırı Aşıldı</div>
                     </div>
-                )}
-
-                {/* User Avatar */}
-                {isUser && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-sm mt-1 overflow-hidden">
-                        {userAvatar?.startsWith('http') ? (
-                            <img src={userAvatar} className="w-full h-full object-cover" alt="User" />
-                        ) : (
-                            <span className="text-sm">{userAvatar || '👤'}</span>
-                        )}
-                    </div>
-                )}
-
-                <div className={cn(
-                    "flex flex-col gap-1 min-w-0",
-                    isUser ? "items-end" : "items-start"
-                )}>
-                    {/* Plan UI */}
-                    {plan && (
-                        <div className="w-full mb-3 glass-card p-3 animate-fade-in">
-                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-500/10">
-                                <span className="text-blue-400 text-sm">📋</span>
-                                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Plan</span>
-                            </div>
-                            <div className="text-sm text-foreground/80 checkbox-list">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        li: ({ children }) => {
-                                            const isCheckbox = Array.isArray(children) && children.some(c => React.isValidElement(c) && (c.props as any).type === 'checkbox')
-                                            return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-0.5")}>{children}</li>
-                                        },
-                                        input: ({ type, checked }) => {
-                                            if (type === 'checkbox') {
-                                                return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-blue-400 scale-105 align-middle" />
-                                            }
-                                            return null
-                                        },
-                                        ul: ({ children }) => <ul className="pl-4 my-1 space-y-0.5">{children}</ul>,
-                                        p: ({ children }) => <p className="my-1">{children}</p>
-                                    }}
-                                >
-                                    {plan}
-                                </ReactMarkdown>
-                            </div>
+                    <p className="text-sm opacity-90 leading-relaxed mb-3">
+                        ChatGPT kullanım limitinize ulaştınız. Lütfen sıfırlanma süresini bekleyin.
+                    </p>
+                    {displayContent.includes('resets_at') && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-xs font-medium">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Sıfırlanma: {new Date(JSON.parse(displayContent.split('HTTP 429: ')[1])?.error?.resets_at * 1000).toLocaleString()}</span>
                         </div>
                     )}
-
-                    {/* Thinking Process UI */}
-                    {thought && (
-                        <div className="w-full mb-1">
+                </div>
+            ) : (
+                <>
+                    {displayContent && !isUser && (
+                        <div className="flex items-center gap-2 mb-1">
                             <button
-                                onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
-                                className="flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-foreground/80 transition-colors select-none"
+                                onClick={() => setShowRawMarkdown(!showRawMarkdown)}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
+                                    showRawMarkdown ? "bg-primary/20 text-primary" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                                )}
                             >
-                                <span className={cn("transition-transform duration-200", isThoughtExpanded ? "rotate-90" : "")}>▶</span>
-                                <span className="font-medium">Düşünce Süreci</span>
-                                {isLast && !displayContent && <span className="animate-pulse">...</span>}
+                                {showRawMarkdown ? <Eye className="w-3 h-3" /> : <Code2 className="w-3 h-3" />}
+                                {showRawMarkdown ? t('chat.render') : t('chat.raw')}
                             </button>
-
-                            {isThoughtExpanded && (
-                                <div className="mt-2 pl-3 border-l-2 border-border/40 text-sm text-muted-foreground/80 italic animate-fa-in bg-white/5 backdrop-blur-md rounded-r-md p-2">
-                                    <div className="whitespace-pre-wrap font-mono text-xs opacity-90 leading-relaxed">
-                                        {thought}
-                                        {isLast && !displayContent && <span className="animate-pulse inline-block w-1.5 h-3 ml-1 bg-current align-middle" />}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
-                    {/* Bubble */}
-                    <div className={cn(
-                        "rounded-[20px] px-5 py-3 text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap break-words",
-                        isUser
-                            ? "message-bubble-user rounded-tr-md"
-                            : "message-bubble-ai rounded-tl-md"
-                    )}>
-                        {!thought && !displayContent ? (
-                            <span className="italic opacity-50">...</span>
-                        ) : (
-                            displayContent ? (
+                    {!thought && !displayContent ? (
+                        isStreaming ? <TypingDots /> : <span className="italic opacity-50">...</span>
+                    ) : (
+                        displayContent ? (
+                            showRawMarkdown ? (
+                                <pre className="whitespace-pre-wrap font-mono text-sm bg-black/30 rounded-lg p-3 border border-white/5 overflow-x-auto text-foreground/90 leading-relaxed">
+                                    {visibleContent}
+                                </pre>
+                            ) : (
                                 <div className="markdown-body">
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm, remarkMath]}
                                         rehypePlugins={[rehypeKatex]}
                                         components={{
-                                            code({ node, className, children, ...props }) {
+                                            code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || '')
                                                 const isInline = !match
                                                 const codeString = String(children).replace(/\n$/, '')
-
-                                                // Mermaid support
-                                                if (match && match[1] === 'mermaid') {
-                                                    return <MermaidDiagram code={codeString} />
-                                                }
-
-                                                return isInline ? (
-                                                    <code className="bg-black/10 dark:bg-white/10 rounded px-1 py-0.5 font-mono text-[0.9em]" {...props}>
+                                                if (match && match[1] === 'mermaid') return <MermaidDiagram code={codeString} />
+                                                return (isInline || !match) ? (
+                                                    <code className="bg-accent/40 rounded px-1 py-0.5 font-mono text-sm uppercase" {...props}>
                                                         {children}
                                                     </code>
                                                 ) : (
-                                                    <div className="not-prose my-2 rounded-lg overflow-hidden border border-border/50 bg-zinc-950 group/code">
-                                                        <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-800">
-                                                            <span className="text-xs text-zinc-400">{match?.[1] || 'code'}</span>
-                                                            <CopyButton text={codeString} />
+                                                    <div className="not-prose my-2 rounded-lg overflow-hidden border border-border/40 bg-black group/code">
+                                                        <div className="flex items-center justify-between px-3 py-1.5 bg-card border-b border-border">
+                                                            <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">{match[1] || 'code'}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <CopyButton text={codeString} />
+                                                            </div>
                                                         </div>
-                                                        <Highlight theme={themes.nightOwl} code={codeString} language={match?.[1] || 'text'}>
+                                                        <Highlight theme={themes.nightOwl} code={codeString} language={match[1] || 'text'}>
                                                             {({ style, tokens, getLineProps, getTokenProps }) => (
                                                                 <pre className="p-3 overflow-x-auto m-0" style={style}>
                                                                     {tokens.map((line, i) => (
                                                                         <div key={i} {...getLineProps({ line })}>
                                                                             <span className="select-none text-zinc-600 mr-4 text-xs inline-block w-6 text-right">{i + 1}</span>
-                                                                            {line.map((token, key) => (
-                                                                                <span key={key} {...getTokenProps({ token })} />
-                                                                            ))}
+                                                                            {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
                                                                         </div>
                                                                     ))}
                                                                 </pre>
@@ -263,118 +300,75 @@ export function MessageBubble({ message, isLast, userAvatar, aiAvatar }: Message
                                                     </div>
                                                 )
                                             },
+                                            img: ({ src, alt }) => (
+                                                <span className="block my-2">
+                                                    <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => src && window.electron.openExternal(src)} />
+                                                    {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
+                                                </span>
+                                            ),
                                             a: ({ href, children }) => (
-                                                <a href={href} className="text-blue-500 hover:underline underline-offset-4" onClick={(e) => {
-                                                    e.preventDefault()
-                                                    if (href) window.electron.openExternal(href)
-                                                }}>{children}</a>
+                                                <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) window.electron.openExternal(href) }}>{children}</a>
                                             ),
                                             li: ({ children }) => {
-                                                const isCheckbox = Array.isArray(children) && children.some(c => React.isValidElement(c) && (c.props as any).type === 'checkbox')
+                                                const isCheckbox = Array.isArray(children) && children.some(c => isValidElement(c) && (c.props as any).type === 'checkbox')
                                                 return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                                             },
                                             input: ({ type, checked, ...props }) => {
-                                                if (type === 'checkbox') {
-                                                    return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-blue-500 scale-110 align-middle" {...props} />
-                                                }
+                                                if (type === 'checkbox') return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />
                                                 return <input {...props} />
                                             },
-                                            ul: ({ children }) => <ul className="pl-4 my-2 space-y-0.5">{children}</ul>,
-                                            ol: ({ children }) => <ol className="list-decimal pl-4 my-2 space-y-0.5">{children}</ol>,
+                                            ul: ({ children }) => <ul className="pl-4 my-2 space-y-1">{children}</ul>,
+                                            ol: ({ children }) => <ol className="list-decimal pl-4 my-2 space-y-1">{children}</ol>,
                                         }}
                                     >
-                                        {displayContent}
+                                        {visibleContent}
                                     </ReactMarkdown>
                                 </div>
-                            ) : null
-                        )}
+                            )
+                        ) : null
+                    )}
+                </>
+            )}
 
-                        {/* Show images if attached (User side usually) */}
-                        {message.images && message.images.length > 0 && (
-                            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-                                {message.images.map((img, i) => (
-                                    <div key={i} className="rounded-lg overflow-hidden border border-black/10 dark:border-white/10 w-48 h-48 shrink-0">
-                                        <img src={`data:image/jpeg;base64,${img}`} alt="User upload" className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
+            {isLongContent && !isUser && !is429Error && (
+                <button onClick={() => setIsContentExpanded(!isContentExpanded)} className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                    {isContentExpanded ? <><ChevronUp className="w-3.5 h-3.5" /> {t('chat.collapse')}</> : <><ChevronDown className="w-3.5 h-3.5" /> {lineCount - COLLAPSE_THRESHOLD} {t('chat.moreLines')}</>}
+                </button>
+            )}
+        </div>
+    )
+
+    return (
+        <div className={cn("flex w-full animate-fade-in group", isUser ? "justify-end" : "justify-start")}>
+            <div className={cn("flex max-w-[85%] md:max-w-[75%] gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
+                {!isUser && getAssistantLogo()}
+                <div className={cn("flex flex-col gap-1 min-w-0", isUser ? "items-end" : "items-start")}>
+                    {plan && (
+                        <div className="w-full mb-3 bg-primary/5 border border-primary/10 rounded-xl p-3 animate-fade-in">
+                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-primary/10">
+                                <span className="text-xs font-black text-primary uppercase tracking-widest">{t('chat.plan')}</span>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Tool Calls & Results */}
-                    {message.toolCalls && message.toolCalls.length > 0 && (
-                        <div className="flex flex-col gap-2 w-full mt-2">
-                            {message.toolCalls.map((toolCall, idx) => (
-                                <ToolDisplay
-                                    key={idx}
-                                    toolCall={toolCall}
-                                    result={message.toolResults?.find(r => r.toolCallId === toolCall.id)}
-                                    isExecuting={!message.toolResults?.find(r => r.toolCallId === toolCall.id)}
-                                />
-                            ))}
+                            <div className="text-sm text-foreground/80"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ li: ({ children }) => <li className="list-disc ml-4 my-0.5">{children}</li> }}>{plan}</ReactMarkdown></div>
                         </div>
                     )}
-
-                    {/* Meta info (time, stats) & Actions */}
-                    {!isUser && (
-                        <div className="flex items-center gap-2 mt-1 px-1">
-                            {message.timestamp && (
-                                <span className="text-[10px] text-muted-foreground/50">
-                                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            )}
-
-                            <button
-                                onClick={() => {
-                                    if (isSpeaking) {
-                                        window.speechSynthesis.cancel()
-                                        setIsSpeaking(false)
-                                    } else {
-                                        window.speechSynthesis.cancel()
-                                        // Simple markdown strip from displayContent
-                                        const cleanText = (displayContent || thought || "")
-                                            .replace(/#{1,6} /g, '')
-                                            .replace(/(\*\*|__)(.*?)\1/g, '$2')
-                                            .replace(/(\*|_)(.*?)\1/g, '$2')
-                                            .replace(/`{3}[\s\S]*?`{3}/g, 'Kod bloğu')
-                                            .replace(/`(.+?)`/g, '$1')
-                                            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-
-                                        const utter = new SpeechSynthesisUtterance(cleanText)
-                                        utter.lang = 'tr-TR' // Configure from settings later?
-                                        utter.onend = () => setIsSpeaking(false)
-                                        window.speechSynthesis.speak(utter)
-                                        setIsSpeaking(true)
-                                    }
-                                }}
-                                className={cn(
-                                    "p-1 rounded-full bg-transparent hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100",
-                                    isSpeaking ? "opacity-100 text-purple-400" : "text-muted-foreground/40 hover:text-foreground/70"
-                                )}
-                                title={isSpeaking ? "Okumayı Durdur" : "Sesli Oku"}
-                            >
-                                {isSpeaking ? (
-                                    <span className="block w-2 h-2 bg-current rounded-sm animate-pulse" />
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                                    </svg>
-                                )}
+                    {thought && (
+                        <div className="w-full mb-1">
+                            <button onClick={() => setIsThoughtExpanded(!isThoughtExpanded)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-primary transition-colors select-none">
+                                <span className={cn("transition-transform duration-200", isThoughtExpanded ? "rotate-90" : "")}>▶</span>
+                                <span>{t('chat.thought')}</span>
                             </button>
+                            {isThoughtExpanded && (
+                                <div className="mt-2 pl-3 border-l-2 border-primary/20 text-sm text-muted-foreground/70 italic animate-fade-in bg-primary/5 rounded-r-md p-3">
+                                    <div className="whitespace-pre-wrap font-mono text-xs leading-relaxed">{thought}</div>
+                                </div>
+                            )}
                         </div>
                     )}
-
-                    {/* Meta for user - simple */}
-                    {isUser && message.timestamp && (
-                        <div className="text-[10px] text-muted-foreground/50 px-1 mt-1 text-right">
-                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                    )}
+                    <div className={cn("rounded-[24px] px-5 py-3 text-base leading-relaxed shadow-sm whitespace-pre-wrap break-words border", isUser ? "bg-primary text-white border-transparent rounded-tr-sm" : "bg-transparent border-transparent pl-0")}>
+                        {contentNode}
+                    </div>
                 </div>
             </div>
         </div>
     )
 }
-
-

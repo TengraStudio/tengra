@@ -1,34 +1,59 @@
-import React from 'react'
+import { ReactNode } from 'react'
 import { Minus, Square, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-export function TitleBar() {
+interface TitleBarProps {
+    children?: ReactNode
+    leftContent?: ReactNode
+    className?: string
+}
+
+export function TitleBar({ children, leftContent, className }: TitleBarProps) {
     return (
-        <div className="h-8 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between select-none" style={{ WebkitAppRegion: 'drag' } as any}>
-            <div className="flex items-center px-3 gap-2">
-                <img src="./src/renderer/assets/logo.png" alt="Orbit Logo" className="w-4 h-4" />
-                <span className="text-xs font-medium text-zinc-400">Orbit</span>
+        <header
+            className={cn(
+                "h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none",
+                className
+            )}
+            style={{ WebkitAppRegion: "drag" } as any}
+        >
+            <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
+                <div className="flex items-center gap-2">
+                    <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
+                    <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
+                </div>
+                {leftContent}
             </div>
 
-            <div className="flex h-full" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                <button
-                    onClick={() => window.electron.minimize()}
-                    className="h-full px-4 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
-                >
-                    <Minus className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={() => window.electron.maximize()}
-                    className="h-full px-4 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
-                >
-                    <Square className="w-3 h-3" />
-                </button>
-                <button
-                    onClick={() => window.electron.close()}
-                    className="h-full px-4 hover:bg-red-500 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
-                >
-                    <X className="w-4 h-4" />
-                </button>
+            {/* Center Content (e.g. Token Counter) */}
+            {children}
+
+            <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
+                <div className="flex gap-2 titlebar-controls px-2">
+                    <button
+                        onClick={() => window.electron.minimize()}
+                        className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                        title="Küçült"
+                    >
+                        <Minus className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => window.electron.maximize()}
+                        className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                        title="Büyüt"
+                    >
+                        <Square className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={() => window.electron.close()}
+                        className="p-1.5 hover:bg-red-500 hover:text-white rounded-md transition-all duration-200 text-muted-foreground"
+                        title="Kapat"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
-        </div>
+        </header>
     )
 }
+

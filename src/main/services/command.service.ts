@@ -14,6 +14,7 @@ interface CommandResult {
 export class CommandService {
     private maxTimeout: number = 60000 // 60 seconds default timeout
     private activeProcesses: Map<string, any> = new Map() // ID -> ChildProcess
+    private maxCommandLength = 10000
 
     killCommand(id: string): boolean {
         const child = this.activeProcesses.get(id)
@@ -36,6 +37,20 @@ export class CommandService {
         return false
     }
 
+    private isCommandAllowed(command: string): { allowed: boolean; reason?: string } {
+        if (!command || command.length > this.maxCommandLength) {
+            return { allowed: false, reason: 'Command is empty or too long' }
+        }
+
+        const trimmed = command.trim()
+        const blockedTokens = ['rm -rf', 'del /f', 'format ', 'shutdown', 'poweroff', 'reboot', 'mkfs', 'reg delete']
+        if (blockedTokens.some(token => trimmed.toLowerCase().includes(token))) {
+            return { allowed: false, reason: 'Command contains blocked operation' }
+        }
+
+        return { allowed: true }
+    }
+
     async executeCommand(
         command: string,
         options?: {
@@ -48,6 +63,14 @@ export class CommandService {
         // ... (Synchronous/Promisified exec doesn't easily return child before promise, use spawn if ID needed)
         // If ID is provided, better to use spawn logic or accept we can't kill `execAsync` easily without access to child.
         // Actually exec returns a ChildProcess.
+
+        const safety = this.isCommandAllowed(command)
+        if (!safety.allowed) {
+            return {
+                success: false,
+                error: safety.reason || 'Command blocked by safety policy'
+            }
+        }
 
         if (options?.id) {
             // If we need to track it, we should use the callback version of exec to get the child object
@@ -115,6 +138,15 @@ export class CommandService {
         options?: { cwd?: string; timeout?: number; id?: string }
     ): Promise<CommandResult> {
         return new Promise((resolve) => {
+            const safety = this.isCommandAllowed(command)
+            if (!safety.allowed) {
+                resolve({
+                    success: false,
+                    error: safety.reason || 'Command blocked by safety policy'
+                })
+                return
+            }
+
             const child = spawn(command, [], {
                 cwd: options?.cwd || process.cwd(),
                 shell: 'powershell.exe',
