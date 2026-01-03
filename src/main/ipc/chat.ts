@@ -26,7 +26,7 @@ export function registerChatIpc(options: {
     ipcMain.handle('chat:copilot', async (_event, messages, model) => {
         try {
             // Intercept Proxy Models designated as Copilot but served by Local Proxy
-            const isProxyModel = model === 'gpt-5-codex' || model === 'gpt-5.1-codex';
+            const isProxyModel = model.includes('codex') || model.includes('gpt-5');
             if (isProxyModel) {
                 const settings = settingsService.getSettings()
                 const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
