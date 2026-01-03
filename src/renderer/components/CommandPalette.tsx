@@ -178,7 +178,7 @@ export function CommandPalette({
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         transition={{ duration: 0.2, type: 'spring', damping: 25 }}
                         onClick={e => e.stopPropagation()}
-                        className="relative w-full max-w-lg bg-[#0d1117]/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
+                        className="relative w-full max-w-lg bg-card/95 border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
                     >
                         {/* Search Input */}
                         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
@@ -221,13 +221,13 @@ export function CommandPalette({
                                                 className={cn(
                                                     "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
                                                     isSelected
-                                                        ? "bg-purple-500/20 text-white"
-                                                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                                                        ? "bg-primary/20 text-foreground"
+                                                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                                 )}
                                             >
                                                 <span className={cn(
                                                     "p-1.5 rounded-md",
-                                                    isSelected ? "bg-purple-500/30" : "bg-white/5"
+                                                    isSelected ? "bg-primary/30" : "bg-muted/30"
                                                 )}>
                                                     {cmd.icon}
                                                 </span>

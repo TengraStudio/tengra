@@ -3,6 +3,21 @@ import { CommandService } from '../services/command.service'
 import { ScreenshotService } from '../services/screenshot.service'
 import { WebService } from '../services/web.service'
 import { toolDefinitions } from './tool-definitions'
+import { SystemService } from '../services/system.service'
+import { NetworkService } from '../services/network.service'
+import { NotificationService } from '../services/notification.service'
+import { DockerService } from '../services/docker.service'
+import { SSHService as SshService } from '../services/ssh.service'
+import { ScannerService } from '../services/scanner.service'
+import { EmbeddingService } from '../services/embedding.service'
+import { UtilityService } from '../services/utility.service'
+import { ContentService } from '../services/content.service'
+import { FileManagementService as FileService } from '../services/file.service'
+import { MonitoringService as MonitorService } from '../services/monitoring.service'
+import { ClipboardService } from '../services/clipboard.service'
+import { GitService } from '@main/services/git.service'
+import { SecurityService } from '@main/services/security.service'
+import { McpDispatcher } from '../mcp/dispatcher'
 
 interface ToolResult {
     success: boolean
@@ -15,79 +30,122 @@ interface ToolResult {
     stderr?: string
 }
 
+interface ToolExecutorOptions {
+    fileSystem: FileSystemService,
+    command: CommandService,
+    web: WebService,
+    screenshot: ScreenshotService,
+    system: SystemService,
+    network: NetworkService,
+    notification: NotificationService,
+    docker: DockerService,
+    ssh: SshService,
+    scanner: ScannerService,
+    embedding: EmbeddingService,
+    utility: UtilityService,
+    content: ContentService,
+    file: FileService,
+    monitor: MonitorService,
+    clipboard: ClipboardService,
+    git: GitService,
+    security: SecurityService,
+    mcp: McpDispatcher
+}
+
 export class ToolExecutor {
     constructor(
-        private fileSystem: FileSystemService,
-        private command: CommandService,
-        private screenshot: ScreenshotService,
-        private web: WebService
+        private options: ToolExecutorOptions,
     ) { }
 
     getToolDefinitions() {
-        return toolDefinitions
+        const nativeTools = toolDefinitions
+        let mcpTools: any[] = []
+        try {
+            mcpTools = this.options.mcp.getToolDefinitions()
+        } catch (e) {
+            console.error('[ToolExecutor] Failed to get MCP tool definitions:', e)
+        }
+        return [...nativeTools, ...mcpTools]
     }
 
-    async execute(toolName: string, args: any): Promise<ToolResult> {
+    async execute(toolName: string, args: any, toolCallId?: string): Promise<ToolResult> {
         try {
-            switch (toolName) {
+            const normalizedName = typeof toolName === 'string'
+                ? toolName
+                : String((toolName as any)?.name || '')
+
+            if (!normalizedName) {
+                return { success: false, error: 'Invalid tool name' }
+            }
+
+            switch (normalizedName) {
                 // File System Tools
                 case 'read_file':
-                    return await this.fileSystem.readFile(args.path)
+                    return await this.options.fileSystem.readFile(args.path)
 
                 case 'write_file':
-                    return await this.fileSystem.writeFile(args.path, args.content)
+                    return await this.options.fileSystem.writeFile(args.path, args.content)
 
                 case 'list_directory':
-                    return await this.fileSystem.listDirectory(args.path)
+                    return await this.options.fileSystem.listDirectory(args.path)
 
                 case 'create_directory':
-                    return await this.fileSystem.createDirectory(args.path)
+                    return await this.options.fileSystem.createDirectory(args.path)
 
                 case 'delete_file':
-                    return await this.fileSystem.deleteFile(args.path)
+                    return await this.options.fileSystem.deleteFile(args.path)
 
                 case 'file_exists':
-                    return { success: true, result: await this.fileSystem.fileExists(args.path) }
+                    return { success: true, result: await this.options.fileSystem.fileExists(args.path) }
 
                 case 'copy_file':
-                    return await this.fileSystem.copyFile(args.source, args.destination)
+                    return await this.options.fileSystem.copyFile(args.source, args.destination)
 
                 case 'move_file':
-                    return await this.fileSystem.moveFile(args.source, args.destination)
+                    return await this.options.fileSystem.moveFile(args.source, args.destination)
 
                 case 'get_file_info':
-                    return await this.fileSystem.getFileInfo(args.path)
+                    return await this.options.fileSystem.getFileInfo(args.path)
 
                 // Command Tools
                 case 'execute_command':
-                    return await this.command.executeCommand(args.command, { cwd: args.cwd })
+                    return await this.options.command.executeCommand(args.command, { cwd: args.cwd, id: toolCallId })
 
                 case 'get_system_info':
-                    const sysInfo = await this.command.getSystemInfo()
+                    const sysInfo = await this.options.command.getSystemInfo()
                     return { success: true, result: sysInfo }
 
                 // Screenshot Tools
                 case 'capture_screenshot':
-                    return await this.screenshot.captureScreen()
+                    return await this.options.screenshot.captureScreen()
 
                 case 'capture_window':
-                    return await this.screenshot.captureWindow(args.window_name)
+                    return await this.options.screenshot.captureWindow(args.window_name)
 
                 case 'list_windows':
-                    return await this.screenshot.listWindows()
+                    return await this.options.screenshot.listWindows()
 
                 // Web Tools
                 case 'fetch_webpage':
-                    return await this.web.fetchWebPage(args.url)
+                    return await this.options.web.fetchWebPage(args.url)
 
                 case 'search_web':
-                    return await this.web.searchWeb(args.query, parseInt(args.num_results) || 5)
+                    return await this.options.web.searchWeb(args.query, parseInt(args.num_results) || 5)
 
                 case 'fetch_json':
-                    return await this.web.fetchJson(args.url)
+                    return await this.options.web.fetchJson(args.url)
 
                 default:
-                    return { success: false, error: `Unknown tool: ${toolName}` }
+                    // Check for MCP tools (prefix: mcp__)
+                    if (normalizedName.startsWith('mcp__')) {
+                        const parts = normalizedName.split('__')
+                        if (parts.length >= 3) {
+                            const service = parts[1]
+                            const action = parts.slice(2).join('__')
+                            return await this.options.mcp.dispatch(service, action, args)
+                        }
+                    }
+                    return { success: false, error: `Unknown tool: ${normalizedName}` }
             }
         } catch (error: any) {
             return { success: false, error: error.message }

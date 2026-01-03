@@ -125,8 +125,15 @@ release/
 Thumbs.db
 
 # Project specific
-data/
+# data/ # Commented out to allow renderer data
+!src/renderer/data/
+
 llama-bin/
 temp_copilot_analysis/
 vscode-copilot-chat-main.zip
 ProxyPal_*.exe
+rustup-init.exe
+proxy/cliproxy_embed/cliproxy-embed*
+go_cache/
+final_build_log.txt
+tsc_output.txt

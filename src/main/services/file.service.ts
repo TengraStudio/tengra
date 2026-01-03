@@ -26,7 +26,7 @@ export class FileManagementService {
                     current = "";
                 }
             }
-            return { success: true, result: { strings: strings.slice(0, 100) } };
+            return { success: true, result: { strings: strings } };
         } catch (e: any) {
             return { success: false, error: e.message };
         }

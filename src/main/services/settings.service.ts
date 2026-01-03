@@ -1,3 +1,4 @@
+
 import { app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -5,35 +6,104 @@ import * as fs from 'fs'
 export interface AppSettings {
     ollama: {
         url: string
+        numCtx?: number
     }
     general: {
         language: 'tr' | 'en'
-        theme: 'dark' | 'light'
+        theme: string
+        resolution: string
+        fontSize: number
+        fontFamily?: string
+        defaultModel?: string
+        lastModel?: string
+        lastProvider?: string
+        responseStyle?: 'concise' | 'balanced' | 'detailed'
+        responseTone?: 'neutral' | 'friendly' | 'professional'
+        responseFormat?: 'auto' | 'structured' | 'steps'
+        customInstructions?: string
+        contextMessageLimit?: number
+        agentMode?: 'adaptive' | 'speed' | 'accuracy'
+        agentSoftDeadlineMs?: number
+        agentHardDeadlineMs?: number
+        agentRequireLocalForActions?: boolean
+        agentAllowLateSuggestions?: boolean
+        favoriteModels?: string[]
+        recentModels?: string[]
+        hiddenModels?: string[]
     }
     github?: {
-        username: string
-        token: string
+        username?: string
+        token?: string
     }
     openai?: {
         apiKey: string
         model: string
     }
-    userAvatar?: string
-    aiAvatar?: string
+    anthropic?: {
+        apiKey: string
+        model: string
+    }
+    antigravity?: {
+        connected: boolean
+    }
+    copilot?: {
+        connected: boolean
+        token?: string
+        username?: string
+    }
+    gemini?: {
+        apiKey: string
+        model: string
+    }
+    groq?: {
+        apiKey: string
+        model: string
+    }
     proxy?: {
         enabled: boolean
         url: string
         key: string
+        authStoreKey: string
     }
+    window?: {
+        width: number
+        height: number
+        x: number
+        y: number
+    }
+    mcpDisabledServers?: string[]
+    mcpUserServers?: any[]
+    mcpSecurityAllowedHosts?: string[]
+    mcpReviewPolicy?: 'elevated' | 'trusted'
+    mcpAutoExecuteSafe?: boolean
+    userAvatar?: string
+    aiAvatar?: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
-        url: 'http://127.0.0.1:11434'
+        url: 'http://127.0.0.1:11434',
+        numCtx: 16384
     },
     general: {
-        language: 'tr',
-        theme: 'dark'
+        language: 'en',
+        theme: 'graphite',
+        resolution: '1280x800',
+        fontSize: 14,
+        defaultModel: 'gpt-4o',
+        lastModel: '',
+        lastProvider: '',
+        responseStyle: 'balanced',
+        responseTone: 'neutral',
+        responseFormat: 'auto',
+        customInstructions: '',
+        contextMessageLimit: 50,
+        agentMode: 'adaptive',
+        agentSoftDeadlineMs: 4000,
+        agentHardDeadlineMs: 25000,
+        agentRequireLocalForActions: true,
+        agentAllowLateSuggestions: true,
+        hiddenModels: []
     },
     github: {
         username: '',
@@ -41,15 +111,37 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     openai: {
         apiKey: '',
-        model: 'gpt-3.5-turbo'
+        model: 'gpt-4o'
+    },
+    anthropic: {
+        apiKey: '',
+        model: 'claude-3-opus-20240229'
+    },
+    antigravity: {
+        connected: false
+    },
+    copilot: {
+        connected: false
+    },
+    gemini: {
+        apiKey: '',
+        model: 'gemini-1.5-pro'
+    },
+    groq: {
+        apiKey: '',
+        model: 'llama3-70b-8192'
     },
     proxy: {
         enabled: true,
-        url: 'http://localhost:8317/v1',
-        key: 'proxypal-local'
+        url: 'http://127.0.0.1:8317/v1',
+        key: 'local-dev-key',
+        authStoreKey: ''
     },
-    userAvatar: '👤',
-    aiAvatar: '🤖'
+    mcpDisabledServers: [],
+    mcpUserServers: [],
+    mcpSecurityAllowedHosts: [],
+    mcpReviewPolicy: 'elevated',
+    mcpAutoExecuteSafe: true
 }
 
 export class SettingsService {
@@ -65,7 +157,24 @@ export class SettingsService {
         try {
             if (fs.existsSync(this.settingsPath)) {
                 const data = fs.readFileSync(this.settingsPath, 'utf8')
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(data) }
+                const loaded = JSON.parse(data)
+                delete loaded.userAvatar
+                delete loaded.aiAvatar
+                return {
+                    ...DEFAULT_SETTINGS,
+                    ...loaded,
+                    ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
+                    general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
+                    github: { ...DEFAULT_SETTINGS.github, ...(loaded.github || {}) },
+                    openai: { ...DEFAULT_SETTINGS.openai, ...(loaded.openai || {}) },
+                    anthropic: { ...DEFAULT_SETTINGS.anthropic, ...(loaded.anthropic || {}) },
+                    antigravity: { ...DEFAULT_SETTINGS.antigravity, ...(loaded.antigravity || {}) },
+                    copilot: { ...DEFAULT_SETTINGS.copilot, ...(loaded.copilot || {}) },
+                    gemini: { ...DEFAULT_SETTINGS.gemini, ...(loaded.gemini || {}) },
+                    groq: { ...DEFAULT_SETTINGS.groq, ...(loaded.groq || {}) },
+                    proxy: { ...DEFAULT_SETTINGS.proxy, ...(loaded.proxy || {}) },
+                    window: { ...DEFAULT_SETTINGS.window, ...(loaded.window || {}) }
+                }
             }
         } catch (error) {
             console.error('Failed to load settings:', error)
@@ -80,24 +189,23 @@ export class SettingsService {
     saveSettings(newSettings: Partial<AppSettings>): AppSettings {
         this.settings = { ...this.settings, ...newSettings }
 
-        // Deep merge for nested objects if needed, but for now simple spread is okay 
-        // if we send full objects or handle partial deeper. 
-        // Actually, let's do a basic deep merge for 2nd level keys manually for safety
-        if (newSettings.ollama) {
-            this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
-        }
-        if (newSettings.general) {
-            this.settings.general = { ...this.settings.general, ...newSettings.general }
-        }
-        if (newSettings.github) {
-            this.settings.github = { ...this.settings.github, ...newSettings.github }
-        }
-        if (newSettings.openai) {
-            this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
-        }
-        if (newSettings.proxy) {
-            this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
-        }
+        if (newSettings.ollama) this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
+        if (newSettings.general) this.settings.general = { ...this.settings.general, ...newSettings.general }
+        if (newSettings.github) this.settings.github = { ...this.settings.github, ...newSettings.github }
+        if (newSettings.openai) this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
+        if (newSettings.anthropic) this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
+        if (newSettings.antigravity) this.settings.antigravity = { ...this.settings.antigravity, ...newSettings.antigravity }
+        if (newSettings.copilot) this.settings.copilot = { ...this.settings.copilot, ...newSettings.copilot }
+        if (newSettings.gemini) this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
+        if (newSettings.groq) this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
+        if (newSettings.proxy) this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
+        if (newSettings.window) this.settings.window = { ...this.settings.window, ...newSettings.window }
+
+        if (newSettings.mcpDisabledServers) this.settings.mcpDisabledServers = newSettings.mcpDisabledServers
+        if (newSettings.mcpUserServers) this.settings.mcpUserServers = newSettings.mcpUserServers
+        if (newSettings.mcpSecurityAllowedHosts) this.settings.mcpSecurityAllowedHosts = newSettings.mcpSecurityAllowedHosts
+        if (newSettings.mcpReviewPolicy) this.settings.mcpReviewPolicy = newSettings.mcpReviewPolicy
+        if (newSettings.mcpAutoExecuteSafe !== undefined) this.settings.mcpAutoExecuteSafe = newSettings.mcpAutoExecuteSafe
 
         try {
             fs.writeFileSync(this.settingsPath, JSON.stringify(this.settings, null, 2))

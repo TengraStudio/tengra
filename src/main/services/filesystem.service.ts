@@ -1,9 +1,28 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
+
 export class FileSystemService {
+    constructor(_allowedRoots?: string[]) {
+        // Restrictions removed by user request
+    }
+
+    updateAllowedRoots(_allowedRoots: string[]) {
+        // No-op
+    }
+
+    private isAllowed(_targetPath: string): boolean {
+        // Allow all paths
+        return true
+    }
+
+
+
     async readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
         try {
+            if (!this.isAllowed(filePath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(filePath)
             const content = await fs.readFile(absolutePath, 'utf-8')
             return { success: true, content }
@@ -14,6 +33,9 @@ export class FileSystemService {
 
     async writeFile(filePath: string, content: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(filePath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(filePath)
             const dir = path.dirname(absolutePath)
 
@@ -29,6 +51,9 @@ export class FileSystemService {
 
     async listDirectory(dirPath: string): Promise<{ success: boolean; files?: any[]; error?: string }> {
         try {
+            if (!this.isAllowed(dirPath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(dirPath)
             const entries = await fs.readdir(absolutePath, { withFileTypes: true })
 
@@ -63,6 +88,9 @@ export class FileSystemService {
 
     async createDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(dirPath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(dirPath)
             await fs.mkdir(absolutePath, { recursive: true })
             return { success: true }
@@ -73,6 +101,9 @@ export class FileSystemService {
 
     async deleteFile(filePath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(filePath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(filePath)
             await fs.unlink(absolutePath)
             return { success: true }
@@ -83,6 +114,9 @@ export class FileSystemService {
 
     async deleteDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(dirPath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(dirPath)
             await fs.rm(absolutePath, { recursive: true, force: true })
             return { success: true }
@@ -93,6 +127,9 @@ export class FileSystemService {
 
     async fileExists(filePath: string): Promise<{ exists: boolean }> {
         try {
+            if (!this.isAllowed(filePath)) {
+                return { exists: false }
+            }
             const absolutePath = path.resolve(filePath)
             await fs.access(absolutePath)
             return { exists: true }
@@ -103,6 +140,9 @@ export class FileSystemService {
 
     async getFileInfo(filePath: string): Promise<{ success: boolean; info?: any; error?: string }> {
         try {
+            if (!this.isAllowed(filePath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
 
@@ -125,6 +165,9 @@ export class FileSystemService {
 
     async copyFile(source: string, destination: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(source) || !this.isAllowed(destination)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const srcPath = path.resolve(source)
             const destPath = path.resolve(destination)
             const destDir = path.dirname(destPath)
@@ -140,6 +183,9 @@ export class FileSystemService {
 
     async moveFile(source: string, destination: string): Promise<{ success: boolean; error?: string }> {
         try {
+            if (!this.isAllowed(source) || !this.isAllowed(destination)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const srcPath = path.resolve(source)
             const destPath = path.resolve(destination)
             const destDir = path.dirname(destPath)
@@ -155,6 +201,9 @@ export class FileSystemService {
 
     async searchFiles(rootPath: string, pattern: string): Promise<{ success: boolean; matches?: string[]; error?: string }> {
         try {
+            if (!this.isAllowed(rootPath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absoluteRoot = path.resolve(rootPath)
             const matches: string[] = []
 
@@ -180,6 +229,9 @@ export class FileSystemService {
     async getFileHash(filePath: string, algorithm: 'md5' | 'sha1' | 'sha256' = 'sha256'): Promise<{ success: boolean; hash?: string; error?: string }> {
         try {
             const { createHash } = await import('crypto')
+            if (!this.isAllowed(filePath)) {
+                return { success: false, error: 'Access denied: path is outside allowed roots' }
+            }
             const absolutePath = path.resolve(filePath)
             const content = await fs.readFile(absolutePath)
             const hash = createHash(algorithm).update(content).digest('hex')

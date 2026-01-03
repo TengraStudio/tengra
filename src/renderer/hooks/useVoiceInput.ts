@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export interface VoiceInputReturn {
     isListening: boolean
@@ -12,6 +12,8 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
     const [recognition, setRecognition] = useState<any>(null)
     const [isSupported, setIsSupported] = useState(false)
 
+    const manualStop = useRef(false)
+
     useEffect(() => {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             setIsSupported(true)
@@ -19,7 +21,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
             const recognitionInstance = new SpeechRecognition()
 
             recognitionInstance.continuous = true
-            recognitionInstance.interimResults = false // Simplify: only final results
+            recognitionInstance.interimResults = false
             recognitionInstance.lang = language
 
             recognitionInstance.onresult = (event: any) => {
@@ -29,29 +31,37 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                         finalTranscript += event.results[i][0].transcript
                     }
                 }
-
-                if (finalTranscript) {
-                    onFinalResult(finalTranscript)
-                }
+                if (finalTranscript) onFinalResult(finalTranscript)
             }
 
             recognitionInstance.onerror = (event: any) => {
                 console.error('Speech recognition error:', event.error)
+                // 'no-speech' is common, don't stop strictly
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     setIsListening(false)
                 }
             }
 
             recognitionInstance.onend = () => {
-                setIsListening(false)
+                // If not manually stopped, try to restart (handling silence timeouts)
+                if (!manualStop.current && isListening) {
+                    try {
+                        recognitionInstance.start()
+                    } catch (e) {
+                        setIsListening(false)
+                    }
+                } else {
+                    setIsListening(false)
+                }
             }
 
             setRecognition(recognitionInstance)
         }
-    }, [language, onFinalResult])
+    }, [language, onFinalResult, isListening]) // isListening dependency is tricky here
 
     const startListening = useCallback(() => {
         if (recognition) {
+            manualStop.current = false
             try {
                 recognition.start()
                 setIsListening(true)
@@ -63,6 +73,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
 
     const stopListening = useCallback(() => {
         if (recognition) {
+            manualStop.current = true
             recognition.stop()
             setIsListening(false)
         }

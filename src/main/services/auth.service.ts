@@ -1,8 +1,17 @@
-import { net, shell } from 'electron';
+import { net } from 'electron';
 import { SettingsService } from './settings.service';
 
-const GITHUB_CLIENT_ID = 'Iv1.b507a08c87ecfe98'; // VS Code's Client ID (commonly used for Copilot integrations)
-const GITHUB_SCOPE = 'read:user'; // Copilot needs minimal scope initially, then specific flows
+// Clients
+const CLIENTS = {
+    profile: {
+        id: 'Ov23liBw1MLMHGdYxtUV', // Orbit AI
+        scope: 'read:user user:email'
+    },
+    copilot: {
+        id: '01ab8ac9400c4e429b23', // VS Code
+        scope: 'read:user'
+    }
+}
 
 // Device Flow Endpoints
 const DEVICE_CODE_URL = 'https://github.com/login/device/code';
@@ -25,15 +34,13 @@ export interface TokenResponse {
 }
 
 export class AuthService {
-    private settingsService: SettingsService;
-    private pollInterval: NodeJS.Timeout | null = null;
-
-    constructor(settingsService: SettingsService) {
-        this.settingsService = settingsService;
+    constructor(_settingsService: SettingsService) {
+        // settingsService intentionally unused for now, keeping signature for future use
     }
 
-    async requestDeviceCode(): Promise<DeviceCodeResponse> {
+    async requestDeviceCode(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
         return new Promise((resolve, reject) => {
+            const client = CLIENTS[appId] || CLIENTS.profile
             const request = net.request({
                 method: 'POST',
                 url: DEVICE_CODE_URL,
@@ -42,8 +49,8 @@ export class AuthService {
             request.setHeader('Content-Type', 'application/json');
 
             const body = JSON.stringify({
-                client_id: GITHUB_CLIENT_ID,
-                scope: GITHUB_SCOPE
+                client_id: client.id,
+                scope: client.scope
             });
 
             request.write(body);
@@ -64,8 +71,9 @@ export class AuthService {
         });
     }
 
-    async pollForToken(deviceCode: string, interval: number): Promise<string> {
+    async pollForToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<string> {
         return new Promise((resolve, reject) => {
+            const client = CLIENTS[appId] || CLIENTS.profile
             const checkToken = () => {
                 const request = net.request({
                     method: 'POST',
@@ -75,7 +83,7 @@ export class AuthService {
                 request.setHeader('Content-Type', 'application/json');
 
                 const body = JSON.stringify({
-                    client_id: GITHUB_CLIENT_ID,
+                    client_id: client.id,
                     device_code: deviceCode,
                     grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
                 });
@@ -112,9 +120,9 @@ export class AuthService {
     }
 
     // Helper to start the flow
-    async startLoginFlow(): Promise<DeviceCodeResponse> {
-        const codeData = await this.requestDeviceCode();
-        shell.openExternal(codeData.verification_uri);
+    async startLoginFlow(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
+        const codeData = await this.requestDeviceCode(appId);
+        // URL is opened by renderer
         return codeData;
     }
 }

@@ -27,7 +27,7 @@ export class NetworkService implements INetworkService {
         }
     }
 
-    async scanPort(host: string, port: number, timeout: number = 200): Promise<ServiceResponse<{ port: number; status: string }>> {
+    async scanPort(host: string, port: number, timeout: number = 2000): Promise<ServiceResponse<{ port: number; status: string }>> {
         return new Promise((resolve) => {
             const socket = new net.Socket();
             socket.setTimeout(timeout);

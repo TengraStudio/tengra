@@ -89,7 +89,28 @@ export function AppRoot() {
     }
 
     const handleSendMessage = async (content: string, _attachments?: Attachment[]) => {
-        if (!currentChatId || !content.trim()) return
+        if (!content.trim()) return
+
+        // Auto-create chat if none exists
+        let chatId = currentChatId
+        if (!chatId) {
+            const newChat: Chat = {
+                id: generateId(),
+                title: 'Yeni Sohbet',
+                messages: [],
+                createdAt: new Date(),
+                model: selectedModel
+            }
+            setChats(prev => [newChat, ...prev])
+            setCurrentChatId(newChat.id)
+            chatId = newChat.id
+
+            try {
+                await window.electron.db.createChat(newChat)
+            } catch (error) {
+                console.error('Failed to create chat:', error)
+            }
+        }
 
         const userMessage: Message = {
             id: generateId(),
@@ -99,7 +120,7 @@ export function AppRoot() {
         }
 
         setChats(prev => prev.map(chat =>
-            chat.id === currentChatId
+            chat.id === chatId
                 ? { ...chat, messages: [...chat.messages, userMessage] }
                 : chat
         ))
@@ -108,7 +129,7 @@ export function AppRoot() {
         setStreamingContent('')
 
         try {
-            const currentChat = chats.find(c => c.id === currentChatId)
+            const currentChat = chats.find(c => c.id === chatId)
             const messages = currentChat ? [...currentChat.messages, userMessage] : [userMessage]
 
             const systemMessage = {
@@ -139,7 +160,7 @@ export function AppRoot() {
             }
 
             setChats(prev => prev.map(chat => {
-                if (chat.id === currentChatId) {
+                if (chat.id === chatId) {
                     let newTitle = chat.title
                     if (chat.messages.length <= 1 && assistantMessage.content) {
                         const firstLine = assistantMessage.content.split('\n')[0].replace(/[#*`]/g, '').trim()
@@ -170,6 +191,31 @@ export function AppRoot() {
         }
     }
 
+    const archiveChat = async (chatId: string) => {
+        // Update local state - remove from visible list
+        setChats(prev => prev.filter(c => c.id !== chatId))
+        if (currentChatId === chatId) {
+            setCurrentChatId(null)
+        }
+        try {
+            await window.electron.db.updateChat(chatId, { isArchived: true })
+        } catch (error) {
+            console.error('Failed to archive chat:', error)
+        }
+    }
+
+    const restoreChat = async (chatId: string) => {
+        // Update local state - mark as not archived
+        setChats(prev => prev.map(c =>
+            c.id === chatId ? { ...c, isArchived: false } : c
+        ))
+        try {
+            await window.electron.db.updateChat(chatId, { isArchived: false })
+        } catch (error) {
+            console.error('Failed to restore chat:', error)
+        }
+    }
+
     // Navigate to settings instead of page
     const handleNavigate = (page: PageId) => {
         if (page === 'settings') {
@@ -193,6 +239,8 @@ export function AppRoot() {
                         onSelectChat={setCurrentChatId}
                         onNewChat={createNewChat}
                         onDeleteChat={deleteChat}
+                        onArchiveChat={archiveChat}
+                        onRestoreChat={restoreChat}
                         onSelectModel={setSelectedModel}
                         onSendMessage={handleSendMessage}
                         hyperparams={hyperparams}
