@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import {
@@ -87,6 +87,15 @@ export function ChatPage({
         }
         loadProxyModels()
     }, [])
+
+    // Memoize filtered model lists to avoid redundant filtering
+    const categorizedModels = useMemo(() => ({
+        copilot: proxyModels.filter((m: any) => m.category === 'copilot'),
+        openai: proxyModels.filter((m: any) => m.category === 'openai'),
+        anthropic: proxyModels.filter((m: any) => m.category === 'anthropic'),
+        gemini: proxyModels.filter((m: any) => m.category === 'gemini'),
+        proxy: proxyModels.filter((m: any) => m.category === 'proxy'),
+    }), [proxyModels])
 
     const currentChat = chats.find(c => c.id === currentChatId)
     const messages = currentChat?.messages || []
@@ -311,112 +320,93 @@ export function ChatPage({
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                                         <SelectValue placeholder="Model Seç" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover/95 backdrop-blur-xl border-border/50 max-h-80">
-                                    {/* GitHub Copilot Models */}
-                                    <SelectGroup>
-                                        <SelectLabel className="text-sm font-bold uppercase tracking-wider text-purple-400/80 flex items-center gap-1.5">
-                                            <span className="w-2 h-2 rounded-full bg-purple-500" />
-                                            GitHub Copilot
-                                        </SelectLabel>
-                                        <SelectItem value="gpt-4o" className="text-sm">
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>GPT-4o</span>
-                                                <span className="text-xs text-muted-foreground ml-2">En akıllı</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="gpt-4o-mini" className="text-sm">
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>GPT-4o Mini</span>
-                                                <span className="text-xs text-muted-foreground ml-2">Hızlı</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="gpt-4" className="text-sm">GPT-4</SelectItem>
-                                        <SelectItem value="o1-preview" className="text-sm">
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>o1-preview</span>
-                                                <span className="text-xs text-orange-400 ml-2">Reasoning</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="o1-mini" className="text-sm">o1-mini</SelectItem>
-                                        <SelectItem value="claude-3.5-sonnet" className="text-sm">Claude 3.5 Sonnet</SelectItem>
-                                    </SelectGroup>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {/* Ollama Models */}
+                                        {models.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🦙 Ollama (Yerel)</SelectLabel>
+                                                {models.map((model: any) => (
+                                                    <SelectItem key={model.name} value={model.name}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
 
-                                    {/* Proxy Models - grouped by provider */}
-                                    {(() => {
-                                        const copilotModelIds = ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'o1-preview', 'o1-mini', 'claude-3.5-sonnet']
-                                        const filteredProxyModels = proxyModels.filter((m: any) => !copilotModelIds.includes(m.id))
+                                        {/* GitHub Copilot Models */}
+                                        {categorizedModels.copilot.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🐙 GitHub Copilot</SelectLabel>
+                                                {categorizedModels.copilot.map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
 
-                                        // Group by owned_by
-                                        const grouped: Record<string, any[]> = {}
-                                        filteredProxyModels.forEach((m: any) => {
-                                            const provider = m.owned_by || 'other'
-                                            if (!grouped[provider]) grouped[provider] = []
-                                            grouped[provider].push(m)
-                                        })
+                                        {/* OpenAI Models */}
+                                        {categorizedModels.openai.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🤖 OpenAI</SelectLabel>
+                                                {categorizedModels.openai.map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
 
-                                        // Provider colors and labels
-                                        const providerConfig: Record<string, { color: string, label: string }> = {
-                                            'openai': { color: 'bg-emerald-500', label: '🟢 OpenAI' },
-                                            'google': { color: 'bg-blue-500', label: '🔵 Google Gemini' },
-                                            'anthropic': { color: 'bg-orange-500', label: '🟠 Anthropic' },
-                                            'antigravity': { color: 'bg-purple-500', label: '🟣 Antigravity' },
-                                            'other': { color: 'bg-gray-500', label: '⚪ Diğer' }
-                                        }
+                                        {/* Anthropic Models */}
+                                        {categorizedModels.anthropic.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🧠 Anthropic (Claude)</SelectLabel>
+                                                {categorizedModels.anthropic.map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
 
-                                        return Object.entries(grouped).map(([provider, models]) => {
-                                            const config = providerConfig[provider] || providerConfig['other']
-                                            return (
-                                                <SelectGroup key={provider}>
-                                                    <SelectLabel className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80 flex items-center gap-1.5">
-                                                        <span className={`w-2 h-2 rounded-full ${config.color}`} />
-                                                        {config.label}
-                                                    </SelectLabel>
-                                                    {models.map((model: any) => (
-                                                        <SelectItem key={model.id} value={model.id} className="text-sm">
-                                                            <div className="flex items-center justify-between w-full">
-                                                                <span>{model.id}</span>
-                                                                {model.name && model.name !== model.id && (
-                                                                    <span className="text-xs text-muted-foreground ml-2 truncate max-w-[100px]">
-                                                                        {model.name}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            )
-                                        })
-                                    })()}
+                                        {/* Google Gemini Models */}
+                                        {categorizedModels.gemini.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>💎 Google (Gemini)</SelectLabel>
+                                                {categorizedModels.gemini.map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
 
-                                    {/* Local Ollama Models */}
-                                    {models.length > 0 && (
-                                        <SelectGroup>
-                                            <SelectLabel className="text-sm font-bold uppercase tracking-wider text-green-400/80 flex items-center gap-1.5">
-                                                <span className="w-2 h-2 rounded-full bg-green-500" />
-                                                Yerel (Ollama)
-                                            </SelectLabel>
-                                            {models.map((model: any) => (
-                                                <SelectItem
-                                                    key={model.name}
-                                                    value={model.name}
-                                                    className="text-sm"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span>{model.name}</span>
-                                                        {model.details && (
-                                                            <span className="text-sm text-muted-foreground">
-                                                                {Math.round((model.size || 0) / 1024 / 1024 / 1024)}GB
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                        {/* Proxy Models */}
+                                        {categorizedModels.proxy.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🌐 Proxy (Harici)</SelectLabel>
+                                                {categorizedModels.proxy.map((model: any) => (
+                                                    <SelectItem key={`proxy-${model.id}`} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* Fallback when no models configured */}
+                                        {models.length === 0 && proxyModels.length === 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>⚠️ Model Bulunamadı</SelectLabel>
+                                                <SelectItem value="" disabled>
+                                                    Ayarlar'dan yapılandırın
                                                 </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    )}
-                                </SelectContent>
-                            </Select>
+                                            </SelectGroup>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                                <Settings2 className="w-3 h-3 text-muted-foreground absolute right-3 top-3 pointer-events-none" />
+                            </div>
                         </div>
                     </motion.aside>
                 )}
