@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 import { Sidebar } from './components/Sidebar'
 import { MessageBubble } from './components/MessageBubble'
 import { SSHManager } from './components/SSHManager'
@@ -16,12 +16,6 @@ import {
     Toast,
     ToolResult
 } from './types'
-
-function generateId(): string {
-    return Math.random().toString(36).substring(2, 15)
-}
-
-import { generateId } from './lib/utils'
 
 
 export default function App() {
@@ -383,20 +377,17 @@ export default function App() {
     }, [isLoading, messageQueue])
 
     const sendMessage = async (content: string, images?: string[]) => {
-        // console.log('sendMessage called', content, selectedModel)
-        window.alert(`DEBUG: sendMessage called. Model: ${selectedModel}, Loading: ${isLoading}`)
+        console.log('[sendMessage] called with model:', selectedModel)
 
         if (!content.trim() && (!images || images.length === 0)) return
         if (!selectedModel) {
-            window.alert('DEBUG: No model selected!')
+            console.error('[sendMessage] No model selected!')
             return
         }
 
         // If loading, queue the message
         if (isLoading) {
-            // window.alert('DEBUG: Queuing message because loading is true')
             // For now discard queue if images present as queue logic is string-only
-            // Or queue as object? Simplifying: just ignore queue for image messages for now
             if (!images || images.length === 0) {
                 setMessageQueue(prev => [...prev, content])
             }
@@ -479,7 +470,7 @@ export default function App() {
         try {
             console.log('[Renderer] BEFORE getToolDefinitions')
             // Temporarily bypass tools to rule out hang
-            const tools = [] // await window.electron.getToolDefinitions()
+            const tools: any[] = [] // await window.electron.getToolDefinitions()
             console.log('[Renderer] Tools bypassed')
 
             const dbRefChat = chats.find(c => c.id === chatId)
@@ -694,7 +685,6 @@ TOOL USAGE PROTOCOL:
                 timestamp: new Date()
             }
 
-                ```
             setChats(prev => prev.map(chat =>
                 chat.id === chatId
                     ? { ...chat, messages: [...chat.messages, errorMessage] }
@@ -708,27 +698,26 @@ TOOL USAGE PROTOCOL:
     }
 
     return (
-
-            <div className="flex flex-col flex-1 relative z-10">
-                {/* Custom Titlebar / Top Bar */}
-                <header
-                    className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none"
-                    style={{ WebkitAppRegion: "drag" } as any}
-                >
-                    <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
-                        <div className="flex items-center gap-2">
-                            <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
-                            <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
-                        </div>
-                        <button
-                            className={cn(
-                                "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300",
-                                isCompact ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-foreground"
-                            )}
-                            onClick={toggleCompact}
-                        >
-                            {isCompact ? "EX-PANSE" : "COMPACT"}
-                        </button>
+        <div className="flex flex-col flex-1 relative z-10">
+            {/* Custom Titlebar / Top Bar */}
+            <header
+                className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none"
+                style={{ WebkitAppRegion: "drag" } as any}
+            >
+                <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
+                    <div className="flex items-center gap-2">
+                        <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
+                        <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
+                    </div>
+                    <button
+                        className={cn(
+                            "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300",
+                            isCompact ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-foreground"
+                        )}
+                        onClick={toggleCompact}
+                    >
+                        {isCompact ? "EX-PANSE" : "COMPACT"}
+                    </button>
                     </div>
 
                     {/* Token Counter */}
@@ -1066,6 +1055,5 @@ TOOL USAGE PROTOCOL:
                     selectedModel={selectedModel}
                 />
             </div>
-        </div>
     )
 }

@@ -266,13 +266,59 @@ ipcMain.handle('settings:save', (_, newSettings) => {
 })
 
 ipcMain.handle('proxy:getModels', async () => {
-    // Native Copilot Models (No external proxy needed)
-    return [
-        { id: 'gpt-4', name: 'GPT-4 (Native)', owned_by: 'copilot (native)' },
-        { id: 'gpt-4o', name: 'GPT-4o (Native)', owned_by: 'copilot (native)' },
-        { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Native)', owned_by: 'copilot (native)' },
-        { id: 'gemini-2.0-flash-thinking-exp-1219', name: 'Gemini 2.0 Flash Thinking (Native)', owned_by: 'copilot (native)' }
-    ]
+    const settings = settingsService.getSettings()
+    const models: any[] = []
+    
+    // GitHub Copilot models (requires GitHub token)
+    if (settings.github?.token) {
+        models.push(
+            { id: 'copilot-gpt-4', name: 'GPT-4 (Copilot)', owned_by: 'github-copilot', category: 'copilot' },
+            { id: 'copilot-gpt-4o', name: 'GPT-4o (Copilot)', owned_by: 'github-copilot', category: 'copilot' },
+            { id: 'copilot-gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Copilot)', owned_by: 'github-copilot', category: 'copilot' }
+        )
+    }
+    
+    // OpenAI models (requires OpenAI API key)
+    if (settings.openai?.apiKey) {
+        models.push(
+            { id: 'gpt-4', name: 'GPT-4', owned_by: 'openai', category: 'openai' },
+            { id: 'gpt-4o', name: 'GPT-4o', owned_by: 'openai', category: 'openai' },
+            { id: 'gpt-4o-mini', name: 'GPT-4o Mini', owned_by: 'openai', category: 'openai' },
+            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', owned_by: 'openai', category: 'openai' },
+            { id: 'o1-preview', name: 'o1 Preview', owned_by: 'openai', category: 'openai' },
+            { id: 'o1-mini', name: 'o1 Mini', owned_by: 'openai', category: 'openai' }
+        )
+    }
+    
+    // Anthropic models (requires Anthropic API key)
+    if (settings.anthropic?.apiKey) {
+        models.push(
+            { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', owned_by: 'anthropic', category: 'anthropic' },
+            { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', owned_by: 'anthropic', category: 'anthropic' },
+            { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', owned_by: 'anthropic', category: 'anthropic' }
+        )
+    }
+    
+    // Google Gemini models (requires Gemini API key)
+    if (settings.gemini?.apiKey) {
+        models.push(
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', owned_by: 'google', category: 'gemini' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', owned_by: 'google', category: 'gemini' },
+            { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', owned_by: 'google', category: 'gemini' }
+        )
+    }
+    
+    // Proxy models (when proxy is enabled, these are available through external proxy)
+    if (settings.proxy?.enabled && settings.proxy?.url) {
+        models.push(
+            { id: 'gpt-4', name: 'GPT-4 (Proxy)', owned_by: 'proxy', category: 'proxy' },
+            { id: 'gpt-4o', name: 'GPT-4o (Proxy)', owned_by: 'proxy', category: 'proxy' },
+            { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet (Proxy)', owned_by: 'proxy', category: 'proxy' },
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Proxy)', owned_by: 'proxy', category: 'proxy' }
+        )
+    }
+    
+    return models
 })
 
 ipcMain.handle('ollama:tags', async () => {
@@ -318,19 +364,72 @@ ipcMain.handle('chat:openai', async (_, messages, model) => {
     console.log('[Main] IPC chat:openai TRIGGERED for:', model)
     console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     try {
-        // NATIVE INTEGRATION:
-        // Attempt to use Copilot Service for everything unless specifically routed otherwise
-        // (Since we removed the external proxy)
         const settings = settingsService.getSettings()
-
-        // If we have a GitHub token, prefer native Copilot service
-        if (settings.github?.token) {
-            console.log('[Main] Routing to Native Copilot Service')
+        
+        // Determine the correct service based on model type
+        const isCopilotModel = model.startsWith('copilot-') || model.startsWith('github-')
+        const isGptModel = model.startsWith('gpt-') || model.startsWith('o1-')
+        const isClaudeModel = model.startsWith('claude-')
+        const isGeminiModel = model.startsWith('gemini-')
+        const isGrokModel = model.startsWith('grok-')
+        
+        // Route Copilot-specific models to Copilot Service (requires GitHub token)
+        if (isCopilotModel) {
+            if (!settings.github?.token) {
+                return { error: 'Copilot modelleri için GitHub Copilot girişi gereklidir. Ayarlar > GitHub bölümünden giriş yapın.' }
+            }
+            console.log('[Main] Routing Copilot model to Native Copilot Service:', model)
             return await copilotService.chat(messages, model)
         }
-
-        // Fallback (e.g. if user has OpenAI Key but no GitHub token)
-        console.log('[Main] No GitHub token, falling back to OpenAI Service')
+        
+        // If proxy is enabled, route all non-Copilot models through proxy
+        if (settings.proxy?.enabled && settings.proxy?.url) {
+            console.log('[Main] Routing via Proxy:', model)
+            return await openaiService.chat(messages, model)
+        }
+        
+        // Route Claude models to Anthropic service or proxy
+        if (isClaudeModel) {
+            if (settings.anthropic?.apiKey) {
+                console.log('[Main] Routing Claude model to Anthropic Service:', model)
+                const result = await anthropicService.chat(messages, model)
+                return result
+            }
+            return { error: 'Claude modelleri için Anthropic API anahtarı gereklidir veya Proxy modunu etkinleştirin.' }
+        }
+        
+        // Route Gemini models to Gemini service or proxy
+        if (isGeminiModel) {
+            if (settings.gemini?.apiKey) {
+                console.log('[Main] Routing Gemini model to Gemini Service:', model)
+                const result = await geminiService.chat(messages, model)
+                return result
+            }
+            return { error: 'Gemini modelleri için Google API anahtarı gereklidir veya Proxy modunu etkinleştirin.' }
+        }
+        
+        // Route Grok models - currently no direct support, need proxy
+        if (isGrokModel) {
+            return { error: 'Grok modelleri için Proxy modunu etkinleştirmeniz gerekiyor.' }
+        }
+        
+        // Route GPT models - try Copilot first if token exists, then OpenAI API
+        if (isGptModel) {
+            // If user has GitHub Copilot access, use it for GPT models
+            if (settings.github?.token) {
+                console.log('[Main] Routing GPT model to Native Copilot Service:', model)
+                return await copilotService.chat(messages, model)
+            }
+            // Otherwise use OpenAI API if key exists
+            if (settings.openai?.apiKey) {
+                console.log('[Main] Routing GPT model to OpenAI Service:', model)
+                return await openaiService.chat(messages, model)
+            }
+            return { error: 'GPT modelleri için GitHub Copilot girişi veya OpenAI API anahtarı gereklidir.' }
+        }
+        
+        // Fallback - try OpenAI service
+        console.log('[Main] Fallback routing to OpenAI Service:', model)
         return await openaiService.chat(messages, model)
     } catch (error: any) {
         console.error('[Main] Chat Error:', error)

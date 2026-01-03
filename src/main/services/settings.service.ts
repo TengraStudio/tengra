@@ -18,6 +18,15 @@ export interface AppSettings {
         apiKey: string
         model: string
     }
+    anthropic?: {
+        apiKey: string
+    }
+    gemini?: {
+        apiKey: string
+    }
+    groq?: {
+        apiKey: string
+    }
     userAvatar?: string
     aiAvatar?: string
     proxy?: {
@@ -43,8 +52,17 @@ const DEFAULT_SETTINGS: AppSettings = {
         apiKey: '',
         model: 'gpt-3.5-turbo'
     },
+    anthropic: {
+        apiKey: ''
+    },
+    gemini: {
+        apiKey: ''
+    },
+    groq: {
+        apiKey: ''
+    },
     proxy: {
-        enabled: true,
+        enabled: false,
         url: 'http://localhost:8317/v1',
         key: 'proxypal-local'
     },
@@ -94,6 +112,15 @@ export class SettingsService {
         }
         if (newSettings.openai) {
             this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
+        }
+        if (newSettings.anthropic) {
+            this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
+        }
+        if (newSettings.gemini) {
+            this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
+        }
+        if (newSettings.groq) {
+            this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
         }
         if (newSettings.proxy) {
             this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }

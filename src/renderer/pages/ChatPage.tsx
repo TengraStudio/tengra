@@ -174,32 +174,85 @@ export function ChatPage({
                                         <SelectValue placeholder="Model Seç" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectGroup>
-                                            <SelectLabel>Ollama Modelleri</SelectLabel>
-                                            {models.map((model: any) => (
-                                                <SelectItem key={model.name} value={model.name}>
-                                                    {model.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-
-                                        {proxyModels.length > 0 && (
+                                        {/* Ollama Models */}
+                                        {models.length > 0 && (
                                             <SelectGroup>
-                                                <SelectLabel>Proxy / Web AI (Otomatik)</SelectLabel>
-                                                {proxyModels.map((model: any) => (
-                                                    <SelectItem key={model.id} value={model.id}>
-                                                        {model.id}
+                                                <SelectLabel>🦙 Ollama (Yerel)</SelectLabel>
+                                                {models.map((model: any) => (
+                                                    <SelectItem key={model.name} value={model.name}>
+                                                        {model.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectGroup>
                                         )}
 
-                                        {proxyModels.length === 0 && (
+                                        {/* GitHub Copilot Models */}
+                                        {proxyModels.filter((m: any) => m.category === 'copilot').length > 0 && (
                                             <SelectGroup>
-                                                <SelectLabel>Proxy / Web AI (Manuel)</SelectLabel>
-                                                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                                                <SelectItem value="claude-3-5-sonnet">Claude 3.5 Sonnet</SelectItem>
-                                                <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                                                <SelectLabel>🐙 GitHub Copilot</SelectLabel>
+                                                {proxyModels.filter((m: any) => m.category === 'copilot').map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* OpenAI Models */}
+                                        {proxyModels.filter((m: any) => m.category === 'openai').length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🤖 OpenAI</SelectLabel>
+                                                {proxyModels.filter((m: any) => m.category === 'openai').map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* Anthropic Models */}
+                                        {proxyModels.filter((m: any) => m.category === 'anthropic').length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🧠 Anthropic (Claude)</SelectLabel>
+                                                {proxyModels.filter((m: any) => m.category === 'anthropic').map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* Google Gemini Models */}
+                                        {proxyModels.filter((m: any) => m.category === 'gemini').length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>💎 Google (Gemini)</SelectLabel>
+                                                {proxyModels.filter((m: any) => m.category === 'gemini').map((model: any) => (
+                                                    <SelectItem key={model.id} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* Proxy Models */}
+                                        {proxyModels.filter((m: any) => m.category === 'proxy').length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>🌐 Proxy (Harici)</SelectLabel>
+                                                {proxyModels.filter((m: any) => m.category === 'proxy').map((model: any) => (
+                                                    <SelectItem key={`proxy-${model.id}`} value={model.id}>
+                                                        {model.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+
+                                        {/* Fallback when no models configured */}
+                                        {models.length === 0 && proxyModels.length === 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>⚠️ Model Bulunamadı</SelectLabel>
+                                                <SelectItem value="" disabled>
+                                                    Ayarlar'dan yapılandırın
+                                                </SelectItem>
                                             </SelectGroup>
                                         )}
                                     </SelectContent>
