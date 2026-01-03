@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { cn } from '@/lib/utils'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { cn, generateId } from '@/lib/utils'
 import { Sidebar } from './components/Sidebar'
 import { MessageBubble } from './components/MessageBubble'
 import { SSHManager } from './components/SSHManager'
@@ -30,7 +30,6 @@ import {
     Project
 } from './types'
 
-import { generateId } from './lib/utils'
 
 export default function App() {
     const isWeb = !window.electron
@@ -640,6 +639,65 @@ export default function App() {
         }
     }, [isLoading, messageQueue])
 
+    const sendMessage = async (content: string, images?: string[]) => {
+        console.log('[sendMessage] called with model:', selectedModel)
+
+        if (!content.trim() && (!images || images.length === 0)) return
+        if (!selectedModel) {
+            console.error('[sendMessage] No model selected!')
+            return
+        }
+
+        // If loading, queue the message
+        if (isLoading) {
+            // For now discard queue if images present as queue logic is string-only
+            if (!images || images.length === 0) {
+                setMessageQueue(prev => [...prev, content])
+            }
+            return
+        }
+
+        let chatId = currentChatId
+
+        // Create chat if needed
+        if (!chatId) {
+            const newChatId = generateId()
+            const timestamp = Date.now()
+            const newChatDb = {
+                id: newChatId,
+                title: content.slice(0, 50),
+                model: selectedModel,
+                backend: 'ollama' as const,
+                createdAt: timestamp,
+                updatedAt: timestamp
+            }
+
+            try {
+                await window.electron.db.createChat(newChatDb)
+                const newChatUi: Chat = {
+                    ...newChatDb,
+                    messages: [],
+                    createdAt: new Date(timestamp),
+                    updatedAt: new Date(timestamp)
+                }
+                setChats(prev => [newChatUi, ...prev])
+                chatId = newChatId
+                setCurrentChatId(chatId)
+            } catch (error) {
+                console.error('Failed to create chat:', error)
+                return
+            }
+        }
+
+        // Add user message to UI and DB
+        const timestamp = Date.now()
+        const userMessage: Message = {
+            id: generateId(),
+            role: 'user',
+            content,
+            images,
+            timestamp: new Date(timestamp)
+        }
 
     const formatChatError = (err: unknown) => {
         const raw = err instanceof Error ? err.message : String(err); const lower = raw.toLowerCase()
@@ -657,41 +715,93 @@ export default function App() {
     async function generateResponse(chatId: string, model: string, history: any[], provider: string) {
         setIsLoading(true); setStreamingContent('')
         try {
-            const systemPrompt = getSystemPrompt(language, selectedPersona?.prompt)
-            const all = [{ role: 'system', content: systemPrompt }, ...history]
-            let full = ''
-            const listener = (chunk: string) => { full += chunk; setStreamingContent(full) }
-            window.electron.onStreamChunk(listener)
-            let res; let tools: any[] = []
-            try { tools = await window.electron.getToolDefinitions() } catch (e) { console.error(e) }
-            const normalizedModel = String(model || '').trim().replace(/[–—−]/g, '-').toLowerCase()
-            const normalizedProvider = (provider || inferProviderFromModel(model)).toLowerCase()
-            const shouldUseProxy = normalizedProvider !== 'ollama' || /^(gpt-|copilot-|claude-|gemini-|o1-|grok-)/.test(normalizedModel)
-            if (shouldUseProxy) res = await window.electron.chatOpenAI(all, model, tools, provider)
-            else res = await window.electron.chatStream(all, model, tools)
-            window.electron.removeStreamChunkListener(listener)
-            if (res?.error) throw new Error(res.error)
-            const completionTokens = typeof res?.completionTokens === 'number' ? res.completionTokens : undefined
-            const reasoningContent = typeof res?.reasoning_content === 'string' ? res.reasoning_content : ''
-            const mainContent = res?.content || full || ''
-            const combinedContent = reasoningContent ? `<think>${reasoningContent}</think>\n\n${mainContent}`.trim() : mainContent
-            const rawToolCalls = Array.isArray(res?.tool_calls) ? res.tool_calls : []
-            const calls = rawToolCalls.map((tc: any) => {
-                const fn = tc.function || {}; const id = tc.id || tc.call_id || generateId()
-                const name = fn.name || tc.name || tc.tool?.name || ''
-                let args: any = {}
-                try { args = typeof fn.arguments === 'string' ? JSON.parse(fn.arguments) : (fn.arguments || tc.arguments || {}) } catch { args = { raw: fn.arguments } }
-                return { id, name, arguments: args }
-            }).filter((tc: any) => !!tc.name)
-            const assistantId = generateId(); const assistantTs = Date.now()
-            const assistantMsg: Message = { id: assistantId, role: 'assistant', content: combinedContent, timestamp: new Date(assistantTs), toolCalls: calls.length > 0 ? calls : undefined, toolResults: [], provider, model }
-            setChats(prev => prev.map(c => {
-                if (c.id === chatId) {
-                    let title = c.title
-                    if (c.messages.length <= 1 && assistantMsg.content) title = assistantMsg.content.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || 'Yeni Sohbet'
-                    return { ...c, title, messages: [...c.messages, assistantMsg] }
-                }
-                return c
+            console.log('[Renderer] BEFORE getToolDefinitions')
+            // Temporarily bypass tools to rule out hang
+            const tools: any[] = [] // await window.electron.getToolDefinitions()
+            console.log('[Renderer] Tools bypassed')
+
+            const dbRefChat = chats.find(c => c.id === chatId)
+            const chatMessages = [...(dbRefChat?.messages || []), userMessage].map(m => ({
+                role: m.role,
+                content: m.content,
+                images: m.images
+            }))
+
+            const systemMessage = {
+                role: 'system',
+                content: `You are Orbit, an intelligent and capable OS Assistant with full access to the local system.
+
+CAPABILITIES:
+- File System: Read/Write/List/Search files (recursive) and calculate hashes.
+- Terminal: Execute PowerShell/CMD commands.
+- Web: Search the internet and analyze webpages.
+- Vision: Analyze images and screen content.
+- System: Monitor CPU/RAM usage, battery status, and OS information.
+- Network: Check local/public IP, DNS lookups, and connectivity.
+- Notifications: Send desktop notifications.
+
+COMMUNICATION GUIDELINES:
+1. **Language Adaptation:** STRICTLY respond in the same language as the user (Turkish or English).
+2. **Style:** Be professional, concise, and helpful. Use Markdown (bold, lists, code blocks) to structure your answers for maximum readability.
+3. **No Fluff:** Avoid starting with "As an AI..." or "Here is the answer". Go straight to the point.
+4. **Conversational:** For greetings ("Nasılsın", "Merhaba"), be warm and natural. DO NOT use tools for simple chat.
+5. **Planning:** For complex tasks, output a Plan in \`<plan>\` tags. Format as a Markdown task list (e.g. \` - [] Task name\`).
+6. **Proactive Planning:** If a task involves multiple steps, proactively propose a plan or ask the user if they'd like one. Use the task list format.
+
+TOOL USAGE PROTOCOL:
+- Use tools ONLY when necessary to fulfill a request.
+- If a task is complex, briefly outline your plan before executing tools.
+- When running commands, provide a brief explanation of what the command does.`
+            }
+
+            const allMessages = [systemMessage, ...chatMessages]
+
+            let fullContent = ''
+            const streamListener = (chunk: string) => {
+                fullContent += chunk
+                setStreamingContent(fullContent)
+            }
+            window.electron.onStreamChunk(streamListener)
+
+            // Call Appropriate Backend
+            console.log('Starting chat with:', selectedModel)
+            let response;
+
+            // window.alert(`Debug: Calling service for ${selectedModel}`)
+
+            if (selectedModel.startsWith('gpt-') ||
+                selectedModel.startsWith('copilot-') ||
+                selectedModel.startsWith('claude-') ||
+                selectedModel.startsWith('gemini-') ||
+                selectedModel.startsWith('o1-') ||
+                selectedModel.startsWith('grok-')) {
+                console.log('[Renderer] Calling window.electron.chatOpenAI...')
+                response = await window.electron.chatOpenAI(allMessages, selectedModel)
+            } else {
+                console.log('[Renderer] Falling back to chatStream (Ollama) for model:', selectedModel)
+                response = await window.electron.chatStream(allMessages, selectedModel, tools)
+            }
+
+            // window.alert(`Debug: Got response: ${JSON.stringify(response).slice(0, 100)}`)
+            console.log('Chat finished, response:', response)
+
+            // Explicitly check for IPC error response
+            if (response && response.error) {
+                throw new Error(response.error)
+            }
+
+            // Remove listener
+            window.electron.removeStreamChunkListener(streamListener) // Fix: Pass the same listener reference
+
+            let finalContent = response.content || fullContent || ''
+
+            // Parse tool calls
+            const toolCalls = (response.tool_calls || []).map((tc: any) => ({
+                id: tc.id || generateId(),
+                name: tc.function.name,
+                arguments: typeof tc.function.arguments === 'string'
+                    ? JSON.parse(tc.function.arguments)
+                    : tc.function.arguments
             }))
             const results: ToolResult[] = []; let followupRes = res; let followupMessages: any[] | null = null
             if (calls.length > 0) {
@@ -786,10 +896,15 @@ export default function App() {
         if (duplicated) { setChats([duplicated, ...chats]); setCurrentChatId(duplicated.id) }
     }
 
-    const handleArchiveChat = async (id: string, isArchived: boolean) => {
-        await window.electron.db.archiveChat(id, isArchived)
-        setChats(chats.map(c => c.id === id ? { ...c, isArchived } : c))
-    }
+            setChats(prev => prev.map(chat =>
+                chat.id === chatId
+                    ? { ...chat, messages: [...chat.messages, errorMessage] }
+                    : chat
+            ))
+        } finally {
+            setIsLoading(false)
+            setStreamingContent('')
+        }
 
     const handleUpdateChatTitle = async (id: string, title: string) => {
         await window.electron.db.updateChat(id, { title })
@@ -797,40 +912,26 @@ export default function App() {
     }
 
     return (
-        <div className="flex h-screen w-screen bg-background text-foreground overflow-hidden font-sans">
-            {!isCompact && (
-                <Sidebar
-                    chats={chats}
-                    currentChatId={currentChatId}
-                    onSelectChat={setCurrentChatId}
-                    onNewChat={createNewChat}
-                    onDeleteChat={deleteChat}
-                    onDuplicateChat={handleDuplicateChat}
-                    onArchiveChat={handleArchiveChat}
-                    onUpdateChatTitle={handleUpdateChatTitle}
-                    onTogglePin={toggleChatPin}
-                    folders={folders}
-                    onCreateFolder={handleCreateFolder}
-                    onDeleteFolder={handleDeleteFolder}
-                    onUpdateFolder={handleUpdateFolder}
-                    onMoveChat={handleMoveChatToFolder}
-                    onToggleFavorite={toggleChatFavorite}
-                    onOpenSettings={(cat: any) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }}
-                    isCollapsed={isSidebarCollapsed}
-                    toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    currentView={currentView}
-                    onChangeView={setCurrentView}
-                    activeProject={selectedProject}
-                    settingsCategory={settingsCategory}
-                    onSelectSettingsCategory={setSettingsCategory}
-                    onSearch={handleSearch}
-                    language={language}
-                />
-            )}
-            <div className="flex-1 flex flex-col min-w-0 relative z-10 bg-background">
-                <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 bg-transparent z-40 select-none shrink-0" style={{ WebkitAppRegion: "drag" } as any}>
-                    <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
-                        {isCompact && <button className="text-sm font-bold px-2.5 py-1 rounded-full border bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 transition-all duration-300" onClick={toggleCompact}>EXPAND</button>}
+        <div className="flex flex-col flex-1 relative z-10">
+            {/* Custom Titlebar / Top Bar */}
+            <header
+                className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none"
+                style={{ WebkitAppRegion: "drag" } as any}
+            >
+                <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
+                    <div className="flex items-center gap-2">
+                        <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
+                        <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
+                    </div>
+                    <button
+                        className={cn(
+                            "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300",
+                            isCompact ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-foreground"
+                        )}
+                        onClick={toggleCompact}
+                    >
+                        {isCompact ? "EX-PANSE" : "COMPACT"}
+                    </button>
                     </div>
                     {sessionTokens.total > 0 && <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/30 border border-border/50 text-sm"><span className="text-muted-foreground/60">Tokens:</span><span className="text-foreground/80 font-mono">{sessionTokens.total.toLocaleString()}</span></div>}
                     {currentView === 'chat' && currentChatId && (
@@ -896,6 +997,5 @@ export default function App() {
                 <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">{toasts.map(t => <div key={t.id} className={cn("px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center gap-3 min-w-[240px]", t.type === 'success' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : t.type === 'error' ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-zinc-800/80 border-white/10 text-white")}><span className="text-lg">{t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : 'ℹ️'}</span><div className="text-sm font-medium">{t.message}</div><button onClick={() => setToasts(prev => prev.filter(toast => toast.id !== t.id))} className="ml-auto opacity-50 hover:opacity-100 transition-opacity">×</button></div>)}</div>
                 <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} onNewChat={createNewChat} onOpenSettings={() => setCurrentView('settings')} onOpenSSHManager={() => setShowSSHManager(true)} onRefreshModels={loadModels} models={models} onSelectModel={setSelectedModel} selectedModel={selectedModel} />
             </div>
-        </div>
     )
 }

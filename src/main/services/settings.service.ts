@@ -41,24 +41,15 @@ export interface AppSettings {
     }
     anthropic?: {
         apiKey: string
-        model: string
-    }
-    antigravity?: {
-        connected: boolean
-    }
-    copilot?: {
-        connected: boolean
-        token?: string
-        username?: string
     }
     gemini?: {
         apiKey: string
-        model: string
     }
     groq?: {
         apiKey: string
-        model: string
     }
+    userAvatar?: string
+    aiAvatar?: string
     proxy?: {
         enabled: boolean
         url: string
@@ -131,11 +122,19 @@ const DEFAULT_SETTINGS: AppSettings = {
         apiKey: '',
         model: 'llama3-70b-8192'
     },
+    anthropic: {
+        apiKey: ''
+    },
+    gemini: {
+        apiKey: ''
+    },
+    groq: {
+        apiKey: ''
+    },
     proxy: {
-        enabled: true,
-        url: 'http://127.0.0.1:8317/v1',
-        key: 'local-dev-key',
-        authStoreKey: ''
+        enabled: false,
+        url: 'http://localhost:8317/v1',
+        key: 'proxypal-local'
     },
     mcpDisabledServers: [],
     mcpUserServers: [],
@@ -189,23 +188,33 @@ export class SettingsService {
     saveSettings(newSettings: Partial<AppSettings>): AppSettings {
         this.settings = { ...this.settings, ...newSettings }
 
-        if (newSettings.ollama) this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
-        if (newSettings.general) this.settings.general = { ...this.settings.general, ...newSettings.general }
-        if (newSettings.github) this.settings.github = { ...this.settings.github, ...newSettings.github }
-        if (newSettings.openai) this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
-        if (newSettings.anthropic) this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
-        if (newSettings.antigravity) this.settings.antigravity = { ...this.settings.antigravity, ...newSettings.antigravity }
-        if (newSettings.copilot) this.settings.copilot = { ...this.settings.copilot, ...newSettings.copilot }
-        if (newSettings.gemini) this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
-        if (newSettings.groq) this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
-        if (newSettings.proxy) this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
-        if (newSettings.window) this.settings.window = { ...this.settings.window, ...newSettings.window }
-
-        if (newSettings.mcpDisabledServers) this.settings.mcpDisabledServers = newSettings.mcpDisabledServers
-        if (newSettings.mcpUserServers) this.settings.mcpUserServers = newSettings.mcpUserServers
-        if (newSettings.mcpSecurityAllowedHosts) this.settings.mcpSecurityAllowedHosts = newSettings.mcpSecurityAllowedHosts
-        if (newSettings.mcpReviewPolicy) this.settings.mcpReviewPolicy = newSettings.mcpReviewPolicy
-        if (newSettings.mcpAutoExecuteSafe !== undefined) this.settings.mcpAutoExecuteSafe = newSettings.mcpAutoExecuteSafe
+        // Deep merge for nested objects if needed, but for now simple spread is okay 
+        // if we send full objects or handle partial deeper. 
+        // Actually, let's do a basic deep merge for 2nd level keys manually for safety
+        if (newSettings.ollama) {
+            this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
+        }
+        if (newSettings.general) {
+            this.settings.general = { ...this.settings.general, ...newSettings.general }
+        }
+        if (newSettings.github) {
+            this.settings.github = { ...this.settings.github, ...newSettings.github }
+        }
+        if (newSettings.openai) {
+            this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
+        }
+        if (newSettings.anthropic) {
+            this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
+        }
+        if (newSettings.gemini) {
+            this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
+        }
+        if (newSettings.groq) {
+            this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
+        }
+        if (newSettings.proxy) {
+            this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
+        }
 
         try {
             fs.writeFileSync(this.settingsPath, JSON.stringify(this.settings, null, 2))
