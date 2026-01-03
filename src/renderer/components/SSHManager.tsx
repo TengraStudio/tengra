@@ -121,7 +121,7 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content ssh-manager" style={{ width: '800px', height: '600px', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-content ssh-manager bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden" style={{ width: '800px', height: '600px', display: 'flex', flexDirection: 'column' }}>
                 <div className="modal-header">
                     <h2>SSH Bağlantıları</h2>
                     <button className="close-btn" onClick={onClose}>×</button>
@@ -129,7 +129,7 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
 
                 <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                     {/* Sidebar list */}
-                    <div style={{ width: '250px', borderRight: '1px solid var(--border-primary)', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                    <div className="border-r border-border/50 p-4 flex flex-col bg-muted/10 w-[250px]">
                         <button
                             className="primary-btn"
                             style={{ marginBottom: '16px' }}
@@ -145,7 +145,7 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
                                     border: '1px solid var(--border-secondary)',
                                     borderRadius: '8px',
                                     marginBottom: '8px',
-                                    backgroundColor: conn.id === selectedConnectionId ? 'rgba(0, 255, 0, 0.1)' : 'transparent',
+                                    backgroundColor: conn.id === selectedConnectionId ? 'var(--primary-transparent, rgba(16, 163, 127, 0.1))' : 'transparent',
                                     cursor: 'pointer'
                                 }}
                                     onClick={() => conn.status === 'connected' && setSelectedConnectionId(conn.id)}
@@ -176,15 +176,15 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
 
                     {/* Terminal / Details Area */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div className="ssh-tabs" style={{ display: 'flex', borderBottom: '1px solid #333' }}>
+                        <div className="ssh-tabs flex border-b border-border/50 bg-muted/20">
                             <button
                                 onClick={() => setActiveTab('terminal')}
                                 style={{
                                     padding: '8px 16px',
-                                    backgroundColor: activeTab === 'terminal' ? '#1e1e1e' : 'transparent',
+                                    backgroundColor: activeTab === 'terminal' ? 'var(--background)' : 'transparent',
                                     border: 'none',
-                                    color: activeTab === 'terminal' ? 'white' : '#777',
-                                    borderBottom: activeTab === 'terminal' ? '2px solid #4CAF50' : 'none'
+                                    color: activeTab === 'terminal' ? 'var(--foreground)' : 'var(--muted-foreground)',
+                                    borderBottom: activeTab === 'terminal' ? '2px solid var(--primary)' : 'none'
                                 }}
                             >
                                 Terminal
@@ -193,10 +193,10 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
                                 onClick={() => setActiveTab('files')}
                                 style={{
                                     padding: '8px 16px',
-                                    backgroundColor: activeTab === 'files' ? '#1e1e1e' : 'transparent',
+                                    backgroundColor: activeTab === 'files' ? 'var(--background)' : 'transparent',
                                     border: 'none',
-                                    color: activeTab === 'files' ? 'white' : '#777',
-                                    borderBottom: activeTab === 'files' ? '2px solid #4CAF50' : 'none'
+                                    color: activeTab === 'files' ? 'var(--foreground)' : 'var(--muted-foreground)',
+                                    borderBottom: activeTab === 'files' ? '2px solid var(--primary)' : 'none'
                                 }}
                             >
                                 Dosyalar
@@ -204,11 +204,11 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
                         </div>
 
                         {activeTab === 'terminal' ? (
-                            <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', backgroundColor: '#1e1e1e' }}>
+                            <div className="flex-1 p-4 flex flex-col bg-background">
                                 <div style={{
                                     flex: 1,
-                                    backgroundColor: '#000',
-                                    color: '#0f0',
+                                    backgroundColor: 'var(--terminal-bg, #000)',
+                                    color: 'var(--terminal-fg, #0f0)',
                                     fontFamily: 'monospace',
                                     padding: '10px',
                                     borderRadius: '4px',
@@ -222,7 +222,7 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
                                     <input
                                         type="text"
                                         placeholder="Komut çalıştır..."
-                                        style={{ flex: 1, padding: '8px', backgroundColor: '#333', border: 'none', color: 'white' }}
+                                        style={{ flex: 1, padding: '8px', backgroundColor: 'var(--muted)', border: 'none', color: 'var(--foreground)' }}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 const target = e.target as HTMLInputElement
@@ -241,7 +241,7 @@ export function SSHManager({ isOpen, onClose }: SSHManagerProps) {
                             selectedConnectionId ? (
                                 <SFTPBrowser connectionId={selectedConnectionId} />
                             ) : (
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e1e1e' }}>
+                                <div className="flex-1 flex items-center justify-center bg-background text-muted-foreground">
                                     Lütfen bir bağlantı seçin
                                 </div>
                             )

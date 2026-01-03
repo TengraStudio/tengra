@@ -1,37 +1,28 @@
-import { app, BrowserWindow, ipcMain, desktopCapturer, shell, dialog, globalShortcut, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import * as http from 'http'
-import * as fs from 'fs'
+import os from 'os'
+import { initAppLogger, appLogger } from './logging/logger'
+import { createServices } from './startup/services'
+import { registerSettingsIpc } from './ipc/settings'
+import { registerAuthIpc } from './ipc/auth'
+import { registerDbIpc } from './ipc/db'
+import { registerOllamaIpc } from './ipc/ollama'
+import { registerChatIpc } from './ipc/chat'
+import { registerToolsIpc } from './ipc/tools'
+import { registerScreenshotIpc } from './ipc/screenshot'
+import { registerDialogIpc } from './ipc/dialog'
 // const pdf = require('pdf-parse')
-import { OllamaService } from './services/ollama.service'
-import { FileSystemService } from './services/filesystem.service'
-import { CommandService } from './services/command.service'
-import { WebService } from './services/web.service'
-import { LlamaService } from './services/llama.service'
-import { DatabaseService } from './services/database.service'
-import { SSHService } from './services/ssh.service'
-import { ScannerService } from './services/scanner.service'
-import { EmbeddingService } from './services/embedding.service'
-import { DockerService } from './services/docker.service'
-import { SecurityService } from './services/security.service'
-import { ContentService } from './services/content.service'
-import { FileManagementService } from './services/file.service'
-import { UtilityService } from './services/utility.service'
-import { OpenAIService } from './services/openai.service'
-import { AnthropicService } from './services/anthropic.service'
-import { GeminiService } from './services/gemini.service'
-import { GroqService } from './services/groq.service'
-import { MonitoringService } from './services/monitoring.service'
-import { SettingsService } from './services/settings.service'
-import { SystemService } from './services/system.service'
-import { NetworkService } from './services/network.service'
-import { NotificationService } from './services/notification.service'
-import { ClipboardService } from './services/clipboard.service'
-import { GitService } from './services/git.service'
-
-const execAsync = promisify(exec)
+import { buildMcpServices } from './mcp/registry'
+import { McpDispatcher } from './mcp/dispatcher'
+import { registerWindowIpc } from './ipc/window'
+import { registerProxyIpc } from './ipc/proxy'
+import { registerMcpIpc } from './ipc/mcp'
+import { registerProxyEmbedIpc } from './ipc/proxy-embed'
+import { registerFilesIpc } from './ipc/files'
+import { registerLoggingIpc } from './ipc/logging'
+import { registerHistoryIpc } from './ipc/history'
+import { registerHFModelIpc } from './ipc/huggingface'
+import { registerSshIpc } from './ipc/ssh'
 
 // Single instance lock - prevent multiple windows
 const gotTheLock = app.requestSingleInstanceLock()
@@ -42,78 +33,148 @@ if (!gotTheLock) {
 // Disable GPU shader disk cache to prevent permission errors
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
 app.commandLine.appendSwitch('disable-software-rasterizer')
+initAppLogger()
+appLogger.info('User data path resolved', { source: 'startup', data: { path: app.getPath('userData') } })
 
-import { AuthService } from './services/auth.service'
-import { CopilotService } from './services/copilot.service'
 import { ToolExecutor } from './tools/tool-executor'
+import { startOllama, isOllamaRunning } from './startup/ollama'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+const userHome = os.homedir()
+const allowedFileRoots = new Set<string>([
+    process.cwd(),
+    app.getPath('userData'),
+    userHome,
+    join(userHome, 'Desktop'),
+    join(userHome, 'Documents'),
+    join(userHome, 'Downloads')
+])
 
-// Services
-const ollamaService = new OllamaService()
-const fileSystemService = new FileSystemService()
-const commandService = new CommandService()
-const webService = new WebService()
-const llamaService = new LlamaService()
-const databaseService = new DatabaseService()
-const sshService = new SSHService()
-const settingsService = new SettingsService()
-const authService = new AuthService(settingsService)
-const copilotService = new CopilotService()
-const systemService = new SystemService()
-const networkService = new NetworkService()
-const notificationService = new NotificationService()
-const clipboardService = new ClipboardService()
-const gitService = new GitService()
-const openaiService = new OpenAIService()
-const securityService = new SecurityService()
-const contentService = new ContentService()
-const fileService = new FileManagementService()
-const scannerService = new ScannerService()
-const anthropicService = new AnthropicService()
-const geminiService = new GeminiService()
-const groqService = new GroqService()
-const monitoringService = new MonitoringService()
-
-const embeddingService = new EmbeddingService(databaseService, ollamaService, openaiService, llamaService)
-const utilityService = new UtilityService(databaseService, scannerService, embeddingService)
-const dockerService = new DockerService(commandService, sshService)
-
-const toolExecutor = new ToolExecutor(
+const services = createServices(allowedFileRoots)
+const {
+    ollamaService,
     fileSystemService,
     commandService,
     webService,
+    databaseService,
+    sshService,
+    settingsService,
+    proxyService,
+    proxyEmbedService,
+    authService,
+    copilotService,
     systemService,
     networkService,
     notificationService,
     clipboardService,
-    utilityService,
     gitService,
-    dockerService,
+    openaiService,
     securityService,
     contentService,
     fileService,
-    monitoringService
+    scannerService,
+    anthropicService,
+    geminiService,
+    groqService,
+    monitoringService,
+    embeddingService,
+    utilityService,
+    dockerService,
+    screenshotService,
+    historyImportService,
+    huggingfaceService
+} = services
+
+const mcpDispatcher = new McpDispatcher(
+    buildMcpServices({
+        web: webService,
+        utility: utilityService,
+        system: systemService,
+        ssh: sshService,
+        screenshot: screenshotService,
+        scanner: scannerService,
+        notification: notificationService,
+        network: networkService,
+        monitoring: monitoringService,
+        git: gitService,
+        security: securityService,
+        settings: settingsService,
+        filesystem: fileSystemService,
+        file: fileService,
+        embedding: embeddingService,
+        docker: dockerService,
+        database: databaseService,
+        content: contentService,
+        command: commandService,
+        clipboard: clipboardService
+    }),
+    settingsService
 )
 
-// Window Controls
-ipcMain.on('window:minimize', () => mainWindow?.minimize())
-ipcMain.on('window:maximize', () => {
-    if (mainWindow?.isMaximized()) {
-        mainWindow.unmaximize()
-    } else {
-        mainWindow?.maximize()
+const toolExecutor = new ToolExecutor(
+    {
+        fileSystem: fileSystemService,
+        command: commandService,
+        web: webService,
+        screenshot: screenshotService,
+        system: systemService,
+        network: networkService,
+        notification: notificationService,
+        clipboard: clipboardService,
+        utility: utilityService,
+        git: gitService,
+        docker: dockerService,
+        security: securityService,
+        content: contentService,
+        file: fileService,
+        monitor: monitoringService,
+        ssh: sshService,
+        scanner: scannerService,
+        embedding: embeddingService,
+        mcp: mcpDispatcher
     }
+)
+
+registerWindowIpc(() => mainWindow)
+registerFilesIpc(() => mainWindow, fileSystemService, allowedFileRoots)
+registerSshIpc(() => mainWindow, sshService)
+registerProxyIpc(proxyService)
+registerProxyEmbedIpc(proxyEmbedService)
+registerMcpIpc(mcpDispatcher)
+registerLoggingIpc()
+registerHistoryIpc(historyImportService)
+registerSettingsIpc({
+    settingsService,
+    ollamaService,
+    openaiService,
+    anthropicService,
+    geminiService,
+    groqService,
+    updateOllamaConnection,
+    updateOpenAIConnection
 })
-ipcMain.on('window:close', () => mainWindow?.close())
-ipcMain.on('window:toggle-compact', (_, enabled) => {
-    if (enabled) {
-        mainWindow?.setSize(400, 600)
-    } else {
-        mainWindow?.setSize(1200, 800)
-    }
+registerAuthIpc(authService, settingsService, copilotService)
+registerDbIpc(databaseService)
+registerOllamaIpc({
+    ollamaService,
+    settingsService,
+    copilotService,
+    openaiService,
+    toolExecutor
 })
+registerChatIpc({
+    settingsService,
+    copilotService,
+    openaiService,
+    anthropicService,
+    geminiService,
+    groqService
+})
+registerToolsIpc(toolExecutor, commandService)
+registerScreenshotIpc()
+registerDialogIpc(() => mainWindow)
+registerHFModelIpc(huggingfaceService)
 
 // Initialize Ollama Connection
 function updateOllamaConnection() {
@@ -132,44 +193,59 @@ updateOllamaConnection()
 
 function updateOpenAIConnection() {
     const settings = settingsService.getSettings()
-
-    // Update API Key
-    if (settings.openai?.apiKey) {
-        openaiService.setApiKey(settings.openai.apiKey)
-    }
+    const resolvedOpenAiKey = settings.openai?.apiKey && settings.openai.apiKey !== 'connected'
+        ? settings.openai.apiKey
+        : ''
+    const proxyUrl = settings.proxy?.url?.replace('localhost', '127.0.0.1')
+    const shouldUseProxy = Boolean(proxyUrl) && (settings.proxy?.enabled || !resolvedOpenAiKey)
 
     // Update Proxy / Base URL
-    if (settings.proxy && settings.proxy.enabled && settings.proxy.url) {
-        openaiService.setBaseUrl(settings.proxy.url)
-        // Use proxy key if provided, otherwise default fallback
-        openaiService.setApiKey(settings.proxy.key || 'proxypal-local')
-        console.log(`Proxy enabled: ${settings.proxy.url}`)
+    if (shouldUseProxy) {
+        openaiService.setBaseUrl(proxyUrl!)
+        // Use proxy key if provided, otherwise clear any stale key
+        openaiService.setApiKey(settings.proxy?.key || '')
+        console.log(`Proxy enabled: ${proxyUrl}`)
     } else {
         // Reset to default if proxy is disabled
         openaiService.setBaseUrl('https://api.openai.com/v1')
         // Restore OpenAI key
-        if (settings.openai?.apiKey) {
-            openaiService.setApiKey(settings.openai.apiKey)
-        }
+        openaiService.setApiKey(resolvedOpenAiKey)
     }
     console.log('OpenAI Service updated.')
 }
 
 updateOpenAIConnection()
 
+const iconPath = process.env.NODE_ENV === 'development'
+    ? join(process.cwd(), 'src/renderer/assets/logo.png')
+    : join(process.resourcesPath, 'assets/logo.png')
+
 function createWindow() {
+    const settings = settingsService.getSettings()
+    const { width, height } = settings.window || { width: 1200, height: 800 }
+
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width,
+        height,
+        minWidth: 1000,
+        minHeight: 600,
         frame: false,
         backgroundColor: '#00000000',
         transparent: true,
+        icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: join(__dirname, '../preload/preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
-            webSecurity: false // Allow loading local resources
+            webSecurity: true
         }
+    })
+
+    mainWindow.on('resize', () => {
+        if (!mainWindow) return
+        const [newWidth, newHeight] = mainWindow.getSize()
+        const current = settingsService.getSettings()
+        settingsService.saveSettings({ ...current, window: { ...current.window, x: current.window?.x || 0, y: current.window?.y || 0, width: newWidth, height: newHeight } })
     })
 
     if (process.env.NODE_ENV === 'development') {
@@ -180,17 +256,13 @@ function createWindow() {
         }
         console.log(`Loading Renderer on port: ${rendererPort}`)
         mainWindow.loadURL(`http://localhost:${rendererPort}`)
-        mainWindow.webContents.openDevTools()
+        // mainWindow.webContents.openDevTools()
     } else {
         mainWindow.loadFile(join(app.getAppPath(), 'renderer', 'index.html'))
     }
 
     // Tray Setup
     try {
-        const iconPath = process.env.NODE_ENV === 'development'
-            ? join(process.cwd(), 'src/renderer/assets/logo.png')
-            : join(process.resourcesPath, 'assets/logo.png')
-
         // Create icon from file with better resizing for Windows Tray
         const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
         tray = new Tray(icon)
@@ -654,32 +726,17 @@ ipcMain.handle('screenshot:capture', async () => {
 
 // Global Exception Handler
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error)
+    if (error instanceof Error) {
+        appLogger.error('Uncaught exception', { source: 'process', data: { message: error.message, stack: error.stack } })
+    } else {
+        appLogger.error('Uncaught exception', { source: 'process', data: { error: String(error) } })
+    }
 })
-
-// Auth & Copilot Handlers
-ipcMain.handle('auth:github-login', async () => {
-    return await authService.startLoginFlow()
-})
-
-ipcMain.handle('auth:poll-token', async (_, deviceCode: string, interval: number) => {
-    try {
-        const token = await authService.pollForToken(deviceCode, interval)
-        // Save token to settings
-        const currentGithub = settingsService.getSettings().github;
-        settingsService.saveSettings({
-            github: {
-                username: currentGithub?.username || '',
-                token: token
-            }
-        })
-
-        // Pass to Copilot Service
-        copilotService.setGithubToken(token)
-
-        return { success: true, token }
-    } catch (error: any) {
-        return { success: false, error: error.message }
+process.on('unhandledRejection', (reason) => {
+    if (reason instanceof Error) {
+        appLogger.error('Unhandled rejection', { source: 'process', data: { message: reason.message, stack: reason.stack } })
+    } else {
+        appLogger.error('Unhandled rejection', { source: 'process', data: { reason: String(reason) } })
     }
 })
 
@@ -690,21 +747,37 @@ app.whenReady().then(async () => {
 
     // Initialize DB
     await databaseService.initialize()
-    console.log(`Database initialized: ${databaseService['dbPath']}`)
+
+    // Load projects into allowed roots
+    try {
+        const projects = databaseService.getProjects()
+        projects.forEach(p => allowedFileRoots.add(p.path))
+        fileSystemService.updateAllowedRoots(Array.from(allowedFileRoots))
+        console.log(`Added ${projects.length} project paths to allow-list.`)
+    } catch (e) {
+        console.error('Failed to load project paths:', e)
+    }
 
     // Initialize Auth/Copilot with existing token if available
     const currentSettings = settingsService.getSettings()
-    if (currentSettings.github?.token) {
+    if (currentSettings.copilot?.token) {
+        console.log('Found saved Copilot token, initializing Copilot Service...')
+        copilotService.setGithubToken(currentSettings.copilot.token)
+    } else if (currentSettings.github?.token) {
         console.log('Found saved GitHub token, initializing Copilot Service...')
         copilotService.setGithubToken(currentSettings.github.token)
     }
+
+    // Start embedded Proxy Service
+    console.log('Starting embedded Proxy Service...')
+    await proxyEmbedService.start({ port: 8317 })
 
     // Try to start Ollama automatically (without asking permission on startup)
     try {
         const ollamaRunning = await isOllamaRunning()
         if (!ollamaRunning) {
             console.log('Ollama is not running, attempting to start...')
-            const result = await startOllama(false)
+            const result = await startOllama(() => mainWindow, false)
             console.log('Ollama start result:', result.message)
         } else {
             console.log('Ollama is already running')
@@ -720,4 +793,8 @@ app.whenReady().then(async () => {
             createWindow()
         }
     })
+})
+
+app.on('will-quit', async () => {
+    await proxyEmbedService.stop()
 })

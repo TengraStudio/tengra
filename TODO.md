@@ -18,6 +18,14 @@
   - [x] Created `AuthService` for GitHub Device Flow.
   - [x] Created `CopilotService` for token management.
   - [x] Added IPC handlers for native login.
+- [x] **UI Theme & Typography**:
+  - [x] Switched primary font to **Plus Jakarta Sans** for a modern look.
+  - [x] Implemented **Premium Minimalist Palette (Soft Dark)** in `index.css`.
+  - [x] Enhanced **Glassmorphism** effects and subtle animations.
+- [x] **General Settings Expansion**:
+  - [x] Added **Resolution** selection (HD, Full HD, etc.) to General settings.
+  - [x] Added **Font Size** slider with real-time application in the UI.
+  - [x] Refined settings layout for better readability and accessibility.
 - [x] **Benchmark Script**: Created `benchmark.js` for verifying model connectivity.
 
 ## Future Roadmap (200 Items)
@@ -77,7 +85,7 @@
 
 ### 2. UI/UX Improvements
 
-51. [ ] Redesign Sidebar for better compactness.
+1. [ ] Redesign Sidebar for better compactness.
 2. [ ] Add "Collapse Sidebar" animation.
 3. [ ] Implement "Dark/Light" mode toggle based on system.
 4. [ ] Add standard "Light Mode" theme (currently only Dark).
@@ -130,7 +138,7 @@
 
 ### 3. Engineering & Performance
 
-101. [ ] Migrate to latest Electron version.
+1. [ ] Migrate to latest Electron version.
 2. [ ] Update React to v19 (when stable).
 3. [ ] Optimize bundle size (code splitting).
 4. [ ] Implement lazy loading for Settings modal.
@@ -183,7 +191,7 @@
 
 ### 4. Native Copilot & Model Specifics
 
-151. [ ] Implement `Codex` model support specifically.
+1. [ ] Implement `Codex` model support specifically.
 2. [ ] Add "Code Completion" UI (inline ghost text - ambitious!).
 3. [ ] Support "Edit Selection" with Copilot.
 4. [ ] Implement "Explain Code" quick action.
@@ -206,7 +214,7 @@
 
 ### 5. Documentation & Community
 
-171. [ ] Create comprehensive `README.md`.
+1. [ ] Create comprehensive `README.md`.
 2. [ ] Create `CONTRIBUTING.md`.
 3. [ ] Create `CHANGELOG.md`.
 4. [ ] Write developer documentation for architecture.
