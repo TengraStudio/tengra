@@ -408,9 +408,10 @@ ipcMain.handle('chat:openai', async (_, messages, model) => {
             return { error: 'Gemini modelleri için Google API anahtarı gereklidir veya Proxy modunu etkinleştirin.' }
         }
         
-        // Route Grok models - currently no direct support, need proxy
+        // Route Grok models (xAI) - currently no direct API support, requires proxy
+        // Note: Grok (xAI) is different from Groq (cloud provider)
         if (isGrokModel) {
-            return { error: 'Grok modelleri için Proxy modunu etkinleştirmeniz gerekiyor.' }
+            return { error: 'Grok (xAI) modelleri için Proxy modunu etkinleştirmeniz gerekiyor. Doğrudan API desteği henüz mevcut değil.' }
         }
         
         // Route GPT models - try Copilot first if token exists, then OpenAI API
