@@ -196,7 +196,7 @@ const webBridge: ElectronAPI = {
     },
 
     captureScreenshot: async () => ({ success: true }),
-    openExternal: () => { },
+    openExternal: async (_url: string) => { },
     openTerminal: async () => true,
 
     readPdf: async () => ({ success: true, text: '' }),
@@ -224,7 +224,13 @@ const webBridge: ElectronAPI = {
         info: () => { },
         warn: () => { },
         error: () => { }
-    }
+    },
+
+    deleteProxyAuthFile: async (fileName: string) => {
+        console.log('[deleteProxyAuthFile] Deleting auth file:', fileName)
+
+        return { success: true }
+    },
 }
 
 export default webBridge

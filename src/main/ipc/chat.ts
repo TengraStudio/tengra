@@ -1,117 +1,67 @@
 import { ipcMain } from 'electron'
 import { CopilotService } from '../services/copilot.service'
 import { SettingsService } from '../services/settings.service'
-import { OpenAIService } from '../services/openai.service'
-import { AnthropicService } from '../services/anthropic.service'
-import { GeminiService } from '../services/gemini.service'
-import { GroqService } from '../services/groq.service'
+import { LLMService } from '../services/llm.service'
+import { ProxyService } from '../services/proxy.service'
+import { parseAIResponseContent } from '../utils/response-parser'
 
 export function registerChatIpc(options: {
     settingsService: SettingsService
     copilotService: CopilotService
-    openaiService: OpenAIService
-    anthropicService: AnthropicService
-    geminiService: GeminiService
-    groqService: GroqService
+    llmService: LLMService
+    proxyService: ProxyService
 }) {
-    const {
-        settingsService,
-        copilotService,
-        openaiService,
-        anthropicService,
-        geminiService,
-        groqService
-    } = options
+    const { settingsService, copilotService, llmService, proxyService } = options
 
+    /**
+     * Unified Chat Handler
+     * Routes to Copilot, Local AI, or Cliproxy (for all others)
+     */
+    ipcMain.handle('chat:openai', async (_event, messages, model, tools, provider) => {
+        try {
+            const settings = settingsService.getSettings()
+
+            // Normalize provider if missing (infer from model name)
+            let effectiveProvider = provider;
+            if (!effectiveProvider || model.toLowerCase().includes('codex') || model.toLowerCase().includes('gpt-5')) {
+                const lowerModel = model.toLowerCase();
+                // Route GitHub/Copilot specific models to native service
+                if (lowerModel.includes('codex') || lowerModel.includes('gpt-5') || lowerModel.startsWith('github-') || lowerModel.startsWith('copilot-')) {
+                    effectiveProvider = 'copilot';
+                }
+            }
+
+            console.log(`[Main] Chat Request: Model=${model}, Provider=${effectiveProvider} (Derived from ${provider})`)
+
+            // 1. Copilot Routing (Native)
+            // If the provider is copilot, we use the dedicated CopilotService
+            if (effectiveProvider === 'copilot') {
+                console.log(`[Main] Routing ${model} via Native Copilot Pathway`)
+                const res = await copilotService.chat(messages, model, tools)
+                const content = parseAIResponseContent(res)
+                return { content, role: 'assistant' }
+            }
+
+            // 2. Cliproxy Routing (Default for everything else: OpenAI, Anthropic, Gemini, Groq, Antigravity)
+            // Cliproxy handles these using its pooled keys or user-provided keys.
+            const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
+            const proxyKey = proxyService.getProxyKey()
+
+            console.log(`[Main] Routing ${model} via Cliproxy`)
+            return await llmService.openaiChat(messages, model, tools, proxyUrl, proxyKey)
+
+        } catch (error: any) {
+            console.error('[Main:Chat] IPC Error:', error)
+            return { error: error.message }
+        }
+    })
+
+    // Legacy handler
     ipcMain.handle('chat:copilot', async (_event, messages, model) => {
         try {
-            // Intercept Proxy Models designated as Copilot but served by Local Proxy
-            const isProxyModel = model.includes('codex') || model.includes('gpt-5');
-            if (isProxyModel) {
-                const settings = settingsService.getSettings()
-                const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
-                console.log('[Main] Redirecting Copilot Request to Proxy for:', model)
-                return await openaiService.chat(messages, model, undefined, proxyUrl)
-            }
-
-            return await copilotService.chat(messages, model)
-        } catch (error: any) {
-            return { error: error.message }
-        }
-    })
-
-    ipcMain.handle('chat:openai', async (_event, messages, model, tools, provider) => {
-        console.log(`[Main] IPC chat:openai TRIGGERED for model: ${model}, provider: ${provider}`)
-        try {
-            // 1. Check for Proxy-Specific Models (gpt-5, codex, etc.)
-            // We route ANY model containing 'codex' or 'gpt-5' to the proxy
-            const isProxyModel = model?.includes('codex') || model?.includes('gpt-5');
-            console.log(`[Main] Model: ${model}, isProxyModel: ${isProxyModel}`)
-
-            if (isProxyModel) {
-                const settings = settingsService.getSettings()
-                const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
-                console.log('[Main] Routing specific model to Proxy:', model)
-                return await openaiService.chat(messages, model, tools, proxyUrl)
-            }
-
-            // 2. Check for Native Copilot Routing
-            const isCopilotParams = provider === 'copilot' ||
-                model?.startsWith('copilot-') ||
-                model?.startsWith('github-') ||
-                ['gpt-4o', 'claude-3.5-sonnet'].includes(model);
-
-            if (isCopilotParams) {
-                console.log('[Main] Routing to Native Copilot Service (Strict Guard)')
-                return await copilotService.chat(messages, model)
-            }
-
-            return await openaiService.chat(messages, model, tools)
-        } catch (error: any) {
-            console.error('[Main] Chat Error:', error)
-            return { error: error.message }
-        }
-    })
-
-    ipcMain.handle('chat:anthropic', async (_event, messages, model) => {
-        try {
-            const settings = settingsService.getSettings()
-            if (settings.proxy?.enabled) {
-                console.log(`Routing Anthropic request via proxy to ${model}`)
-                const response = await openaiService.chat(messages, model)
-                return {
-                    success: true,
-                    result: response.content
-                }
-            }
-            return await anthropicService.chat(messages, model)
-        } catch (error: any) {
-            return { error: error.message }
-        }
-    })
-
-    ipcMain.handle('chat:gemini', async (_event, messages, model) => {
-        try {
-            const settings = settingsService.getSettings()
-            if (settings.proxy?.enabled) {
-                console.log(`Routing Gemini request via proxy to ${model}`)
-                const response = await openaiService.chat(messages, model)
-                return {
-                    success: true,
-                    result: response.content
-                }
-            }
-            return await geminiService.chat(messages, model)
-        } catch (error: any) {
-            return { error: error.message }
-        }
-    })
-
-    ipcMain.handle('chat:groq', async (_event, messages, model) => {
-        try {
-            return await groqService.chat(messages, model)
-        } catch (error: any) {
-            return { error: error.message }
-        }
+            const res = await copilotService.chat(messages, model)
+            const content = parseAIResponseContent(res)
+            return { content, role: 'assistant' }
+        } catch (error: any) { return { error: error.message } }
     })
 }

@@ -101,16 +101,9 @@ export class ProxyEmbedService {
         const configPath = options?.configPath || this.proxyService.getConfigPath()
         this.currentConfigPath = configPath
         this.currentPort = options?.port
-        const authStorePath = this.proxyService.getAuthStorePath()
-        const authWorkDir = this.proxyService.getAuthWorkDir()
-        const authKey = this.proxyService.getAuthStoreKey()
-        const args = ['-config', configPath, '-auth-store', authStorePath, '-auth-dir', authWorkDir]
-        if (options?.port) {
-            args.push('-port', String(options.port))
-        }
-        if (options?.health === false) {
-            args.push('-health=false')
-        }
+
+        // New binary only uses -config, all other settings come from config file
+        const args = ['-config', configPath]
 
         // Ensure config exists
         this.proxyService.prepareAuthWorkDir()
@@ -120,8 +113,7 @@ export class ProxyEmbedService {
         this.child = spawn(binaryPath, args, {
             cwd: path.dirname(binaryPath),
             env: {
-                ...process.env,
-                CLIPROXY_AUTH_KEY: authKey
+                ...process.env
             },
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true

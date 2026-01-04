@@ -65,6 +65,8 @@ export const en = {
         models: 'Models',
         ollama: 'Ollama',
         accounts: 'Accounts',
+        personas: 'Personas',
+        statistics: 'Statistics'
     },
     workspace: {
         editor: 'Editor',

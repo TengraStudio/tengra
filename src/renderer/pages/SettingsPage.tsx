@@ -1,18 +1,14 @@
 ﻿import { useState, useEffect, useRef } from 'react'
-import { useTranslation, Language } from '../i18n'
-import { MCPPage } from './MCPPage'
+import { useTranslation } from '../i18n'
 import {
     Activity,
-    BrainCircuit,
     Database,
     ExternalLink,
     RefreshCw,
-    X,
-    FolderPlus,
     Globe,
     LayoutGrid,
+    AlertTriangle,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import chatgptLogo from '@/assets/chatgpt.svg'
 import antigravityLogo from '@/assets/antigravity.svg'
@@ -86,7 +82,7 @@ export function SettingsPage({
     const [settings, setSettings] = useState<AppSettings | null>(null)
     const [originalSettings, setOriginalSettings] = useState<AppSettings | null>(null)
     const [, setIsDirty] = useState(false)
-    const [, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const [statusMessage, setStatusMessage] = useState('')
     const [authMessage, setAuthMessage] = useState('')
     const [authBusy, setAuthBusy] = useState<string | null>(null)
@@ -95,11 +91,13 @@ export function SettingsPage({
     const { t } = useTranslation(settings?.general?.language as any || 'tr')
     const [editingPersonaId, setEditingPersonaId] = useState<string | null>(null)
     const [personaDraft, setPersonaDraft] = useState({ name: '', description: '', prompt: '' })
+    const [statsLoading, setStatsLoading] = useState(false)
     const [statsPeriod, setStatsPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily')
     const [statsData, setStatsData] = useState<any>(null)
     const [quotaData, setQuotaData] = useState<any>(null)
     const [copilotQuota, setCopilotQuota] = useState<any>(null)
     const [codexUsage, setCodexUsage] = useState<any>(null)
+    const [reloadTrigger, setReloadTrigger] = useState(0)
     const [modelsTab, setModelsTab] = useState<'installed' | 'discover'>('installed')
     const [modelSearch, setModelSearch] = useState('')
     const [showHiddenModels, setShowHiddenModels] = useState(false)
@@ -127,38 +125,46 @@ export function SettingsPage({
     useEffect(() => {
         if (activeTab !== 'statistics') return
         const loadStats = async () => {
+            setStatsLoading(true)
             try {
+                console.log('[SettingsPage] Loading stats for period:', statsPeriod)
                 const data = await window.electron.db.getDetailedStats(statsPeriod)
+                console.log('[SettingsPage] Raw Detailed Stats:', data)
                 setStatsData(data)
+
+
+
+                try {
+                    const quota = await window.electron.getQuota()
+                    setQuotaData(quota)
+                } catch (e) {
+                    console.error('Failed to fetch quota:', e)
+                }
+
+                try {
+                    const cpQuota = await window.electron.getCopilotQuota()
+                    setCopilotQuota(cpQuota)
+                } catch (e) {
+                    console.error('Failed to fetch copilot quota:', e)
+                }
+
+                try {
+                    const usage = await window.electron.getCodexUsage()
+                    console.log({ usage })
+                    setCodexUsage(usage)
+                } catch (e) {
+                    console.error('Failed to fetch codex usage:', e)
+                }
             } catch (error) {
-                console.error('Failed to load stats:', error)
-            }
-            try {
-                const quota = await window.electron.getQuota()
-                setQuotaData(quota)
-            } catch (error) {
-                console.error('Failed to load quota:', error)
-                setQuotaData(null)
-            }
-            try {
-                const quota = await window.electron.getCopilotQuota()
-                setCopilotQuota(quota)
-            } catch (error) {
-                console.error('Failed to load copilot quota:', error)
-                setCopilotQuota(null)
-            }
-            try {
-                const usage = await window.electron.getCodexUsage()
-                setCodexUsage(usage)
-            } catch (error) {
-                console.error('Failed to load codex usage:', error)
-                setCodexUsage(null)
+                console.error('Failed to load stats loop:', error)
+            } finally {
+                setStatsLoading(false)
             }
         }
         loadStats()
         const interval = setInterval(loadStats, 60000)
         return () => clearInterval(interval)
-    }, [activeTab, statsPeriod])
+    }, [activeTab, statsPeriod, reloadTrigger])
 
     useEffect(() => {
         if (activeTab !== 'models' || modelsTab !== 'discover') return
@@ -263,12 +269,23 @@ export function SettingsPage({
         try {
             const status = await window.electron.checkAuthStatus()
             const files = status?.files || []
-            const hasProvider = (provider: string) => files.some((f: any) => f.provider === provider)
+            console.log('[SettingsPage] refreshAuthStatus - files:', files)
+
+            const hasProvider = (providerNames: string[]) => {
+                return files.some((f: any) => {
+                    const fileProvider = (f.provider || f.type || '').toLowerCase()
+                    const fileName = (f.name || '').toLowerCase()
+                    return providerNames.some(name =>
+                        fileProvider === name || fileName.startsWith(name + '-')
+                    )
+                })
+            }
+
             setAuthStatus({
-                codex: hasProvider('codex') || hasProvider('openai'),
-                claude: hasProvider('claude') || hasProvider('anthropic'),
-                gemini: hasProvider('gemini') || hasProvider('gemini-cli'),
-                antigravity: hasProvider('antigravity')
+                codex: hasProvider(['codex', 'openai']),
+                claude: hasProvider(['claude', 'anthropic']),
+                gemini: hasProvider(['gemini', 'gemini-cli']),
+                antigravity: hasProvider(['antigravity'])
             })
         } catch (error) {
             console.error('Auth check failed:', error)
@@ -357,6 +374,7 @@ export function SettingsPage({
     }
 
     const connectBrowserProvider = async (provider: 'codex' | 'claude' | 'gemini' | 'antigravity') => {
+        console.log('[SettingsPage] Connect button clicked for:', provider)
         setAuthBusy(provider)
         setAuthNotice('')
         try {
@@ -366,12 +384,88 @@ export function SettingsPage({
                 gemini: window.electron.geminiLogin,
                 antigravity: window.electron.antigravityLogin
             }[provider]
+
+            console.log('[SettingsPage] Calling backend login for:', provider)
             const result = await loginFn()
+            console.log('[SettingsPage] Backend login result:', result)
+
             if (result?.url) {
-                window.electron.openExternal(result.url)
-                setAuthNotice('Tarayici acildi. Giris tamamlaninca kontrol edin.')
+                console.log('[SettingsPage] Opening browser with URL:', result.url)
+
+                // Use updated backend handler with 'open' package
+                console.log('[SettingsPage] Calling openExternal for:', result.url)
+                try {
+                    const openResult = await window.electron.openExternal(result.url)
+                    console.log('[SettingsPage] openExternal result:', openResult)
+                } catch (e) {
+                    console.error('[SettingsPage] openExternal failed:', e)
+                }
+
+                // Strategy 3: Clipboard fallback (always works)
+                navigator.clipboard.writeText(result.url).then(() => {
+                    setAuthNotice('Link kopyalandi! Tarayicida acilmadiysa, yeni sekme acip yapistirin.')
+                }).catch(() => {
+                    setAuthNotice('Link aciliyor... Lutfen tarayicida giris yapin.', 10000)
+                })
+            } else {
+                console.warn('[SettingsPage] No URL returned from backend!')
+                setAuthNotice('Backend URL dondurmedi.')
             }
-            await refreshAuthStatus()
+
+            // Start Polling for Success
+            console.log('[SettingsPage] Starting polling for auth token...')
+            let attempts = 0
+            const maxAttempts = 20
+            const pollInterval = 3000
+
+            const check = async () => {
+                attempts++
+                console.log(`[SettingsPage] Polling check ${attempts}/${maxAttempts}`)
+
+                try {
+                    const status = await window.electron.checkAuthStatus()
+                    const files = status?.files || []
+
+                    // Same verification logic as refreshAuthStatus
+                    const providerIdentifiers: string[] = []
+                    switch (provider) {
+                        case 'gemini': providerIdentifiers.push('gemini', 'gemini-cli'); break
+                        case 'claude': providerIdentifiers.push('claude', 'anthropic'); break
+                        case 'antigravity': providerIdentifiers.push('antigravity'); break
+                        case 'codex': providerIdentifiers.push('codex', 'openai'); break
+                    }
+
+                    const isConnected = files.some((f: any) => {
+                        const fileProvider = (f.provider || f.type || '').toLowerCase()
+                        const fileName = (f.name || '').toLowerCase()
+                        return providerIdentifiers.some(name =>
+                            fileProvider === name || fileName.startsWith(name + '-')
+                        )
+                    })
+
+                    if (isConnected) {
+                        console.log('[SettingsPage] Connection verified!')
+                        setAuthNotice('Baglanti Basarili!')
+                        // Force refresh of stats and models
+                        await refreshAuthStatus()
+                        onRefreshModels?.()
+                        return true
+                    }
+                } catch (e) {
+                    console.error('[SettingsPage] Poll error:', e)
+                }
+
+                if (attempts < maxAttempts) {
+                    setTimeout(check, pollInterval)
+                } else {
+                    console.warn('[SettingsPage] Polling timed out')
+                    setAuthNotice('Zaman asimi: Token tespit edilemedi. Lutfen sayfayi yenileyin.', 0)
+                }
+            }
+
+            // Kick off polling
+            setTimeout(check, 2000)
+
         } catch (error) {
             console.error(`${provider} auth failed:`, error)
             setAuthNotice('Baglanti basarisiz.')
@@ -380,9 +474,62 @@ export function SettingsPage({
         }
     }
 
-    const disconnectProvider = (provider: 'copilot' | 'codex' | 'claude' | 'gemini' | 'antigravity') => {
+    const disconnectProvider = async (provider: 'copilot' | 'codex' | 'claude' | 'gemini' | 'antigravity') => {
         if (!settings) return
         const updated: AppSettings = { ...settings }
+
+        // 1. Delete associated backend auth files if possible
+        try {
+            const status = await window.electron.checkAuthStatus()
+            const files = status?.files || []
+            console.log('[SettingsPage] Auth files before disconnect:', files)
+
+            // Map provider to all possible identifiers
+            const providerIdentifiers: string[] = []
+            switch (provider) {
+                case 'gemini':
+                    providerIdentifiers.push('gemini', 'gemini-cli')
+                    break
+                case 'claude':
+                    providerIdentifiers.push('claude', 'anthropic')
+                    break
+                case 'antigravity':
+                    providerIdentifiers.push('antigravity')
+                    break
+                case 'codex':
+                    providerIdentifiers.push('codex')
+                    break
+                case 'copilot':
+                    providerIdentifiers.push('copilot')
+                    break
+            }
+
+            const targets = files.filter((f: any) => {
+                const fileProvider = (f.provider || f.type || '').toLowerCase()
+                const fileName = (f.name || '').toLowerCase()
+
+                // Check if provider matches or filename starts with provider name
+                return providerIdentifiers.some(id =>
+                    fileProvider === id || fileName.startsWith(id + '-')
+                )
+            })
+
+            console.log('[SettingsPage] Files to delete:', targets)
+
+            for (const t of targets) {
+                console.log('[SettingsPage] Deleting auth file:', t.name)
+                try {
+                    const result = await window.electron.deleteProxyAuthFile(t.name)
+                    console.log('[SettingsPage] Delete result:', result)
+                } catch (deleteError) {
+                    console.error('[SettingsPage] Delete failed for', t.name, ':', deleteError)
+                }
+            }
+        } catch (e) {
+            console.error('[SettingsPage] Backend auth deletion failed:', e)
+        }
+
+        // 2. Clear frontend settings and state
         if (provider === 'copilot') {
             updated.copilot = { connected: false, username: '', token: '' }
         }
@@ -412,8 +559,19 @@ export function SettingsPage({
             updated.antigravity = { ...(updated.antigravity || { connected: false }), connected: false }
             setAuthStatus(prev => ({ ...prev, antigravity: false }))
         }
+
         applySettings(updated)
-        handleSave(updated)
+        await handleSave(updated)
+
+        // Give backend time to update its cache
+        console.log('[SettingsPage] Waiting for backend to update...')
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        await refreshAuthStatus()
+
+        // Double check with another refresh
+        await new Promise(resolve => setTimeout(resolve, 300))
+        await refreshAuthStatus()
     }
 
     const renderGeneral = () => (
@@ -454,9 +612,9 @@ export function SettingsPage({
         if (!settings) return null
         const isCopilotConnected = Boolean(settings.copilot?.connected || settings.copilot?.token)
         const isGitHubConnected = Boolean(settings.github?.token)
-        const isCodexConnected = authStatus.codex || settings.codex?.connected || settings.openai?.apiKey === 'connected'
-        const isClaudeConnected = authStatus.claude || settings.claude?.apiKey === 'connected' || settings.anthropic?.apiKey === 'connected'
-        const isGeminiConnected = authStatus.gemini || settings.gemini?.apiKey === 'connected'
+        const isCodexConnected = authStatus.codex || (Boolean(settings.openai?.apiKey) && settings.openai?.apiKey !== 'connected')
+        const isClaudeConnected = authStatus.claude || (Boolean(settings.claude?.apiKey) && settings.claude?.apiKey !== 'connected') || (Boolean(settings.anthropic?.apiKey) && settings.anthropic?.apiKey !== 'connected')
+        const isGeminiConnected = authStatus.gemini || (Boolean(settings.gemini?.apiKey) && settings.gemini?.apiKey !== 'connected')
         const isAntigravityConnected = authStatus.antigravity || settings.antigravity?.connected
         const isHuggingFaceConnected = Boolean(settings.huggingface?.apiKey)
 
@@ -516,8 +674,19 @@ export function SettingsPage({
                 description: 'Google auth',
                 logo: geminiLogo,
                 connected: isGeminiConnected,
-                onConnect: () => connectBrowserProvider('gemini'),
-                onDisconnect: () => disconnectProvider('gemini')
+                onConnect: () => {
+                    console.log('[SettingsPage] Gemini CONNECT button clicked!')
+                    connectBrowserProvider('gemini')
+                },
+                onDisconnect: async () => {
+                    console.log('[SettingsPage] Gemini disconnect button clicked!')
+                    try {
+                        await disconnectProvider('gemini')
+                        console.log('[SettingsPage] Gemini disconnect completed')
+                    } catch (error) {
+                        console.error('[SettingsPage] Gemini disconnect error:', error)
+                    }
+                }
             }
         ]
 
@@ -893,10 +1062,10 @@ export function SettingsPage({
             const updated = {
                 ...settings,
                 general: {
-                    ...settings.general,
+                    ...settings?.general,
                     defaultModel: modelId
                 }
-            }
+            } as any
             applySettings(updated)
             handleSave(updated)
         }
@@ -1066,6 +1235,19 @@ export function SettingsPage({
     }
 
     const renderStatistics = () => {
+        if (statsLoading) {
+            return (
+                <div className="space-y-6 animate-pulse">
+                    <div className="bg-card p-6 rounded-xl border border-border h-32"></div>
+                    <div className="bg-card p-6 rounded-xl border border-border h-48"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-card p-6 rounded-xl border border-border h-40"></div>
+                        <div className="bg-card p-6 rounded-xl border border-border h-40"></div>
+                    </div>
+                </div>
+            )
+        }
+
         const fallbackLength = statsPeriod === 'daily' ? 24 : statsPeriod === 'weekly' ? 7 : statsPeriod === 'monthly' ? 30 : 12
         const timeline = (statsData?.tokenTimeline?.length
             ? statsData.tokenTimeline
@@ -1081,12 +1263,15 @@ export function SettingsPage({
             ? statsData.activity
             : new Array(fallbackLength).fill(0)
         const activityMax = Math.max(1, ...activity)
+
+        if (!settings) return null
+
         const codex = codexUsage?.usage || {}
-        const dailyUsed = typeof codex?.dailyUsedPercent === 'number' ? codex.dailyUsedPercent : null
-        const weeklyUsed = typeof codex?.weeklyUsedPercent === 'number' ? codex.weeklyUsedPercent : null
-        const dailyRemaining = dailyUsed === null ? null : Math.max(0, 100 - dailyUsed)
-        const weeklyRemaining = weeklyUsed === null ? null : Math.max(0, 100 - weeklyUsed)
-        const antigravityModels = Array.isArray(quotaData?.models) ? quotaData.models : []
+        const dailyUsedPercent = codex?.dailyUsedPercent || 0
+        const weeklyUsedPercent = codex?.weeklyUsedPercent || 0
+
+        const dailyRemaining = 100 - dailyUsedPercent
+        const weeklyRemaining = 100 - weeklyUsedPercent
         const copilotPercent = typeof copilotQuota?.percentage === 'number' ? copilotQuota.percentage : null
 
         const formatReset = (value?: string) => {
@@ -1112,8 +1297,16 @@ export function SettingsPage({
                 </div>
             )
         }
-        const renderMiniRing = (value: number, color: string) => {
+        const getQuotaColor = (percent: number) => {
+            if (percent === 0) return 'rgb(239 68 68)'; // Red-500
+            if (percent < 25) return 'rgb(249 115 22)'; // Orange-500
+            if (percent < 50) return 'rgb(234 179 8)'; // Yellow-500
+            return 'rgb(34 197 94)'; // Green-500
+        }
+
+        const renderMiniRing = (value: number) => {
             const percent = clampPercent(value)
+            const color = getQuotaColor(percent)
             return (
                 <div className="relative h-9 w-9">
                     <div
@@ -1121,7 +1314,7 @@ export function SettingsPage({
                         style={{ background: `conic-gradient(${color} ${percent}%, rgba(255,255,255,0.08) 0)` }}
                     />
                     <div className="absolute inset-1 rounded-full bg-card" />
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
                         {percent}%
                     </div>
                 </div>
@@ -1230,7 +1423,7 @@ export function SettingsPage({
                         <div className="bg-card p-5 rounded-xl border border-border space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm font-bold text-white">ChatGPT Codex</div>
-                                <div className="text-xs text-muted-foreground">{codexUsage?.planType ? `Plan: ${codexUsage.planType}` : 'Plan: -'}</div>
+                                <div className="text-xs text-muted-foreground">Plan: <span className="text-white">{codex?.planType || 'Free'}</span></div>
                             </div>
                             {(dailyRemaining === null && weeklyRemaining === null) && (
                                 <div className="text-xs text-muted-foreground">Veri yok.</div>
@@ -1270,9 +1463,17 @@ export function SettingsPage({
                                 <div className="flex items-center gap-3">
                                     {renderRing(copilotPercent, 'hsl(142 76% 45%)')}
                                     <div>
-                                        <div className="text-xs font-bold uppercase text-muted-foreground">Kalan</div>
+                                        <div className="text-xs font-bold uppercase text-muted-foreground">Kota Durumu</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {copilotQuota?.remaining != null && copilotQuota?.limit ? `${copilotQuota.remaining}/${copilotQuota.limit}` : 'Limit bilgisi yok'}
+                                            {copilotQuota?.remaining != null && copilotQuota?.limit
+                                                ? (
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span>Kalan: <span className="text-emerald-400 font-bold">{copilotQuota.remaining}</span></span>
+                                                        <span>Kullanilan: <span className="text-white font-bold">{copilotQuota.used}</span></span>
+                                                        <span>Toplam: {copilotQuota.limit}</span>
+                                                    </div>
+                                                )
+                                                : 'Limit bilgisi yok'}
                                         </div>
                                     </div>
                                 </div>
@@ -1282,26 +1483,45 @@ export function SettingsPage({
 
                     <div className="bg-card p-5 rounded-xl border border-border space-y-4">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm font-bold text-white">Antigravity</div>
-                                <div className="text-xs text-muted-foreground">
-                                    {quotaData?.remaining_credits ? `${quotaData.remaining_credits} kalan` : 'Kalan kredi bilinmiyor'}
+                            <div className="flex items-center gap-2">
+                                <div>
+                                    <div className="text-sm font-bold text-white">Antigravity</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {quotaData?.remaining_credits ? `${quotaData.remaining_credits} kalan` : 'Kalan kredi bilinmiyor'}
+                                    </div>
                                 </div>
+                                <button
+                                    onClick={() => setReloadTrigger(prev => prev + 1)}
+                                    className="p-1 hover:bg-white/10 rounded-full transition-colors"
+                                    title="Yenile"
+                                >
+                                    <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                </button>
                             </div>
                             <div className="text-xs text-muted-foreground">Reset: {quotaData?.next_reset || '-'}</div>
                         </div>
-                        {antigravityModels.length === 0 && (
+
+                        {!quotaData?.models?.length && (
                             <div className="text-xs text-muted-foreground">Model kotasi bulunamadi.</div>
                         )}
-                        {antigravityModels.length > 0 && (
+                        {quotaData?.models?.length > 0 && (
                             <div className="max-h-64 overflow-y-auto pr-2 space-y-3">
-                                {antigravityModels.map((model: any) => (
-                                    <div key={model.name} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                {quotaData.models.map((model: any) => (
+                                    <div key={model.name} className={cn(
+                                        "rounded-lg border p-3 transition-colors",
+                                        model.percentage === 0 ? "border-red-500/20 bg-red-500/5 opacity-80" : "border-white/10 bg-white/5"
+                                    )}>
                                         <div className="flex items-center gap-3">
-                                            {renderMiniRing(model.percentage, 'hsl(var(--primary))')}
+                                            {renderMiniRing(model.percentage)}
                                             <div className="flex-1">
-                                                <div className="text-xs font-bold text-white/80">{model.name}</div>
-                                                <div className="text-xs text-muted-foreground">Reset: {model.reset || '-'}</div>
+                                                <div className="flex items-center gap-2">
+                                                    {model.percentage === 0 && <AlertTriangle className="w-3 h-3 text-red-400" />}
+                                                    <div className={cn(
+                                                        "text-xs font-bold",
+                                                        model.percentage === 0 ? "text-red-200/80" : "text-white/80"
+                                                    )}>{model.name}</div>
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground mt-0.5">Reset: {model.reset || '-'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1455,45 +1675,55 @@ export function SettingsPage({
         )
     }
 
-    if (!settings) return <div className="p-10 text-center text-muted-foreground"><BrainCircuit className="w-10 h-10 animate-pulse mx-auto mb-4 opacity-20" /> Yükleniyor...</div>
-    const language = settings?.general?.language as Language || 'tr'
 
     return (
-        <div className="h-full w-full overflow-y-auto bg-background">
-            <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="max-w-5xl mx-auto space-y-8 px-6 py-8"
-            >
-                {activeTab === 'general' && renderGeneral()}
-                {(activeTab === 'mcp-servers' || activeTab === 'mcp-marketplace') && (
-                    <MCPPage
-                        language={language}
-                        embedded
-                        activeTab={activeTab === 'mcp-marketplace' ? 'marketplace' : 'servers'}
-                    />
-                )}
-                {activeTab === 'accounts' && renderAccounts()}
-                {activeTab === 'appearance' && renderAppearance()}
-                {activeTab === 'models' && renderModels()}
-                {activeTab === 'statistics' && renderStatistics()}
-                {activeTab === 'gallery' && renderGallery()}
-                {activeTab === 'personas' && renderPersonas()}
-            </motion.div>
-            {statusMessage && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className="fixed bottom-8 right-8 bg-primary text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/20"
-                >
-                    <FolderPlus className="w-4 h-4" />
-                    <span className="font-bold text-sm uppercase tracking-wider">{statusMessage}</span>
-                    <button onClick={() => setStatusMessage('')}><X className="w-4 h-4 opacity-60" /></button>
-                </motion.div>
-            )}
+        <div className="flex flex-col h-full overflow-hidden bg-transparent animate-in fade-in duration-300">
+            {/* Main Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                <div className="max-w-4xl mx-auto pb-10">
+                    {isLoading && (
+                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50 animate-pulse" />
+                    )}
+
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-black text-white tracking-tight">
+                            {activeTab === 'general' && t('settings.general')}
+                            {activeTab === 'appearance' && t('settings.appearance')}
+                            {activeTab === 'models' && t('settings.models')}
+                            {activeTab === 'accounts' && t('settings.accounts')}
+                            {activeTab === 'personas' && t('settings.personas')}
+                            {activeTab === 'statistics' && t('settings.statistics')}
+                            {activeTab === 'gallery' && 'Galeri'}
+                        </h1>
+                        <p className="text-muted-foreground mt-2 font-medium">
+                            {activeTab === 'general' && 'Uygulama dili, tema ve yazı tipi gibi genel ayarları buradan yönetebilirsiniz.'}
+                            {activeTab === 'appearance' && 'Uygulamanın görsel stilini ve kullanıcı arayüzü tercihlerini kişiselleştirin.'}
+                            {activeTab === 'models' && 'Yapay zeka modellerini yapılandırın ve varsayılan davranışları belirleyin.'}
+                            {activeTab === 'accounts' && 'Bağlı servislerinizi ve API anahtarlarınızı buradan yönetin.'}
+                            {activeTab === 'personas' && 'Yapay zekanın cevap stilini ve uzmanlık alanlarını tanımlayan profiller.'}
+                            {activeTab === 'statistics' && 'Kullanım alışkanlıklarınız, token tüketimi ve kota durumunuz.'}
+                            {activeTab === 'gallery' && 'Yapay zeka tarafından üretilen içeriklerin ve medya dosyalarının galerisi.'}
+                        </p>
+                    </div>
+
+                    {statusMessage && (
+                        <div className="mb-6 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            {statusMessage}
+                        </div>
+                    )}
+
+                    {activeTab === 'general' && renderGeneral()}
+                    {activeTab === 'appearance' && renderAppearance()}
+                    {activeTab === 'models' && renderModels()}
+                    {activeTab === 'accounts' && renderAccounts()}
+                    {activeTab === 'personas' && renderPersonas()}
+                    {activeTab === 'statistics' && renderStatistics()}
+                    {activeTab === 'gallery' && renderGallery()}
+                </div>
+            </div>
         </div>
     )
 }
+
+export default SettingsPage

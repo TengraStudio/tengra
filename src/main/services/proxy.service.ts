@@ -1,710 +1,257 @@
+
 import path from 'path'
 import fs from 'fs'
 import axios from 'axios'
 import crypto from 'crypto'
-import os from 'os'
-import { app } from 'electron'
+import http from 'http'
+import { spawn, ChildProcess } from 'child_process'
+import { app, session, net } from 'electron'
 import { SettingsService } from './settings.service'
+import { appLogger } from '../logging/logger'
+
+export interface DeviceCodeResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  scope: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface ProxyEmbedStatus {
+  running: boolean
+  pid?: number
+  port?: number
+  configPath?: string
+  binaryPath?: string
+  error?: string
+}
+
+const GITHUB_CLIENTS = {
+  profile: { id: 'Ov23liBw1MLMHGdYxtUV', scope: 'read:user user:email' },
+  copilot: { id: '01ab8ac9400c4e429b23', scope: 'read:user' }
+}
+
+const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
+const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+
+// Legacy OAuth Client (found in git history)
+// Reverted per user request to use "old commit" credentials
+const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
+const ANTIGRAVITY_CLIENT_SECRET = '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'
 
 export class ProxyService {
   private configPath: string
   private settingsService: SettingsService
+  private child: ChildProcess | null = null
+  private currentPort: number = 8317
+  private stdoutBuffer = ''
+  private stderrBuffer = ''
 
   constructor(settingsService: SettingsService) {
     this.settingsService = settingsService
-
     this.configPath = path.join(app.getPath('userData'), 'proxy-config.yaml')
     this.ensureAuthStoreKey()
     this.ensureProxyKey()
   }
 
-  private ensureProxyKey(): string {
-    const settings = this.settingsService.getSettings()
-    const existing = settings.proxy?.key?.trim()
-    if (existing) return existing
+  // --- Auth Flow Logic ---
 
-    const generated = crypto.randomBytes(32).toString('base64')
-    this.settingsService.saveSettings({
-      proxy: {
-        ...(settings.proxy || {
-          enabled: true,
-          url: 'http://localhost:8317/v1',
-          key: '',
-          authStoreKey: ''
-        }),
-        key: generated
-      }
-    })
-    return generated
+  async requestGitHubDeviceCode(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
+    return new Promise((resolve, reject) => {
+      const client = GITHUB_CLIENTS[appId] || GITHUB_CLIENTS.profile
+      const request = net.request({ method: 'POST', url: GITHUB_DEVICE_CODE_URL });
+      request.setHeader('Accept', 'application/json');
+      request.setHeader('Content-Type', 'application/json');
+      const body = JSON.stringify({ client_id: client.id, scope: client.scope });
+      request.write(body);
+      request.on('response', (response) => {
+        let data = '';
+        response.on('data', (chunk) => data += chunk);
+        response.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+      });
+      request.end();
+    });
   }
 
-  getProxyKey(): string {
-    const settings = this.settingsService.getSettings()
-    return settings.proxy?.key?.trim() || this.ensureProxyKey()
+  async pollForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const client = GITHUB_CLIENTS[appId] || GITHUB_CLIENTS.profile
+      const checkToken = () => {
+        const request = net.request({ method: 'POST', url: GITHUB_ACCESS_TOKEN_URL });
+        request.setHeader('Accept', 'application/json');
+        request.setHeader('Content-Type', 'application/json');
+        request.write(JSON.stringify({ client_id: client.id, device_code: deviceCode, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' }));
+        request.on('response', (response) => {
+          let data = '';
+          response.on('data', (chunk) => data += chunk);
+          response.on('end', () => {
+            try {
+              const json: TokenResponse = JSON.parse(data);
+              if (json.access_token) resolve(json.access_token);
+              else if (json.error === 'authorization_pending') setTimeout(checkToken, (interval + 1) * 1000);
+              else reject(new Error(json.error_description || json.error));
+            } catch (e) { reject(e); }
+          });
+        });
+        request.end();
+      };
+      setTimeout(checkToken, interval * 1000);
+    });
   }
 
-  private ensureAuthStoreKey(): string {
-    const settings = this.settingsService.getSettings()
-    const existing = settings.proxy?.authStoreKey?.trim()
-    if (existing) return existing
-
-    const generated = crypto.randomBytes(32).toString('base64')
-    this.settingsService.saveSettings({
-      proxy: {
-        ...(settings.proxy || {
-          enabled: true,
-          url: 'http://localhost:8317/v1',
-          key: 'local-dev-key',
-          authStoreKey: ''
-        }),
-        authStoreKey: generated
-      }
-    })
-    return generated
-  }
-
-  getAuthStoreKey(): string {
-    const settings = this.settingsService.getSettings()
-    return settings.proxy?.authStoreKey?.trim() || this.ensureAuthStoreKey()
-  }
-
-  getAuthStorePath(): string {
-    return path.join(app.getPath('userData'), 'cliproxy-auth.enc')
-  }
-
-  getAuthWorkDir(): string {
-    return path.join(app.getPath('userData'), 'cliproxy-auth-work')
-  }
-
-  prepareAuthWorkDir(): void {
-    const authDir = this.getAuthWorkDir()
-    if (!fs.existsSync(authDir)) {
-      fs.mkdirSync(authDir, { recursive: true })
-    }
-    this.migrateLegacyAuthFiles(authDir)
-  }
-
-  private migrateLegacyAuthFiles(authDir: string): void {
-    const hasJson = this.hasAuthJsonFiles(authDir)
-    if (hasJson) {
-      return
-    }
-
-    const legacyDirs = [
-      path.join(app.getPath('userData'), '.cli-proxy-api'),
-      path.join(os.homedir(), '.cli-proxy-api')
-    ]
-
-    for (const legacyDir of legacyDirs) {
-      if (!fs.existsSync(legacyDir)) continue
-      const entries = fs.readdirSync(legacyDir)
-      for (const entry of entries) {
-        if (!entry.toLowerCase().endsWith('.json')) continue
-        const sourcePath = path.join(legacyDir, entry)
-        const targetPath = path.join(authDir, entry)
-        if (fs.existsSync(targetPath)) continue
-        try {
-          fs.copyFileSync(sourcePath, targetPath)
-        } catch (e) {
-          console.warn('[ProxyService] Failed to migrate auth file:', sourcePath, e)
-        }
-      }
-    }
-  }
-
-  private hasAuthJsonFiles(dir: string): boolean {
-    try {
-      return fs.readdirSync(dir).some((entry) => entry.toLowerCase().endsWith('.json'))
-    } catch {
-      return false
-    }
-  }
-
-  getConfigPath(): string {
-    return this.configPath
-  }
-
-  async generateConfig(portOverride?: number) {
-    const settings = this.settingsService.getSettings()
-    const port = portOverride || 8317
-    const authDir = this.getAuthWorkDir().replace(/\\/g, '/')
-    const proxyKey = this.getProxyKey()
-
-    // Basic Config
-    let configContent = `# Auto-generated by Orbit
-host: "127.0.0.1"
-port: ${port}
-auth-dir: "${authDir}"
-api-keys:
-  - "${proxyKey}" # Key for Orbit to connect to Proxy
-
-remote-management:
-  allow-remote: false
-  secret-key: "orbit-management-key" # Fixed key for local management
-  disable-control-panel: true
-  panel-github-repository: ""
-
-debug: true
-logging-to-file: false
-usage-statistics-enabled: true
-request-log: true
-`
-
-    // Copilot / Codex Config
-    if (settings.github?.token) {
-      configContent += `
-# Codex API keys (GitHub Copilot)
-codex-api-key:
-  - api-key: "${settings.github.token}"
-    base-url: "https://api.githubcopilot.com" 
-    models:
-      - name: "gpt-4"
-        alias: "gpt-4"
-      - name: "gpt-4o"
-        alias: "gpt-4o"
-      - name: "gpt-4-turbo"
-        alias: "gpt-4-turbo"
-      - name: "claude-3.5-sonnet"
-        alias: "claude-3.5-sonnet"
-      - name: "o1"
-        alias: "o1"
-      - name: "o1-preview"
-        alias: "o1-preview"
-      - name: "o1-mini"
-        alias: "o1-mini"
-      - name: "gpt-3.5-turbo"
-        alias: "gpt-3.5-turbo"
-      - name: "gpt-5-codex"
-        alias: "gpt-5-codex"
-      - name: "gpt-5.1-codex"
-        alias: "gpt-5.1-codex"
-`
-    }
-
-    if (settings.anthropic?.apiKey) {
-      configContent += `
-# Claude API keys
-claude-api-key:
-  - api-key: "${settings.anthropic.apiKey}"
-`
-    }
-
-    if (settings.gemini?.apiKey) {
-      configContent += `
-# Gemini API keys
-gemini-api-key:
-  - api-key: "${settings.gemini.apiKey}"
-`
-    }
-
-    // OpenAI via Compatibility or dedicated if supported
-    if (settings.openai?.apiKey) {
-      configContent += `
-# OpenAI Compatibility (Standard OpenAI)
-openai-compatibility:
-  - name: "openai"
-    base-url: "https://api.openai.com/v1"
-    api-key-entries:
-      - api-key: "${settings.openai.apiKey}"
-    models:
-      - name: "gpt-4o"
-        alias: "openai-gpt-4o"
-      - name: "gpt-3.5-turbo"
-        alias: "openai-gpt-3.5-turbo"
-      - name: "o1-mini"
-        alias: "openai-o1-mini"
-`
-    }
-
-    const configDir = path.dirname(this.configPath)
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true })
-    }
-
-    fs.writeFileSync(this.configPath, configContent)
-  }
+  // --- Login URLs (New) ---
 
   async getAntigravityAuthUrl(): Promise<{ url: string, state: string }> {
-    return this.makeRequest('/v0/management/antigravity-auth-url?is_webui=true')
-  }
+    console.log('[ProxyService] Generating Auth URL with Client ID:', ANTIGRAVITY_CLIENT_ID)
+    return new Promise((resolve, _reject) => {
+      const state = crypto.randomBytes(16).toString('hex')
+      const server = http.createServer(async (req, res) => {
+        try {
+          const url = new URL(req.url || '', `http://${req.headers.host}`)
+          const code = url.searchParams.get('code')
+          const error = url.searchParams.get('error')
 
-  async getGeminiAuthUrl(): Promise<{ url: string, state: string }> {
+          if (error) {
+            console.error('[ProxyService] Auth Server received error:', error)
+            res.writeHead(400, { 'Content-Type': 'text/html' })
+            res.end('<h1>Login Failed</h1><p>' + error + '</p>')
+            server.close()
+            return
+          }
+
+          if (code) {
+            console.log('[ProxyService] Received auth code, exchanging for token...')
+            const port = (server.address() as any).port
+            const redirectUri = `http://localhost:${port}/oauth-callback`
+
+            try {
+              const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
+                code,
+                client_id: ANTIGRAVITY_CLIENT_ID,
+                client_secret: ANTIGRAVITY_CLIENT_SECRET,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code'
+              })
+
+              const tokenData = tokenResponse.data
+
+              // Construct auth file content
+              const now = Date.now()
+              const authData = {
+                type: 'antigravity',
+                access_token: tokenData.access_token,
+                refresh_token: tokenData.refresh_token,
+                expires_in: tokenData.expires_in,
+                timestamp: now,
+                expired: new Date(now + tokenData.expires_in * 1000).toISOString(),
+                ...tokenData // include other fields like scope, token_type
+              }
+
+              // Fetch email for filename
+              try {
+                const userInfo = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+                  headers: { Authorization: `Bearer ${tokenData.access_token}` }
+                })
+                if (userInfo.data.email) {
+                  authData.email = userInfo.data.email
+                  const filename = `antigravity-${userInfo.data.email.replace(/[@.]/g, '_')}.json`
+                  this.updateAuthFile(filename, authData)
+                } else {
+                  this.updateAuthFile('antigravity.json', authData)
+                }
+              } catch (e: any) {
+                console.warn('[ProxyService] Failed to fetch user info, saving as generic antigravity.json', e.message)
+                this.updateAuthFile('antigravity.json', authData)
+              }
+
+              res.writeHead(200, { 'Content-Type': 'text/html' })
+              res.end('<h1>Login Successful</h1><p>You can close this window and return to the application.</p><script>window.close()</script>')
+            } catch (exchangeError: any) {
+              console.error('[ProxyService] Token exchange failed:', exchangeError?.response?.data || exchangeError.message)
+              res.writeHead(500, { 'Content-Type': 'text/html' })
+              res.end('<h1>Token Exchange Failed</h1><p>Check application logs for details.</p>')
+            } finally {
+              server.close()
+            }
+          }
+        } catch (e) {
+          console.error('[ProxyService] Auth server error:', e)
+          server.close()
+        }
+      })
+
+      server.listen(51121, '127.0.0.1', () => {
+        const port = 51121 // Fixed port as per antigravity.go
+        const redirectUri = `http://localhost:${port}/oauth-callback`
+        const scope = [
+          "https://www.googleapis.com/auth/cloud-platform",
+          "https://www.googleapis.com/auth/userinfo.email",
+          "https://www.googleapis.com/auth/userinfo.profile",
+          "https://www.googleapis.com/auth/cclog",
+          "https://www.googleapis.com/auth/experimentsandconfigs"
+        ].join(' ')
+
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=${ANTIGRAVITY_CLIENT_ID}&prompt=consent&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&debug=manual_fix_v2`
+
+        console.log('[ProxyService] Custom Antigravity Auth Server started on port', port)
+        console.log('[ProxyService] Auth URL:', authUrl)
+        resolve({ url: authUrl, state })
+      })
+    })
+  }
+  async getGeminiAuthUrl() {
     return this.makeRequest('/v0/management/gemini-cli-auth-url?is_webui=true')
   }
-
-  async getClaudeAuthUrl(): Promise<{ url: string, state: string }> {
-    return this.getAnthropicAuthUrl()
+  async getAnthropicAuthUrl() {
+    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true')
   }
-
-  async getCodexAuthUrl(): Promise<{ url: string, state: string }> {
+  async getClaudeAuthUrl() {
+    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true')
+  }
+  async getCodexAuthUrl() {
     return this.makeRequest('/v0/management/codex-auth-url?is_webui=true')
   }
 
-  async getAnthropicAuthUrl(): Promise<{ url: string, state: string }> {
-    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true')
+  async getAuthFiles() {
+    const dir = this.getAuthWorkDir();
+    if (!fs.existsSync(dir)) return { files: [] };
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    return { files: files.map(f => ({ name: f, provider: f.split('-')[0] })) };
   }
 
-  async getAuthFiles(): Promise<any> {
-    return this.makeRequest('/v0/management/auth-files')
+  async deleteAuthFile(name: string) {
+    const filePath = path.join(this.getAuthWorkDir(), name);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return { success: true };
   }
 
-  async downloadAuthFile(name: string): Promise<any> {
-    const encoded = encodeURIComponent(name)
-    return this.makeRequest(`/v0/management/auth-files/download?name=${encoded}`)
-  }
+  // --- Proxy Embed Lifecycle ---
 
-  async getModels(): Promise<any> {
-    const settings = this.settingsService.getSettings()
-    if (settings.proxy?.enabled === false) {
-      return { data: [] }
-    }
-    const apiKey = this.getProxyKey()
-    const baseResponse = await this.makeRequest('/v1/models', apiKey)
-    const baseModels = Array.isArray(baseResponse?.data) ? baseResponse.data : []
+  private getBinaryPath(): string {
+    const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed'
 
-    let extraModels: any[] = []
-    try {
-      extraModels = await this.getAntigravityAvailableModels()
-    } catch (e) {
-      // Non-fatal; fall back to base list
+    // Try multiple possible locations
+    const possiblePaths = [
+      path.join(process.cwd(), 'external', 'cliproxyapi', binName),
+      path.join(process.cwd(), 'proxy', 'cliproxy_embed', binName),
+      path.join(__dirname, '..', '..', '..', 'external', 'cliproxyapi', binName),
+      path.join(app.getAppPath(), 'external', 'cliproxyapi', binName)
+    ]
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) return p
     }
 
-    if (extraModels.length === 0) {
-      return baseResponse
-    }
-
-    const existing = new Set(baseModels.map((m: any) => m?.id).filter(Boolean))
-    const merged = [...baseModels]
-    for (const model of extraModels) {
-      if (!existing.has(model.id)) {
-        merged.push(model)
-        existing.add(model.id)
-      }
-    }
-
-    return { ...baseResponse, data: merged }
-  }
-
-  async getQuota(): Promise<any> {
-    try {
-      // 1. Get Auth Data from file
-      let authData = await this.getAntigravityAuthData()
-      if (!authData) return null
-
-      // 2. Check Expiry and Refresh if needed
-      if (this.isTokenExpired(authData.expired)) {
-        console.log('[ProxyService] Token expired, refreshing...')
-        const newToken = await this.refreshAntigravityToken(authData.refresh_token)
-        if (newToken) {
-          authData.access_token = newToken.access_token
-          authData.expired = newToken.expired
-          // Save back to file (optional but good for syncing)
-          await this.updateAuthFile(authData)
-        } else {
-          console.error('[ProxyService] Failed to refresh token')
-          return null // Cannot proceed
-        }
-      }
-
-      // 3. Fetch Quota from Google Cloud API
-      const endpoints = [
-        'https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
-        'https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
-        'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
-      ]
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await axios.post(
-            endpoint,
-            {},
-            {
-              headers: {
-                'Authorization': `Bearer ${authData.access_token}`,
-                'Content-Type': 'application/json',
-                'User-Agent': 'antigravity/1.104.0 darwin/arm64' // Mimic extension
-              },
-              timeout: 5000
-            }
-          )
-
-          if (response.status === 200 && response.data) {
-            return this.parseQuotaResponse(response.data)
-          }
-        } catch (e: any) {
-          // If 403, might be banned or token invalid
-          if (e.response?.status === 403) {
-            console.warn(`[ProxyService] 403 Forbidden at ${endpoint}`)
-            break // Don't retry other endpoints if forbidden
-          }
-          // Continue to next endpoint
-          console.warn(`[ProxyService] Endpoint failed: ${endpoint}`, e.message)
-        }
-      }
-
-      return null
-    } catch (error: any) {
-      console.error('[ProxyService] Failed to fetch quota:', error)
-      return null
-    }
-  }
-
-  // --- Helper Methods ---
-
-  private async getAntigravityAuthData(): Promise<any | null> {
-    try {
-      const authDir = this.getAuthWorkDir()
-      if (!fs.existsSync(authDir)) return null
-
-      const files = fs.readdirSync(authDir)
-      const antigravityFiles = files.filter(f => f.startsWith('antigravity-') && f.endsWith('.json'))
-
-      if (antigravityFiles.length === 0) return null
-
-      // Find the most recently modified file
-      const recentFile = antigravityFiles.map(f => ({
-        name: f,
-        path: path.join(authDir, f),
-        mtime: fs.statSync(path.join(authDir, f)).mtimeMs
-      })).sort((a, b) => b.mtime - a.mtime)[0]
-
-      const content = fs.readFileSync(recentFile.path, 'utf8')
-      const data = JSON.parse(content)
-      return { ...data, _filePath: recentFile.path } // attach path for updates
-    } catch (e) {
-      console.error('[ProxyService] Error reading auth file:', e)
-      return null
-    }
-  }
-
-  private async getAntigravityAvailableModels(): Promise<any[]> {
-    try {
-      let authData = await this.getAntigravityAuthData()
-      if (!authData) return []
-
-      if (this.isTokenExpired(authData.expired)) {
-        const newToken = await this.refreshAntigravityToken(authData.refresh_token)
-        if (newToken) {
-          authData.access_token = newToken.access_token
-          authData.expired = newToken.expired
-          await this.updateAuthFile(authData)
-        } else {
-          return []
-        }
-      }
-
-      const endpoints = [
-        'https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels',
-        'https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels',
-        'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
-      ]
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await axios.post(
-            endpoint,
-            {},
-            {
-              headers: {
-                'Authorization': `Bearer ${authData.access_token}`,
-                'Content-Type': 'application/json',
-                'User-Agent': 'antigravity/1.104.0 darwin/arm64'
-              },
-              timeout: 5000
-            }
-          )
-
-          if (response.status === 200 && response.data?.models) {
-            const models: any[] = []
-            for (const [key, val] of Object.entries(response.data.models) as any) {
-              if (!val || key.startsWith('chat_') || key.startsWith('rev')) continue
-              models.push({
-                id: key,
-                name: key,
-                owned_by: 'antigravity'
-              })
-            }
-            return models
-          }
-        } catch (e: any) {
-          if (e.response?.status === 403) break
-        }
-      }
-
-      return []
-    } catch {
-      return []
-    }
-  }
-
-  private isTokenExpired(expiredStr?: string): boolean {
-    if (!expiredStr) return true
-    return new Date(expiredStr).getTime() < Date.now()
-  }
-
-  private async refreshAntigravityToken(refreshToken?: string): Promise<{ access_token: string, expired: string } | null> {
-    if (!refreshToken) return null
-    try {
-      const params = new URLSearchParams()
-      params.append('client_id', '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com')
-      params.append('client_secret', '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')
-      params.append('refresh_token', refreshToken)
-      params.append('grant_type', 'refresh_token')
-
-      const res = await axios.post('https://oauth2.googleapis.com/token', params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      })
-
-      if (res.data && res.data.access_token) {
-        const expired = new Date(Date.now() + (res.data.expires_in || 3600) * 1000).toISOString()
-        return { access_token: res.data.access_token, expired }
-      }
-      return null
-    } catch (e: any) {
-      console.error('[ProxyService] Token refresh failed:', e.response?.data || e.message)
-      return null
-    }
-  }
-
-  private async updateAuthFile(data: any) {
-    if (data._filePath) {
-      try {
-        const { _filePath, ...content } = data
-        fs.writeFileSync(_filePath, JSON.stringify(content, null, 2))
-      } catch (e) {
-        console.error('[ProxyService] Failed to update auth file:', e)
-      }
-    }
-  }
-
-  private parseQuotaResponse(data: any): any {
-    // Map Google API response to our UI format
-    if (!data.models) return null
-
-    const models = []
-
-    // Known display names mapping
-    const nameMap: Record<string, string> = {
-      "gemini-2.5-pro": "Gemini 2.5 Pro",
-      "gemini-2.5-flash": "Gemini 2.5 Flash",
-      "gemini-2.0-flash": "Gemini 2.0 Flash",
-      "gemini-exp-1206": "Gemini Exp",
-      "claude-sonnet-4-5": "Claude Sonnet 4.5",
-      "claude-opus-4-5": "Claude Opus 4.5"
-    }
-
-    for (const [key, val] of Object.entries(data.models) as any) {
-      if (val && val.quotaInfo) {
-        // Filter noise models (chat_*, rev*)
-        if (key.startsWith('chat_') || key.startsWith('rev')) continue
-
-        const remaining = val.quotaInfo.remainingFraction || 0
-        models.push({
-          name: nameMap[key] || key,
-          percentage: Math.round(remaining * 100),
-          reset: new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-        })
-      }
-    }
-
-    return {
-      remaining_credits: models.length > 0 ? `${Math.round(models.reduce((a, b: any) => a + b.percentage, 0) / models.length)}%` : 'Available',
-      next_reset: models.length > 0 ? models[0].reset : '-',
-      models: models.sort((a: any, b: any) => a.name.localeCompare(b.name))
-    }
-  }
-
-  private makeRequest(path: string, apiKey: string = 'orbit-management-key'): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const { net } = require('electron')
-      const request = net.request({
-        method: 'GET',
-        protocol: 'http:',
-        hostname: '127.0.0.1',
-        port: 8317,
-        path: path
-      })
-
-      request.setHeader('Authorization', `Bearer ${apiKey}`)
-
-      request.on('response', (response: Electron.IncomingMessage) => {
-        let data = ''
-        response.on('data', (chunk: Buffer) => data += chunk)
-        response.on('end', () => {
-          try {
-            if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
-              resolve(JSON.parse(data))
-            } else {
-              reject(new Error(`Request failed with status ${response.statusCode}: ${data}`))
-            }
-          } catch (e) {
-            reject(e)
-          }
-        })
-      })
-
-      request.on('error', (error: Error) => reject(error))
-      request.end()
-    })
-  }
-
-  // --- Copilot Quota ---
-
-  async getCopilotQuota(): Promise<any> {
-    try {
-      // 1. Get GitHub token from settings (saved during GitHub login)
-      const settings = this.settingsService.getSettings()
-      const token = settings.github?.token
-      if (!token || token === 'connected') {
-        console.log('[ProxyService] No GitHub token found')
-        return null
-      }
-
-      // 2. Get username from GitHub API
-      let username: string | null = null
-      try {
-        const userRes = await axios.get('https://api.github.com/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-          }
-        })
-        username = userRes.data?.login
-      } catch (e: any) {
-        console.error('[ProxyService] Failed to get GitHub username:', e.response?.status, e.message)
-        if (e.response?.status === 401) {
-          return { error: 'invalid_token', message: 'GitHub token is invalid or expired' }
-        }
-        return null
-      }
-
-      if (!username) return null
-
-      // 3. Fetch premium request usage
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = now.getMonth() + 1
-
-      const response = await axios.get(
-        `https://api.github.com/users/${username}/settings/billing/premium_request/usage?year=${year}&month=${month}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-          },
-          timeout: 10000
-        }
-      )
-
-      if (response.status === 200 && response.data) {
-        return this.parseCopilotQuotaResponse(response.data, username)
-      }
-
-      return null
-    } catch (e: any) {
-      console.error('[ProxyService] Copilot quota fetch failed:', e.response?.status, e.response?.data || e.message)
-      // If 403, the token doesn't have billing permissions
-      if (e.response?.status === 403) {
-        return { error: 'permission_denied', message: 'Token needs "Plan" permission' }
-      }
-      return null
-    }
-  }
-
-  private parseCopilotQuotaResponse(data: any, username: string): any {
-    // Parse the GitHub billing response
-    const usageItems = data.usageItems || []
-
-    // Calculate total usage this month
-    let totalUsed = 0
-    const models: any[] = []
-
-    for (const item of usageItems) {
-      if (item.product === 'Copilot') {
-        totalUsed += item.netQuantity || 0
-        models.push({
-          name: item.model || 'Unknown',
-          quantity: item.netQuantity || 0,
-          amount: item.netAmount || 0
-        })
-      }
-    }
-
-    // Premium entitlement is typically 300/month for Pro users
-    const monthlyLimit = 300
-    const remaining = Math.max(0, monthlyLimit - totalUsed)
-    const percentage = Math.round((remaining / monthlyLimit) * 100)
-
-    return {
-      username,
-      used: totalUsed,
-      limit: monthlyLimit,
-      remaining,
-      percentage,
-      models,
-      period: data.timePeriod
-    }
-  }
-
-  async getCodexUsage(): Promise<any> {
-    const result: any = {}
-    let authEntry: any = null
-    try {
-      const status = await this.getAuthFiles()
-      const files = Array.isArray(status?.files) ? status.files : []
-      authEntry = files.find((file: any) => {
-        const provider = String(file?.provider || file?.type || '').toLowerCase()
-        return provider === 'codex' || provider === 'openai'
-      })
-
-      if (authEntry) {
-        if (authEntry.email) result.email = authEntry.email
-        if (authEntry.id_token) {
-          result.planType = authEntry.id_token.plan_type || authEntry.id_token.chatgpt_plan_type
-          result.accountId = authEntry.id_token.chatgpt_account_id || authEntry.id_token.account_id
-        }
-      }
-    } catch (e) {
-      // Non-fatal; auth metadata may be unavailable
-    }
-
-    if (authEntry?.name) {
-      try {
-        const authData = await this.downloadAuthFile(authEntry.name)
-        const accessToken = this.pickOpenAiAccessToken(authData)
-        if (accessToken) {
-          const whamData = await this.fetchCodexUsageFromWham(accessToken)
-          const whamUsage = this.extractCodexUsageFromWham(whamData)
-          if (whamUsage) {
-            result.usage = whamUsage
-            result.usageSource = 'chatgpt'
-          }
-        }
-      } catch (e) {
-        // Non-fatal; usage may be unavailable
-      }
-    }
-
-    try {
-      const usageResponse = await this.makeRequest('/v0/management/usage')
-      const usage = this.extractCodexUsage(usageResponse?.usage)
-      if (usage) {
-        if (result.usage) {
-          result.usage = { ...usage, ...result.usage }
-        } else {
-          result.usage = usage
-          result.usageSource = 'proxy'
-        }
-      }
-    } catch (e) {
-      // Non-fatal; usage stats may be disabled
-    }
-
-    return result
+    // Default to first option if none exist
+    return possiblePaths[0]
   }
 
   private pickOpenAiAccessToken(authData: any): string | null {
@@ -733,6 +280,8 @@ openai-compatibility:
       'https://chatgpt.com/backend-api/wham/usage',
       'https://chat.openai.com/backend-api/wham/usage'
     ]
+
+
 
     for (const endpoint of endpoints) {
       try {
@@ -805,13 +354,17 @@ openai-compatibility:
       'daily_used',
       'usage_daily',
       'requests_daily',
-      'requests_today'
+      'requests_today',
+      'cap_usage',
+      'usage'
     ])
     const dailyLimit = this.findNumberByKeys(data, [
       'daily_limit',
       'dailyLimit',
       'limit_daily',
-      'daily_quota'
+      'daily_quota',
+      'cap_limit',
+      'limit'
     ])
     const weeklyUsage = this.findNumberByKeys(data, [
       'weekly_usage',
@@ -826,25 +379,19 @@ openai-compatibility:
       'limit_weekly',
       'weekly_quota'
     ])
-    const dailyUsedPercent = this.findNumberByKeys(data, [
-      'rate_limit.primary_window.used_percent',
-      'rate_limit.primary_window.usedPercent'
-    ])
-    const weeklyUsedPercent = this.findNumberByKeys(data, [
-      'rate_limit.secondary_window.used_percent',
-      'rate_limit.secondary_window.usedPercent'
-    ])
+    const dailyUsedPercent = data?.rate_limit?.primary_window?.used_percent ??
+      this.findNumberByKeys(data, ['rate_limit.primary_window.used_percent'])
+
+    const weeklyUsedPercent = data?.rate_limit?.secondary_window?.used_percent ??
+      this.findNumberByKeys(data, ['rate_limit.secondary_window.used_percent'])
+
     const dailyResetAt = this.normalizeResetAt(
-      this.findNumberByKeys(data, [
-        'rate_limit.primary_window.reset_at',
-        'rate_limit.primary_window.resetAt'
-      ])
+      data?.rate_limit?.primary_window?.reset_at ??
+      this.findNumberByKeys(data, ['rate_limit.primary_window.reset_at'])
     )
     const weeklyResetAt = this.normalizeResetAt(
-      this.findNumberByKeys(data, [
-        'rate_limit.secondary_window.reset_at',
-        'rate_limit.secondary_window.resetAt'
-      ])
+      data?.rate_limit?.secondary_window?.reset_at ??
+      this.findNumberByKeys(data, ['rate_limit.secondary_window.reset_at'])
     )
     const resetAt = this.normalizeResetAt(
       this.findStringByKeys(data, [
@@ -901,51 +448,6 @@ openai-compatibility:
     }
   }
 
-  private findNumberByKeys(root: any, keys: string[]): number | null {
-    const queue: Array<{ value: any; depth: number }> = [{ value: root, depth: 0 }]
-    while (queue.length > 0) {
-      const current = queue.shift()
-      if (!current) continue
-      const { value, depth } = current
-      if (!value || typeof value !== 'object') continue
-
-      if (!Array.isArray(value)) {
-        for (const key of keys) {
-          if (key.includes('.')) {
-            const path = key.split('.')
-            let cursor = value
-            let found = true
-            for (const part of path) {
-              if (!cursor || typeof cursor !== 'object' || !(part in cursor)) {
-                found = false
-                break
-              }
-              cursor = cursor[part]
-            }
-            if (found) {
-              const num = this.toNumber(cursor)
-              if (num !== null) return num
-            }
-            continue
-          }
-          if (Object.prototype.hasOwnProperty.call(value, key)) {
-            const num = this.toNumber(value[key])
-            if (num !== null) return num
-          }
-        }
-      }
-
-      if (depth >= 4) continue
-      const children = Array.isArray(value) ? value : Object.values(value)
-      for (const child of children) {
-        if (child && typeof child === 'object') {
-          queue.push({ value: child, depth: depth + 1 })
-        }
-      }
-    }
-    return null
-  }
-
   private findStringByKeys(root: any, keys: string[]): string | null {
     const queue: Array<{ value: any; depth: number }> = [{ value: root, depth: 0 }]
     while (queue.length > 0) {
@@ -976,6 +478,16 @@ openai-compatibility:
     return null
   }
 
+  private normalizeResetAt(value: any): string | null {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+    const numeric = this.toNumber(value)
+    if (numeric === null) return null
+    const ms = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric
+    return new Date(ms).toISOString()
+  }
+
   private toNumber(value: any): number | null {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value
@@ -989,54 +501,745 @@ openai-compatibility:
     return null
   }
 
-  private normalizeResetAt(value: any): string | null {
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim()
+  async getCodexUsage(): Promise<any> {
+    const result: any = { usageSource: 'none' }
+
+    // 1. Fetch raw data using the robust fetchCodexUsage method (checks settings, auth files, cookies)
+    const whamData = await this.fetchCodexUsage()
+
+    if (whamData) {
+      console.log('[ProxyService] getCodexUsage: Got data from fetchCodexUsage')
+
+      // Extract structured usage data
+      // Pass the whole object so recursive search can find keys anywhere
+      const usage = this.extractCodexUsageFromWham(whamData)
+
+      if (usage) {
+        result.usage = usage
+        result.usageSource = 'chatgpt'
+      }
+
+      // Try to extract plan type from various locations and CAPITALIZE it
+      const rawPlan = whamData.plan_type ||
+        whamData.rate_limit?.plan_type ||
+        (usage as any)?.planType ||
+        'free'
+
+      result.planType = rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1)
+      // UI expects planType inside usage object too
+      if (result.usage) {
+        result.usage.planType = result.planType
+      }
+
+      // Try to extract account ID
+      result.accountId = whamData.account_id ||
+        whamData.user_id ||
+        'unknown'
+
+      if (whamData.email) result.email = whamData.email
+    } else {
+      console.warn('[ProxyService] getCodexUsage: No data returned from fetchCodexUsage')
     }
-    const numeric = this.toNumber(value)
-    if (numeric === null) return null
-    const ms = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric
-    return new Date(ms).toISOString()
+
+    // fallback to management usage if needed (legacy proxy)
+    try {
+      const usageResponse = await this.makeRequest('/v0/management/usage')
+      if (usageResponse?.usage) {
+        const usage = this.extractCodexUsage(usageResponse.usage)
+        if (usage) {
+          // Merge if we already have some data, or set if we don't
+          result.usage = result.usage ? { ...result.usage, ...usage } : usage
+          if (result.usageSource === 'none') result.usageSource = 'proxy'
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return result
   }
 
-  private extractCodexUsage(snapshot: any): { totalRequests: number; totalTokens: number } | null {
+  async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
+    if (this.child) {
+      console.log('[ProxyService] Proxy already running')
+      return this.getEmbeddedProxyStatus()
+    }
+
+    const binaryPath = this.getBinaryPath()
+    console.log('[ProxyService] Binary path:', binaryPath)
+
+    if (!fs.existsSync(binaryPath)) {
+      console.error('[ProxyService] Binary not found at:', binaryPath)
+      return { running: false, error: `Binary not found at ${binaryPath} ` }
+    }
+
+    this.currentPort = options?.port || 8317
+    await this.generateConfig(this.currentPort)
+    console.log('[ProxyService] Config generated, starting proxy on port', this.currentPort)
+
+    this.child = spawn(binaryPath, ['-config', this.configPath], {
+      cwd: path.dirname(binaryPath),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    })
+
+    this.child.stdout?.on('data', d => this.stdoutBuffer = this.logProxyChunk(this.stdoutBuffer, d.toString(), 'info'))
+    this.child.stderr?.on('data', d => this.stderrBuffer = this.logProxyChunk(this.stderrBuffer, d.toString(), 'error'))
+    this.child.on('close', code => {
+      this.child = null;
+      appLogger.warn(`Proxy exited: ${code} `)
+      console.log('[ProxyService] Proxy process exited with code:', code)
+    })
+
+    console.log('[ProxyService] Proxy started with PID:', this.child.pid)
+    return this.getEmbeddedProxyStatus()
+  }
+
+  async stopEmbeddedProxy() { if (this.child) { this.child.kill(); this.child = null; } return this.getEmbeddedProxyStatus(); }
+
+  getEmbeddedProxyStatus(): ProxyEmbedStatus { return { running: !!this.child, pid: this.child?.pid, port: this.currentPort } }
+
+  private logProxyChunk(buffer: string, chunk: string, level: 'info' | 'error'): string {
+    const lines = (buffer + chunk).split(/\r?\n/);
+    const remainder = lines.pop() || '';
+    for (const line of lines) if (line.trim()) appLogger[level](line.trim(), { source: 'proxy' });
+    return remainder;
+  }
+
+  // --- Quota & Models ---
+
+  async getQuota(): Promise<any> {
+    console.log('[ProxyService] getQuota: starting sequence...')
+    const settings = this.settingsService.getSettings()
+    if (settings.proxy?.enabled === false) return null
+
+    // 1. Try Antigravity (Direct Upstream)
+    const antigravity = await this.fetchAntigravityQuota()
+    if (antigravity && !antigravity.authExpired) return antigravity
+    if (antigravity?.authExpired) return antigravity
+
+    // 2. Try Legacy Fallback
+    const legacy = await this.fetchLegacyQuota()
+    if (legacy && legacy.success) return legacy
+
+    // 3. Try Proxy /v1/quota
+    const proxy = await this.fetchProxyQuota()
+    if (proxy) return proxy
+
+    // 4. Try Codex
+    const codex = await this.fetchCodexQuota()
+    if (codex && codex.success) return codex
+
+    return null
+  }
+
+  // --- Split Quota Functions ---
+
+  private async fetchAntigravityUpstream(): Promise<any | null> {
+    try {
+      const authData = await this.getAntigravityAuthData()
+      if (!authData) return null
+
+      // Check expiry
+      if (this.isTokenExpired(authData)) {
+        console.log('[ProxyService] AG Token expired, refreshing...')
+        const newToken = await this.refreshAntigravityToken(authData.refresh_token)
+        if (newToken) {
+          authData.access_token = newToken.access_token
+          authData.expires_in = newToken.expires_in || 3599
+          authData.timestamp = Date.now()
+          this.updateAuthFile('antigravity-' + (authData.email ? authData.email.replace(/[@.]/g, '_') + '.json' : 'json'), authData)
+        } else {
+          throw new Error('AUTH_EXPIRED')
+        }
+      }
+
+      const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
+      try {
+        // Use empty body by default (proven to be more reliable/expected by current API)
+        const response = await axios.post(upstreamUrl, {}, {
+          headers: {
+            'Authorization': `Bearer ${authData.access_token}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'antigravity/1.104.0 darwin/arm64'
+          },
+          timeout: 8000
+        })
+        if (response.status === 200 && response.data) return response.data
+      } catch (e: any) {
+        console.warn('[ProxyService] Upstream fetch failed:', e.message)
+        throw e
+      }
+    } catch (e) {
+      console.warn('[ProxyService] Upstream fetch failed:', e)
+      throw e // Propagate for specific handling if needed
+    }
+    return null
+  }
+
+  private async fetchAntigravityQuota(): Promise<any | null> {
+    try {
+      const data = await this.fetchAntigravityUpstream()
+      if (data) {
+        console.log('[ProxyService] AG Quota fetched successfully')
+        return this.parseQuotaResponse(data)
+      }
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED') return { success: false, authExpired: true }
+    }
+    return null
+  }
+
+  private async getAntigravityAvailableModels(): Promise<any[]> {
+    try {
+      const data = await this.fetchAntigravityUpstream()
+      if (data && data.models) {
+        const models: any[] = []
+        const nameMap: Record<string, string> = {
+          "gemini-2.5-pro": "Gemini 2.5 Pro",
+          "gemini-2.5-flash": "Gemini 2.5 Flash",
+          "gemini-2.0-flash": "Gemini 2.0 Flash",
+          "gemini-exp-1206": "Gemini Exp",
+          "claude-sonnet-4-5": "Claude Sonnet 4.5",
+          "claude-opus-4-5": "Claude Opus 4.5"
+        }
+
+        for (const [key, val] of Object.entries(data.models) as any) {
+          try {
+            // Filter noise
+            if (key.startsWith('chat_') || key.startsWith('rev')) continue
+
+            let percentage = 100
+            let reset = '-'
+
+            if (val.quotaInfo) {
+              if (typeof val.quotaInfo.remainingFraction === 'number') {
+                percentage = Math.round(val.quotaInfo.remainingFraction * 100)
+              } else if (typeof val.quotaInfo.remainingQuota === 'number' && typeof val.quotaInfo.totalQuota === 'number' && val.quotaInfo.totalQuota > 0) {
+                percentage = Math.round((val.quotaInfo.remainingQuota / val.quotaInfo.totalQuota) * 100)
+              } else if (val.quotaInfo.resetTime) {
+                // If we have a reset time but no fraction info, it typically means 0% (exhausted)
+                // Observed in Gemini 3 Pro (High) etc.
+                percentage = 0
+              }
+
+              if (val.quotaInfo.resetTime) {
+                try {
+                  reset = new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                } catch (dateError) {
+                  console.warn(`[ProxyService] Invalid resetTime for model ${key}:`, val.quotaInfo.resetTime)
+                }
+              }
+            }
+
+            models.push({
+              id: key,
+              name: val.displayName || nameMap[key] || key,
+              object: 'model',
+              owned_by: 'antigravity',
+              provider: 'antigravity',
+              percentage,
+              reset,
+              permission: [],
+              quotaInfo: val.quotaInfo
+            })
+          } catch (itemError) {
+            console.warn(`[ProxyService] Error parsing model ${key}:`, itemError)
+          }
+        }
+        return models
+      }
+    } catch (e) {
+      console.error('[ProxyService] getAntigravityAvailableModels failed:', e)
+    }
+    return []
+  }
+
+  private async fetchLegacyQuota(): Promise<any | null> {
+    try {
+      const legacy = await this.getLegacyQuota()
+      if (legacy && legacy.success) return legacy
+    } catch (e) { }
+    return null
+  }
+
+  private async fetchProxyQuota(): Promise<any | null> {
+    try {
+      const apiKey = this.getProxyKey()
+      return await this.makeRequest('/v1/quota', apiKey)
+    } catch (e) { }
+    return null
+  }
+
+  private async fetchCodexQuota(): Promise<any | null> {
+    try {
+      const codexData = await this.fetchCodexUsage()
+      if (codexData) {
+        return this.parseCodexUsageToQuota(codexData)
+      }
+    } catch (e) { }
+    return null
+  }
+
+  private parseQuotaResponse(data: any): any {
+    // Map Google API response (fetchAvailableModels) to our UI format
+    if (!data.models) return null
+
+    const models = []
+    const nameMap: Record<string, string> = {
+      "gemini-2.5-pro": "Gemini 2.5 Pro",
+      "gemini-2.5-flash": "Gemini 2.5 Flash",
+      "gemini-2.0-flash": "Gemini 2.0 Flash",
+      "gemini-exp-1206": "Gemini Exp",
+      "claude-sonnet-4-5": "Claude Sonnet 4.5",
+      "claude-opus-4-5": "Claude Opus 4.5"
+    }
+
+    for (const [key, val] of Object.entries(data.models) as any) {
+      try {
+        if (key.startsWith('chat_') || key.startsWith('rev')) continue
+
+        let percentage = 100
+        let reset = '-'
+
+        if (val.quotaInfo) {
+          if (typeof val.quotaInfo.remainingFraction === 'number') {
+            percentage = Math.round(val.quotaInfo.remainingFraction * 100)
+          } else if (typeof val.quotaInfo.remainingQuota === 'number' && typeof val.quotaInfo.totalQuota === 'number' && val.quotaInfo.totalQuota > 0) {
+            percentage = Math.round((val.quotaInfo.remainingQuota / val.quotaInfo.totalQuota) * 100)
+          } else if (val.quotaInfo.resetTime) {
+            percentage = 0
+          }
+
+          if (val.quotaInfo.resetTime) {
+            try {
+              reset = new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            } catch { }
+          }
+        }
+
+        models.push({
+          name: val.displayName || nameMap[key] || key,
+          percentage,
+          reset
+        })
+      } catch { }
+    }
+
+    return {
+      status: models.length > 0 ? `${Math.round(models.reduce((sum: number, m: any) => sum + m.percentage, 0) / models.length)}%` : 'Available',
+      next_reset: models.length > 0 ? models[0].reset : '-',
+      models: models.sort((a: any, b: any) => a.name.localeCompare(b.name))
+    }
+  }
+
+  private parseCodexUsageToQuota(data: any): any {
+    return {
+      success: true,
+      usage: {
+        dailyUsedPercent: data.rate_limit?.primary_window?.used_percent || 0,
+        weeklyUsedPercent: data.rate_limit?.secondary_window?.used_percent || 0,
+        dailyResetAt: data.rate_limit?.primary_window?.reset_at,
+        weeklyResetAt: data.rate_limit?.secondary_window?.reset_at,
+        planType: String(data.plan_type || 'Free').toLowerCase().includes('plus') ? 'Plus' : (data.plan_type ? data.plan_type.charAt(0).toUpperCase() + data.plan_type.slice(1) : 'Free')
+      }
+    }
+  }
+
+  async getCopilotQuota() {
+    // GitHub Billing (Copilot) - via Premium Usage API
+    const data = await this.fetchCopilotBilling()
+    if (!data) return { success: false }
+
+    // Parse data.usageItems array
+    /*
+     {
+       "usageItems": [
+         {
+           "product": "Copilot",
+           "netQuantity": 100, // Total requests?
+           "netAmount": 4
+         }
+       ]
+     }
+    */
+    // Parse copilot_internal structure for usage data
+    const premium = data.quota_snapshots?.premium_interactions
+
+    // If no premium data (e.g. Free user?), use defaults
+    return {
+      success: true,
+      plan: data.copilot_plan || 'unknown',
+      limit: premium?.entitlement || 0,
+      remaining: premium?.remaining || 0,
+      used: (premium?.entitlement || 0) - (premium?.remaining || 0),
+      percentage: premium?.percent_remaining || (premium?.entitlement ? (premium.remaining / premium.entitlement * 100) : null)
+    }
+  }
+
+  async getModels(): Promise<any> {
+    const apiKey = this.getProxyKey()
+    let baseRes: any = { data: [] }
+    try {
+      baseRes = await this.makeRequest('/v1/models', apiKey)
+    } catch (err) {
+      console.warn('[ProxyService] getModels: Primary proxy fetch failed, proceeding with extra sources.', err)
+    }
+
+    let extra: any[] = []
+    let antigravityError: string | undefined
+
+    try {
+      extra = await this.getAntigravityAvailableModels()
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED') {
+        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın (Token Refresh Başarısız).'
+      }
+    }
+
+    const base = Array.isArray(baseRes?.data) ? baseRes.data : []
+    const merged = [...base]
+    const ids = new Set(base.map((m: any) => m.id))
+    for (const m of extra) { if (!ids.has(m.id)) merged.push(m) }
+
+    return { ...baseRes, data: merged, antigravityError }
+  }
+
+  // Removed fetchGoogleInternalData - was calling internal API that requires project_id
+  // Models are fetched via /v1/models endpoint instead
+
+
+
+  async fetchCodexUsage(): Promise<any | null> {
+    const settings = this.settingsService.getSettings()
+    let token = (settings as any).openai?.accessToken || settings.openai?.apiKey
+
+    // 2. Try to find token in cliproxy-auth-work (App Auth Files)
+    if (!token || token === 'connected') {
+      try {
+        const authDir = this.getAuthWorkDir()
+        if (fs.existsSync(authDir)) {
+          const files = fs.readdirSync(authDir).filter(f => f.startsWith('codex-') && f.endsWith('.json'))
+          if (files.length > 0) {
+            // Use the most recent file or just the first one
+            const authFile = path.join(authDir, files[0])
+            const content = JSON.parse(fs.readFileSync(authFile, 'utf8'))
+            // Use helper to robustly find token
+            const fileToken = this.pickOpenAiAccessToken(content)
+            if (fileToken) {
+              token = fileToken
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn('[ProxyService] Failed to read auth file:', e.message)
+      }
+    }
+
+    // 3. Try to get token from Electron session (Cookies)
+    if (!token || token === 'connected') {
+      try {
+        const cookies = await session.defaultSession.cookies.get({ url: 'https://chatgpt.com' })
+        if (cookies.length > 0) {
+          const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ')
+          const sessionRes = await axios.get('https://chatgpt.com/api/auth/session', {
+            headers: {
+              'Cookie': cookieHeader,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+            }
+          })
+          if (sessionRes.data?.accessToken) {
+            token = sessionRes.data.accessToken
+          } else {
+            console.warn('[ProxyService] Could not retrieve access token from session endpoint.')
+          }
+        } else {
+          console.warn('[ProxyService] No cookies found for chatgpt.com')
+        }
+      } catch (e: any) {
+        console.warn('[ProxyService] Failed to get session token:', e.message)
+      }
+    }
+
+    if (!token || token === 'connected') {
+      return null
+    }
+
+    // Use robust multi-endpoint helper
+    const data = await this.fetchCodexUsageFromWham(token)
+    try {
+      const debugPath = path.join(process.cwd(), 'debug-codex.json')
+      fs.writeFileSync(debugPath, JSON.stringify(data, null, 2))
+    } catch (e) {
+      console.warn('[ProxyService] Failed to write debug log:', e)
+    }
+    return data
+  }
+
+  private async fetchCopilotBilling(): Promise<any | null> {
+    const settings = this.settingsService.getSettings()
+    // Switch to Copilot Token as verified via CLI (GitHub token failed with 404/Scopes)
+    const token = (settings as any).copilot?.token
+    if (!token) return null
+
+    try {
+      const response = await axios.get('https://api.github.com/copilot_internal/user', {
+        headers: {
+          'Authorization': `token ${token} `,
+          'User-Agent': 'GithubCopilot/1.250.0'
+        }
+      })
+      return response.data
+    } catch (e: any) {
+      // Silent warning
+      return null
+    }
+  }
+
+  // --- Antigravity Helpers ---
+
+  private isTokenExpired(authData: any): boolean {
+    if (!authData.timestamp || !authData.expires_in) return true
+    const expiry = authData.timestamp + (authData.expires_in * 1000)
+    // Buffer of 60 seconds
+    return Date.now() > (expiry - 60000)
+  }
+
+  private async refreshAntigravityToken(refreshToken: string): Promise<any> {
+    if (!refreshToken) return null
+    try {
+      const params = new URLSearchParams()
+      params.append('client_id', ANTIGRAVITY_CLIENT_ID)
+      params.append('client_secret', ANTIGRAVITY_CLIENT_SECRET)
+      params.append('refresh_token', refreshToken)
+      params.append('grant_type', 'refresh_token')
+
+      const res = await axios.post('https://oauth2.googleapis.com/token', params.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
+      return res.data
+    } catch (e: any) {
+      console.error('[ProxyService] refreshAntigravityToken failed:', e.message)
+      return null
+    }
+  }
+
+  private updateAuthFile(nameOrPrefix: string, data: any) {
+    try {
+      const dir = this.getAuthWorkDir()
+      let filePath: string
+
+      if (nameOrPrefix.endsWith('.json')) {
+        // It's a direct filename
+        filePath = path.join(dir, nameOrPrefix)
+      } else {
+        // Legacy: It's a prefix, try to find existing file
+        const files = fs.readdirSync(dir).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
+        if (files.length > 0) {
+          filePath = path.join(dir, files[0])
+        } else {
+          // Fallback: create new generic file if treating as prefix
+          filePath = path.join(dir, `${nameOrPrefix}.json`)
+        }
+      }
+
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+      console.log('[ProxyService] Auth file saved:', path.basename(filePath))
+    } catch (e: any) {
+      console.error('[ProxyService] Failed to update auth file:', e.message)
+    }
+  }
+
+  // --- Quota Helpers ---
+
+  async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: any }> {
+    console.log('[ProxyService] getLegacyQuota: checking auth status...')
+    // Check if Antigravity auth exists
+    const authData = await this.getAntigravityAuthData()
+    if (!authData) {
+      return { success: false } // Not logged in
+    }
+    // Auth exists but we don't have quota info from internal API anymore
+    // Return minimal success response
+    return { success: true, data: { authenticated: true } }
+  }
+
+  async getLegacyCodexUsage() {
+    // Codex usage is fetched separately via fetchCodexUsage method
+    return { success: false }
+  }
+
+  private extractCodexUsage(snapshot: any): any {
     if (!snapshot || typeof snapshot !== 'object') return null
     const apis = snapshot.apis || snapshot.APIs
     if (!apis || typeof apis !== 'object') return null
 
     let totalRequests = 0
     let totalTokens = 0
-    let matched = false
 
+    // Simplified extraction logic
     for (const [apiKey, apiStats] of Object.entries(apis as Record<string, any>)) {
-      if (!apiStats || typeof apiStats !== 'object') continue
-
-      const models = apiStats.models || apiStats.Models
-      let modelMatched = false
-
-      if (models && typeof models === 'object') {
-        for (const [modelName, modelStats] of Object.entries(models as Record<string, any>)) {
-          const name = String(modelName).toLowerCase()
-          if (!name.includes('codex')) continue
-          totalRequests += Number(modelStats?.total_requests || modelStats?.TotalRequests || 0)
-          totalTokens += Number(modelStats?.total_tokens || modelStats?.TotalTokens || 0)
-          modelMatched = true
-        }
+      const keyLower = apiKey.toLowerCase()
+      const statsStr = JSON.stringify(apiStats).toLowerCase()
+      if (keyLower.includes('codex') || statsStr.includes('codex')) {
+        totalRequests += Number(apiStats?.total_requests || 0)
+        totalTokens += Number(apiStats?.total_tokens || 0)
       }
-
-      if (!modelMatched) {
-        const key = String(apiKey).toLowerCase()
-        if (key.includes('codex')) {
-          totalRequests += Number(apiStats?.total_requests || apiStats?.TotalRequests || 0)
-          totalTokens += Number(apiStats?.total_tokens || apiStats?.TotalTokens || 0)
-          modelMatched = true
-        }
-      }
-
-      if (modelMatched) matched = true
     }
 
-    if (!matched) return null
-    return { totalRequests, totalTokens }
+    return { totalRequests, totalTokens, success: true }
+  }
+
+
+  private findNumberByKeys(root: any, keys: string[]): number | null {
+    // Recursive search
+    const queue: Array<{ value: any; depth: number }> = [{ value: root, depth: 0 }]
+    while (queue.length > 0) {
+      const current = queue.shift()
+      if (!current) continue
+      const { value, depth } = current
+      if (!value || typeof value !== 'object') continue
+      if (depth >= 4) continue
+
+      for (const key of keys) {
+        if (value[key] !== undefined && value[key] !== null) {
+          const num = Number(value[key])
+          if (!Number.isNaN(num)) return num
+        }
+      }
+
+      const children = Array.isArray(value) ? value : Object.values(value)
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          queue.push({ value: child, depth: depth + 1 })
+        }
+      }
+    }
+    return null
+  }
+
+  private async getAntigravityAuthData(): Promise<any | null> {
+    const dir = this.getAuthWorkDir()
+    try {
+      if (!fs.existsSync(dir)) return null
+      const files = fs.readdirSync(dir)
+
+      // 1. Look for email-specific file first (antigravity-*.json)
+      const specific = files.find(f => f.startsWith('antigravity-') && f.endsWith('.json'))
+      if (specific) return JSON.parse(fs.readFileSync(path.join(dir, specific), 'utf8'))
+
+      // 2. Fallback to generic antigravity.json
+      const generic = files.find(f => f === 'antigravity.json')
+      if (generic) return JSON.parse(fs.readFileSync(path.join(dir, generic), 'utf8'))
+
+      console.warn('[ProxyService] getAntigravityAuthData: No Antigravity auth file found.')
+      return null
+    } catch { return null }
+  }
+
+  private makeRequest(path: string, apiKey?: string): Promise<any> {
+    const key = apiKey || this.getProxyKey()
+    return new Promise((resolve, reject) => {
+      const options = {
+        method: 'GET',
+        protocol: 'http:' as 'http:',
+        hostname: '127.0.0.1',
+        port: this.currentPort,
+        path
+      }
+
+      console.log(`[ProxyService] Making request to: http://127.0.0.1:${this.currentPort}${path}`)
+
+      const request = net.request(options)
+      request.setHeader('Authorization', `Bearer ${key}`)
+
+      request.on('response', (res) => {
+        let d = '';
+        res.on('data', chunk => d += chunk);
+        res.on('end', () => {
+          console.log(`[ProxyService] Response from ${path}: Status ${res.statusCode}, Data length: ${d.length}`)
+
+          if (res.statusCode && res.statusCode >= 400) {
+            console.warn(`[ProxyService] HTTP Error ${res.statusCode} for ${path}: ${d.substring(0, 200)}`)
+            resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
+            return
+          }
+
+          try {
+            const json = JSON.parse(d);
+            resolve(json);
+          } catch (e) {
+            console.error(`[ProxyService] JSON Parse Error for ${path}:`, e, "Raw data:", d.substring(0, 100))
+            resolve({ success: false, error: 'Invalid JSON', raw: d });
+          }
+        })
+      })
+
+      request.on('error', e => {
+        console.error(`[ProxyService] Request Error to ${path}:`, e)
+        reject(e)
+      })
+
+      request.end()
+    })
+  }
+
+  // --- Helpers ---
+
+  getAuthWorkDir(): string { return path.join(app.getPath('userData'), 'cliproxy-auth-work') }
+  getConfigPath(): string { return this.configPath }
+
+  prepareAuthWorkDir() {
+    const dir = this.getAuthWorkDir()
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  }
+
+  async downloadAuthFile(name: string): Promise<any> {
+    const filePath = path.join(this.getAuthWorkDir(), name)
+    if (!fs.existsSync(filePath)) throw new Error('Auth file not found')
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+  }
+
+  private ensureProxyKey(): string {
+    const settings = this.settingsService.getSettings()
+    let key = settings.proxy?.key?.trim()
+    if (!key) {
+      key = crypto.randomBytes(32).toString('base64')
+      this.settingsService.saveSettings({ proxy: { ...((settings.proxy as any) || {}), key } })
+    }
+    return key as string
+  }
+
+  getProxyKey(): string { return this.ensureProxyKey() }
+
+  private ensureAuthStoreKey(): string {
+    const settings = this.settingsService.getSettings()
+    let key = settings.proxy?.authStoreKey?.trim()
+    if (!key) {
+      key = crypto.randomBytes(32).toString('base64')
+      this.settingsService.saveSettings({ proxy: { ...((settings.proxy as any) || {}), authStoreKey: key } })
+    }
+    return key as string
+  }
+
+  async generateConfig(port: number = 8317) {
+    const settings = this.settingsService.getSettings()
+    const authDir = this.getAuthWorkDir().replace(/\\/g, '/')
+    const proxyKey = this.getProxyKey()
+    let config = `host: "127.0.0.1"\nport: ${port}\nauth-dir: "${authDir}"\napi-keys:\n  - "${proxyKey}"\nremote-management:\n  secret-key: "${proxyKey}"\ndebug: true\nlogging-to-file: false\n`
+    if (settings.github?.token) config += `codex-api-key:\n  - api-key: "${settings.github.token}"\n    base-url: "https://api.githubcopilot.com"\n`
+    if (settings.anthropic?.apiKey) config += `claude-api-key:\n  - api-key: "${settings.anthropic.apiKey}"\n`
+    if (settings.gemini?.apiKey) config += `gemini-api-key:\n  - api-key: "${settings.gemini.apiKey}"\n`
+    fs.writeFileSync(this.configPath, config)
   }
 }

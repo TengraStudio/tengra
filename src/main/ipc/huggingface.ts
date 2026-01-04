@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
-import { HuggingFaceService } from '../services/huggingface.service'
+import { LLMService } from '../services/llm.service'
 
-export function registerHFModelIpc(huggingfaceService: HuggingFaceService) {
+export function registerHFModelIpc(llmService: LLMService) {
     ipcMain.handle('hf:search-models', async (_event, query: string, limit: number, page: number) => {
-        return await huggingfaceService.searchModels(query, limit, page)
+        return await llmService.searchHFModels(query, limit, page)
     })
 }

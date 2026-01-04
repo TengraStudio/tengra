@@ -41,6 +41,8 @@ export const tr = {
         models: 'Modeller',
         ollama: 'Ollama',
         accounts: 'Hesaplar',
+        personas: 'Personalar',
+        statistics: 'İstatistikler'
     },
     sidebar: {
         chats: 'Sohbetler',

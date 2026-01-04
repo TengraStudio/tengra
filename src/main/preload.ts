@@ -18,6 +18,7 @@ export interface ElectronAPI {
     codexLogin: () => Promise<{ url: string; state: string }>
 
     checkAuthStatus: () => Promise<any>
+    deleteProxyAuthFile: (name: string) => Promise<any>
 
     // Proxy
     getProxyModels: () => Promise<any[]>
@@ -202,6 +203,7 @@ const api: ElectronAPI = {
     anthropicLogin: () => ipcRenderer.invoke('proxy:anthropicLogin'),
     codexLogin: () => ipcRenderer.invoke('proxy:codexLogin'),
     checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
+    deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
 
     getProxyModels: () => ipcRenderer.invoke('proxy:getModels'),
     getQuota: () => ipcRenderer.invoke('proxy:getQuota'),
@@ -342,7 +344,7 @@ const api: ElectronAPI = {
     },
 
     captureScreenshot: () => ipcRenderer.invoke('screenshot:capture'),
-    openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
 
     readPdf: (path) => ipcRenderer.invoke('files:readPdf', path),

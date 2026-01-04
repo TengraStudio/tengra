@@ -643,20 +643,37 @@ func (h *Handler) DeleteAuthFile(c *gin.Context) {
 			full = abs
 		}
 	}
+	
+	log.Infof("Attempting to delete auth file: %s", full)
+	
 	if err := os.Remove(full); err != nil {
 		if os.IsNotExist(err) {
+			log.Warnf("Auth file not found: %s", full)
 			c.JSON(404, gin.H{"error": "file not found"})
 		} else {
+			log.Errorf("Failed to remove auth file %s: %v", full, err)
 			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to remove file: %v", err)})
 		}
 		return
 	}
-	if err := h.deleteTokenRecord(ctx, full); err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+	
+	// Verify deletion succeeded
+	if _, statErr := os.Stat(full); statErr == nil {
+		log.Errorf("File still exists after deletion: %s", full)
+		c.JSON(500, gin.H{"error": "file deletion verification failed"})
 		return
 	}
+	
+	log.Infof("Successfully deleted auth file: %s", full)
+	
+	if err := h.deleteTokenRecord(ctx, full); err != nil {
+		log.Warnf("Failed to delete token record for %s: %v", full, err)
+		// Continue anyway since file is deleted
+	}
+	
 	h.disableAuth(ctx, full)
-	c.JSON(200, gin.H{"status": "ok"})
+	
+	c.JSON(200, gin.H{"status": "ok", "deleted": true, "file": filepath.Base(name)})
 }
 
 func (h *Handler) authIDForPath(path string) string {
@@ -1427,8 +1444,8 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	const (
 		antigravityCallbackPort = 51121
-		antigravityClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-		antigravityClientSecret = "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"
+		antigravityClientID     = "225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com"
+		antigravityClientSecret = "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"
 	)
 	var antigravityScopes = []string{
 		"https://www.googleapis.com/auth/cloud-platform",
