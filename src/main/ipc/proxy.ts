@@ -27,7 +27,8 @@ export function registerProxyIpc(proxyService: ProxyService) {
     })
 
     ipcMain.handle('proxy:getModels', async () => {
-        return await proxyService.getModels()
+        const models = await proxyService.getModels() 
+        return models
     })
 
     ipcMain.handle('proxy:getQuota', async () => {
@@ -40,5 +41,9 @@ export function registerProxyIpc(proxyService: ProxyService) {
 
     ipcMain.handle('proxy:getCodexUsage', async () => {
         return await proxyService.getCodexUsage()
+    })
+
+    ipcMain.handle('proxy:deleteAuthFile', async (_event, name: string) => {
+        return await proxyService.deleteAuthFile(name)
     })
 }

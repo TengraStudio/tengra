@@ -215,27 +215,67 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language 
         ? displayContent?.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...'
         : displayContent
 
-    const is429Error = displayContent.includes('429') && (displayContent.includes('usage_limit_reached') || displayContent.includes('usage limit'))
+    // Detect various quota/rate limit errors
+    const is429Error = displayContent.includes('429') && (
+        displayContent.includes('usage_limit_reached') ||
+        displayContent.includes('usage limit') ||
+        displayContent.includes('RESOURCE_EXHAUSTED') ||
+        displayContent.includes('rate limit') ||
+        displayContent.includes('Rate limit') ||
+        displayContent.includes('quota')
+    );
+
+    // Parse error details for quota card
+    const parseQuotaError = () => {
+        try {
+            // Try parsing JSON from error
+            const jsonMatch = displayContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const errData = JSON.parse(jsonMatch[0]);
+                return {
+                    message: errData.error?.message || errData.message || 'Kullanım sınırına ulaşıldı',
+                    resets_at: errData.error?.resets_at || errData.resets_at,
+                    model: errData.error?.model || errData.model
+                };
+            }
+        } catch { }
+        return { message: 'Kullanım sınırına ulaşıldı. Lütfen daha sonra tekrar deneyin.', resets_at: null, model: null };
+    };
+
+    const quotaDetails = is429Error ? parseQuotaError() : null;
 
     const contentNode = (
         <div className="flex flex-col gap-2">
             {is429Error ? (
-                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 max-w-md animate-in fade-in zoom-in duration-300">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 max-w-md animate-in fade-in zoom-in duration-300">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 rounded-full bg-red-500/20">
                             <AlertCircle className="w-5 h-5" />
                         </div>
-                        <div className="font-bold text-sm uppercase tracking-tight">Kullanım Sınırı Aşıldı</div>
+                        <div>
+                            <div className="font-bold text-sm uppercase tracking-tight">Kota Sınırı Aşıldı</div>
+                            {quotaDetails?.model && (
+                                <div className="text-xs opacity-70 mt-0.5">{quotaDetails.model}</div>
+                            )}
+                        </div>
                     </div>
                     <p className="text-sm opacity-90 leading-relaxed mb-3">
-                        ChatGPT kullanım limitinize ulaştınız. Lütfen sıfırlanma süresini bekleyin.
+                        {quotaDetails?.message || 'Kullanım limitinize ulaştınız. Lütfen sıfırlanma süresini bekleyin veya farklı bir model deneyin.'}
                     </p>
-                    {displayContent.includes('resets_at') && (
+                    {quotaDetails?.resets_at && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-xs font-medium">
                             <Clock className="w-3.5 h-3.5" />
-                            <span>Sıfırlanma: {new Date(JSON.parse(displayContent.split('HTTP 429: ')[1])?.error?.resets_at * 1000).toLocaleString()}</span>
+                            <span>Sıfırlanma: {new Date(quotaDetails.resets_at * 1000).toLocaleString()}</span>
                         </div>
                     )}
+                    <div className="mt-3 flex gap-2">
+                        <button
+                            className="px-3 py-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                            onClick={() => window.electron.openExternal('https://ai.google.dev/pricing')}
+                        >
+                            Kotaları İncele
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <>

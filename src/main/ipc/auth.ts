@@ -1,16 +1,17 @@
 import { ipcMain } from 'electron'
-import { AuthService } from '../services/auth.service'
+import { ProxyService } from '../services/proxy.service'
 import { CopilotService } from '../services/copilot.service'
 import { SettingsService } from '../services/settings.service'
 
-export function registerAuthIpc(authService: AuthService, settingsService: SettingsService, copilotService: CopilotService) {
+export function registerAuthIpc(proxyService: ProxyService, settingsService: SettingsService, copilotService: CopilotService) {
     ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'profile') => {
-        return await authService.startLoginFlow(appId)
+        // startLoginFlow was essentially requestGitHubDeviceCode
+        return await proxyService.requestGitHubDeviceCode(appId)
     })
 
     ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile') => {
         try {
-            const token = await authService.pollForToken(deviceCode, interval, appId)
+            const token = await proxyService.pollForGitHubToken(deviceCode, interval, appId)
             const settings = settingsService.getSettings()
 
             if (appId === 'copilot') {
@@ -29,7 +30,6 @@ export function registerAuthIpc(authService: AuthService, settingsService: Setti
                         token: token
                     }
                 })
-                // We do NOT set copilot token here as Orbit ID doesn't work for chat
             }
 
             return { success: true, token }

@@ -19,11 +19,13 @@ export interface ElectronAPI {
     anthropicLogin: () => Promise<{ url: string; state: string }>
     codexLogin: () => Promise<{ url: string; state: string }>
     checkAuthStatus: () => Promise<any>
+    deleteProxyAuthFile: (name: string) => Promise<any>
     getQuota: () => Promise<any>
     getCopilotQuota: () => Promise<any>
     getCodexUsage: () => Promise<any>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
+    openExternal: (url: string) => Promise<any>
 
     // Ollama chat
     getModels: () => Promise<any[]>

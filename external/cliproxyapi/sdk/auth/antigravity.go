@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	antigravityClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-	antigravityClientSecret = "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"
+	antigravityClientID     = "225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com"
+	antigravityClientSecret = "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"
 	antigravityCallbackPort = 51121
 )
 

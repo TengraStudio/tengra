@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { cn, generateId } from '@/lib/utils'
-import { Sidebar } from './components/Sidebar'
 import { MessageBubble } from './components/MessageBubble'
 import { SSHManager } from './components/SSHManager'
+import { Sidebar } from './components/Sidebar'
 import { SettingsPage } from './pages/SettingsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 
@@ -16,8 +16,8 @@ import {
     Star, Download, Box, X
 } from 'lucide-react'
 import { SlashMenu, SlashCommand } from './components/SlashMenu'
-import { getSystemPrompt } from './lib/identity'
 import { useTranslation, Language } from './i18n'
+import { Modal } from './components/ui/modal'
 
 import {
     Message,
@@ -29,12 +29,12 @@ import {
     Folder,
     Project
 } from './types'
+import logo from './assets/zenith_logo.png'
 
 
 export default function App() {
     const isWeb = !window.electron
     const [chats, setChats] = useState<Chat[]>([])
-    const [folders, setFolders] = useState<Folder[]>([])
     const [projects, setProjects] = useState<any[]>([])
     const [selectedProject, setSelectedProject] = useState<Project | null>(null)
     const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -42,7 +42,19 @@ export default function App() {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [currentChatId, setCurrentChatId] = useState<string | null>(null)
     const [models, setModels] = useState<OllamaModel[]>([])
-    const [selectedModel, setSelectedModel] = useState<string>('')
+    const [selectedModel, setSelectedModel] = useState<string>('gpt-4o')
+    const [selectedProvider, setSelectedProvider] = useState<'ollama' | 'openai' | 'gemini' | 'claude' | 'antigravity' | 'copilot' | 'groq' | 'custom' | 'anthropic'>('copilot')
+    const [sessionTokens] = useState({ prompt: 0, completion: 0, total: 0 })
+
+    // Inference helper
+    const inferProvider = (modelId: string): any => {
+        const lower = modelId.toLowerCase();
+        if (lower.includes('codex') || lower.includes('gpt-5') || lower.startsWith('github-') || lower.startsWith('copilot-')) return 'copilot';
+        if (lower.startsWith('gemini-') || lower.startsWith('antigravity-')) return 'antigravity';
+        if (lower.startsWith('claude-')) return 'claude';
+        if (lower.includes('llama') || lower.includes('mistral') || lower.includes('qwen')) return 'ollama';
+        return 'openai';
+    }
     const [language, setLanguage] = useState<Language>('tr')
     const { t } = useTranslation(language)
     const [proxyModels, setProxyModels] = useState<any[]>([])
@@ -51,7 +63,6 @@ export default function App() {
     const [messageQueue, setMessageQueue] = useState<string[]>([])
     const [showSSHManager, setShowSSHManager] = useState(false)
     const [currentView, setCurrentView] = useState<'chat' | 'projects' | 'settings' | 'mcp'>('chat')
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [showFileMenu, setShowFileMenu] = useState(false)
     const [input, setInput] = useState('')
     const [toasts, setToasts] = useState<Toast[]>([])
@@ -59,19 +70,28 @@ export default function App() {
     const [appSettings, setAppSettings] = useState<any>(null)
     const [settingsCategory, setSettingsCategory] = useState<'accounts' | 'general' | 'appearance' | 'models' | 'statistics' | 'gallery' | 'personas' | 'mcp-servers' | 'mcp-marketplace'>('general')
     const [showCommandPalette, setShowCommandPalette] = useState(false)
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+    const [folders, setFolders] = useState<Folder[]>([])
+    const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
+    const isModelMenuOpenRef = useRef(false)
+    const [quotas, setQuotas] = useState<any>(null)
+    const [codexUsage, setCodexUsage] = useState<any>(null)
+    const [antigravityError, setAntigravityError] = useState<string | null>(null)
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
+    useEffect(() => {
+        isModelMenuOpenRef.current = isModelMenuOpen
+    }, [isModelMenuOpen])
     useEffect(() => {
         if (appSettings?.general?.language) {
             setLanguage(appSettings.general.language)
         }
     }, [appSettings?.general?.language])
-    const [sessionTokens] = useState({ prompt: 0, completion: 0, total: 0 })
-    const [_hyperparams, _setHyperparams] = useState({ temperature: 0.7, topP: 0.9, topK: 40, repeatPenalty: 1.1 })
-    const messagesEndRef = useRef<HTMLDivElement>(null)
-    const [selectedProvider, setSelectedProvider] = useState<'ollama' | 'openai' | 'gemini' | 'claude' | 'antigravity' | 'copilot'>('ollama')
+
     const [selectedPersona, setSelectedPersona] = useState<{ id: string, name: string, description: string, prompt: string } | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const [drafts, setDrafts] = useState<Record<string, string>>({})
     const prevChatIdRef = useRef<string | null>(null)
+    const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const currentChat = chats.find(c => c.id === currentChatId)
     const messages = currentChat?.messages || []
@@ -80,24 +100,30 @@ export default function App() {
     useEffect(() => {
         // Save previous chat draft
         if (prevChatIdRef.current && prevChatIdRef.current !== currentChatId) {
-            const oldId = prevChatIdRef.current
-            setDrafts(prev => ({ ...prev, [oldId]: input }))
+            // Draft logic removed as drafts state is removed
         }
 
         // Load new chat draft
         if (currentChatId) {
-            setInput(drafts[currentChatId] || '')
+            // setInput('')
         } else {
             setInput('')
         }
 
         prevChatIdRef.current = currentChatId
-    }, [currentChatId]) // Removed drafts and input to prevent resetting while typing
+    }, [currentChatId])
 
     // Scroll Management (Automatic)
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages.length, streamingContent])
+
+    const loadFolders = async () => {
+        try {
+            const data = await window.electron.db.getFolders()
+            setFolders(data || [])
+        } catch (e) { console.error('Failed to load folders:', e) }
+    }
 
     const displayMessages = useMemo(() => {
         const merged: Message[] = []
@@ -149,7 +175,7 @@ export default function App() {
         displayMessages.length === 0 || displayMessages[displayMessages.length - 1].role === 'user'
     )
 
-    const inferProviderFromModel = (model: string): 'ollama' | 'openai' | 'gemini' | 'claude' | 'antigravity' | 'copilot' => {
+    const inferProviderFromModel = (model: string): any => {
         const name = model.toLowerCase()
         if (name.startsWith('copilot-') || name.includes('codex')) return 'copilot'
         if (name.startsWith('gpt-') || name.startsWith('o1-') || name.includes('openai')) return 'openai'
@@ -179,7 +205,7 @@ export default function App() {
 
     useEffect(() => {
         if (!selectedModel) return
-        const inferred = inferProviderFromModel(selectedModel)
+        // inferProviderFromModel(selectedModel) logic merged below
 
         // Strict consistency check to avoid overriding user choice:
         // Only switch if the model name explicitly mandates a specific provider 
@@ -242,6 +268,39 @@ export default function App() {
     useEffect(() => {
         loadAppSettings()
     }, [])
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            // Only check if user is actually connected
+            if (!appSettings?.antigravity?.connected) {
+                return
+            }
+
+            try {
+                // 1. Check Quota
+                const quota = await window.electron.getQuota()
+                if (quota?.authExpired) {
+                    console.warn('[App] Antigravity error in quota:', quota)
+                    setAntigravityError('Google Antigravity oturumunuzun süresi doldu.')
+                    setIsAuthModalOpen(true)
+                    return
+                }
+
+                // 2. Check Models (alternative error source)
+                const modelsResp: any = await window.electron.getModels()
+                if (modelsResp?.antigravityError) {
+                    console.warn('[App] Antigravity error in models:', modelsResp.antigravityError)
+                    setAntigravityError(modelsResp.antigravityError)
+                    setIsAuthModalOpen(true)
+                }
+            } catch (e: any) {
+                console.error('[App] Global auth check failed:', e.message)
+            }
+        }
+        checkAuth()
+        const timer = setInterval(checkAuth, 30000)
+        return () => clearInterval(timer)
+    }, [appSettings?.antigravity?.connected])
 
     useEffect(() => {
         if (appSettings?.general?.fontSize) {
@@ -399,8 +458,21 @@ export default function App() {
         window.addEventListener('focus', handleFocus)
         document.addEventListener('visibilitychange', handleVisibility)
 
+        const loadQuotas = async () => {
+            try {
+                const q = await window.electron.getQuota()
+                if (q) setQuotas(q)
+                const u = await window.electron.getCodexUsage()
+                if (u) setCodexUsage(u)
+            } catch (e) { }
+        }
+
+        loadQuotas()
+        const quotaInterval = setInterval(loadQuotas, 150000) // Check quotas every 2.5 minutes
+
         return () => {
             timeouts.forEach(clearTimeout)
+            clearInterval(quotaInterval)
             window.removeEventListener('focus', handleFocus)
             document.removeEventListener('visibilitychange', handleVisibility)
         }
@@ -459,39 +531,6 @@ export default function App() {
         } catch (error) { console.error('Failed to load chats:', error) }
     }
 
-    const handleSearch = useCallback(async (query: string) => {
-        if (!query.trim()) {
-            loadChats()
-            return
-        }
-        try {
-            const results = await window.electron.db.searchChats(query)
-            const uiChats: Chat[] = results.map((c: any) => ({
-                ...c,
-                messages: [],
-                createdAt: new Date(c.createdAt),
-                updatedAt: new Date(c.updatedAt)
-            }))
-            setChats(uiChats)
-        } catch (error) { console.error('Failed to search chats:', error) }
-    }, [])
-
-    const deleteChat = async (id: string) => {
-        if (!confirm('Bu sohbeti silmek istediğinize emin misiniz?')) return
-        try {
-            await window.electron.db.deleteChat(id)
-            setChats(prev => prev.filter(c => c.id !== id))
-            if (currentChatId === id) setCurrentChatId(null)
-        } catch (error) { console.error('Failed to delete chat:', error) }
-    }
-
-    const toggleChatPin = async (id: string, isPinned: boolean) => {
-        try {
-            await window.electron.db.updateChat(id, { isPinned })
-            loadChats()
-        } catch (error) { console.error('Failed to pin chat:', error) }
-    }
-
     const toggleChatFavorite = async (id: string, isFavorite: boolean) => {
         try {
             await window.electron.db.updateChat(id, { isFavorite })
@@ -499,53 +538,31 @@ export default function App() {
         } catch (error) { console.error('Failed to favorite chat:', error) }
     }
 
-    const loadFolders = async () => {
+    const handleArchiveChat = async (id: string, isArchived: boolean) => {
         try {
-            const data = await window.electron.db.getFolders()
-            setFolders(data || [])
-        } catch (e) { console.error('Failed to load folders:', e) }
-    }
-
-    const handleCreateFolder = async (name: string) => {
-        try {
-            await window.electron.db.createFolder(name)
-            loadFolders()
-        } catch (e) { console.error(e) }
-    }
-
-    const handleDeleteFolder = async (id: string) => {
-        if (!confirm('Klasörü silmek istediğinize emin misiniz? Sohbetler silinmeyecek, ana listeye taşınacak.')) return
-        try {
-            await window.electron.db.deleteFolder(id)
-            loadFolders()
+            await window.electron.db.updateChat(id, { isArchived })
             loadChats()
-        } catch (e) { console.error(e) }
-    }
-
-    const handleUpdateFolder = async (id: string, name: string) => {
-        try {
-            await window.electron.db.updateFolder(id, name)
-            loadFolders()
-        } catch (e) { console.error(e) }
-    }
-
-    const handleMoveChatToFolder = async (chatId: string, folderId: string | null) => {
-        try {
-            await window.electron.db.updateChat(chatId, { folderId })
-            loadChats()
-        } catch (e) { console.error(e) }
+        } catch (error) { console.error('Failed to archive chat:', error) }
     }
 
     const loadModels = async (attempt: number = 0) => {
+        if (isModelMenuOpenRef.current) {
+            console.log('Skipping model refresh (menu open)')
+            return
+        }
         try {
             const settings = await window.electron.getSettings()
             const modelList = await window.electron.getModels()
             const normalizedModels = Array.isArray(modelList) ? modelList : (modelList as any)?.models || []
             const finalModels = [...normalizedModels]
-            if (settings.openai?.apiKey) {
-                finalModels.push(...[{ name: 'gpt-3.5-turbo' }, { name: 'gpt-4' }, { name: 'gpt-4o' }, { name: 'gpt-4o-mini' }].map(m => ({ ...m, details: { parameter_size: '?' } } as any)))
+            // Only update if changed prevents flickering
+            if (!isModelMenuOpenRef.current) {
+                setModels(prev => {
+                    const isEq = prev.length === finalModels.length && prev.every((m, i) => m.name === finalModels[i].name)
+                    return isEq ? prev : finalModels
+                })
             }
-            setModels(finalModels)
+
             if (!selectedModel) {
                 const preferred = settings?.general?.lastModel || settings?.general?.defaultModel
                 if (preferred) {
@@ -559,7 +576,18 @@ export default function App() {
             try {
                 const pRes: any = await window.electron.getProxyModels()
                 const pModels = Array.isArray(pRes) ? pRes : (pRes?.data || pRes?.models || [])
-                setProxyModels(pModels)
+                console.group('[App] Model Summary')
+                console.log('Total Proxy Models:', pModels.length)
+                console.log('IDs:', pModels.map((m: any) => m.id || m.name).sort())
+                console.groupEnd()
+
+                if (!isModelMenuOpenRef.current) {
+                    setProxyModels(prev => {
+                        const isEq = JSON.stringify(prev) === JSON.stringify(pModels)
+                        return isEq ? prev : pModels
+                    })
+                }
+
                 if (pModels.length > 0) hasProxyModels = true
             } catch (e) { console.error('Failed to load proxy models:', e) }
             if (attempt < 3 && (normalizedModels.length === 0 || !hasProxyModels)) {
@@ -613,7 +641,7 @@ export default function App() {
         if (appSettings?.general?.defaultModel) {
             const def = appSettings.general.defaultModel
             setSelectedModel(def)
-            setSelectedProvider(inferProviderFromModel(def))
+            setSelectedProvider(inferProvider(def))
         }
     }, [appSettings])
 
@@ -699,37 +727,34 @@ export default function App() {
             timestamp: new Date(timestamp)
         }
 
-    const formatChatError = (err: unknown) => {
-        const raw = err instanceof Error ? err.message : String(err); const lower = raw.toLowerCase()
-        if (lower.includes('und_err_headers_timeout') || lower.includes('headers timeout')) return 'Sunucudan yanit gec geliyor. Lutfen tekrar deneyin.'
-        if (lower.includes('econnrefused')) return 'Proxy baglantisi reddedildi. Proxy calisiyor mu?'
-        if (lower.includes('openai api key is not set')) return 'API anahtari eksik.'
-        if (lower.includes('invalid api key')) return 'API anahtari gecersiz.'
-        if (lower.includes('instructions are required')) return 'Model yanit uretmedi. Tekrar deneyin.'
-        if (lower.includes('access denied')) return 'Erisim reddedildi.'
-        if (lower.includes('fetch failed')) return 'Ag hatasi: sunucuya ulasilamadi.'
-        if (lower.includes('429')) return raw
-        return raw
-    }
+        const formatChatError = (err: unknown) => {
+            const raw = err instanceof Error ? err.message : String(err); const lower = raw.toLowerCase()
+            if (lower.includes('und_err_headers_timeout') || lower.includes('headers timeout')) return 'Sunucudan yanit gec geliyor. Lutfen tekrar deneyin.'
+            if (lower.includes('econnrefused')) return 'Proxy baglantisi reddedildi. Proxy calisiyor mu?'
+            if (lower.includes('openai api key is not set')) return 'API anahtari eksik.'
+            if (lower.includes('invalid api key')) return 'API anahtari gecersiz.'
+            if (lower.includes('instructions are required')) return 'Model yanit uretmedi. Tekrar deneyin.'
+            if (lower.includes('access denied')) return 'Erisim reddedildi.'
+            if (lower.includes('fetch failed')) return 'Ag hatasi: sunucuya ulasilamadi.'
+            if (lower.includes('429')) return raw
+            return raw
+        }
 
-    async function generateResponse(chatId: string, model: string, history: any[], provider: string) {
-        setIsLoading(true); setStreamingContent('')
-        try {
-            console.log('[Renderer] BEFORE getToolDefinitions')
-            // Temporarily bypass tools to rule out hang
-            const tools: any[] = [] // await window.electron.getToolDefinitions()
-            console.log('[Renderer] Tools bypassed')
+        async function generateResponse(chatId: string) {
+            setIsLoading(true); setStreamingContent('')
+            try {
+                console.log('[Renderer] BEFORE getToolDefinitions')
+                // Temporarily bypass tools to rule out hang
+                const tools: any[] = [] // await window.electron.getToolDefinitions()
+                console.log('[Renderer] Tools bypassed')
 
-            const dbRefChat = chats.find(c => c.id === chatId)
-            const chatMessages = [...(dbRefChat?.messages || []), userMessage].map(m => ({
-                role: m.role,
-                content: m.content,
-                images: m.images
-            }))
+                const dbRefChat = chats.find(c => c.id === chatId)
+                const smartContext = getSmartContext([...(dbRefChat?.messages || []), userMessage])
+                const chatMessages = smartContext
 
-            const systemMessage = {
-                role: 'system',
-                content: `You are Orbit, an intelligent and capable OS Assistant with full access to the local system.
+                const systemMessage = {
+                    role: 'system',
+                    content: (selectedPersona?.prompt || `You are Orbit, an intelligent and capable OS Assistant with full access to the local system.`) + `
 
 CAPABILITIES:
 - File System: Read/Write/List/Search files (recursive) and calculate hashes.
@@ -752,117 +777,212 @@ TOOL USAGE PROTOCOL:
 - Use tools ONLY when necessary to fulfill a request.
 - If a task is complex, briefly outline your plan before executing tools.
 - When running commands, provide a brief explanation of what the command does.`
-            }
+                }
 
-            const allMessages = [systemMessage, ...chatMessages]
+                const allMessages = [systemMessage, ...chatMessages]
 
-            let fullContent = ''
-            const streamListener = (chunk: string) => {
-                fullContent += chunk
-                setStreamingContent(fullContent)
-            }
-            window.electron.onStreamChunk(streamListener)
+                let fullContent = ''
+                const streamListener = (chunk: string) => {
+                    fullContent += chunk
+                    setStreamingContent(fullContent)
+                }
+                window.electron.onStreamChunk(streamListener)
 
-            // Call Appropriate Backend
-            console.log('Starting chat with:', selectedModel)
-            let response;
+                // Call Appropriate Backend
+                console.log('Starting chat with:', selectedModel)
+                let response;
 
-            // window.alert(`Debug: Calling service for ${selectedModel}`)
+                // window.alert(`Debug: Calling service for ${selectedModel}`)
 
-            if (selectedModel.startsWith('gpt-') ||
-                selectedModel.startsWith('copilot-') ||
-                selectedModel.startsWith('claude-') ||
-                selectedModel.startsWith('gemini-') ||
-                selectedModel.startsWith('o1-') ||
-                selectedModel.startsWith('grok-')) {
-                console.log('[Renderer] Calling window.electron.chatOpenAI...')
-                response = await window.electron.chatOpenAI(allMessages, selectedModel)
-            } else {
-                console.log('[Renderer] Falling back to chatStream (Ollama) for model:', selectedModel)
-                response = await window.electron.chatStream(allMessages, selectedModel, tools)
-            }
+                // Route based on provider
+                const currentProvider = selectedProvider || inferProvider(selectedModel)
+                if (currentProvider === 'ollama') {
+                    console.log('[Renderer] Routing to Local AI (Ollama) for model:', selectedModel)
+                    response = await window.electron.chatStream(allMessages, selectedModel, tools)
+                } else {
+                    console.log('[Renderer] Routing via chatOpenAI:', selectedModel, '(Provider:', currentProvider, ')')
+                    response = await window.electron.chatOpenAI(allMessages, selectedModel, tools, currentProvider)
+                }
 
-            // window.alert(`Debug: Got response: ${JSON.stringify(response).slice(0, 100)}`)
-            console.log('Chat finished, response:', response)
+                // window.alert(`Debug: Got response: ${JSON.stringify(response).slice(0, 100)}`)
+                console.log('Chat finished, response:', response)
 
-            // Explicitly check for IPC error response
-            if (response && response.error) {
-                throw new Error(response.error)
-            }
+                // Explicitly check for IPC error response
+                if (response && response.error) {
+                    throw new Error(response.error)
+                }
 
-            // Remove listener
-            window.electron.removeStreamChunkListener(streamListener) // Fix: Pass the same listener reference
+                // Remove listener
+                window.electron.removeStreamChunkListener()
 
-            let finalContent = response.content || fullContent || ''
+                let finalContent = response.content || fullContent || ''
 
-            // Parse tool calls
-            const toolCalls = (response.tool_calls || []).map((tc: any) => ({
-                id: tc.id || generateId(),
-                name: tc.function.name,
-                arguments: typeof tc.function.arguments === 'string'
-                    ? JSON.parse(tc.function.arguments)
-                    : tc.function.arguments
-            }))
-            const results: ToolResult[] = []; let followupRes = res; let followupMessages: any[] | null = null
-            if (calls.length > 0) {
-                const toolMessages: any[] = []
-                for (const call of calls) {
-                    try {
-                        const r = await window.electron.executeTools(call.name, call.arguments, call.id)
-                        const tr: ToolResult = { toolCallId: call.id, name: call.name, result: r, isImage: call.name === 'capture_screenshot' && r.image }
-                        results.push(tr); toolMessages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(r) })
-                    } catch (e) {
-                        const err = { error: String(e) }; results.push({ toolCallId: call.id, name: call.name, result: err })
-                        toolMessages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(err) })
+                // Parse tool calls
+                const toolCalls = (response.tool_calls || []).map((tc: any) => ({
+                    id: tc.id || generateId(),
+                    name: tc.function.name,
+                    arguments: typeof tc.function.arguments === 'string'
+                        ? JSON.parse(tc.function.arguments)
+                        : tc.function.arguments
+                }))
+
+                // Create assistant message with tool calls
+                const assistantId = generateId()
+                const assistantTs = Date.now()
+                const assistantMsg: Message = {
+                    id: assistantId,
+                    role: 'assistant',
+                    content: finalContent,
+                    timestamp: new Date(assistantTs),
+                    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+                    toolResults: [],
+                    provider: selectedProvider,
+                    model: selectedModel
+                }
+
+                // Add assistant message to UI
+                setChats(prev => prev.map(c => {
+                    if (c.id === chatId) {
+                        let title = c.title
+                        // Initial title from first response (fallback)
+                        if (c.messages.length <= 1 && assistantMsg.content) {
+                            title = assistantMsg.content.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || 'Yeni Sohbet'
+                        }
+                        return { ...c, title, messages: [...c.messages, assistantMsg] }
                     }
-                    setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: c.messages.map(m => m.id === assistantId ? { ...m, toolResults: [...results] } : m) } : c))
-                }
-                if (toolMessages.length > 0) {
-                    const assistantToolMessage = { role: 'assistant', content: null, tool_calls: rawToolCalls }
-                    followupMessages = [...all, assistantToolMessage, ...toolMessages]
-                    followupRes = await window.electron.chatOpenAI(followupMessages, model, tools, provider)
-                }
-            }
-            await window.electron.db.addMessage({ id: assistantId, chatId, role: 'assistant', content: assistantMsg.content, timestamp: assistantTs, toolCalls: calls.length > 0 ? JSON.stringify(calls) : undefined, toolResults: results.length > 0 ? JSON.stringify(results) : undefined, completionTokens, provider, model })
-            if (calls.length > 0) {
-                let followReasoning = typeof followupRes?.reasoning_content === 'string' ? followupRes.reasoning_content : ''
-                let followContent = (followupRes?.content || '').trim()
-                if (!followContent && followupMessages) {
-                    try {
-                        const finalRes = await window.electron.chatOpenAI([...followupMessages, { role: 'user', content: 'Final response please.' }], model, [], provider)
-                        followContent = finalRes?.content || ''; if (!followReasoning) followReasoning = finalRes?.reasoning_content || ''
-                    } catch (e) { console.error(e) }
-                }
-                const followCombined = followReasoning ? `<think>${followReasoning}</think>\n\n${followContent}`.trim() : followContent
-                if (followCombined) {
-                    setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: c.messages.map(m => m.id === assistantId ? { ...m, content: followCombined } : m) } : c))
-                    await window.electron.db.updateMessage(assistantId, { content: followCombined })
-                }
-            }
-        } catch (e) {
-            const errText = formatChatError(e); const err: Message = { id: generateId(), role: 'assistant', content: `Hata: ${errText}`, timestamp: new Date() }
-            setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, err] } : c))
-        } finally { setIsLoading(false); setStreamingContent('') }
-    }
+                    return c
+                }))
 
-    async function sendMessage(content: string, images?: string[]) {
-        if (!content.trim() && (!images || images.length === 0)) return
-        if (!selectedModel) return
-        if (isLoading) { if (!images || images.length === 0) setMessageQueue(prev => [...prev, content]); return }
-        let chatId = currentChatId
-        if (!chatId) {
-            chatId = generateId(); const ts = Date.now(); const cdb = { id: chatId, title: content.slice(0, 50), model: selectedModel, backend: selectedProvider, createdAt: ts, updatedAt: ts }
-            await window.electron.db.createChat(cdb); setChats(prev => [{ ...cdb, messages: [], createdAt: new Date(ts), updatedAt: new Date(ts) }, ...prev]); setCurrentChatId(chatId)
+                // Smart title generation after 3 messages (2 exchanges)
+                // Only if title is still default or a truncated user message
+                const currentChat = chats.find(c => c.id === chatId)
+                const messageCount = (currentChat?.messages.length || 0) + 1 // +1 for the new assistant message
+                const isDefaultTitle = !currentChat?.title ||
+                    currentChat.title === 'Yeni Sohbet' ||
+                    currentChat.title.length <= 50
+
+                if (messageCount === 3 && isDefaultTitle) {
+                    // Generate title in background (non-blocking)
+                    (async () => {
+                        try {
+                            const summaryMessages = [
+                                {
+                                    role: 'system',
+                                    content: 'Generate a short, descriptive title (max 6 words) for this conversation. Return ONLY the title, no quotes or extra text. Use the same language as the conversation.'
+                                },
+                                ...([userMessage, assistantMsg].map(m => ({ role: m.role, content: m.content?.slice(0, 500) || '' })))
+                            ]
+
+                            const titleRes = await window.electron.chatOpenAI(summaryMessages, selectedModel, [], selectedProvider)
+                            const generatedTitle = titleRes?.content?.replace(/[#*`"']/g, '').trim().slice(0, 60)
+
+                            if (generatedTitle && generatedTitle.length > 0) {
+                                setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: generatedTitle } : c))
+                                await window.electron.db.updateChat(chatId, { title: generatedTitle })
+                            }
+                        } catch (e) {
+                            console.error('[App] Failed to generate smart title:', e)
+                        }
+                    })()
+                }
+
+                // Execute tool calls if any
+                const results: ToolResult[] = []
+                let followupRes = response
+                let followupMessages: any[] | null = null
+
+                if (toolCalls.length > 0) {
+                    const toolMessages: any[] = []
+                    for (const call of toolCalls) {
+                        try {
+                            const r = await window.electron.executeTools(call.name, call.arguments, call.id)
+                            const tr: ToolResult = { toolCallId: call.id, name: call.name, result: r, isImage: call.name === 'capture_screenshot' && r.image }
+                            results.push(tr)
+                            toolMessages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(r) })
+                        } catch (e) {
+                            const err = { error: String(e) }
+                            results.push({ toolCallId: call.id, name: call.name, result: err })
+                            toolMessages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(err) })
+                        }
+                        setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: c.messages.map(m => m.id === assistantId ? { ...m, toolResults: [...results] } : m) } : c))
+                    }
+                    if (toolMessages.length > 0) {
+                        const rawToolCalls = response.tool_calls || []
+                        const assistantToolMessage = { role: 'assistant', content: null, tool_calls: rawToolCalls }
+                        followupMessages = [...allMessages, assistantToolMessage, ...toolMessages]
+                        followupRes = await window.electron.chatOpenAI(followupMessages, selectedModel, tools, selectedProvider)
+                    }
+                }
+
+                // Save to DB
+                const completionTokens = typeof response?.completionTokens === 'number' ? response.completionTokens : undefined
+                await window.electron.db.addMessage({
+                    id: assistantId,
+                    chatId,
+                    role: 'assistant',
+                    content: assistantMsg.content,
+                    timestamp: assistantTs,
+                    toolCalls: toolCalls.length > 0 ? JSON.stringify(toolCalls) : undefined,
+                    toolResults: results.length > 0 ? JSON.stringify(results) : undefined,
+                    completionTokens,
+                    provider: selectedProvider,
+                    model: selectedModel
+                })
+
+                // Handle followup response after tool execution
+                if (toolCalls.length > 0) {
+                    let followReasoning = typeof followupRes?.reasoning_content === 'string' ? followupRes.reasoning_content : ''
+                    let followContent = (followupRes?.content || '').trim()
+                    if (!followContent && followupMessages) {
+                        try {
+                            const finalRes = await window.electron.chatOpenAI([...followupMessages, { role: 'user', content: 'Final response please.' }], selectedModel, [], selectedProvider)
+                            followContent = finalRes?.content || ''
+                            if (!followReasoning) followReasoning = finalRes?.reasoning_content || ''
+                        } catch (e) { console.error(e) }
+                    }
+                    const followCombined = followReasoning ? `<think>${followReasoning}</think>\n\n${followContent}`.trim() : followContent
+                    if (followCombined) {
+                        setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: c.messages.map(m => m.id === assistantId ? { ...m, content: followCombined } : m) } : c))
+                        await window.electron.db.updateMessage(assistantId, { content: followCombined })
+                    }
+                }
+            } catch (e) {
+                const errText = formatChatError(e)
+                const errMsg: Message = { id: generateId(), role: 'assistant', content: `Hata: ${errText}`, timestamp: new Date() }
+                setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, errMsg] } : c))
+            } finally {
+                setIsLoading(false)
+                setStreamingContent('')
+            }
         }
-        const ts = Date.now(); const userMsg: Message = { id: generateId(), role: 'user', content, images, timestamp: new Date(ts), provider: selectedProvider, model: selectedModel }
-        await window.electron.db.addMessage({ ...userMsg, chatId, timestamp: ts, toolCalls: null, toolResults: null, provider: selectedProvider, model: selectedModel })
-        setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, userMsg], title: c.messages.length === 0 ? content.slice(0, 50) : c.title } : c))
-        const refChat = chats.find(c => c.id === chatId); const allMessages = [...(refChat?.messages || []), userMsg]
-        const history = getSmartContext(allMessages); await generateResponse(chatId, selectedModel, history, selectedProvider)
+
+        // Add user message to UI and DB
+        try {
+            await window.electron.db.addMessage({
+                ...userMessage,
+                chatId: chatId!,
+                timestamp,
+                toolCalls: null,
+                toolResults: null,
+                provider: selectedProvider,
+                model: selectedModel
+            })
+            setChats(prev => prev.map(c => c.id === chatId ? {
+                ...c,
+                messages: [...c.messages, userMessage],
+                title: c.messages.length === 0 ? content.slice(0, 50) : c.title
+            } : c))
+
+            // Generate response
+            await generateResponse(chatId!)
+        } catch (error) {
+            console.error('Failed to send message:', error)
+        }
     }
 
     const getSmartContext = (messages: Message[]) => {
-        const pinned = messages.filter(m => m.isPinned); const others = messages.filter(m => !m.isPinned)
+        const pinned = messages.filter(m => m.isPinned)
+        const others = messages.filter(m => !m.isPinned)
         const contextLimit = appSettings?.general?.contextMessageLimit ?? 50
         const recent = others.slice(-Math.max(0, contextLimit - pinned.length))
         const combined = [...pinned, ...recent].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
@@ -873,7 +993,8 @@ TOOL USAGE PROTOCOL:
     const handleExportChat = async () => {
         if (!currentChatId) return
         try {
-            const fullChat = await window.electron.db.getChat(currentChatId); const msgs = await window.electron.db.getMessages(currentChatId)
+            const fullChat = await window.electron.db.getChat(currentChatId)
+            const msgs = await window.electron.db.getMessages(currentChatId)
             let content = `# ${fullChat.title}\n\n_Exported on ${new Date().toLocaleString()}_\n\n---\n\n`
             content += msgs.map((m: any) => `### ${m.role.toUpperCase()} (${new Date(m.timestamp).toLocaleString()})\n\n${m.content}\n\n`).join('---\n\n')
             await window.electron.saveFile(content, `chat-export-${new Date().getTime()}.md`)
@@ -891,47 +1012,149 @@ TOOL USAGE PROTOCOL:
         { id: 'reset', label: 'Normal', icon: <Bot className="w-4 h-4" />, action: () => { setSelectedPersona(null); setToasts(prev => [...prev, { id: generateId(), message: `Normal mod`, type: 'info' }]) } }
     ]
 
+
+
+    const handleCreateFolder = async (name: string) => {
+        try {
+            await window.electron.db.createFolder(name)
+            loadFolders()
+        } catch (e) { console.error('Failed to create folder:', e) }
+    }
+
+    const handleDeleteFolder = async (id: string) => {
+        if (!confirm('Klasörü silmek istediğinize emin misiniz?')) return
+        try {
+            await window.electron.db.deleteFolder(id)
+            loadFolders()
+            loadChats()
+        } catch (e) { console.error(e) }
+    }
+
+    const handleUpdateFolder = async (id: string, name: string) => {
+        try {
+            await window.electron.db.updateFolder(id, name)
+            loadFolders()
+            loadChats()
+        } catch (e) { console.error(e) }
+    }
+
+    const handleMoveChatToFolder = async (chatId: string, folderId: string | null) => {
+        try {
+            await window.electron.db.updateChat(chatId, { folderId })
+            loadChats()
+        } catch (e) { console.error(e) }
+    }
+
     const handleDuplicateChat = async (id: string) => {
         const duplicated = await window.electron.db.duplicateChat(id)
         if (duplicated) { setChats([duplicated, ...chats]); setCurrentChatId(duplicated.id) }
     }
-
-            setChats(prev => prev.map(chat =>
-                chat.id === chatId
-                    ? { ...chat, messages: [...chat.messages, errorMessage] }
-                    : chat
-            ))
-        } finally {
-            setIsLoading(false)
-            setStreamingContent('')
-        }
 
     const handleUpdateChatTitle = async (id: string, title: string) => {
         await window.electron.db.updateChat(id, { title })
         setChats(chats.map(c => c.id === id ? { ...c, title } : c))
     }
 
+    const deleteChat = async (id: string) => {
+        if (!confirm('Bu sohbeti silmek istediğinize emin misiniz?')) return
+        try {
+            await window.electron.db.deleteChat(id)
+            setChats(prev => prev.filter(c => c.id !== id))
+            if (currentChatId === id) setCurrentChatId(null)
+        } catch (error) { console.error('Failed to delete chat:', error) }
+    }
+
+    const toggleChatPin = async (id: string, isPinned: boolean) => {
+        try {
+            await window.electron.db.updateChat(id, { isPinned })
+            loadChats()
+        } catch (error) { console.error('Failed to pin chat:', error) }
+    }
+
+    const handleSearch = useCallback(async (query: string) => {
+        if (!query.trim()) { loadChats(); return }
+        try {
+            const results = await window.electron.db.searchChats(query)
+            setChats(results || [])
+        } catch (error) { console.error('Search failed:', error) }
+    }, [])
+
+    const handleAntigravityLogout = async () => {
+        try {
+            const status = await window.electron.checkAuthStatus()
+            const files = status?.files || []
+            const targets = files.filter((f: any) =>
+                (f.provider || '').toLowerCase() === 'antigravity' ||
+                (f.name || '').toLowerCase().startsWith('antigravity-')
+            )
+
+            for (const t of targets) {
+                await window.electron.deleteProxyAuthFile(t.name)
+            }
+
+            if (appSettings) {
+                const updated = {
+                    ...appSettings,
+                    antigravity: { ...(appSettings.antigravity || {}), connected: false }
+                }
+                setAppSettings(updated)
+                await window.electron.saveSettings(updated)
+            }
+        } catch (e) {
+            console.error('[App] Antigravity logout failed:', e)
+        }
+    }
+
     return (
-        <div className="flex flex-col flex-1 relative z-10">
-            {/* Custom Titlebar / Top Bar */}
-            <header
-                className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none"
-                style={{ WebkitAppRegion: "drag" } as any}
-            >
-                <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
-                    <div className="flex items-center gap-2">
-                        <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
-                        <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
-                    </div>
-                    <button
-                        className={cn(
-                            "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300",
-                            isCompact ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-foreground"
-                        )}
-                        onClick={toggleCompact}
-                    >
-                        {isCompact ? "EX-PANSE" : "COMPACT"}
-                    </button>
+        <div className="flex bg-background text-foreground h-screen overflow-hidden selection:bg-primary/30 selection:text-primary-foreground font-sans">
+            <Sidebar
+                chats={chats}
+                currentChatId={currentChatId}
+                onSelectChat={setCurrentChatId}
+                onNewChat={createNewChat}
+                onDeleteChat={deleteChat}
+                onDuplicateChat={handleDuplicateChat}
+                onArchiveChat={handleArchiveChat}
+                onUpdateChatTitle={handleUpdateChatTitle}
+                onTogglePin={toggleChatPin}
+                onToggleFavorite={toggleChatFavorite}
+                onOpenSettings={() => setCurrentView('settings')}
+                isCollapsed={isSidebarCollapsed}
+                toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                currentView={currentView}
+                onChangeView={(view: any) => setCurrentView(view)}
+                onSearch={handleSearch}
+                activeProject={selectedProject}
+                settingsCategory={settingsCategory}
+                onSelectSettingsCategory={setSettingsCategory as any}
+                folders={folders}
+                onCreateFolder={handleCreateFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onUpdateFolder={handleUpdateFolder}
+                onMoveChat={handleMoveChatToFolder}
+                language={language}
+            />
+
+            <div className="flex flex-col flex-1 relative z-10">
+                {/* Custom Titlebar / Top Bar */}
+                <header
+                    className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none"
+                    style={{ WebkitAppRegion: "drag" } as any}
+                >
+                    <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" } as any}>
+                        <div className="flex items-center gap-2">
+                            <img src={logo} alt="Orbit" className="w-5 h-5 object-contain" />
+                            <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
+                        </div>
+                        <button
+                            className={cn(
+                                "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all duration-300",
+                                isCompact ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10 hover:text-foreground"
+                            )}
+                            onClick={toggleCompact}
+                        >
+                            {isCompact ? "EX-PANSE" : "COMPACT"}
+                        </button>
                     </div>
                     {sessionTokens.total > 0 && <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/30 border border-border/50 text-sm"><span className="text-muted-foreground/60">Tokens:</span><span className="text-foreground/80 font-mono">{sessionTokens.total.toLocaleString()}</span></div>}
                     {currentView === 'chat' && currentChatId && (
@@ -960,9 +1183,9 @@ TOOL USAGE PROTOCOL:
                                             </div>
                                         ) : (
                                             <div className="max-w-4xl mx-auto w-full p-4 sm:p-6 space-y-8 min-h-full flex flex-col pt-8 sm:pt-12">
-                                                {displayMessages.map((m, i) => <MessageBubble key={m.id} message={m} isLast={i === displayMessages.length - 1 && !streamingContent} isStreaming={isLoading && i === displayMessages.length - 1 && m.role === 'assistant'} language={language} />)}
+                                                {displayMessages.map((m, i) => <MessageBubble key={m.id} message={m} isLast={i === displayMessages.length - 1 && !streamingContent} isStreaming={isLoading && i === displayMessages.length - 1 && m.role === 'assistant'} language={language} backend={selectedProvider} />)}
                                                 {showTypingIndicator && <MessageBubble message={{ id: 'typing-indicator', role: 'assistant', content: '', timestamp: new Date(), provider: selectedProvider, model: selectedModel }} isStreaming isLast language={language} />}
-                                                {streamingContent && <MessageBubble message={{ id: 'streaming', role: 'assistant', content: streamingContent, timestamp: new Date() }} isStreaming isLast={true} language={language} />}
+                                                {streamingContent && <MessageBubble message={{ id: 'streaming', role: 'assistant', content: streamingContent, timestamp: new Date(), provider: selectedProvider, model: selectedModel }} isStreaming isLast={true} language={language} />}
                                                 <div ref={messagesEndRef} className="h-4" />
                                             </div>
                                         )}
@@ -973,7 +1196,21 @@ TOOL USAGE PROTOCOL:
                                             <SlashMenu isOpen={input.startsWith('/')} onClose={() => { }} query={input.slice(1)} onSelect={(cmd: any) => { cmd.action(); setInput('') }} commands={allCommands} />
                                             <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
                                             <div className="relative flex items-center p-2 pl-3 pb-3 gap-2">
-                                                <ModelSelector selectedProvider={selectedProvider} selectedModel={selectedModel} onSelect={(provider: any, model) => { setSelectedProvider(provider as any); setSelectedModel(model); persistLastSelection(provider, model) }} settings={appSettings} localModels={models} proxyModels={proxyModels} />
+                                                <ModelSelector
+                                                    selectedProvider={selectedProvider}
+                                                    selectedModel={selectedModel}
+                                                    onSelect={(p, m) => {
+                                                        setSelectedProvider(p as any)
+                                                        setSelectedModel(m)
+                                                        persistLastSelection(p, m)
+                                                    }}
+                                                    settings={appSettings}
+                                                    localModels={models}
+                                                    proxyModels={proxyModels}
+                                                    quotas={quotas}
+                                                    codexUsage={codexUsage}
+                                                    onOpenChange={setIsModelMenuOpen}
+                                                />
                                                 <button onClick={() => setShowFileMenu(!showFileMenu)} className="text-muted-foreground hover:text-primary transition-all p-2 hover:bg-primary/10 rounded-xl group/btn"><Paperclip className="w-5 h-5" /></button>
                                                 <AnimatePresence>{showFileMenu && <motion.div initial={{ opacity: 0, scale: 0.9, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 10 }} className="absolute bottom-full left-4 mb-4 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 min-w-[180px]"><button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-all" onClick={() => { fileInputRef.current?.click(); setShowFileMenu(false) }}><ImageIcon className="w-4 h-4 text-emerald-400" />{t('attachments.image')}</button><button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-all" onClick={() => { fileInputRef.current?.click(); setShowFileMenu(false) }}><FileText className="w-4 h-4 text-blue-400" />{t('attachments.document')}</button></motion.div>}</AnimatePresence>
                                             </div>
@@ -997,5 +1234,39 @@ TOOL USAGE PROTOCOL:
                 <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">{toasts.map(t => <div key={t.id} className={cn("px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center gap-3 min-w-[240px]", t.type === 'success' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : t.type === 'error' ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-zinc-800/80 border-white/10 text-white")}><span className="text-lg">{t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : 'ℹ️'}</span><div className="text-sm font-medium">{t.message}</div><button onClick={() => setToasts(prev => prev.filter(toast => toast.id !== t.id))} className="ml-auto opacity-50 hover:opacity-100 transition-opacity">×</button></div>)}</div>
                 <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} onNewChat={createNewChat} onOpenSettings={() => setCurrentView('settings')} onOpenSSHManager={() => setShowSSHManager(true)} onRefreshModels={loadModels} models={models} onSelectModel={setSelectedModel} selectedModel={selectedModel} />
             </div>
+            <Modal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                title="Kimlik Doğrulama Hatası"
+                footer={
+                    <button
+                        onClick={async () => {
+                            await handleAntigravityLogout()
+                            setIsAuthModalOpen(false)
+                            setCurrentView('settings')
+                            setSettingsCategory('accounts')
+                        }}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                        Hesaplara Git ve Giriş Yap
+                    </button>
+                }
+            >
+                <div className="space-y-3">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
+                        <div className="text-2xl">⚠️</div>
+                        <div className="space-y-1">
+                            <p className="font-bold text-red-400">Antigravity Oturumu Sona Erdi</p>
+                            <p className="text-sm text-red-200/80 leading-relaxed">
+                                {antigravityError || 'Google Antigravity oturumunuzun süresi doldu ve güvenlik nedeniyle otomatik olarak yenilenemedi.'}
+                            </p>
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                        Lütfen "Bağlı Hesaplar" sekmesine giderek Antigravity hesabınıza tekrar giriş yapın.
+                    </p>
+                </div>
+            </Modal>
+        </div>
     )
 }

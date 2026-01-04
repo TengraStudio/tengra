@@ -41,12 +41,23 @@ export interface AppSettings {
     }
     anthropic?: {
         apiKey: string
+        model: string
     }
     gemini?: {
         apiKey: string
+        model: string
     }
     groq?: {
         apiKey: string
+        model: string
+    }
+    antigravity?: {
+        connected: boolean
+        token?: string
+    }
+    copilot?: {
+        connected: boolean
+        token?: string
     }
     userAvatar?: string
     aiAvatar?: string
@@ -54,7 +65,7 @@ export interface AppSettings {
         enabled: boolean
         url: string
         key: string
-        authStoreKey: string
+        authStoreKey?: string
     }
     window?: {
         width: number
@@ -67,8 +78,6 @@ export interface AppSettings {
     mcpSecurityAllowedHosts?: string[]
     mcpReviewPolicy?: 'elevated' | 'trusted'
     mcpAutoExecuteSafe?: boolean
-    userAvatar?: string
-    aiAvatar?: string
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -108,12 +117,6 @@ const DEFAULT_SETTINGS: AppSettings = {
         apiKey: '',
         model: 'claude-3-opus-20240229'
     },
-    antigravity: {
-        connected: false
-    },
-    copilot: {
-        connected: false
-    },
     gemini: {
         apiKey: '',
         model: 'gemini-1.5-pro'
@@ -122,14 +125,11 @@ const DEFAULT_SETTINGS: AppSettings = {
         apiKey: '',
         model: 'llama3-70b-8192'
     },
-    anthropic: {
-        apiKey: ''
+    antigravity: {
+        connected: false
     },
-    gemini: {
-        apiKey: ''
-    },
-    groq: {
-        apiKey: ''
+    copilot: {
+        connected: false
     },
     proxy: {
         enabled: false,

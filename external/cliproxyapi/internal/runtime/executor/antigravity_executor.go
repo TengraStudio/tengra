@@ -40,8 +40,8 @@ const (
 	antigravityStreamPath          = "/v1internal:streamGenerateContent"
 	antigravityGeneratePath        = "/v1internal:generateContent"
 	antigravityModelsPath          = "/v1internal:fetchAvailableModels"
-	antigravityClientID            = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-	antigravityClientSecret        = "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"
+	antigravityClientID            = "225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com"
+	antigravityClientSecret        = "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"
 	defaultAntigravityAgent        = "antigravity/1.104.0 darwin/arm64"
 	antigravityAuthType            = "antigravity"
 	refreshSkew                    = 3000 * time.Second
@@ -1298,7 +1298,7 @@ func modelName2Alias(modelName string) string {
 		return "gemini-claude-sonnet-4-5-thinking"
 	case "claude-opus-4-5-thinking":
 		return "gemini-claude-opus-4-5-thinking"
-	case "chat_20706", "chat_23310", "gemini-2.5-flash-thinking", "gemini-3-pro-low", "gemini-2.5-pro":
+	case "chat_20706", "chat_23310":
 		return ""
 	default:
 		return modelName

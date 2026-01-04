@@ -127,7 +127,8 @@ export class HistoryImportService {
 
         const targets = providers.map((p) => p.toLowerCase())
         for (const file of files) {
-            const provider = String(file?.provider || file?.type || '').toLowerCase()
+            const authFile = file as AuthFileEntry
+            const provider = String(authFile?.provider || authFile?.type || '').toLowerCase()
             if (!provider) continue
             if (targets.includes(provider)) {
                 return file

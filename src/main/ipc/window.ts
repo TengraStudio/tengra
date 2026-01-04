@@ -1,4 +1,6 @@
 import { BrowserWindow, ipcMain, shell } from 'electron'
+import { appLogger } from '../logging/logger'
+import { exec } from 'child_process'
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:minimize', () => getMainWindow()?.minimize())
@@ -31,16 +33,35 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
         }
     })
 
-    ipcMain.on('shell:openExternal', (_event, url) => {
+    ipcMain.handle('shell:openExternal', async (_event, url) => {
+        console.log('[MAIN] shell:openExternal handle called with URL:', url)
+        appLogger.info(`shell:openExternal handle called with URL: ${url}`, { source: 'window-ipc' })
+
         try {
             const parsed = new URL(url)
+            const urlString = parsed.toString()
+
             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                shell.openExternal(parsed.toString())
+                console.log('[MAIN] Opening URL with shell.openExternal...')
+                try {
+                    await shell.openExternal(urlString)
+                    return { success: true }
+                } catch (e) {
+                    console.error('[MAIN] shell.openExternal failed:', e)
+                    if (process.platform === 'win32') {
+                        console.log('[MAIN] Falling back to PowerShell/CMD for Windows...')
+                        exec(`powershell -Command "Start-Process '${urlString}'"`)
+                        exec(`start "" "${urlString}"`)
+                        return { success: true, warning: 'Fallback triggered' }
+                    }
+                    return { success: false, error: String(e) }
+                }
             } else {
-                console.warn('Blocked external open for non-http/https URL:', url)
+                return { success: false, error: 'Forbidden protocol' }
             }
         } catch (e) {
-            console.warn('Invalid URL blocked:', url)
+            console.error('[MAIN] openExternal catch:', e)
+            return { success: false, error: String(e) }
         }
     })
 

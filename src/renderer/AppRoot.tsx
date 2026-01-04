@@ -245,6 +245,7 @@ export function AppRoot() {
                         onSendMessage={handleSendMessage}
                         hyperparams={hyperparams}
                         onHyperparamsChange={setHyperparams}
+                        language="tr" // Default language for now
                     />
                 )
             case 'models':
