@@ -45,7 +45,6 @@ interface ChatViewProps {
     codexUsage: any;
     setIsModelMenuOpen: (open: boolean) => void;
     contextTokens: number;
-    allCommands: any[];
     isListening: boolean;
     startListening: () => void;
     stopListening: () => void;
@@ -95,7 +94,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
     codexUsage,
     setIsModelMenuOpen,
     contextTokens,
-    allCommands,
     isListening,
     startListening,
     stopListening,
@@ -188,7 +186,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 codexUsage={codexUsage}
                 setIsModelMenuOpen={setIsModelMenuOpen}
                 contextTokens={contextTokens}
-                allCommands={allCommands}
                 t={t}
                 isListening={isListening}
                 startListening={startListening}
