@@ -58,6 +58,7 @@ export default function App() {
         language,
         appSettings,
         autoReadEnabled: false,
+        handleSpeak,
         formatChatError: (err) => String(err)
     })
 
