@@ -48,7 +48,6 @@ interface ViewManagerProps {
     codexUsage: any
     setIsModelMenuOpen: (open: boolean) => void
     contextTokens: number
-    contextTokens: number
     isListening: boolean
     startListening: () => void
     stopListening: () => void
@@ -118,7 +117,6 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     codexUsage,
     setIsModelMenuOpen,
     contextTokens,
-    contextTokens,
     isListening,
     startListening,
     stopListening,
@@ -182,7 +180,6 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                     quotas={quotas}
                     codexUsage={codexUsage}
                     setIsModelMenuOpen={setIsModelMenuOpen}
-                    contextTokens={contextTokens}
                     contextTokens={contextTokens}
                     isListening={isListening}
                     startListening={startListening}
