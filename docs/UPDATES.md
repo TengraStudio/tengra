@@ -1,32 +1,60 @@
 # Orbit Project Updates
 
-## Latest Updates (Current Session)
+## Latest History (Sorted by Date)
 
-### Refactoring & Cleanup
+**2026-01-06**
 
-- **View Architecture:** Refactored `ViewManager.tsx`, `ProjectWorkspace.tsx`, and related components (`ChatView`, `MessageList`) to align props and fix TypeScript errors.
-- **Service Optimization:**
-  - Moved `llama-bin` to `vendor/llama-bin` and updated `LlamaService` and `LocalAIService`.
-  - Consolidated `cliproxy` dependencies into `vendor/cliproxyapi/cmd/cliproxy-embed`.
-  - Removed unused `public` and `resources` directories to declutter the workspace.
-- **Code Quality:**
-  - Resolved `@apply` CSS linting issues by configuring VS Code settings (`.vscode/settings.json`) and adding `stylelint`.
-  - Updated `.gitignore` to correctly exclude the `vendor` directory while allowing documentation.
+- Final cleanup: Remove proxy/external directories and fix ChatInput
+- Fix ChatInput type error
+- Final cleanup: Fix all lint errors, remove proxy/external, update App.tsx/ChatInput.tsx
+- Fix build errors: restore handleSpeak and remove allCommands
+- Fix duplicate props and remove allCommands from ViewManager
+- Fix ChatInput and ChatView props
+- Fix ChatInput duplicates
+- Fix ChatInput type errors
 
-### Documentation
+**2026-01-05**
 
-- **README.md:** Created a comprehensive README detailing project goals, architecture, and usage risks.
-- **TODO.md:** Established a structured todo list, including future Nginx configuration for SSH and an AI-driven Logo Generator.
-- **UPDATES.md:** Initiated this changelog to track project evolution.
+- Fix lint errors in App.tsx and finalize vendor cleanup
+- Fix: Antigravity quota display, model categorization, and single instance lock
 
-## Application History (Git Log Summary)
+**2026-01-04**
 
-- **Fixing Persistent UI Issues:** Addressed layout and scrolling bugs in the code editor and sidebar.
-- **Antigravity Image Model Debugging:** Resolved routing errors for custom image generation models.
-- **Database Service Fixes:** Corrected FTS5 errors and improved model categorization in the UI.
-- **Graceful Shutdown:** Implemented robust shutdown handlers for training processes.
-- **Copilot Integration:** Fixed routing for `gpt-5.1-codex` and ensured stable connection to GitHub Copilot services.
-- **UI Redesign:** Refreshed the main menu and settings UI with a modern aesthetic.
-- **MCP Server Integration:** Added foundation for Model Context Protocol servers.
+- Optimize Colab training speed and stability
+- Implement graceful shutdown handlers
 
-*See git log for detailed commit history.*
+**2026-01-03**
+
+- Fix FTS5 errors in database service
+- Fix Copilot routing for gpt-5.1-codex
+
+**2026-01-02**
+
+- Restore settings functionality and missing tabs
+- Fix Go module cache permissions
+- Integrate MCP server foundation
+
+**2026-01-01**
+
+- Fix ToolExecutorOptions type error
+- Fix implicit any type error in App.tsx
+- Implement Chat Pinning UI
+
+**2025-12-31**
+
+- Debug Sidebar visibility issue
+- Fix build errors and update TODO list
+- UI Redesign & Settings Overhaul
+
+**2025-12-30**
+
+- Debug missing partner code in user profile
+
+**Previous Updates**
+
+- Initial project scaffolding and electron setup
+- Basic chat interface implementation
+- Local model integration (Ollama)
+- CLI Proxy implementation for Copilot
+- SSH Manager implementation
+- Project workspace and file explorer features
