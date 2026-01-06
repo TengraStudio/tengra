@@ -55,7 +55,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     removeAttachment,
     isLoading,
     sendMessage,
-    stopGeneration,
     fileInputRef,
     textareaRef,
     processFile,
@@ -94,12 +93,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-sm group/att">
                                 {att.type === 'image' ? (
                                     <div className="w-4 h-4 rounded-sm overflow-hidden border border-white/10">
+                                        {/* Calculate fileSize here if needed, but it's not used in the current snippet */}
                                         <img src={att.preview} className="w-full h-full object-cover" />
                                     </div>
                                 ) : (
                                     <FileText className="w-3.5 h-3.5 text-blue-400" />
                                 )}
-                                <span className="text-[11px] font-bold text-muted-foreground/80 max-w-[120px] truncate">{att.file.name}</span>
+                                <span className="text-[11px] font-bold text-muted-foreground/80 max-w-[120px] truncate">{att.file?.name}</span>
                                 <button onClick={() => removeAttachment(i)} className="text-muted-foreground/40 hover:text-red-400 transition-colors">
                                     <X className="w-3 h-3" />
                                 </button>
