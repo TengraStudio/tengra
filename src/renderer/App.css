@@ -1,0 +1,20 @@
+.app-container {
+    @apply flex h-screen w-full bg-[#030303] text-foreground overflow-hidden font-sans selection:bg-primary/30 selection:text-white;
+}
+
+.main-layout {
+    @apply flex-1 flex flex-col h-full overflow-hidden relative border-l border-white/5;
+}
+
+.content-area {
+    @apply flex-1 relative overflow-hidden;
+}
+
+.app-drag-region {
+    @apply h-8 w-full absolute top-0 left-0 z-[999];
+    -webkit-app-region: drag;
+}
+
+.no-drag {
+    -webkit-app-region: no-drag;
+}

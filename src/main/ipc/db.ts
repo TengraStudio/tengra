@@ -17,7 +17,10 @@ export function registerDbIpc(databaseService: DatabaseService) {
     ipcMain.handle('db:getProjects', () => databaseService.getProjects())
     ipcMain.handle('db:createProject', (_event, name, path, desc, mounts) => databaseService.createProject(name, path, desc, mounts))
     ipcMain.handle('db:updateProject', (_event, id, updates) => databaseService.updateProject(id, updates))
+    ipcMain.handle('db:deleteProject', (_event, id) => databaseService.deleteProject(id))
+    ipcMain.handle('db:archiveProject', (_event, id, isArchived) => databaseService.archiveProject(id, isArchived))
     ipcMain.handle('db:deleteMessage', (_event, id) => databaseService.deleteMessage(id))
+    ipcMain.handle('db:deleteMessages', (_event, chatId) => databaseService.deleteMessages(chatId))
     ipcMain.handle('db:updateMessage', (_event, id, updates) => databaseService.updateMessage(id, updates))
     ipcMain.handle('db:deleteAllChats', () => databaseService.deleteAllChats())
 

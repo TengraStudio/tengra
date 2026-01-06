@@ -28,11 +28,11 @@ export class ProxyEmbedService {
 
     private getBinaryPath(): string {
         const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed'
-        return path.join(process.cwd(), 'proxy', 'cliproxy_embed', binName)
+        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed', binName)
     }
 
     private getSourceDir(): string {
-        return path.join(process.cwd(), 'proxy', 'cliproxy_embed')
+        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed')
     }
 
     private async ensureBinary(): Promise<string> {

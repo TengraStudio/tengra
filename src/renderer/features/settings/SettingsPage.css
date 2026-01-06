@@ -1,0 +1,47 @@
+.settings-container {
+    @apply h-full flex flex-col overflow-hidden bg-background/50;
+}
+
+.settings-header {
+    @apply px-8 py-6 border-b border-white/5 shrink-0;
+}
+
+.settings-content {
+    @apply flex-1 flex overflow-hidden;
+}
+
+.settings-sidebar {
+    @apply w-64 border-r border-white/5 p-4 space-y-1 overflow-y-auto;
+}
+
+.settings-main {
+    @apply flex-1 overflow-y-auto p-8;
+}
+
+.settings-tab-btn {
+    @apply w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
+}
+
+.settings-tab-btn-active {
+    @apply bg-primary/10 text-primary;
+}
+
+.settings-tab-btn-inactive {
+    @apply text-muted-foreground hover:text-foreground hover:bg-white/5;
+}
+
+.settings-section {
+    @apply space-y-6 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500;
+}
+
+.settings-group {
+    @apply space-y-3;
+}
+
+.settings-group-title {
+    @apply text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-4 px-1;
+}
+
+.settings-card {
+    @apply bg-white/[0.02] border border-white/5 rounded-2xl p-6 transition-all hover:bg-white/[0.04];
+}

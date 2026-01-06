@@ -56,6 +56,7 @@ export const tr = {
         emptyFolder: 'Boş klasör',
         pinned: 'İğnelenmiş',
         recent: 'Yakın Zamanda',
+        settings: 'Ayarlar'
     },
     mcp: {
         management: 'MCP Yönetimi',
@@ -88,7 +89,7 @@ export const tr = {
         moreLines: 'satır daha',
     },
     welcome: {
-        title: 'ZENITH',
+        title: 'Orbit',
         tagline: 'Zeka ve zarafetin buluştuğu nokta.',
     },
     attachments: {

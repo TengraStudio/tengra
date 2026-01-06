@@ -44,6 +44,7 @@ export const en = {
         emptyFolder: 'Empty folder',
         pinned: 'Pinned',
         recent: 'Recent',
+        settings: 'Settings'
     },
     mcp: {
         management: 'MCP Management',
@@ -88,7 +89,7 @@ export const en = {
         moreLines: 'more lines',
     },
     welcome: {
-        title: 'ZENITH',
+        title: 'Orbit',
         tagline: 'Intelligence meets elegance.',
     },
     attachments: {

@@ -13,6 +13,7 @@ interface LlamaConfig {
     batchSize?: number          // Default 512
     port?: number               // Server port, default 8080
     host?: string               // Server host, default 127.0.0.1
+    backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal'
 }
 
 interface ModelInfo {
@@ -34,7 +35,8 @@ export class LlamaService {
         contextSize: 8192,
         batchSize: 512,
         port: 8080,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
+        backend: 'auto'
     }
 
     constructor() {
@@ -49,11 +51,11 @@ export class LlamaService {
         }
 
         // llama-server binary path
-        this.binDir = join(__dirname, '../../llama-bin')
+        this.binDir = join(__dirname, '../../vendor/llama-bin')
 
         // Fallback to project root if not in dist
         if (!existsSync(this.binDir)) {
-            this.binDir = join(process.cwd(), 'llama-bin')
+            this.binDir = join(process.cwd(), 'vendor', 'llama-bin')
         }
     }
 
@@ -130,9 +132,22 @@ export class LlamaService {
             }
 
             // Start server
+            const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH }
+
+            // Backend specific environment variables
+            if (this.config.backend === 'vulkan') {
+                env['GGML_VULKAN'] = '1'
+            } else if (this.config.backend === 'cuda') {
+                env['GGML_CUDA'] = '1'
+            } else if (this.config.backend === 'metal') {
+                env['GGML_METAL'] = '1'
+            } else if (this.config.backend === 'cpu') {
+                args.push('--gpu-layers', '0')
+            }
+
             this.serverProcess = spawn(serverPath, args, {
                 cwd: this.binDir,
-                env: { ...process.env, PATH: this.binDir + ';' + process.env.PATH },
+                env,
                 windowsHide: true
             })
 
@@ -324,11 +339,10 @@ export class LlamaService {
         return this.binDir
     }
 
-    async getInstalledModels(): Promise<ModelInfo[]> {
-        const fs = await import('fs/promises')
+    async getModels(): Promise<ModelInfo[]> {
         const models: ModelInfo[] = []
-
         try {
+            const fs = await import('fs/promises')
             if (!existsSync(this.modelsDir)) return models
 
             const files = await fs.readdir(this.modelsDir)
@@ -413,7 +427,9 @@ export class LlamaService {
             if (this.currentModelPath === modelPath) {
                 await this.stopServer()
             }
-            await fs.unlink(modelPath)
+            if (existsSync(modelPath)) {
+                await fs.unlink(modelPath)
+            }
             return { success: true }
         } catch (error: any) {
             return { success: false, error: error.message }
@@ -428,17 +444,36 @@ export class LlamaService {
         this.config = { ...this.config, ...config }
     }
 
-    async getGpuInfo(): Promise<{ available: boolean; name?: string; vram?: number }> {
-        // Check if CUDA DLLs exist
+    async getGpuInfo(): Promise<{ available: boolean; backends: string[]; name?: string }> {
+        const backends: string[] = []
+        let detectedName = 'Generic GPU'
+
+        // Check CUDA
         const cudaDll = join(this.binDir, 'ggml-cuda.dll')
         if (existsSync(cudaDll)) {
-            return {
-                available: true,
-                name: 'CUDA (llama.cpp)',
-                vram: 12288 // 12GB - will be detected by llama-server
-            }
+            backends.push('cuda')
+            detectedName = 'NVIDIA CUDA'
         }
-        return { available: false }
+
+        // Check Vulkan
+        const vulkanDll = join(this.binDir, 'ggml-vulkan.dll')
+        if (existsSync(vulkanDll)) {
+            backends.push('vulkan')
+            if (backends.length === 1) detectedName = 'Vulkan'
+            else detectedName += ' / Vulkan'
+        }
+
+        // Check Metal (Apple only)
+        if (process.platform === 'darwin') {
+            backends.push('metal')
+            detectedName = 'Apple Metal'
+        }
+
+        return {
+            available: backends.length > 0,
+            backends,
+            name: backends.length > 0 ? detectedName : 'None'
+        }
     }
 
     isServerAvailable(): boolean {

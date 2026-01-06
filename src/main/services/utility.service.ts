@@ -95,16 +95,8 @@ export class UtilityService {
     }
 
     // 37. Plugin System (Simplified)
-    async loadPlugin(path: string) {
-        try {
-            const fs = require('fs');
-            const code = fs.readFileSync(path, 'utf8');
-            // USE WITH CAUTION: Evaluates JS
-            const result = eval(code);
-            return { success: true, result };
-        } catch (e: any) {
-            return { success: false, error: e.message };
-        }
+    async loadPlugin(_path: string) {
+        return { success: false, error: 'Plugin loading via eval is disabled for security reasons.' };
     }
 
     // 39. Long-term Memory

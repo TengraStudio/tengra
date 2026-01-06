@@ -3,8 +3,8 @@ import { Message } from '../../renderer/types/chat';
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
 const API_VERSION = '2023-07-07';
-const EDITOR_PLUGIN_VERSION = 'copilot-chat/0.25.0';
-const FALLBACK_VSCODE_VERSION = '1.105.0';
+const EDITOR_PLUGIN_VERSION = 'copilot/1.250.0';
+const FALLBACK_VSCODE_VERSION = '1.107';
 
 export class CopilotService {
     private githubToken: string | null = null;
@@ -76,6 +76,26 @@ export class CopilotService {
         });
 
         if (!response.ok) {
+            // Fallback to v1 if v2 fails (sometimes happens specifically with 404)
+            if (response.status === 404) {
+                console.warn('[CopilotService] v2/token returned 404, trying v1/token...');
+                const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
+                    headers: {
+                        'Authorization': `token ${this.githubToken}`,
+                        'Accept': 'application/json',
+                        'Editor-Version': `vscode/${this.vsCodeVersion}`,
+                        'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
+                        'User-Agent': USER_AGENT
+                    }
+                });
+                if (v1Response.ok) {
+                    const data = await v1Response.json() as any;
+                    this.copilotSessionToken = data.token;
+                    this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
+                    return this.copilotSessionToken!;
+                }
+            }
+
             throw new Error(`Failed to get Copilot token: ${response.status} ${await response.text()}`);
         }
 

@@ -21,10 +21,21 @@ import { CopilotService } from '../services/copilot.service'
 import { ScreenshotService } from '../services/screenshot.service'
 import { HistoryImportService } from '../services/history-import.service'
 import { OllamaService } from '../services/ollama.service'
+import { CouncilService } from '../services/council.service'
+import { getOllamaHealthService } from '../services/ollama-health.service'
+import { LlamaService } from '../services/llama.service'
+import { HuggingFaceService } from '../services/huggingface.service'
+import { ProjectService } from '../services/project.service'
+import { ProcessService } from '../services/process.service'
+import { CodeIntelligenceService } from '../services/code-intelligence.service'
+import { WebService } from '../services/web.service'
 
 export function createServices(allowedFileRoots: Set<string>) {
+
     const settingsService = new SettingsService()
     const localAIService = new LocalAIService(settingsService)
+    const llamaService = new LlamaService()
+    const huggingFaceService = new HuggingFaceService()
     const ollamaService = new OllamaService(settingsService)
     const llmService = new LLMService()
     const fileSystemService = new FileSystemService(Array.from(allowedFileRoots))
@@ -44,11 +55,30 @@ export function createServices(allowedFileRoots: Set<string>) {
     const historyImportService = new HistoryImportService(proxyService, databaseService)
 
     // Bridge logic for embedding/utility that still expect old services
-    // For now, we pass llmService for openai, localAIService for ollama/llama
-    const embeddingService = new EmbeddingService(databaseService, ollamaService, llmService as any, localAIService as any)
+    const embeddingService = new EmbeddingService(databaseService, ollamaService, llmService as any, llamaService)
     const utilityService = new UtilityService(databaseService, contentService as any, embeddingService)
     const dockerService = new DockerService(commandService, sshService)
     const screenshotService = new ScreenshotService()
+
+    // Start Ollama health monitoring
+    const ollamaHealthService = getOllamaHealthService(
+        settingsService.getSettings()?.ollama?.url || 'http://localhost:11434'
+    )
+    ollamaHealthService.start()
+
+    const projectService = new ProjectService()
+    const processService = new ProcessService()
+    const codeIntelligenceService = new CodeIntelligenceService()
+
+    const webService = new WebService()
+    const councilService = new CouncilService(
+        llmService,
+        databaseService,
+        fileSystemService,
+        processService,
+        codeIntelligenceService,
+        webService
+    )
 
     return {
         settingsService,
@@ -73,6 +103,15 @@ export function createServices(allowedFileRoots: Set<string>) {
         embeddingService,
         utilityService,
         dockerService,
-        screenshotService
+        screenshotService,
+        councilService,
+        ollamaHealthService,
+        llamaService,
+        huggingFaceService,
+        projectService,
+        processService,
+        codeIntelligenceService,
+        webService
     }
+
 }

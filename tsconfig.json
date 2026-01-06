@@ -24,11 +24,20 @@
             "@/*": [
                 "src/renderer/*"
             ],
+            "@/types": [
+                "src/shared/types/index.ts"
+            ],
+            "@/types/*": [
+                "src/shared/types/*"
+            ],
             "@main/*": [
                 "src/main/*"
             ],
             "@renderer/*": [
                 "src/renderer/*"
+            ],
+            "@shared/*": [
+                "src/shared/*"
             ]
         }
     },

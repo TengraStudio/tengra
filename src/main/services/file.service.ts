@@ -99,4 +99,35 @@ export class FileManagementService {
             });
         });
     }
+
+    async applyEdits(path: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
+        try {
+            const content = await fs.readFile(path, 'utf8');
+            const lines = content.split('\n');
+            const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine); // Apply from bottom to top to preserve indices
+
+            for (const edit of sortedEdits) {
+                if (edit.startLine < 1 || edit.endLine > lines.length || edit.startLine > edit.endLine) {
+                    return { success: false, error: `Invalid line range: ${edit.startLine}-${edit.endLine} (File has ${lines.length} lines)` };
+                }
+
+                // 1-based index to 0-based
+                const start = edit.startLine - 1;
+                const count = edit.endLine - edit.startLine + 1;
+
+                // Handle indentation preservation if needed, or just raw replacement
+                // For surgical edits, we usually assume the agent provides formatted code or we just insert.
+                // Improvement: detect indentation of startLine and apply to replacement if it lacks it? 
+                // For now, raw replacement is safer and more predictable for the agent.
+
+                lines.splice(start, count, edit.replacement);
+            }
+
+            const newContent = lines.join('\n');
+            await fs.writeFile(path, newContent, 'utf8');
+            return { success: true, message: `Applied ${edits.length} edits to ${path}` };
+        } catch (e: any) {
+            return { success: false, error: e.message };
+        }
+    }
 }

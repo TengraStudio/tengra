@@ -4,32 +4,38 @@ import { CopilotService } from '../services/copilot.service'
 import { SettingsService } from '../services/settings.service'
 
 export function registerAuthIpc(proxyService: ProxyService, settingsService: SettingsService, copilotService: CopilotService) {
-    ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'profile') => {
+    ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
         // startLoginFlow was essentially requestGitHubDeviceCode
         return await proxyService.requestGitHubDeviceCode(appId)
     })
 
-    ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile') => {
+    ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
         try {
             const token = await proxyService.pollForGitHubToken(deviceCode, interval, appId)
             const settings = settingsService.getSettings()
 
+            // Always save to github.token providing it's the main login
+            // And if it's copilot capable, save to copilot too.
+            // Since we default to 'copilot', this token is good for everything.
+
+            const newSettings = {
+                ...settings,
+                github: {
+                    ...settings.github,
+                    token: token,
+                    username: settings.github?.username // We don't have username here yet, profile service fetches it later
+                },
+                copilot: appId === 'copilot' ? {
+                    ...settings.copilot,
+                    connected: true,
+                    token: token
+                } : settings.copilot
+            };
+
+            settingsService.saveSettings(newSettings);
+
             if (appId === 'copilot') {
-                settingsService.saveSettings({
-                    copilot: {
-                        ...settings.copilot,
-                        connected: true,
-                        token: token
-                    }
-                })
                 copilotService.setGithubToken(token)
-            } else {
-                settingsService.saveSettings({
-                    github: {
-                        username: settings.github?.username || '',
-                        token: token
-                    }
-                })
             }
 
             return { success: true, token }
