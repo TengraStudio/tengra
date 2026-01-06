@@ -28,7 +28,7 @@ interface ChatInputProps {
     codexUsage: any;
     setIsModelMenuOpen: (open: boolean) => void;
     contextTokens: number;
-    allCommands: any[];
+    contextTokens: number;
     t: (key: string) => string;
     isListening: boolean;
     startListening: () => void;
