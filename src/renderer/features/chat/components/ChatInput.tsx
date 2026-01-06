@@ -114,7 +114,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     onClose={() => { }}
                     query={input.slice(1)}
                     onSelect={(cmd: any) => { cmd.action(); setInput('') }}
-                    commands={allCommands}
+                    commands={[]}
                 />
                 <input
                     type="file"
