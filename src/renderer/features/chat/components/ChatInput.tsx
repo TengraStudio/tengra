@@ -69,7 +69,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     codexUsage,
     setIsModelMenuOpen,
     contextTokens,
-    allCommands,
     t,
     isListening,
     startListening,
