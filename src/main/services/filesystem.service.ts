@@ -20,15 +20,85 @@ export class FileSystemService {
 
 
 
+    private ignorePatterns: string[] = ['node_modules', '.git', 'dist', 'build', '.orbit', '.DS_Store']
+
+    updateIgnorePatterns(patterns: string[]) {
+        this.ignorePatterns = [...new Set([...this.ignorePatterns, ...patterns])]
+    }
+
+    private shouldIgnore(filePath: string): boolean {
+        // Simple string inclusion checker for now, should be replaced with proper minimatch/glob later
+        return this.ignorePatterns.some(pattern => filePath.includes(path.sep + pattern) || filePath.endsWith(path.sep + pattern))
+    }
+
     // --- Core Operations ---
 
     async readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
         try {
             const absolutePath = path.resolve(filePath)
+            const stats = await fs.stat(absolutePath)
+
+            // 10MB limit
+            if (stats.size > 10 * 1024 * 1024) {
+                return { success: false, error: 'File too large (>10MB)' }
+            }
+
+            // Simple binary check: read first 1024 bytes and look for null bytes
+            const handle = await fs.open(absolutePath, 'r')
+            const buffer = Buffer.alloc(Math.min(stats.size, 1024))
+            await handle.read(buffer, 0, buffer.length, 0)
+            await handle.close()
+
+            // If it contains a null byte, effectively considered binary
+            if (buffer.includes(0)) {
+                return { success: false, error: 'File is binary' }
+            }
+
             const content = await fs.readFile(absolutePath, 'utf-8')
             return { success: true, content }
         } catch (error: any) {
             return { success: false, error: error.message }
+        }
+    }
+
+    async readImage(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+        try {
+            const absolutePath = path.resolve(filePath)
+            const stats = await fs.stat(absolutePath)
+            if (stats.size > 20 * 1024 * 1024) { // 20MB limit for images
+                return { success: false, error: 'Image too large (>20MB)' }
+            }
+            const buffer = await fs.readFile(absolutePath)
+            const base64 = buffer.toString('base64')
+
+            // Determine mime type from extension
+            const ext = path.extname(absolutePath).toLowerCase()
+            let mime = 'image/jpeg'
+            if (ext === '.png') mime = 'image/png'
+            if (ext === '.gif') mime = 'image/gif'
+            if (ext === '.webp') mime = 'image/webp'
+            if (ext === '.svg') mime = 'image/svg+xml'
+
+            return { success: true, content: `data:${mime};base64,${base64}` }
+        } catch (error: any) {
+            return { success: false, error: error.message }
+        }
+    }
+
+    async isBinaryFile(filePath: string): Promise<boolean> {
+        try {
+            const absolutePath = path.resolve(filePath)
+            const stats = await fs.stat(absolutePath)
+            if (stats.size === 0) return false
+
+            const handle = await fs.open(absolutePath, 'r')
+            const buffer = Buffer.alloc(Math.min(stats.size, 1024))
+            await handle.read(buffer, 0, buffer.length, 0)
+            await handle.close()
+
+            return buffer.includes(0)
+        } catch {
+            return false
         }
     }
 
@@ -48,8 +118,11 @@ export class FileSystemService {
         try {
             const absolutePath = path.resolve(dirPath)
             const entries = await fs.readdir(absolutePath, { withFileTypes: true })
+
+            const filteredEntries = entries.filter(entry => !this.shouldIgnore(path.join(absolutePath, entry.name)))
+
             const files = await Promise.all(
-                entries.map(async (entry) => {
+                filteredEntries.map(async (entry) => {
                     const entryPath = path.join(absolutePath, entry.name)
                     let size: number | undefined
                     let modified: Date | undefined
@@ -217,12 +290,23 @@ export class FileSystemService {
         }
     }
 
-    watchFolder(dir: string): ServiceResponse {
+    watchFolder(dir: string, callback?: (event: string, filename: string) => void): ServiceResponse<{ close: () => void }> {
         try {
-            watch(dir, (eventType, filename) => {
-                console.log(`Folder changed: ${eventType} on ${filename}`)
+            const absoluteDir = path.resolve(dir)
+            const watcher = watch(absoluteDir, { recursive: true }, (eventType, filename) => {
+                if (!filename) return
+                if (this.shouldIgnore(path.join(absoluteDir, filename.toString()))) return
+
+                // Debounce or just emission could be handled by caller, but basic log here
+                console.log(`[FileWatcher] ${eventType}: ${filename}`)
+                if (callback) callback(eventType, filename.toString())
             })
-            return { success: true, message: `Watching ${dir} for changes...` }
+
+            return {
+                success: true,
+                message: `Watching ${dir} for changes...`,
+                result: { close: () => watcher.close() }
+            }
         } catch (e: any) {
             return { success: false, error: e.message }
         }
@@ -273,6 +357,32 @@ export class FileSystemService {
             return { success: true, files: results }
         } catch (error: any) {
             return { success: false, error: error.message }
+        }
+    }
+
+    async applyEdits(path: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
+        try {
+            const result = await this.readFile(path)
+            if (!result.success || !result.content) return { success: false, error: result.error || 'File read failed' }
+
+            const lines = result.content.split('\n');
+            const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine);
+
+            for (const edit of sortedEdits) {
+                if (edit.startLine < 1 || edit.endLine > lines.length || edit.startLine > edit.endLine) {
+                    return { success: false, error: `Invalid line range: ${edit.startLine}-${edit.endLine} (File has ${lines.length} lines)` };
+                }
+
+                const start = edit.startLine - 1;
+                const count = edit.endLine - edit.startLine + 1;
+                lines.splice(start, count, edit.replacement);
+            }
+
+            const newContent = lines.join('\n');
+            await this.writeFile(path, newContent);
+            return { success: true, message: `Applied ${edits.length} edits to ${path}` };
+        } catch (e: any) {
+            return { success: false, error: e.message };
         }
     }
 }

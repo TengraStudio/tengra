@@ -1,0 +1,463 @@
+﻿import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { ChevronDown, ChevronRight, Folder, Plus, Server, X, FilePlus, FolderPlus, Pencil, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { WorkspaceMount } from '@/types'
+import { FileIcon, FolderIcon } from '../lib/file-icons'
+
+export interface WorkspaceEntry {
+    mountId: string
+    name: string
+    path: string
+    isDirectory: boolean
+}
+
+export interface ContextMenuAction {
+    type: 'createFile' | 'createFolder' | 'rename' | 'delete'
+    entry: WorkspaceEntry
+}
+
+interface WorkspaceExplorerProps {
+    mounts: WorkspaceMount[]
+    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>
+    refreshSignal: number
+    onOpenFile: (entry: WorkspaceEntry) => void
+    onSelectEntry: (entry: WorkspaceEntry) => void
+    selectedEntry?: WorkspaceEntry | null
+    onAddMount: () => void
+    onRemoveMount: (mountId: string) => void
+    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean
+    onContextAction?: (action: ContextMenuAction) => void
+    variant?: 'panel' | 'embedded'
+}
+
+interface FileNode {
+    name: string
+    isDirectory: boolean
+    path: string
+}
+
+interface ContextMenuState {
+    x: number
+    y: number
+    entry?: WorkspaceEntry
+    mountId?: string // For mount-level context menu
+}
+
+const joinPath = (base: string, name: string, type: WorkspaceMount['type']) => {
+
+    const sep = type === 'ssh' ? '/' : (base.includes('\\') ? '\\' : '/')
+    if (base.endsWith(sep)) return `${base}${name}`
+    return `${base}${sep}${name}`
+}
+
+const sortNodes = (nodes: FileNode[]) => (
+    nodes.slice().sort((a, b) => {
+        if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
+        return a.isDirectory ? -1 : 1
+    })
+)
+
+const WorkspaceTreeItem: React.FC<{
+    node: FileNode
+    mount: WorkspaceMount
+    level: number
+    refreshSignal: number
+    onOpenFile: (entry: WorkspaceEntry) => void
+    onSelectEntry: (entry: WorkspaceEntry) => void
+    selectedEntry?: WorkspaceEntry | null
+    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean
+    onContextMenu?: (e: React.MouseEvent, entry: WorkspaceEntry) => void
+}> = ({ node, mount, level, refreshSignal, onOpenFile, onSelectEntry, selectedEntry, onEnsureMount, onContextMenu }) => {
+    const [expanded, setExpanded] = useState(false)
+    const [children, setChildren] = useState<FileNode[]>([])
+    const [loading, setLoading] = useState(false)
+    const [loaded, setLoaded] = useState(false)
+
+    const loadChildren = async () => {
+        if (!node.isDirectory) return
+        setLoading(true)
+        const isReady = onEnsureMount ? await onEnsureMount(mount) : true
+        if (!isReady) {
+            setLoading(false)
+            return
+        }
+        try {
+            const result = mount.type === 'local'
+                ? await window.electron.listDirectory(node.path)
+                : await window.electron.ssh.listDir(mount.id, node.path)
+            if (result?.success && Array.isArray(result.files)) {
+                const mapped = result.files.map((item: any) => ({
+                    name: item.name,
+                    isDirectory: mount.type === 'local' ? Boolean(item.isDirectory) : item.type === 'directory',
+                    path: joinPath(node.path, item.name, mount.type)
+                }))
+                setChildren(sortNodes(mapped))
+                setLoaded(true)
+            }
+        } catch (error) {
+            console.error('Failed to load directory', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (expanded) loadChildren()
+    }, [expanded, refreshSignal])
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        const entry = { mountId: mount.id, name: node.name, path: node.path, isDirectory: node.isDirectory }
+        onSelectEntry(entry)
+        if (node.isDirectory) {
+            setExpanded((prev) => !prev)
+            return
+        }
+        onOpenFile(entry)
+    }
+
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const entry = { mountId: mount.id, name: node.name, path: node.path, isDirectory: node.isDirectory }
+        onSelectEntry(entry)
+        onContextMenu?.(e, entry)
+    }
+
+    const isSelected = Boolean(
+        selectedEntry && selectedEntry.mountId === mount.id && selectedEntry.path === node.path
+    )
+
+    return (
+        <div>
+            <div
+                className={cn(
+                    "flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all select-none group border border-transparent",
+                    isSelected ? "bg-primary/10 text-primary border-primary/20" : "hover:bg-white/5 text-muted-foreground/80 hover:text-white"
+                )}
+                style={{ paddingLeft: `${level * 12 + 8}px` }}
+                onClick={handleClick}
+                onContextMenu={handleContextMenu}
+            >
+                {node.isDirectory ? (
+                    <span className="opacity-70 group-hover:opacity-100">
+                        {loading ? (
+                            <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                        ) : expanded ? (
+                            <ChevronDown className="w-3 h-3" />
+                        ) : (
+                            <ChevronRight className="w-3 h-3" />
+                        )}
+                    </span>
+                ) : (
+                    <span className="w-3" />
+                )}
+
+                {node.isDirectory
+                    ? <FolderIcon folderName={node.name} isOpen={expanded} className="w-3.5 h-3.5" />
+                    : <FileIcon fileName={node.name} className="w-3.5 h-3.5" />}
+                <span className="truncate text-[13px] font-normal tracking-tight">{node.name}</span>
+            </div>
+
+            {expanded && (
+                <div className="flex flex-col">
+                    {children.map((child) => (
+                        <WorkspaceTreeItem
+                            key={`${mount.id}:${child.path}`}
+                            node={child}
+                            mount={mount}
+                            level={level + 1}
+                            refreshSignal={refreshSignal}
+                            onOpenFile={onOpenFile}
+                            onSelectEntry={onSelectEntry}
+                            selectedEntry={selectedEntry}
+                            onEnsureMount={onEnsureMount}
+                            onContextMenu={onContextMenu}
+                        />
+                    ))}
+                    {children.length === 0 && loaded && (
+                        <div className="text-[11px] text-muted-foreground/40 pl-8 py-0.5 italic">BoÅŸ klasÃ¶r</div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
+    mounts,
+    mountStatus,
+    refreshSignal,
+    onOpenFile,
+    onSelectEntry,
+    onAddMount,
+    onRemoveMount,
+    selectedEntry,
+    onEnsureMount,
+    onContextAction,
+    variant = 'panel'
+}) => {
+    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({})
+    const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({})
+    const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({})
+    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
+    const loadRoot = async (mount: WorkspaceMount) => {
+        setLoadingMounts((prev) => ({ ...prev, [mount.id]: true }))
+        const isReady = onEnsureMount ? await onEnsureMount(mount) : true
+        if (!isReady) {
+            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }))
+            return
+        }
+        try {
+            const result = mount.type === 'local'
+                ? await window.electron.listDirectory(mount.rootPath)
+                : await window.electron.ssh.listDir(mount.id, mount.rootPath)
+            if (result?.success && Array.isArray(result.files)) {
+                const mapped = result.files.map((item: any) => ({
+                    name: item.name,
+                    isDirectory: mount.type === 'local' ? Boolean(item.isDirectory) : item.type === 'directory',
+                    path: joinPath(mount.rootPath, item.name, mount.type)
+                }))
+                setRootNodes((prev) => ({ ...prev, [mount.id]: sortNodes(mapped) }))
+            }
+        } catch (error) {
+            console.error('Failed to load mount root', error)
+        } finally {
+            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }))
+        }
+    }
+
+    useEffect(() => {
+        mounts.forEach((mount) => {
+            // Auto-load if explicit expanded OR if it's the only local mount (which hides the toggle)
+            const shouldLoad = expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local')
+
+            if (shouldLoad) {
+                // Avoid reloading if already loaded and no refresh signal? 
+                // Actually loadRoot handles re-fetching.
+                // We want to fetch on mount.
+                loadRoot(mount)
+            }
+        })
+    }, [refreshSignal, mounts])
+
+    // Close context menu when clicking outside
+    useEffect(() => {
+        const handleClick = () => setContextMenu(null)
+        if (contextMenu) {
+            document.addEventListener('click', handleClick)
+            return () => document.removeEventListener('click', handleClick)
+        }
+    }, [contextMenu])
+
+    const toggleMount = (mount: WorkspaceMount) => {
+        setExpandedMounts((prev) => {
+            const next = { ...prev, [mount.id]: !prev[mount.id] }
+            if (!prev[mount.id]) {
+                loadRoot(mount)
+            }
+            return next
+        })
+    }
+
+    const handleContextMenu = (e: React.MouseEvent, entry: WorkspaceEntry) => {
+        setContextMenu({ x: e.clientX, y: e.clientY, entry })
+    }
+
+    const handleContextAction = (type: ContextMenuAction['type']) => {
+        if (contextMenu?.entry && onContextAction) {
+            onContextAction({ type, entry: contextMenu.entry })
+        }
+        setContextMenu(null)
+    }
+
+    const mountIcon = (mount: WorkspaceMount) => (
+        mount.type === 'ssh'
+            ? <Server className="w-3.5 h-3.5 text-indigo-400" />
+            : <Folder className="w-3.5 h-3.5 text-emerald-400" />
+    )
+
+
+    const hasMounts = mounts.length > 0
+
+    return (
+        <div className={cn(
+            "flex flex-col h-full overflow-hidden relative transition-all duration-300",
+            variant === 'panel' ? "bg-background/40 backdrop-blur-xl border-r border-white/5 w-72" : "bg-transparent border-0 w-full"
+        )}>
+            <div className={cn(
+                "p-4 pb-2 flex items-center justify-between",
+                variant === 'panel' ? "border-b border-white/5 bg-transparent" : "border-b border-white/5 bg-transparent"
+            )}>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/50">Dosyalar</span>
+                <button
+                    onClick={onAddMount}
+                    className="p-1.5 hover:bg-white/5 rounded-md transition-colors group"
+                    title="BaÄŸlantÄ± ekle"
+                >
+                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />
+                </button>
+            </div>
+
+            {!hasMounts && (
+                <div className="flex-1 flex flex-col items-center justify-center text-sm text-zinc-500 gap-2 opacity-60">
+                    <Folder className="w-8 h-8 opacity-20" />
+                    <span className="text-xs font-medium">Workspace yok</span>
+                </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent px-0">
+                {mounts.map((mount) => (
+                    <div key={mount.id} className="group/mount">
+                        {/* Only show mount header if there are multiple mounts or it's an SSH mount */}
+                        {(mounts.length > 1 || mount.type !== 'local') && (
+                            <div
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-all duration-200 border-l-2 border-transparent",
+                                    "hover:bg-white/5 text-muted-foreground hover:text-white group-hover/mount:bg-white/[0.02]",
+                                    expandedMounts[mount.id] ? "text-foreground" : ""
+                                )}
+                                onClick={() => toggleMount(mount)}
+                                onContextMenu={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setContextMenu({ x: e.clientX, y: e.clientY, mountId: mount.id })
+                                }}
+                            >
+                                <span className="opacity-50 group-hover/mount:opacity-100 transition-opacity">
+                                    {expandedMounts[mount.id] ? (
+                                        <ChevronDown className="w-3 h-3" />
+                                    ) : (
+                                        <ChevronRight className="w-3 h-3" />
+                                    )}
+                                </span>
+                                {mountIcon(mount)}
+                                <div className="flex-1 min-w-0 flex items-center gap-2">
+                                    <div className="text-xs font-bold uppercase tracking-wider truncate text-muted-foreground/70">{mount.name}</div>
+                                    {mount.type === 'ssh' && (
+                                        <span className="px-1 py-0.5 rounded-[3px] bg-indigo-500/20 text-indigo-300 text-[9px] font-bold border border-indigo-500/30">SSH</span>
+                                    )}
+                                    {mount.type !== 'local' && (
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full",
+                                            mountStatus[mount.id] === 'connected' ? "bg-emerald-500" :
+                                                mountStatus[mount.id] === 'connecting' ? "bg-amber-500 animate-pulse" :
+                                                    "bg-red-500/50"
+                                        )} title={mountStatus[mount.id]} />
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onRemoveMount(mount.id) }}
+                                    className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-red-400 transition-all"
+                                    title="KaldÄ±r"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        )}
+
+                        <div className={cn(
+                            (mounts.length > 1 || mount.type !== 'local') && !expandedMounts[mount.id] ? "hidden" : "block",
+                            (mounts.length > 1 || mount.type !== 'local') ? "ml-0" : "" // Indent if nested
+                        )}>
+                            <div className="space-y-0 relative">
+                                {(rootNodes[mount.id] || []).map((node) => (
+                                    <WorkspaceTreeItem
+                                        key={`${mount.id}:${node.path}`}
+                                        node={node}
+                                        mount={mount}
+                                        level={0}
+                                        refreshSignal={refreshSignal}
+                                        onOpenFile={onOpenFile}
+                                        onSelectEntry={onSelectEntry}
+                                        selectedEntry={selectedEntry}
+                                        onEnsureMount={onEnsureMount}
+                                        onContextMenu={handleContextMenu}
+                                    />
+                                ))}
+                                {(rootNodes[mount.id] || []).length === 0 && !loadingMounts[mount.id] && (
+                                    <div className="text-[11px] text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
+                                        BoÅŸ klasÃ¶r
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Context Menu - rendered via portal for proper z-stacking */}
+            {contextMenu && createPortal(
+                <div
+                    className="fixed bg-[#0A0A0A]/95 border border-white/10 rounded-xl shadow-2xl py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+                    style={{
+                        left: contextMenu.x,
+                        top: contextMenu.y,
+                        zIndex: 99999
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Mount-level context menu */}
+                    {contextMenu.mountId && !contextMenu.entry && (
+                        <button
+                            onClick={() => {
+                                if (contextMenu.mountId) {
+                                    onRemoveMount(contextMenu.mountId)
+                                }
+                                setContextMenu(null)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            BaÄŸlantÄ±yÄ± KaldÄ±r
+                        </button>
+                    )}
+
+                    {/* File/Folder context menu */}
+                    {contextMenu.entry && (
+                        <>
+                            {contextMenu.entry.isDirectory && (
+                                <>
+                                    <button
+                                        onClick={() => handleContextAction('createFile')}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                                    >
+                                        <FilePlus className="w-3.5 h-3.5" />
+                                        Yeni Dosya
+                                    </button>
+                                    <button
+                                        onClick={() => handleContextAction('createFolder')}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                                    >
+                                        <FolderPlus className="w-3.5 h-3.5" />
+                                        Yeni KlasÃ¶r
+                                    </button>
+                                    <div className="h-px bg-white/5 my-1 mx-2" />
+                                </>
+                            )}
+                            <button
+                                onClick={() => handleContextAction('rename')}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                            >
+                                <Pencil className="w-3.5 h-3.5" />
+                                Yeniden AdlandÄ±r
+                            </button>
+                            <button
+                                onClick={() => handleContextAction('delete')}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Sil
+                            </button>
+                        </>
+                    )}
+                </div>,
+                document.body
+            )}
+
+        </div>
+    )
+}

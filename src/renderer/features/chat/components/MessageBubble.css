@@ -1,0 +1,19 @@
+.message-bubble-user {
+    @apply bg-primary/15 text-foreground border border-primary/20 rounded-2xl rounded-tr-md;
+}
+
+.message-bubble-ai {
+    @apply bg-card text-foreground border border-border/50 rounded-2xl rounded-tl-md;
+}
+
+.message-bubble-container {
+    @apply flex flex-col gap-2 max-w-[85%] relative group;
+}
+
+.message-bubble-user-container {
+    @apply self-end items-end;
+}
+
+.message-bubble-ai-container {
+    @apply self-start items-start;
+}

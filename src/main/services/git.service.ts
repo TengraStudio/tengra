@@ -13,12 +13,21 @@ export class GitService {
         }
     }
 
-    async getStatus(cwd: string) {
-        return await this.execute('status --short', cwd);
+    async getStatus(cwd: string): Promise<{ path: string, status: string }[]> {
+        const { stdout } = await this.execute('status --short', cwd);
+        if (!stdout) return []
+
+        return stdout.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const status = line.substring(0, 2)
+                const path = line.substring(3)
+                return { path, status }
+            })
     }
 
     async add(cwd: string, files: string = '.') {
-        return await this.execute(`add ${files}`, cwd);
+        return await this.execute(`add "${files}"`, cwd);
     }
 
     async commit(cwd: string, message: string) {
@@ -34,7 +43,15 @@ export class GitService {
     }
 
     async getLog(cwd: string, count: number = 10) {
-        return await this.execute(`log -n ${count} --oneline`, cwd);
+        const { stdout } = await this.execute(`log -n ${count} --pretty=format:"%h|%s|%an|%cI"`, cwd);
+        if (!stdout) return []
+
+        return stdout.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const [hash, message, author, date] = line.split('|')
+                return { hash, message, author, date }
+            })
     }
 
     async getBranches(cwd: string) {

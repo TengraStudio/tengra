@@ -309,5 +309,26 @@ export const toolDefinitions: ToolDefinition[] = [
                 required: ['source', 'destination']
             }
         }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'generate_image',
+            description: 'Antigravity gorsel modelini kullanarak resim uretir. "Bana 2 kedi resmi ciz" gibi istekler icin kullanin.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    prompt: {
+                        type: 'string',
+                        description: 'Gorsel icin detayli prompt (Ingilizce veya Turkce)'
+                    },
+                    count: {
+                        type: 'number',
+                        description: 'Uretilecek toplam resim sayisi. Eger kullanici birden fazla resim istediyse (or: "5 tane...") bu parametreyi mutlaka belirtin. (varsayilan: 1, maks: 5)'
+                    }
+                },
+                required: ['prompt']
+            }
+        }
     }
 ]

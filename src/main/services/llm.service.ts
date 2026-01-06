@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ImagePersistenceService } from './image-persistence.service';
 
 
 export interface OpenAIResponse {
@@ -7,6 +8,7 @@ export interface OpenAIResponse {
     tool_calls?: any[];
     completionTokens?: number;
     reasoning_content?: string;
+    images?: string[];
 }
 
 export interface HFModel {
@@ -30,9 +32,14 @@ export class LLMService {
     private anthropicApiKey: string = '';
     private geminiApiKey: string = '';
     private groqApiKey: string = '';
+    private proxyUrl: string = 'http://localhost:8317/v1';
+    private proxyKey: string = 'connected';
     private dispatcher: any = null;
+    private imagePersistence: ImagePersistenceService;
 
-    constructor() { }
+    constructor() {
+        this.imagePersistence = new ImagePersistenceService();
+    }
 
     // --- Configuration ---
 
@@ -41,6 +48,10 @@ export class LLMService {
     setAnthropicApiKey(key: string) { this.anthropicApiKey = key; }
     setGeminiApiKey(key: string) { this.geminiApiKey = key; }
     setGroqApiKey(key: string) { this.groqApiKey = key; }
+    setProxySettings(url: string, key: string) {
+        this.proxyUrl = url.replace(/\/$/, '');
+        this.proxyKey = key;
+    }
 
     private getDispatcher() {
         if (this.dispatcher) return this.dispatcher;
@@ -59,13 +70,46 @@ export class LLMService {
 
     // --- Message Normalization ---
 
-    private normalizeOpenAIMessages(messages: any[]): any[] {
+    private normalizeOpenAIMessages(messages: any[], model?: string): any[] {
         if (!Array.isArray(messages)) return messages;
+
+        // Gemini 3 Thinking models (high/low) usually don't support multimodal input in history
+        // or the specific endpoint they use rejects it.
+        const shouldStripImages = model && (
+            model.includes('gemini-3-pro-high') ||
+            model.includes('gemini-3-pro-low')
+        );
+
         return messages.map((message) => {
             if (!message || typeof message !== 'object') return message;
-            if (Array.isArray(message.content)) return message;
+            if (Array.isArray(message.content)) {
+                // If we need to strip images from existing structured content
+                if (shouldStripImages) {
+                    const textParts = message.content.filter((p: any) => p.type === 'text');
+                    if (textParts.length > 0) {
+                        // Return just text content or array of text parts
+                        return { ...message, content: textParts };
+                    }
+                    // If only images, return empty content or skip?
+                    // Better to keep role but empty text to avoid breaking structure
+                    return { ...message, content: '' };
+                }
+                return message;
+            }
+
             const images = Array.isArray(message.images) ? message.images.filter(Boolean) : [];
-            if (images.length === 0) return message;
+
+            // If stripping images, just return text content
+            if (shouldStripImages || images.length === 0) {
+                // Ensure we don't accidentally send a mixed content structure if we're stripping images
+                // just return the flat text content
+                return {
+                    ...message,
+                    content: message.content,
+                    images: undefined // Explicitly remove images property
+                };
+            }
+
             const parts: any[] = [];
             const text = typeof message.content === 'string' ? message.content : (message.content == null ? '' : String(message.content));
             if (text.trim()) parts.push({ type: 'text', text });
@@ -75,6 +119,66 @@ export class LLMService {
             }
             const { images: _ignored, content: _content, ...rest } = message;
             return { ...rest, content: parts };
+        }).filter(msg => {
+            if (!msg) return false;
+            // Keep if tool_calls exist and are not empty
+            if (Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) return true;
+            // Keep if content is non-empty string
+            if (typeof msg.content === 'string' && msg.content.trim() !== '') return true;
+            // Keep if content is non-empty array
+            if (Array.isArray(msg.content) && msg.content.length > 0) return true;
+
+            return false;
+        });
+    }
+
+    private normalizeAnthropicMessages(messages: any[]): any[] {
+        if (!Array.isArray(messages)) return messages;
+        // Anthropic doesn't support 'system' role in messages array (it's a top-level param)
+        // We assume system messages are filtered or handled by the caller if needed.
+        return messages.filter(m => m.role !== 'system').map((message) => {
+            if (!message || typeof message !== 'object') return message;
+            const images = Array.isArray(message.images) ? message.images.filter(Boolean) : [];
+            if (images.length === 0) return { role: message.role, content: message.content };
+
+            const content: any[] = [];
+            if (message.content) content.push({ type: 'text', text: message.content });
+            for (const img of images) {
+                const base64 = typeof img === 'string' && img.includes(',') ? img.split(',')[1] : img;
+                const mediaType = typeof img === 'string' && img.includes('image/png') ? 'image/png' : 'image/jpeg';
+                content.push({
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: mediaType,
+                        data: base64
+                    }
+                });
+            }
+            return { role: message.role, content };
+        });
+    }
+
+    private normalizeGeminiMessages(messages: any[]): any[] {
+        if (!Array.isArray(messages)) return messages;
+        return messages.map((message) => {
+            if (!message || typeof message !== 'object') return message;
+            const role = message.role === 'assistant' ? 'model' : 'user';
+            const images = Array.isArray(message.images) ? message.images.filter(Boolean) : [];
+
+            const parts: any[] = [];
+            if (message.content) parts.push({ text: message.content });
+            for (const img of images) {
+                const base64 = typeof img === 'string' && img.includes(',') ? img.split(',')[1] : img;
+                const mimeType = typeof img === 'string' && img.includes('image/png') ? 'image/png' : 'image/jpeg';
+                parts.push({
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64
+                    }
+                });
+            }
+            return { role, parts };
         });
     }
 
@@ -86,7 +190,10 @@ export class LLMService {
         const endpoint = `${effectiveBaseUrl}/chat/completions`;
 
         try {
-            const normalizedMessages = this.normalizeOpenAIMessages(messages);
+            const normalizedMessages = this.normalizeOpenAIMessages(messages, model);
+            console.log(`[LLMService:openaiChat] Effective Base URL: ${effectiveBaseUrl}`);
+            console.log(`[LLMService:openaiChat] Endpoint: ${endpoint}`);
+
             const body: any = {
                 model,
                 messages: normalizedMessages,
@@ -120,12 +227,26 @@ export class LLMService {
             const json = await response.json();
             if (json.choices && json.choices.length > 0) {
                 const choice = json.choices[0];
+                const rawImages = choice.message.images || [];
+                const savedImages: string[] = [];
+
+                if (rawImages.length > 0) {
+                    await Promise.all(rawImages.map(async (img: any) => {
+                        const url = img.image_url?.url;
+                        if (url) {
+                            const localPath = await this.imagePersistence.saveImage(url);
+                            savedImages.push(localPath);
+                        }
+                    }));
+                }
+
                 return {
                     content: choice.message.content || '',
                     role: choice.message.role || 'assistant',
                     tool_calls: choice.message.tool_calls || [],
                     completionTokens: json.usage?.completion_tokens,
-                    reasoning_content: choice.message.reasoning_content
+                    reasoning_content: choice.message.reasoning_content || choice.message.reasoning || '',
+                    images: savedImages
                 };
             }
             throw new Error('No choices returned from model');
@@ -135,11 +256,19 @@ export class LLMService {
         }
     }
 
-    async *openaiStreamChat(messages: any[], model: string = 'gpt-4o', baseUrlOverride?: string, apiKeyOverride?: string): AsyncGenerator<string> {
+    async *openaiStreamChat(messages: any[], model: string = 'gpt-4o', tools?: any[], baseUrlOverride?: string, apiKeyOverride?: string): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: any[] }> {
         const effectiveBaseUrl = baseUrlOverride || this.openaiBaseUrl;
         const effectiveApiKey = apiKeyOverride || this.openaiApiKey;
         const endpoint = `${effectiveBaseUrl}/chat/completions`;
-        const normalizedMessages = this.normalizeOpenAIMessages(messages);
+        const normalizedMessages = this.normalizeOpenAIMessages(messages, model);
+
+        const requestBody: any = { model, messages: normalizedMessages, stream: true };
+        if (tools && tools.length > 0) {
+            requestBody.tools = tools;
+            requestBody.tool_choice = 'auto';
+        }
+        console.log('[LLMService] Stream request to:', endpoint);
+        console.log('[LLMService] Request body:', JSON.stringify(requestBody, null, 2));
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -147,40 +276,153 @@ export class LLMService {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${effectiveApiKey || 'dummy'}`
             },
-            body: JSON.stringify({ model, messages: normalizedMessages, stream: true })
+            body: JSON.stringify(requestBody)
         });
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => '')
+            console.error('[LLMService] Stream Error:', response.status, errorText)
+            throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
         if (!response.body) throw new Error('No response body');
 
-        const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
         try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || !trimmed.startsWith('data:')) continue;
-                    const data = trimmed.slice(5).trim();
-                    if (data === '[DONE]') continue;
-                    try {
-                        const json = JSON.parse(data);
-                        const content = json.choices?.[0]?.delta?.content;
-                        if (content) yield content;
-                    } catch { }
+            // Robust Stream Handling
+            const body: any = response.body;
+
+            if (typeof body.getReader === 'function') {
+                // Web Standard ReadableStream
+                console.log('[LLMService] Using Web Stream Reader');
+                const reader = body.getReader();
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed || !trimmed.startsWith('data:')) continue;
+                            const data = trimmed.slice(5).trim();
+
+                            if (data === '[DONE]') continue;
+
+                            // Handle nested data: prefix issue
+                            let jsonData = data;
+                            while (jsonData.startsWith('data:')) {
+                                jsonData = jsonData.slice(5).trim();
+                            }
+
+                            if (jsonData === '[DONE]') continue;
+
+                            try {
+                                const json = JSON.parse(jsonData);
+                                const delta = json.choices?.[0]?.delta;
+                                if (!delta) continue;
+
+                                const content = delta.content || '';
+                                const reasoning = delta.reasoning_content || delta.reasoning || '';
+                                const images = delta.images || [];
+
+                                if (content || reasoning || images.length > 0 || delta.tool_calls) {
+                                    const savedImages: string[] = [];
+                                    if (images.length > 0) {
+                                        // Save images concurrently
+                                        await Promise.all(images.map(async (img: any) => {
+                                            const url = img.image_url?.url;
+                                            if (url) {
+                                                const localPath = await this.imagePersistence.saveImage(url);
+                                                savedImages.push(localPath);
+                                            }
+                                        }));
+                                    }
+
+                                    yield {
+                                        content,
+                                        reasoning,
+                                        images: savedImages.filter(img => typeof img === 'string'),
+                                        type: delta.tool_calls ? 'tool_calls' : undefined,
+                                        toolCalls: delta.tool_calls
+                                    } as any;
+                                }
+                            } catch { }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+            } else {
+                // Node.js Readable Stream (Async Iterable)
+                console.log('[LLMService] Using Node Stream Iterator');
+                for await (const value of body) {
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || !trimmed.startsWith('data:')) continue;
+                        const data = trimmed.slice(5).trim();
+                        if (data === '[DONE]') continue;
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            if (!delta) continue;
+
+                            const content = delta.content || '';
+                            const reasoning = delta.reasoning_content || delta.reasoning || '';
+                            const images = delta.images || [];
+
+                            if (content || reasoning || images.length > 0 || delta.tool_calls) {
+                                const savedImages: string[] = [];
+                                if (images.length > 0) {
+                                    // Save images concurrently
+                                    await Promise.all(images.map(async (img: any) => {
+                                        const url = img.image_url?.url;
+                                        if (url) {
+                                            const localPath = await this.imagePersistence.saveImage(url);
+                                            savedImages.push(localPath);
+                                        }
+                                    }));
+                                }
+
+                                yield {
+                                    content,
+                                    reasoning,
+                                    images: savedImages.filter(img => typeof img === 'string'),
+                                    type: delta.tool_calls ? 'tool_calls' : undefined,
+                                    toolCalls: delta.tool_calls
+                                } as any;
+                            }
+                        } catch { }
+                    }
                 }
             }
-        } finally { reader.releaseLock(); }
+        } catch (e: any) {
+            console.error('[LLMService] Stream Loop Error:', e);
+            throw e;
+        }
     }
 
     async anthropicChat(messages: any[], model: string = 'claude-3-5-sonnet-20240620'): Promise<OpenAIResponse> {
         if (!this.anthropicApiKey) throw new Error('Anthropic API Key not set');
+        const normalized = this.normalizeAnthropicMessages(messages);
+        const systemMessage = messages.find(m => m.role === 'system')?.content;
+
+        const body: any = {
+            model,
+            messages: normalized,
+            max_tokens: 4096
+        };
+        if (systemMessage) body.system = systemMessage;
+
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -188,7 +430,7 @@ export class LLMService {
                 'x-api-key': this.anthropicApiKey,
                 'anthropic-version': '2023-06-01'
             },
-            body: JSON.stringify({ model, messages, max_tokens: 4096 })
+            body: JSON.stringify(body)
         });
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
@@ -200,10 +442,7 @@ export class LLMService {
 
     async geminiChat(messages: any[], model: string = 'gemini-1.5-pro'): Promise<OpenAIResponse> {
         if (!this.geminiApiKey) throw new Error('Gemini API Key not set');
-        const contents = messages.map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }]
-        }));
+        const contents = this.normalizeGeminiMessages(messages);
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -233,6 +472,21 @@ export class LLMService {
             content: data.choices[0].message.content || '',
             role: 'assistant'
         };
+    }
+
+    async chat(messages: any[], model: string, tools?: any[], provider?: string): Promise<OpenAIResponse> {
+        const p = provider?.toLowerCase() || '';
+        if (p.includes('anthropic') || p.includes('claude')) {
+            return this.anthropicChat(messages, model);
+        } else if (p.includes('gemini') || p.includes('google')) {
+            return this.geminiChat(messages, model);
+        } else if (p.includes('groq')) {
+            return this.groqChat(messages, model);
+        } else if (p.includes('antigravity')) {
+            return this.openaiChat(messages, model, tools, this.proxyUrl, this.proxyKey);
+        } else {
+            return this.openaiChat(messages, model, tools);
+        }
     }
 
     // --- Search & Misc ---

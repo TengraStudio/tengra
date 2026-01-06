@@ -20,6 +20,12 @@ export interface ElectronAPI {
     checkAuthStatus: () => Promise<any>
     deleteProxyAuthFile: (name: string) => Promise<any>
 
+    code: {
+        scanTodos: (rootPath: string) => Promise<any[]>
+        findSymbols: (rootPath: string, query: string) => Promise<any[]>
+        searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<any[]>
+    }
+
     // Proxy
     getProxyModels: () => Promise<any[]>
     getQuota: () => Promise<any>
@@ -27,16 +33,17 @@ export interface ElectronAPI {
     getCodexUsage: () => Promise<any>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
+    runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
 
 
     // Ollama chat
     getModels: () => Promise<any[]>
     chat: (messages: any[], model: string) => Promise<any>
     chatOpenAI: (messages: any[], model: string, tools?: any[], provider?: string) => Promise<any>
-    chatStream: (messages: any[], model: string, tools?: any[]) => Promise<any>
+    chatStream: (messages: any[], model: string, tools?: any[], provider?: string, options?: any) => Promise<any>
     abortChat: () => void
-    onStreamChunk: (callback: (chunk: string) => void) => void
-    removeStreamChunkListener: (callback?: (chunk: string) => void) => void
+    onStreamChunk: (callback: (chunk: any) => void) => void
+    removeStreamChunkListener: (callback?: (chunk: any) => void) => void
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>
@@ -46,6 +53,12 @@ export interface ElectronAPI {
     getLibraryModels: () => Promise<any[]>
     onPullProgress: (callback: (progress: any) => void) => void
     removePullProgressListener: () => void
+
+    // New health and GPU checks
+    getOllamaHealthStatus: () => Promise<any>
+    forceOllamaHealthCheck: () => Promise<any>
+    checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>
+    onOllamaStatusChange: (callback: (status: any) => void) => void
 
     // llama.cpp
     llama: {
@@ -80,6 +93,7 @@ export interface ElectronAPI {
         deleteMessage: (id: string) => Promise<{ success: boolean }>
         updateMessage: (id: string, updates: any) => Promise<{ success: boolean }>
         deleteAllChats: () => Promise<{ success: boolean }>
+        deleteMessages: (chatId: string) => Promise<{ success: boolean }>
         getMessages: (chatId: string) => Promise<any[]>
         getStats: () => Promise<{ chatCount: number; messageCount: number; dbSize: number }>
         getDetailedStats: (period: string) => Promise<{
@@ -95,14 +109,40 @@ export interface ElectronAPI {
         getProjects: () => Promise<any[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
         updateProject: (id: string, updates: any) => Promise<void>
-        createFolder: (name: string) => Promise<any>
-        deleteFolder: (id: string) => Promise<{ success: boolean }>
+        deleteProject: (id: string) => Promise<void>
+        archiveProject: (id: string, isArchived: boolean) => Promise<void>
+        createFolder: (name: string) => Promise<void>
+        deleteFolder: (id: string) => Promise<void>
         updateFolder: (id: string, name: string) => Promise<{ success: boolean }>
         getFolders: () => Promise<any[]>
     }
 
+    council: {
+        runSession: (projectId: string, taskId: string) => Promise<void>
+        onUpdate: (callback: (data: any) => void) => void
+        removeUpdateListener: () => void
+        approvePlan: (sessionId: string, approved: boolean, editedPlan?: string) => Promise<boolean>
+        generateAgents: (taskDescription: string) => Promise<any[]>
+        getSessions: (projectId?: string) => Promise<any[]>
+        getSessionById: (id: string) => Promise<any>
+    }
+
+    terminal: {
+        isAvailable: () => Promise<boolean>
+        getShells: () => Promise<{ id: string; name: string; path: string }[]>
+        create: (options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<{ success: boolean; error?: string }>
+        write: (sessionId: string, data: string) => Promise<boolean>
+        resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
+        kill: (sessionId: string) => Promise<boolean>
+        getSessions: () => Promise<string[]>
+        onData: (callback: (data: { id: string; data: string }) => void) => void
+        onExit: (callback: (data: { id: string; code: number }) => void) => void
+        removeAllListeners: () => void
+    }
+
     // SSH
     ssh: {
+
         connect: (connection: any) => Promise<{ success: boolean; error?: string }>
         disconnect: (connectionId: string) => Promise<{ success: boolean }>
         execute: (connectionId: string, command: string, options?: any) => Promise<any>
@@ -171,12 +211,42 @@ export interface ElectronAPI {
     searchFiles: (rootPath: string, pattern: string) => Promise<{ success: boolean; matches?: string[]; error?: string }>
     saveFile: (content: string, filename: string) => Promise<{ success: boolean; path?: string; error?: string }>
 
+    files: {
+        listDirectory: (path: string) => Promise<any[]>
+        readFile: (path: string) => Promise<string>
+        readImage: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
+        writeFile: (path: string, content: string) => Promise<void>
+        exists: (path: string) => Promise<boolean>
+    }
+
+    project: {
+        analyze: (rootPath: string) => Promise<any>
+        saveState: (rootPath: string, state: any) => Promise<boolean>
+        loadState: (rootPath: string) => Promise<any>
+    }
+
+    process: {
+        spawn: (command: string, args: string[], cwd: string) => Promise<string>
+        kill: (id: string) => Promise<boolean>
+        list: () => Promise<any[]>
+        scanScripts: (rootPath: string) => Promise<Record<string, string>>
+        resize: (id: string, cols: number, rows: number) => Promise<void>
+        write: (id: string, data: string) => Promise<void>
+        onData: (callback: (data: { id: string; data: string }) => void) => void
+        onExit: (callback: (data: { id: string; code: number }) => void) => void
+        removeListeners: () => void
+    }
+
     // Settings
     getSettings: () => Promise<any>
     saveSettings: (settings: any) => Promise<any>
 
     huggingface: {
         searchModels: (query: string, limit: number, page: number) => Promise<any[]>
+        getFiles: (modelId: string) => Promise<any[]>
+        downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => Promise<{ success: boolean; error?: string }>
+        onDownloadProgress: (callback: (progress: { filename: string; received: number; total: number }) => void) => void
+        cancelDownload: () => void
     }
 
     log: {
@@ -185,6 +255,13 @@ export interface ElectronAPI {
         info: (message: string, data?: any) => void
         warn: (message: string, data?: any) => void
         error: (message: string, data?: any) => void
+    }
+
+    gallery: {
+        list: () => Promise<{ name: string; path: string; url: string; mtime: number }[]>
+        delete: (path: string) => Promise<boolean>
+        open: (path: string) => Promise<boolean>
+        reveal: (path: string) => Promise<boolean>
     }
 }
 
@@ -205,6 +282,12 @@ const api: ElectronAPI = {
     checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
     deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
 
+    code: {
+        scanTodos: (rootPath) => ipcRenderer.invoke('code:scanTodos', rootPath),
+        findSymbols: (rootPath, query) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
+        searchFiles: (rootPath, query, isRegex) => ipcRenderer.invoke('code:searchFiles', rootPath, query, isRegex)
+    },
+
     getProxyModels: () => ipcRenderer.invoke('proxy:getModels'),
     getQuota: () => ipcRenderer.invoke('proxy:getQuota'),
     getCopilotQuota: () => ipcRenderer.invoke('proxy:getCopilotQuota'),
@@ -214,11 +297,11 @@ const api: ElectronAPI = {
 
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
-    chatOpenAI: (messages, model, tools, provider) => ipcRenderer.invoke('chat:openai', messages, model, tools, provider),
-    chatStream: (messages, model, tools) => ipcRenderer.invoke('ollama:chatStream', messages, model, tools),
+    chatOpenAI: (messages: any[], model: string, tools?: any[], provider?: string, options?: any) => ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options),
+    chatStream: (messages: any[], model: string, tools?: any[], provider?: string, options?: any) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options),
     abortChat: () => ipcRenderer.invoke('ollama:abort'),
     onStreamChunk: (callback) => {
-        const listener = (_event: any, chunk: string) => callback(chunk)
+        const listener = (_event: any, chunk: any) => callback(chunk)
         ipcRenderer.on('ollama:streamChunk', listener)
     },
     removeStreamChunkListener: () => {
@@ -233,9 +316,12 @@ const api: ElectronAPI = {
     onPullProgress: (callback) => {
         ipcRenderer.on('ollama:pullProgress', (_event, progress) => callback(progress))
     },
-    removePullProgressListener: () => {
-        ipcRenderer.removeAllListeners('ollama:pullProgress')
-    },
+    removePullProgressListener: () => ipcRenderer.removeAllListeners('ollama:pullProgress'),
+
+    getOllamaHealthStatus: () => ipcRenderer.invoke('ollama:healthStatus'),
+    forceOllamaHealthCheck: () => ipcRenderer.invoke('ollama:forceHealthCheck'),
+    checkCuda: () => ipcRenderer.invoke('ollama:checkCuda'),
+    onOllamaStatusChange: (callback: (status: any) => void) => ipcRenderer.on('ollama:statusChange', (_event, value) => callback(value)),
 
     llama: {
         loadModel: (modelPath, config) => ipcRenderer.invoke('llama:loadModel', modelPath, config),
@@ -276,16 +362,31 @@ const api: ElectronAPI = {
         deleteMessage: (id) => ipcRenderer.invoke('db:deleteMessage', id),
         updateMessage: (id, updates) => ipcRenderer.invoke('db:updateMessage', id, updates),
         deleteAllChats: () => ipcRenderer.invoke('db:deleteAllChats'),
+        deleteMessages: (chatId) => ipcRenderer.invoke('db:deleteMessages', chatId),
         getMessages: (chatId) => ipcRenderer.invoke('db:getMessages', chatId),
         getStats: () => ipcRenderer.invoke('db:getStats'),
         getDetailedStats: (period) => ipcRenderer.invoke('db:getDetailedStats', period),
         getProjects: () => ipcRenderer.invoke('db:getProjects'),
         createProject: (name, path, desc, mounts) => ipcRenderer.invoke('db:createProject', name, path, desc, mounts),
-        updateProject: (id, updates) => ipcRenderer.invoke('db:updateProject', id, updates),
-        createFolder: (name) => ipcRenderer.invoke('db:createFolder', name),
-        deleteFolder: (id) => ipcRenderer.invoke('db:deleteFolder', id),
-        updateFolder: (id, name) => ipcRenderer.invoke('db:updateFolder', id, name),
-        getFolders: () => ipcRenderer.invoke('db:getFolders')
+        updateProject: (id: string, updates: any) => ipcRenderer.invoke('db:updateProject', id, updates),
+        deleteProject: (id: string) => ipcRenderer.invoke('db:deleteProject', id),
+        archiveProject: (id: string, isArchived: boolean) => ipcRenderer.invoke('db:archiveProject', id, isArchived),
+        getFolders: () => ipcRenderer.invoke('db:getFolders'),
+        createFolder: (name: string) => ipcRenderer.invoke('db:createFolder', name),
+        deleteFolder: (id: string) => ipcRenderer.invoke('db:deleteFolder', id),
+        updateFolder: (id: string, name: string) => ipcRenderer.invoke('db:updateFolder', id, name)
+    },
+
+    council: {
+        runSession: (projectId: string, taskId: string) => ipcRenderer.invoke('council:run', projectId, taskId),
+        onUpdate: (callback: (data: any) => void) => {
+            ipcRenderer.on('council:update', (_event, data) => callback(data))
+        },
+        removeUpdateListener: () => ipcRenderer.removeAllListeners('council:update'),
+        approvePlan: (sessionId: string, approved: boolean, editedPlan?: string) => ipcRenderer.invoke('council:approvePlan', sessionId, approved, editedPlan),
+        generateAgents: (taskDescription: string) => ipcRenderer.invoke('council:generateAgents', taskDescription),
+        getSessions: (projectId?: string) => ipcRenderer.invoke('db:getCouncilSessions', projectId),
+        getSessionById: (id: string) => ipcRenderer.invoke('db:getCouncilSessionById', id)
     },
 
     ssh: {
@@ -346,6 +447,7 @@ const api: ElectronAPI = {
     captureScreenshot: () => ipcRenderer.invoke('screenshot:capture'),
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
+    runCommand: (command, args, cwd) => ipcRenderer.invoke('shell:runCommand', command, args, cwd),
 
     readPdf: (path) => ipcRenderer.invoke('files:readPdf', path),
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
@@ -359,11 +461,44 @@ const api: ElectronAPI = {
     searchFiles: (rootPath, pattern) => ipcRenderer.invoke('files:searchFiles', rootPath, pattern),
     saveFile: (content, filename) => ipcRenderer.invoke('dialog:saveFile', { content, filename }),
 
+    files: {
+        listDirectory: (path: string) => ipcRenderer.invoke('files:listDirectory', path),
+        readFile: (filePath: string) => ipcRenderer.invoke('files:readFile', filePath),
+        readImage: (filePath: string) => ipcRenderer.invoke('files:readImage', filePath),
+        writeFile: (filePath: string, content: string) => ipcRenderer.invoke('files:writeFile', filePath, content),
+        exists: (path: string) => ipcRenderer.invoke('files:exists', path)
+    },
+
     getSettings: () => ipcRenderer.invoke('settings:get'),
     saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
 
+    project: {
+        analyze: (rootPath: string) => ipcRenderer.invoke('project:analyze', rootPath),
+        saveState: (rootPath: string, state: any) => ipcRenderer.invoke('project:save-state', rootPath, state),
+        loadState: (rootPath: string) => ipcRenderer.invoke('project:load-state', rootPath)
+    },
+
+    process: {
+        spawn: (command: string, args: string[], cwd: string) => ipcRenderer.invoke('process:spawn', command, args, cwd),
+        kill: (id: string) => ipcRenderer.invoke('process:kill', id),
+        list: () => ipcRenderer.invoke('process:list'),
+        scanScripts: (rootPath: string) => ipcRenderer.invoke('process:scan-scripts', rootPath),
+        resize: (id: string, cols: number, rows: number) => ipcRenderer.invoke('process:resize', id, cols, rows),
+        write: (id: string, data: string) => ipcRenderer.invoke('process:write', id, data),
+        onData: (callback: (data: any) => void) => ipcRenderer.on('process:data', (_event, data) => callback(data)),
+        onExit: (callback: (data: any) => void) => ipcRenderer.on('process:exit', (_event, data) => callback(data)),
+        removeListeners: () => {
+            ipcRenderer.removeAllListeners('process:data')
+            ipcRenderer.removeAllListeners('process:exit')
+        }
+    },
+
     huggingface: {
-        searchModels: (query: string, limit: number, page: number) => ipcRenderer.invoke('hf:search-models', query, limit, page)
+        searchModels: (query: string, limit: number, page: number) => ipcRenderer.invoke('hf:search-models', query, limit, page),
+        getFiles: (modelId: string) => ipcRenderer.invoke('hf:get-files', modelId),
+        downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256),
+        onDownloadProgress: (callback: (progress: any) => void) => ipcRenderer.on('hf:download-progress', (_event, progress) => callback(progress)),
+        cancelDownload: () => ipcRenderer.invoke('hf:cancel-download')
     },
 
     log: {
@@ -372,6 +507,29 @@ const api: ElectronAPI = {
         info: (message, data) => ipcRenderer.send('log:write', { level: 'info', message, data }),
         warn: (message, data) => ipcRenderer.send('log:write', { level: 'warn', message, data }),
         error: (message, data) => ipcRenderer.send('log:write', { level: 'error', message, data })
+    },
+
+    terminal: {
+        isAvailable: () => ipcRenderer.invoke('terminal:isAvailable'),
+        getShells: () => ipcRenderer.invoke('terminal:getShells'),
+        create: (options) => ipcRenderer.invoke('terminal:create', options),
+        write: (sessionId, data) => ipcRenderer.invoke('terminal:write', sessionId, data),
+        resize: (sessionId, cols, rows) => ipcRenderer.invoke('terminal:resize', sessionId, cols, rows),
+        kill: (sessionId) => ipcRenderer.invoke('terminal:kill', sessionId),
+        getSessions: () => ipcRenderer.invoke('terminal:getSessions'),
+        onData: (callback) => ipcRenderer.on('terminal:data', (_event, data) => callback(data)),
+        onExit: (callback) => ipcRenderer.on('terminal:exit', (_event, data) => callback(data)),
+        removeAllListeners: () => {
+            ipcRenderer.removeAllListeners('terminal:data')
+            ipcRenderer.removeAllListeners('terminal:exit')
+        }
+    },
+
+    gallery: {
+        list: () => ipcRenderer.invoke('gallery:list'),
+        delete: (path) => ipcRenderer.invoke('gallery:delete', path),
+        open: (path) => ipcRenderer.invoke('gallery:open', path),
+        reveal: (path) => ipcRenderer.invoke('gallery:reveal', path)
     }
 }
 

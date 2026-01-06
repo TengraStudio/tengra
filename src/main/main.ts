@@ -1,188 +1,223 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, protocol } from 'electron'
 import { join } from 'path'
-import { initAppLogger } from './logging/logger'
+
+
 import { createServices } from './startup/services'
-import { registerSettingsIpc } from './ipc/settings'
-import { registerAuthIpc } from './ipc/auth'
-import { registerDbIpc } from './ipc/db'
-import { registerOllamaIpc } from './ipc/ollama'
-import { registerChatIpc } from './ipc/chat'
-import { registerToolsIpc } from './ipc/tools'
-import { registerScreenshotIpc } from './ipc/screenshot'
-import { registerDialogIpc } from './ipc/dialog'
-import { buildMcpServices } from './mcp/registry'
 import { McpDispatcher } from './mcp/dispatcher'
-import { registerMcpIpc } from './ipc/mcp'
-import { registerProxyIpc } from './ipc/proxy'
-import { registerProxyEmbedIpc } from './ipc/proxy-embed'
-import { registerFilesIpc } from './ipc/files'
-import { registerLoggingIpc } from './ipc/logging'
-import { registerHistoryIpc } from './ipc/history'
-import { registerHFModelIpc } from './ipc/huggingface'
+
+// IPC Registrations
 import { registerWindowIpc } from './ipc/window'
+import { registerAuthIpc } from './ipc/auth'
+import { registerProxyIpc } from './ipc/proxy'
+import { registerChatIpc } from './ipc/chat'
+import { registerOllamaIpc } from './ipc/ollama'
+import { registerDbIpc } from './ipc/db'
+import { registerSettingsIpc } from './ipc/settings'
+import { registerSshIpc } from './ipc/ssh'
+import { registerFilesIpc } from './ipc/files'
+import { registerToolsIpc } from './ipc/tools'
+import { registerMcpIpc } from './ipc/mcp'
+import { registerScreenshotIpc } from './ipc/screenshot'
+import { registerHFModelIpc } from './ipc/huggingface'
+import { registerProjectIpc } from './ipc/project'
+import { registerLoggingIpc } from './ipc/logging'
+import { registerTerminalIpc } from './ipc/terminal'
+import { registerDialogIpc } from './ipc/dialog'
+import { registerHistoryIpc } from './ipc/history'
+import { registerProxyEmbedIpc } from './ipc/proxy-embed'
+import { registerExportIpc } from './ipc/export'
+import { registerCouncilIpc } from './ipc/council'
+import { registerGalleryIpc } from './ipc/gallery'
+import { registerLlamaIpc } from './ipc/llama'
+import { registerProcessIpc, setupProcessEvents } from './ipc/process'
+import { registerCodeIntelligenceIpc } from './ipc/code-intelligence'
 import { ToolExecutor } from './tools/tool-executor'
-
-// Single Instance Lock
-const gotTheLock = app.requestSingleInstanceLock()
-
-if (!gotTheLock) {
-    console.log('[MAIN] Another instance is already running. Quitting...')
-    app.quit()
-} else {
-    app.on('second-instance', (_event, _commandLine, _workingDirectory) => {
-        // Someone tried to run a second instance, we should focus our window.
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore()
-            mainWindow.focus()
-        }
-    })
-
-    // Initialize Logger
-    initAppLogger()
-    console.log('[MAIN] Application starting up - Streamlined Services')
-}
 
 let mainWindow: BrowserWindow | null = null
 
-const allowedFileRoots = new Set<string>([
-    app.getPath('home'),
-    app.getPath('desktop'),
-    app.getPath('documents')
-])
-
-const {
-    settingsService,
-    databaseService,
-    localAIService,
-    ollamaService,
-    copilotService,
-    llmService,
-    proxyService,
-    systemService,
-    networkService,
-    notificationService,
-    clipboardService,
-    gitService,
-    securityService,
-    contentService,
-    monitoringService,
-    historyImportService,
-    embeddingService,
-    utilityService,
-    dockerService,
-    screenshotService,
-    commandService,
-    fileSystemService,
-    sshService
-} = createServices(allowedFileRoots)
-
-const mcpServices = buildMcpServices({
-    web: contentService as any,
-    utility: utilityService,
-    system: systemService,
-    ssh: sshService,
-    screenshot: screenshotService,
-    scanner: contentService as any,
-    notification: notificationService,
-    network: networkService,
-    monitoring: monitoringService,
-    git: gitService,
-    security: securityService,
-    settings: settingsService,
-    filesystem: fileSystemService,
-    file: fileSystemService as any,
-    embedding: embeddingService,
-    docker: dockerService,
-    database: databaseService,
-    content: contentService as any,
-    command: commandService,
-    clipboard: clipboardService
-})
-
-const mcpDispatcher = new McpDispatcher(mcpServices, settingsService)
-const toolExecutor = new ToolExecutor({
-    fileSystem: fileSystemService,
-    command: commandService,
-    web: contentService as any,
-    screenshot: screenshotService,
-    system: systemService,
-    network: networkService,
-    notification: notificationService,
-    docker: dockerService,
-    ssh: sshService,
-    scanner: contentService as any,
-    embedding: embeddingService,
-    utility: utilityService,
-    content: contentService as any,
-    file: fileSystemService as any,
-    monitor: monitoringService,
-    clipboard: clipboardService,
-    git: gitService,
-    security: securityService,
-    mcp: mcpDispatcher
-})
-
-function updateOpenAIConnection() {
-    const settings = settingsService.getSettings()
-    llmService.setOpenAIApiKey(settings.openai?.apiKey || '')
-    llmService.setOpenAIBaseUrl(settings.proxy?.enabled && settings.proxy?.url ? settings.proxy.url : 'https://api.openai.com/v1')
-
-    // Initialize other providers too
-    if (settings.anthropic?.apiKey) llmService.setAnthropicApiKey(settings.anthropic.apiKey)
-    if (settings.gemini?.apiKey) llmService.setGeminiApiKey(settings.gemini.apiKey)
-    if (settings.groq?.apiKey) llmService.setGroqApiKey(settings.groq.apiKey)
-}
-
-function updateOllamaConnection() {
-    // Handled internally by localAIService via settings updates
-}
-
-registerSettingsIpc({ settingsService, llmService, updateOpenAIConnection, updateOllamaConnection })
-registerAuthIpc(proxyService, settingsService, copilotService)
-registerDbIpc(databaseService)
-registerOllamaIpc({ localAIService, settingsService, llmService, ollamaService })
-registerChatIpc({ settingsService, copilotService, llmService, proxyService })
-registerToolsIpc(toolExecutor, commandService)
-registerMcpIpc(mcpDispatcher)
-registerFilesIpc(() => mainWindow, fileSystemService, allowedFileRoots)
-registerProxyIpc(proxyService)
-registerProxyEmbedIpc(proxyService)
-registerLoggingIpc()
-registerHFModelIpc(llmService as any) // Casting as LLMService has searchHFModels
-registerHistoryIpc(historyImportService)
-registerScreenshotIpc()
-registerDialogIpc(() => mainWindow)
-registerWindowIpc(() => mainWindow)
-
-function createWindow() {
-    mainWindow = new BrowserWindow({
-        width: 1280, height: 800, minWidth: 900, minHeight: 600, frame: false,
-        backgroundColor: '#00000000', transparent: true,
-        webPreferences: { preload: join(__dirname, '../preload/preload.js'), nodeIntegration: false, contextIsolation: true }
+function createWindow(): BrowserWindow {
+    const win = new BrowserWindow({
+        width: 1280,
+        height: 800,
+        show: false,
+        frame: false,
+        backgroundColor: '#000000',
+        autoHideMenuBar: true,
+        webPreferences: {
+            preload: join(__dirname, '../preload/preload.js'),
+            sandbox: false,
+            contextIsolation: true,
+            nodeIntegration: false
+        }
     })
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (url.startsWith('http')) shell.openExternal(url)
+
+    win.on('ready-to-show', () => {
+        win.show()
+    })
+
+    win.webContents.setWindowOpenHandler((details: any) => {
+        shell.openExternal(details.url)
         return { action: 'deny' }
     })
-    mainWindow.on('closed', () => { mainWindow = null })
+
+    if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
+        win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    } else {
+        win.loadFile(join(__dirname, '../renderer/index.html'))
+    }
+
+    return win
 }
 
+protocol.registerSchemesAsPrivileged([
+    { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
+])
+
 app.whenReady().then(async () => {
-    await databaseService.initialize()
+    app.setAppUserModelId('com.github.orbit-ai')
 
-    // Initial key load
-    updateOpenAIConnection()
+    protocol.registerFileProtocol('safe-file', (request, callback) => {
+        let url = request.url.replace('safe-file://', '')
 
-    const projects = databaseService.getProjects()
-    projects.forEach(p => allowedFileRoots.add(p.path))
-    fileSystemService.updateAllowedRoots(Array.from(allowedFileRoots))
+        // Handle Windows drive letters (e.g., /C:/Users -> C:/Users)
+        // If the path starts with a slash followed by a drive letter, strip the slash
+        if (process.platform === 'win32') {
+            if (/^\/[a-zA-Z]:/.test(url)) {
+                url = url.slice(1)
+            } else if (/^[a-zA-Z]\//.test(url)) {
+                // Handle malformed 2-slash URLs where colon is stripped (e.g. c/Users -> c:/Users)
+                url = url.substring(0, 1) + ':' + url.substring(1)
+            }
+        }
 
-    const settings = settingsService.getSettings()
-    if (settings.copilot?.token) copilotService.setGithubToken(settings.copilot.token)
+        const decoded = decodeURIComponent(url)
+        try {
+            return callback(decoded)
+        } catch (error) {
+            console.error('[SAFE-FILE] Error:', error)
+        }
+    })
 
-    await proxyService.startEmbeddedProxy({ port: 8317 })
-    createWindow()
+    const services = createServices(new Set([app.getPath('userData'), app.getPath('home')]))
+    await services.databaseService.initialize()
+    await services.proxyService.startEmbeddedProxy()
+
+    const mcpDispatcher = new McpDispatcher([], services.settingsService)
+
+    const toolExecutor = new ToolExecutor({
+        fileSystem: services.fileSystemService,
+        command: services.commandService,
+        web: services.utilityService as any,
+        screenshot: services.screenshotService,
+        system: services.systemService,
+        network: services.networkService,
+        notification: services.notificationService,
+        docker: services.dockerService,
+        ssh: services.sshService,
+        scanner: services.monitoringService as any,
+        embedding: services.embeddingService,
+        utility: services.utilityService,
+        content: services.contentService,
+        file: services.fileSystemService as any,
+        monitor: services.monitoringService,
+        clipboard: services.clipboardService,
+        git: services.gitService,
+        security: services.securityService,
+        mcp: mcpDispatcher,
+        llm: services.llmService
+    })
+
+    // Create window FIRST so we can pass it to synchronous registers if needed
+    mainWindow = createWindow()
+
+    // Register all IPC handlers
+    registerWindowIpc(() => mainWindow)
+
+    // Initialize Copilot Token
+    const settings = services.settingsService.getSettings()
+    const validToken = settings.copilot?.token || settings.github?.token
+    if (validToken) {
+        services.copilotService.setGithubToken(validToken)
+    }
+
+    // Sync proxy settings to LLMService
+    const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
+    const proxyKey = services.proxyService.getProxyKey()
+    services.llmService.setProxySettings(proxyUrl, proxyKey)
+
+    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService)
+    registerProxyIpc(services.proxyService)
+    registerChatIpc({
+        settingsService: services.settingsService,
+        copilotService: services.copilotService,
+        llmService: services.llmService,
+        proxyService: services.proxyService
+    })
+
+    registerOllamaIpc({
+        localAIService: services.localAIService,
+        settingsService: services.settingsService,
+        llmService: services.llmService,
+        ollamaService: services.ollamaService,
+        ollamaHealthService: services.ollamaHealthService,
+        proxyService: services.proxyService,
+        copilotService: services.copilotService,
+        llamaService: services.llamaService
+    })
+
+    registerProjectIpc(services.projectService)
+    registerProcessIpc(services.processService)
+    setupProcessEvents(services.processService)
+    registerCodeIntelligenceIpc(services.codeIntelligenceService)
+
+    registerDbIpc(services.databaseService)
+    registerLlamaIpc(services.llamaService)
+
+    registerSettingsIpc({
+        settingsService: services.settingsService,
+        llmService: services.llmService,
+        updateOpenAIConnection: () => { },
+        updateOllamaConnection: () => { }
+    })
+
+    registerSshIpc(() => mainWindow, services.sshService)
+    registerFilesIpc(() => mainWindow, services.fileSystemService, new Set([app.getPath('userData'), app.getPath('home')]))
+    registerHFModelIpc(services.llmService, services.huggingFaceService)
+
+    registerToolsIpc(toolExecutor, services.commandService)
+    registerMcpIpc(mcpDispatcher)
+
+    registerScreenshotIpc()
+    registerLoggingIpc()
+
+    // Terminal needs the instance
+    registerTerminalIpc(mainWindow)
+
+    registerDialogIpc(() => mainWindow)
+    registerHistoryIpc(services.historyImportService)
+
+    registerProxyEmbedIpc(services.proxyService)
+    registerExportIpc(() => mainWindow)
+
+    // Council IPC registered already? No, we will do it after creating service properly.
+    // Actually, createServices does it. We just need to register IPC.
+    // registerCouncilIpc(services.councilService, services.databaseService)
+    // Wait, services.councilService in createServices was created with OLD deps.
+    // We need to fix createServices function in services.ts first.
+    registerCouncilIpc(services.councilService, services.databaseService)
+
+    // Register Gallery IPC
+    const galleryPath = join(app.getPath('pictures'), 'Orbit', 'Gallery')
+    registerGalleryIpc(galleryPath)
+
+    // Re-create on activate if needed
+    app.on('activate', function () {
+        if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
+    })
 })
 
-app.on('will-quit', async () => { await proxyService.stopEmbeddedProxy() })
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
+})

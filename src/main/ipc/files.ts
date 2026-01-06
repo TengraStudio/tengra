@@ -30,6 +30,10 @@ export function registerFilesIpc(
         return await fileSystemService.readFile(filePath)
     })
 
+    ipcMain.handle('files:readImage', async (_event, filePath: string) => {
+        return await fileSystemService.readImage(filePath)
+    })
+
     ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string) => {
         return await fileSystemService.writeFile(filePath, content)
     })

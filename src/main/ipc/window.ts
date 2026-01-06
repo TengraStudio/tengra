@@ -37,6 +37,23 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
         console.log('[MAIN] shell:openExternal handle called with URL:', url)
         appLogger.info(`shell:openExternal handle called with URL: ${url}`, { source: 'window-ipc' })
 
+        // Handle safe-file:// protocol for local images
+        if (url.startsWith('safe-file://')) {
+            const filePath = url.replace('safe-file://', '')
+            console.log('[MAIN] Opening local file path:', filePath)
+            try {
+                const error = await shell.openPath(decodeURIComponent(filePath))
+                if (error) {
+                    console.error('[MAIN] shell.openPath failed:', error)
+                    return { success: false, error }
+                }
+                return { success: true }
+            } catch (e) {
+                console.error('[MAIN] Safe file open catch:', e)
+                return { success: false, error: String(e) }
+            }
+        }
+
         try {
             const parsed = new URL(url)
             const urlString = parsed.toString()
@@ -74,5 +91,34 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
             console.log('Open terminal not fully supported on non-windows yet:', command)
         }
         return true
+    })
+
+    ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
+        const { spawn } = require('child_process')
+        return new Promise((resolve) => {
+            const child = spawn(command, args, {
+                cwd: cwd || process.cwd(),
+                shell: true
+            })
+
+            let stdout = ''
+            let stderr = ''
+
+            child.stdout.on('data', (data: Buffer) => {
+                stdout += data.toString()
+            })
+
+            child.stderr.on('data', (data: Buffer) => {
+                stderr += data.toString()
+            })
+
+            child.on('close', (code: number | null) => {
+                resolve({ stdout, stderr, code: code || 0 })
+            })
+
+            child.on('error', (err: Error) => {
+                resolve({ stdout, stderr, code: 1, error: err.message })
+            })
+        })
     })
 }

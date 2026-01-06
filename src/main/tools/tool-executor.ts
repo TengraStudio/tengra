@@ -18,6 +18,7 @@ import { ClipboardService } from '../services/clipboard.service'
 import { GitService } from '@main/services/git.service'
 import { SecurityService } from '@main/services/security.service'
 import { McpDispatcher } from '../mcp/dispatcher'
+import { LLMService } from '../services/llm.service'
 
 interface ToolResult {
     success: boolean
@@ -49,7 +50,8 @@ interface ToolExecutorOptions {
     clipboard: ClipboardService,
     git: GitService,
     security: SecurityService,
-    mcp: McpDispatcher
+    mcp: McpDispatcher,
+    llm: LLMService
 }
 
 export class ToolExecutor {
@@ -134,6 +136,56 @@ export class ToolExecutor {
 
                 case 'fetch_json':
                     return await this.options.web.fetchJson(args.url)
+
+                // AI Generation Tools
+                case 'generate_image': {
+                    const count = Math.min(Math.max(1, parseInt(args.count) || 1), 5)
+                    const prompt = args.prompt
+                    const imagePaths: string[] = []
+
+                    try {
+                        console.log(`[ToolExecutor:generate_image] Generating ${count} images for prompt: ${prompt}`)
+                        // Run requests in parallel
+                        const promises = Array(count).fill(0).map((_, i) => {
+                            console.log(`[ToolExecutor:generate_image] Submitting image request ${i + 1}/${count}`)
+                            return this.options.llm.chat(
+                                [{ role: 'user', content: prompt }],
+                                'gemini-3-pro-image',
+                                [], // no tools
+                                'antigravity' // force provider
+                            )
+                        })
+
+                        const responses = await Promise.all(promises)
+
+                        responses.forEach(resp => {
+                            if (resp.images && Array.isArray(resp.images)) {
+                                resp.images.forEach((img: any) => {
+                                    if (typeof img === 'string') imagePaths.push(img);
+                                    else if (img && typeof img === 'object' && (img as any).path) imagePaths.push((img as any).path);
+                                    else if (img && typeof img === 'object' && (img as any).image_url?.url) imagePaths.push((img as any).image_url.url);
+                                });
+                            }
+                        })
+
+                        if (imagePaths.length === 0) {
+                            return { success: false, error: 'Resim uretilemedi.' }
+                        }
+
+                        return {
+                            success: true,
+                            result: `${imagePaths.length} resim uretildi.`,
+                            files: imagePaths.map(p => ({
+                                name: p.split(/[/\\]/).pop(),
+                                path: p,
+                                isImage: true
+                            }))
+                        }
+
+                    } catch (e: any) {
+                        return { success: false, error: `Gorsel uretim hatasi: ${e.message}` }
+                    }
+                }
 
                 default:
                     // Check for MCP tools (prefix: mcp__)

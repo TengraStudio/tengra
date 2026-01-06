@@ -135,5 +135,11 @@ ProxyPal_*.exe
 rustup-init.exe
 proxy/cliproxy_embed/cliproxy-embed*
 go_cache/
-final_build_log.txt
-tsc_output.txt
+*.txt
+*.log
+!docs/*.md
+build_log*.txt
+tsc_log.txt
+
+MODEL_ARCHITECTURE.md
+vendor/

@@ -42,11 +42,14 @@ export class LocalAIService {
     }
 
     async ollamaChat(model: string, messages: any[]): Promise<any> {
+        const settings = this.settingsService.getSettings()
+        const num_ctx = (settings as any).contextSize || 4096
+
         return this.ollamaRequest('/api/chat', 'POST', {
             model,
             messages,
             stream: false,
-            options: { num_ctx: 8192 }
+            options: { num_ctx }
         })
     }
 
@@ -73,7 +76,7 @@ export class LocalAIService {
 
     async startLlamaServer(modelPath: string): Promise<boolean> {
         if (this.llamaProcess) this.stopLlamaServer()
-        const binPath = join(process.cwd(), 'llama-bin', 'llama-server.exe')
+        const binPath = join(process.cwd(), 'vendor', 'llama-bin', 'llama-server.exe')
         if (!existsSync(binPath)) return false
 
         this.llamaProcess = spawn(binPath, ['-m', modelPath, '--port', this.llamaPort.toString()], {
@@ -109,5 +112,18 @@ export class LocalAIService {
             ...ollama.map(m => ({ id: m.name, name: m.name, size: m.size, provider: 'ollama' as const, loaded: true })),
             ...llama.map(f => ({ id: f, name: f, size: 0, provider: 'llama-cpp' as const, loaded: f === this.llamaModelPath }))
         ]
+    }
+
+    async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
+        return new Promise((resolve) => {
+            const { exec } = require('child_process')
+            exec('nvidia-smi', (error: any, stdout: string) => {
+                if (error) {
+                    resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' })
+                } else {
+                    resolve({ hasCuda: true, detail: stdout.split('\n')[0] })
+                }
+            })
+        })
     }
 }

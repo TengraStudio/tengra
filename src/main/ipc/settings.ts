@@ -19,6 +19,12 @@ export function registerSettingsIpc(options: {
         if (newSettings.anthropic) llmService.setAnthropicApiKey(newSettings.anthropic.apiKey)
         if (newSettings.gemini) llmService.setGeminiApiKey(newSettings.gemini.apiKey)
         if (newSettings.groq) llmService.setGroqApiKey(newSettings.groq.apiKey)
+
+        // Update Antigravity proxy settings in LLMService
+        const proxyUrl = newSettings.proxy?.url || 'http://localhost:8317/v1'
+        const proxyKey = newSettings.proxy?.key || 'connected'
+        llmService.setProxySettings(proxyUrl, proxyKey)
+
         updateOpenAIConnection()
         return saved
     })

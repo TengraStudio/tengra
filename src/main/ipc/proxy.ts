@@ -7,7 +7,8 @@ export function registerProxyIpc(proxyService: ProxyService) {
     })
 
     ipcMain.handle('proxy:geminiLogin', async () => {
-        return await proxyService.getGeminiAuthUrl()
+        // Use custom login to get correct scopes (generative-language) which Cliproxy misses
+        return await proxyService.customGeminiLogin()
     })
 
     ipcMain.handle('proxy:claudeLogin', async () => {
@@ -27,8 +28,7 @@ export function registerProxyIpc(proxyService: ProxyService) {
     })
 
     ipcMain.handle('proxy:getModels', async () => {
-        const models = await proxyService.getModels() 
-        return models
+        return await proxyService.getModels()
     })
 
     ipcMain.handle('proxy:getQuota', async () => {

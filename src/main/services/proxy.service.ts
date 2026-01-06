@@ -237,21 +237,7 @@ export class ProxyService {
 
   private getBinaryPath(): string {
     const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed'
-
-    // Try multiple possible locations
-    const possiblePaths = [
-      path.join(process.cwd(), 'external', 'cliproxyapi', binName),
-      path.join(process.cwd(), 'proxy', 'cliproxy_embed', binName),
-      path.join(__dirname, '..', '..', '..', 'external', 'cliproxyapi', binName),
-      path.join(app.getAppPath(), 'external', 'cliproxyapi', binName)
-    ]
-
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) return p
-    }
-
-    // Default to first option if none exist
-    return possiblePaths[0]
+    return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed', binName)
   }
 
   private pickOpenAiAccessToken(authData: any): string | null {
@@ -508,7 +494,6 @@ export class ProxyService {
     const whamData = await this.fetchCodexUsage()
 
     if (whamData) {
-      console.log('[ProxyService] getCodexUsage: Got data from fetchCodexUsage')
 
       // Extract structured usage data
       // Pass the whole object so recursive search can find keys anywhere
@@ -561,7 +546,6 @@ export class ProxyService {
 
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
     if (this.child) {
-      console.log('[ProxyService] Proxy already running')
       return this.getEmbeddedProxyStatus()
     }
 
@@ -575,7 +559,6 @@ export class ProxyService {
 
     this.currentPort = options?.port || 8317
     await this.generateConfig(this.currentPort)
-    console.log('[ProxyService] Config generated, starting proxy on port', this.currentPort)
 
     this.child = spawn(binaryPath, ['-config', this.configPath], {
       cwd: path.dirname(binaryPath),
@@ -609,7 +592,6 @@ export class ProxyService {
   // --- Quota & Models ---
 
   async getQuota(): Promise<any> {
-    console.log('[ProxyService] getQuota: starting sequence...')
     const settings = this.settingsService.getSettings()
     if (settings.proxy?.enabled === false) return null
 
@@ -638,7 +620,10 @@ export class ProxyService {
   private async fetchAntigravityUpstream(): Promise<any | null> {
     try {
       const authData = await this.getAntigravityAuthData()
-      if (!authData) return null
+      if (!authData) {
+        console.warn('[ProxyService] fetchAntigravityUpstream: No auth data found. User might not be logged in.')
+        return null
+      }
 
       // Check expiry
       if (this.isTokenExpired(authData)) {
@@ -681,7 +666,6 @@ export class ProxyService {
     try {
       const data = await this.fetchAntigravityUpstream()
       if (data) {
-        console.log('[ProxyService] AG Quota fetched successfully')
         return this.parseQuotaResponse(data)
       }
     } catch (e: any) {
@@ -791,23 +775,18 @@ export class ProxyService {
     if (!data.models) return null
 
     const models = []
-    const nameMap: Record<string, string> = {
-      "gemini-2.5-pro": "Gemini 2.5 Pro",
-      "gemini-2.5-flash": "Gemini 2.5 Flash",
-      "gemini-2.0-flash": "Gemini 2.0 Flash",
-      "gemini-exp-1206": "Gemini Exp",
-      "claude-sonnet-4-5": "Claude Sonnet 4.5",
-      "claude-opus-4-5": "Claude Opus 4.5"
-    }
 
     for (const [key, val] of Object.entries(data.models) as any) {
       try {
+        // Filter noise
         if (key.startsWith('chat_') || key.startsWith('rev')) continue
 
         let percentage = 100
         let reset = '-'
+        let quotaInfo: any = undefined
 
         if (val.quotaInfo) {
+          // Calculate Percentage
           if (typeof val.quotaInfo.remainingFraction === 'number') {
             percentage = Math.round(val.quotaInfo.remainingFraction * 100)
           } else if (typeof val.quotaInfo.remainingQuota === 'number' && typeof val.quotaInfo.totalQuota === 'number' && val.quotaInfo.totalQuota > 0) {
@@ -816,6 +795,7 @@ export class ProxyService {
             percentage = 0
           }
 
+          // Format Reset Time string
           if (val.quotaInfo.resetTime) {
             try {
               reset = new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', {
@@ -826,12 +806,23 @@ export class ProxyService {
               })
             } catch { }
           }
+
+          // Standardized Quota Object for Frontend
+          quotaInfo = {
+            remainingQuota: val.quotaInfo.remainingQuota,
+            totalQuota: val.quotaInfo.totalQuota,
+            remainingFraction: val.quotaInfo.remainingFraction ?? (percentage / 100),
+            resetTime: val.quotaInfo.resetTime
+          }
         }
 
         models.push({
-          name: val.displayName || nameMap[key] || key,
+          id: key,
+          name: val.displayName || key,
+          provider: 'antigravity',
           percentage,
-          reset
+          reset,
+          quotaInfo // Inject standard object
         })
       } catch { }
     }
@@ -896,23 +887,137 @@ export class ProxyService {
       console.warn('[ProxyService] getModels: Primary proxy fetch failed, proceeding with extra sources.', err)
     }
 
+    // Fetch separate quotas
+    const [codexData, copilotData] = await Promise.all([
+      this.fetchCodexUsage(),
+      this.getCopilotQuota()
+    ]);
+
+    // Process Codex Quota
+    let codexQuotaFn: any = undefined;
+    if (codexData) {
+      const usage = this.extractCodexUsageFromWham(codexData);
+      if (usage) {
+        // Robust calculation: Use the most restrictive of daily/weekly percentages if available
+        let fraction = 1.0;
+        if (usage.dailyUsedPercent !== undefined || usage.weeklyUsedPercent !== undefined) {
+          const dRemaining = usage.dailyUsedPercent !== undefined ? (100 - usage.dailyUsedPercent) / 100 : 1.0;
+          const wRemaining = usage.weeklyUsedPercent !== undefined ? (100 - usage.weeklyUsedPercent) / 100 : 1.0;
+          fraction = Math.max(0, Math.min(dRemaining, wRemaining));
+        } else {
+          const remaining = usage.remainingRequests ?? usage.remainingTokens ?? 0;
+          const limit = usage.dailyLimit ?? usage.weeklyLimit ?? usage.totalRequests ?? 0;
+          fraction = limit > 0 ? remaining / limit : 0;
+        }
+
+        codexQuotaFn = {
+          remainingQuota: usage.remainingRequests ?? 0,
+          totalQuota: usage.dailyLimit ?? usage.weeklyLimit ?? 0,
+          remainingFraction: fraction,
+          resetTime: usage.dailyResetAt || usage.weeklyResetAt || usage.resetAt
+        };
+      }
+    }
+
+    // Process Copilot Quota
+    let copilotQuotaFn: any = undefined;
+    if (copilotData && copilotData.success) {
+      copilotQuotaFn = {
+        remainingQuota: copilotData.remaining,
+        totalQuota: copilotData.limit,
+        remainingFraction: copilotData.percentage ? copilotData.percentage / 100 : 0,
+        resetTime: undefined // Copilot usually resets monthly but exact date isn't always in this endpoint
+      };
+    }
+
     let extra: any[] = []
+    // let geminiModels: any[] = [] // Unused now
     let antigravityError: string | undefined
 
     try {
-      extra = await this.getAntigravityAvailableModels()
+      [extra] = await Promise.all([
+        this.getAntigravityAvailableModels(),
+        // this.fetchGeminiModels() // Disabled per user request
+      ]);
+      console.log('[ProxyService] getModels: Fetched', extra.length, 'Antigravity models')
     } catch (e: any) {
       if (e.message === 'AUTH_EXPIRED') {
         antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın (Token Refresh Başarısız).'
       }
     }
 
-    const base = Array.isArray(baseRes?.data) ? baseRes.data : []
+    const base = Array.isArray(baseRes?.data) ? baseRes.data.map((m: any) => ({
+      ...m,
+      provider: m.provider || (m.id.toLowerCase().includes('gemini-3') ? 'copilot' : 'antigravity')
+    })) : []
+
     const merged = [...base]
     const ids = new Set(base.map((m: any) => m.id))
-    for (const m of extra) { if (!ids.has(m.id)) merged.push(m) }
 
-    return { ...baseRes, data: merged, antigravityError }
+    // Add Antigravity Models
+    for (const m of extra) {
+      if (ids.has(m.id)) {
+        merged.push({
+          ...m,
+          id: m.id + '-antigravity',
+          name: (m.name || m.id) + ' (Antigravity)',
+          provider: 'antigravity'
+        })
+      } else {
+        merged.push(m)
+      }
+    }
+
+    // Inject Quota Info & Normalize Structure
+    const finalData = merged.map((m: any) => {
+      const provider = (m.provider || 'custom').toLowerCase();
+      // const id = m.id.toLowerCase();
+      let model = { ...m };
+
+      // Inject Codex Quota
+      if ((provider === 'codex' || provider === 'openai' || m.id.startsWith('gpt-')) && codexQuotaFn) {
+        model.quotaInfo = codexQuotaFn;
+      }
+
+      // Inject Copilot Quota
+      if (provider === 'copilot' && copilotQuotaFn) {
+        model.quotaInfo = copilotQuotaFn;
+      }
+
+      // Ensure 'quota' object exists (Frontend expectation: { percentage, reset })
+      // Use existing quotaInfo (from Antigravity) or injected one
+      if (!model.quota && model.quotaInfo) {
+        const fraction = model.quotaInfo.remainingFraction ?? (model.quotaInfo.totalQuota > 0 ? model.quotaInfo.remainingQuota / model.quotaInfo.totalQuota : 0);
+        const resetTime = model.quotaInfo.resetTime;
+
+        let resetStr = '-';
+        if (resetTime) {
+          try {
+            resetStr = new Date(resetTime).toLocaleString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          } catch { }
+        }
+
+        model.quota = {
+          percentage: Math.round(fraction * 100),
+          reset: resetStr
+        };
+      }
+      // Normalize Antigravity format which might have 'percentage'/'reset' as top properties
+      if (!model.quota && typeof model.percentage === 'number') {
+        model.quota = {
+          percentage: model.percentage,
+          reset: model.reset || '-'
+        }
+      }
+
+      return model;
+    });
+
+    return {
+      ...baseRes,
+      data: finalData,
+      antigravityError
+    }
   }
 
   // Removed fetchGoogleInternalData - was calling internal API that requires project_id
@@ -977,11 +1082,19 @@ export class ProxyService {
 
     // Use robust multi-endpoint helper
     const data = await this.fetchCodexUsageFromWham(token)
-    try {
-      const debugPath = path.join(process.cwd(), 'debug-codex.json')
-      fs.writeFileSync(debugPath, JSON.stringify(data, null, 2))
-    } catch (e) {
-      console.warn('[ProxyService] Failed to write debug log:', e)
+
+    // Persist valid session for Cliproxy binary
+    if (data) {
+      try {
+        this.updateAuthFile('codex-session.json', {
+          accessToken: token,
+          provider: 'codex',
+          timestamp: Date.now(),
+          email: data.email || (settings as any).openai?.email
+        })
+      } catch (e) {
+        console.warn('[ProxyService] Failed to persist codex session:', e)
+      }
     }
     return data
   }
@@ -1158,8 +1271,6 @@ export class ProxyService {
         path
       }
 
-      console.log(`[ProxyService] Making request to: http://127.0.0.1:${this.currentPort}${path}`)
-
       const request = net.request(options)
       request.setHeader('Authorization', `Bearer ${key}`)
 
@@ -1167,10 +1278,7 @@ export class ProxyService {
         let d = '';
         res.on('data', chunk => d += chunk);
         res.on('end', () => {
-          console.log(`[ProxyService] Response from ${path}: Status ${res.statusCode}, Data length: ${d.length}`)
-
           if (res.statusCode && res.statusCode >= 400) {
-            console.warn(`[ProxyService] HTTP Error ${res.statusCode} for ${path}: ${d.substring(0, 200)}`)
             resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
             return
           }
@@ -1179,14 +1287,12 @@ export class ProxyService {
             const json = JSON.parse(d);
             resolve(json);
           } catch (e) {
-            console.error(`[ProxyService] JSON Parse Error for ${path}:`, e, "Raw data:", d.substring(0, 100))
             resolve({ success: false, error: 'Invalid JSON', raw: d });
           }
         })
       })
 
       request.on('error', e => {
-        console.error(`[ProxyService] Request Error to ${path}:`, e)
         reject(e)
       })
 
@@ -1237,9 +1343,214 @@ export class ProxyService {
     const authDir = this.getAuthWorkDir().replace(/\\/g, '/')
     const proxyKey = this.getProxyKey()
     let config = `host: "127.0.0.1"\nport: ${port}\nauth-dir: "${authDir}"\napi-keys:\n  - "${proxyKey}"\nremote-management:\n  secret-key: "${proxyKey}"\ndebug: true\nlogging-to-file: false\n`
-    if (settings.github?.token) config += `codex-api-key:\n  - api-key: "${settings.github.token}"\n    base-url: "https://api.githubcopilot.com"\n`
+    // Removed codex-api-key injection to prevent forcing Codex requests to Copilot API
     if (settings.anthropic?.apiKey) config += `claude-api-key:\n  - api-key: "${settings.anthropic.apiKey}"\n`
     if (settings.gemini?.apiKey) config += `gemini-api-key:\n  - api-key: "${settings.gemini.apiKey}"\n`
     fs.writeFileSync(this.configPath, config)
   }
+
+  // --- Custom Gemini OAuth & Model Fetching ---
+
+  async customGeminiLogin(): Promise<{ url: string, state: string }> {
+    // User's Custom Client ID
+    const CLIENT_ID = '225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com'
+    const REDIRECT_URI = 'http://localhost:8085/oauth2callback'
+    const SCOPES = [
+      'https://www.googleapis.com/auth/cloud-platform',
+      'https://www.googleapis.com/auth/generative-language',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile'
+    ].join(' ')
+
+    const state = 'gem-custom-' + Date.now()
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=${CLIENT_ID}&prompt=consent&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(SCOPES)}&state=${state}`
+
+    // Start a temporary local server to handle the callback
+    const server = http.createServer(async (req, res) => {
+      // Use try-catch to prevent crashing on malformed URLs
+      try {
+        const u = new URL(req.url || '', `http://localhost:8085`)
+        if (u.pathname === '/oauth2callback') {
+          const code = u.searchParams.get('code')
+          const error = u.searchParams.get('error')
+
+          if (error) {
+            res.end('Authentication failed. You can close this window.')
+            server.close()
+            return
+          }
+
+          if (code) {
+            res.end('Authentication successful! You can close this window now.')
+            try {
+              await this.exchangeGeminiCode(code, CLIENT_ID, REDIRECT_URI)
+            } catch (err) {
+              console.error('[ProxyService] Gemini token exchange failed:', err)
+            } finally {
+              server.close()
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[ProxyService] Error handling callback request:', e);
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+      }
+    })
+
+    server.listen(8085, () => {
+      console.log('[ProxyService] Custom Gemini Auth Server listening on 8085')
+    })
+
+    // Auto-close server after 5 minutes if no callback
+    setTimeout(() => server.close(), 5 * 60 * 1000)
+
+    return { url: authUrl, state }
+  }
+
+  private async exchangeGeminiCode(code: string, clientId: string, redirectUri: string) {
+    const CLIENT_SECRET = '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' // User provided secret
+
+    try {
+      const tokenRes = await axios.post('https://oauth2.googleapis.com/token', new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      }), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
+
+      const tokens = tokenRes.data
+
+      // Get User Info for filename
+      const userRes = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+        headers: { Authorization: `Bearer ${tokens.access_token}` }
+      })
+
+      const email = userRes.data.email
+      const projectId = 'gen-lang-client-0669911453'
+
+      const record = {
+        token: {
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          token_type: tokens.token_type,
+          expiry_date: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+        },
+        project_id: projectId,
+        email: email,
+        auto: true,
+        checked: true
+      }
+
+      const fileName = `gemini-${email}-${projectId}.json`
+      this.updateAuthFile(fileName, record)
+      console.log('[ProxyService] Saved custom Gemini auth file:', fileName)
+
+    } catch (err) {
+      console.error('[ProxyService] Failed to exchange or save Gemini token', err)
+      throw err
+    }
+  }
+
+  async fetchGeminiModels(): Promise<any[]> {
+    // 1. Check for API Key first (Preferred/Robust)
+    const settings = this.settingsService.getSettings()
+    const apiKey = settings.gemini?.apiKey
+
+    if (apiKey) {
+      try {
+        const res = await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        return res.data.models.map((m: any) => ({
+          id: m.name.split('/').pop(),
+          name: m.displayName,
+          provider: 'gemini',
+          description: m.description,
+          contextWindow: m.inputTokenLimit,
+          outputLimit: m.outputTokenLimit
+        }));
+      } catch (error) {
+        console.warn('[ProxyService] Failed to fetch Gemini models via API Key:', error);
+        // Fallthrough to OAuth? No, if key provided but fails, likely invalid key.
+        // But let's try OAuth as backup just in case.
+      }
+    }
+
+    try {
+      const dir = this.getAuthWorkDir();
+      if (!fs.existsSync(dir)) return [];
+      const files = fs.readdirSync(dir).filter(f => f.startsWith('gemini-') && f.endsWith('.json'));
+      if (files.length === 0) return [];
+
+      const latestFile = files.map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtime.getTime() }))
+        .sort((a, b) => b.time - a.time)[0].name;
+
+      const authData = JSON.parse(fs.readFileSync(path.join(dir, latestFile), 'utf8'));
+      let accessToken = authData.token?.access_token;
+      const refreshToken = authData.token?.refresh_token;
+
+      try {
+        const res = await axios.get('https://generativelanguage.googleapis.com/v1beta/models', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        return res.data.models.map((m: any) => ({
+          id: m.name.split('/').pop(),
+          name: m.displayName,
+          provider: 'gemini',
+          description: m.description,
+          contextWindow: m.inputTokenLimit,
+          outputLimit: m.outputTokenLimit
+        }));
+      } catch (err: any) {
+        if ((err.response?.status === 401 || err.response?.status === 403) && refreshToken) {
+          console.log('[ProxyService] Access token expired/invalid, refreshing Gemini token...');
+          const refreshed = await this.refreshGeminiToken(refreshToken);
+          if (refreshed) {
+            accessToken = refreshed;
+            authData.token.access_token = refreshed;
+            this.updateAuthFile(latestFile, authData);
+
+            const resRetry = await axios.get('https://generativelanguage.googleapis.com/v1beta/models', {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            return resRetry.data.models.map((m: any) => ({
+              id: m.name.split('/').pop(),
+              name: m.displayName,
+              provider: 'gemini',
+              description: m.description,
+              contextWindow: m.inputTokenLimit,
+              outputLimit: m.outputTokenLimit
+            }));
+          }
+        }
+        throw err;
+      }
+
+    } catch (error) {
+      // console.warn('[ProxyService] Failed to fetch Gemini models directly:', error);
+      return [];
+    }
+  }
+
+  private async refreshGeminiToken(refreshToken: string): Promise<string | null> {
+    try {
+      const CLIENT_ID = '225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com'
+      const CLIENT_SECRET = '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'
+
+      const res = await axios.post('https://oauth2.googleapis.com/token', new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+      }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+
+      return res.data.access_token;
+    } catch (e) {
+      console.error('[ProxyService] Failed to refresh Gemini token', e);
+      return null;
+    }
+  }
+
 }
