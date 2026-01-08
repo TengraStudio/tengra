@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs'
 import * as path from 'path'
 
-import { DatabaseService } from './database.service'
-import { EmbeddingService } from './embedding.service'
+import { DatabaseService } from './data/database.service'
+import { EmbeddingService } from './llm/embedding.service'
 
 export class CodeIntelligenceService {
 

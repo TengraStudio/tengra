@@ -1,25 +1,66 @@
 /**
- * Cache Utility with TTL and LRU eviction
+ * @fileoverview In-memory cache utility with TTL and LRU eviction.
+ * 
+ * Provides a generic caching mechanism with support for:
+ * - Time-To-Live (TTL) expiration per entry or globally
+ * - Least Recently Used (LRU) eviction when capacity is reached
+ * - Eviction callbacks for resource cleanup
+ * - Memoization decorator for function result caching
+ * 
+ * @module utils/cache
+ * @author Orbit Team
+ * @license MIT
  */
 
+/**
+ * Configuration options for the Cache.
+ * 
+ * @interface CacheOptions
+ * @property {number} [maxSize=100] - Maximum number of entries before eviction triggered
+ * @property {number} [defaultTTL=300000] - Default time-to-live in milliseconds (default: 5 mins)
+ * @property {Function} [onEvict] - Callback invoked when an item is removed (expired or evicted)
+ */
 export interface CacheOptions {
     maxSize?: number           // Maximum number of entries
     defaultTTL?: number        // Default TTL in milliseconds
     onEvict?: (key: string, value: any) => void
 }
 
+/**
+ * Internal storage structure for cache entries.
+ * 
+ * @template T - Type of the stored value
+ * @internal
+ */
 interface CacheEntry<T> {
     value: T
     expiresAt: number
     lastAccessed: number
 }
 
+/**
+ * Generic in-memory cache implementation.
+ * 
+ * @template T - Type of values stored in the cache (defaults to any)
+ * 
+ * @example
+ * ```typescript
+ * const userCache = new Cache<User>({ maxSize: 50, defaultTTL: 60000 });
+ * userCache.set('user:1', { id: 1, name: 'Alice' });
+ * const user = userCache.get('user:1');
+ * ```
+ */
 export class Cache<T = any> {
     private entries: Map<string, CacheEntry<T>> = new Map()
     private readonly maxSize: number
     private readonly defaultTTL: number
     private readonly onEvict?: (key: string, value: T) => void
 
+    /**
+     * Creates a new Cache instance.
+     * 
+     * @param options - Cache configuration options
+     */
     constructor(options: CacheOptions = {}) {
         this.maxSize = options.maxSize ?? 100
         this.defaultTTL = options.defaultTTL ?? 5 * 60 * 1000 // 5 minutes
@@ -27,7 +68,13 @@ export class Cache<T = any> {
     }
 
     /**
-     * Get a value from cache
+     * Retrieves a value from the cache.
+     * 
+     * Updates the last accessed time for LRU tracking.
+     * Returns undefined if the key doesn't exist or has expired.
+     * 
+     * @param key - The cache key to retrieve
+     * @returns The cached value or undefined
      */
     get(key: string): T | undefined {
         const entry = this.entries.get(key)
@@ -45,7 +92,13 @@ export class Cache<T = any> {
     }
 
     /**
-     * Set a value in cache
+     * Stores a value in the cache.
+     * 
+     * If the cache is full, the least recently used item is evicted.
+     * 
+     * @param key - The unique key for the entry
+     * @param value - The value to store
+     * @param ttl - Optional custom TTL in milliseconds for this specific entry
      */
     set(key: string, value: T, ttl?: number): void {
         // Evict if at capacity
@@ -62,7 +115,12 @@ export class Cache<T = any> {
     }
 
     /**
-     * Check if key exists and is not expired
+     * Checks if a key exists in the cache and is valid (not expired).
+     * 
+     * Note: This does not update the last accessed time.
+     * 
+     * @param key - The key to check
+     * @returns True if the key exists and is valid
      */
     has(key: string): boolean {
         const entry = this.entries.get(key)
@@ -75,7 +133,12 @@ export class Cache<T = any> {
     }
 
     /**
-     * Delete a key from cache
+     * Removes an entry from the cache.
+     * 
+     * Triggers the onEvict callback if one was provided.
+     * 
+     * @param key - The key to remove
+     * @returns True if an entry was removed, false if it didn't exist
      */
     delete(key: string): boolean {
         const entry = this.entries.get(key)
@@ -86,7 +149,9 @@ export class Cache<T = any> {
     }
 
     /**
-     * Clear all entries
+     * Removes all entries from the cache.
+     * 
+     * Triggers the onEvict callback for every entry.
      */
     clear(): void {
         if (this.onEvict) {
@@ -98,21 +163,27 @@ export class Cache<T = any> {
     }
 
     /**
-     * Get cache size
+     * Returns the current number of entries in the cache.
+     * 
+     * @returns The count of cached items
      */
     size(): number {
         return this.entries.size
     }
 
     /**
-     * Get all keys
+     * Returns an array of all keys currently in the cache.
+     * 
+     * @returns Array of cache keys
      */
     keys(): string[] {
         return Array.from(this.entries.keys())
     }
 
     /**
-     * Evict least recently used entry
+     * Evicts the least recently used item from the cache.
+     * 
+     * @private
      */
     private evictLRU(): void {
         let oldestKey: string | null = null
@@ -131,7 +202,9 @@ export class Cache<T = any> {
     }
 
     /**
-     * Remove expired entries
+     * Removes all expired entries from the cache.
+     * 
+     * @returns The number of entries removed
      */
     prune(): number {
         const now = Date.now()
@@ -148,7 +221,9 @@ export class Cache<T = any> {
     }
 
     /**
-     * Get cache stats
+     * Returns statistics about the cache.
+     * 
+     * @returns Object containing cache usage statistics
      */
     stats(): { size: number; maxSize: number; hitRate?: number } {
         return {
@@ -159,7 +234,19 @@ export class Cache<T = any> {
 }
 
 /**
- * Create a memoized version of an async function with caching
+ * Creates a memoized version of an async function.
+ * 
+ * Results are cached based on the arguments passed to the function.
+ * 
+ * @template T - The type of the async function to memoize
+ * @param fn - The function to memoize
+ * @param options - Configuration options for memoization
+ * @returns A wrapped version of the function that caches results
+ * 
+ * @example
+ * ```typescript
+ * const fetchUser = memoize(async (id) => api.getUser(id), { ttl: 60000 });
+ * ```
  */
 export function memoize<T extends (...args: any[]) => Promise<any>>(
     fn: T,
@@ -187,16 +274,20 @@ export function memoize<T extends (...args: any[]) => Promise<any>>(
 }
 
 // Pre-configured caches for common use cases
+
+/** Cache for LLM model lists (Short TTL) */
 export const modelCache = new Cache<any[]>({
     maxSize: 10,
     defaultTTL: 5 * 60 * 1000 // 5 minutes
 })
 
+/** Cache for API quota information (Very short TTL) */
 export const quotaCache = new Cache<any>({
     maxSize: 20,
     defaultTTL: 60 * 1000 // 1 minute
 })
 
+/** Cache for application settings (Short TTL) */
 export const settingsCache = new Cache<any>({
     maxSize: 5,
     defaultTTL: 30 * 1000 // 30 seconds

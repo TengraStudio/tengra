@@ -5,192 +5,80 @@ import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { AgentDashboard } from '@/features/agent/AgentDashboard'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { DockerDashboard } from '@/features/mcp/DockerDashboard'
-import { Language } from '@/i18n'
-import { TerminalTab, Message } from '@/types'
+import { useAuth } from '@/context/AuthContext'
+import { useModel } from '@/context/ModelContext'
+import { useChat } from '@/context/ChatContext'
+import { useProject } from '@/context/ProjectContext'
 
 interface ViewManagerProps {
     currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp'
-    messages: Message[]
-    displayMessages: Message[]
-    searchTerm: string
-    setSearchTerm: (v: string) => void
-    t: any
-    templates: any[]
-    setInput: (v: string) => void
-    isLoading: boolean
-    streamingContent: string
-    streamingReasoning?: string
-    streamingSpeed: number | null
-    language: Language
-    selectedProvider: string
-    selectedModel: string
-    onSpeak: (text: string, id: string) => void
-    onStopSpeak: () => void
-    speakingMessageId: string | null
     messagesEndRef: React.RefObject<HTMLDivElement>
-    showScrollButton: boolean
-    setShowScrollButton: (show: boolean) => void
-    onScrollToBottom: () => void
-    input: string
-    attachments: any[]
-    removeAttachment: (i: number) => void
-    sendMessage: (content?: string) => void
-    stopGeneration: () => void
     fileInputRef: React.RefObject<HTMLInputElement>
     textareaRef: React.RefObject<HTMLTextAreaElement>
-    processFile: (file: File) => void
+    onScrollToBottom: () => void
+    showScrollButton: boolean
+    setShowScrollButton: (show: boolean) => void
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
-    onSelectModel: (p: string, m: string) => void
-    appSettings: any
-    groupedModels: any
-    quotas: any
-    codexUsage: any
-    setIsModelMenuOpen: (open: boolean) => void
-    contextTokens: number
-    isListening: boolean
-    startListening: () => void
-    stopListening: () => void
-    autoReadEnabled: boolean
-    setAutoReadEnabled: (enabled: boolean) => void
-    handleKeyDown: (e: React.KeyboardEvent) => void
-    handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
-    prompts: any[]
-
-    // Project Props
-    projects: any[]
-    loadProjects: () => void
-    selectedProject: any
-    setSelectedProject: (p: any) => void
-    terminalTabs: TerminalTab[]
-    activeTerminalId: string | null
-    setTerminalTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void
-    setActiveTerminalId: (id: string | null) => void
-
-    // Settings Props
-    models: any[]
-    proxyModels: any[]
-    loadModels: () => void
-    settingsCategory: string
-    setSettingsCategory: (c: string) => void
-
-    // MCP Props
-    handleOpenTerminal: (name: string, cmd: string) => void
+    // Templates might be static or context, but for now passing them or defining them inside
+    templates: any[]
 }
 
 export const ViewManager: React.FC<ViewManagerProps> = ({
     currentView,
-    messages,
-    displayMessages,
-    searchTerm,
-    setSearchTerm,
-    t,
-    templates,
-    setInput,
-    isLoading,
-    streamingContent,
-    streamingReasoning,
-    streamingSpeed,
-    language,
-    selectedProvider,
-    selectedModel,
-    onSpeak,
-    onStopSpeak,
-    speakingMessageId,
     messagesEndRef,
-    showScrollButton,
-    setShowScrollButton,
-    onScrollToBottom,
-    input,
-    attachments,
-    removeAttachment,
-    sendMessage,
-    stopGeneration,
     fileInputRef,
     textareaRef,
-    processFile,
+    onScrollToBottom,
+    showScrollButton,
+    setShowScrollButton,
     showFileMenu,
     setShowFileMenu,
-    onSelectModel,
-    appSettings,
-    groupedModels,
-    quotas,
-    codexUsage,
-    setIsModelMenuOpen,
-    contextTokens,
-    isListening,
-    startListening,
-    stopListening,
-    autoReadEnabled,
-    setAutoReadEnabled,
-    handleKeyDown,
-    handlePaste,
-    prompts,
-    projects,
-    loadProjects,
-    selectedProject,
-    setSelectedProject,
-    terminalTabs,
-    activeTerminalId,
-    setTerminalTabs,
-    setActiveTerminalId,
-    models,
-    proxyModels,
-    loadModels,
-    settingsCategory,
-    setSettingsCategory,
-    handleOpenTerminal
+    templates
 }) => {
+    // Context Consumption
+    const { language, settingsCategory, setSettingsCategory, appSettings, quotas, codexUsage } = useAuth()
+    const {
+        models, proxyModels, loadModels,
+        selectedProvider, selectedModel, setSelectedModel, setSelectedProvider,
+        groupedModels, persistLastSelection, setIsModelMenuOpen
+    } = useModel()
+    const {
+        projects, selectedProject, setSelectedProject, loadProjects,
+        terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId,
+        handleOpenTerminal
+    } = useProject()
+
+    // ChatContext is consumed inside ChatView, but ProjectsPage also needs some chat props
+    const {
+        isLoading, handleSend: sendMessage, setInput,
+        isListening, stopListening, displayMessages
+    } = useChat()
+
+    // Global Shortcut for Model Menu
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key === 'm') {
+                setIsModelMenuOpen(prev => !prev)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [setIsModelMenuOpen])
+
     return (
         <AnimatePresence mode="wait">
             {currentView === 'chat' && (
                 <ChatView
-                    messages={messages}
-                    displayMessages={displayMessages}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    t={t}
                     templates={templates}
-                    setInput={setInput}
-                    isLoading={isLoading}
-                    streamingContent={streamingContent}
-                    streamingReasoning={streamingReasoning}
-                    streamingSpeed={streamingSpeed}
-                    language={language}
-                    selectedProvider={selectedProvider}
-                    selectedModel={selectedModel}
-                    onSpeak={onSpeak}
-                    onStopSpeak={onStopSpeak}
-                    speakingMessageId={speakingMessageId}
                     messagesEndRef={messagesEndRef}
-                    showScrollButton={showScrollButton}
-                    setShowScrollButton={setShowScrollButton}
-                    onScrollToBottom={onScrollToBottom}
-                    input={input}
-                    attachments={attachments}
-                    removeAttachment={removeAttachment}
-                    sendMessage={sendMessage}
-                    stopGeneration={stopGeneration}
                     fileInputRef={fileInputRef}
                     textareaRef={textareaRef}
-                    processFile={processFile}
+                    onScrollToBottom={onScrollToBottom}
+                    showScrollButton={showScrollButton}
+                    setShowScrollButton={setShowScrollButton}
                     showFileMenu={showFileMenu}
                     setShowFileMenu={setShowFileMenu}
-                    onSelectModel={onSelectModel}
-                    appSettings={appSettings}
-                    groupedModels={groupedModels}
-                    quotas={quotas}
-                    codexUsage={codexUsage}
-                    setIsModelMenuOpen={setIsModelMenuOpen}
-                    contextTokens={contextTokens}
-                    isListening={isListening}
-                    startListening={startListening}
-                    stopListening={stopListening}
-                    autoReadEnabled={autoReadEnabled}
-                    setAutoReadEnabled={setAutoReadEnabled}
-                    handleKeyDown={handleKeyDown}
-                    handlePaste={handlePaste}
-                    prompts={prompts}
                 />
             )}
             {currentView === 'projects' && (
@@ -200,20 +88,27 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                         onRefresh={loadProjects}
                         selectedProject={selectedProject}
                         onSelectProject={setSelectedProject}
-                        language={language}
+                        language={language || 'en'}
                         tabs={terminalTabs}
                         activeTabId={activeTerminalId}
                         setTabs={setTerminalTabs}
                         setActiveTabId={setActiveTerminalId}
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
-                        onSelectModel={onSelectModel}
+                        onSelectModel={(p, m) => {
+                            setSelectedProvider(p as any)
+                            setSelectedModel(m)
+                            persistLastSelection(p as any, m)
+                        }}
                         groupedModels={groupedModels}
                         quotas={quotas}
                         codexUsage={codexUsage}
                         settings={appSettings}
-                        sendMessage={sendMessage}
-                        messages={messages}
+                        sendMessage={(text) => {
+                            setInput(text || '')
+                            sendMessage()
+                        }}
+                        messages={displayMessages}
                         isLoading={isLoading}
                     />
                 </motion.div>
@@ -233,16 +128,24 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                         proxyModels={proxyModels}
                         onRefreshModels={loadModels}
                         activeTab={settingsCategory as any}
-                        onTabChange={setSettingsCategory}
+                        onTabChange={setSettingsCategory as any}
                     />
                 </motion.div>
             )}
             {currentView === 'mcp' && (
                 <motion.div key="mcp" className="h-full overflow-hidden">
                     <div className="flex-1 p-6 overflow-y-auto">
-                        <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} />
+                        <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language || 'en'} />
                     </div>
                 </motion.div>
+            )}
+
+            {/* Global Mic Indicator */}
+            {isListening && (
+                <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer hover:bg-red-600 transition-colors flex items-center gap-2 bg-red-500/80 text-white px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Listening</span>
+                </div>
             )}
         </AnimatePresence>
     )

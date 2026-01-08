@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Cache, memoize } from './cache.util'
 
@@ -120,7 +119,7 @@ describe('memoize', () => {
 
     it('should cache different results for different args', async () => {
         let counter = 0
-        const fn = vi.fn().mockImplementation((arg) => Promise.resolve(`result-${counter++}`))
+        const fn = vi.fn().mockImplementation((_arg) => Promise.resolve(`result-${counter++}`))
         const memoized = memoize(fn, { ttl: 1000 })
 
         const result1 = await memoized('arg1')

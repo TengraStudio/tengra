@@ -68,33 +68,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
         }
     }
 
-    const handleImportProject = async () => {
-        // Close wizard first or keep it open? Close seems better to switch context.
-        // Or we can invoke usage from within wizard, but simpler to lift up.
-        setShowWizard(false)
 
-        const result = await window.electron.selectDirectory()
-        if (result.success && result.path) {
-            const name = result.path.split(/[\\/]/).pop() || 'Untitled Project'
-            try {
-                const mounts = [{
-                    id: `local-${Date.now()}`,
-                    name: name, // Use folder name
-                    type: 'local',
-                    rootPath: result.path
-                }]
-                await window.electron.db.createProject(
-                    name,
-                    result.path,
-                    result.path, // Description defaults to path
-                    JSON.stringify(mounts)
-                )
-                onRefresh()
-            } catch (error) {
-                console.error('Failed to import project:', error)
-            }
-        }
-    }
 
     // Handlers for Edit/Delete
     const handleEditClick = (project: Project, e: React.MouseEvent) => {
@@ -362,7 +336,6 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         isOpen={showWizard}
                         onClose={() => setShowWizard(false)}
                         onProjectCreated={handleWizardCreate}
-                        onImportProject={handleImportProject}
                         language={language}
                     />
 

@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { ProxyService } from '../services/proxy.service'
+import { ProxyService } from '../services/proxy/proxy.service'
 
 export function registerProxyIpc(proxyService: ProxyService) {
     ipcMain.handle('proxy:antigravityLogin', async () => {
@@ -12,7 +12,7 @@ export function registerProxyIpc(proxyService: ProxyService) {
     })
 
     ipcMain.handle('proxy:claudeLogin', async () => {
-        return await proxyService.getClaudeAuthUrl()
+        return await proxyService.getAnthropicAuthUrl()
     })
 
     ipcMain.handle('proxy:anthropicLogin', async () => {

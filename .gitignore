@@ -130,22 +130,6 @@ Thumbs.db
 # data/ # Commented out to allow renderer data
 !src/renderer/data/
 
-llama-bin/
-temp_copilot_analysis/
-vscode-copilot-chat-main.zip
-ProxyPal_*.exe
-rustup-init.exe
-proxy/cliproxy_embed/cliproxy-embed*
-go_cache/
-*.txt
-*.txt
-!sidecar/requirements.txt
-!docs/*.md
-build_log*.txt
-tsc_log.txt
-
-MODEL_ARCHITECTURE.md
-vendor/
 
 # Sidecar (Python voice service)
 sidecar/.venv/

@@ -341,6 +341,22 @@ const webBridge: ElectronAPI = {
         return { success: true }
     },
 
+    getUserDataPath: async () => '/mock/userData',
+
+    update: {
+        checkForUpdates: async () => { return },
+        downloadUpdate: async () => { return },
+        installUpdate: async () => { return }
+    },
+
+    ipcRenderer: {
+        on: (_channel: string, _listener: (...args: any[]) => void) => () => { },
+        off: (_channel: string, _listener: (...args: any[]) => void) => { },
+        send: (_channel: string, ..._args: any[]) => { },
+        invoke: async (_channel: string, ..._args: any[]) => { },
+        removeAllListeners: (_channel: string) => { }
+    },
+
 
 
     on: () => () => { }

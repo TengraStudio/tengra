@@ -1,0 +1,55 @@
+
+/**
+ * Role of the message sender.
+ */
+export type MessageRole = 'system' | 'user' | 'assistant' | 'tool' | 'function';
+
+/**
+ * A content part for structured messages (e.g. text + image).
+ */
+export interface ContentPart {
+    type: 'text' | 'image_url' | 'image';
+    text?: string;
+    image_url?: { url: string };
+    source?: {
+        type: 'base64';
+        media_type: string;
+        data: string;
+    };
+}
+
+/**
+ * Represents a tool call within a message.
+ */
+export interface ToolCall {
+    id: string;
+    type: 'function';
+    function: {
+        name: string;
+        arguments: string;
+    };
+}
+
+/**
+ * Standard chat message interface.
+ */
+export interface ChatMessage {
+    role: MessageRole;
+    content: string | ContentPart[];
+    name?: string;
+    tool_calls?: ToolCall[];
+    tool_call_id?: string;
+    // For reasoning models
+    images?: string[]; // Legacy/Convenience field for some internal logic
+}
+
+/**
+ * Options for chat completion requests.
+ */
+export interface ChatOptions {
+    model: string;
+    temperature?: number;
+    max_tokens?: number;
+    stream?: boolean;
+    tools?: any[]; // Keep any for tools def for now as it's complex schema
+}

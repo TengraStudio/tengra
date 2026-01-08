@@ -23,6 +23,7 @@ import { ProjectDashboard } from './ProjectDashboard'
 import { WorkspaceModals } from './workspace/WorkspaceModals'
 import { ProjectSettingsView } from './settings/ProjectSettingsView'
 import { LogoGeneratorModal } from './LogoGeneratorModal'
+import { GitCommitGenerator } from './GitCommitGenerator'
 
 interface ProjectWorkspaceProps {
     project: Project
@@ -99,6 +100,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const [councilEnabled, setCouncilEnabled] = useState(false)
     const [showSettings, setShowSettings] = useState(false)
     const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
+    const [showGitModal, setShowGitModal] = useState(false)
 
     const notify = useCallback((type: Notice['type'], message: string) => {
         setNotice({ type, message })
@@ -271,6 +273,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 showAgentPanel={showAgentPanel}
                 toggleAgentPanel={() => setShowAgentPanel(!showAgentPanel)}
                 toggleSettings={() => setShowSettings(!showSettings)}
+                onOpenGit={() => setShowGitModal(true)}
                 language={language}
             />
 
@@ -469,6 +472,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onApply={handleApplyLogo}
                 language={language}
             />
+
+            {showGitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-[#09090b] border border-white/10 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <GitCommitGenerator
+                            projectPath={project.path}
+                            onClose={() => setShowGitModal(false)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {notice && (
                 <div className={cn(

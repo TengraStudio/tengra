@@ -1,7 +1,7 @@
 // MemoryService - Refactored for Async DatabaseService
-import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge, ChatMessage } from './database.service'
-import { EmbeddingService } from './embedding.service'
-import { LLMService } from './llm.service'
+import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge, ChatMessage } from './data/database.service'
+import { EmbeddingService } from './llm/embedding.service'
+import { LLMService } from './llm/llm.service'
 
 // Preferred models in order of priority (smallest first for speed)
 const PREFERRED_OLLAMA_MODELS = [

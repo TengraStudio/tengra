@@ -400,6 +400,57 @@ export function useChatManager(options: UseChatManagerOptions) {
         }
     }
 
+    const updateChat = async (id: string, updates: Partial<Chat>) => {
+        try {
+            await window.electron.db.updateChat(id, updates)
+            setChats(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+        } catch (error) {
+            console.error('Failed to update chat:', error)
+        }
+    }
+
+    const togglePin = async (id: string, isPinned: boolean) => {
+        await updateChat(id, { isPinned })
+    }
+
+    const toggleFavorite = async (id: string, isFavorite: boolean) => {
+        await updateChat(id, { isFavorite })
+    }
+
+    interface Attachment {
+        id: string;
+        name: string;
+        type: 'image' | 'file';
+        size: number;
+        status: 'uploading' | 'ready' | 'error';
+        content?: string;
+    }
+
+    const [attachments, setAttachments] = useState<Attachment[]>([])
+
+    const processFile = async (file: File) => {
+        const id = generateId()
+        const newAttachment: Attachment = {
+            id,
+            name: file.name,
+            type: file.type.split('/')[0] as 'image' | 'file',
+            size: file.size,
+            status: 'uploading'
+        }
+        setAttachments(prev => [...prev, newAttachment])
+
+        try {
+            const content = await file.text()
+            setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'ready', content } : a))
+        } catch (error) {
+            setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'error' } : a))
+        }
+    }
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index))
+    }
+
     return {
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages,
         searchTerm, setSearchTerm, input, setInput, isLoading, streamingContent,
@@ -409,6 +460,13 @@ export function useChatManager(options: UseChatManagerOptions) {
         prompts, createPrompt, deletePrompt, updatePrompt,
         isListening,
         startListening,
-        stopListening
+        stopListening,
+        updateChat,
+        togglePin,
+        toggleFavorite,
+        attachments,
+        setAttachments,
+        processFile,
+        removeAttachment
     }
 }

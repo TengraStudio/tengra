@@ -48,7 +48,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ isOpen, onCl
         window.electron?.ipcRenderer.on('log:entry', handler)
 
         return () => {
-            window.electron?.ipcRenderer.removeListener('log:entry', handler)
+            ; (window.electron?.ipcRenderer as any).removeListener('log:entry', handler)
         }
     }, [isOpen, isPaused])
 

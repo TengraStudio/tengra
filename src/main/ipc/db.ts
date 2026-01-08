@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { DatabaseService } from '../services/database.service'
-import { EmbeddingService } from '../services/embedding.service'
+import { DatabaseService } from '../services/data/database.service'
+import { EmbeddingService } from '../services/llm/embedding.service'
 
 export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService) {
     ipcMain.handle('db:createChat', (_event, chat) => databaseService.createChat(chat))

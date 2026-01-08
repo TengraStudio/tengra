@@ -1,4 +1,4 @@
-﻿import { Chat, Folder, Project, Prompt } from '@/types'
+﻿import { Chat, Folder } from '@/types'
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -7,46 +7,22 @@ import {
     Plus, Settings, ChevronLeft, ChevronRight,
     Trash2, Search, MessageSquare, Rocket, ChevronDown,
     LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
-    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book
+    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin
 } from 'lucide-react'
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
-import { useTranslation, Language } from '@/i18n'
+import { useTranslation } from '@/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useChat } from '@/context/ChatContext'
+import { useAuth } from '@/context/AuthContext'
+import { useProject } from '@/context/ProjectContext'
 
 interface SidebarProps {
-    chats: Chat[]
-    currentChatId: string | null
-    onSelectChat: (id: string) => void
-    onNewChat: () => void
-    onDeleteChat: (id: string) => void
-    onDuplicateChat?: (id: string) => void
-    onArchiveChat?: (id: string, isArchived: boolean) => void
-    onUpdateChatTitle?: (id: string, title: string) => void
-    onTogglePin: (id: string, isPinned: boolean) => void
-    onToggleFavorite: (id: string, isFavorite: boolean) => void
-    onOpenSettings: (category?: any) => void
     isCollapsed: boolean
     toggleSidebar: () => void
     currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council'
     onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council') => void
+    onOpenSettings: (category?: any) => void
     onSearch: (query: string) => void
-    activeProject?: Project | null
-    settingsCategory?: any
-    onSelectSettingsCategory?: (category: any) => void
-
-    // Folders on the sidebar? (Unused but kept for interface compat)
-    folders?: Folder[]
-    onCreateFolder?: (name: string) => void
-    onDeleteFolder: (id: string) => void
-    onUpdateFolder: (id: string, updates: Partial<Folder>) => void
-    onMoveChat: (chatId: string, folderId: string | null) => void
-    prompts: Prompt[]
-    onCreatePrompt: (title: string, content: string, tags?: string[]) => void
-    onUpdatePrompt: (id: string, updates: Partial<Prompt>) => void
-    onDeletePrompt: (id: string) => void
-    language?: Language
-    modelUsageStats?: { name: string, count: number }[]
-    isLoading?: boolean
 }
 
 const SettingsMenuItem = ({
@@ -76,33 +52,27 @@ const SettingsMenuItem = ({
 )
 
 export function Sidebar({
-    chats,
-    currentChatId,
-    onSelectChat,
-    onNewChat,
-    onDeleteChat,
-    onUpdateChatTitle,
     onOpenSettings,
     isCollapsed,
     toggleSidebar,
     currentView,
     onChangeView,
-    onSearch,
-    language = 'en',
-    onSelectSettingsCategory,
-    settingsCategory,
-    isLoading,
-    folders = [],
-    onCreateFolder,
-    onDeleteFolder,
-    onUpdateFolder,
-    onMoveChat,
-    prompts = [],
-    onCreatePrompt,
-    onUpdatePrompt,
-    onDeletePrompt
+    onSearch
 }: SidebarProps) {
-    const { t } = useTranslation(language)
+    // Context Consumption
+    const {
+        chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
+        folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
+        prompts, createPrompt, updatePrompt, deletePrompt,
+        isLoading, togglePin
+    } = useChat()
+
+    const { language, settingsCategory, setSettingsCategory } = useAuth()
+    const { selectedProject } = useProject()
+
+    const { t } = useTranslation(language || 'en')
+
+    // Internal State
     const [editingChatId, setEditingChatId] = useState<string | null>(null)
     const [editTitle, setEditTitle] = useState('')
     const editInputRef = useRef<HTMLInputElement>(null)
@@ -117,14 +87,10 @@ export function Sidebar({
 
     // Ensure folders are available
     const activeFolders = folders || []
-
-    // Sort folders by name
     const sortedFolders = [...activeFolders].sort((a, b) => a.name.localeCompare(b.name))
 
     useEffect(() => {
         if (activeFolders.length > 0 && expandedFolders.size === 0) {
-            // Auto expand all folders usually? Or just leave collapsed. 
-            // Let's leave collapsed but maybe expand the one with the current chat.
             if (currentChatId && chats) {
                 const chat = chats.find(c => c.id === currentChatId)
                 if (chat?.folderId) {
@@ -132,7 +98,7 @@ export function Sidebar({
                 }
             }
         }
-    }, [activeFolders.length, currentChatId])
+    }, [activeFolders.length, currentChatId, chats])
 
     const toggleFolder = (folderId: string) => {
         const newExpanded = new Set(expandedFolders)
@@ -142,16 +108,16 @@ export function Sidebar({
     }
 
     const handleCreateFolder = () => {
-        if (newFolderName.trim() && onCreateFolder) {
-            onCreateFolder(newFolderName.trim())
+        if (newFolderName.trim()) {
+            createFolder(newFolderName.trim())
             setNewFolderName('')
             setIsCreatingFolder(false)
         }
     }
 
     const handleRenameFolder = () => {
-        if (editingFolderId && editFolderName.trim() && onUpdateFolder) {
-            onUpdateFolder(editingFolderId, { name: editFolderName.trim() })
+        if (editingFolderId && editFolderName.trim()) {
+            updateFolder(editingFolderId, { name: editFolderName.trim() })
             setEditingFolderId(null)
         }
     }
@@ -164,8 +130,8 @@ export function Sidebar({
     }, [editingChatId])
 
     const handleSaveEdit = () => {
-        if (editingChatId && onUpdateChatTitle) {
-            onUpdateChatTitle(editingChatId, editTitle)
+        if (editingChatId) {
+            updateChat(editingChatId, { title: editTitle })
         }
         setEditingChatId(null)
     }
@@ -193,10 +159,9 @@ export function Sidebar({
         return groups
     }
 
-    // Separate chats into Foldered and Unfoldered
-    const unfolderedChats = chats.filter(c => !c.folderId)
-
-    // Grouping for unfoldered chats
+    // Separate chats into Pinned, Foldered and Unfoldered
+    const pinnedChats = chats.filter(c => c.isPinned)
+    const unfolderedChats = chats.filter(c => !c.folderId && !c.isPinned)
     const dateGroups = groupChatsByDate(unfolderedChats)
 
     const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
@@ -206,18 +171,14 @@ export function Sidebar({
     }
 
     // --- Background Generation Sync ---
+    const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
+
     useEffect(() => {
-        const removeStatusListener = window.electron.on('chat:generation-status', (_event, data: { chatId: string, isGenerating: boolean }) => {
-            // Note: We don't have local state for chats in Sidebar that we can easily patch
-            // because chats comes from props. However, we can use a local "generatingChats" override
-            // or just rely on the parent (useChatManager) updating.
-            // But sometimes the parent is not active. So we use a local ref or state for override.
+        const removeStatusListener = window.electron.on('chat:generation-status', (_event: any, data: { chatId: string, isGenerating: boolean }) => {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: data.isGenerating }))
         })
         return () => { removeStatusListener() }
     }, [])
-
-    const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
 
     const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating
 
@@ -232,7 +193,10 @@ export function Sidebar({
                 {/* Top Navigation Section */}
                 <div className="flex flex-col gap-1 p-4 pb-2">
                     <Button
-                        onClick={onNewChat}
+                        onClick={() => {
+                            onChangeView('chat')
+                            createNewChat()
+                        }}
                         className={cn(
                             "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
                             !isCollapsed && "px-4 w-full"
@@ -304,76 +268,16 @@ export function Sidebar({
                                             className="overflow-hidden"
                                         >
                                             <div className="pr-2 py-1 space-y-0.5 ml-2 border-l border-dashed border-border/30">
-                                                <SettingsMenuItem
-                                                    id="general"
-                                                    icon={LayoutGrid}
-                                                    label={t('settings.general')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'general'}
-                                                    onClick={() => { onOpenSettings('general'); if (onSelectSettingsCategory) onSelectSettingsCategory('general') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="accounts"
-                                                    icon={UserCircle}
-                                                    label={t('settings.accounts')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'accounts'}
-                                                    onClick={() => { onOpenSettings('accounts'); if (onSelectSettingsCategory) onSelectSettingsCategory('accounts') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="models"
-                                                    icon={Database}
-                                                    label={t('settings.models')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'models'}
-                                                    onClick={() => { onOpenSettings('models'); if (onSelectSettingsCategory) onSelectSettingsCategory('models') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="appearance"
-                                                    icon={Image}
-                                                    label={t('settings.appearance')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'appearance'}
-                                                    onClick={() => { onOpenSettings('appearance'); if (onSelectSettingsCategory) onSelectSettingsCategory('appearance') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="speech"
-                                                    icon={Mic}
-                                                    label={t('settings.speech')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'speech'}
-                                                    onClick={() => { onOpenSettings('speech'); if (onSelectSettingsCategory) onSelectSettingsCategory('speech') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="advanced"
-                                                    icon={Cpu}
-                                                    label={t('settings.advanced')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'advanced'}
-                                                    onClick={() => { onOpenSettings('advanced'); if (onSelectSettingsCategory) onSelectSettingsCategory('advanced') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="developer"
-                                                    icon={Terminal}
-                                                    label={t('settings.developer')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'developer'}
-                                                    onClick={() => { onOpenSettings('developer'); if (onSelectSettingsCategory) onSelectSettingsCategory('developer') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="statistics"
-                                                    icon={Activity}
-                                                    label={t('settings.statistics')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'statistics'}
-                                                    onClick={() => { onOpenSettings('statistics'); if (onSelectSettingsCategory) onSelectSettingsCategory('statistics') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="gallery"
-                                                    icon={Image}
-                                                    label={t('settings.gallery')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'gallery'}
-                                                    onClick={() => { onOpenSettings('gallery'); if (onSelectSettingsCategory) onSelectSettingsCategory('gallery') }}
-                                                />
-                                                <SettingsMenuItem
-                                                    id="about"
-                                                    icon={Info}
-                                                    label={t('settings.about')}
-                                                    isActive={currentView === 'settings' && settingsCategory === 'about'}
-                                                    onClick={() => { onOpenSettings('about'); if (onSelectSettingsCategory) onSelectSettingsCategory('about') }}
-                                                />
+                                                {['general', 'accounts', 'models', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
+                                                    <SettingsMenuItem
+                                                        key={id}
+                                                        id={id}
+                                                        icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : LayoutGrid}
+                                                        label={t(`settings.${id}`)}
+                                                        isActive={currentView === 'settings' && settingsCategory === id}
+                                                        onClick={() => { onOpenSettings(id); if (setSettingsCategory) setSettingsCategory(id as any) }}
+                                                    />
+                                                ))}
                                             </div>
                                         </motion.div>
                                     )}
@@ -444,7 +348,7 @@ export function Sidebar({
                         </div>
                     )}
 
-                    {/* Chat Statistics Summary (#60) */}
+                    {/* Chat Statistics Summary */}
                     {!isCollapsed && chats.length > 0 && (
                         <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/40 border-b border-white/5 mb-2">
                             <span>{chats.length} {t('sidebar.chatCount')}</span>
@@ -466,8 +370,49 @@ export function Sidebar({
                             </div>
                         ) : (
                             <>
+                                {/* Pinned Chats Section */}
+                                {pinnedChats.length > 0 && (
+                                    <div className="mb-4 space-y-1">
+                                        {!isCollapsed && (
+                                            <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center gap-2">
+                                                <Pin className="w-3 h-3" />
+                                                <span>{t('sidebar.pinned') || 'Pinned'}</span>
+                                            </div>
+                                        )}
+                                        {pinnedChats.map(chat => (
+                                            <div key={chat.id} className="relative group">
+                                                <button
+                                                    onClick={() => {
+                                                        onChangeView('chat')
+                                                        setCurrentChatId(chat.id)
+                                                    }}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-3 rounded-md transition-all duration-200",
+                                                        isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
+                                                        currentView === 'chat' && currentChatId === chat.id
+                                                            ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
+                                                            : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
+                                                    )}
+                                                >
+                                                    <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
+                                                    {!isCollapsed && <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>}
+                                                </button>
+                                                {/* Unpin Action */}
+                                                {!isCollapsed && (
+                                                    <div className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2">
+                                                        <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5">
+                                                            <Pin className="w-3 h-3 fill-current" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <div className="h-px bg-white/5 mx-2 my-2" />
+                                    </div>
+                                )}
+
                                 {/* Folders Section */}
-                                {!isCollapsed && sortedFolders.map(folder => (
+                                {!isCollapsed && sortedFolders.map((folder: Folder) => (
                                     <div key={folder.id} className="space-y-0.5">
                                         <div
                                             className={cn(
@@ -515,7 +460,7 @@ export function Sidebar({
                                                 <div
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (onDeleteFolder) onDeleteFolder(folder.id)
+                                                        deleteFolder(folder.id)
                                                     }}
                                                     className="p-1 hover:text-red-400 hover:bg-white/10 rounded"
                                                 >
@@ -541,7 +486,7 @@ export function Sidebar({
                                                             <button
                                                                 onClick={() => {
                                                                     onChangeView('chat')
-                                                                    onSelectChat(chat.id)
+                                                                    setCurrentChatId(chat.id)
                                                                 }}
                                                                 className={cn(
                                                                     "flex-1 flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 text-xs text-left min-w-0 relative",
@@ -562,13 +507,13 @@ export function Sidebar({
                                                                         title={t('sidebar.removeFromFolder') || 'Remove from folder'}
                                                                         onClick={(e) => {
                                                                             e.stopPropagation()
-                                                                            if (onMoveChat) onMoveChat(chat.id, null)
+                                                                            moveChatToFolder(chat.id, null)
                                                                         }}
                                                                         className="p-1 hover:text-orange-400 rounded-md cursor-pointer hover:bg-white/5"
                                                                     >
                                                                         <FolderIcon className="w-2.5 h-2.5" />
                                                                     </div>
-                                                                    <div onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
                                                                         <Trash2 className="w-2.5 h-2.5" />
                                                                     </div>
                                                                 </div>
@@ -600,7 +545,7 @@ export function Sidebar({
                                                     <button
                                                         onClick={() => {
                                                             onChangeView('chat')
-                                                            onSelectChat(chat.id)
+                                                            setCurrentChatId(chat.id)
                                                         }}
                                                         className={cn(
                                                             "w-full flex items-center gap-3 rounded-md transition-all duration-200",
@@ -648,6 +593,9 @@ export function Sidebar({
                                                                             >
                                                                                 <CornerUpRight className="w-3 h-3" />
                                                                             </div>
+                                                                            <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5">
+                                                                                <Pin className="w-3 h-3" />
+                                                                            </div>
                                                                             {/* Simple Hover Dropdown for Folders */}
                                                                             <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-[#1A1A1A] border border-white/10 rounded-md shadow-xl -mt-1">
                                                                                 <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">Move to...</div>
@@ -656,7 +604,7 @@ export function Sidebar({
                                                                                         key={f.id}
                                                                                         onClick={(e) => {
                                                                                             e.stopPropagation()
-                                                                                            if (onMoveChat) onMoveChat(chat.id, f.id)
+                                                                                            moveChatToFolder(chat.id, f.id)
                                                                                         }}
                                                                                         className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2"
                                                                                     >
@@ -668,7 +616,7 @@ export function Sidebar({
                                                                         </div>
                                                                     )}
 
-                                                                    <div onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
                                                                         <Trash2 className="w-3 h-3" />
                                                                     </div>
                                                                 </div>
@@ -687,6 +635,16 @@ export function Sidebar({
 
                 {/* Bottom Section */}
                 <div className="p-2 border-t border-white/5 bg-black/5 space-y-1">
+                    {/* Active Project Indicator */}
+                    {!isCollapsed && selectedProject && (
+                        <div className="px-3 py-2 bg-white/5 rounded-md border border-white/5 mb-1">
+                            <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">Project</div>
+                            <div className="text-xs font-medium truncate flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {selectedProject.title}
+                            </div>
+                        </div>
+                    )}
 
                     <Button
                         variant="ghost"
@@ -703,9 +661,9 @@ export function Sidebar({
                 isOpen={showPrompts}
                 onClose={() => setShowPrompts(false)}
                 prompts={prompts}
-                onCreatePrompt={onCreatePrompt}
-                onUpdatePrompt={onUpdatePrompt}
-                onDeletePrompt={onDeletePrompt}
+                onCreatePrompt={createPrompt}
+                onUpdatePrompt={updatePrompt}
+                onDeletePrompt={deletePrompt}
             />
         </>
     )

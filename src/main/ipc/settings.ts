@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { SettingsService } from '../services/settings.service'
-import { LLMService } from '../services/llm.service'
-import { CopilotService } from '../services/copilot.service'
+import { LLMService } from '../services/llm/llm.service'
+import { CopilotService } from '../services/llm/copilot.service'
 
 export function registerSettingsIpc(options: {
     settingsService: SettingsService

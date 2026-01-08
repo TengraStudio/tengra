@@ -1,5 +1,5 @@
-import { DatabaseService } from './database.service'
-import { ProxyService } from './proxy.service'
+import { DatabaseService } from './data/database.service'
+import { ProxyService } from './proxy/proxy.service'
 
 type ImportResult = {
     success: boolean
@@ -46,7 +46,7 @@ export class HistoryImportService {
             return { success: false, message: 'OpenAI hesabi bagli degil.' }
         }
 
-        const authData = await this.proxyService.downloadAuthFile(authFile.name)
+        const authData = await this.proxyService.getAuthFileContent(authFile.name)
         const accessToken = this.pickToken(authData)
         if (!accessToken) {
             return { success: false, message: 'OpenAI token bulunamadi.' }
