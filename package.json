@@ -1,5 +1,5 @@
 {
-  "name": "orbit-ai",
+  "name": "orbit",
   "version": "1.0.0",
   "description": "Orbit - Your Personal AI Assistant",
   "main": "dist/main/main.js",
@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "electron:dev": "vite",
+    "electron:dev": "set NODE_OPTIONS=--max-old-space-size=8192 && vite",
     "electron:build": "npm run build && electron-builder"
   },
   "keywords": [
@@ -17,7 +17,7 @@
     "ollama",
     "electron",
     "copilot",
-    "omni"
+    "orbit"
   ],
   "author": "",
   "license": "MIT",
@@ -59,10 +59,15 @@
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.28.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@floating-ui/react": "^0.27.16",
+    "@lancedb/lancedb": "^0.23.0",
+    "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@types/ssh2": "^1.15.5",
+    "@types/ws": "8.18.1",
     "@uiw/react-codemirror": "^4.22.2",
+    "apache-arrow": "^18.1.0",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -74,26 +79,24 @@
     "os-utils": "^0.0.14",
     "pdf-parse": "^2.4.5",
     "prism-react-renderer": "^2.4.1",
-    "prismjs": "^1.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-katex": "^3.1.0",
     "react-markdown": "^9.0.0",
     "react-resizable-panels": "^4.2.1",
     "rehype-katex": "^7.0.1",
-    "rehype-prism-plus": "^2.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
-    "sql.js": "^1.13.0",
     "ssh2": "^1.17.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "ws": "8.19.0",
     "xterm": "^5.3.0",
     "xterm-addon-fit": "^0.8.0"
   },
   "build": {
-    "appId": "com.ai-chat.app",
-    "productName": "OMNI",
+    "appId": "com.orbit.app",
+    "productName": "orbit",
     "directories": {
       "output": "release"
     },
@@ -108,5 +111,9 @@
       ],
       "icon": "src/renderer/assets/logo.png"
     }
+  },
+  "optionalDependencies": {
+    "bufferutil": "*",
+    "utf-8-validate": "*"
   }
 }

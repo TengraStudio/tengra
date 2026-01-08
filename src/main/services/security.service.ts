@@ -44,4 +44,32 @@ export class SecurityService implements ISecurityService {
             return { success: false, error: e.message };
         }
     }
+
+
+    encryptSync(text: string): string {
+        const { safeStorage } = require('electron');
+        if (safeStorage && safeStorage.isEncryptionAvailable()) {
+            const buffer = safeStorage.encryptString(text);
+            return buffer.toString('base64');
+        } else {
+            console.warn('[SecurityService] safeStorage not available, falling back to plain text');
+            return text;
+        }
+    }
+
+    decryptSync(encryptedText: string): string {
+        const { safeStorage } = require('electron');
+        if (safeStorage && safeStorage.isEncryptionAvailable()) {
+            try {
+                const buffer = Buffer.from(encryptedText, 'base64');
+                const decrypted = safeStorage.decryptString(buffer);
+                return decrypted;
+            } catch (e) {
+                console.error('[SecurityService] Decryption failed:', e);
+                return encryptedText;
+            }
+        } else {
+            return encryptedText;
+        }
+    }
 }

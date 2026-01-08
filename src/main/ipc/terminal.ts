@@ -6,7 +6,7 @@ import { TerminalService } from '../services/terminal.service'
 
 let terminalService: TerminalService | null = null
 
-export function registerTerminalIpc(browserWindow: BrowserWindow) {
+export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     terminalService = new TerminalService()
 
     // Check availability
@@ -32,10 +32,10 @@ export function registerTerminalIpc(browserWindow: BrowserWindow) {
         const success = terminalService.createSession({
             ...options,
             onData: (data: string) => {
-                browserWindow.webContents.send('terminal:data', { id: options.id, data })
+                getWindow()?.webContents.send('terminal:data', { id: options.id, data })
             },
             onExit: (code: number) => {
-                browserWindow.webContents.send('terminal:exit', { id: options.id, code })
+                getWindow()?.webContents.send('terminal:exit', { id: options.id, code })
             }
         })
 
@@ -62,9 +62,8 @@ export function registerTerminalIpc(browserWindow: BrowserWindow) {
         return terminalService?.getActiveSessions() ?? []
     })
 
-    // Cleanup on window close
-    browserWindow.on('closed', () => {
-        terminalService?.dispose()
-        terminalService = null
+    // Read session buffer
+    ipcMain.handle('terminal:readBuffer', (_event, sessionId: string) => {
+        return terminalService?.getSessionBuffer(sessionId) ?? ''
     })
 }

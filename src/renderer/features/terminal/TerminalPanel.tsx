@@ -1,11 +1,15 @@
-﻿import { useState, useRef, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, memo } from 'react'
+import { Terminal as XTerm } from 'xterm'
+import { FitAddon } from 'xterm-addon-fit'
+import 'xterm/css/xterm.css'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TerminalTab } from '@/types'
 import {
-    Terminal, X, Plus, ChevronUp, ChevronDown,
+    Terminal, X, Plus, ChevronDown,
     Maximize2, Minimize2, TerminalSquare
 } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 
 interface TerminalPanelProps {
     isOpen: boolean
@@ -19,11 +23,173 @@ interface TerminalPanelProps {
     setActiveTabId: (id: string | null) => void
 }
 
-const TERMINAL_TYPES = [
-    { id: 'powershell', name: 'PowerShell', icon: 'ğŸ”·' },
-    { id: 'cmd', name: 'CMD', icon: 'â¬›' },
-    { id: 'bash', name: 'Bash', icon: 'ğŸŸ¢' },
-]
+// Single Terminal Session Component
+const TerminalSession = memo(({
+    tab,
+    isActive,
+    onClose,
+    projectPath
+}: {
+    tab: TerminalTab,
+    isActive: boolean,
+    onClose: () => void,
+    projectPath?: string
+}) => {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const xtermRef = useRef<XTerm | null>(null)
+    const fitAddonRef = useRef<FitAddon | null>(null)
+    const { theme } = useTheme() // Assuming this hook returns 'dark' or 'light'
+    const [isReady, setIsReady] = useState(false)
+
+    // Theme definitions
+    const getTheme = (isDark: boolean) => ({
+        background: isDark ? '#09090b' : '#ffffff',
+        foreground: isDark ? '#e4e4e7' : '#18181b',
+        cursor: isDark ? '#ffffff' : '#000000',
+        selectionBackground: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+        black: isDark ? '#000000' : '#000000',
+        red: isDark ? '#ef4444' : '#ef4444',
+        green: isDark ? '#22c55e' : '#22c55e',
+        yellow: isDark ? '#eab308' : '#eab308',
+        blue: isDark ? '#3b82f6' : '#3b82f6',
+        magenta: isDark ? '#ec4899' : '#ec4899',
+        cyan: isDark ? '#06b6d4' : '#06b6d4',
+        white: isDark ? '#ffffff' : '#ffffff',
+        brightBlack: isDark ? '#71717a' : '#71717a',
+        brightRed: isDark ? '#f87171' : '#f87171',
+        brightGreen: isDark ? '#4ade80' : '#4ade80',
+        brightYellow: isDark ? '#facc15' : '#facc15',
+        brightBlue: isDark ? '#60a5fa' : '#60a5fa',
+        brightMagenta: isDark ? '#f472b6' : '#f472b6',
+        brightCyan: isDark ? '#22d3ee' : '#22d3ee',
+        brightWhite: isDark ? '#ffffff' : '#ffffff'
+    })
+
+    // Update theme on change
+    useEffect(() => {
+        if (xtermRef.current) {
+            xtermRef.current.options.theme = getTheme(theme === 'dark')
+        }
+    }, [theme])
+
+    // Initialize xterm
+    useEffect(() => {
+        if (!containerRef.current) return
+
+        const term = new XTerm({
+            cursorBlink: true,
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
+            theme: getTheme(theme === 'dark'),
+            allowProposedApi: true
+        })
+
+        const fitAddon = new FitAddon()
+        term.loadAddon(fitAddon)
+        term.open(containerRef.current)
+        fitAddon.fit()
+
+        xtermRef.current = term
+        fitAddonRef.current = fitAddon
+
+        // Initialize backend session
+        const initSession = async () => {
+            const cols = term.cols
+            const rows = term.rows
+
+            await window.electron.terminal.create({
+                id: tab.id,
+                shell: tab.type,
+                cwd: projectPath, // Use provided project path or default
+                cols,
+                rows
+            })
+
+            // Hook up resize
+            term.onResize((size) => {
+                window.electron.terminal.resize(tab.id, size.cols, size.rows)
+            })
+
+            // Hook up data input
+            term.onData((data) => {
+                window.electron.terminal.write(tab.id, data)
+            })
+
+            setIsReady(true)
+        }
+
+        initSession()
+
+        // Cleanup
+        return () => {
+            window.electron.terminal.kill(tab.id)
+            term.dispose()
+        }
+    }, []) // Run once on mount
+
+    // Handle incoming data
+    useEffect(() => {
+        if (!isReady) return
+
+        const handleData = (_: any, { id, data }: { id: string, data: string }) => {
+            if (id === tab.id && xtermRef.current) {
+                xtermRef.current.write(data)
+            }
+        }
+
+        const handleExit = (_: any, { id }: { id: string }) => {
+            if (id === tab.id) {
+                onClose()
+            }
+        }
+
+        const cleanupData = window.electron.on('terminal:data', handleData)
+        const cleanupExit = window.electron.on('terminal:exit', handleExit)
+
+        return () => {
+            cleanupData()
+            cleanupExit()
+        }
+    }, [tab.id, isReady, onClose])
+
+    // Handle fit on resize or visibility change
+    useEffect(() => {
+        if (isActive && fitAddonRef.current) {
+            // Small timeout to allow layout to settle
+            setTimeout(() => {
+                fitAddonRef.current?.fit()
+            }, 50)
+        }
+    }, [isActive, tab.id])
+
+    // Resize observer for container
+    useEffect(() => {
+        if (!containerRef.current || !fitAddonRef.current) return
+
+        const observer = new ResizeObserver(() => {
+            if (isActive) {
+                try {
+                    fitAddonRef.current?.fit()
+                } catch (e) {
+                    // Ignore fit errors (can happen if element is hidden)
+                }
+            }
+        })
+
+        observer.observe(containerRef.current)
+        return () => observer.disconnect()
+    }, [isActive])
+
+    return (
+        <div
+            className={cn("h-full w-full bg-zinc-950", isActive ? "block" : "hidden")}
+            style={{ paddingLeft: '8px' }} // Tiny padding for aesthetic
+        >
+            <div ref={containerRef} className="h-full w-full" />
+        </div>
+    )
+})
+TerminalSession.displayName = 'TerminalSession'
 
 export function TerminalPanel({
     isOpen,
@@ -39,50 +205,45 @@ export function TerminalPanel({
     const [isResizing, setIsResizing] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [showNewTerminalMenu, setShowNewTerminalMenu] = useState(false)
-    const panelRef = useRef<HTMLDivElement>(null)
-    const inputRef = useRef<HTMLInputElement>(null)
-    const outputRef = useRef<HTMLDivElement>(null)
 
-    const activeTab = tabs.find(t => t.id === activeTabId)
+    const [availableShells, setAvailableShells] = useState<{ id: string, name: string, path: string }[]>([])
 
-    // Create default terminal on first open
+    // Create default terminal 
     useEffect(() => {
-        if (isOpen && tabs.length === 0) {
-            createTerminal('powershell')
-        }
-    }, [isOpen])
+        const loadShells = async () => {
+            const shells = await window.electron.terminal.getShells()
+            setAvailableShells(shells)
 
-    // Focus input when tab changes
-    useEffect(() => {
-        if (activeTab && inputRef.current) {
-            inputRef.current.focus()
+            // Auto-create if empty and open
+            if (isOpen && tabs.length === 0 && shells.length > 0) {
+                // Defer slightly to ensure shells are loaded
+                setTimeout(() => createTerminal(shells[0].id), 100)
+            }
         }
-    }, [activeTabId])
-
-    // Scroll to bottom on new content
-    useEffect(() => {
-        if (outputRef.current) {
-            outputRef.current.scrollTop = outputRef.current.scrollHeight
-        }
-    }, [activeTab?.content])
+        loadShells()
+    }, [isOpen]) // Reload if re-opened? Or just once. isOpen dep is fine.
 
     const generateId = () => Math.random().toString(36).substr(2, 9)
 
-    const createTerminal = (type: 'powershell' | 'cmd' | 'bash' | 'custom') => {
+    const createTerminal = (type: string) => {
         const id = generateId()
-        const typeLabel = TERMINAL_TYPES.find(t => t.id === type)?.name || 'Terminal'
-        const tabCount = tabs.filter(t => t.type === type).length + 1
+        const shellInfo = availableShells.find(s => s.id === type)
+        const typeLabel = shellInfo?.name || type
+        const count = tabs.filter(t => t.type === type).length + 1
 
         const newTab: TerminalTab = {
             id,
-            name: `${typeLabel} ${tabCount}`,
+            name: `${typeLabel} ${count}`,
             type,
-            content: [`[${typeLabel}] Oturum baÅŸlatÄ±ldÄ±...`, ''],
+            content: [],
             inputHistory: [],
             historyIndex: -1,
             currentInput: '',
-            cwd: projectPath || 'C:\\Users',
-            isRunning: false
+            cwd: projectPath || '',
+            isRunning: true,
+            status: 'idle',
+            history: [],
+            command: ''
         }
 
         setTabs(prev => [...prev, newTab])
@@ -102,246 +263,96 @@ export function TerminalPanel({
         })
     }
 
-    const handleCommand = async (tabId: string, command: string) => {
-        if (!command.trim()) return
-
-        setTabs(prev => prev.map(t => {
-            if (t.id !== tabId) return t
-            return {
-                ...t,
-                content: [...t.content, `> ${command}`],
-                inputHistory: [...t.inputHistory, command],
-                historyIndex: -1,
-                currentInput: '',
-                isRunning: true
-            }
-        }))
-
-        // Simulate command execution (real implementation would use electron IPC)
-        try {
-            const tab = tabs.find(t => t.id === tabId)
-            if (!tab) return
-
-            // Simulate some common commands
-            let output = ''
-            const cmd = command.toLowerCase().trim()
-
-            if (cmd === 'cls' || cmd === 'clear') {
-                setTabs(prev => prev.map(t => {
-                    if (t.id !== tabId) return t
-                    return { ...t, content: [], isRunning: false }
-                }))
-                return
-            } else if (cmd === 'pwd' || cmd === 'cd') {
-                output = tab.cwd
-            } else if (cmd.startsWith('cd ')) {
-                const newPath = command.slice(3).trim()
-                setTabs(prev => prev.map(t => {
-                    if (t.id !== tabId) return t
-                    return {
-                        ...t,
-                        cwd: newPath || t.cwd,
-                        content: [...t.content, `Dizin deÄŸiÅŸtirildi: ${newPath}`],
-                        isRunning: false
-                    }
-                }))
-                return
-            } else if (cmd === 'help') {
-                output = `KullanÄ±labilir komutlar:\n  cls/clear - EkranÄ± temizle\n  pwd/cd - Mevcut dizini gÃ¶ster\n  cd <path> - Dizin deÄŸiÅŸtir\n  help - YardÄ±m gÃ¶ster\n\nNot: Terminal henÃ¼z geliÅŸtirme aÅŸamasÄ±ndadÄ±r.`
-            } else {
-                output = `Komut simÃ¼le edildi: ${command}\n(GerÃ§ek terminal entegrasyonu yakÄ±nda eklenecek)`
-            }
-
-            setTabs(prev => prev.map(t => {
-                if (t.id !== tabId) return t
-                return {
-                    ...t,
-                    content: [...t.content, ...output.split('\n')],
-                    isRunning: false
-                }
-            }))
-        } catch (error: any) {
-            setTabs(prev => prev.map(t => {
-                if (t.id !== tabId) return t
-                return {
-                    ...t,
-                    content: [...t.content, `Hata: ${error.message}`],
-                    isRunning: false
-                }
-            }))
-        }
-    }
-
-    const handleKeyDown = (e: React.KeyboardEvent, tabId: string) => {
-        const tab = tabs.find(t => t.id === tabId)
-        if (!tab) return
-
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            handleCommand(tabId, tab.currentInput)
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            if (tab.inputHistory.length > 0) {
-                const newIndex = tab.historyIndex < tab.inputHistory.length - 1
-                    ? tab.historyIndex + 1
-                    : tab.historyIndex
-                setTabs(prev => prev.map(t => {
-                    if (t.id !== tabId) return t
-                    return {
-                        ...t,
-                        historyIndex: newIndex,
-                        currentInput: t.inputHistory[t.inputHistory.length - 1 - newIndex] || ''
-                    }
-                }))
-            }
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            if (tab.historyIndex > 0) {
-                const newIndex = tab.historyIndex - 1
-                setTabs(prev => prev.map(t => {
-                    if (t.id !== tabId) return t
-                    return {
-                        ...t,
-                        historyIndex: newIndex,
-                        currentInput: t.inputHistory[t.inputHistory.length - 1 - newIndex] || ''
-                    }
-                }))
-            } else if (tab.historyIndex === 0) {
-                setTabs(prev => prev.map(t => {
-                    if (t.id !== tabId) return t
-                    return { ...t, historyIndex: -1, currentInput: '' }
-                }))
-            }
-        }
-    }
-
-    const handleInputChange = (tabId: string, value: string) => {
-        setTabs(prev => prev.map(t => {
-            if (t.id !== tabId) return t
-            return { ...t, currentInput: value }
-        }))
-    }
-
-    // Resize handling
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
-        e.preventDefault()
-        setIsResizing(true)
-    }, [])
-
+    // Resize logic
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isResizing) return
-            const windowHeight = window.innerHeight
-            const newHeight = windowHeight - e.clientY
-            onHeightChange(Math.min(Math.max(150, newHeight), windowHeight * 0.7))
+            const newHeight = window.innerHeight - e.clientY
+            onHeightChange(Math.min(Math.max(150, newHeight), window.innerHeight * 0.8))
         }
-
-        const handleMouseUp = () => {
-            setIsResizing(false)
-        }
+        const handleMouseUp = () => setIsResizing(false)
 
         if (isResizing) {
             document.addEventListener('mousemove', handleMouseMove)
             document.addEventListener('mouseup', handleMouseUp)
         }
-
         return () => {
             document.removeEventListener('mousemove', handleMouseMove)
             document.removeEventListener('mouseup', handleMouseUp)
         }
     }, [isResizing, onHeightChange])
 
-    const toggleMaximize = () => {
-        setIsMaximized(!isMaximized)
-        onHeightChange(isMaximized ? 250 : window.innerHeight * 0.6)
-    }
-
-    if (!isOpen) {
-        return (
-            <button
-                onClick={onToggle}
-                className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-white/10 rounded-xl text-sm font-medium text-muted-foreground hover:text-white hover:border-white/20 transition-all shadow-xl"
-            >
-                <Terminal className="w-4 h-4" />
-                Terminal
-                <ChevronUp className="w-4 h-4" />
-            </button>
-        )
-    }
+    // Logic for closed state handled by parent (hidden) but we can keep minimal check
+    // if (!isOpen) return null 
 
     return (
         <motion.div
-            ref={panelRef}
-            initial={{ y: 100, opacity: 0 }}
+            initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            style={{ height: isMaximized ? '60vh' : height }}
-            className="flex flex-col bg-zinc-950 border-t border-white/10 overflow-hidden"
+            style={{ height: isMaximized ? '70vh' : height }}
+            className="flex flex-col bg-zinc-950 border-t border-white/10 overflow-hidden shadow-2xl h-full"
         >
             {/* Resize Handle */}
             <div
-                onMouseDown={handleResizeStart}
+                onMouseDown={(e) => { e.preventDefault(); setIsResizing(true) }}
                 className={cn(
-                    "h-1 cursor-ns-resize bg-transparent hover:bg-primary/50 transition-colors",
+                    "h-1 cursor-ns-resize bg-transparent hover:bg-primary/50 transition-colors w-full relative z-10",
                     isResizing && "bg-primary"
                 )}
             />
 
-            {/* Tab Bar */}
-            <div className="flex items-center justify-between px-2 py-1 bg-zinc-900/50 border-b border-white/5">
-                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
+            {/* Header / Tabs */}
+            <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/80 border-b border-white/5 backdrop-blur-sm">
+                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar no-thumb">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTabId(tab.id)}
                             className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                                "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap border border-transparent",
                                 activeTabId === tab.id
-                                    ? "bg-zinc-800 text-white"
-                                    : "text-muted-foreground hover:text-white hover:bg-zinc-800/50"
+                                    ? "bg-zinc-800 text-white border-white/10 shadow-sm"
+                                    : "text-muted-foreground hover:text-zinc-300 hover:bg-white/5"
                             )}
                         >
-                            <TerminalSquare className="w-3.5 h-3.5" />
+                            <TerminalSquare className={cn("w-3.5 h-3.5", activeTabId === tab.id ? "text-primary" : "opacity-70")} />
                             {tab.name}
-                            {tab.isRunning && (
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            )}
-                            <button
+                            <div
                                 onClick={(e) => { e.stopPropagation(); closeTab(tab.id) }}
-                                className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-white"
+                                className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-red-400 transition-colors"
                             >
                                 <X className="w-3 h-3" />
-                            </button>
+                            </div>
                         </button>
                     ))}
 
-                    {/* New Terminal Button */}
-                    <div className="relative">
+                    <div className="relative ml-1">
                         <button
                             onClick={() => setShowNewTerminalMenu(!showNewTerminalMenu)}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-zinc-800/50 transition-all"
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3.5 h-3.5" />
                         </button>
-
                         <AnimatePresence>
                             {showNewTerminalMenu && (
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute top-full left-0 mt-1 py-1 bg-zinc-900 border border-white/10 rounded-lg shadow-xl z-50 min-w-[150px]"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="absolute bottom-full left-0 mb-2 py-1 bg-[#18181b] border border-white/10 rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden"
                                 >
-                                    {TERMINAL_TYPES.map(type => (
+                                    {availableShells.length > 0 ? availableShells.map(shell => (
                                         <button
-                                            key={type.id}
-                                            onClick={() => createTerminal(type.id as any)}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                                            key={shell.id}
+                                            onClick={() => createTerminal(shell.id)}
+                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-white/5 transition-colors flex items-center gap-2 text-zinc-300"
                                         >
-                                            <span>{type.icon}</span>
-                                            {type.name}
+                                            <span className="opacity-50">&gt;_</span>
+                                            {shell.name}
                                         </button>
-                                    ))}
+                                    )) : (
+                                        <div className="px-3 py-2 text-xs text-muted-foreground">No shells found</div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -349,65 +360,37 @@ export function TerminalPanel({
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <button
-                        onClick={toggleMaximize}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-zinc-800/50 transition-all"
-                    >
-                        {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    <button onClick={() => setIsMaximized(!isMaximized)} className="p-1.5 text-muted-foreground hover:text-white transition-colors">
+                        {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                     </button>
-                    <button
-                        onClick={onToggle}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-zinc-800/50 transition-all"
-                    >
-                        <ChevronDown className="w-4 h-4" />
+                    <button onClick={onToggle} className="p-1.5 text-muted-foreground hover:text-white transition-colors">
+                        <ChevronDown className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
 
-            {/* Terminal Content */}
-            <div className="flex-1 overflow-hidden">
-                {activeTab ? (
-                    <div className="h-full flex flex-col bg-black/50 font-mono text-sm">
-                        {/* Output */}
-                        <div
-                            ref={outputRef}
-                            className="flex-1 overflow-auto p-3 text-zinc-300 leading-relaxed custom-scrollbar"
-                        >
-                            {activeTab.content.map((line, i) => (
-                                <div key={i} className={cn(
-                                    "whitespace-pre-wrap",
-                                    line.startsWith('>') && "text-cyan-400",
-                                    line.startsWith('Hata:') && "text-red-400"
-                                )}>
-                                    {line || '\u00A0'}
-                                </div>
-                            ))}
-                        </div>
+            {/* Terminal Sessions Container */}
+            <div className="flex-1 overflow-hidden relative bg-zinc-950">
+                {tabs.map(tab => (
+                    <TerminalSession
+                        key={tab.id}
+                        tab={tab}
+                        isActive={activeTabId === tab.id}
+                        onClose={() => closeTab(tab.id)}
+                        projectPath={projectPath}
+                    />
+                ))}
 
-                        {/* Input */}
-                        <div className="flex items-center gap-2 px-3 py-2 border-t border-white/5 bg-zinc-950">
-                            <span className="text-emerald-400 font-bold shrink-0">
-                                {activeTab.cwd.split('\\').pop() || activeTab.cwd} &gt;
-                            </span>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={activeTab.currentInput}
-                                onChange={(e) => handleInputChange(activeTab.id, e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(e, activeTab.id)}
-                                disabled={activeTab.isRunning}
-                                className="flex-1 bg-transparent outline-none text-white placeholder:text-zinc-600"
-                                placeholder={activeTab.isRunning ? "Ã‡alÄ±ÅŸÄ±yor..." : "Komut girin..."}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                            <Terminal className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p className="text-sm">Yeni terminal aÃ§mak iÃ§in + butonuna tÄ±klayÄ±n</p>
-                        </div>
+                {tabs.length === 0 && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                        <Terminal className="w-12 h-12 mb-4 opacity-20" />
+                        <p className="text-sm">No active terminal sessions</p>
+                        <button
+                            onClick={() => createTerminal(availableShells[0]?.id || 'powershell')}
+                            className="mt-4 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors"
+                        >
+                            Start New Session
+                        </button>
                     </div>
                 )}
             </div>

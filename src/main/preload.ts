@@ -24,6 +24,8 @@ export interface ElectronAPI {
         scanTodos: (rootPath: string) => Promise<any[]>
         findSymbols: (rootPath: string, query: string) => Promise<any[]>
         searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<any[]>
+        indexProject: (rootPath: string, projectId: string) => Promise<void>
+        queryIndexedSymbols: (query: string) => Promise<any[]>
     }
 
     // Proxy
@@ -88,11 +90,16 @@ export interface ElectronAPI {
         archiveChat: (id: string, isArchived: boolean) => Promise<{ success: boolean }>
         getChat: (id: string) => Promise<any>
         getAllChats: () => Promise<any[]>
+        getPrompts: () => Promise<any[]>
+        createPrompt: (title: string, content: string, tags?: string[]) => Promise<{ success: boolean }>
+        updatePrompt: (id: string, updates: any) => Promise<{ success: boolean }>
+        deletePrompt: (id: string) => Promise<{ success: boolean }>
         searchChats: (query: string) => Promise<any[]>
         addMessage: (message: any) => Promise<{ success: boolean }>
         deleteMessage: (id: string) => Promise<{ success: boolean }>
         updateMessage: (id: string, updates: any) => Promise<{ success: boolean }>
         deleteAllChats: () => Promise<{ success: boolean }>
+        deleteChatsByTitle: (title: string) => Promise<number>
         deleteMessages: (chatId: string) => Promise<{ success: boolean }>
         getMessages: (chatId: string) => Promise<any[]>
         getStats: () => Promise<{ chatCount: number; messageCount: number; dbSize: number }>
@@ -111,9 +118,9 @@ export interface ElectronAPI {
         updateProject: (id: string, updates: any) => Promise<void>
         deleteProject: (id: string) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
-        createFolder: (name: string) => Promise<void>
+        createFolder: (name: string, color?: string) => Promise<any>
         deleteFolder: (id: string) => Promise<void>
-        updateFolder: (id: string, name: string) => Promise<{ success: boolean }>
+        updateFolder: (id: string, updates: any) => Promise<void>
         getFolders: () => Promise<any[]>
     }
 
@@ -125,6 +132,11 @@ export interface ElectronAPI {
         generateAgents: (taskDescription: string) => Promise<any[]>
         getSessions: (projectId?: string) => Promise<any[]>
         getSessionById: (id: string) => Promise<any>
+    }
+
+    agent: {
+        getAll: () => Promise<any[]>
+        get: (id: string) => Promise<any>
     }
 
     terminal: {
@@ -143,7 +155,7 @@ export interface ElectronAPI {
     // SSH
     ssh: {
 
-        connect: (connection: any) => Promise<{ success: boolean; error?: string }>
+        connect: (connection: any) => Promise<{ success: boolean; error?: string; id?: string }>
         disconnect: (connectionId: string) => Promise<{ success: boolean }>
         execute: (connectionId: string, command: string, options?: any) => Promise<any>
         upload: (connectionId: string, localPath: string, remotePath: string) => Promise<{ success: boolean; error?: string }>
@@ -167,6 +179,13 @@ export interface ElectronAPI {
         onShellData: (callback: (data: any) => void) => void
         shellStart: (connectionId: string) => Promise<{ success: boolean; error?: string }>
         shellWrite: (connectionId: string, data: string) => Promise<{ success: boolean; error?: string }>
+        getSystemStats: (connectionId: string) => Promise<any>
+        getInstalledPackages: (connectionId: string, manager?: 'apt' | 'npm' | 'pip') => Promise<any[]>
+        getLogFiles: (connectionId: string) => Promise<string[]>
+        readLogFile: (connectionId: string, path: string, lines?: number) => Promise<string>
+        getProfiles: () => Promise<any[]>
+        saveProfile: (profile: any) => Promise<boolean>
+        deleteProfile: (id: string) => Promise<boolean>
     }
 
     // Tools
@@ -223,6 +242,9 @@ export interface ElectronAPI {
         analyze: (rootPath: string) => Promise<any>
         saveState: (rootPath: string, state: any) => Promise<boolean>
         loadState: (rootPath: string) => Promise<any>
+        analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>
+        generateLogo: (projectPath: string, prompt: string, style: string) => Promise<string>
+        analyzeDirectory: (dirPath: string) => Promise<any>
     }
 
     process: {
@@ -263,6 +285,11 @@ export interface ElectronAPI {
         open: (path: string) => Promise<boolean>
         reveal: (path: string) => Promise<boolean>
     }
+
+
+
+    on: (channel: string, callback: (...args: any[]) => void) => void
+    getUserDataPath: () => Promise<string>
 }
 
 const api: ElectronAPI = {
@@ -285,7 +312,9 @@ const api: ElectronAPI = {
     code: {
         scanTodos: (rootPath) => ipcRenderer.invoke('code:scanTodos', rootPath),
         findSymbols: (rootPath, query) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
-        searchFiles: (rootPath, query, isRegex) => ipcRenderer.invoke('code:searchFiles', rootPath, query, isRegex)
+        searchFiles: (rootPath, query, isRegex) => ipcRenderer.invoke('code:searchFiles', rootPath, query, isRegex),
+        indexProject: (rootPath, projectId) => ipcRenderer.invoke('code:indexProject', rootPath, projectId),
+        queryIndexedSymbols: (query) => ipcRenderer.invoke('code:queryIndexedSymbols', query)
     },
 
     getProxyModels: () => ipcRenderer.invoke('proxy:getModels'),
@@ -362,6 +391,7 @@ const api: ElectronAPI = {
         deleteMessage: (id) => ipcRenderer.invoke('db:deleteMessage', id),
         updateMessage: (id, updates) => ipcRenderer.invoke('db:updateMessage', id, updates),
         deleteAllChats: () => ipcRenderer.invoke('db:deleteAllChats'),
+        deleteChatsByTitle: (title) => ipcRenderer.invoke('db:deleteChatsByTitle', title),
         deleteMessages: (chatId) => ipcRenderer.invoke('db:deleteMessages', chatId),
         getMessages: (chatId) => ipcRenderer.invoke('db:getMessages', chatId),
         getStats: () => ipcRenderer.invoke('db:getStats'),
@@ -372,9 +402,13 @@ const api: ElectronAPI = {
         deleteProject: (id: string) => ipcRenderer.invoke('db:deleteProject', id),
         archiveProject: (id: string, isArchived: boolean) => ipcRenderer.invoke('db:archiveProject', id, isArchived),
         getFolders: () => ipcRenderer.invoke('db:getFolders'),
-        createFolder: (name: string) => ipcRenderer.invoke('db:createFolder', name),
+        createFolder: (name: string, color?: string) => ipcRenderer.invoke('db:createFolder', name, color),
         deleteFolder: (id: string) => ipcRenderer.invoke('db:deleteFolder', id),
-        updateFolder: (id: string, name: string) => ipcRenderer.invoke('db:updateFolder', id, name)
+        updateFolder: (id: string, updates: any) => ipcRenderer.invoke('db:updateFolder', id, updates),
+        getPrompts: () => ipcRenderer.invoke('db:getPrompts'),
+        createPrompt: (title: string, content: string, tags?: string[]) => ipcRenderer.invoke('db:createPrompt', title, content, tags),
+        updatePrompt: (id: string, updates: any) => ipcRenderer.invoke('db:updatePrompt', id, updates),
+        deletePrompt: (id: string) => ipcRenderer.invoke('db:deletePrompt', id)
     },
 
     council: {
@@ -387,6 +421,11 @@ const api: ElectronAPI = {
         generateAgents: (taskDescription: string) => ipcRenderer.invoke('council:generateAgents', taskDescription),
         getSessions: (projectId?: string) => ipcRenderer.invoke('db:getCouncilSessions', projectId),
         getSessionById: (id: string) => ipcRenderer.invoke('db:getCouncilSessionById', id)
+    },
+
+    agent: {
+        getAll: () => ipcRenderer.invoke('agent:get-all'),
+        get: (id: string) => ipcRenderer.invoke('agent:get', id)
     },
 
     ssh: {
@@ -421,7 +460,14 @@ const api: ElectronAPI = {
         },
         onShellData: (callback) => ipcRenderer.on('ssh:shellData', (_event, data) => callback(data)),
         shellStart: (connectionId) => ipcRenderer.invoke('ssh:shellStart', connectionId),
-        shellWrite: (connectionId, data) => ipcRenderer.invoke('ssh:shellWrite', { connectionId, data })
+        shellWrite: (connectionId, data) => ipcRenderer.invoke('ssh:shellWrite', { connectionId, data }),
+        getSystemStats: (connectionId) => ipcRenderer.invoke('ssh:getSystemStats', connectionId),
+        getInstalledPackages: (connectionId, manager) => ipcRenderer.invoke('ssh:getInstalledPackages', connectionId, manager),
+        getLogFiles: (connectionId) => ipcRenderer.invoke('ssh:getLogFiles', connectionId),
+        readLogFile: (connectionId, path, lines) => ipcRenderer.invoke('ssh:readLogFile', { connectionId, path, lines }),
+        getProfiles: () => ipcRenderer.invoke('ssh:getProfiles'),
+        saveProfile: (profile) => ipcRenderer.invoke('ssh:saveProfile', profile),
+        deleteProfile: (id) => ipcRenderer.invoke('ssh:deleteProfile', id)
     },
 
     executeTools: (toolName, args, toolCallId) => ipcRenderer.invoke('tools:execute', toolName, args, toolCallId),
@@ -475,7 +521,10 @@ const api: ElectronAPI = {
     project: {
         analyze: (rootPath: string) => ipcRenderer.invoke('project:analyze', rootPath),
         saveState: (rootPath: string, state: any) => ipcRenderer.invoke('project:save-state', rootPath, state),
-        loadState: (rootPath: string) => ipcRenderer.invoke('project:load-state', rootPath)
+        loadState: (rootPath: string) => ipcRenderer.invoke('project:load-state', rootPath),
+        analyzeIdentity: (rootPath: string) => ipcRenderer.invoke('project:analyzeIdentity', rootPath),
+        generateLogo: (projectPath: string, prompt: string, style: string) => ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style),
+        analyzeDirectory: (dirPath: string) => ipcRenderer.invoke('project:analyzeDirectory', dirPath)
     },
 
     process: {
@@ -530,7 +579,19 @@ const api: ElectronAPI = {
         delete: (path) => ipcRenderer.invoke('gallery:delete', path),
         open: (path) => ipcRenderer.invoke('gallery:open', path),
         reveal: (path) => ipcRenderer.invoke('gallery:reveal', path)
-    }
+    },
+
+
+
+    // Generic event listener for IPC events
+    on: (channel: string, callback: (...args: any[]) => void) => {
+        const listener = (_event: any, ...args: any[]) => callback(_event, ...args)
+        ipcRenderer.on(channel, listener)
+        // Return cleanup function
+        return () => ipcRenderer.removeListener(channel, listener)
+    },
+
+    getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath')
 }
 
 contextBridge.exposeInMainWorld('electron', api)

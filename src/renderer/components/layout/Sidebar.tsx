@@ -1,11 +1,13 @@
-﻿import { Chat, Folder, Project } from '@/types'
+﻿import { Chat, Folder, Project, Prompt } from '@/types'
+import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import './Sidebar.css'
 import {
     Plus, Settings, ChevronLeft, ChevronRight,
     Trash2, Search, MessageSquare, Rocket, ChevronDown,
-    LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu
+    LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
+    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book
 } from 'lucide-react'
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import { useTranslation, Language } from '@/i18n'
@@ -35,12 +37,43 @@ interface SidebarProps {
     // Folders on the sidebar? (Unused but kept for interface compat)
     folders?: Folder[]
     onCreateFolder?: (name: string) => void
-    onDeleteFolder?: (id: string) => void
-    onUpdateFolder?: (id: string, name: string) => void
-    onMoveChat?: (chatId: string, folderId: string | null) => void
+    onDeleteFolder: (id: string) => void
+    onUpdateFolder: (id: string, updates: Partial<Folder>) => void
+    onMoveChat: (chatId: string, folderId: string | null) => void
+    prompts: Prompt[]
+    onCreatePrompt: (title: string, content: string, tags?: string[]) => void
+    onUpdatePrompt: (id: string, updates: Partial<Prompt>) => void
+    onDeletePrompt: (id: string) => void
     language?: Language
     modelUsageStats?: { name: string, count: number }[]
+    isLoading?: boolean
 }
+
+const SettingsMenuItem = ({
+    icon: Icon,
+    label,
+    isActive,
+    onClick
+}: {
+    id: string,
+    icon: any,
+    label: string,
+    isActive: boolean,
+    onClick: () => void
+}) => (
+    <button
+        onClick={onClick}
+        className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ml-2 border-l border-white/5 hover:border-primary/50",
+            isActive
+                ? "text-primary bg-primary/5 border-primary"
+                : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
+        )}
+    >
+        <Icon className="w-3.5 h-3.5 opacity-70" />
+        <span>{label}</span>
+    </button>
+)
 
 export function Sidebar({
     chats,
@@ -57,7 +90,17 @@ export function Sidebar({
     onSearch,
     language = 'en',
     onSelectSettingsCategory,
-    settingsCategory
+    settingsCategory,
+    isLoading,
+    folders = [],
+    onCreateFolder,
+    onDeleteFolder,
+    onUpdateFolder,
+    onMoveChat,
+    prompts = [],
+    onCreatePrompt,
+    onUpdatePrompt,
+    onDeletePrompt
 }: SidebarProps) {
     const { t } = useTranslation(language)
     const [editingChatId, setEditingChatId] = useState<string | null>(null)
@@ -65,6 +108,53 @@ export function Sidebar({
     const editInputRef = useRef<HTMLInputElement>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false)
+    const [newFolderName, setNewFolderName] = useState('')
+    const [editingFolderId, setEditingFolderId] = useState<string | null>(null)
+    const [editFolderName, setEditFolderName] = useState('')
+    const [showPrompts, setShowPrompts] = useState(false)
+
+    // Ensure folders are available
+    const activeFolders = folders || []
+
+    // Sort folders by name
+    const sortedFolders = [...activeFolders].sort((a, b) => a.name.localeCompare(b.name))
+
+    useEffect(() => {
+        if (activeFolders.length > 0 && expandedFolders.size === 0) {
+            // Auto expand all folders usually? Or just leave collapsed. 
+            // Let's leave collapsed but maybe expand the one with the current chat.
+            if (currentChatId && chats) {
+                const chat = chats.find(c => c.id === currentChatId)
+                if (chat?.folderId) {
+                    setExpandedFolders(prev => new Set(prev).add(chat.folderId!))
+                }
+            }
+        }
+    }, [activeFolders.length, currentChatId])
+
+    const toggleFolder = (folderId: string) => {
+        const newExpanded = new Set(expandedFolders)
+        if (newExpanded.has(folderId)) newExpanded.delete(folderId)
+        else newExpanded.add(folderId)
+        setExpandedFolders(newExpanded)
+    }
+
+    const handleCreateFolder = () => {
+        if (newFolderName.trim() && onCreateFolder) {
+            onCreateFolder(newFolderName.trim())
+            setNewFolderName('')
+            setIsCreatingFolder(false)
+        }
+    }
+
+    const handleRenameFolder = () => {
+        if (editingFolderId && editFolderName.trim() && onUpdateFolder) {
+            onUpdateFolder(editingFolderId, { name: editFolderName.trim() })
+            setEditingFolderId(null)
+        }
+    }
 
     useEffect(() => {
         if (editingChatId && editInputRef.current) {
@@ -82,10 +172,10 @@ export function Sidebar({
 
     const groupChatsByDate = (chatsToGroup: Chat[]) => {
         const groups: Record<string, Chat[]> = {
-            'BugÃ¼n': [],
-            'DÃ¼n': [],
-            'GeÃ§en Hafta': [],
-            'Daha Eski': []
+            [t('dateGroups.today')]: [],
+            [t('dateGroups.yesterday')]: [],
+            [t('dateGroups.lastWeek')]: [],
+            [t('dateGroups.older')]: []
         }
 
         const now = new Date()
@@ -94,14 +184,20 @@ export function Sidebar({
 
         chatsToGroup.forEach(chat => {
             const date = new Date(chat.createdAt).getTime()
-            if (date >= today) groups['BugÃ¼n'].push(chat)
-            else if (date >= yesterday) groups['DÃ¼n'].push(chat)
-            else if (date >= today - 7 * 86400000) groups['GeÃ§en Hafta'].push(chat)
-            else groups['Daha Eski'].push(chat)
+            if (date >= today) groups[t('dateGroups.today')].push(chat)
+            else if (date >= yesterday) groups[t('dateGroups.yesterday')].push(chat)
+            else if (date >= today - 7 * 86400000) groups[t('dateGroups.lastWeek')].push(chat)
+            else groups[t('dateGroups.older')].push(chat)
         })
 
         return groups
     }
+
+    // Separate chats into Foldered and Unfoldered
+    const unfolderedChats = chats.filter(c => !c.folderId)
+
+    // Grouping for unfoldered chats
+    const dateGroups = groupChatsByDate(unfolderedChats)
 
     const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
@@ -109,220 +205,508 @@ export function Sidebar({
         onSearch(value)
     }
 
-    const SettingsMenuItem = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => (
-        <button
-            onClick={() => {
-                onOpenSettings(id)
-                if (onSelectSettingsCategory) onSelectSettingsCategory(id)
-            }}
-            className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ml-2 border-l border-white/5 hover:border-primary/50",
-                (currentView === 'settings' && settingsCategory === id)
-                    ? "text-primary bg-primary/5 border-primary"
-                    : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
-            )}
-        >
-            <Icon className="w-3.5 h-3.5 opacity-70" />
-            <span>{label}</span>
-        </button>
-    )
+    // --- Background Generation Sync ---
+    useEffect(() => {
+        const removeStatusListener = window.electron.on('chat:generation-status', (_event, data: { chatId: string, isGenerating: boolean }) => {
+            // Note: We don't have local state for chats in Sidebar that we can easily patch
+            // because chats comes from props. However, we can use a local "generatingChats" override
+            // or just rely on the parent (useChatManager) updating.
+            // But sometimes the parent is not active. So we use a local ref or state for override.
+            setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: data.isGenerating }))
+        })
+        return () => { removeStatusListener() }
+    }, [])
+
+    const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
+
+    const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating
 
     return (
-        <aside
-            className={cn(
-                "flex flex-col h-full z-30 relative overflow-hidden transition-all duration-300 border-r border-border/40 bg-background/60 backdrop-blur-2xl shadow-xl",
-                isCollapsed ? "w-[72px]" : "w-[280px]"
-            )}
-        >
-            {/* Top Navigation Section */}
-            <div className="flex flex-col gap-1 p-4 pb-2">
-                <Button
-                    onClick={onNewChat}
-                    className={cn(
-                        "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
-                        !isCollapsed && "px-4 w-full"
-                    )}
-                >
-                    <Plus className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
-                    {!isCollapsed && <span>{t('sidebar.newChat')}</span>}
-                </Button>
-
-                <div className="space-y-1">
+        <>
+            <aside
+                className={cn(
+                    "flex flex-col h-full z-30 relative overflow-hidden transition-all duration-300 border-r border-border/40 bg-background/60 backdrop-blur-2xl shadow-xl",
+                    isCollapsed ? "w-[72px]" : "w-[280px]"
+                )}
+            >
+                {/* Top Navigation Section */}
+                <div className="flex flex-col gap-1 p-4 pb-2">
                     <Button
-                        variant="ghost"
-                        onClick={() => onChangeView('projects')}
+                        onClick={onNewChat}
                         className={cn(
-                            "nav-item",
-                            currentView === 'projects' && "nav-item-active"
+                            "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
+                            !isCollapsed && "px-4 w-full"
                         )}
                     >
-                        <Rocket className="w-4 h-4 shrink-0" />
-                        {!isCollapsed && <span>{t('sidebar.projects')}</span>}
+                        <Plus className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
+                        {!isCollapsed && <span>{t('sidebar.newChat')}</span>}
                     </Button>
 
-                    {/* Integrated Settings Menu */}
-                    {isCollapsed ? (
+                    <div className="space-y-1">
                         <Button
                             variant="ghost"
-                            onClick={() => onOpenSettings()}
+                            onClick={() => onChangeView('projects')}
                             className={cn(
                                 "nav-item",
-                                currentView === 'council' && "nav-item-active"
+                                currentView === 'projects' && "nav-item-active"
                             )}
                         >
-                            <UserCircle className="w-4 h-4 shrink-0" />
+                            <Rocket className="w-4 h-4 shrink-0" />
+                            {!isCollapsed && <span>{t('sidebar.projects')}</span>}
                         </Button>
-                    ) : (
-                        <div className="flex flex-col">
-                            <button
-                                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+
+                        {!isCollapsed && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowPrompts(true)}
+                                className={cn("nav-item", "w-full justify-start text-xs text-muted-foreground hover:text-foreground h-8 px-2", showPrompts && "nav-item-active")}
+                            >
+                                <Book className="w-4 h-4 mr-2 opacity-60" />
+                                {!isCollapsed && <span>{t('sidebar.prompts')}</span>}
+                            </Button>
+                        )}
+
+                        {/* Integrated Settings Menu */}
+                        {isCollapsed ? (
+                            <Button
+                                variant="ghost"
+                                onClick={() => onOpenSettings()}
                                 className={cn(
-                                    "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full group",
-                                    currentView === 'settings' ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
+                                    "nav-item",
+                                    currentView === 'council' && "nav-item-active"
                                 )}
                             >
-                                <div className="flex items-center gap-3">
-                                    <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-                                    <span>{t('sidebar.settings')}</span>
-                                </div>
-                                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isSettingsOpen && "rotate-180")} />
-                            </button>
+                                <UserCircle className="w-4 h-4 shrink-0" />
+                            </Button>
+                        ) : (
+                            <div className="flex flex-col">
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className={cn(
+                                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full group",
+                                        currentView === 'settings' ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                                        <span>{t('sidebar.settings')}</span>
+                                    </div>
+                                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isSettingsOpen && "rotate-180")} />
+                                </button>
 
-                            <AnimatePresence>
-                                {isSettingsOpen && (
-                                    <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden"
-                                    >
-                                        <div className="pr-2 py-1 space-y-0.5 ml-2 border-l border-dashed border-border/30">
-                                            <SettingsMenuItem id="general" icon={LayoutGrid} label={t('settings.general')} />
-                                            <SettingsMenuItem id="accounts" icon={UserCircle} label="Hesaplar" />
-                                            <SettingsMenuItem id="models" icon={Database} label={t('settings.models')} />
-                                            <SettingsMenuItem id="appearance" icon={Image} label={t('settings.appearance')} />
-                                            <SettingsMenuItem id="speech" icon={Mic} label="Ses" />
-                                            <SettingsMenuItem id="advanced" icon={Cpu} label="GeliÅŸmiÅŸ" />
-                                            <SettingsMenuItem id="developer" icon={Terminal} label="GeliÅŸtirici" />
-                                            <SettingsMenuItem id="statistics" icon={Activity} label="Ä°statistikler" />
-                                            <SettingsMenuItem id="gallery" icon={Image} label="Galeri" />
-                                            <SettingsMenuItem id="about" icon={Info} label="HakkÄ±nda" />
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                <AnimatePresence>
+                                    {isSettingsOpen && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="pr-2 py-1 space-y-0.5 ml-2 border-l border-dashed border-border/30">
+                                                <SettingsMenuItem
+                                                    id="general"
+                                                    icon={LayoutGrid}
+                                                    label={t('settings.general')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'general'}
+                                                    onClick={() => { onOpenSettings('general'); if (onSelectSettingsCategory) onSelectSettingsCategory('general') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="accounts"
+                                                    icon={UserCircle}
+                                                    label={t('settings.accounts')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'accounts'}
+                                                    onClick={() => { onOpenSettings('accounts'); if (onSelectSettingsCategory) onSelectSettingsCategory('accounts') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="models"
+                                                    icon={Database}
+                                                    label={t('settings.models')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'models'}
+                                                    onClick={() => { onOpenSettings('models'); if (onSelectSettingsCategory) onSelectSettingsCategory('models') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="appearance"
+                                                    icon={Image}
+                                                    label={t('settings.appearance')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'appearance'}
+                                                    onClick={() => { onOpenSettings('appearance'); if (onSelectSettingsCategory) onSelectSettingsCategory('appearance') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="speech"
+                                                    icon={Mic}
+                                                    label={t('settings.speech')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'speech'}
+                                                    onClick={() => { onOpenSettings('speech'); if (onSelectSettingsCategory) onSelectSettingsCategory('speech') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="advanced"
+                                                    icon={Cpu}
+                                                    label={t('settings.advanced')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'advanced'}
+                                                    onClick={() => { onOpenSettings('advanced'); if (onSelectSettingsCategory) onSelectSettingsCategory('advanced') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="developer"
+                                                    icon={Terminal}
+                                                    label={t('settings.developer')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'developer'}
+                                                    onClick={() => { onOpenSettings('developer'); if (onSelectSettingsCategory) onSelectSettingsCategory('developer') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="statistics"
+                                                    icon={Activity}
+                                                    label={t('settings.statistics')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'statistics'}
+                                                    onClick={() => { onOpenSettings('statistics'); if (onSelectSettingsCategory) onSelectSettingsCategory('statistics') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="gallery"
+                                                    icon={Image}
+                                                    label={t('settings.gallery')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'gallery'}
+                                                    onClick={() => { onOpenSettings('gallery'); if (onSelectSettingsCategory) onSelectSettingsCategory('gallery') }}
+                                                />
+                                                <SettingsMenuItem
+                                                    id="about"
+                                                    icon={Info}
+                                                    label={t('settings.about')}
+                                                    isActive={currentView === 'settings' && settingsCategory === 'about'}
+                                                    onClick={() => { onOpenSettings('about'); if (onSelectSettingsCategory) onSelectSettingsCategory('about') }}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Separator */}
+                <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mx-4 my-2" />
+
+                {/* Chat List Section */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    {!isCollapsed && (
+                        <div className="px-4 py-2">
+                            <div className="flex items-center gap-2 mb-2 px-1">
+                                <History className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">{t('sidebar.history')}</span>
+                            </div>
+                            <div className="relative group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder={t('sidebar.searchChats')}
+                                    value={searchQuery}
+                                    onChange={handleSearch}
+                                    className="w-full bg-black/10 border border-white/5 focus:border-primary/20 focus:bg-black/20 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/30"
+                                />
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Separator */}
-            <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mx-4 my-2" />
+                    {/* New Folder Button */}
+                    {!isCollapsed && (
+                        <div className="px-4 pb-2">
+                            <div className="flex gap-2 mb-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsCreatingFolder(true)}
+                                    className="w-full h-7 text-[10px] font-medium text-muted-foreground/60 hover:text-primary hover:bg-primary/10 border border-white/5 justify-start px-2"
+                                >
+                                    <FolderPlus className="w-3.5 h-3.5 mr-2" />
+                                    {t('sidebar.newFolder') || 'New Folder'}
+                                </Button>
+                            </div>
 
-            {/* Chat List Section */}
-            <div className="flex-1 flex flex-col min-h-0">
-                {!isCollapsed && (
-                    <div className="px-4 py-2">
-                        <div className="flex items-center gap-2 mb-2 px-1">
-                            <History className="w-3.5 h-3.5 text-muted-foreground/60" />
-                            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">GeÃ§miÅŸ</span>
-                        </div>
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                            <input
-                                type="text"
-                                placeholder={t('sidebar.searchChats')}
-                                value={searchQuery}
-                                onChange={handleSearch}
-                                className="w-full bg-black/10 border border-white/5 focus:border-primary/20 focus:bg-black/20 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/30"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Chat Statistics Summary (#60) */}
-                {!isCollapsed && chats.length > 0 && (
-                    <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/40 border-b border-white/5 mb-2">
-                        <span>{chats.length} sohbet</span>
-                        <span>â€¢</span>
-                        <span>{chats.reduce((acc, c) => acc + (c.messages?.length || 0), 0)} mesaj</span>
-                    </div>
-                )}
-
-                <div className="flex-1 overflow-y-auto px-3 space-y-6 custom-scrollbar py-2">
-                    {Object.entries(groupChatsByDate(chats)).map(([category, categoryChats]) => (
-                        categoryChats.length > 0 && (
-                            <div key={category} className="space-y-1">
-                                {!isCollapsed && (
-                                    <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">
-                                        {category}
+                            {/* Folder Creation Input */}
+                            {isCreatingFolder && (
+                                <div className="mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-md border border-primary/20">
+                                        <input
+                                            autoFocus
+                                            value={newFolderName}
+                                            onChange={(e) => setNewFolderName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleCreateFolder()
+                                                if (e.key === 'Escape') setIsCreatingFolder(false)
+                                            }}
+                                            onBlur={() => { if (!newFolderName) setIsCreatingFolder(false) }}
+                                            placeholder="Folder Name..."
+                                            className="w-full bg-transparent text-xs outline-none px-1 py-0.5"
+                                        />
                                     </div>
-                                )}
-                                {categoryChats.map(chat => (
-                                    <button
-                                        key={chat.id}
-                                        onClick={() => {
-                                            onChangeView('chat')
-                                            onSelectChat(chat.id)
-                                        }}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 rounded-md transition-all group relative duration-200",
-                                            isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
-                                            currentView === 'chat' && currentChatId === chat.id
-                                                ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
-                                                : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
-                                        )}
-                                        title={isCollapsed ? chat.title : undefined}
-                                    >
-                                        <MessageSquare className={cn("w-4 h-4 shrink-0 transition-colors", currentView === 'chat' && currentChatId === chat.id ? "text-primary" : "opacity-50 group-hover:opacity-100")} />
-                                        {!isCollapsed && (
-                                            <>
-                                                {editingChatId === chat.id ? (
-                                                    <input
-                                                        ref={editInputRef}
-                                                        value={editTitle}
-                                                        onChange={e => setEditTitle(e.target.value)}
-                                                        onBlur={handleSaveEdit}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleSaveEdit()
-                                                            if (e.key === 'Escape') setEditingChatId(null)
-                                                        }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0"
-                                                    />
-                                                ) : (
-                                                    <span className="truncate text-xs flex-1 font-medium">{chat.title || 'Yeni Sohbet'}</span>
-                                                )}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                                                <div className={cn(
-                                                    "opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-2 bg-gradient-to-l from-background to-transparent pl-2",
-                                                    editingChatId === chat.id && "hidden"
-                                                )}>
-                                                    <div onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </button>
+                    {/* Chat Statistics Summary (#60) */}
+                    {!isCollapsed && chats.length > 0 && (
+                        <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/40 border-b border-white/5 mb-2">
+                            <span>{chats.length} {t('sidebar.chatCount')}</span>
+                            <span>•</span>
+                            <span>{chats.reduce((acc, c) => acc + (c.messages?.length || 0), 0)} {t('sidebar.messageCount')}</span>
+                        </div>
+                    )}
+
+                    <div className="flex-1 overflow-y-auto px-3 space-y-6 custom-scrollbar py-2">
+                        {isLoading ? (
+                            <div className="space-y-4 pt-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="flex flex-col gap-2 px-2 animate-pulse">
+                                        {!isCollapsed && <div className="h-3 w-16 bg-white/5 rounded" />}
+                                        <div className={cn("h-10 rounded-md bg-white/5 w-full", isCollapsed && "h-10 w-10 mx-auto")} />
+                                        {!isCollapsed && <div className="h-10 rounded-md bg-white/5 w-full" />}
+                                    </div>
                                 ))}
                             </div>
-                        )
-                    ))}
-                </div>
-            </div>
+                        ) : (
+                            <>
+                                {/* Folders Section */}
+                                {!isCollapsed && sortedFolders.map(folder => (
+                                    <div key={folder.id} className="space-y-0.5">
+                                        <div
+                                            className={cn(
+                                                "group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-white/5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
+                                                expandedFolders.has(folder.id) && "text-foreground"
+                                            )}
+                                            onClick={() => toggleFolder(folder.id)}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                {expandedFolders.has(folder.id) ? (
+                                                    <FolderOpen className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                                                ) : (
+                                                    <FolderIcon className="w-3.5 h-3.5 shrink-0" />
+                                                )}
 
-            {/* Bottom Section - Collapse Toggle Only */}
-            <div className="p-2 border-t border-white/5 bg-black/5">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleSidebar}
-                    className="w-full h-6 text-muted-foreground/30 hover:text-foreground hover:bg-white/5 transition-colors"
-                >
-                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                </Button>
-            </div>
-        </aside>
+                                                {editingFolderId === folder.id ? (
+                                                    <input
+                                                        autoFocus
+                                                        value={editFolderName}
+                                                        onChange={e => setEditFolderName(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') handleRenameFolder()
+                                                            if (e.key === 'Escape') setEditingFolderId(null)
+                                                        }}
+                                                        onClick={e => e.stopPropagation()}
+                                                        onBlur={handleRenameFolder}
+                                                        className="bg-transparent border-none outline-none text-xs font-medium min-w-0 flex-1"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs font-medium truncate select-none">{folder.name}</span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setEditingFolderId(folder.id)
+                                                        setEditFolderName(folder.name)
+                                                    }}
+                                                    className="p-1 hover:text-primary hover:bg-white/10 rounded"
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </div>
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onDeleteFolder) onDeleteFolder(folder.id)
+                                                    }}
+                                                    className="p-1 hover:text-red-400 hover:bg-white/10 rounded"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Folder Chats */}
+                                        <AnimatePresence initial={false}>
+                                            {expandedFolders.has(folder.id) && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden ml-2 pl-2 border-l border-white/5 space-y-0.5"
+                                                >
+                                                    {chats.filter(c => c.folderId === folder.id).map(chat => (
+                                                        <div
+                                                            key={chat.id}
+                                                            className="group flex items-center gap-1"
+                                                        >
+                                                            <button
+                                                                onClick={() => {
+                                                                    onChangeView('chat')
+                                                                    onSelectChat(chat.id)
+                                                                }}
+                                                                className={cn(
+                                                                    "flex-1 flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 text-xs text-left min-w-0 relative",
+                                                                    currentView === 'chat' && currentChatId === chat.id
+                                                                        ? "bg-primary/10 text-primary"
+                                                                        : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground"
+                                                                )}
+                                                            >
+                                                                <MessageSquare className="w-3 h-3 shrink-0 opacity-70" />
+                                                                <span className="truncate flex-1">{chat.title || t('sidebar.newChat')}</span>
+
+                                                                {/* Chat Actions */}
+                                                                <div className={cn(
+                                                                    "opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-1 bg-gradient-to-l from-background to-transparent pl-2",
+                                                                    editingChatId === chat.id && "hidden"
+                                                                )}>
+                                                                    <div
+                                                                        title={t('sidebar.removeFromFolder') || 'Remove from folder'}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            if (onMoveChat) onMoveChat(chat.id, null)
+                                                                        }}
+                                                                        className="p-1 hover:text-orange-400 rounded-md cursor-pointer hover:bg-white/5"
+                                                                    >
+                                                                        <FolderIcon className="w-2.5 h-2.5" />
+                                                                    </div>
+                                                                    <div onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                        <Trash2 className="w-2.5 h-2.5" />
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {chats.filter(c => c.folderId === folder.id).length === 0 && (
+                                                        <div className="px-3 py-2 text-[10px] text-muted-foreground/40 italic">
+                                                            {t('sidebar.emptyFolder') || 'Empty'}
+                                                        </div>
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ))}
+
+                                {/* Unfoldered Groups */}
+                                {Object.entries(dateGroups).map(([category, categoryChats]) => (
+                                    categoryChats.length > 0 && (
+                                        <div key={category} className="space-y-1 mt-2">
+                                            {!isCollapsed && (
+                                                <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center justify-between group/cat">
+                                                    {category}
+                                                </div>
+                                            )}
+                                            {categoryChats.map(chat => (
+                                                <div key={chat.id} className="relative group">
+                                                    <button
+                                                        onClick={() => {
+                                                            onChangeView('chat')
+                                                            onSelectChat(chat.id)
+                                                        }}
+                                                        className={cn(
+                                                            "w-full flex items-center gap-3 rounded-md transition-all duration-200",
+                                                            isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
+                                                            currentView === 'chat' && currentChatId === chat.id
+                                                                ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
+                                                                : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
+                                                        )}
+                                                        title={isCollapsed ? chat.title : undefined}
+                                                    >
+                                                        <div className="relative">
+                                                            <MessageSquare className={cn("w-4 h-4 shrink-0 transition-colors", currentView === 'chat' && currentChatId === chat.id ? "text-primary" : "opacity-50 group-hover:opacity-100")} />
+                                                            {isChatGenerating(chat) && (
+                                                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+                                                            )}
+                                                        </div>
+                                                        {!isCollapsed && (
+                                                            <>
+                                                                {editingChatId === chat.id ? (
+                                                                    <input
+                                                                        ref={editInputRef}
+                                                                        value={editTitle}
+                                                                        onChange={e => setEditTitle(e.target.value)}
+                                                                        onBlur={handleSaveEdit}
+                                                                        onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') handleSaveEdit()
+                                                                            if (e.key === 'Escape') setEditingChatId(null)
+                                                                        }}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0"
+                                                                    />
+                                                                ) : (
+                                                                    <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
+                                                                )}
+
+                                                                <div className={cn(
+                                                                    "opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-2 bg-gradient-to-l from-background to-transparent pl-2",
+                                                                    editingChatId === chat.id && "hidden"
+                                                                )}>
+                                                                    {/* Move to Folder - Quick Action */}
+                                                                    {activeFolders.length > 0 && (
+                                                                        <div className="relative group/folder">
+                                                                            <div
+                                                                                className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5"
+                                                                            >
+                                                                                <CornerUpRight className="w-3 h-3" />
+                                                                            </div>
+                                                                            {/* Simple Hover Dropdown for Folders */}
+                                                                            <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-[#1A1A1A] border border-white/10 rounded-md shadow-xl -mt-1">
+                                                                                <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">Move to...</div>
+                                                                                {sortedFolders.map(f => (
+                                                                                    <div
+                                                                                        key={f.id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation()
+                                                                                            if (onMoveChat) onMoveChat(chat.id, f.id)
+                                                                                        }}
+                                                                                        className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2"
+                                                                                    >
+                                                                                        <FolderIcon className="w-3 h-3 opacity-50" />
+                                                                                        {f.name}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                        <Trash2 className="w-3 h-3" />
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                ))}
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Bottom Section */}
+                <div className="p-2 border-t border-white/5 bg-black/5 space-y-1">
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleSidebar}
+                        className="w-full h-6 text-muted-foreground/30 hover:text-foreground hover:bg-white/5 transition-colors"
+                    >
+                        {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </Button>
+                </div>
+            </aside >
+
+            <PromptManagerModal
+                isOpen={showPrompts}
+                onClose={() => setShowPrompts(false)}
+                prompts={prompts}
+                onCreatePrompt={onCreatePrompt}
+                onUpdatePrompt={onUpdatePrompt}
+                onDeletePrompt={onDeletePrompt}
+            />
+        </>
     )
 }

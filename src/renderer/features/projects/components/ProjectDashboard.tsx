@@ -1,9 +1,13 @@
 ﻿import { useState, useEffect } from 'react'
-import { FileCode, Activity, Terminal as TerminalIcon, X, Play, RefreshCw } from 'lucide-react'
+import { FileCode, Activity, Terminal as TerminalIcon, X, Play, RefreshCw, Pencil, Camera, Sparkles, Check } from 'lucide-react'
 import { TerminalComponent } from './ide/Terminal'
 import { FileExplorer } from './ide/FileExplorer'
 import { CodeEditor } from './ide/CodeEditor'
+import { FolderInspector } from './ide/FolderInspector'
 import { AgentCouncil } from '@/features/chat/components/AgentCouncil'
+import { ProjectTodoTab } from './ProjectTodoTab'
+import { Project } from '@/types'
+import { cn } from '@/lib/utils'
 
 interface OpenFile {
     path: string
@@ -12,48 +16,46 @@ interface OpenFile {
     isDirty: boolean
 }
 
-export const ProjectDashboard = () => {
+import { useTranslation, Language } from '@/i18n'
+
+interface ProjectDashboardProps {
+    project: Project
+    onUpdate?: (updates: Partial<Project>) => Promise<void>
+    onOpenLogoGenerator?: () => void
+    language?: Language
+}
+
+export const ProjectDashboard = ({
+    project,
+    onUpdate,
+    onOpenLogoGenerator,
+    language = 'en'
+}: ProjectDashboardProps) => {
+    const { t } = useTranslation(language)
     const [stats, setStats] = useState<any>(null)
     const [analysis, setAnalysis] = useState<any>(null)
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState<'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council'>('overview')
-    const [projectRoot, setProjectRoot] = useState<string>('')
+    const [projectRoot, setProjectRoot] = useState<string>(project.path)
     const [openFiles, setOpenFiles] = useState<OpenFile[]>([])
     const [activeFile, setActiveFile] = useState<string | null>(null)
+    const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+
+    // Inline Editing State
+    const [isEditingName, setIsEditingName] = useState(false)
+    const [isEditingDesc, setIsEditingDesc] = useState(false)
+    const [editName, setEditName] = useState(project.title)
+    const [editDesc, setEditDesc] = useState(project.description || '')
 
     const analyzeProject = async () => {
         setLoading(true)
         try {
-            const settings = await (window.electron as any).getSettings()
-            let rootPath = settings?.general?.lastProjectRoot
-
-            if (!rootPath) {
-                const auth = await (window.electron as any).checkAuthStatus()
-                if (auth?.files && auth.files.length > 0) {
-                    const workspace = auth.files[0]
-                    rootPath = workspace.uri.replace('file:///', '')
-                    // fallback used
-                }
-            }
-
+            const rootPath = project.path
             if (rootPath) {
-                if (rootPath.match(/^\/[a-zA-Z]:/)) rootPath = rootPath.substring(1)
-
                 setProjectRoot(rootPath)
                 const data = await (window.electron as any).project.analyze(rootPath)
                 setAnalysis(data)
                 setStats(data.stats)
-
-                // mock git/npm status
-                // const status = await (window.electron as any).git?.getStatus?.(rootPath) || []
-                // setGitStatus(status)
-
-                // Load Scripts
-                // The 'scripts' variable was unused, and setNpmScripts was commented out.
-                // The scanScripts call is no longer needed here if its result isn't used.
-                try {
-                    // await window.electron.process.scanScripts(rootPath) // If we still want to run this for side effects, keep it. Otherwise, remove.
-                } catch (e) { console.warn('Scripts scan failed', e) }
             }
         } catch (error) {
             console.error('Project analysis failed:', error)
@@ -62,12 +64,25 @@ export const ProjectDashboard = () => {
         }
     }
 
+    const handleSaveName = async () => {
+        if (editName.trim() && editName !== project.title) {
+            await onUpdate?.({ title: editName })
+        }
+        setIsEditingName(false)
+    }
+
+    const handleSaveDesc = async () => {
+        if (editDesc !== project.description) {
+            await onUpdate?.({ description: editDesc })
+        }
+        setIsEditingDesc(false)
+    }
+
     useEffect(() => {
         analyzeProject()
-    }, [])
+    }, [project.path])
 
     const handleFileSelect = async (path: string) => {
-        // specific fix for windows paths if needed, usually we just use what explorer gives
         if (openFiles.find(f => f.path === path)) {
             setActiveFile(path)
             setActiveTab('files')
@@ -98,14 +113,14 @@ export const ProjectDashboard = () => {
         return (
             <div className="flex items-center justify-center p-12 text-muted-foreground">
                 <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-                Analyzing Project...
+                {t('projectDashboard.analyzing')}
             </div>
         )
     }
 
     if (!analysis) {
         return (
-            <div className="p-8 text-center text-muted-foreground">No active project.</div>
+            <div className="p-8 text-center text-muted-foreground">{t('projectDashboard.noProject')}</div>
         )
     }
 
@@ -114,66 +129,201 @@ export const ProjectDashboard = () => {
 
     return (
         <div className="h-full flex flex-col bg-background text-foreground">
-            {/* Tab Navigation */}
             <div className="flex items-center gap-1 p-2 border-b border-white/10 bg-black/20 backdrop-blur-md">
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'overview' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <Activity className="w-3.5 h-3.5" /> Overview
+                    <Activity className="w-3.5 h-3.5" /> {t('projectDashboard.overview')}
                 </button>
                 <button
                     onClick={() => setActiveTab('terminal')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'terminal' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <TerminalIcon className="w-3.5 h-3.5" /> Terminal
+                    <TerminalIcon className="w-3.5 h-3.5" /> {t('projectDashboard.terminal')}
                 </button>
                 <button
                     onClick={() => setActiveTab('files')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'files' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <FileCode className="w-3.5 h-3.5" /> Files
+                    <FileCode className="w-3.5 h-3.5" /> {t('projectDashboard.files')}
                 </button>
                 <button
                     onClick={() => setActiveTab('tasks')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'tasks' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <Play className="w-3.5 h-3.5" /> Tasks
+                    <Play className="w-3.5 h-3.5" /> {t('projectDashboard.tasks')}
                 </button>
                 <button
                     onClick={() => setActiveTab('search')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'search' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <RefreshCw className="w-3.5 h-3.5" /> Search
+                    <RefreshCw className="w-3.5 h-3.5" /> {t('projectDashboard.search')}
                 </button>
                 <button
                     onClick={() => setActiveTab('council')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'council' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
                 >
-                    <Activity className="w-3.5 h-3.5" /> Council
+                    <Activity className="w-3.5 h-3.5" /> {t('projectDashboard.council')}
                 </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-2">
                 {activeTab === 'overview' && (
-                    <div className="space-y-6 overflow-y-auto pr-2">
+                    <div className="space-y-8 overflow-y-auto pr-2 pb-12 animate-in fade-in duration-500">
+                        {/* Project Header & Identity */}
+                        <div className="flex flex-col md:flex-row gap-8 items-start bg-card/20 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
+                            {/* Logo Area */}
+                            <div className="relative group shrink-0">
+                                <div className="w-32 h-32 rounded-2xl bg-black/40 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
+                                    {project.logo ? (
+                                        <img src={`safe-file://${project.logo}`} alt="Logo" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Sparkles className="w-10 h-10 text-muted-foreground/20" />
+                                    )}
+
+                                    <button
+                                        onClick={onOpenLogoGenerator}
+                                        className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-white"
+                                    >
+                                        <Camera className="w-6 h-6" />
+                                        <span className="text-[10px] font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Name & Description Area */}
+                            <div className="flex-1 space-y-4 w-full">
+                                <div className="space-y-1 group">
+                                    {isEditingName ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                autoFocus
+                                                value={editName}
+                                                onChange={e => setEditName(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') handleSaveName()
+                                                    if (e.key === 'Escape') setIsEditingName(false)
+                                                }}
+                                                onBlur={handleSaveName}
+                                                className="text-3xl font-black bg-black/40 border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight"
+                                            />
+                                            <button onClick={handleSaveName} className="p-2 bg-primary text-primary-foreground rounded-lg">
+                                                <Check className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <h1
+                                            onClick={() => setIsEditingName(true)}
+                                            className="text-4xl font-black tracking-tighter text-white cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
+                                        >
+                                            {project.title}
+                                            <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                                        </h1>
+                                    )}
+                                </div>
+
+                                <div className="group">
+                                    {isEditingDesc ? (
+                                        <div className="space-y-2">
+                                            <textarea
+                                                autoFocus
+                                                value={editDesc}
+                                                onChange={e => setEditDesc(e.target.value)}
+                                                onBlur={handleSaveDesc}
+                                                className="w-full bg-black/40 border border-primary/30 rounded-xl p-3 text-sm text-gray-300 outline-none min-h-[80px] resize-none"
+                                                placeholder={(t('projects.description') || 'Description') + '...'}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <p
+                                            onClick={() => setIsEditingDesc(true)}
+                                            className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
+                                        >
+                                            {project.description || (t('projects.noDescription') || 'No description provided')}
+                                            <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-4 pt-2">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{type}</span>
+                                    </div>
+                                    <div className="text-[10px] font-medium text-muted-foreground font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
+                                        {projectRoot}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Summary Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-card p-4 rounded-xl border border-border">
-                                <div className="text-xs font-bold uppercase text-muted-foreground mb-1">Files</div>
+                            <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.fileCount')}</div>
                                 <div className="text-2xl font-black text-white">{stats?.fileCount || 0}</div>
                             </div>
-                            <div className="bg-card p-4 rounded-xl border border-border">
-                                <div className="text-xs font-bold uppercase text-muted-foreground mb-1">LOC</div>
+                            <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.loc')}</div>
                                 <div className="text-2xl font-black text-white">~{stats?.loc || 0}</div>
                             </div>
-                            <div className="bg-card p-4 rounded-xl border border-border">
-                                <div className="text-xs font-bold uppercase text-muted-foreground mb-1">Modules</div>
+                            <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.modules')}</div>
                                 <div className="text-2xl font-black text-white">{Object.keys(dependencies || {}).length}</div>
                             </div>
-                            <div className="bg-card p-4 rounded-xl border border-border">
-                                <div className="text-xs font-bold uppercase text-muted-foreground mb-1">Type</div>
+                            <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
                                 <div className="text-2xl font-black text-primary capitalize">{type}</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Technology Stack */}
+                            <div className="bg-card/40 rounded-2xl border border-white/5 p-5 space-y-4">
+                                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    {t('projectDashboard.techStack')}
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {analysis.frameworks.map((fw: string) => (
+                                        <span key={fw} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-blue-300 font-medium">
+                                            {fw}
+                                        </span>
+                                    ))}
+                                    {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
+                                </div>
+                            </div>
+
+                            {/* Language Distribution */}
+                            <div className="bg-card/40 rounded-2xl border border-white/5 p-5 space-y-4">
+                                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    {t('projectDashboard.langDist')}
+                                </h3>
+                                <div className="space-y-3">
+                                    {Object.entries(analysis.languages || {})
+                                        .sort(([, a], [, b]) => (b as number) - (a as number))
+                                        .slice(0, 5)
+                                        .map(([lang, count]) => {
+                                            const percentage = Math.round(((count as number) / stats.fileCount) * 100)
+                                            return (
+                                                <div key={lang} className="space-y-1">
+                                                    <div className="flex justify-between text-[10px] uppercase font-bold tracking-tight">
+                                                        <span className="text-gray-300">{lang}</span>
+                                                        <span className="text-muted-foreground">{percentage}%</span>
+                                                    </div>
+                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-emerald-500/50 rounded-full"
+                                                            style={{ width: `${percentage}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -186,8 +336,8 @@ export const ProjectDashboard = () => {
                 )}
 
                 {activeTab === 'tasks' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2">
-                        <div className="text-muted-foreground p-4">Tasks not available</div>
+                    <div className="h-full overflow-hidden">
+                        <ProjectTodoTab projectRoot={projectRoot} t={t} />
                     </div>
                 )}
 
@@ -196,7 +346,7 @@ export const ProjectDashboard = () => {
                         <div className="flex gap-2 bg-card p-4 rounded-xl border border-border">
                             <input
                                 type="text"
-                                placeholder="Search in project..."
+                                placeholder={t('projectDashboard.searchInProject')}
                                 className="flex-1 bg-black/20 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
                                 onKeyDown={async (e) => {
                                     if (e.key === 'Enter') {
@@ -214,7 +364,7 @@ export const ProjectDashboard = () => {
                             />
                         </div>
                         <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col p-2">
-                            <SearchResults projectRoot={projectRoot} onSelect={handleFileSelect} />
+                            <SearchResults projectRoot={projectRoot} onSelect={handleFileSelect} t={t} />
                         </div>
                     </div>
                 )}
@@ -226,19 +376,19 @@ export const ProjectDashboard = () => {
                 )}
 
                 {activeTab === 'files' && (
-                    <div className="h-full flex gap-4">
+                    <div className="h-full flex gap-4 transition-all duration-300">
                         {/* Sidebar */}
                         <div className="w-64 flex-shrink-0 bg-card rounded-xl border border-white/10 flex flex-col">
-                            <div className="p-3 border-b border-white/10 text-xs font-bold uppercase text-muted-foreground">
-                                Explorer
+                            <div className="p-3 border-b border-white/10 text-xs font-bold uppercase text-muted-foreground flex justify-between items-center">
+                                {t('projectDashboard.explorer')}
                             </div>
                             <div className="flex-1 overflow-hidden p-1">
-                                <FileExplorer rootPath={projectRoot} onFileSelect={handleFileSelect} />
+                                <FileExplorer rootPath={projectRoot} onFileSelect={handleFileSelect} onFolderSelect={(path) => setSelectedFolder(path)} />
                             </div>
                         </div>
 
                         {/* Editor Area */}
-                        <div className="flex-1 bg-card rounded-xl border border-white/10 flex flex-col overflow-hidden">
+                        <div className="flex-1 bg-card rounded-xl border border-white/10 flex flex-col overflow-hidden min-w-0">
                             {openFiles.length > 0 ? (
                                 <>
                                     <div className="flex items-center overflow-x-auto border-b border-white/10 bg-black/20 scrollbar-none">
@@ -278,9 +428,17 @@ export const ProjectDashboard = () => {
                             ) : (
                                 <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                                     <CodeCodeIcon className="w-16 h-16 mb-4 opacity-10" />
-                                    <p>Select a file to edit</p>
+                                    <p>{t('projectDashboard.selectFile')}</p>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Folder Inspector */}
+                        <div className={cn(
+                            "w-80 flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-l border-white/10",
+                            selectedFolder ? "opacity-100 mr-0" : "opacity-0 w-0 border-0 pointer-events-none"
+                        )}>
+                            <FolderInspector folderPath={selectedFolder} rootPath={projectRoot} />
                         </div>
                     </div>
                 )}
@@ -289,7 +447,7 @@ export const ProjectDashboard = () => {
     )
 }
 
-const SearchResults = ({ projectRoot, onSelect }: { projectRoot: string, onSelect: (path: string) => void }) => {
+const SearchResults = ({ projectRoot, onSelect, t }: { projectRoot: string, onSelect: (path: string) => void, t: any }) => {
     const [results, setResults] = useState<any[]>([])
 
     useEffect(() => {
@@ -298,7 +456,7 @@ const SearchResults = ({ projectRoot, onSelect }: { projectRoot: string, onSelec
         return () => window.removeEventListener('search-results', handler)
     }, [])
 
-    if (results.length === 0) return <div className="text-center text-muted-foreground mt-10">No results to display</div>
+    if (results.length === 0) return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>
 
     return (
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 space-y-2">

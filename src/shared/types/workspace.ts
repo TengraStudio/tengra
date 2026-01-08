@@ -26,6 +26,7 @@ export interface WorkspaceEntry {
     size?: number
     lastModified?: Date
     children?: WorkspaceEntry[]
+    initialLine?: number
 }
 
 export interface EditorTab {
@@ -37,6 +38,7 @@ export interface EditorTab {
     savedContent: string
     isDirty: boolean
     type: 'code' | 'image'
+    initialLine?: number
 }
 
 export interface ActivityEntry {

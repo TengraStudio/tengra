@@ -41,6 +41,7 @@ interface CommandPaletteProps {
     onSelectModel: (model: string) => void
     selectedModel: string
     onClearChat: () => void
+    t: (key: string) => string
 }
 
 export function CommandPalette({
@@ -57,7 +58,8 @@ export function CommandPalette({
     models,
     onSelectModel,
     selectedModel,
-    onClearChat
+    onClearChat,
+    t
 }: CommandPaletteProps) {
     const [search, setSearch] = useState('')
     const [selectedIndex, setSelectedIndex] = useState(0)
@@ -67,8 +69,8 @@ export function CommandPalette({
         const baseCommands: CommandItem[] = [
             {
                 id: 'new-chat',
-                label: 'Yeni Sohbet',
-                description: 'Yeni bir sohbet baÅŸlat',
+                label: t('commandPalette.newChat'),
+                description: t('commandPalette.newChatDesc'),
                 icon: <MessageSquarePlus className="w-4 h-4" />,
                 shortcut: 'N',
                 action: () => { onNewChat(); onClose(); },
@@ -76,16 +78,16 @@ export function CommandPalette({
             },
             {
                 id: 'clear-chat',
-                label: 'Sohbeti Temizle',
-                description: 'Mevcut sohbet mesajlarÄ±nÄ± sil',
+                label: t('commandPalette.clearChat'),
+                description: t('commandPalette.clearChatDesc'),
                 icon: <Trash2 className="w-4 h-4" />,
-                action: () => { if (confirm('Sohbeti temizlemek istediÄŸinize emin misiniz?')) { onClearChat(); onClose(); } },
+                action: () => { if (confirm(t('commandPalette.clearChatConfirm'))) { onClearChat(); onClose(); } },
                 category: 'actions'
             },
             {
                 id: 'settings',
-                label: 'Ayarlar',
-                description: 'Uygulama ayarlarÄ±nÄ± aÃ§',
+                label: t('commandPalette.settings'),
+                description: t('commandPalette.settingsDesc'),
                 icon: <Settings className="w-4 h-4" />,
                 shortcut: ',',
                 action: () => { onOpenSettings(); onClose(); },
@@ -93,8 +95,8 @@ export function CommandPalette({
             },
             {
                 id: 'ssh-manager',
-                label: 'SSH YÃ¶neticisi',
-                description: 'SSH baÄŸlantÄ±larÄ±nÄ± yÃ¶net',
+                label: t('commandPalette.sshManager'),
+                description: t('commandPalette.sshManagerDesc'),
                 icon: <Server className="w-4 h-4" />,
                 action: () => { onOpenSSHManager(); onClose(); },
                 category: 'navigation'
@@ -104,8 +106,8 @@ export function CommandPalette({
         // Add recent chats
         const chatCommands: CommandItem[] = chats.slice(0, 5).map(chat => ({
             id: `chat-${chat.id}`,
-            label: chat.title || 'Ä°simsiz Sohbet',
-            description: 'Sohbete git',
+            label: chat.title || t('commandPalette.untitledChat'),
+            description: t('commandPalette.goToChat'),
             icon: <MessageSquare className="w-4 h-4" />,
             action: () => { onSelectChat(chat.id); onClose(); },
             category: 'chat'
@@ -114,8 +116,8 @@ export function CommandPalette({
         // Add projects
         const projectCommands: CommandItem[] = projects.slice(0, 5).map(project => ({
             id: `project-${project.id}`,
-            label: project.title || 'Ä°simsiz Proje',
-            description: 'Projeye git',
+            label: project.title || t('commandPalette.untitledProject'),
+            description: t('commandPalette.goToProject'),
             icon: <Folder className="w-4 h-4" />,
             action: () => { onSelectProject(project.id); onClose(); },
             category: 'projects'
@@ -125,8 +127,8 @@ export function CommandPalette({
         const modelCommands: CommandItem[] = [
             {
                 id: 'refresh-models',
-                label: 'Modelleri Yenile',
-                description: 'Ollama modellerini yeniden yÃ¼kle',
+                label: t('commandPalette.refreshModels'),
+                description: t('commandPalette.refreshModelsDesc'),
                 icon: <RefreshCw className="w-4 h-4" />,
                 action: () => { onRefreshModels(); onClose(); },
                 category: 'model'
@@ -134,15 +136,18 @@ export function CommandPalette({
             ...models.map(model => ({
                 id: `model-${model.name}`,
                 label: model.name,
-                description: model.name === selectedModel ? 'âœ“ Aktif model' : 'Bu modele geÃ§',
+                description: model.name === selectedModel ? '✓ ' + t('commandPalette.activeModel') : t('commandPalette.switchToModel'),
                 icon: <Cpu className="w-4 h-4" />,
-                action: () => { onSelectModel(model.name); onClose(); },
+                action: () => {
+                    onSelectModel(model.name);
+                    onClose();
+                },
                 category: 'model' as const
             }))
         ]
 
         return [...baseCommands, ...chatCommands, ...projectCommands, ...modelCommands]
-    }, [chats, projects, models, selectedModel, onNewChat, onOpenSettings, onOpenSSHManager, onRefreshModels, onSelectModel, onSelectChat, onSelectProject, onClearChat, onClose])
+    }, [chats, projects, models, selectedModel, onNewChat, onOpenSettings, onOpenSSHManager, onRefreshModels, onSelectModel, onSelectChat, onSelectProject, onClearChat, onClose, t])
 
     const filteredCommands = useMemo(() => {
         if (!search.trim()) return commands
@@ -202,12 +207,12 @@ export function CommandPalette({
     }
 
     const categoryLabels: Record<string, string> = {
-        chat: 'Sohbetler',
-        projects: 'Projeler',
-        navigation: 'Navigasyon',
-        actions: 'Eylemler',
-        model: 'Modeller',
-        system: 'Sistem'
+        chat: t('commandPalette.chats'),
+        projects: t('commandPalette.projects'),
+        navigation: t('commandPalette.navigation'),
+        actions: t('commandPalette.actions'),
+        model: t('commandPalette.models'),
+        system: t('commandPalette.system')
     }
 
     const groupedCommands = useMemo(() => {
@@ -250,7 +255,7 @@ export function CommandPalette({
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Dosya, sohbet veya komut ara..."
+                                placeholder={t('commandPalette.searchPlaceholder')}
                                 className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-sm"
                             />
                             <div className="flex items-center gap-1 text-white/30 text-xs">
@@ -310,23 +315,23 @@ export function CommandPalette({
 
                             {filteredCommands.length === 0 && (
                                 <div className="px-4 py-8 text-center text-white/40 text-sm">
-                                    SonuÃ§ bulunamadÄ±
+                                    {t('commandPalette.noResults')}
                                 </div>
                             )}
                         </div>
 
                         <div className="px-4 py-2 border-t border-white/10 flex items-center gap-4 text-[10px] text-white/20">
                             <span className="flex items-center gap-1">
-                                <kbd className="px-1 py-0.5 bg-white/10 rounded">â†‘â†“</kbd>
-                                Gezin
+                                <kbd className="px-1 py-0.5 bg-white/10 rounded">↑↓</kbd>
+                                {t('commandPalette.navigate')}
                             </span>
                             <span className="flex items-center gap-1">
-                                <kbd className="px-1 py-0.5 bg-white/10 rounded">â†µ</kbd>
-                                SeÃ§
+                                <kbd className="px-1 py-0.5 bg-white/10 rounded">↵</kbd>
+                                {t('commandPalette.select')}
                             </span>
                             <span className="flex items-center gap-1">
                                 <kbd className="px-1 py-0.5 bg-white/10 rounded">Esc</kbd>
-                                Kapat
+                                {t('commandPalette.close')}
                             </span>
                         </div>
                     </motion.div>

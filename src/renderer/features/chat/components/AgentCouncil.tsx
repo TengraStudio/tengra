@@ -59,25 +59,30 @@ const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) =
 
 export const AgentCouncil = () => {
     // const { project } = props
-    const [session, setSession] = useState<LocalCouncilSession | null>(null)
+    const [session, _setSession] = useState<LocalCouncilSession | null>(null)
     const [taskInput, setTaskInput] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
 
     // Mock data for initial dev (replace with real IPC later)
     useEffect(() => {
         // Listen for IPC updates
-        if (window.electron?.council) {
-            window.electron.council.onUpdate((data: any) => {
-                setSession(data)
-            })
-        }
+        // Note: council.onUpdate and council.runSession are deprecated
+        // if (window.electron?.council) {
+        //     window.electron.council.onUpdate((data: any) => {
+        //         setSession(data)
+        //     })
+        // }
     }, [])
 
     const handleStart = async () => {
         if (!taskInput) return
         setIsGenerating(true)
-        // Call backend to start council
-        await window.electron.council.runSession('project-id', taskInput) // 'project-id' should come from context
+        // Call backend to start council (use createSession instead)
+        try {
+            await window.electron.council.createSession(taskInput)
+        } catch (err) {
+            console.error('Failed to create council session', err)
+        }
         setIsGenerating(false)
     }
 

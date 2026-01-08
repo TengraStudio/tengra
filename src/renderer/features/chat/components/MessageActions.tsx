@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react'
-import { Copy, Check, Bookmark, ThumbsUp, ThumbsDown, Code2, Smile, Volume2, VolumeX } from 'lucide-react'
+import { Copy, Check, Bookmark, ThumbsUp, ThumbsDown, Code2, Smile, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ActionButtonProps {
@@ -130,6 +130,13 @@ export const MessageActionsGroup = ({
                     ))}
                 </div>
             </div>
+
+            {/* Regenerate Skeleton */}
+            {role === 'assistant' && (
+                <ActionButton title="Yeniden Oluştur (Geçici)" onClick={() => alert('Regenerate feature coming soon!')}>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                </ActionButton>
+            )}
 
             {onRate && <RatingButtons rating={rating} onRate={onRate} />}
         </div>

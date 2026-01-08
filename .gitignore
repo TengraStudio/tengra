@@ -10,6 +10,8 @@ lerna-debug.log*
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+.vscode
+
 # Runtime data
 pids
 *.pid
@@ -136,10 +138,21 @@ rustup-init.exe
 proxy/cliproxy_embed/cliproxy-embed*
 go_cache/
 *.txt
-*.log
+*.txt
+!sidecar/requirements.txt
 !docs/*.md
 build_log*.txt
 tsc_log.txt
 
 MODEL_ARCHITECTURE.md
 vendor/
+
+# Sidecar (Python voice service)
+sidecar/.venv/
+sidecar/__pycache__/
+sidecar/cloned_voices/
+sidecar/output.wav
+sidecar/temp_stt.wav
+sidecar/*.tmp
+sidecar/.python-version
+sidecar/install-pyenv-win.ps1

@@ -5,6 +5,8 @@ export interface SSHConnection {
     username: string
     status: 'connected' | 'disconnected' | 'connecting' | 'error'
     error?: string
+    password?: string
+    privateKey?: string
 }
 
 export interface SSHConfig {

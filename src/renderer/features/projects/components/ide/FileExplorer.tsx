@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
+import { useTranslation } from '@/i18n'
 import { ChevronRight, ChevronDown, File, Folder, FileText, Image, Code } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +13,10 @@ interface FileNode {
 interface FileExplorerProps {
     rootPath?: string
     onFileSelect?: (path: string) => void
+    onFolderSelect?: (path: string) => void
 }
 
-const FileTreeItem = ({ node, depth = 0, onSelect }: { node: FileNode, depth?: number, onSelect: (path: string) => void }) => {
+const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: FileNode, depth?: number, onSelect: (path: string) => void, onFolderSelect?: (path: string) => void }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [children, setChildren] = useState<FileNode[]>([])
     const [loading, setLoading] = useState(false)
@@ -22,6 +24,8 @@ const FileTreeItem = ({ node, depth = 0, onSelect }: { node: FileNode, depth?: n
     const handleToggle = async (e: React.MouseEvent) => {
         e.stopPropagation()
         if (node.isDirectory) {
+            onFolderSelect?.(node.path)
+
             if (!isOpen && children.length === 0) {
                 setLoading(true)
                 try {
@@ -82,7 +86,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect }: { node: FileNode, depth?: n
                         <div className="pl-8 py-1 text-xs text-muted-foreground">Loading...</div>
                     ) : (
                         children.map(child => (
-                            <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} />
+                            <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onFolderSelect={onFolderSelect} />
                         ))
                     )}
                 </div>
@@ -91,7 +95,8 @@ const FileTreeItem = ({ node, depth = 0, onSelect }: { node: FileNode, depth?: n
     )
 }
 
-export const FileExplorer = ({ rootPath, onFileSelect }: FileExplorerProps) => {
+export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExplorerProps) => {
+    const { t } = useTranslation()
     const [rootNodes, setRootNodes] = useState<FileNode[]>([])
     const [loading, setLoading] = useState(false)
 
@@ -119,15 +124,15 @@ export const FileExplorer = ({ rootPath, onFileSelect }: FileExplorerProps) => {
         loadRoot()
     }, [rootPath])
 
-    if (loading) return <div className="p-4 text-xs text-muted-foreground">Loading file tree...</div>
+    if (loading) return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>
 
     return (
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
             {rootNodes.map(node => (
-                <FileTreeItem key={node.path} node={node} onSelect={onFileSelect || (() => { })} />
+                <FileTreeItem key={node.path} node={node} onSelect={onFileSelect || (() => { })} onFolderSelect={onFolderSelect} />
             ))}
             {rootNodes.length === 0 && (
-                <div className="p-4 text-xs text-muted-foreground text-center">Empty directory</div>
+                <div className="p-4 text-xs text-muted-foreground text-center">{t('projectDashboard.emptyDir')}</div>
             )}
         </div>
     )

@@ -51,8 +51,8 @@ export class ProxyEmbedService {
         }
 
         const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir, env })
-        if (stdout?.trim()) appLogger.info(stdout.trim(), { source: 'proxy-embed:build' })
-        if (stderr?.trim()) appLogger.warn(stderr.trim(), { source: 'proxy-embed:build' })
+        if (stdout?.trim()) appLogger.info('ProxyEmbed:Build', stdout.trim())
+        if (stderr?.trim()) appLogger.warn('ProxyEmbed:Build', stderr.trim())
 
         if (!fs.existsSync(binaryPath)) {
             throw new Error('Failed to build embed binary')
@@ -98,7 +98,7 @@ export class ProxyEmbedService {
         }
 
         const binaryPath = await this.ensureBinary()
-        const configPath = options?.configPath || this.proxyService.getConfigPath()
+        const configPath = options?.configPath || this.proxyService.settingsService.getSettingsPath()
         this.currentConfigPath = configPath
         this.currentPort = options?.port
 
@@ -109,7 +109,7 @@ export class ProxyEmbedService {
         this.proxyService.prepareAuthWorkDir()
         await this.proxyService.generateConfig(options?.port)
 
-        appLogger.info(`Spawning embedded proxy: ${binaryPath} ${args.join(' ')}`, { source: 'proxy-embed' })
+        appLogger.info('ProxyEmbed', `Spawning embedded proxy: ${binaryPath} ${args.join(' ')}`)
         this.child = spawn(binaryPath, args, {
             cwd: path.dirname(binaryPath),
             env: {
@@ -129,14 +129,14 @@ export class ProxyEmbedService {
 
         this.child.on('close', (code) => {
             if (this.stdoutBuffer.trim()) {
-                appLogger.info(this.stdoutBuffer.trim(), { source: 'proxy-embed' })
+                appLogger.info('ProxyEmbed', this.stdoutBuffer.trim())
                 this.stdoutBuffer = ''
             }
             if (this.stderrBuffer.trim()) {
-                appLogger.error(this.stderrBuffer.trim(), { source: 'proxy-embed' })
+                appLogger.error('ProxyEmbed', this.stderrBuffer.trim())
                 this.stderrBuffer = ''
             }
-            appLogger.warn(`Proxy embed exited with code ${code}`, { source: 'proxy-embed' })
+            appLogger.warn('ProxyEmbed', `Proxy embed exited with code ${code}`)
             this.child = null
         })
 
@@ -145,7 +145,7 @@ export class ProxyEmbedService {
 
     async stop(): Promise<ProxyEmbedStatus> {
         if (this.child) {
-            appLogger.info('Stopping embedded proxy...', { source: 'proxy-embed' })
+            appLogger.info('ProxyEmbed', 'Stopping embedded proxy...')
             this.child.kill()
             this.child = null
         }
@@ -170,9 +170,9 @@ export class ProxyEmbedService {
             const trimmed = line.trim()
             if (!trimmed) continue
             if (level === 'error') {
-                appLogger.error(trimmed, { source: 'proxy-embed' })
+                appLogger.error('ProxyEmbed', trimmed)
             } else {
-                appLogger.info(trimmed, { source: 'proxy-embed' })
+                appLogger.info('ProxyEmbed', trimmed)
             }
         }
         return remainder

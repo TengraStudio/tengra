@@ -1,7 +1,8 @@
 ﻿import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, ArrowLeft } from 'lucide-react';
-import { ModelSelector } from '../ModelSelector';
+import { MessageBubble } from '../../../chat/components/MessageBubble';
+import { ModelSelector } from '../../../models/components/ModelSelector';
 import { CouncilPanel } from './CouncilPanel';
 import { CouncilAgent, ActivityEntry } from '@/types';
 
@@ -26,6 +27,10 @@ interface AIAssistantSidebarProps {
     activityLog: ActivityEntry[];
     clearLogs: () => void;
     t: (key: string) => string;
+    messages?: any[];
+    isLoading?: boolean;
+    language: string;
+    onSourceClick?: (path: string) => void;
 }
 
 /**
@@ -55,7 +60,11 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     runCouncil,
     activityLog,
     clearLogs,
-    t
+    t,
+    messages = [],
+    isLoading,
+    language,
+    onSourceClick
 }) => {
     return (
         <motion.div
@@ -100,14 +109,27 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                 ) : (
                     <div className="flex-1 flex flex-col min-h-0">
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                    <Users className="w-4 h-4 text-primary" />
+                            {messages.length === 0 ? (
+                                <div className="flex gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                        <Users className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
+                                        {t('agents.welcomeMessage') || 'Merhaba! Ben AI asistanın. Kodunda sana nasıl yardımcı olabilirim?'}
+                                    </div>
                                 </div>
-                                <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
-                                    Merhaba! Ben AI asistanÄ±n. Kodunda sana nasÄ±l yardÄ±mcÄ± olabilirim? Refactor Ã¶nerileri veya gÃ¼venlik taramasÄ± iÃ§in hazÄ±rÄ±m.
-                                </div>
-                            </div>
+                            ) : (
+                                messages.map((m: any, idx: number) => (
+                                    <MessageBubble
+                                        key={m.id || idx}
+                                        message={m}
+                                        isLast={idx === messages.length - 1}
+                                        language={language as any}
+                                        isStreaming={isLoading && idx === messages.length - 1 && m.role === 'assistant'}
+                                        onSourceClick={onSourceClick}
+                                    />
+                                ))
+                            )}
                         </div>
 
                         {/* Chat Input Area */}

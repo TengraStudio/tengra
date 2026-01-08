@@ -11,6 +11,7 @@ import {
     ShieldCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation, Language } from '@/i18n'
 
 interface Step {
     title: string
@@ -23,36 +24,38 @@ interface OnboardingTourProps {
     isOpen: boolean
     onClose: () => void
     onComplete: () => void
+    language?: Language
 }
 
-export function OnboardingTour({ isOpen, onClose, onComplete }: OnboardingTourProps) {
+export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }: OnboardingTourProps) {
+    const { t } = useTranslation(language)
     const [currentStep, setCurrentStep] = useState(0)
 
     const steps: Step[] = [
         {
-            title: "Orbit'e HoÅŸ Geldiniz",
-            description: "GÃ¼Ã§lÃ¼ AI modelleriyle projelerinizi yÃ¶netebileceÄŸiniz modern Ã§alÄ±ÅŸma alanÄ±nÄ±za adÄ±m attÄ±nÄ±z. Sizi kÄ±sa bir tura Ã§Ä±karalÄ±m.",
+            title: t('onboarding.step1Title'),
+            description: t('onboarding.step1Desc'),
             icon: <Sparkles className="w-8 h-8 text-primary" />
         },
         {
-            title: "Evrensel Komut Paleti",
-            description: "Her yerden Cmd+K (veya Ctrl+K) tuÅŸlarÄ±na basarak projelere, sohbetlere ve tÃ¼m AI araÃ§larÄ±na anÄ±nda ulaÅŸÄ±n. Her ÅŸey parmaklarÄ±nÄ±zÄ±n ucunda.",
+            title: t('onboarding.step2Title'),
+            description: t('onboarding.step2Desc'),
             icon: <Command className="w-8 h-8 text-blue-400" />,
             highlight: "Cmd+K"
         },
         {
-            title: "Esnek Ã‡alÄ±ÅŸma AlanÄ±",
-            description: "Panelleri kenarlarÄ±ndan sÃ¼rÃ¼kleyerek istediÄŸiniz gibi boyutlandÄ±rÄ±n. OdaklanmanÄ±z gerektiÄŸinde 'Focus Mode' ile dikkat daÄŸÄ±tÄ±cÄ±larÄ± gizleyin.",
+            title: t('onboarding.step3Title'),
+            description: t('onboarding.step3Desc'),
             icon: <Layers className="w-8 h-8 text-purple-400" />
         },
         {
-            title: "Gizlilik ve GÃ¼venlik",
-            description: "Orbit, yerel modelleri (Ollama) ve bulut modellerini birleÅŸtirir. TÃ¼m yerel verileriniz cihazÄ±nÄ±zda ÅŸifrelenmiÅŸ olarak saklanÄ±r.",
+            title: t('onboarding.step4Title'),
+            description: t('onboarding.step4Desc'),
             icon: <ShieldCheck className="w-8 h-8 text-emerald-400" />
         },
         {
-            title: "HazÄ±rsÄ±nÄ±z!",
-            description: "ArtÄ±k keÅŸfetmeye hazÄ±rsÄ±nÄ±z. Yeni bir sohbet baÅŸlatÄ±n veya mevcut bir projenizi ekleyerek AI Council ile iÅŸbirliÄŸine baÅŸlayÄ±n.",
+            title: t('onboarding.step5Title'),
+            description: t('onboarding.step5Desc'),
             icon: <MessageSquare className="w-8 h-8 text-primary animate-bounce" />
         }
     ]
@@ -134,7 +137,7 @@ export function OnboardingTour({ isOpen, onClose, onComplete }: OnboardingTourPr
                                 )}
                             >
                                 <ChevronLeft className="w-4 h-4" />
-                                Geri
+                                {t('onboarding.back')}
                             </button>
 
                             <div className="flex gap-1.5">
@@ -153,7 +156,7 @@ export function OnboardingTour({ isOpen, onClose, onComplete }: OnboardingTourPr
                                 onClick={handleNext}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
                             >
-                                {currentStep === steps.length - 1 ? 'BaÅŸlayalÄ±m' : 'Devam'}
+                                {currentStep === steps.length - 1 ? t('onboarding.letsStart') : t('onboarding.continue')}
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>

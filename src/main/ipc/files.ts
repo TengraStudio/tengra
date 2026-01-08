@@ -57,4 +57,8 @@ export function registerFilesIpc(
     ipcMain.handle('files:searchFiles', async (_event, rootPath: string, pattern: string) => {
         return await fileSystemService.searchFiles(rootPath, pattern)
     })
+
+    ipcMain.handle('app:getUserDataPath', () => {
+        return require('electron').app.getPath('userData')
+    })
 }

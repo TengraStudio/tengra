@@ -2,6 +2,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ToolResult } from '@/types'
+import { useTranslation, Language } from '@/i18n'
 
 interface ToolDisplayProps {
     toolCall: {
@@ -11,11 +12,13 @@ interface ToolDisplayProps {
     }
     result?: ToolResult
     isExecuting?: boolean
+    language?: Language
 }
 
 import { cn } from '@/lib/utils'
 
-export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps) {
+export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) {
+    const { t } = useTranslation(language)
     const hasError = result?.error
     const execStdout = result?.result?.stdout
     const execStderr = result?.result?.stderr
@@ -39,7 +42,7 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
         const outputText = [stdout, stderr, error].filter(Boolean).join('\n')
         const preview = outputText ? outputText.split('\n').slice(0, 6).join('\n') : ''
         const hasOutput = Boolean(outputText)
-        const statusLabel = isExecuting ? 'Calisiyor' : (error || stderr ? 'Hata' : 'Tamamlandi')
+        const statusLabel = isExecuting ? t('tools.running') : (error || stderr ? t('tools.error') : t('tools.completed'))
         const statusClass = error || stderr
             ? 'bg-red-500/10 text-red-400 border-red-500/20'
             : isExecuting
@@ -60,14 +63,14 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                             <span className={cn("text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border", statusClass)}>
                                 {statusLabel}
                             </span>
-                            <span className="text-xs text-muted-foreground">Komut</span>
+                            <span className="text-xs text-muted-foreground">{t('tools.command')}</span>
                             <span className="text-xs font-mono text-foreground/80 truncate">{command}</span>
                         </div>
                         <span className={cn("text-xs text-muted-foreground transition-transform", commandExpanded && "rotate-180")}>v</span>
                     </div>
                     {!commandExpanded && (
                         <div className="mt-2 text-xs font-mono text-zinc-300 whitespace-pre-wrap max-h-24 overflow-hidden">
-                            {preview || (isExecuting ? 'Calistiriliyor...' : 'Cikti yok')}
+                            {preview || (isExecuting ? t('tools.executing') : t('tools.noOutput'))}
                         </div>
                     )}
                 </button>
@@ -95,7 +98,7 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                                     className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors uppercase tracking-wider font-bold mr-2"
                                     title="Markdown Gorunumu"
                                 >
-                                    {showMarkdown ? 'TEXT' : 'MD'}
+                                    {showMarkdown ? t('tools.text') : t('tools.markdown')}
                                 </button>
                             )}
                             {/* KILL BUTTON */}
@@ -107,9 +110,9 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                                         if (success) console.log("Process killed")
                                     }}
                                     className="text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors uppercase tracking-wider font-bold"
-                                    title="Islemi Zorla Durdur"
+                                    title={t('tools.forceStop')}
                                 >
-                                    DURDUR
+                                    {t('tools.stop')}
                                 </button>
                             )}
                         </div>
@@ -129,7 +132,7 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                                 {isExecuting && (
                                     <div className="flex items-center gap-2 text-zinc-500 italic mb-2">
                                         <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"></span>
-                                        komut calistiriliyor...
+                                        {t('tools.executingCommand')}
                                     </div>
                                 )}
 
@@ -138,7 +141,7 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                                         {showMarkdown ? (
                                             <div className="text-zinc-200 text-sm leading-6">
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                    {outputText || '(No output)'}
+                                                    {outputText || t('tools.noOutputReturned')}
                                                 </ReactMarkdown>
                                             </div>
                                         ) : (
@@ -164,7 +167,7 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                                         )}
                                         {!hasOutput && !isExecuting && (
                                             <div className="text-zinc-600 italic text-xs mt-1 opacity-50">
-                                                (No output returned)
+                                                {t('tools.noOutput')}
                                             </div>
                                         )}
                                     </>
@@ -191,15 +194,15 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
     const [userExpanded, setUserExpanded] = useState(false)
 
     // Specific status messages
-    let statusText = 'AraÃ§ kullanÄ±lÄ±yor...'
+    let statusText = t('tools.usingTool')
     if (isExecuting) {
-        if (toolCall.name.includes('search')) statusText = 'Ä°nternette aranÄ±yor...'
-        else if (toolCall.name.includes('file')) statusText = 'Dosyalar okunuyor...'
-        else if (toolCall.name.includes('command')) statusText = 'Komut yÃ¼rÃ¼tÃ¼lÃ¼yor...'
-        else if (toolCall.name.includes('screenshot')) statusText = 'Ekran gÃ¶rÃ¼ntÃ¼sÃ¼ alÄ±nÄ±yor...'
+        if (toolCall.name.includes('search')) statusText = t('tools.searching')
+        else if (toolCall.name.includes('file')) statusText = t('tools.readingFiles')
+        else if (toolCall.name.includes('command')) statusText = t('tools.executingCmd')
+        else if (toolCall.name.includes('screenshot')) statusText = t('tools.screenshotting')
     } else {
-        if (hasError) statusText = 'Ä°ÅŸlem baÅŸarÄ±sÄ±z oldu'
-        else statusText = 'TamamlandÄ±'
+        if (hasError) statusText = t('tools.failed')
+        else statusText = t('tools.completed')
     }
 
     if (isExecuting) {
@@ -222,26 +225,26 @@ export function ToolDisplay({ toolCall, result, isExecuting }: ToolDisplayProps)
                         : "bg-muted/20 text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                 )}
             >
-                <div>{hasError ? 'âŒ' : 'âœ…'}</div>
+                <div>{hasError ? '❌' : '✅'}</div>
                 <div className="flex-1 truncate font-mono opacity-80">
                     <span className="opacity-70 mr-2">{toolCall.name}</span>
                     <span className="opacity-50">({statusText})</span>
                 </div>
                 <div className="transition-transform duration-200 opacity-50" style={{ transform: userExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                    â–¼
+                    ▼
                 </div>
             </button>
 
             {userExpanded && (
                 <div className="mt-2 ml-2 border-l-2 border-white/10 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
                     <div className="space-y-1">
-                        <div className="text-sm uppercase tracking-wider text-muted-foreground font-bold opacity-50">Girdi</div>
+                        <div className="text-sm uppercase tracking-wider text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
                         <ToolArguments name={toolCall.name} args={toolCall.arguments} />
                     </div>
                     {result && (
                         <div className="space-y-1">
-                            <div className="text-sm uppercase tracking-wider text-muted-foreground font-semibold opacity-70">Ã‡Ä±ktÄ±</div>
-                            <ToolOutput name={toolCall.name} result={result.result} />
+                            <div className="text-sm uppercase tracking-wider text-muted-foreground font-semibold opacity-70">{t('tools.output')}</div>
+                            <ToolOutput name={toolCall.name} result={result.result} t={t} />
                         </div>
                     )}
                 </div>
@@ -257,13 +260,13 @@ function ToolArguments({ name, args }: { name: string, args: any }) {
     return <pre className="font-mono text-muted-foreground bg-muted/50 p-2 rounded overflow-x-auto">{JSON.stringify(args, null, 2)}</pre>
 }
 
-function ToolOutput({ name, result }: { name: string, result: any }) {
+function ToolOutput({ name, result, t }: { name: string, result: any, t: (key: string) => string }) {
     // Other tool outputs remain the same but cleaner
     if (name === 'read_file') {
         const content = typeof result === 'string' ? result : result.content
         return (
             <div className="relative group">
-                <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50">FILE PREVIEW</div>
+                <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50">{t('tools.filePreview')}</div>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{

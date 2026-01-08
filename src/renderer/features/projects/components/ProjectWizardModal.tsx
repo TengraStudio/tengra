@@ -1,119 +1,109 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRight, ChevronLeft, Check, Loader2 } from 'lucide-react'
+import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRight, ChevronLeft, Check, Loader2, Server } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation, Language } from '@/i18n'
 
 interface ProjectWizardModalProps {
     isOpen: boolean
     onClose: () => void
-    onProjectCreated: (path: string, name: string, description: string) => void
-    onImportProject: () => void
+    onProjectCreated: (path: string, name: string, description: string, mounts?: any[]) => void
+    language: Language
 }
 
-type Step = 'selection' | 'details' | 'creating'
+type Step = 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating'
 
 const CATEGORIES = [
-    { id: 'web', name: 'Web Application', icon: Globe, color: 'text-blue-400' },
-    { id: 'backend', name: 'Backend Service', icon: Database, color: 'text-emerald-400' },
-    { id: 'cli', name: 'CLI / Script', icon: Terminal, color: 'text-amber-400' },
-    { id: 'mobile', name: 'Mobile App', icon: Smartphone, color: 'text-purple-400' },
-    { id: 'other', name: 'Custom Project', icon: Code, color: 'text-gray-400' },
+    { id: 'web', nameKey: 'projectWizard.categories.web', icon: Globe, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { id: 'backend', nameKey: 'projectWizard.categories.backend', icon: Database, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { id: 'cli', nameKey: 'projectWizard.categories.cli', icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { id: 'mobile', nameKey: 'projectWizard.categories.mobile', icon: Smartphone, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { id: 'other', nameKey: 'projectWizard.categories.other', icon: Code, color: 'text-gray-400', bg: 'bg-gray-500/10' },
 ]
 
-export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, onImportProject }) => {
-    const [step, setStep] = useState<Step>('selection')
+export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
+    const { t } = useTranslation(language)
+    const [step, setStep] = useState<Step>('details')
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         category: 'web',
         goal: ''
     })
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Reset state on open
     useEffect(() => {
         if (isOpen) {
-            setStep('selection')
+            setStep('details')
             setFormData({ name: '', description: '', category: 'web', goal: '' })
+            setIsLoading(false)
+            setError(null)
         }
     }, [isOpen])
 
+    const handleImportLocal = async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            const result = await window.electron.selectDirectory()
+            if (result.success && result.path) {
+                onProjectCreated(result.path, formData.name, formData.description)
+                onClose()
+            }
+        } catch (err: any) {
+            setError(err.message || 'Failed to select directory')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const handleCreate = async () => {
         if (!formData.name) return
-
+        setIsLoading(true)
+        setError(null)
         setStep('creating')
 
         try {
-            // 1. Get Home Dir
-            const { stdout } = await window.electron.runCommand('echo %USERPROFILE%', [], '')
-            const homeDir = stdout.trim()
-            const orbitDir = `${homeDir}\\Documents\\Orbit`
-            const projectsDir = `${orbitDir}\\Projects`
+            const userData = await window.electron.getUserDataPath()
+            const projectsDir = `${userData}\\projects`
             const projectPath = `${projectsDir}\\${formData.name.replace(/[^a-zA-Z0-9-_]/g, '-')}`
 
-            // 2. Ensure Directories
-            await window.electron.createDirectory(orbitDir)
             await window.electron.createDirectory(projectsDir)
-            await window.electron.createDirectory(`${orbitDir}\\Gallery`)
-            await window.electron.createDirectory(`${orbitDir}\\Config`)
+            await window.electron.createDirectory(projectPath)
 
-            // 3. Create Project Directory
-            const dirResult = await window.electron.createDirectory(projectPath)
-            if (!dirResult.success && dirResult.error?.includes('exists')) {
-                // If exists, strictly we might want to warn, but for now we proceed or fail?
-                // Proceeding allows attaching to empty folder
-            }
-
-            // 4. Create README.md with content
-            const readmeContent = `# ${formData.name}\n\n${formData.description}\n\n## Project Goal\n${formData.goal}\n\n## Category\n${CATEGORIES.find(c => c.id === formData.category)?.name}\n`
+            const readmeContent = `# ${formData.name}\n\n${formData.description}\n`
             await window.electron.writeFile(`${projectPath}\\README.md`, readmeContent)
 
-            // 5. Callback to create in DB
-            onProjectCreated(projectPath, formData.name, formData.description) // This will close modal typically
+            onProjectCreated(projectPath, formData.name, formData.description)
+            onClose()
 
-        } catch (error) {
-            console.error('Wizard Creation Failed:', error)
-            // handle error state?
-            setStep('details')
+        } catch (err: any) {
+            console.error('Project Creation Failed:', err)
+            setError(err.message || 'Failed to create project')
+            setStep('selection')
+        } finally {
+            setIsLoading(false)
         }
     }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={step === 'selection' ? 'Yeni Proje' : 'Proje DetaylarÄ±'}>
-            <div className="min-h-[400px] flex flex-col">
+        <Modal isOpen={isOpen} onClose={onClose} title={t('projectWizard.title')} size="3xl">
+            <div className="relative min-h-[500px] flex flex-col">
+                {isLoading && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
+                        <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                            <span className="text-sm font-medium text-white/80 animate-pulse tracking-widest uppercase">
+                                {step === 'creating' ? t('projectWizard.creating') : t('common.loading')}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 <AnimatePresence mode="wait">
-                    {step === 'selection' && (
-                        <motion.div
-                            key="selection"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="grid grid-cols-2 gap-4 flex-1 items-center content-center pt-8"
-                        >
-                            <button
-                                onClick={() => setStep('details')}
-                                className="group h-48 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all hover:scale-105"
-                            >
-                                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
-                                    <Plus className="w-8 h-8" />
-                                </div>
-                                <h3 className="font-medium text-lg text-foreground">Yeni OluÅŸtur</h3>
-                                <p className="text-sm text-muted-foreground mt-2">SÄ±fÄ±rdan yeni bir proje baÅŸlat</p>
-                            </button>
-
-                            <button
-                                onClick={onImportProject}
-                                className="group h-48 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/50 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all hover:scale-105"
-                            >
-                                <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
-                                    <FolderOpen className="w-8 h-8" />
-                                </div>
-                                <h3 className="font-medium text-lg text-foreground">Ä°Ã§e Aktar</h3>
-                                <p className="text-sm text-muted-foreground mt-2">Mevcut bir klasÃ¶rÃ¼ ekle</p>
-                            </button>
-                        </motion.div>
-                    )}
-
                     {step === 'details' && (
                         <motion.div
                             key="details"
@@ -123,62 +113,118 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             className="space-y-6 flex-1 pt-4"
                         >
                             <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Proje AdÄ±</label>
-                                    <input
-                                        autoFocus
-                                        value={formData.name}
-                                        onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
-                                        placeholder="Ã–rn: Super App"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Kategori</label>
-                                        <div className="grid gap-2">
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('projectWizard.projectName')}</label>
+                                        <input
+                                            autoFocus
+                                            value={formData.name}
+                                            onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                            placeholder={t('projectWizard.namePlaceholder')}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-3 block opacity-70 tracking-widest">{t('projects.categoryLabel')}</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                             {CATEGORIES.map(cat => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => setFormData(p => ({ ...p, category: cat.id }))}
                                                     className={cn(
-                                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm border transition-all text-left",
+                                                        "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden",
                                                         formData.category === cat.id
-                                                            ? "bg-primary/10 border-primary/50 text-primary"
-                                                            : "bg-white/5 border-transparent hover:bg-white/10 text-muted-foreground"
+                                                            ? "bg-primary/20 border-primary shadow-lg shadow-primary/10"
+                                                            : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
                                                     )}
                                                 >
-                                                    <cat.icon className={cn("w-4 h-4", cat.color)} />
-                                                    {cat.name}
-                                                    {formData.category === cat.id && <Check className="w-3.5 h-3.5 ml-auto" />}
+                                                    {formData.category === cat.id && (
+                                                        <div className="absolute top-2 right-2">
+                                                            <Check className="w-3 h-3 text-primary" />
+                                                        </div>
+                                                    )}
+                                                    <div className={cn("p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-sm", cat.bg, cat.color)}>
+                                                        <cat.icon className="w-5 h-5" />
+                                                    </div>
+                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest truncate w-full px-1 text-center", formData.category === cat.id ? "text-primary" : "text-muted-foreground")}>
+                                                        {t(cat.nameKey)}
+                                                    </span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">AÃ§Ä±klama</label>
-                                            <textarea
-                                                value={formData.description}
-                                                onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                                                className="w-full h-20 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none"
-                                                placeholder="KÄ±sa bir aÃ§Ä±klama..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Proje Hedefi</label>
-                                            <textarea
-                                                value={formData.goal}
-                                                onChange={e => setFormData(p => ({ ...p, goal: e.target.value }))}
-                                                className="w-full h-32 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none font-mono"
-                                                placeholder="Bu projenin temel amacÄ± nedir? (AI baÄŸlamÄ± iÃ§in kullanÄ±lÄ±r)"
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('projectWizard.description')}</label>
+                                        <textarea
+                                            value={formData.description}
+                                            onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
+                                            className="w-full h-24 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none text-white"
+                                            placeholder={t('projectWizard.descPlaceholder')}
+                                        />
                                     </div>
+                                    {error && (
+                                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
+                                            {error}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {step === 'selection' && (
+                        <motion.div
+                            key="selection"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.05 }}
+                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            className="flex flex-col items-center justify-center flex-1 h-full py-12"
+                        >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl mx-auto px-2">
+                                <button
+                                    onClick={handleImportLocal}
+                                    className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-primary/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-primary/10 overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-6 ring-1 ring-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                                        <FolderOpen className="w-12 h-12" />
+                                    </div>
+                                    <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">{t('projectWizard.alreadyExists')}</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">{t('projectWizard.alreadyExistsDesc')}</p>
+                                    <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
+                                        <ArrowRight className="w-5 h-5 text-primary" />
+                                    </div>
+                                </button>
+
+                                <button
+                                    disabled
+                                    className="group relative h-72 bg-card/50 border border-border/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 shadow-sm opacity-60 cursor-not-allowed overflow-hidden"
+                                >
+                                    <div className="w-24 h-24 rounded-3xl bg-purple-500/5 flex items-center justify-center text-purple-400/50 mb-6 ring-1 ring-purple-500/10">
+                                        <Server className="w-12 h-12" />
+                                    </div>
+                                    <h3 className="font-black text-2xl text-foreground/50 tracking-tight leading-none">{t('projectWizard.sshTodo')}</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-40">{t('projectWizard.sshTodoDesc')}</p>
+                                </button>
+
+                                <button
+                                    onClick={handleCreate}
+                                    className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-blue-500/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-24 h-24 rounded-3xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 ring-1 ring-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                                        <Plus className="w-12 h-12" />
+                                    </div>
+                                    <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">{t('projectWizard.newCreateTodo')}</h3>
+                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">{t('projectWizard.newCreateTodoDesc')}</p>
+                                    <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
+                                        <ArrowRight className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                </button>
+                            </div>
+
                         </motion.div>
                     )}
 
@@ -187,34 +233,51 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             key="creating"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="flex-1 flex flex-col items-center justify-center text-center space-y-4"
+                            exit={{ opacity: 0 }}
+                            className="flex-1 flex flex-col items-center justify-center text-center space-y-6"
                         >
-                            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                            <div className="relative">
+                                <Loader2 className="w-16 h-16 animate-spin text-primary" />
+                                <Check className="w-6 h-6 text-primary absolute inset-0 m-auto opacity-0 animate-pulse" />
+                            </div>
                             <div>
-                                <h3 className="text-xl font-light">Proje HazÄ±rlanÄ±yor...</h3>
-                                <p className="text-muted-foreground mt-1">Dosyalar oluÅŸturuluyor ve yapÄ±landÄ±rÄ±lÄ±yor</p>
+                                <h3 className="text-2xl font-light text-white">{t('projectWizard.creating')}</h3>
+                                <p className="text-muted-foreground mt-2 max-w-[280px] mx-auto text-sm">
+                                    {t('projectWizard.configuring')}
+                                </p>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {step === 'details' && (
-                    <div className="flex justify-between items-center pt-6 border-t border-white/10 mt-auto">
+                {step !== 'creating' && (
+                    <div className="flex justify-between items-center pt-6 border-t border-white/5 mt-auto">
                         <button
-                            onClick={() => setStep('selection')}
-                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={() => {
+                                if (step === 'selection') setStep('details')
+                                else onClose()
+                            }}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                         >
-                            <ChevronLeft className="w-4 h-4" />
-                            Geri
+                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            {t('projectWizard.back')}
                         </button>
-                        <button
-                            onClick={handleCreate}
-                            disabled={!formData.name}
-                            className="px-6 py-2.5 bg-primary rounded-lg text-primary-foreground font-medium hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            OluÅŸtur
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
+
+                        <div className="flex gap-3">
+                            {step === 'details' && (
+                                <button
+                                    onClick={() => {
+                                        if (!formData.name) return
+                                        setStep('selection')
+                                    }}
+                                    disabled={!formData.name}
+                                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-primary/20"
+                                >
+                                    {t('projectWizard.next')}
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

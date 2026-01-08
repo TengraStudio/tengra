@@ -2,7 +2,7 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChatView } from '@/features/chat/components/ChatView'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
-import { CouncilView } from '@/features/chat/components/CouncilView'
+import { AgentDashboard } from '@/features/agent/AgentDashboard'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { DockerDashboard } from '@/features/mcp/DockerDashboard'
 import { Language } from '@/i18n'
@@ -55,6 +55,7 @@ interface ViewManagerProps {
     setAutoReadEnabled: (enabled: boolean) => void
     handleKeyDown: (e: React.KeyboardEvent) => void
     handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
+    prompts: any[]
 
     // Project Props
     projects: any[]
@@ -124,6 +125,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     setAutoReadEnabled,
     handleKeyDown,
     handlePaste,
+    prompts,
     projects,
     loadProjects,
     selectedProject,
@@ -188,6 +190,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                     setAutoReadEnabled={setAutoReadEnabled}
                     handleKeyDown={handleKeyDown}
                     handlePaste={handlePaste}
+                    prompts={prompts}
                 />
             )}
             {currentView === 'projects' && (
@@ -209,12 +212,18 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                         quotas={quotas}
                         codexUsage={codexUsage}
                         settings={appSettings}
+                        sendMessage={sendMessage}
+                        messages={messages}
+                        isLoading={isLoading}
                     />
                 </motion.div>
             )}
             {currentView === 'council' && (
                 <motion.div key="council" className="h-full overflow-hidden">
-                    <CouncilView />
+                    <AgentDashboard
+                        groupedModels={groupedModels}
+                        models={models}
+                    />
                 </motion.div>
             )}
             {currentView === 'settings' && (
@@ -231,7 +240,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             {currentView === 'mcp' && (
                 <motion.div key="mcp" className="h-full overflow-hidden">
                     <div className="flex-1 p-6 overflow-y-auto">
-                        <DockerDashboard onOpenTerminal={handleOpenTerminal} />
+                        <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} />
                     </div>
                 </motion.div>
             )}

@@ -1,22 +1,40 @@
 import { ipcMain } from 'electron'
-import { CouncilService, AgentConfig } from '../services/council.service'
+import { CouncilService } from '../services/council.service'
+import { DatabaseService } from '../services/database.service'
 
-export function registerCouncilIpc(councilService: CouncilService, databaseService: any) {
-    ipcMain.handle('db:runCouncil', async (event, projectId: string, taskId: string, agents: AgentConfig[]) => {
-        return await councilService.runCouncil(projectId, taskId, agents, (update) => {
-            event.sender.send('council:update', update)
+export function registerCouncilIpc(council: CouncilService, _db: DatabaseService) {
+    ipcMain.handle('council:create', async (_, goal) => {
+        return council.createSession(goal)
+    })
+
+    ipcMain.handle('council:get-all', async () => {
+        return council.getSessions()
+    })
+
+    ipcMain.handle('council:get', async (_, id) => {
+        return council.getSession(id)
+    })
+
+    ipcMain.handle('council:log', async (_, sessionId, agentId, message, type) => {
+        return council.addLog(sessionId, agentId, message, type)
+    })
+
+    ipcMain.on('council:run-step', (_, sessionId) => {
+        // Run asynchronously without blocking IPC
+        council.runSessionStep(sessionId).catch(err => {
+            console.error('[Council] Step error:', err)
         })
     })
-    ipcMain.handle('council:approvePlan', async (_event, sessionId: string, approved: boolean, editedPlan?: string) => {
-        return councilService.approvePlan(sessionId, approved, editedPlan)
+
+    ipcMain.on('council:start-loop', (_, sessionId) => {
+        council.startSessionLoop(sessionId).catch(err => {
+            console.error('[Council] Start loop error:', err)
+        })
     })
-    ipcMain.handle('council:generateAgents', async (_event, taskDescription: string) => {
-        return await councilService.generateAgentsForTask(taskDescription)
-    })
-    ipcMain.handle('db:getCouncilSessions', async (_event, projectId?: string) => {
-        return databaseService.getCouncilSessions(projectId)
-    })
-    ipcMain.handle('db:getCouncilSessionById', async (_event, id: string) => {
-        return databaseService.getCouncilSessionById(id)
+
+    ipcMain.on('council:stop-loop', (_, sessionId) => {
+        council.stopSessionLoop(sessionId).catch(err => {
+            console.error('[Council] Stop loop error:', err)
+        })
     })
 }

@@ -1,12 +1,10 @@
 ﻿import React from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import { EditorView } from '@codemirror/view';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 import { EditorTab } from '@/types';
+import { getLanguageFromExtension } from '@/utils/language-map';
 
 interface WorkspaceEditorProps {
     activeTab: EditorTab | null;
-    editorExtensions: any[];
     updateTabContent: (value: string) => void;
     emptyState: React.ReactNode;
 }
@@ -21,7 +19,6 @@ interface WorkspaceEditorProps {
  */
 export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     activeTab,
-    editorExtensions,
     updateTabContent,
     emptyState
 }) => {
@@ -39,30 +36,14 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
 
     return (
         <div className="absolute inset-0 overflow-hidden">
-            <CodeMirror
+            <CodeEditor
                 value={activeTab.content}
-                height="100%"
-                style={{ height: '100%' }}
-                theme={oneDark}
-                extensions={editorExtensions}
-                onChange={updateTabContent}
-                basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLine: true,
-                    highlightSelectionMatches: true,
-                    foldGutter: true,
-                    drawSelection: true,
-                    dropCursor: true,
-                    allowMultipleSelections: true,
-                    indentOnInput: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: true,
-                    rectangularSelection: true,
-                    crosshairCursor: true,
-                    highlightActiveLineGutter: true,
-                }}
-                className="h-full w-full text-base font-mono"
+                language={getLanguageFromExtension(activeTab.name)}
+                onChange={(val) => updateTabContent(val || '')}
+                className="h-full w-full"
+                showMinimap={true}
+                fontSize={16}
+                initialLine={activeTab.initialLine}
             />
         </div>
     );

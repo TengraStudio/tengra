@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+﻿import React, { useState, memo } from 'react'
 import { useTranslation } from '@/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -27,11 +27,15 @@ interface ProjectsPageProps {
     quotas?: any
     codexUsage?: any
     settings?: any
+    sendMessage?: (content?: string) => void
+    messages?: any[]
+    isLoading?: boolean
 }
 
 export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     projects, onRefresh, selectedProject, onSelectProject, language, tabs, activeTabId, setTabs, setActiveTabId,
-    selectedProvider, selectedModel, onSelectModel, groupedModels, quotas, codexUsage, settings
+    selectedProvider, selectedModel, onSelectModel, groupedModels, quotas, codexUsage, settings,
+    sendMessage, messages, isLoading
 }) => {
     const { t } = useTranslation(language)
     const [searchQuery, setSearchQuery] = useState('')
@@ -43,9 +47,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     const [showWizard, setShowWizard] = useState(false)
 
     // Wizard Callbacks
-    const handleWizardCreate = async (path: string, name: string, description: string) => {
+    const handleWizardCreate = async (path: string, name: string, description: string, userMounts?: any[]) => {
         try {
-            const mounts = [{
+            const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
                 id: `local-${Date.now()}`,
                 name: name, // Use project name
                 type: 'local',
@@ -144,6 +148,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
             quotas={quotas}
             codexUsage={codexUsage}
             settings={settings}
+            sendMessage={sendMessage}
+            messages={messages}
+            isLoading={isLoading}
         />
     }
 
@@ -163,7 +170,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             {t('sidebar.projects')}
                         </h1>
                         <p className="text-muted-foreground mt-2 font-light">
-                            {t('projects.subtitle') || 'YÃ¶nettiÄŸiniz tÃ¼m Ã§alÄ±ÅŸma alanlarÄ±.'}
+                            {t('projects.subtitle')}
                         </p>
                     </div>
                 </div>
@@ -175,14 +182,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         className="h-12 px-6 bg-foreground text-background hover:bg-foreground/90 rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg shadow-black/5"
                     >
                         <Plus className="w-5 h-5" />
-                        {t('projects.newProjectButton') || 'Yeni Proje'}
+                        {t('projects.newProjectButton')}
                     </button>
 
                     <div className="flex-1 relative group max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
                         <input
                             type="text"
-                            placeholder={t('projects.searchPlaceholder') || 'Projelerde ara...'}
+                            placeholder={t('projects.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-muted/30 border-none rounded-lg h-12 pl-11 pr-4 text-foreground focus:ring-1 focus:ring-foreground/20 transition-all placeholder:text-muted-foreground/40"
@@ -202,8 +209,12 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             className="group bg-card border border-border/60 hover:border-foreground/20 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-black/5 flex flex-col gap-4 relative overflow-hidden"
                         >
                             <div className="flex items-start justify-between">
-                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                    <Terminal className="w-5 h-5" />
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-white/5">
+                                    {project.logo ? (
+                                        <img src={`safe-file://${project.logo}`} alt={project.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Terminal className="w-5 h-5" />
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -238,14 +249,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors text-left"
                                                     >
                                                         <Pencil className="w-3.5 h-3.5 text-blue-400" />
-                                                        DÃ¼zenle
+                                                        {t('common.edit')}
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleDeleteClick(project, e)}
                                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-red-500/10 text-red-400 transition-colors text-left"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
-                                                        Sil
+                                                        {t('common.delete')}
                                                     </button>
                                                 </div>
                                             </>
@@ -269,7 +280,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                     {new Date(project.createdAt).toLocaleDateString()}
                                 </span>
                                 <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-[10px] font-bold tracking-wider", project.status === 'active' ? "text-emerald-500" : "")}>
-                                    {project.status || 'Active'}
+                                    {project.status || t('common.active')}
                                 </span>
                             </div>
                         </motion.div>
@@ -278,24 +289,24 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     {/* Edit Modal */}
                     <AnimatePresence>
                         {editingProject && (
-                            <Modal isOpen={!!editingProject} onClose={() => setEditingProject(null)} title="Projeyi DÃ¼zenle">
+                            <Modal isOpen={!!editingProject} onClose={() => setEditingProject(null)} title={t('projects.editProject')}>
                                 <div className="space-y-4 pt-2">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-medium text-muted-foreground uppercase">Proje AdÄ±</label>
+                                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.nameLabel')}</label>
                                         <input
                                             value={editForm.title}
                                             onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
-                                            placeholder="Proje adÄ±..."
+                                            placeholder={t('projects.namePlaceholder')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-medium text-muted-foreground uppercase">AÃ§Ä±klama</label>
+                                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.description')}</label>
                                         <textarea
                                             value={editForm.description}
                                             onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-h-[80px] resize-none"
-                                            placeholder="Proje aÃ§Ä±klamasÄ±..."
+                                            placeholder={t('projects.projectDescPlaceholder')}
                                         />
                                     </div>
                                     <div className="flex justify-end gap-2 pt-2">
@@ -303,14 +314,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                             onClick={() => setEditingProject(null)}
                                             className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
                                         >
-                                            Ä°ptal
+                                            {t('common.cancel')}
                                         </button>
                                         <button
                                             onClick={handleUpdateProject}
                                             disabled={!editForm.title.trim()}
                                             className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                                         >
-                                            Kaydet
+                                            {t('common.save')}
                                         </button>
                                     </div>
                                 </div>
@@ -321,24 +332,24 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     {/* Delete Modal */}
                     <AnimatePresence>
                         {deletingProject && (
-                            <Modal isOpen={!!deletingProject} onClose={() => setDeletingProject(null)} title="Projeyi Sil">
+                            <Modal isOpen={!!deletingProject} onClose={() => setDeletingProject(null)} title={t('projects.deleteProject')}>
                                 <div className="space-y-4 pt-2">
                                     <p className="text-sm text-muted-foreground">
-                                        Bu projeyi silmek Ã¼zeresiniz: <span className="text-foreground font-medium">{deletingProject.title}</span>.
-                                        Bu iÅŸlem sadece Ã§alÄ±ÅŸma alanÄ±ndan kaldÄ±rÄ±r, diskteki dosyalar silinmez.
+                                        {t('projects.deleteConfirmation')} <span className="text-foreground font-medium">{deletingProject.title}</span>.
+                                        {t('projects.deleteWarning')}
                                     </p>
                                     <div className="flex justify-end gap-2 pt-2">
                                         <button
                                             onClick={() => setDeletingProject(null)}
                                             className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
                                         >
-                                            Ä°ptal
+                                            {t('common.cancel')}
                                         </button>
                                         <button
                                             onClick={handleDeleteProject}
                                             className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                         >
-                                            Sil
+                                            {t('common.delete')}
                                         </button>
                                     </div>
                                 </div>
@@ -352,14 +363,15 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         onClose={() => setShowWizard(false)}
                         onProjectCreated={handleWizardCreate}
                         onImportProject={handleImportProject}
+                        language={language}
                     />
 
 
                     {filteredProjects.length === 0 && (
                         <div className="col-span-full py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
                             <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                            <p className="text-muted-foreground font-medium">Proje bulunamadÄ±.</p>
-                            <p className="text-xs text-muted-foreground/50 mt-1">Yeni bir proje oluÅŸturarak baÅŸlayÄ±n.</p>
+                            <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
+                            <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>
                         </div>
                     )}
                 </div>
@@ -367,3 +379,5 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
         </div >
     )
 }
+
+export const MemoizedProjectsPage = memo(ProjectsPage)

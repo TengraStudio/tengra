@@ -106,4 +106,31 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
         const success = sshService.sendShellData(payload.connectionId, payload.data)
         return { success }
     })
+
+    ipcMain.handle('ssh:getSystemStats', async (_event, connectionId: string) => {
+        return await sshService.getSystemStats(connectionId)
+    })
+
+    ipcMain.handle('ssh:getInstalledPackages', async (_event, connectionId: string, manager?: 'apt' | 'npm' | 'pip') => {
+        return await sshService.getInstalledPackages(connectionId, manager)
+    })
+
+    ipcMain.handle('ssh:getLogFiles', async (_event, connectionId: string) => {
+        return await sshService.getLogFiles(connectionId)
+    })
+
+    ipcMain.handle('ssh:readLogFile', async (_event, payload: { connectionId: string; path: string; lines?: number }) => {
+        return await sshService.readLogFile(payload.connectionId, payload.path, payload.lines)
+    })
+    ipcMain.handle('ssh:getProfiles', async () => {
+        return await sshService.getSavedProfiles()
+    })
+
+    ipcMain.handle('ssh:saveProfile', async (_event, profile: SSHConnection) => {
+        return await sshService.saveProfile(profile)
+    })
+
+    ipcMain.handle('ssh:deleteProfile', async (_event, id: string) => {
+        return await sshService.deleteProfile(id)
+    })
 }

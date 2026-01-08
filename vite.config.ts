@@ -37,7 +37,12 @@ export default defineConfig({
                                 'crypto',
                                 'fs/promises',
                                 'sql.js',
-                                'ssh2'
+                                'ssh2',
+                                '@lancedb/lancedb',
+                                'apache-arrow',
+                                'ws',
+                                'bufferutil',
+                                'utf-8-validate'
                             ]
                         }
                     }

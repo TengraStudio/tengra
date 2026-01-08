@@ -1,9 +1,10 @@
-﻿import React from 'react';
+﻿import { memo } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface ChatHeaderProps {
     searchTerm: string;
     setSearchTerm: (value: string) => void;
+    t: (key: string) => string;
 }
 
 /**
@@ -11,10 +12,11 @@ interface ChatHeaderProps {
  * 
  * Provides a search bar to filter messages within the current chat.
  */
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
+export const ChatHeader = memo(({
     searchTerm,
-    setSearchTerm
-}) => {
+    setSearchTerm,
+    t
+}: ChatHeaderProps) => {
     return (
         <div className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-background/30 backdrop-blur-md shrink-0">
             <div className="flex items-center gap-4 flex-1">
@@ -22,7 +24,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
-                        placeholder="Mesajlarda ara..."
+                        placeholder={t('chat.searchMessages')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-white/5 border border-white/5 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30"
@@ -39,4 +41,4 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </div>
         </div>
     );
-};
+});

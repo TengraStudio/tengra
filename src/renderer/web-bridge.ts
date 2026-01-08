@@ -43,7 +43,9 @@ const webBridge: ElectronAPI = {
     code: {
         scanTodos: async () => [],
         findSymbols: async () => [],
-        searchFiles: async () => []
+        searchFiles: async () => [],
+        indexProject: async () => { },
+        queryIndexedSymbols: async () => []
     },
 
     getProxyModels: async () => [],
@@ -55,8 +57,8 @@ const webBridge: ElectronAPI = {
 
     getModels: async () => [{ name: 'llama3.1:8b', details: { family: 'llama' } }],
     chat: async (_messages, _model) => ({}),
-    chatStream: async (_messages, _model, _tools, _provider, _options) => ({}),
-    chatOpenAI: async (_messages, _model, _tools, _provider, _options) => ({}),
+    chatStream: async (_messages, _model, _tools, _provider, _options, _chatId, _projectId) => ({}),
+    chatOpenAI: async (_messages, _model, _tools, _provider, _options, _projectId) => ({}),
     abortChat: () => { },
     onStreamChunk: () => { },
     removeStreamChunkListener: () => { },
@@ -152,34 +154,44 @@ const webBridge: ElectronAPI = {
         updateProject: async () => { },
         deleteProject: async () => { },
         archiveProject: async () => { },
-        createFolder: async (name: string) => {
-            const f = { id: Date.now().toString(), name, createdAt: Date.now(), updatedAt: Date.now() }
+        createFolder: async (name: string, color?: string) => {
+            const f = { id: Date.now().toString(), name, color: color || '#3b82f6', createdAt: Date.now(), updatedAt: Date.now() }
             mockDB.folders.push(f)
             saveDB()
-            // return f // void return signature
+            return f
         },
         deleteFolder: async (id: string) => { mockDB.folders = mockDB.folders.filter((f: any) => f.id !== id); saveDB(); },
-        updateFolder: async (id: string, name: string) => {
+        updateFolder: async (id: string, updates: any) => {
             const idx = mockDB.folders.findIndex((f: any) => f.id === id)
-            if (idx !== -1) { mockDB.folders[idx] = { ...mockDB.folders[idx], name, updatedAt: Date.now() }; saveDB() }
-            return { success: true }
+            if (idx !== -1) { mockDB.folders[idx] = { ...mockDB.folders[idx], ...updates, updatedAt: Date.now() }; saveDB() }
         },
-        getFolders: async () => mockDB.folders
+        getFolders: async () => mockDB.folders,
+        createPrompt: async () => ({ id: Date.now().toString(), title: '', content: '', tags: [], createdAt: Date.now() }),
+        deletePrompt: async () => { },
+        updatePrompt: async () => { },
+        getPrompts: async () => []
     },
 
     council: {
-        runSession: async (_projectId: string, _taskId: string) => { console.log('Mock: runSession', _projectId, _taskId) },
-        onUpdate: (_callback: (data: any) => void) => { console.log('Mock: onUpdate') },
-        removeUpdateListener: () => { },
-        approvePlan: async (_sessionId: string, _approved: boolean, _editedPlan?: string) => true,
-        generateAgents: async (_taskDescription: string) => [],
-        getSessions: async (_projectId?: string) => [],
-        getSessionById: async (_id: string) => null
+        createSession: async (_goal: string) => ({ id: Date.now().toString() }),
+        getSessions: async () => [],
+        getSession: async (_id: string) => null,
+        addLog: async () => { },
+        runStep: () => { },
+        startLoop: () => { },
+        stopLoop: () => { }
+    },
+
+    agent: {
+        getAll: async () => [
+            { id: '1', name: 'TechLead', description: 'Mock Agent', systemPrompt: '', tools: [], parentModel: 'gpt-4o' }
+        ],
+        get: async (_id: string) => null
     },
 
 
     ssh: {
-        connect: async () => ({ success: true }),
+        connect: async () => ({ success: true, id: 'mock-id' }),
         disconnect: async () => ({ success: true }),
         execute: async () => ({}),
         upload: async () => ({ success: true }),
@@ -202,7 +214,14 @@ const webBridge: ElectronAPI = {
         removeAllListeners: () => { },
         onShellData: () => { },
         shellStart: async () => ({ success: true }),
-        shellWrite: async () => ({ success: true })
+        shellWrite: async () => ({ success: true }),
+        getSystemStats: async () => ({ cpu: 0, memory: { total: 0, used: 0, free: 0 }, disk: [], uptime: '0s' }),
+        getInstalledPackages: async (_id, _manager) => [],
+        getLogFiles: async () => [],
+        readLogFile: async () => '',
+        getProfiles: async () => [],
+        saveProfile: async () => true,
+        deleteProfile: async () => true
     },
 
     executeTools: async () => ({}),
@@ -233,6 +252,7 @@ const webBridge: ElectronAPI = {
         resize: async () => true,
         kill: async () => true,
         getSessions: async () => [],
+        readBuffer: async () => '',
         onData: () => { },
         onExit: () => { },
         removeAllListeners: () => { }
@@ -245,10 +265,7 @@ const webBridge: ElectronAPI = {
         reveal: async () => true
     },
 
-    speak: async () => { },
-    stopSpeaking: async () => { },
-    onSpeakBoundary: () => { },
-    onSpeakEnd: () => { },
+
 
     exportChatToPdf: async () => ({ success: true }),
 
@@ -273,7 +290,7 @@ const webBridge: ElectronAPI = {
     saveSettings: async (s) => { localStorage.setItem('ai-chat-settings', JSON.stringify(s)); return s },
 
     huggingface: {
-        searchModels: async () => [],
+        searchModels: async (_q, _l, _p, _s) => ({ models: [], total: 0 }),
         getFiles: async () => [],
         downloadFile: async () => ({ success: true }),
         onDownloadProgress: () => { },
@@ -281,9 +298,14 @@ const webBridge: ElectronAPI = {
     },
 
     project: {
-        analyze: async () => ({}),
+        analyze: async (_rootPath: string, _projectId?: string) => ({}),
         saveState: async () => true,
-        loadState: async () => ({})
+        loadState: async () => ({}),
+        analyzeIdentity: async () => ({ suggestedPrompts: [], colors: [] }),
+        generateLogo: async () => '',
+        getCompletion: async () => '',
+        applyLogo: async () => '',
+        analyzeDirectory: async () => ({ hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 } })
     },
 
     process: {
@@ -318,6 +340,10 @@ const webBridge: ElectronAPI = {
         console.log('[deleteProxyAuthFile] Deleting auth file:', name)
         return { success: true }
     },
+
+
+
+    on: () => () => { }
 }
 
 export default webBridge

@@ -35,7 +35,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
 
     ipcMain.handle('shell:openExternal', async (_event, url) => {
         console.log('[MAIN] shell:openExternal handle called with URL:', url)
-        appLogger.info(`shell:openExternal handle called with URL: ${url}`, { source: 'window-ipc' })
+        appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${url}`)
 
         // Handle safe-file:// protocol for local images
         if (url.startsWith('safe-file://')) {

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, isValidElement } from 'react'
+﻿import { useState, useEffect, useMemo, isValidElement, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -8,7 +8,7 @@ import mermaid from 'mermaid'
 import { useTranslation, Language } from '@/i18n'
 import { cn } from '@/lib/utils'
 import './MessageBubble.css'
-import { Copy, Check, ChevronDown, ChevronUp, Eye, Code2, AlertCircle, Clock, Volume2, VolumeX, Brain, Sparkles, Smile, Bookmark, ThumbsUp, ThumbsDown, ListTodo } from 'lucide-react'
+import { Copy, Check, ChevronDown, ChevronUp, Eye, Code2, AlertCircle, Clock, Volume2, VolumeX, Brain, Sparkles, Smile, Bookmark, ThumbsUp, ThumbsDown, ListTodo, FileCode } from 'lucide-react'
 import { Highlight, themes } from 'prism-react-renderer'
 import LogoAntigravity from '@/assets/antigravity.svg'
 import LogoClaude from '@/assets/claude.svg'
@@ -28,7 +28,7 @@ mermaid.initialize({
 })
 
 // Copy Button Component
-function CopyButton({ text }: { text: string }) {
+const CopyButton = memo(({ text, t }: { text: string, t: (key: string) => string }) => {
     const [copied, setCopied] = useState(false)
 
     const handleCopy = async () => {
@@ -38,30 +38,30 @@ function CopyButton({ text }: { text: string }) {
     }
 
     return (
-        <button onClick={handleCopy} className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-zinc-400 hover:text-white" title="Kopyala">
+        <button onClick={handleCopy} className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('messageBubble.copy')}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     )
-}
+})
 
-function BookmarkButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+const BookmarkButton = memo(({ active, onClick, t }: { active: boolean; onClick: () => void, t: (key: string) => string }) => {
     return (
-        <button onClick={onClick} className={cn("p-1.5 hover:bg-white/10 rounded-md transition-all duration-300", active ? "text-amber-400 bg-amber-400/10 shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "text-zinc-400 hover:text-white")} title={active ? "Yer iÅŸaretini kaldÄ±r" : "Yer iÅŸareti ekle"}>
+        <button onClick={onClick} className={cn("p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300", active ? "text-amber-400 bg-amber-400/10 shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "text-muted-foreground hover:text-foreground")} title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}>
             <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} />
         </button>
     )
-}
+})
 
-function RatingButtons({ rating, onRate }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void }) {
+const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void, t: (key: string) => string }) => {
     return (
-        <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1">
+        <div className="flex items-center gap-1 border-l border-border/50 pl-2 ml-1">
             <button
                 onClick={() => onRate(rating === 1 ? 0 : 1)}
                 className={cn(
                     "p-1.5 rounded-md transition-all duration-200",
-                    rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/5"
+                    rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-400/5"
                 )}
-                title="Ä°yi cevap"
+                title={t('messageBubble.goodAnswer')}
             >
                 <ThumbsUp className={cn("w-3.5 h-3.5", rating === 1 && "fill-current")} />
             </button>
@@ -69,37 +69,64 @@ function RatingButtons({ rating, onRate }: { rating?: 1 | -1 | 0; onRate: (val: 
                 onClick={() => onRate(rating === -1 ? 0 : -1)}
                 className={cn(
                     "p-1.5 rounded-md transition-all duration-200",
-                    rating === -1 ? "text-red-400 bg-red-400/10" : "text-zinc-400 hover:text-red-400 hover:bg-red-400/5"
+                    rating === -1 ? "text-red-400 bg-red-400/10" : "text-muted-foreground hover:text-red-400 hover:bg-red-400/5"
                 )}
-                title="KÃ¶tÃ¼ cevap"
+                title={t('messageBubble.badAnswer')}
             >
                 <ThumbsDown className={cn("w-3.5 h-3.5", rating === -1 && "fill-current")} />
             </button>
         </div>
     )
-}
+})
 
 // Copy as Markdown Button Component (#55)
-function CopyMarkdownButton({ text, role }: { text: string; role: string }) {
+const CopyMarkdownButton = memo(({ text, role, t }: { text: string; role: string, t: (key: string) => string }) => {
     const [copied, setCopied] = useState(false)
 
     const handleCopy = async () => {
-        const markdown = `**${role === 'user' ? 'KullanÄ±cÄ±' : 'Asistan'}:**\n\n${text}`
+        const markdown = `**${role === 'user' ? t('messageBubble.user') : t('messageBubble.assistant')}:**\n\n${text}`
         await navigator.clipboard.writeText(markdown)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
     }
 
     return (
-        <button onClick={handleCopy} className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-zinc-400 hover:text-white" title="Markdown olarak kopyala">
+        <button onClick={handleCopy} className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('messageBubble.copyAsMarkdown')}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Code2 className="w-3.5 h-3.5" />}
         </button>
     )
-}
+})
 
+// Copy as HTML Button Component
+const CopyHtmlButton = memo(({ text, t }: { text: string, t: (key: string) => string }) => {
+    const [copied, setCopied] = useState(false)
 
+    const handleCopy = async () => {
+        // Simple html conversion
+        let html = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+            .replace(/\n/g, '<br/>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
 
-const MermaidDiagram = ({ code }: { code: string }) => {
+        await navigator.clipboard.writeText(html)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
+
+    return (
+        <button onClick={handleCopy} className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('messageBubble.copyAsHtml')}>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Code2 className="w-3.5 h-3.5 rotate-90" />}
+        </button>
+    )
+})
+
+const MermaidDiagram = memo(({ code }: { code: string }) => {
     const [svg, setSvg] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
     const id = useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, [])
@@ -118,18 +145,18 @@ const MermaidDiagram = ({ code }: { code: string }) => {
     }, [code, id])
 
     if (error) return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>
-    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />
-}
+    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />
+})
 
 // Enhanced Typing Indicator (#45)
-const TypingDots = () => (
+const TypingDots = ({ t }: { t: (key: string) => string }) => (
     <div className="flex gap-2 items-center px-2 py-3">
         <div className="flex gap-1.5 items-center">
             <div className="w-2 h-2 bg-gradient-to-r from-primary to-purple-500 rounded-full animate-bounce [animation-delay:-0.3s] shadow-lg shadow-primary/30" />
             <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce [animation-delay:-0.15s] shadow-lg shadow-purple-500/30" />
             <div className="w-2 h-2 bg-gradient-to-r from-pink-500 to-primary rounded-full animate-bounce shadow-lg shadow-pink-500/30" />
         </div>
-        <span className="text-[10px] text-muted-foreground/50 font-medium animate-pulse">dÃ¼ÅŸÃ¼nÃ¼yor...</span>
+        <span className="text-[10px] text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
     </div>
 )
 
@@ -139,14 +166,14 @@ const ResponseProgress = () => (
     </div>
 )
 
-const ImageSkeleton = () => (
-    <div className="w-[300px] h-[300px] rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-slide-shimmer" />
-        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center animate-pulse">
+const ImageSkeleton = ({ t }: { t: (key: string) => string }) => (
+    <div className="w-[300px] h-[300px] rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
+        <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
             <Sparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">OrbÄ±t Ã‡Ä±zÄ±yor</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.orbitDrawing')}</div>
             <div className="flex gap-1 justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />
@@ -172,9 +199,12 @@ interface MessageProps {
     onApprovePlan?: () => void
     streamingSpeed?: number | null
     streamingReasoning?: string
+    id?: string
+    isFocused?: boolean
+    onSourceClick?: (path: string) => void
 }
 
-export function MessageBubble({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning }: MessageProps) {
+export const MessageBubble = memo(function MessageBubble({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) {
     const { t } = useTranslation(language)
     const isUser = message.role === 'user'
     const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
@@ -270,7 +300,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
         }
         if (p.includes('github') || p.includes('copilot')) {
             return (
-                <div className="w-6 h-6 rounded-md bg-black border border-white/5 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1">
+                <div className="w-6 h-6 rounded-md bg-black border border-border/50 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1">
                     <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt="Copilot" />
                 </div>
             )
@@ -346,13 +376,13 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
             if (jsonMatch) {
                 const errData = JSON.parse(jsonMatch[0]);
                 return {
-                    message: errData.error?.message || errData.message || 'KullanÄ±m sÄ±nÄ±rÄ±na ulaÅŸÄ±ldÄ±',
+                    message: errData.error?.message || errData.message || t('messageBubble.quotaExceeded'),
                     resets_at: errData.error?.resets_at || errData.resets_at,
                     model: errData.error?.model || errData.model
                 };
             }
         } catch { }
-        return { message: 'KullanÄ±m sÄ±nÄ±rÄ±na ulaÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin.', resets_at: null, model: null };
+        return { message: t('messageBubble.quotaMessage'), resets_at: null, model: null };
     };
 
     const quotaDetails = is429Error ? parseQuotaError() : null;
@@ -363,13 +393,13 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
             {message.images.map((img, i) => (
                 typeof img !== 'string' ? null :
                     img === '__LOADING_IMAGE__' ? (
-                        <ImageSkeleton key={`skel-${i}`} />
+                        <ImageSkeleton key={`skel-${i}`} t={t} />
                     ) : (
                         <div key={i} className="relative group/img-container">
                             <img
                                 src={img}
                                 alt={`Attached ${i + 1}`}
-                                className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-white/10 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl"
+                                className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl"
                                 onClick={() => window.open(img, '_blank')}
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img-container:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
@@ -391,27 +421,27 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                             <AlertCircle className="w-5 h-5" />
                         </div>
                         <div>
-                            <div className="font-bold text-sm uppercase tracking-tight">Kota SÄ±nÄ±rÄ± AÅŸÄ±ldÄ±</div>
+                            <div className="font-bold text-sm uppercase tracking-tight">{t('messageBubble.quotaExceeded')}</div>
                             {quotaDetails?.model && (
                                 <div className="text-xs opacity-70 mt-0.5">{quotaDetails.model}</div>
                             )}
                         </div>
                     </div>
                     <p className="text-sm opacity-90 leading-relaxed mb-3">
-                        {quotaDetails?.message || 'KullanÄ±m limitinize ulaÅŸtÄ±nÄ±z. LÃ¼tfen sÄ±fÄ±rlanma sÃ¼resini bekleyin veya farklÄ± bir model deneyin.'}
+                        {quotaDetails?.message || t('messageBubble.quotaMessage')}
                     </p>
                     {quotaDetails?.resets_at && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-xs font-medium">
                             <Clock className="w-3.5 h-3.5" />
-                            <span>SÄ±fÄ±rlanma: {new Date(quotaDetails.resets_at * 1000).toLocaleString()}</span>
+                            <span>{t('messageBubble.resetsAt')} {new Date(quotaDetails.resets_at * 1000).toLocaleString()}</span>
                         </div>
                     )}
                     <div className="mt-3 flex gap-2">
                         <button
-                            className="px-3 py-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                            className="px-3 py-1.5 text-xs rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors"
                             onClick={() => window.electron.openExternal('https://ai.google.dev/pricing')}
                         >
-                            KotalarÄ± Ä°ncele
+                            {t('messageBubble.checkQuotas')}
                         </button>
                     </div>
                 </div>
@@ -423,7 +453,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                 onClick={() => setShowRawMarkdown(!showRawMarkdown)}
                                 className={cn(
                                     "flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors",
-                                    showRawMarkdown ? "bg-primary/20 text-primary" : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                                    showRawMarkdown ? "bg-primary/20 text-primary" : "bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                 )}
                             >
                                 {showRawMarkdown ? <Eye className="w-3 h-3" /> : <Code2 className="w-3 h-3" />}
@@ -433,11 +463,11 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                     )}
 
                     {!thought && !displayContent && (!message.images || message.images.length === 0) ? (
-                        isStreaming ? <TypingDots /> : <span className="italic opacity-50">...</span>
+                        isStreaming ? <TypingDots t={t} /> : <span className="italic opacity-50">...</span>
                     ) : (
                         displayContent ? (
                             showRawMarkdown ? (
-                                <pre className="whitespace-pre-wrap font-mono text-sm bg-black/30 rounded-lg p-3 border border-white/5 overflow-x-auto text-foreground/90 leading-relaxed">
+                                <pre className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
                                     {visibleContent}
                                 </pre>
                             ) : (
@@ -461,15 +491,15 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                                             <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">{match[1] || 'code'}</span>
                                                             <div className="flex items-center gap-1.5">
                                                                 {isSpeaking ? (
-                                                                    <button onClick={onStop} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-primary" title="Durdur">
+                                                                    <button onClick={onStop} className="p-1 px-1.5 hover:bg-accent/50 rounded-md transition-colors text-primary" title={t('messageBubble.stop')}>
                                                                         <VolumeX className="w-3.5 h-3.5" />
                                                                     </button>
                                                                 ) : (
-                                                                    <button onClick={() => onSpeak?.(codeString)} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground" title="Sesli Oku">
+                                                                    <button onClick={() => onSpeak?.(codeString)} className="p-1 px-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('messageBubble.speakAloud')}>
                                                                         <Volume2 className="w-3.5 h-3.5" />
                                                                     </button>
                                                                 )}
-                                                                <CopyButton text={codeString} />
+                                                                <CopyButton text={codeString} t={t} />
                                                             </div>
                                                         </div>
                                                         <Highlight theme={themes.vsDark} code={codeString} language={match[1] || 'text'}>
@@ -491,7 +521,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                             },
                                             img: ({ src, alt }) => (
                                                 <span className="block my-2 relative group/image">
-                                                    <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => src && window.electron.openExternal(src)} />
+                                                    <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => src && window.electron.openExternal(src)} />
                                                     {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
                                                     {src && !isUser && onCodeConvert && (
                                                         <button
@@ -499,10 +529,10 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                                                 e.stopPropagation()
                                                                 onCodeConvert(src)
                                                             }}
-                                                            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group-hover/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                                                            className="absolute top-2 right-2 bg-background/60 hover:bg-background/80 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group-hover/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                                         >
                                                             <Code2 className="w-3.5 h-3.5" />
-                                                            Koda Ã‡evir
+                                                            {t('messageBubble.convertToCode')}
                                                         </button>
                                                     )}
                                                 </span>
@@ -531,8 +561,33 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                 </>
             )}
 
+            {message.sources && message.sources.length > 0 && !isUser && (
+                <div className="flex flex-wrap gap-2 mt-3 animate-fade-in">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-[10px] text-primary font-bold uppercase tracking-wider mb-1">
+                        <Sparkles className="w-3 h-3" />
+                        {t('chat.sources')}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {message.sources.map((path, idx) => {
+                            const fileName = path.split(/[\\/]/).pop() || path
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => onSourceClick?.(path)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all text-xs text-muted-foreground hover:text-foreground group/chip"
+                                    title={path}
+                                >
+                                    <FileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" />
+                                    <span>{fileName}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
             {isLongContent && !isUser && !is429Error && (
-                <button onClick={() => setIsContentExpanded(!isContentExpanded)} className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all">
+                <button onClick={() => setIsContentExpanded(!isContentExpanded)} className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all">
                     {isContentExpanded ? <><ChevronUp className="w-3.5 h-3.5" /> {t('chat.collapse')}</> : <><ChevronDown className="w-3.5 h-3.5" /> {lineCount - COLLAPSE_THRESHOLD} {t('chat.moreLines')}</>}
                 </button>
             )}
@@ -540,7 +595,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
     )
 
     return (
-        <div className={cn("flex w-full animate-fade-in group", isUser ? "justify-end" : "justify-start")}>
+        <div id={id} className={cn("flex w-full animate-fade-in group transition-all duration-300 rounded-2xl p-2", isUser ? "justify-end" : "justify-start", isFocused && "bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5")}>
             <div className={cn("flex max-w-[85%] md:max-w-[75%] gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
                 {!isUser && getAssistantLogo()}
                 <div className={cn("flex flex-col gap-1 min-w-0", isUser ? "items-end" : "items-start")}>
@@ -578,7 +633,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
                                     >
                                         <Check className="w-3.5 h-3.5" />
-                                        Plani Onayla ve BaÅŸlat
+                                        {t('messageBubble.approvePlan')}
                                     </button>
                                 </div>
                             )}
@@ -597,24 +652,24 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                     "flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 select-none",
                                     isThoughtExpanded
                                         ? "bg-primary/10 border-primary/20 text-primary shadow-sm shadow-primary/10"
-                                        : "bg-white/5 border-white/5 text-muted-foreground/60 hover:bg-white/10 hover:border-white/10 hover:text-primary/70"
+                                        : "bg-accent/30 border-border/50 text-muted-foreground/60 hover:bg-accent/50 hover:border-border hover:text-primary/70"
                                 )}>
                                     <div className={cn(
                                         "p-1 rounded-full",
-                                        isThoughtExpanded ? "bg-primary/20" : "bg-white/5"
+                                        isThoughtExpanded ? "bg-primary/20" : "bg-accent/30"
                                     )}>
                                         <Brain className={cn("w-3.5 h-3.5", isThoughtExpanded ? "animate-pulse" : "")} />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? 'OrbÄ±t Dusunuyor' : 'Dusunceyi Goster'}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? t('messageBubble.orbitThinking') : t('messageBubble.showThought')}</span>
                                     <Sparkles className={cn("w-3 h-3 transition-opacity duration-300", isThoughtExpanded ? "opacity-100" : "opacity-0")} />
-                                    <span className={cn("text-[8px] transition-transform duration-300 ml-1", isThoughtExpanded ? "rotate-180" : "rotate-0")}>â–¼</span>
+                                    <span className={cn("text-[8px] transition-transform duration-300 ml-1", isThoughtExpanded ? "rotate-180" : "rotate-0")}>▼</span>
                                 </div>
                             </button>
                             {isThoughtExpanded && (
                                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="relative pl-4 border-l-2 border-primary/20 py-1">
                                         <div className="absolute -left-[2px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
-                                        <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-white/[0.02]">
+                                        <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-border/20">
                                             <div className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">
                                                 {thought}
                                             </div>
@@ -630,23 +685,24 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                         {!isUser && displayContent && !is429Error && (
                             <div className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
                                 {isSpeaking ? (
-                                    <button onClick={onStop} className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-primary transition-all border border-border/50 backdrop-blur-sm" title="Durdur">
+                                    <button onClick={onStop} className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-primary transition-all border border-border/50 backdrop-blur-sm" title={t('messageBubble.stop')}>
                                         <VolumeX className="w-3.5 h-3.5" />
                                     </button>
                                 ) : (
-                                    <button onClick={() => onSpeak?.(displayContent)} className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm" title="Sesli Oku">
+                                    <button onClick={() => onSpeak?.(displayContent)} className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm" title={t('messageBubble.speakAloud')}>
                                         <Volume2 className="w-3.5 h-3.5" />
                                     </button>
                                 )}
-                                <CopyButton text={displayContent} />
-                                <CopyMarkdownButton text={displayContent} role={message.role} />
-                                <BookmarkButton active={!!message.isBookmarked} onClick={() => onBookmark?.(!message.isBookmarked)} />
+                                <CopyButton text={displayContent} t={t} />
+                                <CopyMarkdownButton text={displayContent} role={message.role} t={t} />
+                                <CopyHtmlButton text={displayContent} t={t} />
+                                <BookmarkButton active={!!message.isBookmarked} onClick={() => onBookmark?.(!message.isBookmarked)} t={t} />
                                 <div className="relative group/react">
-                                    <button className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm" title="Tepki Ver">
+                                    <button className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm" title={t('messageBubble.react')}>
                                         <Smile className="w-3.5 h-3.5" />
                                     </button>
                                     <div className="absolute bottom-full mb-2 bg-[#1a1b26] border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom">
-                                        {['ğŸ‘', 'ğŸ‘', 'â¤ï¸', 'ğŸ‰', 'ğŸš€'].map(emoji => (
+                                        {['👍', '👎', '❤️', '🎉', '🚀'].map(emoji => (
                                             <button
                                                 key={emoji}
                                                 onClick={() => onReact?.(emoji)}
@@ -657,7 +713,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                                         ))}
                                     </div>
                                 </div>
-                                {onRate && <RatingButtons rating={message.rating} onRate={onRate} />}
+                                {onRate && <RatingButtons rating={message.rating} onRate={onRate} t={t} />}
                             </div>
                         )}
                     </div>
@@ -678,7 +734,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                     {/* Message Footer: Timestamp & Token Count (#51, #61) */}
                     {!isUser && displayContent && !is429Error && (
                         <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/40 font-medium">
-                            <span>{message.timestamp ? new Date(message.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                            <span>{message.timestamp ? new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                             <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
                             <span>~{Math.ceil(displayContent.length / 4)} token</span>
                             {message.model && (
@@ -696,7 +752,7 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
                             {message.isBookmarked && (
                                 <>
                                     <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-                                    <span className="text-amber-400/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /> Favori</span>
+                                    <span className="text-amber-400/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /> {t('messageBubble.favorite')}</span>
                                 </>
                             )}
                             {isStreaming && streamingSpeed !== null && streamingSpeed !== undefined && (
@@ -711,4 +767,4 @@ export function MessageBubble({ message, isLast, backend, isStreaming, language,
             </div>
         </div>
     )
-}
+})

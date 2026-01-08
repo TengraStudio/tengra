@@ -18,29 +18,32 @@ export function installRendererLogger() {
     }
 
     const send = (level: LogLevel, args: unknown[]) => {
+        // Temporarily sending all logs to main for debugging
+        // if (level === 'error' || level === 'warn') {
         const message = formatArgs(args)
         logger.write(level, message)
+        // }
     }
 
     console.debug = (...args: unknown[]) => {
-        send('debug', args)
         original.debug(...args)
+        send('debug', args)
     }
     console.log = (...args: unknown[]) => {
-        send('info', args)
         original.log(...args)
+        send('info', args)
     }
     console.info = (...args: unknown[]) => {
-        send('info', args)
         original.info(...args)
+        send('info', args)
     }
     console.warn = (...args: unknown[]) => {
-        send('warn', args)
         original.warn(...args)
+        send('warn', args)
     }
     console.error = (...args: unknown[]) => {
-        send('error', args)
         original.error(...args)
+        send('error', args)
     }
 
     window.addEventListener('error', (event) => {
@@ -68,9 +71,9 @@ function formatValue(value: unknown): string {
     if (typeof value === 'string') {
         return value
     }
-    try {
-        return JSON.stringify(value)
-    } catch {
-        return String(value)
-    }
+    // DO NOT JSON.stringify in the renderer's hot path for regular logs.
+    // This is extremely expensive and blocks the main thread.
+    // If it's an object and we really need it in the main log, 
+    // we should only do it for errors/warnings or specific whitelisted cases.
+    return '[Object]'
 }

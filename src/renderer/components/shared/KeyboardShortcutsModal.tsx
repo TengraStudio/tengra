@@ -1,5 +1,6 @@
 ﻿import React from 'react'
 import { X, Keyboard } from 'lucide-react'
+import { useTranslation, Language } from '@/i18n'
 
 interface ShortcutItemProps {
     keys: string[]
@@ -22,9 +23,12 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
 interface KeyboardShortcutsModalProps {
     isOpen: boolean
     onClose: () => void
+    language?: Language
 }
 
-export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
+export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose, language = 'tr' }) => {
+    const { t } = useTranslation(language)
+
     if (!isOpen) return null
 
     return (
@@ -34,7 +38,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 <div className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-white/5">
                     <div className="flex items-center gap-2">
                         <Keyboard className="w-5 h-5 text-purple-400" />
-                        <h2 className="text-lg font-medium text-white">Klavye KÄ±sayollarÄ±</h2>
+                        <h2 className="text-lg font-medium text-white">{t('shortcuts.title')}</h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white">
                         <X className="w-5 h-5" />
@@ -44,30 +48,30 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 {/* Content */}
                 <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
                     <div>
-                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">Genel</h3>
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">{t('shortcuts.general')}</h3>
                         <div className="bg-black/20 rounded-xl px-4 border border-white/5">
-                            <ShortcutItem keys={['Ctrl', 'N']} description="Yeni Sohbet" />
-                            <ShortcutItem keys={['Ctrl', ',']} description="AyarlarÄ± AÃ§" />
-                            <ShortcutItem keys={['Ctrl', 'K']} description="Komut Paleti" />
-                            <ShortcutItem keys={['?']} description="KÄ±sayollarÄ± GÃ¶ster" />
-                            <ShortcutItem keys={['Esc']} description="Kapat / Ä°ptal" />
+                            <ShortcutItem keys={['Ctrl', 'N']} description={t('shortcuts.newChat')} />
+                            <ShortcutItem keys={['Ctrl', ',']} description={t('shortcuts.openSettings')} />
+                            <ShortcutItem keys={['Ctrl', 'K']} description={t('shortcuts.commandPalette')} />
+                            <ShortcutItem keys={['?']} description={t('shortcuts.showShortcuts')} />
+                            <ShortcutItem keys={['Esc']} description={t('shortcuts.close')} />
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">Sohbet</h3>
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">{t('shortcuts.chat')}</h3>
                         <div className="bg-black/20 rounded-xl px-4 border border-white/5">
-                            <ShortcutItem keys={['Enter']} description="MesajÄ± GÃ¶nder" />
-                            <ShortcutItem keys={['Shift', 'Enter']} description="Yeni SatÄ±r" />
-                            <ShortcutItem keys={['Ctrl', 'L']} description="Sohbeti Temizle" />
-                            <ShortcutItem keys={['Ctrl', 'F']} description="Sohbet Ä°Ã§i Arama" />
+                            <ShortcutItem keys={['Enter']} description={t('shortcuts.sendMessage')} />
+                            <ShortcutItem keys={['Shift', 'Enter']} description={t('shortcuts.newLine')} />
+                            <ShortcutItem keys={['Ctrl', 'L']} description={t('shortcuts.clearChat')} />
+                            <ShortcutItem keys={['Ctrl', 'F']} description={t('shortcuts.searchChat')} />
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="p-4 bg-black/20 border-t border-white/5 text-center">
-                    <p className="text-[10px] text-zinc-500">Orbit - Klavye ile daha hÄ±zlÄ± Ã¼retim yapÄ±n.</p>
+                    <p className="text-[10px] text-zinc-500">{t('shortcuts.footer')}</p>
                 </div>
             </div>
         </div>

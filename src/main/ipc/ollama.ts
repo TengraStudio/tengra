@@ -38,6 +38,7 @@ export function registerOllamaIpc(options: {
                 provider: 'ollama',
                 name: m.name
             }));
+            console.log(`[Main:Ollama] Fetched ${localModels.length} local models`);
         } catch (e) {
             console.error('Failed to fetch local models', e);
         }

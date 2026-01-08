@@ -3,8 +3,8 @@ import { LLMService } from '../services/llm.service'
 import { HuggingFaceService } from '../services/huggingface.service'
 
 export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFaceService) {
-    ipcMain.handle('hf:search-models', async (_event, query: string, limit: number, page: number) => {
-        return await llmService.searchHFModels(query, limit, page)
+    ipcMain.handle('hf:search-models', async (_event, query: string, limit: number, page: number, sort: string) => {
+        return await llmService.searchHFModels(query, limit, page, sort)
     })
 
     ipcMain.handle('hf:get-files', async (_event, modelId: string) => {

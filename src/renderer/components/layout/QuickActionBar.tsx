@@ -1,13 +1,16 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, Copy, X, Sparkles } from 'lucide-react'
+import { useTranslation } from '@/i18n'
 
 interface QuickActionBarProps {
     onExplain: (text: string) => void
     onTranslate: (text: string) => void
+    language: 'tr' | 'en'
 }
 
-export function QuickActionBar({ onExplain, onTranslate }: QuickActionBarProps) {
+export function QuickActionBar({ onExplain, onTranslate, language }: QuickActionBarProps) {
+    const { t } = useTranslation(language)
     const [isVisible, setIsVisible] = useState(false)
     const [position, setPosition] = useState({ x: 0, y: 0 })
     const [selectedText, setSelectedText] = useState('')
@@ -24,7 +27,7 @@ export function QuickActionBar({ onExplain, onTranslate }: QuickActionBarProps) 
                 const anchorNode = selection?.anchorNode
                 const parentElement = anchorNode?.parentElement
 
-                // Check if selection is within allowed areas (CodeMirror, Markdown content, etc.)
+                // Check if selection is within allowed areas
                 const isAllowedArea = parentElement?.closest('.cm-editor') ||
                     parentElement?.closest('.prose') ||
                     parentElement?.closest('.message-content')
@@ -39,7 +42,6 @@ export function QuickActionBar({ onExplain, onTranslate }: QuickActionBarProps) 
                 }
             } else {
                 if (isVisible) {
-                    // Slight delay to allow clicking the bar itself
                     setTimeout(() => {
                         const activeSelection = window.getSelection()?.toString().trim()
                         if (!activeSelection) setIsVisible(false)
@@ -79,28 +81,28 @@ export function QuickActionBar({ onExplain, onTranslate }: QuickActionBarProps) 
                         zIndex: 1000
                     }}
                     className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
-                    onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
+                    onMouseDown={(e) => e.preventDefault()}
                 >
                     <button
                         onClick={() => { onExplain(selectedText); setIsVisible(false) }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
                     >
                         <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        <span>AÃ§Ä±kla</span>
+                        <span>{t('quickAction.explain')}</span>
                     </button>
                     <div className="w-px h-4 bg-border/50 mx-0.5" />
                     <button
                         onClick={() => { onTranslate(selectedText); setIsVisible(false) }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
                     >
                         <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Ã‡evir</span>
+                        <span>{t('quickAction.translate')}</span>
                     </button>
                     <div className="w-px h-4 bg-border/50 mx-0.5" />
                     <button
                         onClick={handleCopy}
                         className="p-1.5 hover:bg-white/10 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-                        title="Kopyala"
+                        title={t('common.copy')}
                     >
                         <Copy className="w-3.5 h-3.5" />
                     </button>

@@ -1,9 +1,10 @@
 ﻿import React, { useEffect, useState } from 'react'
+import { useTranslation, Language } from '@/i18n'
 import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronRight, Folder, Plus, Server, X, FilePlus, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkspaceMount } from '@/types'
-import { FileIcon, FolderIcon } from '../lib/file-icons'
+import { FileIcon, FolderIcon } from '../../../lib/file-icons'
 
 export interface WorkspaceEntry {
     mountId: string
@@ -29,6 +30,7 @@ interface WorkspaceExplorerProps {
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean
     onContextAction?: (action: ContextMenuAction) => void
     variant?: 'panel' | 'embedded'
+    language: Language
 }
 
 interface FileNode {
@@ -68,7 +70,8 @@ const WorkspaceTreeItem: React.FC<{
     selectedEntry?: WorkspaceEntry | null
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean
     onContextMenu?: (e: React.MouseEvent, entry: WorkspaceEntry) => void
-}> = ({ node, mount, level, refreshSignal, onOpenFile, onSelectEntry, selectedEntry, onEnsureMount, onContextMenu }) => {
+    t: (key: string) => string
+}> = ({ node, mount, level, refreshSignal, onOpenFile, onSelectEntry, selectedEntry, onEnsureMount, onContextMenu, t }) => {
     const [expanded, setExpanded] = useState(false)
     const [children, setChildren] = useState<FileNode[]>([])
     const [loading, setLoading] = useState(false)
@@ -174,10 +177,11 @@ const WorkspaceTreeItem: React.FC<{
                             selectedEntry={selectedEntry}
                             onEnsureMount={onEnsureMount}
                             onContextMenu={onContextMenu}
+                            t={t}
                         />
                     ))}
                     {children.length === 0 && loaded && (
-                        <div className="text-[11px] text-muted-foreground/40 pl-8 py-0.5 italic">BoÅŸ klasÃ¶r</div>
+                        <div className="text-[11px] text-muted-foreground/40 pl-8 py-0.5 italic">{t('workspace.emptyFolder')}</div>
                     )}
                 </div>
             )}
@@ -196,8 +200,10 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     selectedEntry,
     onEnsureMount,
     onContextAction,
-    variant = 'panel'
+    variant = 'panel',
+    language
 }) => {
+    const { t } = useTranslation(language)
     const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({})
     const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({})
     const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({})
@@ -291,11 +297,11 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 "p-4 pb-2 flex items-center justify-between",
                 variant === 'panel' ? "border-b border-white/5 bg-transparent" : "border-b border-white/5 bg-transparent"
             )}>
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/50">Dosyalar</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/50">{t('workspace.files')}</span>
                 <button
                     onClick={onAddMount}
                     className="p-1.5 hover:bg-white/5 rounded-md transition-colors group"
-                    title="BaÄŸlantÄ± ekle"
+                    title={t('workspace.addConnection')}
                 >
                     <Plus className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />
                 </button>
@@ -304,7 +310,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             {!hasMounts && (
                 <div className="flex-1 flex flex-col items-center justify-center text-sm text-zinc-500 gap-2 opacity-60">
                     <Folder className="w-8 h-8 opacity-20" />
-                    <span className="text-xs font-medium">Workspace yok</span>
+                    <span className="text-xs font-medium">{t('workspace.noMounts')}</span>
                 </div>
             )}
 
@@ -352,7 +358,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onRemoveMount(mount.id) }}
                                     className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-red-400 transition-all"
-                                    title="KaldÄ±r"
+                                    title={t('workspace.removeMount')}
                                 >
                                     <X className="w-3 h-3" />
                                 </button>
@@ -376,11 +382,12 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                         selectedEntry={selectedEntry}
                                         onEnsureMount={onEnsureMount}
                                         onContextMenu={handleContextMenu}
+                                        t={t}
                                     />
                                 ))}
                                 {(rootNodes[mount.id] || []).length === 0 && !loadingMounts[mount.id] && (
                                     <div className="text-[11px] text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
-                                        BoÅŸ klasÃ¶r
+                                        {t('workspace.emptyFolder')}
                                     </div>
                                 )}
                             </div>
@@ -412,7 +419,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            BaÄŸlantÄ±yÄ± KaldÄ±r
+                            {t('workspace.removeMount')}
                         </button>
                     )}
 
@@ -426,14 +433,14 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                         className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                                     >
                                         <FilePlus className="w-3.5 h-3.5" />
-                                        Yeni Dosya
+                                        {t('workspace.newFile')}
                                     </button>
                                     <button
                                         onClick={() => handleContextAction('createFolder')}
                                         className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                                     >
                                         <FolderPlus className="w-3.5 h-3.5" />
-                                        Yeni KlasÃ¶r
+                                        {t('workspace.newFolder')}
                                     </button>
                                     <div className="h-px bg-white/5 my-1 mx-2" />
                                 </>
@@ -443,14 +450,14 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                             >
                                 <Pencil className="w-3.5 h-3.5" />
-                                Yeniden AdlandÄ±r
+                                {t('workspace.rename')}
                             </button>
                             <button
                                 onClick={() => handleContextAction('delete')}
                                 className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                Sil
+                                {t('common.delete')}
                             </button>
                         </>
                     )}

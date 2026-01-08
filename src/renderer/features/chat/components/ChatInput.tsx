@@ -1,53 +1,44 @@
-﻿import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Paperclip, X, FileText, ImageIcon, Volume2, Brain, Mic, Send } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { SlashMenu } from './SlashMenu';
-import { ModelSelector } from '@/features/models/components/ModelSelector';
-import { Attachment } from '@/types';
+﻿
+import React, { useEffect } from 'react'
+import { Send, Square, Paperclip, X, Image as ImageIcon, FileText, FileCode, File as FileIcon, Mic, MicOff } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Attachment, Prompt } from '@/types'
+import { cn } from '@/lib/utils'
+import { ModelSelector } from '@/features/models/components/ModelSelector'
 
 interface ChatInputProps {
-    input: string;
-    setInput: (value: string) => void;
-    attachments: Attachment[];
-    removeAttachment: (index: number) => void;
-    isLoading: boolean;
-    sendMessage: () => void;
-    stopGeneration: () => void;
-    fileInputRef: React.RefObject<HTMLInputElement>;
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
-    processFile: (file: File) => void;
-    showFileMenu: boolean;
-    setShowFileMenu: (show: boolean) => void;
-    selectedProvider: string;
-    selectedModel: string;
-    onSelectModel: (p: string, m: string) => void;
-    appSettings: any;
-    groupedModels: any;
-    quotas: any;
-    codexUsage: any;
-    setIsModelMenuOpen: (open: boolean) => void;
-    contextTokens: number;
-    t: (key: string) => string;
-    isListening: boolean;
-    startListening: () => void;
-    stopListening: () => void;
-    autoReadEnabled: boolean;
-    setAutoReadEnabled: (enabled: boolean) => void;
-    handleKeyDown: (e: React.KeyboardEvent) => void;
-    handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
+    input: string
+    setInput: (value: string) => void
+    attachments: Attachment[]
+    removeAttachment: (index: number) => void
+    isLoading: boolean
+    sendMessage: () => void
+    stopGeneration: () => void
+    fileInputRef: React.RefObject<HTMLInputElement>
+    textareaRef: React.RefObject<HTMLTextAreaElement>
+    processFile: (file: File) => void
+    showFileMenu: boolean
+    setShowFileMenu: (show: boolean) => void
+    selectedProvider: string
+    selectedModel: string
+    onSelectModel: (provider: string, model: string) => void
+    appSettings: any
+    groupedModels: any
+    quotas: any
+    codexUsage: any
+    setIsModelMenuOpen: (open: boolean) => void
+    contextTokens: number
+    t: (key: string) => string
+    isListening: boolean
+    startListening: () => void
+    stopListening: () => void
+    autoReadEnabled: boolean
+    setAutoReadEnabled: (enabled: boolean) => void
+    handleKeyDown: (e: React.KeyboardEvent) => void
+    handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
+    prompts?: Prompt[]
 }
 
-/**
- * ChatInput Component
- * 
- * The main input area for the chat, featuring:
- * - Textarea with auto-resize and slash commands
- * - File attachments (images, docs) with preview
- * - Model selection and provider switching
- * - Audio controls (TTS auto-read, voice input)
- * - Send/Stop buttons
- */
 export const ChatInput: React.FC<ChatInputProps> = ({
     input,
     setInput,
@@ -55,11 +46,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     removeAttachment,
     isLoading,
     sendMessage,
+    stopGeneration,
     fileInputRef,
     textareaRef,
     processFile,
-    showFileMenu,
-    setShowFileMenu,
+    showFileMenu: _showFileMenu,
+    setShowFileMenu: _setShowFileMenu,
     selectedProvider,
     selectedModel,
     onSelectModel,
@@ -73,34 +65,121 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     isListening,
     startListening,
     stopListening,
-    autoReadEnabled,
-    setAutoReadEnabled,
-    handleKeyDown,
-    handlePaste
+    autoReadEnabled: _autoReadEnabled,
+    setAutoReadEnabled: _setAutoReadEnabled,
+    handleKeyDown: _handleKeyDown,
+    handlePaste: _handlePaste,
+    prompts = []
 }) => {
+
+    const [showCommandMenu, setShowCommandMenu] = React.useState(false)
+    const [commandQuery, setCommandQuery] = React.useState('')
+    const [selectedIndex, setSelectedIndex] = React.useState(0)
+
+    const filteredPrompts = React.useMemo(() => {
+        if (!commandQuery) return prompts.slice(0, 5)
+        return prompts.filter(p => p.title.toLowerCase().includes(commandQuery.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(commandQuery.toLowerCase()))).slice(0, 5)
+    }, [prompts, commandQuery])
+
+    // Auto-resize textarea
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+        }
+
+        // Check for slash command
+        const lastWord = input.split(' ').pop() || ''
+        if (lastWord.startsWith('/')) {
+            setShowCommandMenu(true)
+            setCommandQuery(lastWord.slice(1))
+            setSelectedIndex(0)
+        } else {
+            setShowCommandMenu(false)
+        }
+    }, [input])
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (showCommandMenu && filteredPrompts.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setSelectedIndex(prev => (prev + 1) % filteredPrompts.length)
+                return
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setSelectedIndex(prev => (prev - 1 + filteredPrompts.length) % filteredPrompts.length)
+                return
+            }
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault()
+                const selected = filteredPrompts[selectedIndex]
+                if (selected) {
+                    // Replace the slash command with content
+                    const words = input.split(' ')
+                    words.pop()
+                    const newText = words.join(' ') + (words.length > 0 ? ' ' : '') + selected.content
+                    setInput(newText)
+                    setShowCommandMenu(false)
+                }
+                return
+            }
+            if (e.key === 'Escape') {
+                setShowCommandMenu(false)
+                return
+            }
+        }
+
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            if (!isLoading && (input.trim() || attachments.length > 0)) {
+                sendMessage()
+            }
+        }
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            processFile(e.target.files[0])
+            // Reset value so same file can be selected again
+            e.target.value = ''
+        }
+    }
+
+    const getFileIcon = (type: string) => {
+        if (type.startsWith('image/')) return <ImageIcon size={14} />
+        if (type.includes('text') || type.includes('json') || type.includes('md')) return <FileText size={14} />
+        if (type.includes('code') || type.includes('javascript') || type.includes('python')) return <FileCode size={14} />
+        return <FileIcon size={14} />
+    }
+
     return (
-        <div className="p-4 sm:p-8 pt-2 max-w-4xl mx-auto w-full relative shrink-0">
+        <div className="p-4 border-t border-white/5 bg-zinc-950/50 backdrop-blur-sm relative z-30">
+            {/* Attachments Preview */}
             <AnimatePresence>
                 {attachments.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="flex flex-wrap gap-2 px-1 mb-3"
+                        className="flex flex-wrap gap-2 mb-3 px-2"
                     >
                         {attachments.map((att, i) => (
-                            <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-sm group/att">
-                                {att.type === 'image' ? (
-                                    <div className="w-4 h-4 rounded-sm overflow-hidden border border-white/10">
-                                        {/* Calculate fileSize here if needed, but it's not used in the current snippet */}
-                                        <img src={att.preview} className="w-full h-full object-cover" />
-                                    </div>
-                                ) : (
-                                    <FileText className="w-3.5 h-3.5 text-blue-400" />
-                                )}
-                                <span className="text-[11px] font-bold text-muted-foreground/80 max-w-[120px] truncate">{att.file?.name}</span>
-                                <button onClick={() => removeAttachment(i)} className="text-muted-foreground/40 hover:text-red-400 transition-colors">
-                                    <X className="w-3 h-3" />
+                            <div key={i} className="group relative flex items-center gap-2 bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 pr-8">
+                                <span className={cn(
+                                    "p-1.5 rounded-md",
+                                    att.type.startsWith('image/') ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"
+                                )}>
+                                    {getFileIcon(att.type)}
+                                </span>
+                                <span className="truncate max-w-[150px]">{att.name}</span>
+                                <span className="text-zinc-600 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
+
+                                <button
+                                    onClick={() => removeAttachment(i)}
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X size={12} />
                                 </button>
                             </div>
                         ))}
@@ -108,107 +187,123 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 )}
             </AnimatePresence>
 
-            <div className="relative flex items-end rounded-2xl bg-muted/20 border border-border transition-all duration-300 focus-within:bg-muted/40 focus-within:border-primary/30 shadow-sm group/input">
-                <SlashMenu
-                    isOpen={input.startsWith('/')}
-                    onClose={() => { }}
-                    query={input.slice(1)}
-                    onSelect={(cmd: any) => { cmd.action(); setInput('') }}
-                    commands={[]}
-                />
-                <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach(processFile); e.target.value = '' }}
-                />
+            {/* Command Menu */}
+            <AnimatePresence>
+                {showCommandMenu && filteredPrompts.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-full left-0 mb-2 w-64 bg-zinc-900 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+                    >
+                        <div className="text-[10px] uppercase font-bold text-zinc-500 px-3 py-1.5 bg-black/20">Prompts</div>
+                        {filteredPrompts.map((prompt, i) => (
+                            <button
+                                key={prompt.id}
+                                onClick={() => {
+                                    const words = input.split(' ')
+                                    words.pop()
+                                    const newText = words.join(' ') + (words.length > 0 ? ' ' : '') + prompt.content
+                                    setInput(newText)
+                                    setShowCommandMenu(false)
+                                }}
+                                className={cn(
+                                    "w-full text-left px-3 py-2 text-xs transition-colors block",
+                                    i === selectedIndex ? "bg-purple-500/20 text-purple-200" : "hover:bg-white/5 text-zinc-300"
+                                )}
+                            >
+                                <div className="font-medium">{prompt.title}</div>
+                                <div className="text-[10px] text-zinc-500 truncate">{prompt.content}</div>
+                            </button>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                <div className="relative flex items-center p-2 pl-3 pb-3 gap-2">
+            <div className="relative flex items-end gap-2 bg-zinc-900 border border-white/10 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-purple-500/50 focus-within:border-purple-500/50 transition-all">
+                {/* File Upload Button */}
+                <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
+                    <div className="relative">
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                            title={t('input.attachFile')}
+                        >
+                            <Paperclip size={20} />
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                            multiple={false}
+                        />
+                    </div>
+
+                    <button
+                        onClick={isListening ? stopListening : startListening}
+                        className={cn(
+                            "p-2 rounded-lg transition-all",
+                            isListening ? "bg-red-500/20 text-red-500 animate-pulse" : "text-zinc-400 hover:text-white hover:bg-white/5"
+                        )}
+                        title={isListening ? t('input.stopListening') : t('input.startListening')}
+                    >
+                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+
+                    <div className="h-8 w-px bg-white/5 mx-1" />
+
                     <ModelSelector
-                        selectedProvider={(selectedProvider as any)}
+                        selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
                         onSelect={onSelectModel}
                         settings={appSettings}
-                        groupedModels={groupedModels || undefined}
+                        groupedModels={groupedModels}
                         quotas={quotas}
                         codexUsage={codexUsage}
                         onOpenChange={setIsModelMenuOpen}
                         contextTokens={contextTokens}
+                        language={appSettings?.general?.language as any}
                     />
-                    <button
-                        onClick={() => setShowFileMenu(!showFileMenu)}
-                        className="text-muted-foreground hover:text-primary transition-all p-2 hover:bg-primary/10 rounded-xl"
-                    >
-                        <Paperclip className="w-5 h-5" />
-                    </button>
-
-                    <AnimatePresence>
-                        {showFileMenu && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                className="absolute bottom-full left-4 mb-4 bg-card border border-border rounded-2xl p-2 shadow-2xl z-50 min-w-[180px]"
-                            >
-                                <button
-                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
-                                    onClick={() => { fileInputRef.current?.click(); setShowFileMenu(false) }}
-                                >
-                                    <ImageIcon className="w-4 h-4 text-emerald-400" />
-                                    {t('attachments.image')}
-                                </button>
-                                <button
-                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
-                                    onClick={() => { fileInputRef.current?.click(); setShowFileMenu(false) }}
-                                >
-                                    <FileText className="w-4 h-4 text-blue-400" />
-                                    {t('attachments.document')}
-                                </button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
                 </div>
 
+                {/* Text Input */}
                 <textarea
                     ref={textareaRef}
-                    className="flex-1 bg-transparent border-none py-5 pl-0 pr-4 min-h-[60px] max-h-[300px] resize-none focus:ring-0 text-base placeholder:text-muted-foreground/30 outline-none text-foreground font-medium"
-                    placeholder={t('chat.placeholder')}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
+                    placeholder={
+                        t('input.placeholder.default')
+                    }
+                    className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-zinc-100 placeholder:text-zinc-600 resize-none py-2.5 max-h-[200px]"
                     rows={1}
                 />
 
-                <div className="p-3 pr-4 flex items-end gap-3">
-                    <button
-                        onClick={() => {/* handled by shortcut/context later */ }}
-                        className="h-10 w-10 text-muted-foreground/40 hover:text-foreground hover:bg-white/5 transition-all"
-                    >
-                        <Volume2 className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setAutoReadEnabled(!autoReadEnabled)}
-                        className={cn("h-10 w-10 transition-all", autoReadEnabled ? "text-primary bg-primary/10" : "text-muted-foreground/40 hover:text-foreground")}
-                    >
-                        <Brain className={cn("w-5 h-5", autoReadEnabled && "animate-pulse")} />
-                    </button>
-                    <button
-                        onClick={isListening ? stopListening : startListening}
-                        className={cn("h-10 w-10 rounded-xl transition-all", isListening ? "bg-red-500 animate-pulse" : "bg-transparent text-muted-foreground")}
-                    >
-                        {isListening ? <div className="w-3 h-3 bg-white" /> : <Mic className="w-5 h-5" />}
-                    </button>
-                    <button
-                        onClick={sendMessage}
-                        disabled={!isLoading && !input.trim()}
-                        className={cn("h-10 w-10 rounded-xl transition-all", !isLoading && !input.trim() ? "bg-white/5 text-muted-foreground/30" : "bg-primary text-primary-foreground")}
-                    >
-                        {isLoading ? <div className="w-3 h-3 bg-white" /> : <Send className="w-5 h-5 ml-0.5" />}
-                    </button>
-                </div>
+                {/* Send/Stop Button */}
+                <button
+                    onClick={isLoading ? stopGeneration : sendMessage}
+                    disabled={!isLoading && !input.trim() && attachments.length === 0}
+                    className={cn(
+                        "p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5",
+                        isLoading
+                            ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                            : (input.trim() || attachments.length > 0)
+                                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500"
+                                : "bg-white/5 text-zinc-600 cursor-not-allowed"
+                    )}
+                >
+                    {isLoading ? (
+                        <Square size={18} fill="currentColor" className="animate-pulse" />
+                    ) : (
+                        <Send size={18} className={cn((input.trim() || attachments.length > 0) && "ml-0.5")} />
+                    )}
+                </button>
             </div>
-        </div>
-    );
-};
+
+            <div className="absolute bottom-1 right-4 text-[10px] text-zinc-700 pointer-events-none select-none">
+                {selectedProvider}
+            </div>
+        </div >
+    )
+}

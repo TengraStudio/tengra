@@ -11,7 +11,7 @@ export interface OllamaStatus {
 export class OllamaHealthService extends EventEmitter {
     private intervalId: NodeJS.Timeout | null = null
     private status: OllamaStatus = { online: false, lastCheck: new Date() }
-    private baseUrl: string = 'http://localhost:11434'
+    private baseUrl: string = 'http://127.0.0.1:11434'
     private checkInterval: number = 30000 // 30 seconds
 
     constructor(baseUrl?: string) {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ImagePersistenceService } from './image-persistence.service';
+import { DataService } from './data.service';
 
 
 export interface OpenAIResponse {
@@ -37,8 +38,8 @@ export class LLMService {
     private dispatcher: any = null;
     private imagePersistence: ImagePersistenceService;
 
-    constructor() {
-        this.imagePersistence = new ImagePersistenceService();
+    constructor(dataService?: DataService) {
+        this.imagePersistence = new ImagePersistenceService(dataService);
     }
 
     // --- Configuration ---
@@ -53,6 +54,10 @@ export class LLMService {
         this.proxyKey = key;
     }
 
+    isOpenAIConnected(): boolean {
+        return !!this.openaiApiKey
+    }
+
     private getDispatcher() {
         if (this.dispatcher) return this.dispatcher;
         try {
@@ -61,11 +66,27 @@ export class LLMService {
                 this.dispatcher = new undici.Agent({
                     connectTimeout: 30000,
                     headersTimeout: 120000,
-                    bodyTimeout: 120000
+                    bodyTimeout: 120000,
+                    keepAliveMaxTimeout: 60000, // Close idle connections after 60s
+                    keepAliveTimeout: 30000,
+                    connections: 10 // Limit concurrent connections
                 });
             }
         } catch (e) { }
         return this.dispatcher;
+    }
+
+    // Cleanup method - call on app shutdown
+    destroy() {
+        if (this.dispatcher) {
+            try {
+                this.dispatcher.destroy();
+                this.dispatcher = null;
+                console.log('[LLMService] Dispatcher destroyed');
+            } catch (e) {
+                console.error('[LLMService] Error destroying dispatcher:', e);
+            }
+        }
     }
 
     // --- Message Normalization ---
@@ -194,8 +215,24 @@ export class LLMService {
             console.log(`[LLMService:openaiChat] Effective Base URL: ${effectiveBaseUrl}`);
             console.log(`[LLMService:openaiChat] Endpoint: ${endpoint}`);
 
+            let finalModel = model;
+            // If hitting Cliproxy (8317), ensure we have a provider prefix
+            if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
+                // Determine best prefix
+                if (finalModel.includes('gpt') || finalModel.startsWith('o1')) {
+                    finalModel = `openai/${finalModel}`;
+                } else if (finalModel.includes('claude')) {
+                    finalModel = `anthropic/${finalModel}`;
+                } else if (finalModel.includes('gemini')) {
+                    finalModel = `google/${finalModel}`;
+                } else {
+                    finalModel = `openai/${finalModel}`; // fallback
+                }
+                console.log(`[LLMService] Proxy Routing: Prefixed model ${model} -> ${finalModel}`);
+            }
+
             const body: any = {
-                model,
+                model: finalModel,
                 messages: normalizedMessages,
                 stream: false
             };
@@ -260,9 +297,23 @@ export class LLMService {
         const effectiveBaseUrl = baseUrlOverride || this.openaiBaseUrl;
         const effectiveApiKey = apiKeyOverride || this.openaiApiKey;
         const endpoint = `${effectiveBaseUrl}/chat/completions`;
-        const normalizedMessages = this.normalizeOpenAIMessages(messages, model);
 
-        const requestBody: any = { model, messages: normalizedMessages, stream: true };
+        let finalModel = model;
+        if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
+            if (finalModel.includes('gpt') || finalModel.startsWith('o1')) {
+                finalModel = `openai/${finalModel}`;
+            } else if (finalModel.includes('claude')) {
+                finalModel = `anthropic/${finalModel}`;
+            } else if (finalModel.includes('gemini')) {
+                finalModel = `google/${finalModel}`;
+            } else {
+                finalModel = `openai/${finalModel}`;
+            }
+        }
+
+        const normalizedMessages = this.normalizeOpenAIMessages(messages, finalModel);
+
+        const requestBody: any = { model: finalModel, messages: normalizedMessages, stream: true };
         if (tools && tools.length > 0) {
             requestBody.tools = tools;
             requestBody.tool_choice = 'auto';
@@ -349,7 +400,7 @@ export class LLMService {
                                         reasoning,
                                         images: savedImages.filter(img => typeof img === 'string'),
                                         type: delta.tool_calls ? 'tool_calls' : undefined,
-                                        toolCalls: delta.tool_calls
+                                        tool_calls: delta.tool_calls
                                     } as any;
                                 }
                             } catch { }
@@ -398,7 +449,7 @@ export class LLMService {
                                     reasoning,
                                     images: savedImages.filter(img => typeof img === 'string'),
                                     type: delta.tool_calls ? 'tool_calls' : undefined,
-                                    toolCalls: delta.tool_calls
+                                    tool_calls: delta.tool_calls
                                 } as any;
                             }
                         } catch { }
@@ -484,6 +535,10 @@ export class LLMService {
             return this.groqChat(messages, model);
         } else if (p.includes('antigravity')) {
             return this.openaiChat(messages, model, tools, this.proxyUrl, this.proxyKey);
+        } else if (p.includes('ollama')) {
+            // Route to local Ollama server
+            const ollamaUrl = 'http://127.0.0.1:11434/v1';
+            return this.openaiChat(messages, model, tools, ollamaUrl, 'ollama');
         } else {
             return this.openaiChat(messages, model, tools);
         }
@@ -491,23 +546,53 @@ export class LLMService {
 
     // --- Search & Misc ---
 
-    async searchHFModels(query: string = '', limit: number = 20, page: number = 0): Promise<HFModel[]> {
+    async searchHFModels(query: string = '', limit: number = 20, page: number = 0, sort: string = 'downloads'): Promise<{ models: HFModel[], total: number }> {
         try {
-            const searchQuery = query ? `${query} GGUF` : 'GGUF';
+            let searchQuery = query.trim();
+            // If query is empty, default to GGUF to show compatible models
+            // If query is not empty, check if user already specified GGUF, if not append it for compatibility
+            if (!searchQuery) {
+                searchQuery = 'GGUF';
+            } else if (!searchQuery.toLowerCase().includes('gguf')) {
+                searchQuery = `${searchQuery} GGUF`;
+            }
+
+            let hfSort = sort;
+            if (sort === 'newest') hfSort = 'updated';
+            if (sort === 'name') hfSort = 'name'; // HF might not support 'name' well, but worth a try or fallback to trending
+
             const response = await axios.get('https://huggingface.co/api/models', {
-                params: { search: searchQuery, limit, full: true, sort: 'downloads', direction: -1, offset: page * limit }
+                params: {
+                    search: searchQuery,
+                    filter: 'gguf',
+                    limit,
+                    full: true,
+                    sort: hfSort,
+                    direction: -1,
+                    offset: page * limit
+                }
             });
-            return response.data.map((m: any) => ({
+
+            const total = parseInt(response.headers['x-total-count'] || '0') || 0;
+            const models = response.data.map((m: any) => ({
                 id: m.modelId,
                 name: m.modelId.split('/')[1] || m.modelId,
                 author: m.author,
-                description: m.cardData?.short_description || `A model by ${m.author}`,
+                description: m.cardData?.short_description || `A ${m.pipeline_tag || 'LLM'} model by ${m.author}`,
                 downloads: m.downloads || 0,
                 likes: m.likes || 0,
                 tags: m.tags || [],
                 lastModified: m.lastModified
             }));
-        } catch { return []; }
+
+            // Log both the batch size and the (missing) total count for clarity
+            console.log(`[LLMService] HuggingFace Search: Fetched ${models.length} models. (Total Header: ${total}, Query: "${searchQuery}")`);
+
+            // Fallback for total count if header is missing (156k is current GGUF library size)
+            const displayTotal = total > 0 ? total : (searchQuery.toLowerCase() === 'gguf' ? 156607 : models.length);
+
+            return { models, total: displayTotal };
+        } catch { return { models: [], total: 0 }; }
     }
 
     async getOpenAIModels(): Promise<any[]> {
