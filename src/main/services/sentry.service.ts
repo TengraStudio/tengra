@@ -43,9 +43,7 @@ export class SentryService {
                     // Optionally strip PII or sensitive data here
                     return event
                 },
-                integrations: [
-                    Sentry.mainProcessIntegration()
-                ]
+                // integrations: [Sentry.mainProcessIntegration()]
             })
             this.isInitialized = true
             console.log('[SentryService] Initialized for main process.')

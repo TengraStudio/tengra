@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { SSHManager } from './features/ssh/SSHManager'
 import { Sidebar } from './components/layout/Sidebar'
@@ -11,63 +11,46 @@ import { UpdateNotification } from './components/layout/UpdateNotification'
 
 import { useVoiceInput } from './features/chat/hooks/useVoiceInput'
 import { useTextToSpeech } from './features/chat/hooks/useTextToSpeech'
-import { useModelManager } from './features/models/hooks/useModelManager'
-import { useChatManager } from './features/chat/hooks/useChatManager'
-import { useProjectManager } from './features/projects/hooks/useProjectManager'
-import { useAuthManager } from './features/settings/hooks/useAuthManager'
 
 import { ViewManager } from './views/ViewManager'
 import './App.css'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { Attachment, Toast } from '@/types'
-import { v4 as uuidv4 } from 'uuid'
+import { Toast } from '@/types'
 import { KeyboardShortcutsModal } from './components/shared/KeyboardShortcutsModal'
 import { useTranslation } from './i18n'
-
-
+import { useAuth } from '@/context/AuthContext'
+import { useChat } from '@/context/ChatContext'
+import { useModel } from '@/context/ModelContext'
+import { useProject } from '@/context/ProjectContext'
 
 export default function App() {
+    // Context Consumption
     const {
-        appSettings, setAppSettings, settingsCategory, setSettingsCategory,
-        isAuthModalOpen, setIsAuthModalOpen, quotas, codexUsage,
-        handleAntigravityLogout, language
-    } = useAuthManager()
+        handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen,
+        setSettingsCategory, language
+    } = useAuth()
 
-    const { t } = useTranslation(language)
-
-    const {
-        models, proxyModels, selectedModel, setSelectedModel, selectedProvider, setSelectedProvider,
-        groupedModels, loadModels, persistLastSelection
-    } = useModelManager(appSettings, setAppSettings)
+    // Some Voice Hooks are still local for now or used for Overlay
+    // You might want to move these to ChatContext eventually too if they aren't already
+    const { setInput, handleSend, processFile, createNewChat, currentChatId, setCurrentChatId, chats, setChats } = useChat()
 
     const { isListening, startListening, stopListening } = useVoiceInput((text) => setInput(prev => prev + text))
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech()
 
-    const {
-        projects, selectedProject, setSelectedProject, terminalTabs, setTerminalTabs,
-        activeTerminalId, setActiveTerminalId, loadProjects, handleOpenTerminal
-    } = useProjectManager()
+    const { models, loadModels, selectedModel, setSelectedModel } = useModel()
+    const { projects, setSelectedProject } = useProject()
 
-    const {
-        chats, currentChatId, setCurrentChatId, messages, displayMessages, searchTerm, setSearchTerm,
-        input, setInput, isLoading, streamingContent, streamingReasoning, streamingSpeed, contextTokens,
-        handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, setChats,
-        folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
-        prompts, createPrompt, updatePrompt, deletePrompt
-    } = useChatManager({
-        selectedProvider,
-        selectedModel,
-        language,
-        appSettings,
-        autoReadEnabled: false,
-        handleSpeak,
-        formatChatError: (e: any) => e?.message || 'Unknown error',
-        t,
-        projectId: selectedProject?.id,
-        activeWorkspacePath: selectedProject?.path
-    })
+    const { t } = useTranslation(language || 'en')
 
+    // Debug / Global Speak Handler
+    useEffect(() => {
+        if (speakingMessageId) console.log('🔊 Speaking Message:', speakingMessageId)
+        // Attach to window for external control if needed
+        window.orbitSpeak = handleSpeak
+    }, [speakingMessageId, handleSpeak])
+
+    // Local UI State
     const [currentView, setCurrentView] = useState<'chat' | 'projects' | 'council' | 'settings' | 'mcp'>('chat')
     const [isDragging, setIsDragging] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -75,52 +58,14 @@ export default function App() {
     const [showCommandPalette, setShowCommandPalette] = useState(false)
     const [showSSHManager, setShowSSHManager] = useState(false)
     const [showShortcuts, setShowShortcuts] = useState(false)
-    const fileInputRef = useRef<HTMLInputElement>(null)
-    const textareaRef = useRef<HTMLTextAreaElement>(null)
     const [showFileMenu, setShowFileMenu] = useState(false)
-    const [attachments, setAttachments] = useState<Attachment[]>([])
-    const [autoReadEnabled, setAutoReadEnabled] = useState(false)
     const [showScrollButton, setShowScrollButton] = useState(false)
-    const messagesEndRef = useRef<HTMLDivElement>(null)
     const [isAudioOverlayOpen, setIsAudioOverlayOpen] = useState(false)
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
-            e.preventDefault()
-            handleSend()
-        }
-    }
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const files = Array.from(e.clipboardData.files)
-        if (files.length > 0) {
-            e.preventDefault()
-            files.forEach(processFile)
-        }
-    }
-
-    const processFile = async (file: File) => {
-        const id = uuidv4()
-        const newAttachment: Attachment = {
-            id,
-            name: file.name,
-            type: file.type.split('/')[0] as any,
-            size: file.size,
-            status: 'uploading'
-        }
-        setAttachments(prev => [...prev, newAttachment])
-
-        try {
-            const content = await file.text()
-            setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'ready', content } : a))
-        } catch (error) {
-            setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'error' } : a))
-        }
-    }
-
-    const removeAttachment = (index: number) => {
-        setAttachments(prev => prev.filter((_, i) => i !== index))
-    }
+    // Refs
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const CHAT_TEMPLATES = [
         { id: 'code', icon: 'Code', iconColor: 'text-blue-400', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
@@ -135,40 +80,16 @@ export default function App() {
             <Sidebar
                 currentView={currentView}
                 onChangeView={setCurrentView}
-                onNewChat={() => { setCurrentView('chat'); createNewChat() }}
-                chats={chats}
-                currentChatId={currentChatId}
-                onSelectChat={(id) => { setCurrentView('chat'); setCurrentChatId(id) }}
-                onDeleteChat={deleteChat}
                 isCollapsed={isSidebarCollapsed}
                 toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 onOpenSettings={(cat) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat as any) }}
-                onTogglePin={(id, p) => { window.electron.db.updateChat(id, { isPinned: p }).then(() => loadProjects()) }}
-                onToggleFavorite={(id, f) => { window.electron.db.updateChat(id, { isFavorite: f }).then(() => loadProjects()) }}
                 onSearch={() => { }}
-                language={language as any}
-                settingsCategory={settingsCategory}
-                onSelectSettingsCategory={setSettingsCategory}
-                isLoading={isLoading}
-                folders={folders}
-                onCreateFolder={createFolder}
-                onUpdateFolder={updateFolder}
-                onDeleteFolder={deleteFolder}
-                onMoveChat={moveChatToFolder}
-                prompts={prompts}
-                onCreatePrompt={createPrompt}
-                onUpdatePrompt={updatePrompt}
-                onDeletePrompt={deletePrompt}
             />
 
             <div className="main-layout">
                 <div className="relative z-10 flex-none">
                     <AppHeader
                         currentView={currentView}
-                        currentChatId={currentChatId}
-                        chats={chats}
-                        onClearChat={clearMessages}
-                        t={t}
                     />
                 </div>
 
@@ -178,72 +99,38 @@ export default function App() {
                     <main className="flex-1 flex flex-col overflow-hidden relative h-full">
                         <ViewManager
                             currentView={currentView}
-                            messages={messages}
-                            displayMessages={displayMessages}
-                            searchTerm={searchTerm}
-                            setSearchTerm={setSearchTerm}
-                            t={t}
                             templates={CHAT_TEMPLATES}
-                            setInput={setInput}
-                            isLoading={isLoading}
-                            streamingContent={streamingContent}
-                            streamingReasoning={streamingReasoning}
-                            streamingSpeed={streamingSpeed}
-                            language={language as any}
-                            selectedProvider={selectedProvider}
-                            selectedModel={selectedModel}
-                            onSpeak={handleSpeak}
-                            onStopSpeak={handleStopSpeak}
-                            speakingMessageId={speakingMessageId}
                             messagesEndRef={messagesEndRef}
-                            showScrollButton={showScrollButton}
-                            setShowScrollButton={setShowScrollButton}
-                            onScrollToBottom={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            input={input}
-                            attachments={attachments}
-                            removeAttachment={removeAttachment}
-                            sendMessage={handleSend}
-                            stopGeneration={stopGeneration}
                             fileInputRef={fileInputRef}
                             textareaRef={textareaRef}
-                            processFile={processFile}
+                            onScrollToBottom={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            showScrollButton={showScrollButton}
+                            setShowScrollButton={setShowScrollButton}
                             showFileMenu={showFileMenu}
                             setShowFileMenu={setShowFileMenu}
-                            onSelectModel={async (p, m) => { setSelectedProvider(p as any); setSelectedModel(m); persistLastSelection(p, m); if (p === 'llama-cpp') await window.electron.llama.loadModel(m, { backend: 'auto' }) }}
-                            appSettings={appSettings}
-                            groupedModels={groupedModels}
-                            quotas={quotas}
-                            codexUsage={codexUsage}
-                            setIsModelMenuOpen={() => { }}
-                            contextTokens={contextTokens}
-                            isListening={isListening}
-                            startListening={startListening}
-                            stopListening={stopListening}
-                            autoReadEnabled={autoReadEnabled}
-                            setAutoReadEnabled={setAutoReadEnabled}
-                            prompts={prompts}
-                            handleKeyDown={handleKeyDown}
-                            handlePaste={handlePaste}
-                            projects={projects}
-                            loadProjects={loadProjects}
-                            selectedProject={selectedProject}
-                            setSelectedProject={setSelectedProject}
-                            terminalTabs={terminalTabs}
-                            activeTerminalId={activeTerminalId}
-                            setTerminalTabs={setTerminalTabs}
-                            setActiveTerminalId={setActiveTerminalId}
-                            models={models}
-                            proxyModels={proxyModels}
-                            loadModels={loadModels}
-                            settingsCategory={settingsCategory as any}
-                            setSettingsCategory={setSettingsCategory as any}
-                            handleOpenTerminal={handleOpenTerminal}
                         />
                     </main>
                 </div>
-                <AnimatePresence>{showSSHManager && <SSHManager isOpen={showSSHManager} onClose={() => setShowSSHManager(false)} language={language} />}</AnimatePresence>
+                <AnimatePresence>{showSSHManager && <SSHManager isOpen={showSSHManager} onClose={() => setShowSSHManager(false)} language={language || 'en'} />}</AnimatePresence>
                 <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">{toasts.map(tZ => <div key={tZ.id} className={cn("px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center gap-3 min-w-[240px]", tZ.type === 'success' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : tZ.type === 'error' ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-zinc-800/80 border-white/10 text-white")}><span className="text-lg">{tZ.type === 'success' ? '✅' : tZ.type === 'error' ? '❌' : 'ℹ️'}</span><div className="text-sm font-medium">{tZ.message}</div><button onClick={() => setToasts(prev => prev.filter(toast => toast.id !== tZ.id))} className="ml-auto opacity-50">×</button></div>)}</div>
-                <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} chats={chats} onSelectChat={setCurrentChatId} onNewChat={createNewChat} projects={projects} onSelectProject={(id: string) => { const p = projects.find(pro => pro.id === id); if (p) { setSelectedProject(p); setCurrentView('projects') } }} onOpenSettings={(cat: any) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }} onOpenSSHManager={() => setShowSSHManager(true)} onRefreshModels={loadModels} models={models} onSelectModel={setSelectedModel} selectedModel={selectedModel} onClearChat={async () => { if (currentChatId) { await window.electron.db.deleteMessages(currentChatId); setChats(await window.electron.db.getAllChats()) } }} t={t} />
+
+                <CommandPalette
+                    isOpen={showCommandPalette}
+                    onClose={() => setShowCommandPalette(false)}
+                    chats={chats}
+                    onSelectChat={setCurrentChatId}
+                    onNewChat={createNewChat}
+                    projects={projects}
+                    onSelectProject={(id: string) => { const p = projects.find(pro => pro.id === id); if (p) { setSelectedProject(p); setCurrentView('projects') } }}
+                    onOpenSettings={(cat: any) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }}
+                    onOpenSSHManager={() => setShowSSHManager(true)}
+                    onRefreshModels={loadModels}
+                    models={models}
+                    onSelectModel={setSelectedModel}
+                    selectedModel={selectedModel}
+                    onClearChat={async () => { if (currentChatId) { await window.electron.db.deleteMessages(currentChatId); setChats(await window.electron.db.getAllChats()) } }}
+                    t={t}
+                />
             </div>
 
             <Modal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} title="Kimlik Doğrulama Hatası" footer={<button onClick={async () => { await handleAntigravityLogout(); setIsAuthModalOpen(false); setCurrentView('settings'); setSettingsCategory('accounts') }} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">Hesaplara Git</button>}>
@@ -257,10 +144,10 @@ export default function App() {
             </AnimatePresence>
 
             <AnimatePresence>
-                {isAudioOverlayOpen && <AudioChatOverlay isOpen={isAudioOverlayOpen} onClose={() => setIsAudioOverlayOpen(false)} isListening={isListening} startListening={startListening} stopListening={stopListening} isSpeaking={isSpeaking} onStopSpeaking={() => handleStopSpeak()} language={language} />}
+                {isAudioOverlayOpen && <AudioChatOverlay isOpen={isAudioOverlayOpen} onClose={() => setIsAudioOverlayOpen(false)} isListening={isListening} startListening={startListening} stopListening={stopListening} isSpeaking={isSpeaking} onStopSpeaking={() => handleStopSpeak()} language={language || 'en'} />}
             </AnimatePresence>
 
-            <QuickActionBar onExplain={(text) => { setInput(`Açıkla: ${text}`); handleSend() }} onTranslate={(text) => { setInput(`Çevir: ${text}`); handleSend() }} language={language} />
+            <QuickActionBar onExplain={(text) => { setInput(`Açıkla: ${text}`); handleSend() }} onTranslate={(text) => { setInput(`Çevir: ${text}`); handleSend() }} language={language || 'en'} />
             <UpdateNotification />
         </div>
     )

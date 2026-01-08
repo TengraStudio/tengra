@@ -5,107 +5,45 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { WelcomeScreen } from './WelcomeScreen';
-import { Message, Attachment, Prompt } from '@/types';
-import { Language } from '@/i18n';
+import { useChat } from '@/context/ChatContext';
+import { useAuth } from '@/context/AuthContext';
+import { useModel } from '@/context/ModelContext';
+import { useTranslation } from '@/i18n';
 
 interface ChatViewProps {
-    messages: Message[];
-    displayMessages: Message[];
-    searchTerm: string;
-    setSearchTerm: (value: string) => void;
-    t: (key: string) => string;
     templates: any[];
-    setInput: (value: string) => void;
-    isLoading: boolean;
-    streamingContent: string;
-    streamingReasoning?: string;
-    streamingSpeed: number | null;
-    language: Language;
-    selectedProvider: string;
-    selectedModel: string;
-    onSpeak: (text: string, id: string) => void;
-    onStopSpeak: () => void;
-    speakingMessageId: string | null;
-    messagesEndRef: React.RefObject<HTMLDivElement>;
-    onScrollToBottom: () => void;
-    input: string;
-    attachments: Attachment[];
-    removeAttachment: (index: number) => void;
-    sendMessage: () => void;
-    stopGeneration: () => void;
-    fileInputRef: React.RefObject<HTMLInputElement>;
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
-    processFile: (file: File) => void;
-    showFileMenu: boolean;
-    setShowFileMenu: (show: boolean) => void;
-    onSelectModel: (p: string, m: string) => void;
-    appSettings: any;
-    groupedModels: any;
-    quotas: any;
-    codexUsage: any;
-    setIsModelMenuOpen: (open: boolean) => void;
-    contextTokens: number;
-    isListening: boolean;
-    startListening: () => void;
-    stopListening: () => void;
-    autoReadEnabled: boolean;
-    setAutoReadEnabled: (enabled: boolean) => void;
-    handleKeyDown: (e: React.KeyboardEvent) => void;
-    handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
     showScrollButton?: boolean;
     setShowScrollButton?: (show: boolean) => void;
-    prompts: Prompt[];
+    messagesEndRef: React.RefObject<HTMLDivElement>;
+    onScrollToBottom: () => void;
+    fileInputRef: React.RefObject<HTMLInputElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    showFileMenu: boolean;
+    setShowFileMenu: (show: boolean) => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
-    messages: _messages,
-    displayMessages,
-
-    searchTerm,
-    setSearchTerm,
-    t,
     templates,
-    setInput,
-    isLoading,
-    streamingContent,
-    streamingReasoning,
-    streamingSpeed,
-    language,
-    selectedProvider,
-    selectedModel,
-    onSpeak,
-    onStopSpeak,
-    speakingMessageId,
-    messagesEndRef,
-    onScrollToBottom,
-    input,
-    attachments,
-    removeAttachment,
-    sendMessage,
-    stopGeneration,
-    fileInputRef,
-    textareaRef,
-    processFile,
-    showFileMenu,
-    setShowFileMenu,
-    onSelectModel,
-    appSettings,
-    groupedModels,
-    quotas,
-    codexUsage,
-    setIsModelMenuOpen,
-    contextTokens,
-    isListening,
-    startListening,
-    stopListening,
-    autoReadEnabled,
-    setAutoReadEnabled,
-    handleKeyDown,
-    handlePaste,
     showScrollButton,
     setShowScrollButton,
-    prompts
+    messagesEndRef,
+    onScrollToBottom,
+    fileInputRef,
+    textareaRef,
+    showFileMenu,
+    setShowFileMenu
 }) => {
+    // Context Consumption
+    const {
+        displayMessages, searchTerm, setSearchTerm, setInput,
+        streamingContent, streamingReasoning, streamingSpeed, isLoading,
+        speakingMessageId, handleSpeak, handleStopSpeak
+    } = useChat();
+
+    const { language } = useAuth();
+    const { selectedProvider, selectedModel } = useModel();
+    const { t } = useTranslation(language || 'en');
+
     return (
         <motion.div
             key="chat"
@@ -141,17 +79,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         streamingReasoning={streamingReasoning}
                         streamingSpeed={streamingSpeed}
                         isLoading={isLoading}
-                        language={language}
+                        language={language || 'en'}
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
-                        onSpeak={onSpeak}
-                        onStopSpeak={onStopSpeak}
+                        onSpeak={(text, id) => handleSpeak(id, text)}
+                        onStopSpeak={handleStopSpeak}
                         speakingMessageId={speakingMessageId}
                         messagesEndRef={messagesEndRef}
                     />
                 )}
             </div>
-
 
             <AnimatePresence>
                 {showScrollButton && (
@@ -168,36 +105,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </AnimatePresence>
 
             <ChatInput
-                input={input}
-                setInput={setInput}
-                attachments={attachments}
-                removeAttachment={removeAttachment}
-                isLoading={isLoading}
-                sendMessage={sendMessage}
-                stopGeneration={stopGeneration}
                 fileInputRef={fileInputRef}
                 textareaRef={textareaRef}
-                processFile={processFile}
                 showFileMenu={showFileMenu}
                 setShowFileMenu={setShowFileMenu}
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                onSelectModel={onSelectModel}
-                appSettings={appSettings}
-                groupedModels={groupedModels}
-                quotas={quotas}
-                codexUsage={codexUsage}
-                setIsModelMenuOpen={setIsModelMenuOpen}
-                contextTokens={contextTokens}
-                t={t}
-                isListening={isListening}
-                startListening={startListening}
-                stopListening={stopListening}
-                autoReadEnabled={autoReadEnabled}
-                setAutoReadEnabled={setAutoReadEnabled}
-                handleKeyDown={handleKeyDown}
-                handlePaste={handlePaste}
-                prompts={prompts}
             />
         </motion.div>
     );

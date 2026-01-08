@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
 import { resolve } from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
     plugins: [
@@ -67,7 +68,14 @@ export default defineConfig({
                 }
             }
         ]),
-        renderer()
+        renderer(),
+        // Bundle analyzer - generates stats.html after build
+        visualizer({
+            filename: 'stats.html',
+            open: false,
+            gzipSize: true,
+            brotliSize: true
+        })
     ],
     resolve: {
         alias: {
@@ -77,6 +85,27 @@ export default defineConfig({
         }
     },
     build: {
-        outDir: 'dist/renderer'
+        outDir: 'dist/renderer',
+        rollupOptions: {
+            output: {
+                // Manual chunks for code splitting
+                manualChunks: {
+                    // Monaco Editor - very large, separate chunk
+                    'monaco': ['monaco-editor', '@monaco-editor/react'],
+                    // React ecosystem
+                    'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+                    // Animation libraries
+                    'animation': ['framer-motion'],
+                    // Utilities
+                    'utils': ['lodash', 'date-fns', 'uuid'],
+                    // Icons
+                    'icons': ['lucide-react'],
+                    // Markdown
+                    'markdown': ['react-markdown', 'remark-gfm', 'rehype-highlight']
+                }
+            }
+        },
+        // Increase chunk size warning limit
+        chunkSizeWarningLimit: 1000
     }
 })

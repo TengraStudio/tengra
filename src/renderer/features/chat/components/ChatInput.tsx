@@ -1,82 +1,58 @@
-﻿
-import React, { useEffect } from 'react'
+﻿import React, { useEffect, useRef } from 'react'
 import { Send, Square, Paperclip, X, Image as ImageIcon, FileText, FileCode, File as FileIcon, Mic, MicOff } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Attachment, Prompt } from '@/types'
+import { Attachment } from '@/types'
 import { cn } from '@/lib/utils'
 import { ModelSelector } from '@/features/models/components/ModelSelector'
+import { useChat } from '@/context/ChatContext'
+import { useModel } from '@/context/ModelContext'
+import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from '@/i18n'
 
 interface ChatInputProps {
-    input: string
-    setInput: (value: string) => void
-    attachments: Attachment[]
-    removeAttachment: (index: number) => void
-    isLoading: boolean
-    sendMessage: () => void
-    stopGeneration: () => void
-    fileInputRef: React.RefObject<HTMLInputElement>
-    textareaRef: React.RefObject<HTMLTextAreaElement>
-    processFile: (file: File) => void
-    showFileMenu: boolean
-    setShowFileMenu: (show: boolean) => void
-    selectedProvider: string
-    selectedModel: string
-    onSelectModel: (provider: string, model: string) => void
-    appSettings: any
-    groupedModels: any
-    quotas: any
-    codexUsage: any
-    setIsModelMenuOpen: (open: boolean) => void
-    contextTokens: number
-    t: (key: string) => string
-    isListening: boolean
-    startListening: () => void
-    stopListening: () => void
-    autoReadEnabled: boolean
-    setAutoReadEnabled: (enabled: boolean) => void
-    handleKeyDown: (e: React.KeyboardEvent) => void
-    handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void
-    prompts?: Prompt[]
+    fileInputRef?: React.RefObject<HTMLInputElement>
+    textareaRef?: React.RefObject<HTMLTextAreaElement>
+    showFileMenu?: boolean
+    setShowFileMenu?: (show: boolean) => void
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
-    input,
-    setInput,
-    attachments,
-    removeAttachment,
-    isLoading,
-    sendMessage,
-    stopGeneration,
-    fileInputRef,
-    textareaRef,
-    processFile,
+    fileInputRef: externalFileInputRef,
+    textareaRef: externalTextareaRef,
     showFileMenu: _showFileMenu,
-    setShowFileMenu: _setShowFileMenu,
-    selectedProvider,
-    selectedModel,
-    onSelectModel,
-    appSettings,
-    groupedModels,
-    quotas,
-    codexUsage,
-    setIsModelMenuOpen,
-    contextTokens,
-    t,
-    isListening,
-    startListening,
-    stopListening,
-    autoReadEnabled: _autoReadEnabled,
-    setAutoReadEnabled: _setAutoReadEnabled,
-    handleKeyDown: _handleKeyDown,
-    handlePaste: _handlePaste,
-    prompts = []
+    setShowFileMenu: _setShowFileMenu
 }) => {
+    // Context Consumption
+    const {
+        input, setInput, attachments, removeAttachment, processFile,
+        isLoading, handleSend: sendMessage, stopGeneration,
+        prompts, isListening, startListening, stopListening,
+        contextTokens
+    } = useChat()
+
+    const {
+        selectedModel, selectedProvider, setSelectedModel, setSelectedProvider,
+        groupedModels, setIsModelMenuOpen
+    } = useModel()
+
+    const {
+        appSettings, quotas, codexUsage, language
+    } = useAuth()
+
+    const { t } = useTranslation(language || 'en')
+
+    // Local refs if not provided from outside (though ViewManager usually provides them)
+    const localFileInputRef = useRef<HTMLInputElement>(null)
+    const localTextareaRef = useRef<HTMLTextAreaElement>(null)
+    const fileInputRef = externalFileInputRef || localFileInputRef
+    const textareaRef = externalTextareaRef || localTextareaRef
 
     const [showCommandMenu, setShowCommandMenu] = React.useState(false)
     const [commandQuery, setCommandQuery] = React.useState('')
     const [selectedIndex, setSelectedIndex] = React.useState(0)
 
     const filteredPrompts = React.useMemo(() => {
+        if (!prompts) return []
         if (!commandQuery) return prompts.slice(0, 5)
         return prompts.filter(p => p.title.toLowerCase().includes(commandQuery.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(commandQuery.toLowerCase()))).slice(0, 5)
     }, [prompts, commandQuery])
@@ -164,7 +140,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         exit={{ opacity: 0, y: 10 }}
                         className="flex flex-wrap gap-2 mb-3 px-2"
                     >
-                        {attachments.map((att, i) => (
+                        {attachments.map((att: Attachment, i: number) => (
                             <div key={i} className="group relative flex items-center gap-2 bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 pr-8">
                                 <span className={cn(
                                     "p-1.5 rounded-md",
@@ -256,14 +232,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     <ModelSelector
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
-                        onSelect={onSelectModel}
+                        onSelect={(p, m) => {
+                            setSelectedProvider(p as any);
+                            setSelectedModel(m);
+                        }}
                         settings={appSettings}
-                        groupedModels={groupedModels}
+                        groupedModels={groupedModels || undefined}
                         quotas={quotas}
                         codexUsage={codexUsage}
                         onOpenChange={setIsModelMenuOpen}
                         contextTokens={contextTokens}
-                        language={appSettings?.general?.language as any}
+                        language={language as any}
                     />
                 </div>
 
@@ -282,7 +261,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
                 {/* Send/Stop Button */}
                 <button
-                    onClick={isLoading ? stopGeneration : sendMessage}
+                    onClick={isLoading ? stopGeneration : () => sendMessage()}
                     disabled={!isLoading && !input.trim() && attachments.length === 0}
                     className={cn(
                         "p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5",

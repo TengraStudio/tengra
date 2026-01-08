@@ -5,7 +5,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from '../services/data.service'
+import { DataService } from '../services/data/data.service'
 
 export interface Migration {
     version: number
@@ -25,7 +25,7 @@ export class MigrationService {
     private migrations: Migration[] = []
     private applied: MigrationRecord[] = []
 
-    constructor(private dataService: DataService) {
+    constructor(dataService: DataService) {
         this.migrationsPath = path.join(dataService.getPath('data'), 'migrations.json')
     }
 

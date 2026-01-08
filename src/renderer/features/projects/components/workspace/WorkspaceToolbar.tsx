@@ -16,6 +16,7 @@ interface WorkspaceToolbarProps {
     showAgentPanel: boolean;
     toggleAgentPanel: () => void;
     toggleSettings: () => void;
+    onOpenGit?: () => void;
     language: Language;
 }
 
@@ -39,6 +40,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     showAgentPanel,
     toggleAgentPanel,
     toggleSettings,
+    onOpenGit,
     language
 }) => {
     const { t } = useTranslation(language);
@@ -113,6 +115,14 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
+                <button
+                    onClick={() => onOpenGit?.()}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-md border border-white/5 text-xs font-medium transition-colors group"
+                    title="Git Commit"
+                >
+                    <div className="w-2 h-2 rounded-full bg-orange-400 group-hover:animate-pulse" />
+                    <span className="text-muted-foreground group-hover:text-white">Git</span>
+                </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] font-medium text-emerald-400/80 uppercase tracking-wider">{t('workspace.online')}</span>

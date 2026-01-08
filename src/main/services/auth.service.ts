@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from './data.service'
+import { DataService } from './data/data.service'
 import { SecurityService } from './security.service'
 
 export class AuthService {

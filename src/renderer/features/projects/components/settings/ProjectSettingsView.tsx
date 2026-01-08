@@ -29,6 +29,8 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
     const [suggestedIdeas, setSuggestedIdeas] = useState<string[]>([])
     const [suggestedColors, setSuggestedColors] = useState<string[]>([])
 
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
     // Save Handlers
     const handleGeneralSave = async () => {
         await onUpdate(generalForm)
@@ -51,11 +53,8 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
         if (!logoPrompt) return
         setIsGenerating(true)
         try {
-            // Call via IPC (assuming we exposed it on window.electron.project)
-            // Need to update electron.d.ts if not present, but for now we cast to any
             const logoPath = await (window.electron as any).project.generateLogo(project.path, logoPrompt, logoStyle)
             setGeneratedLogo(logoPath)
-            // Do NOT save automatically. Let user decide.
         } catch (error) {
             console.error('Logo generation failed:', error)
         } finally {
@@ -101,16 +100,6 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
                     <Terminal className="w-4 h-4" />
                     {t('settings.advanced') || 'Advanced Config'}
                 </button>
-
-                <div className="mt-auto">
-                    <button
-                        onClick={onDelete}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left text-red-500 hover:bg-red-500/10 w-full"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        {t('common.delete') || 'Delete Project'}
-                    </button>
-                </div>
             </div>
 
             {/* Content */}
@@ -118,45 +107,84 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
                 <div className="max-w-2xl mx-auto space-y-8">
 
                     {activeTab === 'general' && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-medium mb-1">{t('projects.generalInfo')}</h3>
-                                <p className="text-sm text-muted-foreground">{t('projects.generalInfoDesc')}</p>
-                            </div>
+                        <div className="space-y-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-xl font-medium mb-1">{t('projects.generalInfo')}</h3>
+                                    <p className="text-sm text-muted-foreground">{t('projects.generalInfoDesc')}</p>
+                                </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.nameLabel')}</label>
-                                    <input
-                                        type="text"
-                                        value={generalForm.title}
-                                        onChange={(e) => setGeneralForm(prev => ({ ...prev, title: e.target.value }))}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.description')}</label>
-                                    <textarea
-                                        value={generalForm.description}
-                                        onChange={(e) => setGeneralForm(prev => ({ ...prev, description: e.target.value }))}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 min-h-[100px]"
-                                    />
-                                </div>
-                                <div className="space-y-2 opacity-60">
-                                    <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.localPath')} (Read Only)</label>
-                                    <div className="w-full bg-white/5 border border-white/5 rounded-lg px-4 py-2.5 text-sm font-mono text-muted-foreground truncate">
-                                        {project.path}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.nameLabel')}</label>
+                                        <input
+                                            type="text"
+                                            value={generalForm.title}
+                                            onChange={(e) => setGeneralForm(prev => ({ ...prev, title: e.target.value }))}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.description')}</label>
+                                        <textarea
+                                            value={generalForm.description}
+                                            onChange={(e) => setGeneralForm(prev => ({ ...prev, description: e.target.value }))}
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 min-h-[100px]"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 opacity-60">
+                                        <label className="text-xs font-medium uppercase text-muted-foreground">{t('projects.localPath')} (Read Only)</label>
+                                        <div className="w-full bg-white/5 border border-white/5 rounded-lg px-4 py-2.5 text-sm font-mono text-muted-foreground truncate">
+                                            {project.path}
+                                        </div>
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={handleGeneralSave}
+                                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    {t('projects.saveChanges')}
+                                </button>
                             </div>
 
-                            <button
-                                onClick={handleGeneralSave}
-                                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors flex items-center gap-2"
-                            >
-                                <Save className="w-4 h-4" />
-                                {t('projects.saveChanges')}
-                            </button>
+                            {/* Danger Zone */}
+                            <div className="pt-8 border-t border-white/5">
+                                <h3 className="text-sm font-bold text-red-500 uppercase tracking-widest mb-4">Danger Zone</h3>
+                                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-6 flex items-center justify-between">
+                                    <div>
+                                        <h4 className="font-medium text-white mb-1">{t('projects.deleteProject') || 'Delete Project'}</h4>
+                                        <p className="text-sm text-muted-foreground">{t('projects.deleteProjectDesc') || 'Permanently delete this project and all its data.'}</p>
+                                    </div>
+
+                                    {!showDeleteConfirm ? (
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            {t('common.delete')}
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4">
+                                            <span className="text-xs text-red-400 font-bold uppercase">Are you sure?</span>
+                                            <button
+                                                onClick={onDelete}
+                                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors"
+                                            >
+                                                Yes, Delete
+                                            </button>
+                                            <button
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                                className="px-4 py-2 bg-transparent hover:bg-white/5 text-muted-foreground hover:text-white rounded-lg text-sm transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

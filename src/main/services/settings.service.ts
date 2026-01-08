@@ -168,7 +168,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpAutoExecuteSafe: true
 }
 
-import { DataService } from './data.service'
+import { DataService } from './data/data.service'
 import { AuthService } from './auth.service'
 
 export class SettingsService {

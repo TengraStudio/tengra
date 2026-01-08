@@ -4,8 +4,6 @@
  */
 
 import { Migration } from '../services/migration.service'
-import * as fs from 'fs'
-import * as path from 'path'
 
 /**
  * Migration v1: Initial schema setup

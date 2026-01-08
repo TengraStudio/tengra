@@ -245,7 +245,7 @@ app.whenReady().then(async () => {
     registerExportIpc(() => mainWindow)
 
     // Council IPC
-    registerCouncilIpc(services.councilService, services.databaseService)
+    registerCouncilIpc(services.agentCouncilService, services.databaseService)
 
     // Register Gallery IPC
     registerGalleryIpc(services.dataService.getPath('gallery'))

@@ -1,12 +1,12 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { LocalAIService } from '../services/local-ai.service'
+import { LocalAIService } from '../services/llm/local-ai.service'
 import { SettingsService } from '../services/settings.service'
-import { LLMService } from '../services/llm.service'
-import { OllamaService } from '../services/ollama.service'
-import { LlamaService } from '../services/llama.service'
-import { OllamaHealthService } from '../services/ollama-health.service'
-import { ProxyService } from '../services/proxy.service'
-import { CopilotService } from '../services/copilot.service';
+import { LLMService } from '../services/llm/llm.service'
+import { OllamaService } from '../services/llm/ollama.service'
+import { LlamaService } from '../services/llm/llama.service'
+import { OllamaHealthService } from '../services/llm/ollama-health.service'
+import { ProxyService } from '../services/proxy/proxy.service'
+import { CopilotService } from '../services/llm/copilot.service';
 
 export function registerOllamaIpc(options: {
     localAIService: LocalAIService

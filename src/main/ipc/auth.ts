@@ -1,17 +1,17 @@
 import { ipcMain } from 'electron'
-import { ProxyService } from '../services/proxy.service'
-import { CopilotService } from '../services/copilot.service'
+import { ProxyService } from '../services/proxy/proxy.service'
+import { CopilotService } from '../services/llm/copilot.service'
 import { SettingsService } from '../services/settings.service'
 
 export function registerAuthIpc(proxyService: ProxyService, settingsService: SettingsService, copilotService: CopilotService) {
     ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
-        // startLoginFlow was essentially requestGitHubDeviceCode
-        return await proxyService.requestGitHubDeviceCode(appId)
+        // startLoginFlow was essentially initiateGitHubAuth
+        return await proxyService.initiateGitHubAuth(appId)
     })
 
     ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
         try {
-            const token = await proxyService.pollForGitHubToken(deviceCode, interval, appId)
+            const token = await proxyService.waitForGitHubToken(deviceCode, interval, appId)
             const settings = settingsService.getSettings()
 
             // Always save to github.token providing it's the main login

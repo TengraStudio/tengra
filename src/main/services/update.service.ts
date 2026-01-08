@@ -2,7 +2,7 @@
 import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, app, ipcMain } from 'electron'
 import { SettingsService } from './settings.service'
-import { DataService } from './data.service'
+import { DataService } from './data/data.service'
 import log from 'electron-log'
 
 export class UpdateService {

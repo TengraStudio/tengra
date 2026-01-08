@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { RequestQueue } from './request-queue.util'
 
 describe('RequestQueue', () => {

@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { promises as fs } from 'fs';
-import { LLMService } from './llm.service';
+import { LLMService } from './llm/llm.service';
 import { ProjectService } from './project.service';
 
 export class LogoService {

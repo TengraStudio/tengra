@@ -1,4 +1,4 @@
-import { LanceDbService, AgentRecord } from './lancedb.service'
+import { LanceDbService, type AgentRecord } from './data/lancedb.service'
 import { randomUUID } from 'crypto'
 
 export interface AgentDefinition {

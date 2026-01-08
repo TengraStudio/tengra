@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { LlamaService } from '../services/llama.service'
+import { LlamaService } from '../services/llm/llama.service'
 
 export function registerLlamaIpc(llamaService: LlamaService) {
     ipcMain.handle('llama:loadModel', async (_event, modelPath: string, config: any) => {

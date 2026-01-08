@@ -5,7 +5,7 @@ import * as crypto from 'crypto'
 import https from 'https'
 import http from 'http'
 import { appLogger } from '../logging/logger'
-import { DataService } from './data.service'
+import { DataService } from './data/data.service'
 
 export class ImagePersistenceService {
     private galleryPath: string

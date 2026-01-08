@@ -10,22 +10,21 @@ import {
     Users,
     Container
 } from 'lucide-react'
+import { useChat } from '@/context/ChatContext'
+import { useTranslation } from '@/i18n'
+import { useAuth } from '@/context/AuthContext'
 
 interface AppHeaderProps {
     currentView: string
-    currentChatId: string | null
-    chats: any[]
-    onClearChat: () => void
-    t: any
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-    currentView,
-    currentChatId,
-    chats,
-    onClearChat,
-    t
+    currentView
 }) => {
+    const { chats, currentChatId, clearMessages } = useChat()
+    const { language } = useAuth()
+    const { t } = useTranslation(language || 'en')
+
     const currentChat = chats.find(c => c.id === currentChatId)
 
     const viewIcons: Record<string, any> = {
@@ -58,7 +57,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <div className="flex items-center gap-2 no-drag">
                 {currentView === 'chat' && currentChatId && (
                     <button
-                        onClick={onClearChat}
+                        onClick={clearMessages}
                         className="p-2 hover:bg-accent/50 rounded-xl transition-all text-muted-foreground hover:text-foreground group"
                         title={t('chat.clear')}
                     >

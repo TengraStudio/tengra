@@ -1,6 +1,6 @@
-import { DatabaseService } from './database.service';
+import { DatabaseService } from './data/database.service';
 import { ScannerService } from './scanner.service';
-import { EmbeddingService } from './embedding.service';
+import { EmbeddingService } from './llm/embedding.service';
 
 export class UtilityService {
     constructor(

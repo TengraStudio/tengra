@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
-import { CopilotService } from '../services/copilot.service'
+import { CopilotService } from '../services/llm/copilot.service'
 import { SettingsService } from '../services/settings.service'
-import { LLMService } from '../services/llm.service'
-import { ProxyService } from '../services/proxy.service'
+import { LLMService } from '../services/llm/llm.service'
+import { ProxyService } from '../services/proxy/proxy.service'
 import { parseAIResponseContent } from '../utils/response-parser'
 
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
@@ -100,7 +100,7 @@ export function registerChatIpc(options: {
             const proxyKey = proxyService.getProxyKey()
 
             console.log(`[Main] Routing ${model} via Cliproxy/LLMService`)
-            const res = await llmService.openaiChat(messages, model, undefined, proxyUrl, proxyKey);
+            const res = await llmService.chatOpenAI(messages, model, undefined, proxyUrl, proxyKey);
             const content = res.content || '';
             const reasoning = res.reasoning_content || '';
             const images = res.images || [];
@@ -216,7 +216,7 @@ export function registerChatIpc(options: {
                 }
 
                 // 3. LLMService (Cliproxy) for all others
-                for await (const chunk of llmService.openaiStreamChat(messages, model, tools, proxyUrl, proxyKey)) {
+                for await (const chunk of llmService.chatOpenAIStream(messages, model, tools, proxyUrl, proxyKey)) {
                     event.sender.send('ollama:streamChunk', { ...chunk, chatId });
                 }
             } catch (error: any) {
