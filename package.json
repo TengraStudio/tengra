@@ -24,7 +24,7 @@
     "orbit"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",
     "@eslint/js": "^9.39.2",
