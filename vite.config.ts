@@ -91,17 +91,17 @@ export default defineConfig({
                 // Manual chunks for code splitting
                 manualChunks: {
                     // Monaco Editor - very large, separate chunk
-                    'monaco': ['monaco-editor', '@monaco-editor/react'],
+                    'monaco': ['@monaco-editor/react'],
                     // React ecosystem
                     'react-vendor': ['react', 'react-dom', 'react-router-dom'],
                     // Animation libraries
                     'animation': ['framer-motion'],
                     // Utilities
-                    'utils': ['lodash', 'date-fns', 'uuid'],
+
                     // Icons
                     'icons': ['lucide-react'],
                     // Markdown
-                    'markdown': ['react-markdown', 'remark-gfm', 'rehype-highlight']
+                    'markdown': ['react-markdown', 'remark-gfm']
                 }
             }
         },
