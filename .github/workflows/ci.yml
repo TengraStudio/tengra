@@ -26,6 +26,10 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
+    - name: Run Linter
+      run: npm run lint
+      continue-on-error: true # Don't fail build on lint errors for now
+
 
 
     - name: Run Tests
