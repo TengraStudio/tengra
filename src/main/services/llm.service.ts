@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ImagePersistenceService } from './image-persistence.service';
 import { DataService } from './data.service';
+import { withRetry, getErrorMessage } from '../utils/retry.util';
 
 
 export interface OpenAIResponse {
@@ -255,7 +256,15 @@ export class LLMService {
             };
             if (dispatcher) requestInit.dispatcher = dispatcher;
 
-            const response = await fetch(endpoint, requestInit);
+            const response = await withRetry(
+                () => fetch(endpoint, requestInit),
+                {
+                    maxRetries: 2,
+                    onRetry: (err, attempt, delay) => {
+                        console.log(`[LLMService] Retrying OpenAI request (attempt ${attempt + 1}) after ${delay}ms: ${getErrorMessage(err)}`);
+                    }
+                }
+            );
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(errorText || `HTTP ${response.status}`);
@@ -321,14 +330,22 @@ export class LLMService {
         console.log('[LLMService] Stream request to:', endpoint);
         console.log('[LLMService] Request body:', JSON.stringify(requestBody, null, 2));
 
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${effectiveApiKey || 'dummy'}`
-            },
-            body: JSON.stringify(requestBody)
-        });
+        const response = await withRetry(
+            () => fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${effectiveApiKey || 'dummy'}`
+                },
+                body: JSON.stringify(requestBody)
+            }),
+            {
+                maxRetries: 2,
+                onRetry: (err, attempt, delay) => {
+                    console.log(`[LLMService] Retrying stream request (attempt ${attempt + 1}) after ${delay}ms: ${getErrorMessage(err)}`);
+                }
+            }
+        );
 
         if (!response.ok) {
             const errorText = await response.text().catch(() => '')
@@ -474,15 +491,23 @@ export class LLMService {
         };
         if (systemMessage) body.system = systemMessage;
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': this.anthropicApiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify(body)
-        });
+        const response = await withRetry(
+            () => fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': this.anthropicApiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify(body)
+            }),
+            {
+                maxRetries: 2,
+                onRetry: (err, attempt, delay) => {
+                    console.log(`[LLMService] Retrying Anthropic request (attempt ${attempt + 1}) after ${delay}ms: ${getErrorMessage(err)}`);
+                }
+            }
+        );
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
         return {
@@ -494,11 +519,19 @@ export class LLMService {
     async geminiChat(messages: any[], model: string = 'gemini-1.5-pro'): Promise<OpenAIResponse> {
         if (!this.geminiApiKey) throw new Error('Gemini API Key not set');
         const contents = this.normalizeGeminiMessages(messages);
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents })
-        });
+        const response = await withRetry(
+            () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents })
+            }),
+            {
+                maxRetries: 2,
+                onRetry: (err, attempt, delay) => {
+                    console.log(`[LLMService] Retrying Gemini request (attempt ${attempt + 1}) after ${delay}ms: ${getErrorMessage(err)}`);
+                }
+            }
+        );
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
         return {
@@ -509,14 +542,22 @@ export class LLMService {
 
     async groqChat(messages: any[], model: string = 'llama3-70b-8192'): Promise<OpenAIResponse> {
         if (!this.groqApiKey) throw new Error('Groq API Key not set');
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.groqApiKey}`
-            },
-            body: JSON.stringify({ model, messages })
-        });
+        const response = await withRetry(
+            () => fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.groqApiKey}`
+                },
+                body: JSON.stringify({ model, messages })
+            }),
+            {
+                maxRetries: 2,
+                onRetry: (err, attempt, delay) => {
+                    console.log(`[LLMService] Retrying Groq request (attempt ${attempt + 1}) after ${delay}ms: ${getErrorMessage(err)}`);
+                }
+            }
+        );
         const data = await response.json();
         if (data.error) throw new Error(data.error.message);
         return {

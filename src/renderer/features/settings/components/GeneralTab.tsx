@@ -1,19 +1,28 @@
 ﻿import React from 'react'
-import { Globe, Activity, Database } from 'lucide-react'
+import { Globe, Activity, Database, Download, RefreshCw } from 'lucide-react'
 import { AppSettings } from '../hooks/useSettingsLogic'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
 
 interface GeneralTabProps {
     settings: AppSettings | null
     updateGeneral: (patch: Partial<AppSettings['general']>) => void
+    handleSave: (settings: AppSettings) => Promise<void>
     t: (key: string) => string
 }
 
-export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral, t }) => {
+export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral, handleSave, t }) => {
     const languageOptions = [
         { value: 'tr', label: t('general.turkish') },
         { value: 'en', label: t('general.english') }
     ]
+
+    const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
+        if (!settings) return
+        const current = settings.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
+        handleSave({ ...settings, autoUpdate: { ...current, ...patch } })
+    }
+
+    const autoUpdate = settings?.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
 
     return (
         <div className="space-y-6">
@@ -58,6 +67,72 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                     >
                         {t('general.startTour')}
                     </button>
+                </div>
+
+                {/* Updates Section */}
+                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Download className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-bold uppercase text-muted-foreground">Updates</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+                            <span className="text-sm font-medium">Auto-Update</span>
+                            <div
+                                onClick={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })}
+                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${autoUpdate.enabled ? 'bg-primary' : 'bg-gray-600'}`}
+                            >
+                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${autoUpdate.enabled ? 'translate-x-5' : ''}`} />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+                            <span className="text-sm font-medium">Check on Startup</span>
+                            <div
+                                onClick={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })}
+                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${autoUpdate.checkOnStartup ? 'bg-primary' : 'bg-gray-600'}`}
+                            >
+                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${autoUpdate.checkOnStartup ? 'translate-x-5' : ''}`} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                        <button
+                            onClick={() => window.electron.update.checkForUpdates()}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase rounded-lg transition-all"
+                        >
+                            <RefreshCw className="w-3 h-3" />
+                            Check for Updates
+                        </button>
+                    </div>
+                </div>
+
+                {/* Privacy Section */}
+                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-bold uppercase text-muted-foreground">Privacy</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+                            <div>
+                                <span className="text-sm font-medium">Crash Reporting</span>
+                                <p className="text-xs text-muted-foreground mt-1">Send anonymous crash reports to help us improve Orbit.</p>
+                            </div>
+                            <div
+                                onClick={() => {
+                                    if (!settings) return
+                                    const current = settings.crashReporting || { enabled: false }
+                                    handleSave({ ...settings, crashReporting: { enabled: !current.enabled } })
+                                }}
+                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${settings?.crashReporting?.enabled ? 'bg-primary' : 'bg-gray-600'}`}
+                            >
+                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${settings?.crashReporting?.enabled ? 'translate-x-5' : ''}`} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

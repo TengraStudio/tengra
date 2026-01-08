@@ -24,6 +24,8 @@ import { NotificationService } from '../services/notification.service'
 import { ClipboardService } from '../services/clipboard.service'
 import { GitService } from '../services/git.service'
 import { ProxyService } from '../services/proxy.service'
+import { ProxyProcessManager } from '../services/proxy-process.manager'
+import { QuotaService } from '../services/quota.service'
 import { CopilotService } from '../services/copilot.service'
 import { ScreenshotService } from '../services/screenshot.service'
 import { HistoryImportService } from '../services/history-import.service'
@@ -41,6 +43,9 @@ import { MemoryService } from '../services/memory.service'
 import { PageSpeedService } from '../services/pagespeed.service'
 import { RuleService } from '../services/rule.service'
 import { AgentService } from '../services/agent.service'
+import { UpdateService } from '../services/update.service'
+import { SentryService } from '../services/sentry.service'
+import { getHealthCheckService } from '../services/health-check.service'
 
 
 import { DataService } from '../services/data.service'
@@ -69,7 +74,9 @@ export async function createServices(allowedFileRoots: Set<string>) {
     const lanceDbService = new LanceDbService(dataService)
     const databaseService = new DatabaseService(dataService, lanceDbService)
     const sshService = new SSHService(dataService.getPath('config'))
-    const proxyService = new ProxyService(settingsService, dataService, securityService)
+    const proxyProcessManager = new ProxyProcessManager(settingsService, dataService, securityService)
+    const quotaService = new QuotaService(settingsService, dataService, securityService)
+    const proxyService = new ProxyService(settingsService, dataService, securityService, proxyProcessManager, quotaService)
     const copilotService = new CopilotService()
     const systemService = new SystemService()
     const networkService = new NetworkService()
@@ -92,11 +99,30 @@ export async function createServices(allowedFileRoots: Set<string>) {
     const agentService = new AgentService(lanceDbService)
     await agentService.init()
 
+    const updateService = new UpdateService(settingsService, dataService)
+    const sentryService = new SentryService(settingsService)
+
     // Start Ollama health monitoring
     const ollamaHealthService = getOllamaHealthService(
         settingsService.getSettings()?.ollama?.url || 'http://127.0.0.1:11434'
     )
     ollamaHealthService.start()
+
+    // Setup Health Check Service
+    const healthCheckService = getHealthCheckService()
+    healthCheckService.register('ollama', async () => {
+        try {
+            const res = await fetch((settingsService.getSettings()?.ollama?.url || 'http://127.0.0.1:11434') + '/api/tags')
+            return res.ok
+        } catch { return false }
+    }, { intervalMs: 60000, critical: false })
+    healthCheckService.register('proxy', async () => {
+        try {
+            const res = await fetch('http://127.0.0.1:8317/health')
+            return res.ok
+        } catch { return false }
+    }, { intervalMs: 30000, critical: true })
+    healthCheckService.start()
 
     const projectService = new ProjectService()
     const processService = new ProcessService()
@@ -155,7 +181,10 @@ export async function createServices(allowedFileRoots: Set<string>) {
         pageSpeedService,
         ruleService,
         agentService,
-        dataService
+        dataService,
+        updateService,
+        sentryService,
+        healthCheckService
     }
 
 }

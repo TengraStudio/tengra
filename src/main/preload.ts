@@ -290,6 +290,20 @@ export interface ElectronAPI {
 
     on: (channel: string, callback: (...args: any[]) => void) => void
     getUserDataPath: () => Promise<string>
+
+    update: {
+        checkForUpdates: () => Promise<void>
+        downloadUpdate: () => Promise<void>
+        installUpdate: () => Promise<void>
+    }
+
+    ipcRenderer: {
+        on: (channel: string, listener: (event: any, ...args: any[]) => void) => () => void
+        off: (channel: string, listener: (...args: any[]) => void) => void
+        send: (channel: string, ...args: any[]) => void
+        invoke: (channel: string, ...args: any[]) => Promise<any>
+        removeAllListeners: (channel: string) => void
+    }
 }
 
 const api: ElectronAPI = {
@@ -591,7 +605,24 @@ const api: ElectronAPI = {
         return () => ipcRenderer.removeListener(channel, listener)
     },
 
-    getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath')
+    getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
+
+    update: {
+        checkForUpdates: () => ipcRenderer.invoke('update:check'),
+        downloadUpdate: () => ipcRenderer.invoke('update:download'),
+        installUpdate: () => ipcRenderer.invoke('update:install')
+    },
+
+    ipcRenderer: {
+        on: (channel: string, listener: (event: any, ...args: any[]) => void) => {
+            ipcRenderer.on(channel, listener)
+            return () => ipcRenderer.removeListener(channel, listener)
+        },
+        off: (channel: string, listener: (...args: any[]) => void) => ipcRenderer.removeListener(channel, listener),
+        send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+        invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
+        removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
+    }
 }
 
 contextBridge.exposeInMainWorld('electron', api)

@@ -1,0 +1,136 @@
+
+import { autoUpdater } from 'electron-updater'
+import { BrowserWindow, app, ipcMain } from 'electron'
+import { SettingsService } from './settings.service'
+import { DataService } from './data.service'
+import log from 'electron-log'
+
+export class UpdateService {
+    private settingsService: SettingsService
+    private window: BrowserWindow | null = null
+
+    constructor(
+        settingsService: SettingsService,
+        dataService: DataService
+    ) {
+        this.settingsService = settingsService
+
+        // Configure electron-log
+        log.transports.file.level = 'info'
+        log.transports.file.resolvePathFn = () => dataService.getPath('logs') + '/update.log'
+        autoUpdater.logger = log
+
+        // Disable auto-download if configured (we'll handle it manually based on settings)
+        autoUpdater.autoDownload = false
+        autoUpdater.autoInstallOnAppQuit = true
+    }
+
+    init(window: BrowserWindow) {
+        this.window = window
+
+        // Don't run in development unless forced
+        if (!app.isPackaged && !process.env.FORCE_UPDATE_TEST) {
+            log.info('Skipping auto-updater in development mode')
+            return
+        }
+
+        this.registerEvents()
+        this.registerIpcHandlers()
+
+        const settings = this.settingsService.getSettings()
+        if (settings.autoUpdate?.enabled && settings.autoUpdate?.checkOnStartup) {
+            // Delay check slightly to not slow down startup
+            setTimeout(() => {
+                this.checkForUpdates()
+            }, 5000)
+        }
+    }
+
+    private registerEvents() {
+        autoUpdater.on('checking-for-update', () => {
+            this.sendToWindow('update:status', { state: 'checking' })
+        })
+
+        autoUpdater.on('update-available', (info) => {
+            log.info('Update available:', info)
+            this.sendToWindow('update:status', { state: 'available', version: info.version })
+
+            const settings = this.settingsService.getSettings()
+            if (settings.autoUpdate?.downloadAutomatically && !settings.autoUpdate?.notifyOnly) {
+                this.downloadUpdate()
+            }
+        })
+
+        autoUpdater.on('update-not-available', (info) => {
+            log.info('Update not available:', info)
+            this.sendToWindow('update:status', { state: 'not-available' })
+        })
+
+        autoUpdater.on('error', (err) => {
+            console.error('Update error:', err)
+            this.sendToWindow('update:status', { state: 'error', error: err.message })
+        })
+
+        autoUpdater.on('download-progress', (progressObj) => {
+            let log_message = 'Download speed: ' + progressObj.bytesPerSecond
+            log_message = log_message + ' - Downloaded ' + progressObj.percent + '%'
+            log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')'
+            // log.info(log_message) // Too verbose for file log usually
+
+            this.sendToWindow('update:status', {
+                state: 'downloading',
+                progress: progressObj.percent,
+                bytesPerSecond: progressObj.bytesPerSecond,
+                total: progressObj.total,
+                transferred: progressObj.transferred
+            })
+        })
+
+        autoUpdater.on('update-downloaded', (info) => {
+            log.info('Update downloaded')
+            this.sendToWindow('update:status', { state: 'downloaded', version: info.version })
+        })
+    }
+
+    private registerIpcHandlers() {
+        ipcMain.handle('update:check', async () => {
+            return await this.checkForUpdates()
+        })
+
+        ipcMain.handle('update:download', async () => {
+            return await this.downloadUpdate()
+        })
+
+        ipcMain.handle('update:install', () => {
+            this.quitAndInstall()
+        })
+    }
+
+    async checkForUpdates() {
+        try {
+            await autoUpdater.checkForUpdates()
+        } catch (error) {
+            log.error('Failed to check for updates', error)
+            throw error
+        }
+    }
+
+    async downloadUpdate() {
+        try {
+            await autoUpdater.downloadUpdate()
+        } catch (error) {
+            log.error('Failed to download update', error)
+            throw error
+        }
+    }
+
+    quitAndInstall() {
+        autoUpdater.quitAndInstall()
+    }
+
+    private sendToWindow(channel: string, ...args: any[]) {
+        if (this.window && !this.window.isDestroyed()) {
+            this.window.webContents.send(channel, ...args)
+        }
+    }
+}
