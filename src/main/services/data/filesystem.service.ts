@@ -1,21 +1,32 @@
 import * as fs from 'fs/promises'
 import { watch } from 'fs'
 import * as path from 'path'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import * as https from 'https'
 import { createWriteStream } from 'fs'
 import { ServiceResponse } from '../../../shared/types/index'
 
-const execAsync = promisify(exec)
-
 export class FileSystemService {
-    constructor(_allowedRoots?: string[]) {
-        // Restrictions removed by user request
+    private allowedRoots: string[] = []
+
+    constructor(allowedRoots?: string[]) {
+        if (allowedRoots) {
+            this.allowedRoots = allowedRoots.map(r => path.resolve(r))
+        }
     }
 
-    updateAllowedRoots(_allowedRoots: string[]) {
-        // No-op
+    updateAllowedRoots(allowedRoots: string[]) {
+        this.allowedRoots = allowedRoots.map(r => path.resolve(r))
+    }
+
+    private isPathAllowed(filePath: string): boolean {
+        const absolutePath = path.resolve(filePath)
+        return this.allowedRoots.some(root => absolutePath.startsWith(root))
+    }
+
+    private validatePath(filePath: string) {
+        if (!this.isPathAllowed(filePath)) {
+            throw new Error(`Access denied: Path is outside allowed directories. (${filePath})`)
+        }
     }
 
 
@@ -35,6 +46,7 @@ export class FileSystemService {
 
     async readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
         try {
+            this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
 
@@ -63,6 +75,7 @@ export class FileSystemService {
 
     async readImage(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
         try {
+            this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
             if (stats.size > 20 * 1024 * 1024) { // 20MB limit for images
@@ -87,6 +100,7 @@ export class FileSystemService {
 
     async isBinaryFile(filePath: string): Promise<boolean> {
         try {
+            this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
             if (stats.size === 0) return false
@@ -104,6 +118,7 @@ export class FileSystemService {
 
     async writeFile(filePath: string, content: string): Promise<{ success: boolean; error?: string }> {
         try {
+            this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
             const dir = path.dirname(absolutePath)
             await fs.mkdir(dir, { recursive: true })
@@ -116,6 +131,7 @@ export class FileSystemService {
 
     async listDirectory(dirPath: string): Promise<{ success: boolean; files?: any[]; error?: string }> {
         try {
+            this.validatePath(dirPath)
             const absolutePath = path.resolve(dirPath)
             const entries = await fs.readdir(absolutePath, { withFileTypes: true })
 
@@ -147,6 +163,7 @@ export class FileSystemService {
 
     async createDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            this.validatePath(dirPath)
             const absolutePath = path.resolve(dirPath)
             await fs.mkdir(absolutePath, { recursive: true })
             return { success: true }
@@ -157,6 +174,7 @@ export class FileSystemService {
 
     async deleteFile(filePath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            this.validatePath(filePath)
             await fs.unlink(path.resolve(filePath))
             return { success: true }
         } catch (error: any) {
@@ -166,6 +184,7 @@ export class FileSystemService {
 
     async deleteDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
         try {
+            this.validatePath(dirPath)
             await fs.rm(path.resolve(dirPath), { recursive: true, force: true })
             return { success: true }
         } catch (error: any) {
@@ -217,6 +236,8 @@ export class FileSystemService {
 
     async moveFile(source: string, destination: string): Promise<{ success: boolean; error?: string }> {
         try {
+            this.validatePath(source)
+            this.validatePath(destination)
             const srcPath = path.resolve(source)
             const destPath = path.resolve(destination)
             await fs.mkdir(path.dirname(destPath), { recursive: true })
@@ -262,12 +283,37 @@ export class FileSystemService {
 
     async unzip(zipPath: string, destPath: string): Promise<ServiceResponse> {
         try {
-            if (process.platform === 'win32') {
-                await execAsync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${destPath}' -Force"`)
-            } else {
-                await execAsync(`unzip -o "${zipPath}" -d "${destPath}"`)
-            }
-            return { success: true, message: `Extracted to ${destPath}` }
+            this.validatePath(zipPath)
+            this.validatePath(destPath)
+
+            const { spawn } = await import('child_process')
+
+            return new Promise((resolve) => {
+                let proc
+                if (process.platform === 'win32') {
+                    // Use powershell with array arguments to prevent injection
+                    proc = spawn('powershell.exe', [
+                        '-NoProfile',
+                        '-NonInteractive',
+                        '-Command',
+                        'Expand-Archive',
+                        '-Path',
+                        zipPath,
+                        '-DestinationPath',
+                        destPath,
+                        '-Force'
+                    ])
+                } else {
+                    proc = spawn('unzip', ['-o', zipPath, '-d', destPath])
+                }
+
+                let error = ''
+                proc.stderr?.on('data', (data) => error += data.toString())
+                proc.on('close', (code) => {
+                    if (code === 0) resolve({ success: true, message: `Extracted to ${destPath}` })
+                    else resolve({ success: false, error: error || `Exit code ${code}` })
+                })
+            })
         } catch (e: any) {
             return { success: false, error: e.message }
         }
