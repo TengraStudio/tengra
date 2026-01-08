@@ -7,6 +7,7 @@ import { QuickActionBar } from './components/layout/QuickActionBar'
 import { AudioChatOverlay } from './features/chat/components/AudioChatOverlay'
 import { AppHeader } from './components/layout/AppHeader'
 import { Modal } from './components/ui/modal'
+import { UpdateNotification } from './components/layout/UpdateNotification'
 
 import { useVoiceInput } from './features/chat/hooks/useVoiceInput'
 import { useTextToSpeech } from './features/chat/hooks/useTextToSpeech'
@@ -260,6 +261,7 @@ export default function App() {
             </AnimatePresence>
 
             <QuickActionBar onExplain={(text) => { setInput(`Açıkla: ${text}`); handleSend() }} onTranslate={(text) => { setInput(`Çevir: ${text}`); handleSend() }} language={language} />
+            <UpdateNotification />
         </div>
     )
 }

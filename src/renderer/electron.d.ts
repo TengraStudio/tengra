@@ -296,6 +296,21 @@ export interface ElectronAPI {
     // Generic event listener
     on: (channel: string, callback: (...args: any[]) => void) => () => void
     getUserDataPath: () => Promise<string>
+
+    update: {
+        checkForUpdates: () => Promise<void>
+        downloadUpdate: () => Promise<void>
+        installUpdate: () => Promise<void>
+    }
+
+    // Explicit ipcRenderer exposure for flexible components
+    ipcRenderer: {
+        on: (channel: string, listener: (event: any, ...args: any[]) => void) => () => void
+        off: (channel: string, listener: (...args: any[]) => void) => void
+        send: (channel: string, ...args: any[]) => void
+        invoke: (channel: string, ...args: any[]) => Promise<any>
+        removeAllListeners: (channel: string) => void
+    }
 }
 
 declare global {

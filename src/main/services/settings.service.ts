@@ -13,6 +13,15 @@ export interface AppSettings {
         provider: 'ollama' | 'openai' | 'llama' | 'none'
         model?: string
     }
+    autoUpdate?: {
+        enabled: boolean
+        checkOnStartup: boolean
+        downloadAutomatically: boolean
+        notifyOnly: boolean
+    }
+    crashReporting?: {
+        enabled: boolean
+    }
     general: {
         language: 'tr' | 'en'
         theme: string
@@ -94,6 +103,12 @@ const DEFAULT_SETTINGS: AppSettings = {
     embeddings: {
         provider: 'none',
         model: 'all-minilm' // fallback/legacy
+    },
+    autoUpdate: {
+        enabled: true,
+        checkOnStartup: true,
+        downloadAutomatically: true,
+        notifyOnly: false
     },
     general: {
         language: 'en',
@@ -191,6 +206,7 @@ export class SettingsService {
                     ...DEFAULT_SETTINGS,
                     ...loaded,
                     ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
+                    autoUpdate: { ...DEFAULT_SETTINGS.autoUpdate, ...(loaded.autoUpdate || {}) },
                     general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
                     github: {
                         ...DEFAULT_SETTINGS.github,
@@ -254,6 +270,7 @@ export class SettingsService {
 
         // Deep merge logic (simplified for brevity, ensuring objects exist) (KEEP EXISTING MERGE LOGIC)
         if (newSettings.ollama) this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
+        if (newSettings.autoUpdate) this.settings.autoUpdate = { ...this.settings.autoUpdate, ...newSettings.autoUpdate }
         if (newSettings.general) this.settings.general = { ...this.settings.general, ...newSettings.general }
         if (newSettings.github) this.settings.github = { ...this.settings.github, ...newSettings.github }
         if (newSettings.openai) this.settings.openai = { ...this.settings.openai, ...newSettings.openai }

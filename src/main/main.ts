@@ -253,6 +253,12 @@ app.whenReady().then(async () => {
     // NOW create window after all handlers are registered
     mainWindow = createWindow()
 
+    // Initialize Auto-Updater
+    services.updateService.init(mainWindow)
+
+    // Initialize Crash Reporting
+    services.sentryService.init()
+
 
 
     // Re-create on activate if needed

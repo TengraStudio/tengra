@@ -58,16 +58,28 @@ export class DataService {
                 new: this.paths.auth,
                 isDir: true
             },
+            // Encrypted Token: root/cliproxy-auth.enc -> data/auth/proxy-auth-token.enc
+            {
+                old: path.join(rootPath, 'cliproxy-auth.enc'),
+                new: path.join(this.paths.auth, 'proxy-auth-token.enc'),
+                isDir: false
+            },
             // Legacy Migration: root/cliproxy-auth-work -> data/auth
             {
                 old: path.join(rootPath, 'cliproxy-auth-work'),
                 new: this.paths.auth,
                 isDir: true
             },
-            // DB: root/orbit-lancedb -> data/db/orbit-lancedb
+            // DB: root/orbit-lancedb -> data/db/vector-store (Renamed from orbit-lancedb)
             {
                 old: path.join(rootPath, 'orbit-lancedb'),
-                new: path.join(this.paths.db, 'orbit-lancedb'),
+                new: path.join(this.paths.db, 'vector-store'),
+                isDir: true
+            },
+            // DB: runtime/data/db/orbit-lancedb -> data/db/vector-store (Rename if already migrated)
+            {
+                old: path.join(this.paths.db, 'orbit-lancedb'),
+                new: path.join(this.paths.db, 'vector-store'),
                 isDir: true
             },
             // SQLite: root/databases -> data/db
