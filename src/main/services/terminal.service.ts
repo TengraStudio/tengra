@@ -13,6 +13,8 @@ try {
     console.warn('[TerminalService] node-pty not available, terminal features disabled')
 }
 
+const MAX_BUFFER_SIZE = 1024 * 1024 // 1MB buffer per session
+
 interface TerminalSession {
     id: string
     ptyProcess: any
@@ -20,6 +22,7 @@ interface TerminalSession {
     cwd: string
     cols: number
     rows: number
+    buffer: string
 }
 
 export class TerminalService {
@@ -92,9 +95,22 @@ export class TerminalService {
             })
 
             // Set up event handlers
-            if (options.onData) {
-                ptyProcess.onData(options.onData)
-            }
+            ptyProcess.onData((data: string) => {
+                // Update buffer
+                const session = this.sessions.get(options.id)
+                if (session) {
+                    session.buffer += data
+                    // Truncate if too large (keep end)
+                    if (session.buffer.length > MAX_BUFFER_SIZE) {
+                        session.buffer = session.buffer.substring(session.buffer.length - MAX_BUFFER_SIZE)
+                    }
+                }
+
+                // Call external handler
+                if (options.onData) {
+                    options.onData(data)
+                }
+            })
 
             if (options.onExit) {
                 ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
@@ -109,7 +125,8 @@ export class TerminalService {
                 shell,
                 cwd,
                 cols,
-                rows
+                rows,
+                buffer: ''
             })
 
             return true
@@ -175,6 +192,13 @@ export class TerminalService {
      */
     getActiveSessions(): string[] {
         return Array.from(this.sessions.keys())
+    }
+
+    /**
+     * Get session buffer content
+     */
+    getSessionBuffer(sessionId: string): string {
+        return this.sessions.get(sessionId)?.buffer || ''
     }
 
     /**

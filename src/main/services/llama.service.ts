@@ -6,6 +6,7 @@ import { existsSync, mkdirSync } from 'fs'
 import { app } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import * as http from 'http'
+import { DataService } from './data.service'
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -39,10 +40,15 @@ export class LlamaService {
         backend: 'auto'
     }
 
-    constructor() {
+    constructor(dataService?: DataService) {
         // Get paths
         try {
-            this.modelsDir = join(app.getPath('userData'), 'models')
+            if (dataService) {
+                this.modelsDir = join(dataService.getPath('models'))
+            } else {
+                this.modelsDir = join(app.getPath('userData'), 'models')
+            }
+
             if (!existsSync(this.modelsDir)) {
                 mkdirSync(this.modelsDir, { recursive: true })
             }

@@ -5,7 +5,7 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { WelcomeScreen } from './WelcomeScreen';
-import { Message, Attachment } from '@/types';
+import { Message, Attachment, Prompt } from '@/types';
 import { Language } from '@/i18n';
 
 interface ChatViewProps {
@@ -54,6 +54,7 @@ interface ChatViewProps {
     handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
     showScrollButton?: boolean;
     setShowScrollButton?: (show: boolean) => void;
+    prompts: Prompt[];
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -102,7 +103,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
     handleKeyDown,
     handlePaste,
     showScrollButton,
-    setShowScrollButton
+    setShowScrollButton,
+    prompts
 }) => {
     return (
         <motion.div
@@ -115,6 +117,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             <ChatHeader
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                t={t}
             />
 
             <div
@@ -194,6 +197,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 setAutoReadEnabled={setAutoReadEnabled}
                 handleKeyDown={handleKeyDown}
                 handlePaste={handlePaste}
+                prompts={prompts}
             />
         </motion.div>
     );

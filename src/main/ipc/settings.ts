@@ -1,14 +1,16 @@
 import { ipcMain } from 'electron'
 import { SettingsService } from '../services/settings.service'
 import { LLMService } from '../services/llm.service'
+import { CopilotService } from '../services/copilot.service'
 
 export function registerSettingsIpc(options: {
     settingsService: SettingsService
     llmService: LLMService
+    copilotService: CopilotService
     updateOpenAIConnection: () => void
     updateOllamaConnection: () => void
 }) {
-    const { settingsService, llmService, updateOpenAIConnection, updateOllamaConnection } = options
+    const { settingsService, llmService, copilotService, updateOpenAIConnection, updateOllamaConnection } = options
 
     ipcMain.handle('settings:get', () => settingsService.getSettings())
 
@@ -19,6 +21,12 @@ export function registerSettingsIpc(options: {
         if (newSettings.anthropic) llmService.setAnthropicApiKey(newSettings.anthropic.apiKey)
         if (newSettings.gemini) llmService.setGeminiApiKey(newSettings.gemini.apiKey)
         if (newSettings.groq) llmService.setGroqApiKey(newSettings.groq.apiKey)
+
+        // Update Copilot Service
+        const copilotToken = newSettings.copilot?.token || newSettings.github?.token
+        if (copilotToken) {
+            copilotService.setGithubToken(copilotToken)
+        }
 
         // Update Antigravity proxy settings in LLMService
         const proxyUrl = newSettings.proxy?.url || 'http://localhost:8317/v1'

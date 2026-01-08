@@ -1,6 +1,7 @@
 ﻿import { ReactNode } from 'react'
 import { Minus, Square, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n'
 
 interface TitleBarProps {
     children?: ReactNode
@@ -9,6 +10,7 @@ interface TitleBarProps {
 }
 
 export function TitleBar({ children, leftContent, className }: TitleBarProps) {
+    const { t } = useTranslation()
     return (
         <header
             className={cn(
@@ -33,21 +35,21 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
                     <button
                         onClick={() => window.electron.minimize()}
                         className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
-                        title="KÃ¼Ã§Ã¼lt"
+                        title={t('titleBar.minimize')}
                     >
                         <Minus className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => window.electron.maximize()}
                         className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
-                        title="BÃ¼yÃ¼t"
+                        title={t('titleBar.maximize')}
                     >
                         <Square className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => window.electron.close()}
                         className="p-1.5 hover:bg-red-500 hover:text-white rounded-md transition-all duration-200 text-muted-foreground"
-                        title="Kapat"
+                        title={t('titleBar.close')}
                     >
                         <X className="w-4 h-4" />
                     </button>

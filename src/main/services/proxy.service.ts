@@ -6,8 +6,11 @@ import crypto from 'crypto'
 import http from 'http'
 import { spawn, ChildProcess } from 'child_process'
 import { app, session, net } from 'electron'
+import * as os from 'os'
 import { SettingsService } from './settings.service'
 import { appLogger } from '../logging/logger'
+import { DataService } from './data.service'
+import { SecurityService } from './security.service'
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -48,16 +51,19 @@ const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.ap
 const ANTIGRAVITY_CLIENT_SECRET = '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'
 
 export class ProxyService {
-  private configPath: string
-  private settingsService: SettingsService
+  public settingsService: SettingsService
   private child: ChildProcess | null = null
   private currentPort: number = 8317
   private stdoutBuffer = ''
   private stderrBuffer = ''
+  private tempAuthDir: string | null = null
 
-  constructor(settingsService: SettingsService) {
+  constructor(
+    settingsService: SettingsService,
+    private dataService?: DataService,
+    private securityService?: SecurityService
+  ) {
     this.settingsService = settingsService
-    this.configPath = path.join(app.getPath('userData'), 'proxy-config.yaml')
     this.ensureAuthStoreKey()
     this.ensureProxyKey()
   }
@@ -558,9 +564,36 @@ export class ProxyService {
     }
 
     this.currentPort = options?.port || 8317
-    await this.generateConfig(this.currentPort)
 
-    this.child = spawn(binaryPath, ['-config', this.configPath], {
+    // Secure Storage: Setup temp dir and decrypt files
+    try {
+      this.tempAuthDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orbit-proxy-auth-'))
+      const realAuthDir = this.getAuthWorkDir()
+      if (fs.existsSync(realAuthDir)) {
+        const files = fs.readdirSync(realAuthDir)
+        for (const file of files) {
+          if (file.endsWith('.json')) {
+            try {
+              // Use helper for decryption
+              const json = this.readAuthFile(path.join(realAuthDir, file))
+              if (!json) continue
+
+              const textToSave = JSON.stringify(json)
+              fs.writeFileSync(path.join(this.tempAuthDir, file), textToSave)
+            } catch (e) {
+              console.warn('[ProxyService] Failed to decrypt/copy auth file:', file, e)
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[ProxyService] Failed to create temp auth dir:', e)
+    }
+
+    await this.generateConfig(this.currentPort, this.tempAuthDir || undefined)
+
+    const settingsPath = this.settingsService.getSettingsPath()
+    this.child = spawn(binaryPath, ['-config', settingsPath], {
       cwd: path.dirname(binaryPath),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true
@@ -570,7 +603,7 @@ export class ProxyService {
     this.child.stderr?.on('data', d => this.stderrBuffer = this.logProxyChunk(this.stderrBuffer, d.toString(), 'error'))
     this.child.on('close', code => {
       this.child = null;
-      appLogger.warn(`Proxy exited: ${code} `)
+      appLogger.warn('Proxy', `Proxy exited: ${code} `)
       console.log('[ProxyService] Proxy process exited with code:', code)
     })
 
@@ -578,14 +611,31 @@ export class ProxyService {
     return this.getEmbeddedProxyStatus()
   }
 
-  async stopEmbeddedProxy() { if (this.child) { this.child.kill(); this.child = null; } return this.getEmbeddedProxyStatus(); }
+  async stopEmbeddedProxy() {
+    if (this.child) {
+      this.child.kill();
+      this.child = null;
+    }
+
+    // Cleanup temp dir
+    if (this.tempAuthDir) {
+      try {
+        fs.rmSync(this.tempAuthDir, { recursive: true, force: true })
+      } catch (e) {
+        console.error('[ProxyService] Failed to cleanup temp auth dir:', e)
+      }
+      this.tempAuthDir = null
+    }
+
+    return this.getEmbeddedProxyStatus();
+  }
 
   getEmbeddedProxyStatus(): ProxyEmbedStatus { return { running: !!this.child, pid: this.child?.pid, port: this.currentPort } }
 
   private logProxyChunk(buffer: string, chunk: string, level: 'info' | 'error'): string {
     const lines = (buffer + chunk).split(/\r?\n/);
     const remainder = lines.pop() || '';
-    for (const line of lines) if (line.trim()) appLogger[level](line.trim(), { source: 'proxy' });
+    for (const line of lines) if (line.trim()) (appLogger[level] as any)('Proxy', line.trim());
     return remainder;
   }
 
@@ -1038,9 +1088,10 @@ export class ProxyService {
           if (files.length > 0) {
             // Use the most recent file or just the first one
             const authFile = path.join(authDir, files[0])
-            const content = JSON.parse(fs.readFileSync(authFile, 'utf8'))
+            // Use helper
+            const content = this.readAuthFile(authFile)
             // Use helper to robustly find token
-            const fileToken = this.pickOpenAiAccessToken(content)
+            const fileToken = content ? this.pickOpenAiAccessToken(content) : null
             if (fileToken) {
               token = fileToken
             }
@@ -1150,26 +1201,38 @@ export class ProxyService {
   private updateAuthFile(nameOrPrefix: string, data: any) {
     try {
       const dir = this.getAuthWorkDir()
-      let filePath: string
+      let fileName: string
 
       if (nameOrPrefix.endsWith('.json')) {
-        // It's a direct filename
-        filePath = path.join(dir, nameOrPrefix)
+        fileName = nameOrPrefix
       } else {
-        // Legacy: It's a prefix, try to find existing file
+        // Resolve prefix
         const files = fs.readdirSync(dir).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
         if (files.length > 0) {
-          filePath = path.join(dir, files[0])
+          fileName = files[0]
         } else {
-          // Fallback: create new generic file if treating as prefix
-          filePath = path.join(dir, `${nameOrPrefix}.json`)
+          fileName = `${nameOrPrefix}.json`
         }
       }
 
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
-      console.log('[ProxyService] Auth file saved:', path.basename(filePath))
+      const filePath = path.join(dir, fileName)
+
+      // 1. Encrypt and save to persistent store
+      const contentString = JSON.stringify(data, null, 2)
+      let persistedData = contentString
+      if (this.securityService) {
+        const encrypted = this.securityService.encryptSync(contentString)
+        persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 })
+      }
+      fs.writeFileSync(filePath, persistedData)
+
+      // 2. If running, update temp store (plain text)
+      if (this.tempAuthDir && fs.existsSync(this.tempAuthDir)) {
+        fs.writeFileSync(path.join(this.tempAuthDir, fileName), contentString)
+      }
+
     } catch (e: any) {
-      console.error('[ProxyService] Failed to update auth file:', e.message)
+      console.error('[ProxyService] Failed to update auth file:', nameOrPrefix, e)
     }
   }
 
@@ -1249,11 +1312,11 @@ export class ProxyService {
 
       // 1. Look for email-specific file first (antigravity-*.json)
       const specific = files.find(f => f.startsWith('antigravity-') && f.endsWith('.json'))
-      if (specific) return JSON.parse(fs.readFileSync(path.join(dir, specific), 'utf8'))
+      if (specific) return this.readAuthFile(path.join(dir, specific))
 
       // 2. Fallback to generic antigravity.json
       const generic = files.find(f => f === 'antigravity.json')
-      if (generic) return JSON.parse(fs.readFileSync(path.join(dir, generic), 'utf8'))
+      if (generic) return this.readAuthFile(path.join(dir, generic))
 
       console.warn('[ProxyService] getAntigravityAuthData: No Antigravity auth file found.')
       return null
@@ -1302,18 +1365,52 @@ export class ProxyService {
 
   // --- Helpers ---
 
-  getAuthWorkDir(): string { return path.join(app.getPath('userData'), 'cliproxy-auth-work') }
-  getConfigPath(): string { return this.configPath }
+  getAuthWorkDir(): string {
+    if (this.dataService) {
+      return this.dataService.getPath('auth')
+    }
+    return path.join(app.getPath('userData'), 'auth')
+  }
 
   prepareAuthWorkDir() {
     const dir = this.getAuthWorkDir()
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+
+    // Cleanup legacy config file
+    try {
+      if (this.dataService) {
+        const legacyConfig = path.join(this.dataService.getPath('config'), 'proxy-config.yaml')
+        if (fs.existsSync(legacyConfig)) {
+          fs.unlinkSync(legacyConfig)
+          console.log('[ProxyService] Cleaned up legacy proxy-config.yaml')
+        }
+      }
+    } catch (e) {
+      console.error('[ProxyService] Failed to cleanup legacy config:', e)
+    }
   }
 
   async downloadAuthFile(name: string): Promise<any> {
     const filePath = path.join(this.getAuthWorkDir(), name)
     if (!fs.existsSync(filePath)) throw new Error('Auth file not found')
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    return this.readAuthFile(filePath)
+  }
+
+  private readAuthFile(filePath: string): any | null {
+    try {
+      const content = fs.readFileSync(filePath, 'utf8')
+      let json = JSON.parse(content)
+
+      if (json.encryptedPayload && this.securityService) {
+        const decrypted = this.securityService.decryptSync(json.encryptedPayload)
+        json = JSON.parse(decrypted)
+      }
+
+      return json
+    } catch (e) {
+      console.warn('[ProxyService] Failed to read/decrypt auth file:', filePath, e)
+      return null
+    }
   }
 
   private ensureProxyKey(): string {
@@ -1338,15 +1435,28 @@ export class ProxyService {
     return key as string
   }
 
-  async generateConfig(port: number = 8317) {
+  async generateConfig(port: number = 8317, overrideAuthDir?: string) {
     const settings = this.settingsService.getSettings()
-    const authDir = this.getAuthWorkDir().replace(/\\/g, '/')
+    const finalAuthDir = overrideAuthDir || this.getAuthWorkDir()
+    const authDir = finalAuthDir.replace(/\\/g, '/')
     const proxyKey = this.getProxyKey()
-    let config = `host: "127.0.0.1"\nport: ${port}\nauth-dir: "${authDir}"\napi-keys:\n  - "${proxyKey}"\nremote-management:\n  secret-key: "${proxyKey}"\ndebug: true\nlogging-to-file: false\n`
-    // Removed codex-api-key injection to prevent forcing Codex requests to Copilot API
-    if (settings.anthropic?.apiKey) config += `claude-api-key:\n  - api-key: "${settings.anthropic.apiKey}"\n`
-    if (settings.gemini?.apiKey) config += `gemini-api-key:\n  - api-key: "${settings.gemini.apiKey}"\n`
-    fs.writeFileSync(this.configPath, config)
+
+    // Save configuration to settings.json under 'proxy' key
+    // This will be read by the binary directly
+    this.settingsService.saveSettings({
+      proxy: {
+        ...(settings.proxy || {}),
+        host: "127.0.0.1",
+        port: port,
+        "auth-dir": authDir,
+        "api-keys": [proxyKey],
+        "remote-management": {
+          "secret-key": proxyKey
+        },
+        debug: true,
+        "logging-to-file": false
+      }
+    } as any)
   }
 
   // --- Custom Gemini OAuth & Model Fetching ---
@@ -1487,7 +1597,9 @@ export class ProxyService {
       const latestFile = files.map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtime.getTime() }))
         .sort((a, b) => b.time - a.time)[0].name;
 
-      const authData = JSON.parse(fs.readFileSync(path.join(dir, latestFile), 'utf8'));
+      const authData = this.readAuthFile(path.join(dir, latestFile))
+      if (!authData) return []
+
       let accessToken = authData.token?.access_token;
       const refreshToken = authData.token?.refresh_token;
 

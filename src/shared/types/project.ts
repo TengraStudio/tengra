@@ -15,6 +15,8 @@ export interface Project {
         consensusThreshold: number; // 0-1 (e.g. 0.7 for 70% agreement)
     };
     status: 'active' | 'archived' | 'draft';
+    logo?: string;
+    metadata?: Record<string, any>;
 }
 
 export interface CouncilMessage extends Message {

@@ -5,13 +5,19 @@ import * as crypto from 'crypto'
 import https from 'https'
 import http from 'http'
 import { appLogger } from '../logging/logger'
+import { DataService } from './data.service'
 
 export class ImagePersistenceService {
     private galleryPath: string
 
-    constructor() {
-        const picturesDir = app.getPath('pictures')
-        this.galleryPath = path.join(picturesDir, 'Orbit', 'Gallery')
+    constructor(dataService?: DataService) {
+        if (dataService) {
+            this.galleryPath = dataService.getPath('galleryImages')
+        } else {
+            // Fallback: match Roaming/Orbit/Gallery/Images structure
+            const userData = app.getPath('userData')
+            this.galleryPath = path.join(path.dirname(userData), 'Gallery', 'Images')
+        }
         this.ensureGalleryExists()
     }
 
@@ -63,13 +69,13 @@ export class ImagePersistenceService {
             const filePath = path.join(this.galleryPath, filename)
 
             await fs.promises.writeFile(filePath, buffer)
-            appLogger.info(`Saved generated image to ${filePath}`, { source: 'ImagePersistence' })
+            appLogger.info('ImagePersistence', `Saved generated image to ${filePath}`)
 
             // Return safe-file URI for Electron/Browser usage
             return `safe-file:///${filePath.replace(/\\/g, '/')}`
 
         } catch (error) {
-            appLogger.error(`Failed to save image: ${error}`, { source: 'ImagePersistence' })
+            appLogger.error('ImagePersistence', `Failed to save image: ${error}`)
             return imageData // Fallback to original if save fails
         }
     }

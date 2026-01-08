@@ -22,13 +22,20 @@ export interface ElectronAPI {
         scanTodos: (rootPath: string) => Promise<any[]>
         findSymbols: (rootPath: string, query: string) => Promise<any[]>
         searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<any[]>
+        indexProject: (rootPath: string, projectId: string) => Promise<void>
+        queryIndexedSymbols: (query: string) => Promise<any[]>
     }
 
     // Project System
     project: {
-        analyze: (rootPath: string) => Promise<any>
+        analyze: (rootPath: string, projectId: string) => Promise<any>
         saveState: (rootPath: string, state: any) => Promise<boolean>
         loadState: (rootPath: string) => Promise<any>
+        generateLogo: (projectPath: string, prompt: string, style: string) => Promise<string>
+        analyzeIdentity: (projectPath: string) => Promise<{ suggestedPrompts: string[], colors: string[] }>
+        applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>
+        getCompletion: (text: string) => Promise<string>
+        analyzeDirectory: (dirPath: string) => Promise<any>
     }
 
     process: {
@@ -63,8 +70,8 @@ export interface ElectronAPI {
     // Ollama chat
     getModels: () => Promise<any[]>
     chat: (messages: any[], model: string) => Promise<any>
-    chatOpenAI: (messages: any[], model: string, tools?: any[], provider?: string, options?: any) => Promise<any>
-    chatStream: (messages: any[], model: string, tools?: any[], provider?: string, options?: any) => Promise<any>
+    chatOpenAI: (messages: any[], model: string, tools?: any[], provider?: string, options?: any, projectId?: string) => Promise<any>
+    chatStream: (messages: any[], model: string, tools?: any[], provider?: string, options?: any, chatId?: string, projectId?: string) => Promise<any>
     abortChat: () => void
     onStreamChunk: (callback: (chunk: any) => void) => void
     removeStreamChunkListener: (callback?: (chunk: any) => void) => void
@@ -136,9 +143,15 @@ export interface ElectronAPI {
         updateProject: (id: string, updates: any) => Promise<void>
         deleteProject: (id: string) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
-        createFolder: (name: string) => Promise<void>
+        createFolder: (name: string, color?: string) => Promise<any>
         deleteFolder: (id: string) => Promise<void>
-        updateFolder: (id: string, name: string) => Promise<{ success: boolean }>
+        updateFolder: (id: string, updates: any) => Promise<void>
+
+        // Prompts
+        createPrompt: (title: string, content: string, tags?: string[]) => Promise<any>
+        deletePrompt: (id: string) => Promise<void>
+        updatePrompt: (id: string, updates: any) => Promise<void>
+        getPrompts: () => Promise<any[]>
     }
 
     terminal: {
@@ -149,24 +162,30 @@ export interface ElectronAPI {
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
         kill: (sessionId: string) => Promise<boolean>
         getSessions: () => Promise<string[]>
+        readBuffer: (sessionId: string) => Promise<string>
         onData: (callback: (data: { id: string; data: string }) => void) => void
         onExit: (callback: (data: { id: string; code: number }) => void) => void
         removeAllListeners: () => void
     }
 
     council: {
-        runSession: (projectId: string, taskId: string) => Promise<void>
-        onUpdate: (callback: (data: any) => void) => void
-        removeUpdateListener: () => void
-        approvePlan: (sessionId: string, approved: boolean, editedPlan?: string) => Promise<boolean>
-        generateAgents: (taskDescription: string) => Promise<any[]>
-        getSessions: (projectId?: string) => Promise<any[]>
-        getSessionById: (id: string) => Promise<any>
+        createSession: (goal: string) => Promise<any>
+        getSessions: () => Promise<any[]>
+        getSession: (id: string) => Promise<any>
+        addLog: (sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action') => Promise<void>
+        runStep: (sessionId: string) => void
+        startLoop: (sessionId: string) => void
+        stopLoop: (sessionId: string) => void
+    }
+
+    agent: {
+        getAll: () => Promise<any[]>
+        get: (id: string) => Promise<any>
     }
 
     // SSH
     ssh: {
-        connect: (connection: any) => Promise<{ success: boolean; error?: string }>
+        connect: (connection: any) => Promise<{ success: boolean; error?: string; id?: string }>
         disconnect: (connectionId: string) => Promise<{ success: boolean }>
         execute: (connectionId: string, command: string, options?: any) => Promise<any>
         upload: (connectionId: string, localPath: string, remotePath: string) => Promise<{ success: boolean; error?: string }>
@@ -190,6 +209,13 @@ export interface ElectronAPI {
         onShellData: (callback: (data: any) => void) => void
         shellStart: (connectionId: string) => Promise<{ success: boolean; error?: string }>
         shellWrite: (connectionId: string, data: string) => Promise<{ success: boolean; error?: string }>
+        getSystemStats: (connectionId: string) => Promise<any>
+        getInstalledPackages: (connectionId: string, manager?: 'apt' | 'npm' | 'pip') => Promise<any[]>
+        getLogFiles: (connectionId: string) => Promise<string[]>
+        readLogFile: (connectionId: string, path: string, lines?: number) => Promise<string>
+        getProfiles: () => Promise<any[]>
+        saveProfile: (profile: any) => Promise<boolean>
+        deleteProfile: (id: string) => Promise<boolean>
     }
 
     // Tools
@@ -240,7 +266,7 @@ export interface ElectronAPI {
     saveSettings: (settings: any) => Promise<any>
 
     huggingface: {
-        searchModels: (query: string, limit: number, page: number) => Promise<any[]>
+        searchModels: (query: string, limit: number, page: number, sort: string) => Promise<{ models: any[], total: number }>
         getFiles: (modelId: string) => Promise<any[]>
         downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => Promise<{ success: boolean; error?: string }>
         onDownloadProgress: (callback: (progress: { filename: string; received: number; total: number }) => void) => void
@@ -255,20 +281,6 @@ export interface ElectronAPI {
         error: (message: string, data?: any) => void
     }
 
-    // Terminal (PTY)
-    terminal: {
-        isAvailable: () => Promise<boolean>
-        getShells: () => Promise<{ id: string; name: string; path: string }[]>
-        create: (options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<{ success: boolean; error?: string }>
-        write: (sessionId: string, data: string) => Promise<boolean>
-        resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
-        kill: (sessionId: string) => Promise<boolean>
-        getSessions: () => Promise<string[]>
-        onData: (callback: (data: { id: string; data: string }) => void) => void
-        onExit: (callback: (data: { id: string; code: number }) => void) => void
-        removeAllListeners: () => void
-    }
-
     gallery: {
         list: () => Promise<{ name: string; path: string; url: string; mtime: number }[]>
         delete: (path: string) => Promise<boolean>
@@ -276,11 +288,14 @@ export interface ElectronAPI {
         reveal: (path: string) => Promise<boolean>
     }
 
-    // Speaker (legacy/extra from earlier edit)
-    speak: (text: string) => Promise<void>
-    stopSpeaking: () => Promise<void>
-    onSpeakBoundary: (callback: (index: number) => void) => void
-    onSpeakEnd: (callback: () => void) => void
+    on: (channel: string, listener: (event: any, ...args: any[]) => void) => () => void
+
+
+
+
+    // Generic event listener
+    on: (channel: string, callback: (...args: any[]) => void) => () => void
+    getUserDataPath: () => Promise<string>
 }
 
 declare global {

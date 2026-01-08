@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
+import { useTranslation } from '@/i18n'
 import 'xterm/css/xterm.css'
 
 interface TerminalComponentProps {
@@ -8,6 +9,7 @@ interface TerminalComponentProps {
 }
 
 export const TerminalComponent = ({ cwd }: TerminalComponentProps) => {
+    const { t } = useTranslation()
     const terminalRef = useRef<HTMLDivElement>(null)
     const pidRef = useRef<string | null>(null)
 
@@ -43,7 +45,7 @@ export const TerminalComponent = ({ cwd }: TerminalComponentProps) => {
                 })
 
                 if (!result.success) {
-                    throw new Error(result.error || 'Failed to create terminal session')
+                    throw new Error(result.error || t('projectDashboard.terminalFailedSession'))
                 }
                 pidRef.current = terminalId
 
@@ -56,7 +58,7 @@ export const TerminalComponent = ({ cwd }: TerminalComponentProps) => {
 
                 window.electron.terminal.onExit(({ id, code }) => {
                     if (pidRef.current && id === pidRef.current) {
-                        term.write(`\r\n\x1b[33mTerminal exited with code ${code}\x1b[0m\r\n`)
+                        term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`)
                     }
                 })
 
@@ -73,7 +75,7 @@ export const TerminalComponent = ({ cwd }: TerminalComponentProps) => {
                 })
 
             } catch (error) {
-                term.write('\r\n\x1b[31mFailed to start terminal.\x1b[0m\r\n')
+                term.write(`\r\n\x1b[31m${t('projectDashboard.terminalFailedStart')}\x1b[0m\r\n`)
                 console.error(error)
             }
         }

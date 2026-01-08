@@ -14,9 +14,25 @@ module.exports = {
             padding: "2rem",
             screens: {
                 "2xl": "1400px",
+                "3xl": "1800px",
             },
         },
         extend: {
+            fontFamily: {
+                sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+                mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            },
+            fontSize: {
+                // Shift generic scale up for better readability on small/large screens
+                xs: "0.80rem",    // 13px
+                sm: "0.92rem",    // 14.7px
+                base: "1.05rem",  // 16.8px (approx 17px)
+                lg: "1.15rem",    // 18.4px
+                xl: "1.35rem",    // 21.6px
+                "2xl": "1.65rem", // 26.4px
+                "3xl": "2.15rem",
+                "4xl": "2.75rem",
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",

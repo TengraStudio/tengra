@@ -1,4 +1,3 @@
-import * as http from 'http'
 import { ChildProcess, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import * as fsPromises from 'fs/promises'
@@ -14,36 +13,81 @@ export interface LocalAIModel {
     loaded: boolean
 }
 
+// import { DataService } from './data.service'
+
+export interface OllamaModel {
+    name: string
+    size: number
+    digest: string
+    modified_at: string
+}
+
+export interface OllamaChatMessage {
+    role: 'user' | 'assistant' | 'system'
+    content: string
+}
+
 export class LocalAIService {
-    private ollamaHost: string = '127.0.0.1'
-    private ollamaPort: number = 11434
     private llamaProcess: ChildProcess | null = null
     private llamaModelPath: string | null = null
     private llamaPort: number = 8080
 
     constructor(private settingsService: SettingsService) {
-        const settings = this.settingsService.getSettings()
-        if (settings.ollama?.url) {
-            try {
-                const url = new URL(settings.ollama.url)
-                this.ollamaHost = url.hostname
-                this.ollamaPort = parseInt(url.port) || 11434
-            } catch { }
-        }
     }
 
     // --- Ollama Ops ---
 
-    async getOllamaModels(): Promise<any[]> {
+    async getOllamaModels(): Promise<OllamaModel[]> {
         try {
+            console.log('[LocalAI] Fetching Ollama models from http://127.0.0.1:11434/api/tags...');
             const res = await this.ollamaRequest('/api/tags')
-            return res.models || []
-        } catch { return [] }
+            if (res && res.models) {
+                console.log(`[LocalAI] Found ${res.models.length} models in Ollama`);
+                return res.models;
+            }
+            return []
+        } catch (error: any) {
+            console.error('[LocalAI] Failed to fetch Ollama models (Ollama might be closed):', error?.message || String(error));
+            // Attempt auto-start on connection failure
+            this.maybeStartOllama();
+            return []
+        }
     }
 
-    async ollamaChat(model: string, messages: any[]): Promise<any> {
+    async maybeStartOllama() {
+        if (process.platform !== 'win32') return;
+
+        try {
+            console.log('[LocalAI] Attempting to auto-start Ollama headlessly...');
+            const localAppData = process.env.LOCALAPPDATA || join(process.env.USERPROFILE || '', 'AppData', 'Local');
+            const ollamaExePath = join(localAppData, 'Programs', 'Ollama', 'ollama.exe');
+
+            if (existsSync(ollamaExePath)) {
+                spawn(ollamaExePath, ['serve'], {
+                    detached: true,
+                    stdio: 'ignore',
+                    windowsHide: true,
+                    shell: false
+                }).unref();
+                console.log('[LocalAI] Triggered headless ollama serve via binary');
+            } else {
+                // Fallback to system PATH
+                spawn('ollama', ['serve'], {
+                    detached: true,
+                    stdio: 'ignore',
+                    windowsHide: true,
+                    shell: true
+                }).unref();
+                console.log('[LocalAI] Triggered headless ollama serve via PATH');
+            }
+        } catch (e) {
+            console.error('[LocalAI] Critical failure during Ollama auto-start:', e);
+        }
+    }
+
+    async ollamaChat(model: string, messages: OllamaChatMessage[]): Promise<any> {
         const settings = this.settingsService.getSettings()
-        const num_ctx = (settings as any).contextSize || 4096
+        const num_ctx = settings.ollama.numCtx || 4096
 
         return this.ollamaRequest('/api/chat', 'POST', {
             model,
@@ -53,23 +97,19 @@ export class LocalAIService {
         })
     }
 
-    private ollamaRequest(path: string, method: string = 'GET', body?: any): Promise<any> {
-        return new Promise((resolve, reject) => {
-            const req = http.request({
-                hostname: this.ollamaHost,
-                port: this.ollamaPort,
-                path,
+    private async ollamaRequest(endpoint: string, method = 'GET', body?: any) {
+        const url = `http://127.0.0.1:11434${endpoint}`
+        try {
+            const response = await fetch(url, {
                 method,
-                headers: body ? { 'Content-Type': 'application/json' } : undefined
-            }, (res) => {
-                let d = ''
-                res.on('data', chunk => d += chunk)
-                res.on('end', () => resolve(JSON.parse(d || '{}')))
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined
             })
-            req.on('error', reject)
-            if (body) req.write(JSON.stringify(body))
-            req.end()
-        })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json()
+        } catch (error) {
+            throw error
+        }
     }
 
     // --- Llama.cpp Ops ---

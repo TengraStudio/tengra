@@ -1,9 +1,18 @@
 import { app, BrowserWindow, shell, protocol } from 'electron'
 import { join } from 'path'
-
+import * as path from 'path'
 
 import { createServices } from './startup/services'
 import { McpDispatcher } from './mcp/dispatcher'
+import { appLogger, LogLevel } from './logging/logger'
+
+// Initialize Logger
+appLogger.setLevel(LogLevel.DEBUG)
+appLogger.installConsoleRedirect()
+
+appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']}`)
+appLogger.info('Startup', `app.isPackaged: ${app.isPackaged}`)
+appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'}`)
 
 // IPC Registrations
 import { registerWindowIpc } from './ipc/window'
@@ -19,6 +28,7 @@ import { registerToolsIpc } from './ipc/tools'
 import { registerMcpIpc } from './ipc/mcp'
 import { registerScreenshotIpc } from './ipc/screenshot'
 import { registerHFModelIpc } from './ipc/huggingface'
+import { registerAgentIpc } from './ipc/agent'
 import { registerProjectIpc } from './ipc/project'
 import { registerLoggingIpc } from './ipc/logging'
 import { registerTerminalIpc } from './ipc/terminal'
@@ -31,6 +41,8 @@ import { registerGalleryIpc } from './ipc/gallery'
 import { registerLlamaIpc } from './ipc/llama'
 import { registerProcessIpc, setupProcessEvents } from './ipc/process'
 import { registerCodeIntelligenceIpc } from './ipc/code-intelligence'
+import { registerMemoryIpc } from './ipc/memory'
+
 import { ToolExecutor } from './tools/tool-executor'
 
 let mainWindow: BrowserWindow | null = null
@@ -53,6 +65,15 @@ function createWindow(): BrowserWindow {
 
     win.on('ready-to-show', () => {
         win.show()
+        win.setTitle('ORBIT')
+    })
+
+    win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+        const levels = ['debug', 'info', 'warn', 'error']
+        const lvl = levels[level] || 'info'
+        const context = `renderer:${path.basename(sourceId)}:${line}`
+        // @ts-ignore
+        appLogger[lvl](context, message)
     })
 
     win.webContents.setWindowOpenHandler((details: any) => {
@@ -74,7 +95,27 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.whenReady().then(async () => {
-    app.setAppUserModelId('com.github.orbit-ai')
+    app.setAppUserModelId('Orbit')
+    app.name = 'Orbit'
+
+    // Isolate Electron runtime folders to a subfolder
+    const runtimePath = join(app.getPath('appData'), 'Orbit', 'runtime')
+    app.setPath('userData', runtimePath)
+
+    // Migration from orbit-ai to Orbit
+    const fs = require('fs')
+    const path = require('path')
+    const oldPath = path.join(app.getPath('appData'), 'orbit-ai')
+    const newPath = app.getPath('userData') // This should now point to Orbit due to app.name change
+
+    if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
+        try {
+            appLogger.info('Main', `Migrating AppData from ${oldPath} to ${newPath}`)
+            fs.renameSync(oldPath, newPath)
+        } catch (e) {
+            appLogger.error('Main', `Failed to migrate AppData folder: ${e}`)
+        }
+    }
 
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '')
@@ -98,7 +139,7 @@ app.whenReady().then(async () => {
         }
     })
 
-    const services = createServices(new Set([app.getPath('userData'), app.getPath('home')]))
+    const services = await createServices(new Set([app.getPath('userData'), app.getPath('home')]))
     await services.databaseService.initialize()
     await services.proxyService.startEmbeddedProxy()
 
@@ -124,13 +165,12 @@ app.whenReady().then(async () => {
         git: services.gitService,
         security: services.securityService,
         mcp: mcpDispatcher,
-        llm: services.llmService
+        llm: services.llmService,
+        memory: services.memoryService,
+        pageSpeed: services.pageSpeedService
     })
 
-    // Create window FIRST so we can pass it to synchronous registers if needed
-    mainWindow = createWindow()
-
-    // Register all IPC handlers
+    // Register all IPC handlers BEFORE creating window to prevent race conditions
     registerWindowIpc(() => mainWindow)
 
     // Initialize Copilot Token
@@ -151,7 +191,8 @@ app.whenReady().then(async () => {
         settingsService: services.settingsService,
         copilotService: services.copilotService,
         llmService: services.llmService,
-        proxyService: services.proxyService
+        proxyService: services.proxyService,
+        codeIntelligenceService: services.codeIntelligenceService
     })
 
     registerOllamaIpc({
@@ -165,18 +206,22 @@ app.whenReady().then(async () => {
         llamaService: services.llamaService
     })
 
-    registerProjectIpc(services.projectService)
+    registerProjectIpc(services.projectService, services.logoService, services.codeIntelligenceService)
+    registerAgentIpc(services.agentService)
     registerProcessIpc(services.processService)
     setupProcessEvents(services.processService)
     registerCodeIntelligenceIpc(services.codeIntelligenceService)
 
-    registerDbIpc(services.databaseService)
+    registerDbIpc(services.databaseService, services.embeddingService)
     registerLlamaIpc(services.llamaService)
+    registerMemoryIpc(services.memoryService)
+
 
     registerSettingsIpc({
         settingsService: services.settingsService,
         llmService: services.llmService,
-        updateOpenAIConnection: () => { },
+        copilotService: services.copilotService,
+        updateOpenAIConnection: () => mainWindow?.webContents.send('openai:connection-status', services.llmService.isOpenAIConnected()),
         updateOllamaConnection: () => { }
     })
 
@@ -190,8 +235,8 @@ app.whenReady().then(async () => {
     registerScreenshotIpc()
     registerLoggingIpc()
 
-    // Terminal needs the instance
-    registerTerminalIpc(mainWindow)
+    // Terminal needs the instance - use getter for deferred access
+    registerTerminalIpc(() => mainWindow)
 
     registerDialogIpc(() => mainWindow)
     registerHistoryIpc(services.historyImportService)
@@ -199,16 +244,16 @@ app.whenReady().then(async () => {
     registerProxyEmbedIpc(services.proxyService)
     registerExportIpc(() => mainWindow)
 
-    // Council IPC registered already? No, we will do it after creating service properly.
-    // Actually, createServices does it. We just need to register IPC.
-    // registerCouncilIpc(services.councilService, services.databaseService)
-    // Wait, services.councilService in createServices was created with OLD deps.
-    // We need to fix createServices function in services.ts first.
+    // Council IPC
     registerCouncilIpc(services.councilService, services.databaseService)
 
     // Register Gallery IPC
-    const galleryPath = join(app.getPath('pictures'), 'Orbit', 'Gallery')
-    registerGalleryIpc(galleryPath)
+    registerGalleryIpc(services.dataService.getPath('gallery'))
+
+    // NOW create window after all handlers are registered
+    mainWindow = createWindow()
+
+
 
     // Re-create on activate if needed
     app.on('activate', function () {
@@ -221,3 +266,19 @@ app.on('window-all-closed', () => {
         app.quit()
     }
 })
+
+// Cleanup on app quit - prevent memory leaks
+app.on('before-quit', async () => {
+    console.log('[Main] Cleaning up before quit...')
+    try {
+        // Services cleanup will be triggered via global reference
+        // This is a safety net for any remaining resources
+        if (global.gc) {
+            global.gc()
+            console.log('[Main] Manual GC triggered')
+        }
+    } catch (e) {
+        console.error('[Main] Cleanup error:', e)
+    }
+})
+

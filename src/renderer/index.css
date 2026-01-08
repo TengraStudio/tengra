@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -30,6 +30,7 @@
     --input: 240 4% 16%;
     --ring: 210 100% 50%;
     --radius: 1rem;
+    --font-family: 'Inter', system-ui, sans-serif;
   }
 
   [data-theme="obsidian"] {
@@ -150,6 +151,7 @@
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
     --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --card: 0 0% 100%;
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
@@ -312,9 +314,10 @@
   }
 
   html {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    letter-spacing: -0.01em;
-    font-size: 15px;
+    font-family: var(--font-family);
+    letter-spacing: -0.015em;
+    /* Responsive Scaling: Min 15px, Preferred 1.05vw, Max 18px */
+    font-size: clamp(15px, 1.05vw, 18px);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -348,7 +351,8 @@
   code,
   pre,
   .font-mono {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-ligatures: none;
   }
 }
 

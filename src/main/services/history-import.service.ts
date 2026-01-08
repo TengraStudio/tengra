@@ -71,7 +71,7 @@ export class HistoryImportService {
             if (!conversationId) continue
 
             const chatId = `openai:${conversationId}`
-            if (this.databaseService.getChat(chatId)) {
+            if (await this.databaseService.getChat(chatId)) {
                 continue
             }
 
@@ -90,7 +90,7 @@ export class HistoryImportService {
             const model = detail?.model || detail?.model_slug || detail?.default_model_slug || item?.model || ''
             const title = item?.title || detail?.title || 'OpenAI Chat'
 
-            this.databaseService.createChat({
+            await this.databaseService.createChat({
                 id: chatId,
                 title,
                 model,
@@ -100,7 +100,7 @@ export class HistoryImportService {
             })
 
             for (const message of messages) {
-                this.databaseService.addMessage({
+                await this.databaseService.addMessage({
                     id: `openai:${message.id}`,
                     chatId,
                     role: message.role,

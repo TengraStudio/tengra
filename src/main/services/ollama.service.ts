@@ -1,5 +1,6 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
+import axios from 'axios'
 import { SettingsService } from './settings.service'
 
 interface Message {
@@ -45,6 +46,7 @@ interface LibraryModel {
     name: string
     description: string
     tags: string[]
+    pulls?: string
 }
 
 export class OllamaService {
@@ -322,7 +324,7 @@ export class OllamaService {
     }
 
     async getLibraryModels(): Promise<LibraryModel[]> {
-        return [
+        const staticList: LibraryModel[] = [
             { name: 'llama2', description: 'Meta\'s Llama 2 model', tags: ['7b', '13b', '70b'] },
             { name: 'llama3', description: 'Meta\'s Llama 3 model', tags: ['8b', '70b'] },
             { name: 'llama3.1', description: 'Meta\'s Llama 3.1 model', tags: ['8b', '70b', '405b'] },
@@ -344,6 +346,32 @@ export class OllamaService {
             { name: 'neural-chat', description: 'Intel Neural Chat', tags: ['7b'] },
             { name: 'vicuna', description: 'Vicuna', tags: ['7b', '13b', '33b'] }
         ]
+
+        try {
+            // Attempt to fetch most popular from registry to get real "pulls" count
+            const response = await axios.get('https://ollama.com/library?sort=popular', { timeout: 3000 })
+            const html = response.data
+
+            // Build a map of name -> pulls from the library page
+            const pullsMap: Record<string, string> = {};
+            const regex = /href="\/library\/([^"]+)"[\s\S]*?x-test-pull-count>([^<]+)<\/span>/gi;
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+                pullsMap[match[1]] = match[2].trim();
+            }
+
+            const results = [...staticList];
+            for (const model of results) {
+                if (pullsMap[model.name]) {
+                    model.pulls = pullsMap[model.name];
+                }
+            }
+            console.log(`[OllamaService] Library enriched with Pulls. Found counts for ${Object.keys(pullsMap).length} models.`);
+            return results;
+        } catch (e: any) {
+            console.warn('[OllamaService] Could not fetch live pulls from registry, using static list', e.message);
+            return staticList;
+        }
     }
 
     async isAvailable(): Promise<boolean> {

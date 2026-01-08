@@ -16,9 +16,10 @@ interface SlashMenuProps {
     query: string
     onSelect: (command: SlashCommand) => void
     commands: SlashCommand[]
+    t: (key: string) => string
 }
 
-export function SlashMenu({ isOpen, onClose, query, onSelect, commands }: SlashMenuProps) {
+export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: SlashMenuProps) {
     const [selectedIndex, setSelectedIndex] = useState(0)
 
     // Filter commands based on query (after the slash)
@@ -64,8 +65,8 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands }: SlashM
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className="absolute bottom-full left-4 mb-2 w-64 bg-popover border border-border shadow-2xl rounded-xl overflow-hidden z-50 flex flex-col"
         >
-            <div className="px-3 py-2 text-sm font-bold text-muted-foreground uppercase tracking-wider bg-muted/20">
-                Komutlar
+            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground bg-muted/20 border-b border-border/50">
+                {t('common.commands')}
             </div>
             <div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
                 {filteredCommands.map((cmd, idx) => (
@@ -73,22 +74,22 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands }: SlashM
                         key={cmd.id}
                         onClick={() => onSelect(cmd)}
                         className={cn(
-                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                            idx === selectedIndex ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all",
+                            idx === selectedIndex ? "bg-primary text-primary-foreground shadow-lg scale-[1.02]" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                         )}
                         onMouseEnter={() => setSelectedIndex(idx)}
                     >
                         <div className={cn(
-                            "p-1.5 rounded-md",
+                            "p-1.5 rounded-md shrink-0",
                             idx === selectedIndex ? "bg-white/20" : "bg-muted/30"
                         )}>
                             {cmd.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{cmd.label}</div>
+                            <div className="text-sm font-bold truncate leading-tight">{cmd.label}</div>
                             <div className={cn(
-                                "text-sm truncate",
-                                idx === selectedIndex ? "text-indigo-100" : "text-zinc-500"
+                                "text-[11px] truncate mt-0.5",
+                                idx === selectedIndex ? "text-white/70" : "text-zinc-500"
                             )}>{cmd.description}</div>
                         </div>
                     </button>

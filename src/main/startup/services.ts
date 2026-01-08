@@ -1,7 +1,14 @@
+import { CollaborationService } from '../services/collaboration.service'
 import { LocalAIService } from '../services/local-ai.service'
+
+// ... existing imports ...
+
+// Duplicate definitions removed.
+// Removed premature CouncilService instantiation
 import { FileSystemService } from '../services/filesystem.service'
 import { CommandService } from '../services/command.service'
 import { DatabaseService } from '../services/database.service'
+import { LanceDbService } from '../services/lancedb.service'
 import { SSHService } from '../services/ssh.service'
 import { EmbeddingService } from '../services/embedding.service'
 import { DockerService } from '../services/docker.service'
@@ -26,59 +33,90 @@ import { getOllamaHealthService } from '../services/ollama-health.service'
 import { LlamaService } from '../services/llama.service'
 import { HuggingFaceService } from '../services/huggingface.service'
 import { ProjectService } from '../services/project.service'
+import { LogoService } from '../services/logo.service'
 import { ProcessService } from '../services/process.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
 import { WebService } from '../services/web.service'
+import { MemoryService } from '../services/memory.service'
+import { PageSpeedService } from '../services/pagespeed.service'
+import { RuleService } from '../services/rule.service'
+import { AgentService } from '../services/agent.service'
 
-export function createServices(allowedFileRoots: Set<string>) {
 
-    const settingsService = new SettingsService()
+import { DataService } from '../services/data.service'
+import { AuthService } from '../services/auth.service'
+import { Logger } from '../utils/logger'
+
+export async function createServices(allowedFileRoots: Set<string>) {
+
+    // Critical: Initialize Data Service first
+    const dataService = new DataService()
+    await dataService.migrate()
+
+    // Initialize Logger with centralized path
+    Logger.init(dataService.getPath('logs'))
+
+    const securityService = new SecurityService()
+    const authService = new AuthService(dataService, securityService)
+    const settingsService = new SettingsService(dataService, authService)
     const localAIService = new LocalAIService(settingsService)
-    const llamaService = new LlamaService()
+    const llamaService = new LlamaService(dataService)
     const huggingFaceService = new HuggingFaceService()
     const ollamaService = new OllamaService(settingsService)
-    const llmService = new LLMService()
+    const llmService = new LLMService(dataService)
     const fileSystemService = new FileSystemService(Array.from(allowedFileRoots))
     const commandService = new CommandService()
-    const databaseService = new DatabaseService()
-    const sshService = new SSHService()
-    const proxyService = new ProxyService(settingsService)
+    const lanceDbService = new LanceDbService(dataService)
+    const databaseService = new DatabaseService(dataService, lanceDbService)
+    const sshService = new SSHService(dataService.getPath('config'))
+    const proxyService = new ProxyService(settingsService, dataService, securityService)
     const copilotService = new CopilotService()
     const systemService = new SystemService()
     const networkService = new NetworkService()
     const notificationService = new NotificationService()
     const clipboardService = new ClipboardService()
     const gitService = new GitService()
-    const securityService = new SecurityService()
+    // securityService moved up
     const contentService = new ContentService()
     const monitoringService = new MonitoringService()
     const historyImportService = new HistoryImportService(proxyService, databaseService)
 
     // Bridge logic for embedding/utility that still expect old services
-    const embeddingService = new EmbeddingService(databaseService, ollamaService, llmService as any, llamaService)
+    const embeddingService = new EmbeddingService(databaseService, ollamaService, llmService as any, llamaService, settingsService)
     const utilityService = new UtilityService(databaseService, contentService as any, embeddingService)
     const dockerService = new DockerService(commandService, sshService)
     const screenshotService = new ScreenshotService()
+    const memoryService = new MemoryService(databaseService, embeddingService, llmService)
+    const pageSpeedService = new PageSpeedService()
+    const ruleService = new RuleService()
+    const agentService = new AgentService(lanceDbService)
+    await agentService.init()
 
     // Start Ollama health monitoring
     const ollamaHealthService = getOllamaHealthService(
-        settingsService.getSettings()?.ollama?.url || 'http://localhost:11434'
+        settingsService.getSettings()?.ollama?.url || 'http://127.0.0.1:11434'
     )
     ollamaHealthService.start()
 
     const projectService = new ProjectService()
     const processService = new ProcessService()
-    const codeIntelligenceService = new CodeIntelligenceService()
+    const codeIntelligenceService = new CodeIntelligenceService(databaseService, embeddingService)
 
     const webService = new WebService()
+    const collaborationService = new CollaborationService()
     const councilService = new CouncilService(
         llmService,
         databaseService,
         fileSystemService,
         processService,
         codeIntelligenceService,
-        webService
+        webService,
+        collaborationService,
+        embeddingService
     )
+
+    const logoService = new LogoService(llmService, projectService)
+
 
     return {
         settingsService,
@@ -109,9 +147,15 @@ export function createServices(allowedFileRoots: Set<string>) {
         llamaService,
         huggingFaceService,
         projectService,
+        logoService,
         processService,
         codeIntelligenceService,
-        webService
+        webService,
+        memoryService,
+        pageSpeedService,
+        ruleService,
+        agentService,
+        dataService
     }
 
 }

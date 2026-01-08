@@ -49,15 +49,38 @@ export const registerProcessIpc = (processService: ProcessService) => {
 import { BrowserWindow } from 'electron'
 
 export const setupProcessEvents = (processService: ProcessService) => {
-    processService.on('data', ({ id, data }) => {
+    const buffers = new Map<string, string>()
+    let timer: NodeJS.Timeout | null = null
+
+    const flush = () => {
+        if (buffers.size === 0) return
+
         BrowserWindow.getAllWindows().forEach(win => {
-            win.webContents.send('process:data', { id, data })
+            if (win.isDestroyed()) return
+            buffers.forEach((data, id) => {
+                win.webContents.send('process:data', { id, data })
+            })
         })
+        buffers.clear()
+        timer = null
+    }
+
+    processService.on('data', ({ id, data }) => {
+        const current = buffers.get(id) || ''
+        buffers.set(id, current + data)
+
+        if (!timer) {
+            timer = setTimeout(flush, 100)
+        }
     })
 
     processService.on('exit', ({ id, code }) => {
+        // Flush immediately on exit
+        flush()
         BrowserWindow.getAllWindows().forEach(win => {
-            win.webContents.send('process:exit', { id, code })
+            if (!win.isDestroyed()) {
+                win.webContents.send('process:exit', { id, code })
+            }
         })
     })
 }

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 
 export interface AppSettings {
     ollama: {
@@ -6,6 +6,7 @@ export interface AppSettings {
         numCtx?: number
         backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal'
         gpuLayers?: number
+        orchestrationPolicy?: 'auto' | 'fifo' | 'parallel'
     }
     general: {
         language: string
@@ -47,6 +48,8 @@ export interface AppSettings {
         rate?: number
         pitch?: number
         volume?: number
+        audioInputDeviceId?: string
+        audioOutputDeviceId?: string
     }
     modelSettings?: Record<string, {
         systemPrompt?: string

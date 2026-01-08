@@ -5,10 +5,9 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
-import { Highlight, themes } from 'prism-react-renderer'
-import { Volume2, VolumeX, Code2 } from 'lucide-react'
+import { Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CopyButton } from './MessageActions'
+import { MonacoBlock } from './MonacoBlock'
 
 // Initialize mermaid
 mermaid.initialize({
@@ -74,37 +73,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                                 {children}
                             </code>
                         ) : (
-                            <div className="not-prose my-3 rounded-xl overflow-hidden border border-border/30 bg-[#0d1117] group/code transition-premium">
-                                <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/20 backdrop-blur-sm">
-                                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">{match[1] || 'code'}</span>
-                                    <div className="flex items-center gap-1.5">
-                                        {isSpeaking ? (
-                                            <button onClick={onStop} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-primary" title="Durdur">
-                                                <VolumeX className="w-3.5 h-3.5" />
-                                            </button>
-                                        ) : (
-                                            <button onClick={() => onSpeak?.(codeString)} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground" title="Sesli Oku">
-                                                <Volume2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
-                                        <CopyButton text={codeString} />
-                                    </div>
-                                </div>
-                                <Highlight theme={themes.vsDark} code={codeString} language={match[1] || 'text'}>
-                                    {({ style, tokens, getLineProps, getTokenProps }) => (
-                                        <pre className="p-4 overflow-x-auto m-0 !bg-transparent text-sm leading-relaxed" style={style}>
-                                            {tokens.map((line, i) => (
-                                                <div key={i} {...getLineProps({ line })} className="flex">
-                                                    <span className="select-none text-muted-foreground/30 mr-4 text-xs inline-block w-4 text-right shrink-0">{i + 1}</span>
-                                                    <div className="flex-1">
-                                                        {line.map((token, key) => <span key={key} {...getTokenProps({ token })} />)}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </pre>
-                                    )}
-                                </Highlight>
-                            </div>
+                            <MonacoBlock
+                                language={match[1] || 'text'}
+                                code={codeString}
+                                isSpeaking={isSpeaking}
+                                onSpeak={() => onSpeak?.(codeString)}
+                                onStop={onStop}
+                            />
                         )
                     },
                     img: ({ src, alt }) => (
@@ -120,7 +95,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                                     className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
-                                    Koda Ã‡evir
+                                    Koda Çevir
                                 </button>
                             )}
                         </span>

@@ -1,8 +1,14 @@
 ﻿import { useState, useEffect } from 'react';
 import { Image, Trash2, ExternalLink, RefreshCw, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation, Language } from '@/i18n';
 
-export function GalleryView() {
+interface GalleryViewProps {
+    language: Language;
+}
+
+export function GalleryView({ language }: GalleryViewProps) {
+    const { t } = useTranslation(language);
     const [images, setImages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
@@ -25,7 +31,7 @@ export function GalleryView() {
     };
 
     const handleDelete = async (path: string) => {
-        if (!confirm('Bu resmi silmek istediÄŸinize emin misiniz?')) return;
+        if (!confirm(t('gallery.deleteConfirm'))) return;
         setDeleting(path);
         try {
             await window.electron.gallery.delete(path);
@@ -57,13 +63,13 @@ export function GalleryView() {
         <div className="h-full flex flex-col">
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                 <div className="flex items-center gap-3">
-                    <h3 className="text-white font-medium">Galeri</h3>
-                    <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{images.length} resim</span>
+                    <h3 className="text-white font-medium">{t('gallery.title')}</h3>
+                    <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
                 </div>
                 <button
                     onClick={loadImages}
                     className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
-                    title="Yenile"
+                    title={t('gallery.refresh')}
                 >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
                 </button>
@@ -73,8 +79,8 @@ export function GalleryView() {
                 {images.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
                         <Image className="w-12 h-12 mb-3 opacity-20" />
-                        <p>HenÃ¼z oluÅŸturulmuÅŸ resim yok.</p>
-                        <p className="text-xs mt-1">Sohbet sÄ±rasÄ±nda resim oluÅŸturduÄŸunuzda burada gÃ¶rÃ¼necektir.</p>
+                        <p>{t('gallery.noImages')}</p>
+                        <p className="text-xs mt-1">{t('gallery.emptyState')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -94,14 +100,14 @@ export function GalleryView() {
                                         <button
                                             onClick={() => handleReveal(img.path)}
                                             className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm transition-colors"
-                                            title="Dosya Konumunu AÃ§"
+                                            title={t('gallery.openLocation')}
                                         >
                                             <FolderOpen className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleOpen(img.path)}
                                             className="p-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 rounded-lg backdrop-blur-sm transition-colors"
-                                            title="AÃ§"
+                                            title={t('gallery.open')}
                                         >
                                             <ExternalLink className="w-4 h-4" />
                                         </button>
@@ -109,7 +115,7 @@ export function GalleryView() {
                                             onClick={() => handleDelete(img.path)}
                                             disabled={!!deleting}
                                             className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg backdrop-blur-sm transition-colors"
-                                            title="Sil"
+                                            title={t('gallery.delete')}
                                         >
                                             {deleting === img.path ? (
                                                 <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />

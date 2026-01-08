@@ -7,6 +7,11 @@ export interface AppSettings {
     ollama: {
         url: string
         numCtx?: number
+        orchestrationPolicy?: 'auto' | 'fifo' | 'parallel'
+    }
+    embeddings: {
+        provider: 'ollama' | 'openai' | 'llama' | 'none'
+        model?: string
     }
     general: {
         language: 'tr' | 'en'
@@ -83,7 +88,12 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
         url: 'http://127.0.0.1:11434',
-        numCtx: 16384
+        numCtx: 16384,
+        orchestrationPolicy: 'auto'
+    },
+    embeddings: {
+        provider: 'none',
+        model: 'all-minilm' // fallback/legacy
     },
     general: {
         language: 'en',
@@ -143,12 +153,23 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpAutoExecuteSafe: true
 }
 
+import { DataService } from './data.service'
+import { AuthService } from './auth.service'
+
 export class SettingsService {
     private settingsPath: string
     private settings: AppSettings
 
-    constructor() {
-        this.settingsPath = path.join(app.getPath('userData'), 'settings.json')
+    constructor(
+        dataService?: DataService,
+        private authService?: AuthService
+    ) {
+        if (dataService) {
+            this.settingsPath = path.join(dataService.getPath('config'), 'settings.json')
+        } else {
+            // Fallback for tests or simplified usage, though in main we pass it.
+            this.settingsPath = path.join(app.getPath('userData'), 'settings.json')
+        }
         this.settings = this.loadSettings()
     }
 
@@ -159,19 +180,58 @@ export class SettingsService {
                 const loaded = JSON.parse(data)
                 delete loaded.userAvatar
                 delete loaded.aiAvatar
+
+                // Merge tokens from AuthService
+                let authTokens: Record<string, string> = {}
+                if (this.authService) {
+                    authTokens = this.authService.getAllTokens()
+                }
+
                 return {
                     ...DEFAULT_SETTINGS,
                     ...loaded,
                     ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
                     general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
-                    github: { ...DEFAULT_SETTINGS.github, ...(loaded.github || {}) },
-                    openai: { ...DEFAULT_SETTINGS.openai, ...(loaded.openai || {}) },
-                    anthropic: { ...DEFAULT_SETTINGS.anthropic, ...(loaded.anthropic || {}) },
-                    antigravity: { ...DEFAULT_SETTINGS.antigravity, ...(loaded.antigravity || {}) },
-                    copilot: { ...DEFAULT_SETTINGS.copilot, ...(loaded.copilot || {}) },
-                    gemini: { ...DEFAULT_SETTINGS.gemini, ...(loaded.gemini || {}) },
-                    groq: { ...DEFAULT_SETTINGS.groq, ...(loaded.groq || {}) },
-                    proxy: { ...DEFAULT_SETTINGS.proxy, ...(loaded.proxy || {}) },
+                    github: {
+                        ...DEFAULT_SETTINGS.github,
+                        ...(loaded.github || {}),
+                        token: authTokens['github_token'] || loaded.github?.token || ''
+                    },
+                    openai: {
+                        ...DEFAULT_SETTINGS.openai,
+                        ...(loaded.openai || {}),
+                        apiKey: authTokens['openai_key'] || loaded.openai?.apiKey || ''
+                    },
+                    anthropic: {
+                        ...DEFAULT_SETTINGS.anthropic,
+                        ...(loaded.anthropic || {}),
+                        apiKey: authTokens['anthropic_key'] || loaded.anthropic?.apiKey || ''
+                    },
+                    antigravity: {
+                        ...DEFAULT_SETTINGS.antigravity,
+                        ...(loaded.antigravity || {}),
+                        token: authTokens['antigravity_token'] || loaded.antigravity?.token
+                    },
+                    copilot: {
+                        ...DEFAULT_SETTINGS.copilot,
+                        ...(loaded.copilot || {}),
+                        token: authTokens['copilot_token'] || loaded.copilot?.token
+                    },
+                    gemini: {
+                        ...DEFAULT_SETTINGS.gemini,
+                        ...(loaded.gemini || {}),
+                        apiKey: authTokens['gemini_key'] || loaded.gemini?.apiKey || ''
+                    },
+                    groq: {
+                        ...DEFAULT_SETTINGS.groq,
+                        ...(loaded.groq || {}),
+                        apiKey: authTokens['groq_key'] || loaded.groq?.apiKey || ''
+                    },
+                    proxy: {
+                        ...DEFAULT_SETTINGS.proxy,
+                        ...(loaded.proxy || {}),
+                        key: authTokens['proxy_key'] || loaded.proxy?.key || ''
+                    },
                     window: { ...DEFAULT_SETTINGS.window, ...(loaded.window || {}) }
                 }
             }
@@ -185,39 +245,81 @@ export class SettingsService {
         return this.settings
     }
 
+    getSettingsPath(): string {
+        return this.settingsPath
+    }
+
     saveSettings(newSettings: Partial<AppSettings>): AppSettings {
         this.settings = { ...this.settings, ...newSettings }
 
-        // Deep merge for nested objects if needed, but for now simple spread is okay 
-        // if we send full objects or handle partial deeper. 
-        // Actually, let's do a basic deep merge for 2nd level keys manually for safety
-        if (newSettings.ollama) {
-            this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
-        }
-        if (newSettings.general) {
-            this.settings.general = { ...this.settings.general, ...newSettings.general }
-        }
-        if (newSettings.github) {
-            this.settings.github = { ...this.settings.github, ...newSettings.github }
-        }
-        if (newSettings.openai) {
-            this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
-        }
-        if (newSettings.anthropic) {
-            this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
-        }
-        if (newSettings.gemini) {
-            this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
-        }
-        if (newSettings.groq) {
-            this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
-        }
-        if (newSettings.proxy) {
-            this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
+        // Deep merge logic (simplified for brevity, ensuring objects exist) (KEEP EXISTING MERGE LOGIC)
+        if (newSettings.ollama) this.settings.ollama = { ...this.settings.ollama, ...newSettings.ollama }
+        if (newSettings.general) this.settings.general = { ...this.settings.general, ...newSettings.general }
+        if (newSettings.github) this.settings.github = { ...this.settings.github, ...newSettings.github }
+        if (newSettings.openai) this.settings.openai = { ...this.settings.openai, ...newSettings.openai }
+        if (newSettings.anthropic) this.settings.anthropic = { ...this.settings.anthropic, ...newSettings.anthropic }
+        if (newSettings.gemini) this.settings.gemini = { ...this.settings.gemini, ...newSettings.gemini }
+        if (newSettings.groq) this.settings.groq = { ...this.settings.groq, ...newSettings.groq }
+        if (newSettings.proxy) this.settings.proxy = { ...this.settings.proxy, ...newSettings.proxy }
+
+        // Secure Storage Logic
+        if (this.authService) {
+
+            // GitHub
+            if (this.settings.github?.token) {
+                this.authService.saveToken('github_token', this.settings.github.token)
+            }
+            // OpenAI
+            if (this.settings.openai?.apiKey) {
+                this.authService.saveToken('openai_key', this.settings.openai.apiKey)
+            }
+            // Anthropic
+            if (this.settings.anthropic?.apiKey) {
+                this.authService.saveToken('anthropic_key', this.settings.anthropic.apiKey)
+            }
+            // Gemini
+            if (this.settings.gemini?.apiKey) {
+                this.authService.saveToken('gemini_key', this.settings.gemini.apiKey)
+            }
+            // Groq
+            if (this.settings.groq?.apiKey) {
+                this.authService.saveToken('groq_key', this.settings.groq.apiKey)
+            }
+            // Antigravity
+            if (this.settings.antigravity?.token) {
+                this.authService.saveToken('antigravity_token', this.settings.antigravity.token)
+            }
+            // Copilot
+            if (this.settings.copilot?.token) {
+                this.authService.saveToken('copilot_token', this.settings.copilot.token)
+            }
+            // Proxy Key
+            if (this.settings.proxy?.key && this.settings.proxy.key !== 'connected') {
+                this.authService.saveToken('proxy_key', this.settings.proxy.key)
+            }
         }
 
         try {
-            fs.writeFileSync(this.settingsPath, JSON.stringify(this.settings, null, 2))
+            // Create a copy to save that doesn't have the secrets
+            const settingsToSave = JSON.parse(JSON.stringify(this.settings))
+
+            // Strip secrets if AuthService is active
+            if (this.authService) {
+                if (settingsToSave.github) settingsToSave.github.token = ''
+                if (settingsToSave.openai) settingsToSave.openai.apiKey = ''
+                if (settingsToSave.anthropic) settingsToSave.anthropic.apiKey = ''
+                if (settingsToSave.gemini) settingsToSave.gemini.apiKey = ''
+                if (settingsToSave.groq) settingsToSave.groq.apiKey = ''
+                if (settingsToSave.antigravity) settingsToSave.antigravity.token = undefined
+                if (settingsToSave.copilot) settingsToSave.copilot.token = undefined
+                // Proxy key might be needed for non-auth purposes? It's usually 'connected' or a real key. 
+                // If it's a real key, we saved it. If it's 'connected', we leave it.
+                if (settingsToSave.proxy && settingsToSave.proxy.key !== 'connected') {
+                    settingsToSave.proxy.key = ''
+                }
+            }
+
+            fs.writeFileSync(this.settingsPath, JSON.stringify(settingsToSave, null, 2))
         } catch (error) {
             console.error('Failed to save settings:', error)
         }

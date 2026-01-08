@@ -35,6 +35,7 @@ export interface Message {
     responseTime?: number
     rating?: 1 | -1 | 0
     reactions?: string[]
+    sources?: string[]
 }
 
 export interface Chat {
@@ -49,6 +50,7 @@ export interface Chat {
     isArchived?: boolean
     isFavorite?: boolean
     folderId?: string
+    isGenerating?: boolean // Transient state for UI
 }
 
 export interface Folder {
@@ -56,6 +58,15 @@ export interface Folder {
     name: string
     createdAt: Date
     updatedAt: Date
+}
+
+export interface Prompt {
+    id: string
+    title: string
+    content: string
+    tags: string[]
+    createdAt: number
+    updatedAt: number
 }
 
 export interface Toast {

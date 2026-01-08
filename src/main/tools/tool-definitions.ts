@@ -9,6 +9,7 @@ export interface ToolDefinition {
                 type: string
                 description: string
                 enum?: string[]
+                items?: { type: string }
             }>
             required?: string[]
         }
@@ -328,6 +329,62 @@ export const toolDefinitions: ToolDefinition[] = [
                     }
                 },
                 required: ['prompt']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'remember',
+            description: 'Store a fact or piece of information in the long-term memory for future retrieval.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    fact: {
+                        type: 'string',
+                        description: 'The fact or information to remember.'
+                    },
+                    tags: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Optional tags to categorize the memory.'
+                    }
+                },
+                required: ['fact']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'recall',
+            description: 'Search the long-term memory for relevant information based on a query.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: {
+                        type: 'string',
+                        description: 'The query to search for in memory.'
+                    }
+                },
+                required: ['query']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'forget',
+            description: 'Remove a specific fact from long-term memory by its ID.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    fact_id: {
+                        type: 'string',
+                        description: 'The ID of the fact to forget/delete.'
+                    }
+                },
+                required: ['fact_id']
             }
         }
     }

@@ -2,6 +2,8 @@
 import { Box, RefreshCw, Play, Square, Trash2, Terminal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { useTranslation, Language } from '@/i18n'
+
 interface ContainerInfo {
     id: string
     name: string
@@ -15,9 +17,11 @@ interface ContainerInfo {
 interface DockerDashboardProps {
     isOpen?: boolean
     onOpenTerminal?: (name: string, command: string) => void
+    language: Language
 }
 
-export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboardProps) {
+export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: DockerDashboardProps) {
+    const { t } = useTranslation(language)
     const [containers, setContainers] = useState<ContainerInfo[]>([])
     const [selectedContainer, setSelectedContainer] = useState<string | null>(null)
     const [logs, setLogs] = useState<string>('')
@@ -35,7 +39,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
             ], process.cwd())
 
             if (result.stderr && !result.stdout) {
-                setError('Docker is not running or not installed')
+                setError(t('docker.notRunning'))
                 return
             }
 
@@ -59,7 +63,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
 
             setContainers(parsed)
         } catch (err: any) {
-            setError(err.message || 'Failed to load containers')
+            setError(err.message || t('docker.failedLoad'))
         } finally {
             setIsLoading(false)
         }
@@ -71,7 +75,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                 'logs', '--tail', '100', containerId
             ], process.cwd())
 
-            setLogs(result.stdout || result.stderr || 'No logs available')
+            setLogs(result.stdout || result.stderr || t('docker.noLogs'))
         } catch (err: any) {
             setLogs(`Error: ${err.message}`)
         }
@@ -118,8 +122,8 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                         <Box size={20} className="text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="font-semibold text-white">Docker Dashboard</h2>
-                        <p className="text-xs text-zinc-500">{containers.length} containers</p>
+                        <h2 className="font-semibold text-white">{t('docker.title')}</h2>
+                        <p className="text-xs text-zinc-500">{containers.length} {t('docker.containers')}</p>
                     </div>
                 </div>
                 <button
@@ -143,7 +147,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                 <div className="w-1/2 border-r border-white/5 overflow-y-auto p-4 space-y-2">
                     {containers.length === 0 && !isLoading && (
                         <div className="text-center text-zinc-500 text-sm py-8">
-                            No containers found
+                            {t('docker.noContainers')}
                         </div>
                     )}
                     {containers.map((container) => (
@@ -179,7 +183,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                                     <button
                                         onClick={(e) => { e.stopPropagation(); containerAction('stop', container.id) }}
                                         className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
-                                        title="Stop"
+                                        title={t('docker.stop')}
                                     >
                                         <Square size={14} />
                                     </button>
@@ -187,7 +191,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                                     <button
                                         onClick={(e) => { e.stopPropagation(); containerAction('start', container.id) }}
                                         className="p-1.5 rounded hover:bg-green-500/20 text-zinc-400 hover:text-green-400"
-                                        title="Start"
+                                        title={t('docker.start')}
                                     >
                                         <Play size={14} />
                                     </button>
@@ -195,7 +199,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                                 <button
                                     onClick={(e) => { e.stopPropagation(); containerAction('rm', container.id) }}
                                     className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
-                                    title="Remove"
+                                    title={t('docker.remove')}
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -205,7 +209,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                                         onOpenTerminal?.(`Docker: ${container.name}`, `docker exec -it ${container.id} /bin/sh`)
                                     }}
                                     className="p-1.5 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400"
-                                    title="Shell"
+                                    title={t('docker.shell')}
                                 >
                                     <Terminal size={14} />
                                 </button>
@@ -218,10 +222,10 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal }: DockerDashboa
                 <div className="w-1/2 flex flex-col overflow-hidden">
                     <div className="p-3 border-b border-white/5 flex items-center gap-2">
                         <Terminal size={14} className="text-zinc-400" />
-                        <span className="text-sm text-zinc-400">Logs</span>
+                        <span className="text-sm text-zinc-400">{t('docker.logs')}</span>
                     </div>
                     <pre className="flex-1 p-4 text-xs font-mono text-zinc-400 overflow-y-auto whitespace-pre-wrap">
-                        {selectedContainer ? logs || 'Loading...' : 'Select a container to view logs'}
+                        {selectedContainer ? logs || t('docker.loading') : t('docker.selectContainer')}
                     </pre>
                 </div>
             </div>

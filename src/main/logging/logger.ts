@@ -2,21 +2,18 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+export enum LogLevel {
+    DEBUG = 0,
+    INFO = 1,
+    WARN = 2,
+    ERROR = 3
+}
 
 type LogPayload = {
     level: LogLevel
     message: string
-    source?: string
+    context: string
     data?: unknown
-}
-
-type ConsoleLike = {
-    debug: (...args: unknown[]) => void
-    info: (...args: unknown[]) => void
-    log: (...args: unknown[]) => void
-    warn: (...args: unknown[]) => void
-    error: (...args: unknown[]) => void
 }
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -28,15 +25,34 @@ class AppLogger {
     private size = 0
     private initialized = false
     private queue: Promise<void> = Promise.resolve()
-    private originalConsole: ConsoleLike | null = null
+    private originalConsole: any = null
+    private currentLevel: LogLevel = LogLevel.INFO
 
-    init() {
-        if (this.initialized) return
-        this.logDir = this.resolveLogDir()
+    init(logDir?: string) {
+        if (this.initialized && !logDir) return
+
+        if (logDir) {
+            this.logDir = logDir
+        } else {
+            try {
+                const base = app.getPath('userData')
+                this.logDir = path.join(base, 'logs')
+            } catch {
+                this.logDir = path.join(process.cwd(), 'logs')
+            }
+        }
+
         this.logPath = path.join(this.logDir, 'app.log')
-        fs.mkdirSync(this.logDir, { recursive: true })
+        if (!fs.existsSync(this.logDir)) {
+            fs.mkdirSync(this.logDir, { recursive: true })
+        }
         this.size = this.safeStatSize(this.logPath)
         this.initialized = true
+        this.info('Logger', `Logger initialized at ${this.logPath}`)
+    }
+
+    setLevel(level: LogLevel) {
+        this.currentLevel = level
     }
 
     installConsoleRedirect() {
@@ -50,54 +66,75 @@ class AppLogger {
         }
 
         console.debug = (...args: unknown[]) => {
-            this.debug(formatArgs(args), { source: 'main' })
+            this.debug('console', formatArgs(args))
             this.originalConsole?.debug(...args)
         }
         console.log = (...args: unknown[]) => {
-            this.info(formatArgs(args), { source: 'main' })
+            this.info('console', formatArgs(args))
             this.originalConsole?.log(...args)
         }
         console.info = (...args: unknown[]) => {
-            this.info(formatArgs(args), { source: 'main' })
+            this.info('console', formatArgs(args))
             this.originalConsole?.info(...args)
         }
         console.warn = (...args: unknown[]) => {
-            this.warn(formatArgs(args), { source: 'main' })
+            this.warn('console', formatArgs(args))
             this.originalConsole?.warn(...args)
         }
         console.error = (...args: unknown[]) => {
-            this.error(formatArgs(args), { source: 'main' })
+            this.error('console', formatArgs(args))
             this.originalConsole?.error(...args)
         }
     }
 
-    debug(message: string, options?: { source?: string; data?: unknown }) {
-        this.write({ level: 'debug', message, source: options?.source, data: options?.data })
+    debug(context: string, message: string, data?: unknown) {
+        if (this.currentLevel <= LogLevel.DEBUG) {
+            this.write({ level: LogLevel.DEBUG, message, context, data })
+        }
     }
 
-    info(message: string, options?: { source?: string; data?: unknown }) {
-        this.write({ level: 'info', message, source: options?.source, data: options?.data })
+    info(context: string, message: string, data?: unknown) {
+        if (this.currentLevel <= LogLevel.INFO) {
+            this.write({ level: LogLevel.INFO, message, context, data })
+        }
     }
 
-    warn(message: string, options?: { source?: string; data?: unknown }) {
-        this.write({ level: 'warn', message, source: options?.source, data: options?.data })
+    warn(context: string, message: string, data?: unknown) {
+        if (this.currentLevel <= LogLevel.WARN) {
+            this.write({ level: LogLevel.WARN, message, context, data })
+        }
     }
 
-    error(message: string, options?: { source?: string; data?: unknown }) {
-        this.write({ level: 'error', message, source: options?.source, data: options?.data })
+    error(context: string, message: string, data?: unknown) {
+        if (this.currentLevel <= LogLevel.ERROR) {
+            this.write({ level: LogLevel.ERROR, message, context, data })
+        }
     }
 
-    write(payload: LogPayload) {
+    private write(payload: LogPayload) {
         if (!this.initialized) {
             this.init()
         }
+
         const line = formatLine(payload)
+
+        // Console Output (with colors if possible)
+        const color = getLevelColor(payload.level)
+        const reset = '\x1b[0m'
+        const levelStr = LogLevel[payload.level].padEnd(5)
+        if (this.originalConsole) {
+            const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`
+            if (payload.level === LogLevel.ERROR) this.originalConsole.error(consoleMsg)
+            else if (payload.level === LogLevel.WARN) this.originalConsole.warn(consoleMsg)
+            else this.originalConsole.log(consoleMsg)
+        }
+
         this.queue = this.queue.then(async () => {
             this.rotateIfNeeded(line.length)
             await fs.promises.appendFile(this.logPath, line, 'utf8')
             this.size += Buffer.byteLength(line, 'utf8')
         }).catch((err) => {
-            this.originalConsole?.error('Logger write failed', err)
+            if (this.originalConsole) this.originalConsole.error('Logger write failed', err)
         })
     }
 
@@ -118,15 +155,6 @@ class AppLogger {
         this.size = 0
     }
 
-    private resolveLogDir(): string {
-        try {
-            const base = app.getPath('userData')
-            return path.join(base, 'logs')
-        } catch {
-            return path.join(process.cwd(), 'logs')
-        }
-    }
-
     private safeStatSize(filePath: string): number {
         try {
             return fs.statSync(filePath).size
@@ -136,7 +164,27 @@ class AppLogger {
     }
 }
 
+function getLevelColor(level: LogLevel): string {
+    switch (level) {
+        case LogLevel.DEBUG: return '\x1b[36m' // Cyan
+        case LogLevel.INFO: return '\x1b[32m'  // Green
+        case LogLevel.WARN: return '\x1b[33m'  // Yellow
+        case LogLevel.ERROR: return '\x1b[31m' // Red
+        default: return ''
+    }
+}
+
 export const appLogger = new AppLogger()
+
+// Legacy export for those who used static Logger
+export class Logger {
+    static init(logDir?: string) { appLogger.init(logDir) }
+    static setLevel(level: LogLevel) { appLogger.setLevel(level) }
+    static debug(context: string, message: string, data?: unknown) { appLogger.debug(context, message, data) }
+    static info(context: string, message: string, data?: unknown) { appLogger.info(context, message, data) }
+    static warn(context: string, message: string, data?: unknown) { appLogger.warn(context, message, data) }
+    static error(context: string, message: string, data?: unknown) { appLogger.error(context, message, data) }
+}
 
 export function initAppLogger() {
     appLogger.init()
@@ -144,24 +192,12 @@ export function initAppLogger() {
 }
 
 function formatLine(payload: LogPayload): string {
-    const timestamp = formatTimestamp(new Date())
-    const level = payload.level.toUpperCase().padEnd(5, ' ')
-    const source = payload.source ? payload.source : 'main'
+    const timestamp = new Date().toISOString()
+    const level = LogLevel[payload.level].padEnd(5)
+    const context = payload.context
     const base = sanitize(payload.message)
     const meta = payload.data !== undefined ? ` | ${sanitize(formatValue(payload.data))}` : ''
-    return `${timestamp} [${level}] [${source}] ${base}${meta}\n`
-}
-
-function formatTimestamp(date: Date): string {
-    const pad = (value: number, len: number) => String(value).padStart(len, '0')
-    const year = date.getFullYear()
-    const month = pad(date.getMonth() + 1, 2)
-    const day = pad(date.getDate(), 2)
-    const hours = pad(date.getHours(), 2)
-    const minutes = pad(date.getMinutes(), 2)
-    const seconds = pad(date.getSeconds(), 2)
-    const ms = pad(date.getMilliseconds(), 3)
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${ms}`
+    return `[${timestamp}] [${level}] [${context}] ${base}${meta}\n`
 }
 
 function formatArgs(args: unknown[]): string {
@@ -183,5 +219,6 @@ function formatValue(value: unknown): string {
 }
 
 function sanitize(message: string): string {
-    return message.replace(/\r?\n/g, '\\n')
+    return String(message).replace(/\r?\n/g, '\\n')
 }
+

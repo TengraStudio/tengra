@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { memo } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { Message } from '@/types';
 import { Language } from '@/i18n';
@@ -26,7 +26,7 @@ interface MessageListProps {
  * - Streaming message content (when a response is in progress)
  * - Auto-scrolling to the bottom when new messages arrive.
  */
-export const MessageList: React.FC<MessageListProps> = ({
+export const MessageList = memo(({
     messages,
     streamingContent,
     streamingReasoning,
@@ -39,12 +39,47 @@ export const MessageList: React.FC<MessageListProps> = ({
     onStopSpeak,
     speakingMessageId,
     messagesEndRef
-}) => {
+}: MessageListProps) => {
+    const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const activeTag = document.activeElement?.tagName.toLowerCase();
+            if (activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable) {
+                return;
+            }
+
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                setFocusedIndex(prev => {
+                    const next = (prev === null ? -1 : prev) + 1;
+                    return Math.min(next, messages.length - 1);
+                });
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                setFocusedIndex(prev => {
+                    const next = (prev === null ? messages.length : prev) - 1;
+                    return Math.max(next, 0);
+                });
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [messages.length]);
+
+    React.useEffect(() => {
+        if (focusedIndex !== null) {
+            const el = document.getElementById(`message-bubble-${focusedIndex}`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [focusedIndex]);
+
     return (
-        <div className="max-w-4xl mx-auto w-full p-4 sm:p-6 space-y-8 flex-1 flex flex-col pt-8 sm:pt-12">
+        <div className="max-w-3xl mx-auto w-full p-4 space-y-4 flex-1 flex flex-col pt-4">
             {messages.map((m, i) => (
                 <MessageBubble
                     key={m.id}
+                    id={`message-bubble-${i}`}
+                    isFocused={i === focusedIndex}
                     message={m}
                     isLast={i === messages.length - 1 && !streamingContent}
                     isStreaming={isLoading && i === messages.length - 1 && m.role === 'assistant'}
@@ -83,4 +118,4 @@ export const MessageList: React.FC<MessageListProps> = ({
             <div ref={messagesEndRef} className="h-4" />
         </div>
     );
-};
+});

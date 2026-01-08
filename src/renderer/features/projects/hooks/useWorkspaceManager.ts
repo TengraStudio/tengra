@@ -94,7 +94,7 @@ export function useWorkspaceManager({
         return true
     }, [mountStatus, notify])
 
-    const openFile = useCallback(async (entry: { mountId: string, path: string, name: string, isDirectory: boolean }) => {
+    const openFile = useCallback(async (entry: { mountId: string, path: string, name: string, isDirectory: boolean, initialLine?: number }) => {
         if (entry.isDirectory) return
         const mount = mounts.find(m => m.id === entry.mountId)
         if (!mount) return
@@ -102,6 +102,10 @@ export function useWorkspaceManager({
         const tabId = `${entry.mountId}:${entry.path}`
         const existing = openTabs.find(tab => tab.id === tabId)
         if (existing) {
+            // If it has an initialLine, we should update the tab to trigger a scroll
+            if (entry.initialLine !== undefined) {
+                setOpenTabs(prev => prev.map(t => t.id === tabId ? { ...t, initialLine: entry.initialLine } : t))
+            }
             setActiveEditorTabId(existing.id)
             return
         }
@@ -131,7 +135,17 @@ export function useWorkspaceManager({
 
         if (!result?.success) { notify('error', result?.error || 'Failed to read file.'); return }
 
-        const tab: EditorTab = { id: tabId, mountId: entry.mountId, path: entry.path, name: entry.name, content, savedContent: content, type, isDirty: false }
+        const tab: EditorTab = {
+            id: tabId,
+            mountId: entry.mountId,
+            path: entry.path,
+            name: entry.name,
+            content,
+            savedContent: content,
+            type,
+            isDirty: false,
+            initialLine: entry.initialLine
+        }
         setOpenTabs(prev => [...prev, tab])
         setActiveEditorTabId(tabId)
     }, [mounts, openTabs, ensureMountReady, notify])

@@ -14,6 +14,7 @@ export interface ProjectAnalysis {
     dependencies: Record<string, string>
     devDependencies: Record<string, string>
     stats: ProjectStats
+    languages: Record<string, number>
     files: string[]
 }
 
@@ -28,6 +29,7 @@ export class ProjectService {
         const type = await this.detectType(files)
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type)
         const stats = await this.calculateStats(files)
+        const languages = this.calculateLanguages(files)
 
         console.log(`[ProjectService] Analysis complete in ${Date.now() - runStart}ms`)
 
@@ -37,8 +39,76 @@ export class ProjectService {
             dependencies,
             devDependencies,
             stats,
+            languages,
             files: files.slice(0, 1000) // Limit file list for performance in IPC
         }
+    }
+
+    async analyzeDirectory(dirPath: string): Promise<{
+        hasPackageJson: boolean
+        pkg: any
+        readme: string | null
+        stats: ProjectStats
+    }> {
+        // 1. Check for package.json
+        let hasPackageJson = false
+        let pkg = {}
+        try {
+            const pkgPath = path.join(dirPath, 'package.json')
+            const content = await fs.readFile(pkgPath, 'utf-8')
+            pkg = JSON.parse(content)
+            hasPackageJson = true
+        } catch { }
+
+        // 2. Check for README.md
+        let readme: string | null = null
+        try {
+            const readmePath = path.join(dirPath, 'README.md')
+            readme = await fs.readFile(readmePath, 'utf-8')
+        } catch { }
+
+        // 3. Stats for this folder (non-recursive deep scan for speed, or shallow?)
+        // Let's do a quick scan of just this directory + 1 level deep?
+        // For now, reusing scanFiles but might be too heavy for deep folders.
+        // We will just do a shallow scan for file count in this dir
+        let files: string[] = []
+        try {
+            const entries = await fs.readdir(dirPath)
+            files = entries.map(e => path.join(dirPath, e))
+        } catch { }
+
+        const stats = await this.calculateStats(files)
+
+        return { hasPackageJson, pkg, readme, stats }
+    }
+
+    private calculateLanguages(files: string[]): Record<string, number> {
+        const langMap: Record<string, number> = {}
+        const commonExts: Record<string, string> = {
+            'js': 'JavaScript',
+            'ts': 'TypeScript',
+            'tsx': 'React (TS)',
+            'jsx': 'React (JS)',
+            'py': 'Python',
+            'go': 'Go',
+            'rs': 'Rust',
+            'html': 'HTML',
+            'css': 'CSS',
+            'json': 'JSON',
+            'md': 'Markdown',
+            'yaml': 'YAML',
+            'yml': 'YAML'
+        }
+
+        for (const file of files) {
+            const ext = path.extname(file).slice(1).toLowerCase()
+            if (!ext) continue
+
+            const lang = commonExts[ext] || ext.toUpperCase()
+            langMap[lang] = (langMap[lang] || 0) + 1
+        }
+
+        return langMap
     }
 
     private async scanFiles(dir: string, fileList: string[] = []): Promise<string[]> {

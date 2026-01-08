@@ -10,28 +10,38 @@ export function registerGalleryIpc(galleryPath: string) {
         try {
             fs.mkdirSync(galleryPath, { recursive: true })
         } catch (e) {
-            appLogger.error(`Failed to create gallery path: ${e}`)
+            appLogger.error('Gallery', `Failed to create gallery path: ${e}`)
         }
     }
 
     ipcMain.handle('gallery:list', async () => {
         try {
-            const files = await fs.promises.readdir(galleryPath)
-            // Filter images and map to full paths
-            return files
-                .filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f))
-                .map(f => {
-                    const fullPath = path.join(galleryPath, f)
-                    return {
-                        name: f,
-                        path: fullPath,
-                        url: `safe-file://${fullPath.replace(/\\/g, '/')}`,
-                        mtime: fs.statSync(fullPath).mtime.getTime() // Sync is fast enough for stat here usually
+            const results: any[] = []
+            const subdirs = ['images', 'videos']
+
+            for (const sub of subdirs) {
+                const subPath = path.join(galleryPath, sub)
+                if (!fs.existsSync(subPath)) continue
+
+                const files = await fs.promises.readdir(subPath)
+                for (const f of files) {
+                    if (/\.(png|jpg|jpeg|webp|gif|mp4|webm|mov)$/i.test(f)) {
+                        const fullPath = path.join(subPath, f)
+                        const stats = fs.statSync(fullPath)
+                        results.push({
+                            name: f,
+                            path: fullPath,
+                            url: `safe-file://${fullPath.replace(/\\/g, '/')}`,
+                            mtime: stats.mtime.getTime(),
+                            type: sub === 'images' ? 'image' : 'video'
+                        })
                     }
-                })
-                .sort((a, b) => b.mtime - a.mtime) // Newest first
+                }
+            }
+
+            return results.sort((a, b) => b.mtime - a.mtime) // Newest first
         } catch (error) {
-            appLogger.error(`Gallery List Error: ${error}`)
+            appLogger.error('Gallery', `Gallery List Error: ${error}`)
             return []
         }
     })
@@ -45,7 +55,7 @@ export function registerGalleryIpc(galleryPath: string) {
             await fs.promises.unlink(filePath)
             return true
         } catch (error) {
-            appLogger.error(`Gallery Delete Error: ${error}`)
+            appLogger.error('Gallery', `Gallery Delete Error: ${error}`)
             return false
         }
     })
@@ -55,7 +65,7 @@ export function registerGalleryIpc(galleryPath: string) {
             await shell.openPath(filePath)
             return true
         } catch (error) {
-            appLogger.error(`Gallery Open Error: ${error}`)
+            appLogger.error('Gallery', `Gallery Open Error: ${error}`)
             return false
         }
     })
@@ -65,7 +75,7 @@ export function registerGalleryIpc(galleryPath: string) {
             shell.showItemInFolder(filePath)
             return true
         } catch (error) {
-            appLogger.error(`Gallery Reveal Error: ${error}`)
+            appLogger.error('Gallery', `Gallery Reveal Error: ${error}`)
             return false
         }
     })

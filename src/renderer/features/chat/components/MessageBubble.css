@@ -7,7 +7,7 @@
 }
 
 .message-bubble-container {
-    @apply flex flex-col gap-2 max-w-[85%] relative group;
+    @apply flex flex-col gap-2 max-w-[85%] relative;
 }
 
 .message-bubble-user-container {

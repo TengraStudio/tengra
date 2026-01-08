@@ -140,4 +140,17 @@ export class SystemService implements ISystemService {
             return { success: false, error: e.message };
         }
     }
+
+    async healthCheck(): Promise<ServiceResponse> {
+        return {
+            success: true,
+            result: {
+                status: 'healthy',
+                timestamp: Date.now(),
+                memory: process.memoryUsage(),
+                uptime: process.uptime(),
+                platform: process.platform
+            }
+        };
+    }
 }

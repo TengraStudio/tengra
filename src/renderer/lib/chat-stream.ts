@@ -3,7 +3,9 @@ export async function* chatStream(
     model: string,
     tools: any[] = [],
     provider?: string,
-    options?: any
+    options?: any,
+    chatId?: string,
+    projectId?: string
 ) {
     let currentResolver: ((value: any) => void) | null = null;
     let queue: any[] = [];
@@ -13,7 +15,12 @@ export async function* chatStream(
     // Type for the listener callback
     const listener = (chunk: any) => {
         if (isDone) return;
+        // If chatId is provided and chunk has chatId, filter it. 
+        // If either is missing, we fall back to global (for partial backward compat)
+        if (chatId && chunk.chatId && chunk.chatId !== chatId) return;
+
         queue.push(chunk);
+
         if (currentResolver) {
             currentResolver(null); // Signal that data is available
             currentResolver = null;
@@ -24,7 +31,7 @@ export async function* chatStream(
     window.electron.onStreamChunk(listener);
 
     // Start the stream via IPC
-    window.electron.chatStream(messages, model, tools, provider, options)
+    window.electron.chatStream(messages, model, tools, provider, options, chatId, projectId)
         .then(() => {
             isDone = true;
             if (currentResolver) currentResolver(null);
@@ -46,6 +53,7 @@ export async function* chatStream(
                     if (chunk.reasoning) yield { type: 'reasoning', content: chunk.reasoning };
                     if (chunk.images) yield { type: 'images', images: chunk.images };
                     if (chunk.type === 'tool_calls') yield chunk; // Pass through tool calls if structure matches
+                    if (chunk.type === 'metadata') yield chunk; // Yield metadata (sources)
                     if (chunk.type === 'error') yield chunk;
                 }
             }

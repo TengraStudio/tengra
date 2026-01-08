@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Message } from '../../renderer/types/chat';
+import { Message } from '../../shared/types/chat';
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
 const API_VERSION = '2023-07-07';
@@ -12,6 +12,7 @@ export class CopilotService {
     private tokenExpiresAt: number = 0;
     private vsCodeVersion: string = FALLBACK_VSCODE_VERSION;
     private accountType: 'individual' | 'business' | 'enterprise' = 'individual';
+    private tokenPromise: Promise<string> | null = null;
 
     constructor() {
         this.fetchVsCodeVersion();
@@ -41,69 +42,76 @@ export class CopilotService {
             return this.copilotSessionToken;
         }
 
-        if (!this.githubToken) {
-            throw new Error('GitHub Authentication failed: No token found. Please login via Settings.');
-        }
+        if (this.tokenPromise) return this.tokenPromise;
 
-        try {
-            const usageRes = await fetch('https://api.github.com/copilot_internal/user', {
-                headers: {
-                    'Authorization': `token ${this.githubToken}`,
-                    'Accept': 'application/json',
-                    'User-Agent': USER_AGENT
+        this.tokenPromise = (async () => {
+            try {
+                if (!this.githubToken) {
+                    throw new Error('GitHub Authentication failed: No token found. Please login via Settings.');
                 }
-            });
-            if (usageRes.ok) {
-                const usageData = await usageRes.json() as any;
-                if (usageData.copilot_plan === 'business') this.accountType = 'business';
-                else if (usageData.copilot_plan === 'enterprise') this.accountType = 'enterprise';
-                else this.accountType = 'individual';
-                console.log(`[CopilotService] Detected Plan: ${usageData.copilot_plan} -> Endpoint: ${this.getBaseUrl()}`);
-            }
-        } catch (e) {
-            console.warn('[CopilotService] Failed to detect account type, defaulting to individual');
-        }
 
-        const response = await fetch('https://api.github.com/copilot_internal/v2/token', {
-            headers: {
-                'Authorization': `token ${this.githubToken}`,
-                'Accept': 'application/json',
-                'Editor-Version': `vscode/${this.vsCodeVersion}`,
-                'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
-                'User-Agent': USER_AGENT,
-                'X-GitHub-Api-Version': API_VERSION,
-            }
-        });
+                try {
+                    const usageRes = await fetch('https://api.github.com/copilot_internal/user', {
+                        headers: {
+                            'Authorization': `token ${this.githubToken}`,
+                            'Accept': 'application/json',
+                            'User-Agent': USER_AGENT
+                        }
+                    });
+                    if (usageRes.ok) {
+                        const usageData = await usageRes.json() as any;
+                        if (usageData.copilot_plan === 'business') this.accountType = 'business';
+                        else if (usageData.copilot_plan === 'enterprise') this.accountType = 'enterprise';
+                        else this.accountType = 'individual';
+                        console.log(`[CopilotService] Detected Plan: ${usageData.copilot_plan} -> Endpoint: ${this.getBaseUrl()}`);
+                    }
+                } catch (e) {
+                    console.warn('[CopilotService] Failed to detect account type, defaulting to individual');
+                }
 
-        if (!response.ok) {
-            // Fallback to v1 if v2 fails (sometimes happens specifically with 404)
-            if (response.status === 404) {
-                console.warn('[CopilotService] v2/token returned 404, trying v1/token...');
-                const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
+                const response = await fetch('https://api.github.com/copilot_internal/v2/token', {
                     headers: {
                         'Authorization': `token ${this.githubToken}`,
                         'Accept': 'application/json',
                         'Editor-Version': `vscode/${this.vsCodeVersion}`,
                         'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
-                        'User-Agent': USER_AGENT
+                        'User-Agent': USER_AGENT,
+                        'X-GitHub-Api-Version': API_VERSION,
                     }
                 });
-                if (v1Response.ok) {
-                    const data = await v1Response.json() as any;
-                    this.copilotSessionToken = data.token;
-                    this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
-                    return this.copilotSessionToken!;
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.warn('[CopilotService] v2/token returned 404, trying v1/token...');
+                        const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
+                            headers: {
+                                'Authorization': `token ${this.githubToken}`,
+                                'Accept': 'application/json',
+                                'Editor-Version': `vscode/${this.vsCodeVersion}`,
+                                'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
+                                'User-Agent': USER_AGENT
+                            }
+                        });
+                        if (v1Response.ok) {
+                            const data = await v1Response.json() as any;
+                            this.copilotSessionToken = data.token;
+                            this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
+                            return this.copilotSessionToken!;
+                        }
+                    }
+                    throw new Error(`Failed to get Copilot token: ${response.status} ${await response.text()}`);
                 }
+
+                const data = await response.json() as any;
+                this.copilotSessionToken = data.token;
+                this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
+                return this.copilotSessionToken!;
+            } finally {
+                this.tokenPromise = null;
             }
+        })();
 
-            throw new Error(`Failed to get Copilot token: ${response.status} ${await response.text()}`);
-        }
-
-        const data = await response.json() as any;
-        this.copilotSessionToken = data.token;
-        this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
-
-        return this.copilotSessionToken!;
+        return this.tokenPromise;
     }
 
     private getBaseUrl(): string {
@@ -241,20 +249,33 @@ export class CopilotService {
                             // Map /responses output to standard format
                             let data: any = {};
                             try {
-                                // Consuming stream body for JSON parsing if not streaming response to user yet
-                                // But if stream=true, we might need to handle SSE.
-                                // The user asked for Stream support.
-                                // /responses endpoint returns "output" object.
-                                // If stream is true, it probably returns SSE with output object deltas? 
-                                // For now, let's assume non-stream diagnostics or just return body if stream.
-                                if (stream) return res.body;
+                                if (stream) {
+                                    console.log(`[CopilotService] Returning stream body from ${url}`);
+                                    // Log first chunk to see format
+                                    const clonedRes = res.clone();
+                                    const reader = clonedRes.body?.getReader();
+                                    if (reader) {
+                                        const { value } = await reader.read();
+                                        if (value) {
+                                            const sample = new TextDecoder().decode(value);
+                                            console.log(`[CopilotService] Stream sample (first 500 chars): ${sample.substring(0, 500)}`);
+                                        }
+                                        reader.releaseLock();
+                                    }
+                                    return res.body;
+                                }
                                 data = await res.json() as any;
+                                console.log(`[CopilotService] Non-stream response:`, JSON.stringify(data).substring(0, 500));
                             } catch (e) {
+                                console.log(`[CopilotService] Parse error:`, e);
                                 return null;
                             }
 
+                            // Parse /responses format - might be nested under 'response' key
+                            const responseData = data.response || data;
+
                             // Check for tool calls in output
-                            const outputItems = Array.isArray(data.output) ? data.output : [];
+                            const outputItems = Array.isArray(responseData.output) ? responseData.output : [];
                             const toolCalls = outputItems
                                 .filter((item: any) => item.type === 'function_call')
                                 .map((item: any) => ({
@@ -266,12 +287,32 @@ export class CopilotService {
                                     }
                                 }));
 
-                            const contentText = data.output_text || outputItems
-                                .filter((item: any) => item.type !== 'function_call')
-                                .map((item: any) => typeof item === 'string' ? item : JSON.stringify(item))
-                                .join('');
+                            // Try multiple possible content locations - ensure string type
+                            let contentText: string | null = null;
 
-                            const message: any = { role: 'assistant', content: contentText || null };
+                            if (typeof responseData.output_text === 'string') contentText = responseData.output_text;
+                            else if (typeof responseData.text === 'string') contentText = responseData.text;
+                            else if (typeof responseData.content === 'string') contentText = responseData.content;
+                            else if (outputItems.length > 0) {
+                                contentText = outputItems
+                                    .filter((item: any) => item.type !== 'function_call')
+                                    .map((item: any) => {
+                                        if (typeof item === 'string') return item;
+                                        if (typeof item.text === 'string') return item.text;
+                                        if (typeof item.content === 'string') return item.content;
+                                        return JSON.stringify(item);
+                                    })
+                                    .join('');
+                            }
+
+                            // Fallback: stringify the whole response for debugging
+                            if (!contentText) {
+                                contentText = `[/responses format unknown] ${JSON.stringify(responseData).substring(0, 500)}`;
+                            }
+
+                            console.log(`[CopilotService] Extracted content: ${contentText.substring(0, 100)}`);
+
+                            const message: any = { role: 'assistant', content: contentText };
                             if (toolCalls.length > 0) {
                                 message.tool_calls = toolCalls;
                             }

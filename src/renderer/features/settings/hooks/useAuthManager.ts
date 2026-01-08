@@ -72,7 +72,7 @@ export function useAuthManager() {
         try {
             const quota = await window.electron.getQuota()
             if (quota?.authExpired) {
-                setAntigravityError('Google Antigravity oturumunuzun sÃ¼resi doldu.')
+                setAntigravityError('Google Antigravity oturumunuzun süresi doldu.')
                 setIsAuthModalOpen(true)
                 return
             }

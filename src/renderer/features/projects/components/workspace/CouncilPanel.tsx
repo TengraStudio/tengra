@@ -29,10 +29,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
     agents,
     toggleAgent,
     addAgent,
-    runCouncil,
-    activityLog,
-    clearLogs,
-    t
+    runCouncil
 }) => {
     const enabledAgents = agents.filter((agent) => agent.enabled);
     const localCount = enabledAgents.filter((agent) => agent.kind === 'local').length;

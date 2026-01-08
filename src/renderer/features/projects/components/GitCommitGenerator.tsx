@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
-import { chatStream } from '../lib/chat-stream'
+import { chatStream } from '../../../lib/chat-stream'
 import { GitCommit, Copy, Check, RefreshCw, Sparkles } from 'lucide-react'
+import { useTranslation } from '@/i18n'
 
 interface GitCommitGeneratorProps {
     projectPath?: string
@@ -8,6 +9,7 @@ interface GitCommitGeneratorProps {
 }
 
 export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorProps) {
+    const { t } = useTranslation()
     const [diff, setDiff] = useState<string>('')
     const [suggestion, setSuggestion] = useState<string>('')
     const [isLoading, setIsLoading] = useState(false)
@@ -25,7 +27,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             const result = await window.electron.runCommand('git', ['diff', '--staged'], projectPath)
 
             if (result.stderr && !result.stdout) {
-                setError('No staged changes found. Stage some changes first with `git add`')
+                setError(t('git.noStagedChanges'))
                 return
             }
 
@@ -36,7 +38,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
                 await generateCommitMessage(result.stdout)
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to get staged diff')
+            setError(err.message || t('git.error'))
         } finally {
             setIsLoading(false)
         }
@@ -102,7 +104,7 @@ Commit message:`
             // Success - close the modal
             onClose?.()
         } catch (err: any) {
-            setError(err.message || 'Failed to commit')
+            setError(err.message || t('git.error'))
         }
     }
 
@@ -114,8 +116,8 @@ Commit message:`
                     <GitCommit size={20} className="text-green-400" />
                 </div>
                 <div className="flex-1">
-                    <h2 className="font-semibold text-white">Git Commit Generator</h2>
-                    <p className="text-xs text-zinc-500">AI-powered commit message suggestions</p>
+                    <h2 className="font-semibold text-white">{t('git.commitGenerator')}</h2>
+                    <p className="text-xs text-zinc-500">{t('git.generatorSubtitle')}</p>
                 </div>
                 <button
                     onClick={fetchStagedDiff}
@@ -127,7 +129,7 @@ Commit message:`
                     ) : (
                         <Sparkles size={16} />
                     )}
-                    Generate
+                    {t('git.generate')}
                 </button>
             </div>
 
@@ -141,13 +143,13 @@ Commit message:`
 
                 {!projectPath && (
                     <div className="text-center py-8 text-zinc-500 text-sm">
-                        Select a project to generate commit messages
+                        {t('git.selectProject')}
                     </div>
                 )}
 
                 {suggestion && (
                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500">Suggested Commit Message</label>
+                        <label className="text-xs text-zinc-500">{t('git.suggestedMessage')}</label>
                         <div className="relative">
                             <textarea
                                 value={suggestion}
@@ -158,7 +160,7 @@ Commit message:`
                             <button
                                 onClick={copyToClipboard}
                                 className="absolute top-2 right-2 p-1.5 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                title="Copy"
+                                title={t('git.copy')}
                             >
                                 {isCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                             </button>
@@ -168,7 +170,7 @@ Commit message:`
 
                 {diff && (
                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500">Staged Changes Preview</label>
+                        <label className="text-xs text-zinc-500">{t('git.stagedChanges')}</label>
                         <pre className="bg-black/30 border border-white/5 rounded-lg p-3 text-xs font-mono text-zinc-400 max-h-48 overflow-y-auto">
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
@@ -184,13 +186,13 @@ Commit message:`
                         onClick={onClose}
                         className="flex-1 py-2.5 rounded-lg bg-white/5 text-zinc-400 text-sm font-medium hover:bg-white/10"
                     >
-                        Cancel
+                        {t('git.cancel')}
                     </button>
                     <button
                         onClick={executeCommit}
                         className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-medium"
                     >
-                        Commit
+                        {t('git.commit')}
                     </button>
                 </div>
             )}

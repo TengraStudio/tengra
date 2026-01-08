@@ -1,65 +1,84 @@
-﻿import { useState, useEffect, useMemo, useRef } from 'react'
-import type { GroupedModels } from '../lib/model-fetcher'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
+import { GroupedModels, ModelInfo } from '../utils/model-fetcher'
 
-interface AppSettings {
-    general?: {
-        defaultModel?: string
-        lastModel?: string
-        lastProvider?: string
-    }
-}
-
-export function useModelManager(appSettings: AppSettings | null, setAppSettings: (settings: any) => void) {
-    const [models, setModels] = useState<any[]>([])
+export function useModelManager(appSettings: any, setAppSettings: (settings: any) => void) {
+    const [models, setModels] = useState<ModelInfo[]>([])
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null)
-    const [selectedModel, setSelectedModel] = useState<string>('gpt-4o')
-    const [selectedProvider, setSelectedProvider] = useState<string>('copilot')
+    const [selectedModel, setSelectedModel] = useState<string>('')
+    const [selectedProvider, setSelectedProvider] = useState<string>('')
     const [proxyModels, setProxyModels] = useState<any[]>([])
     const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
+
+    const selectedModelRef = useRef('')
+    const selectedProviderRef = useRef('')
     const isModelMenuOpenRef = useRef(false)
+    const lastUserSelectionTimeRef = useRef(0)
+
+    // Sync refs with state for use in async closures
+    useEffect(() => {
+        selectedModelRef.current = selectedModel
+        selectedProviderRef.current = selectedProvider
+    }, [selectedModel, selectedProvider])
 
     useEffect(() => {
         isModelMenuOpenRef.current = isModelMenuOpen
     }, [isModelMenuOpen])
 
-    // Auto-sync provider when model changes
-    useEffect(() => {
-        if (!selectedModel || !groupedModels) return
-        for (const [provider, models] of Object.entries(groupedModels)) {
-            if (Array.isArray(models) && models.some((m: any) => m.id === selectedModel)) {
-                if (selectedProvider !== provider) {
-                    console.log('[useModelManager] Auto-sync provider for model:', selectedModel, '->', provider)
-                    setSelectedProvider(provider)
-                }
-                break
-            }
-        }
-    }, [selectedModel, groupedModels, selectedProvider])
+    // We only initialize from settings once in loadModels. 
+    // We DO NOT sync back from settings to state during runtime, because 
+    // local interactions are the source of truth.
+    // This prevents the "revert" bug when appSettings is slow to update.
 
-    const persistLastSelection = async (provider: string, model: string) => {
-        if (!appSettings?.general) return
+    /* Removed sync effect */
+
+    const persistLastSelection = useCallback(async (provider: string, model: string) => {
+        const now = Date.now()
+        lastUserSelectionTimeRef.current = now
+        console.log(`%c[ModelSelection] PERSIST: ${model} (${provider})`, 'color: #3b82f6; font-weight: bold;')
+
+        // 1. Immediate Optimistic Update
+        setSelectedModel((prev) => {
+            if (prev !== model) {
+                selectedModelRef.current = model
+                return model
+            }
+            return prev
+        })
+        setSelectedProvider((prev) => {
+            if (prev !== provider) return provider
+            return prev
+        })
+
+        if (!appSettings) return
+
+        // 2. Persist to Backend
         const updated = {
             ...appSettings,
             general: {
-                ...appSettings.general,
+                ...(appSettings.general || {}),
                 lastModel: model,
                 lastProvider: provider
             }
         }
+
+        // Don't wait for this to finish to update UI
         setAppSettings(updated)
+
         try {
             await window.electron.saveSettings(updated)
+            console.log('[ModelSelection] Settings saved to disk')
         } catch (e) {
-            console.error('Failed to save last model selection:', e)
+            console.error('[ModelSelection] Failed to save settings:', e)
         }
-    }
+    }, [appSettings, setAppSettings])
 
-    const loadModels = async (attempt: number = 0) => {
-        if (isModelMenuOpenRef.current) return
+
+    const loadModels = useCallback(async (attempt: number = 0, force: boolean = false) => {
+        if (isModelMenuOpenRef.current && !force) return
 
         try {
-            const { fetchModels } = await import('../lib/model-fetcher')
-            const grouped = await fetchModels()
+            const { fetchModels } = await import('../utils/model-fetcher')
+            const grouped = await fetchModels(force || attempt > 0)
 
             const allModels = [
                 ...grouped.ollama,
@@ -90,22 +109,23 @@ export function useModelManager(appSettings: AppSettings | null, setAppSettings:
                 ]
 
                 setProxyModels(prev => {
-                    const isEq = JSON.stringify(prev) === JSON.stringify(proxyList)
-                    return isEq ? prev : proxyList
+                    if (prev.length === proxyList.length &&
+                        prev.every((m, i) => m.id === proxyList[i].id)) {
+                        return prev
+                    }
+                    return proxyList
                 })
             }
 
-            if (!selectedModel && allModels.length > 0) {
-                const preferredModel = appSettings?.general?.lastModel || appSettings?.general?.defaultModel
+            // Sync with settings if not already selected
+            // Use REF check to see what the CURRENT selection is, even across re-renders
+            console.log(`[ModelSelection] loadModels check - selectedModelRef: "${selectedModelRef.current}", allModels: ${allModels.length}`)
+            if (allModels.length > 0 && !selectedModelRef.current) {
+                const preferredModel = appSettings?.general?.lastModel || appSettings?.general?.defaultModel || 'gpt-4o'
                 const preferredProvider = appSettings?.general?.lastProvider || 'copilot'
-
-                if (preferredModel) {
-                    setSelectedModel(preferredModel)
-                    setSelectedProvider(preferredProvider)
-                } else {
-                    setSelectedModel(allModels[0].id)
-                    setSelectedProvider(allModels[0].provider)
-                }
+                console.log(`[ModelSelection] loadModels: initializing with ${preferredModel} (${preferredProvider})`)
+                setSelectedModel(preferredModel)
+                setSelectedProvider(preferredProvider)
             }
 
             let hasProxyModels = allModels.some(m => m.provider !== 'ollama')
@@ -115,40 +135,12 @@ export function useModelManager(appSettings: AppSettings | null, setAppSettings:
         } catch (error) {
             console.error('Failed to load models:', error)
         }
-    }
+    }, [appSettings, setSelectedModel, setSelectedProvider])
 
-    // Validation Effect
+    // Initial load
     useEffect(() => {
-        if (!groupedModels || !selectedModel) return
-
-        const allModels = [
-            ...groupedModels.ollama,
-            ...groupedModels.copilot,
-            ...groupedModels.openai,
-            ...groupedModels.anthropic,
-            ...groupedModels.gemini,
-            ...groupedModels.antigravity,
-            ...groupedModels.custom
-        ]
-
-        if (allModels.length === 0) return
-
-        const currentExists = allModels.some(m => m.id === selectedModel)
-        if (!currentExists) {
-            const normalized = selectedModel.toLowerCase()
-            const fallback = allModels.find(m => m.id === selectedModel)
-                || allModels.find(m => m.id.toLowerCase() === normalized)
-                || allModels.find(m => m.id.toLowerCase().includes(normalized))
-                || allModels.find(m => m.id.toLowerCase().includes('sonnet'))
-                || allModels.find(m => m.id.includes('gpt-4o'))
-                || allModels[0]
-
-            if (fallback && fallback.id !== selectedModel) {
-                setSelectedModel(fallback.id)
-                setSelectedProvider(fallback.provider)
-            }
-        }
-    }, [selectedModel, groupedModels])
+        loadModels()
+    }, [])
 
     return {
         models,

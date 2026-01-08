@@ -1,3 +1,4 @@
+import { appLogger } from '../logging/logger'
 import { FileSystemService } from '../services/filesystem.service'
 import { CommandService } from '../services/command.service'
 import { ScreenshotService } from '../services/screenshot.service'
@@ -19,6 +20,8 @@ import { GitService } from '@main/services/git.service'
 import { SecurityService } from '@main/services/security.service'
 import { McpDispatcher } from '../mcp/dispatcher'
 import { LLMService } from '../services/llm.service'
+import { MemoryService } from '../services/memory.service'
+import { PageSpeedService } from '../services/pagespeed.service'
 
 interface ToolResult {
     success: boolean
@@ -51,7 +54,9 @@ interface ToolExecutorOptions {
     git: GitService,
     security: SecurityService,
     mcp: McpDispatcher,
-    llm: LLMService
+    llm: LLMService,
+    memory: MemoryService,
+    pageSpeed: PageSpeedService
 }
 
 export class ToolExecutor {
@@ -65,9 +70,9 @@ export class ToolExecutor {
         try {
             mcpTools = this.options.mcp.getToolDefinitions()
         } catch (e) {
-            console.error('[ToolExecutor] Failed to get MCP tool definitions:', e)
+            appLogger.error('ToolExecutor', `Failed to get MCP tool definitions: ${e}`)
         }
-        return [...nativeTools, ...mcpTools]
+        return [...nativeTools, ...mcpTools, this.options.pageSpeed.getToolDefinition()]
     }
 
     async execute(toolName: string, args: any, toolCallId?: string): Promise<ToolResult> {
@@ -137,6 +142,20 @@ export class ToolExecutor {
                 case 'fetch_json':
                     return await this.options.web.fetchJson(args.url)
 
+                // Memory Tools
+                case 'remember':
+                    const fragment = await this.options.memory.rememberFact(args.fact, 'user', 'manual', args.tags)
+                    return { success: true, result: `Remembered: "${fragment.content}"` }
+
+                case 'recall':
+                    const memories = await this.options.memory.recallRelevantFacts(args.query, 5)
+                    const summaries = memories.map(m => `- ${m.content}`).join('\n')
+                    return { success: true, result: memories.length > 0 ? `Found relevant memories:\n${summaries}` : 'No relevant memories found.' }
+
+                case 'forget':
+                    const deleted = await this.options.memory.forgetFact(args.fact_id)
+                    return { success: deleted, result: deleted ? `Forgot memory with ID: ${args.fact_id}` : 'Memory not found or could not be deleted.' }
+
                 // AI Generation Tools
                 case 'generate_image': {
                     const count = Math.min(Math.max(1, parseInt(args.count) || 1), 5)
@@ -144,10 +163,10 @@ export class ToolExecutor {
                     const imagePaths: string[] = []
 
                     try {
-                        console.log(`[ToolExecutor:generate_image] Generating ${count} images for prompt: ${prompt}`)
+                        appLogger.info('ToolExecutor', `[generate_image] Generating ${count} images for prompt: ${prompt}`)
                         // Run requests in parallel
                         const promises = Array(count).fill(0).map((_, i) => {
-                            console.log(`[ToolExecutor:generate_image] Submitting image request ${i + 1}/${count}`)
+                            appLogger.info('ToolExecutor', `[generate_image] Submitting image request ${i + 1}/${count}`)
                             return this.options.llm.chat(
                                 [{ role: 'user', content: prompt }],
                                 'gemini-3-pro-image',
@@ -186,6 +205,14 @@ export class ToolExecutor {
                         return { success: false, error: `Gorsel uretim hatasi: ${e.message}` }
                     }
                 }
+
+                case 'analyze_page_performance':
+                    try {
+                        const analysis = await this.options.pageSpeed.analyze(args.url, args.strategy || 'mobile')
+                        return { success: true, result: analysis }
+                    } catch (e: any) {
+                        return { success: false, error: e.message }
+                    }
 
                 default:
                     // Check for MCP tools (prefix: mcp__)
@@ -226,6 +253,15 @@ export class ToolExecutor {
                     return result.results.map((r: any, i: number) =>
                         `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet}`
                     ).join('\n\n')
+                }
+                return JSON.stringify(result, null, 2)
+
+            case 'analyze_page_performance':
+                if (result.result) {
+                    const r = result.result
+                    const metrics = Object.entries(r.metrics).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(', ')
+                    const opps = r.opportunities.map((o: any) => `- ${o.title}: ${o.savings}`).join('\n')
+                    return `Performance Score: ${r.performanceScore.toFixed(0)}\nMetrics: ${metrics}\nOpportunities:\n${opps}`
                 }
                 return JSON.stringify(result, null, 2)
 
