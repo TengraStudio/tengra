@@ -1,39 +1,25 @@
 /**
  * @fileoverview Retry utility with exponential backoff and jitter.
- * 
- * Provides robust retry mechanisms for network requests and other
- * potentially failing operations. Supports customizable retry conditions,
- * exponential backoff with jitter to prevent thundering herd, and
- * callback hooks for monitoring.
- * 
- * @module utils/retry
- * @author Orbit Team
- * @license MIT
  */
+
+import { CatchError, JsonValue } from '../../shared/types/common'
+import { getErrorMessage as getSharedErrorMessage } from '../../shared/utils/error.util'
+export { getSharedErrorMessage as getErrorMessage }
 
 /**
  * Configuration options for retry behavior.
- * 
- * @interface RetryOptions
- * @property {number} [maxRetries=3] - Maximum number of retry attempts after initial failure
- * @property {number} [baseDelayMs=1000] - Initial delay in milliseconds before first retry
- * @property {number} [maxDelayMs=30000] - Maximum delay cap to prevent excessive waiting
- * @property {number} [jitterFactor=0.2] - Random variance factor (0-1) to prevent synchronized retries
- * @property {Function} [shouldRetry] - Custom function to determine if error is retryable
- * @property {Function} [onRetry] - Callback invoked before each retry attempt
  */
 export interface RetryOptions {
     maxRetries?: number
     baseDelayMs?: number
     maxDelayMs?: number
     jitterFactor?: number
-    shouldRetry?: (error: any, attempt: number) => boolean
-    onRetry?: (error: any, attempt: number, delayMs: number) => void
+    shouldRetry?: (error: CatchError, attempt: number) => boolean
+    onRetry?: (error: CatchError, attempt: number, delayMs: number) => void
 }
 
 /**
  * Default retry configuration values.
- * @internal
  */
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
     maxRetries: 3,
@@ -46,43 +32,37 @@ const DEFAULT_OPTIONS: Required<RetryOptions> = {
 
 /**
  * Default retry condition that checks for retryable error types.
- * 
- * Retries on:
- * - Network errors (ECONNRESET, ENOTFOUND, ETIMEDOUT)
- * - Rate limiting (HTTP 429)
- * - Server errors (HTTP 5xx)
- * - Network/timeout messages in error text
- * 
- * @param error - The error to evaluate
- * @param _attempt - Current attempt number (unused in default implementation)
- * @returns True if the error is retryable, false otherwise
- * 
- * @example
- * ```typescript
- * if (defaultShouldRetry(error, 0)) {
- *   console.log('Will retry this error');
- * }
- * ```
  */
-function defaultShouldRetry(error: any, _attempt: number): boolean {
+function defaultShouldRetry(error: CatchError, _attempt: number): boolean {
+    if (!error || typeof error !== 'object') return false
+    const err = error as Record<string, JsonValue | undefined>
+
     // Network errors
-    if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+    if (err.code === 'ECONNRESET' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
         return true
     }
 
     // Rate limiting
-    if (error.status === 429 || error.response?.status === 429) {
+    if (err.status === 429) {
+        return true
+    }
+
+    const response = (err.response && typeof err.response === 'object')
+        ? (err.response as Record<string, JsonValue | undefined>)
+        : undefined
+    if (response?.status === 429) {
         return true
     }
 
     // Server errors (5xx)
-    const status = error.status || error.response?.status
+    const status = (typeof err.status === 'number' ? err.status : undefined) || (typeof response?.status === 'number' ? response.status : undefined)
     if (status && status >= 500 && status < 600) {
         return true
     }
 
     // Axios/fetch specific network indicators
-    if (error.message?.includes('network') || error.message?.includes('timeout')) {
+    const message = typeof err.message === 'string' ? err.message : undefined
+    if (message?.toLowerCase().includes('network') || message?.toLowerCase().includes('timeout')) {
         return true
     }
 
@@ -91,13 +71,6 @@ function defaultShouldRetry(error: any, _attempt: number): boolean {
 
 /**
  * Calculates retry delay using exponential backoff with jitter.
- * 
- * Formula: `min(baseDelay * 2^attempt + jitter, maxDelay)`
- * 
- * @param attempt - Current attempt number (0-indexed)
- * @param options - Retry configuration
- * @returns Delay in milliseconds before next retry
- * @internal
  */
 function calculateDelay(attempt: number, options: Required<RetryOptions>): number {
     const exponentialDelay = options.baseDelayMs * Math.pow(2, attempt)
@@ -108,10 +81,6 @@ function calculateDelay(attempt: number, options: Required<RetryOptions>): numbe
 
 /**
  * Suspends execution for the specified duration.
- * 
- * @param ms - Duration to sleep in milliseconds
- * @returns Promise that resolves after the specified duration
- * @internal
  */
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -119,65 +88,30 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Executes an async function with automatic retry on failure.
- * 
- * Uses exponential backoff with jitter to space out retry attempts.
- * Retries only on errors deemed retryable (network errors, rate limits, server errors).
- * 
- * @template T - The return type of the function being retried
- * @param fn - Async function to execute with retry logic
- * @param options - Optional retry configuration
- * @returns Promise resolving to the function's result
- * @throws The last error encountered if all retries are exhausted
- * 
- * @example Basic usage
- * ```typescript
- * const data = await withRetry(() => fetch('https://api.example.com/data'));
- * ```
- * 
- * @example With custom options
- * ```typescript
- * const response = await withRetry(
- *   () => apiClient.sendRequest(payload),
- *   {
- *     maxRetries: 5,
- *     baseDelayMs: 500,
- *     onRetry: (err, attempt, delay) => {
- *       console.log(`Retry ${attempt + 1} after ${delay}ms: ${err.message}`);
- *     }
- *   }
- * );
- * ```
- * 
- * @example Custom retry condition
- * ```typescript
- * const result = await withRetry(fetchData, {
- *   shouldRetry: (error) => error.code === 'TIMEOUT'
- * });
- * ```
  */
 export async function withRetry<T>(
     fn: () => Promise<T>,
     options?: RetryOptions
 ): Promise<T> {
     const opts: Required<RetryOptions> = { ...DEFAULT_OPTIONS, ...options }
-    let lastError: any
+    let lastError: CatchError = undefined
 
     for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
         try {
             return await fn()
-        } catch (error: any) {
-            lastError = error
+        } catch (error) {
+            lastError = error as Error
 
             if (attempt >= opts.maxRetries) {
                 break
             }
 
-            if (!opts.shouldRetry(error, attempt)) {
+            if (!opts.shouldRetry(error as Error, attempt)) {
                 break
             }
 
             const delay = calculateDelay(attempt, opts)
-            opts.onRetry(error, attempt, delay)
+            opts.onRetry(error as Error, attempt, delay)
             await sleep(delay)
         }
     }
@@ -189,10 +123,10 @@ export async function withRetry<T>(
  * Decorator-style retry wrapper for class methods
  */
 export function retryable(options?: RetryOptions) {
-    return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor) {
         const original = descriptor.value
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (this: object, ...args: Array<JsonValue | object | null | undefined>) {
             return withRetry(() => original.apply(this, args), options)
         }
 
@@ -201,23 +135,13 @@ export function retryable(options?: RetryOptions) {
 }
 
 /**
- * Extract a user-friendly error message from various error types
- */
-export function getErrorMessage(error: any): string {
-    if (typeof error === 'string') return error
-    if (error.message) return error.message
-    if (error.error?.message) return error.error.message
-    if (error.response?.data?.error?.message) return error.response.data.error.message
-    if (error.response?.data?.message) return error.response.data.message
-    if (error.response?.statusText) return error.response.statusText
-    return 'Unknown error'
-}
-
-/**
  * Check if an error indicates the request should not be retried
  */
-export function isNonRetryableError(error: any): boolean {
-    const status = error.status || error.response?.status
+export function isNonRetryableError(error: CatchError): boolean {
+    if (!error || typeof error !== 'object') return false
+    const err = error as Record<string, JsonValue | undefined>
+    const response = (err.response && typeof err.response === 'object') ? err.response as Record<string, JsonValue | undefined> : undefined
+    const status = (typeof err.status === 'number' ? err.status : undefined) || (typeof response?.status === 'number' ? response.status : undefined)
 
     // Client errors that won't succeed on retry
     if (status === 400 || status === 401 || status === 403 || status === 404) {
@@ -225,7 +149,7 @@ export function isNonRetryableError(error: any): boolean {
     }
 
     // API-specific non-retryable errors
-    const message = getErrorMessage(error).toLowerCase()
+    const message = getSharedErrorMessage(error).toLowerCase()
     if (
         message.includes('invalid api key') ||
         message.includes('authentication') ||

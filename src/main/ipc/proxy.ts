@@ -6,10 +6,7 @@ export function registerProxyIpc(proxyService: ProxyService) {
         return await proxyService.getAntigravityAuthUrl()
     })
 
-    ipcMain.handle('proxy:geminiLogin', async () => {
-        // Use custom login to get correct scopes (generative-language) which Cliproxy misses
-        return await proxyService.customGeminiLogin()
-    })
+
 
     ipcMain.handle('proxy:claudeLogin', async () => {
         return await proxyService.getAnthropicAuthUrl()

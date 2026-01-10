@@ -1,11 +1,11 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react'
 import { Volume2, Speaker } from 'lucide-react'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
 
 interface SpeechTabProps {
     settings: AppSettings | null
-    updateSpeech: (patch: Partial<AppSettings['speech']>) => void
+    updateSpeech: (patch: Partial<NonNullable<AppSettings['speech']>>) => void
     t: (key: string) => string
 }
 

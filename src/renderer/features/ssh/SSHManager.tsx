@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { SFTPBrowser } from './SFTPBrowser'
 import { StatsDashboard } from './StatsDashboard'
 import { PackageManager } from './PackageManager'
@@ -12,6 +12,16 @@ interface SSHManagerProps {
     isOpen: boolean
     onClose: () => void
     language: Language
+}
+
+interface SSHProfile {
+    id: string
+    name: string
+    host: string
+    port: number
+    username: string
+    password?: string
+    privateKey?: string
 }
 
 export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
@@ -29,90 +39,95 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const [shouldSaveProfile, setShouldSaveProfile] = useState(false)
     const [isConnecting, setIsConnecting] = useState(false)
     const [terminalOutput, setTerminalOutput] = useState<string>('')
-    const [activeTab, setActiveTab] = useState<'terminal' | 'dashboard' | 'files' | 'packages' | 'logs' | 'management'>('terminal')
+    type TabId = 'terminal' | 'dashboard' | 'files' | 'packages' | 'logs' | 'management'
+    const [activeTab, setActiveTab] = useState<TabId>('terminal')
     const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null)
 
-    useEffect(() => {
-        if (isOpen) {
-            loadConnections()
-            setupListeners()
-        }
-        return () => {
-            if (isOpen) {
-                window.electron.ssh.removeAllListeners()
-            }
-        }
-    }, [isOpen])
+    const updateConnectionStatus = useCallback((id: string, status: SSHConnection['status'], error?: string) => {
+        setConnections(prev => prev.map(c =>
+            c.id === id ? { ...c, status, error } : c
+        ))
+    }, [])
 
-    const setupListeners = () => {
-        window.electron.ssh.onStdout((data: any) => {
-            setTerminalOutput(prev => prev + data.toString())
+    const setupListeners = useCallback(() => {
+        window.electron.ssh.onStdout((data) => {
+            const str = typeof data === 'string' ? data : new TextDecoder().decode(data)
+            setTerminalOutput(prev => prev + str)
         })
-        window.electron.ssh.onStderr((data: any) => {
-            setTerminalOutput(prev => prev + data.toString())
+        window.electron.ssh.onStderr((data) => {
+            const str = typeof data === 'string' ? data : new TextDecoder().decode(data)
+            setTerminalOutput(prev => prev + str)
         })
-        window.electron.ssh.onShellData((eventData: any) => {
+        window.electron.ssh.onShellData((eventData) => {
             setTerminalOutput(prev => prev + eventData.data)
         })
         window.electron.ssh.onConnected((id: string) => {
             updateConnectionStatus(id, 'connected')
             setIsConnecting(false)
             setSelectedConnectionId(id)
-            // Start shell when connected
             window.electron.ssh.shellStart(id)
         })
         window.electron.ssh.onDisconnected((id: string) => {
             updateConnectionStatus(id, 'disconnected')
             if (selectedConnectionId === id) setSelectedConnectionId(null)
         })
-    }
+    }, [selectedConnectionId, updateConnectionStatus])
 
-    const loadConnections = async () => {
+    const loadConnections = useCallback(async () => {
         try {
-            // Load saved profiles
-            const profiles = await window.electron.ssh.getProfiles() || []
-
-            // Load active connections
+            const profilesRaw = await window.electron.ssh.getProfiles() as SSHProfile[] || []
             const activeConns = await window.electron.ssh.getConnections() || []
 
-            // Merge: Start with profiles
-            const merged: SSHConnection[] = profiles.map((p: any) => ({
-                ...p,
-                status: 'disconnected'
+            const merged: SSHConnection[] = profilesRaw.map(p => ({
+                id: p.id || '',
+                name: p.name || '',
+                host: p.host || '',
+                port: p.port || 22,
+                username: p.username || '',
+                password: p.password,
+                privateKey: p.privateKey,
+                status: 'disconnected' as const
             }))
 
-            // Determine status from active connections
             for (const active of activeConns) {
                 const existingIndex = merged.findIndex(p => p.id === active.id)
                 if (existingIndex >= 0) {
-                    merged[existingIndex] = { ...merged[existingIndex], ...active, status: 'connected' }
+                    merged[existingIndex] = { ...merged[existingIndex], ...active, status: 'connected' as const }
                 } else {
-                    // Ad-hoc connection not in profiles
-                    merged.push({ ...active, status: 'connected' }) // Assume connected if in active list
+                    merged.push({ ...active, status: 'connected' as const } as SSHConnection)
                 }
             }
 
             setConnections(merged)
 
-            // Double check status for all (async verify)
             for (const conn of merged) {
                 if (conn.status !== 'connected') continue
-
                 const isConnected = await window.electron.ssh.isConnected(conn.id)
                 if (!isConnected) {
                     updateConnectionStatus(conn.id, 'disconnected')
                 }
             }
-        } catch (error) {
-            console.error('Failed to load connections:', error)
+        } catch (e) {
+            console.error('Failed to load connections:', e)
         }
-    }
+    }, [updateConnectionStatus])
 
-    const updateConnectionStatus = (id: string, status: SSHConnection['status'], error?: string) => {
-        setConnections(prev => prev.map(c =>
-            c.id === id ? { ...c, status, error } : c
-        ))
-    }
+    useEffect(() => {
+        let isMounted = true
+        if (isOpen) {
+            const init = async () => {
+                await loadConnections()
+                if (isMounted) {
+                    setupListeners()
+                }
+            }
+            init()
+        }
+        return () => {
+            isMounted = false
+            window.electron.ssh.removeAllListeners()
+        }
+    }, [isOpen, loadConnections, setupListeners])
 
 
     const handleAddConnection = async () => {
@@ -128,7 +143,6 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         })
 
         setIsConnecting(false)
-        console.log('Connect result:', result)
 
         if (result.success) {
             setTerminalOutput(prev => prev + `${t('ssh.connected', { host: newConnection.host })}\n`)
@@ -137,14 +151,14 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             if (shouldSaveProfile) {
                 await window.electron.ssh.saveProfile({
                     ...newConnection,
-                    id: result.id, // Use the ID generated by backend
+                    id: result.id || '',
                     name: newConnection.name || newConnection.host
                 })
             }
 
             loadConnections()
         } else {
-            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error })}\n`)
+            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error || 'Unknown error' })}\n`)
         }
     }
 
@@ -164,7 +178,6 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
 
     const handleExecute = async (id: string, cmd: string) => {
         if (!cmd.trim()) return
-        // Send to interactive shell
         await window.electron.ssh.shellWrite(id, cmd + '\n')
     }
 
@@ -226,12 +239,13 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        // Quick connect for saved profile
                                                         window.electron.ssh.connect({
-                                                            ...conn,
-                                                            password: conn.password, // This was saved (unsafe but as planned)
+                                                            host: conn.host,
+                                                            port: conn.port,
+                                                            username: conn.username,
+                                                            password: conn.password,
                                                             privateKey: conn.privateKey
-                                                        }).then(loadConnections)
+                                                        }).then(() => loadConnections())
                                                     }}
                                                     className="text-xs px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded border border-primary/20"
                                                 >
@@ -265,7 +279,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                             ].map(tab => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as any)}
+                                    onClick={() => setActiveTab(tab.id as TabId)}
                                     style={{
                                         padding: '8px 16px',
                                         backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent',
@@ -396,4 +410,3 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         </div>
     )
 }
-

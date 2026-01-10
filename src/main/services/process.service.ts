@@ -3,6 +3,12 @@ import * as os from 'os'
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import { EventEmitter } from 'events'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
+
+const execAsync = promisify(exec)
 
 // Interface for a running task
 export interface TaskProcess {
@@ -110,7 +116,7 @@ export class ProcessService extends EventEmitter {
             // Python (basic check for manage.py or similar)
             // Makefile?
         } catch (error) {
-            console.error('[ProcessService] Failed to scan scripts:', error)
+            console.error('[ProcessService] Failed to scan scripts:', getErrorMessage(error as Error))
         }
 
         return scripts
@@ -118,7 +124,7 @@ export class ProcessService extends EventEmitter {
 
     // --- Process Manager (2.2.23) ---
 
-    getRunningTasks(): any[] {
+    getRunningTasks(): Array<{ id: string; pid: number; command: string; cwd: string; status: string; startTime: number }> {
         return Array.from(this.processes.values()).map(t => ({
             id: t.id,
             pid: t.pid,
@@ -144,15 +150,13 @@ export class ProcessService extends EventEmitter {
     }
 
     async execute(command: string, cwd?: string): Promise<string> {
-        const { exec } = require('child_process')
-        const util = require('util')
-        const execAsync = util.promisify(exec)
-
         try {
             const { stdout, stderr } = await execAsync(command, { cwd })
             return stdout || stderr || 'Command executed successfully'
-        } catch (e: any) {
-            return `Error: ${e.message}\nStderr: ${e.stderr}`
+        } catch (e) {
+            const msg = getErrorMessage(e as Error)
+            const stderr = (e as { stderr?: string }).stderr || ''
+            return `Error: ${msg}\nStderr: ${stderr}`
         }
     }
 }

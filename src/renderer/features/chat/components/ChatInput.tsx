@@ -233,16 +233,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
                         onSelect={(p, m) => {
-                            setSelectedProvider(p as any);
+                            setSelectedProvider(p);
                             setSelectedModel(m);
                         }}
-                        settings={appSettings}
+                        settings={appSettings || undefined}
                         groupedModels={groupedModels || undefined}
                         quotas={quotas}
                         codexUsage={codexUsage}
                         onOpenChange={setIsModelMenuOpen}
                         contextTokens={contextTokens}
-                        language={language as any}
+                        language={language || 'en'}
                     />
                 </div>
 

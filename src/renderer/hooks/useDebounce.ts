@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { JsonValue } from '../../shared/types/common'
 
 /**
  * Debounces a value by the specified delay.
@@ -28,13 +29,13 @@ export function useDebouncedValue<T>(value: T, delay: number = 300): T {
  * @param delay Delay in milliseconds (default: 300ms)
  * @returns The debounced function
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: JsonValue[]) => JsonValue | void>(
     callback: T,
     delay: number = 300
-): T {
+): (...args: Parameters<T>) => void {
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
 
-    const debouncedCallback = ((...args: Parameters<T>) => {
+    const debouncedCallback = (...args: Parameters<T>) => {
         if (timeoutId) {
             clearTimeout(timeoutId)
         }
@@ -42,7 +43,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
             callback(...args)
         }, delay)
         setTimeoutId(id)
-    }) as T
+    }
 
     // Cleanup on unmount
     useEffect(() => {

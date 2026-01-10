@@ -2,6 +2,8 @@ import { ipcMain } from 'electron'
 import { ProxyService } from '../services/proxy/proxy.service'
 import { CopilotService } from '../services/llm/copilot.service'
 import { SettingsService } from '../services/settings.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 
 export function registerAuthIpc(proxyService: ProxyService, settingsService: SettingsService, copilotService: CopilotService) {
     ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
@@ -39,8 +41,8 @@ export function registerAuthIpc(proxyService: ProxyService, settingsService: Set
             }
 
             return { success: true, token }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     })
 }

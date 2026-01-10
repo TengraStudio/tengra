@@ -3,6 +3,7 @@ import { join } from 'path'
 import { writeFileSync } from 'fs'
 import { BrowserWindow } from 'electron'
 
+
 export function registerExportIpc(getWindow: () => BrowserWindow | null) {
     ipcMain.handle('files:exportChatToPdf', async (_event, _chatId: string, title: string) => {
         const window = getWindow()
@@ -23,9 +24,10 @@ export function registerExportIpc(getWindow: () => BrowserWindow | null) {
 
             writeFileSync(filePath, data)
             return { success: true, path: filePath }
-        } catch (error: any) {
+        } catch (error) {
             console.error('Export PDF error:', error)
-            return { success: false, error: error.message }
+            const message = error instanceof Error ? error.message : String(error)
+            return { success: false, error: message }
         }
     })
 }

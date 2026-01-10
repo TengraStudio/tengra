@@ -1,21 +1,42 @@
 import { ipcMain } from 'electron'
 import { ProcessService } from '../services/process.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export const registerProcessIpc = (processService: ProcessService) => {
-    ipcMain.handle('process:spawn', (_, command: string, args: string[], cwd: string) => {
-        return processService.spawn(command, args, cwd)
+    ipcMain.handle('process:spawn', async (_, command: string, args: string[], cwd: string) => {
+        try {
+            return processService.spawn(command, args, cwd)
+        } catch (error) {
+            console.error('[IPC] process:spawn failed:', getErrorMessage(error as Error))
+            return null
+        }
     })
 
-    ipcMain.handle('process:kill', (_, id: string) => {
-        return processService.kill(id)
+    ipcMain.handle('process:kill', async (_, id: string) => {
+        try {
+            return processService.kill(id)
+        } catch (error) {
+            console.error('[IPC] process:kill failed:', getErrorMessage(error as Error))
+            return false
+        }
     })
 
-    ipcMain.handle('process:list', () => {
-        return processService.getRunningTasks()
+    ipcMain.handle('process:list', async () => {
+        try {
+            return processService.getRunningTasks()
+        } catch (error) {
+            console.error('[IPC] process:list failed:', getErrorMessage(error as Error))
+            return []
+        }
     })
 
-    ipcMain.handle('process:scan-scripts', (_, rootPath: string) => {
-        return processService.scanScripts(rootPath)
+    ipcMain.handle('process:scan-scripts', async (_, rootPath: string) => {
+        try {
+            return await processService.scanScripts(rootPath)
+        } catch (error) {
+            console.error('[IPC] process:scan-scripts failed:', getErrorMessage(error as Error))
+            return {}
+        }
     })
 
     ipcMain.handle('process:resize', (_, id: string, cols: number, rows: number) => {

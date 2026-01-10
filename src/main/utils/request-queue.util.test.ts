@@ -33,7 +33,7 @@ describe('RequestQueue', () => {
         const createRequest = () => async () => {
             concurrent++
             maxConcurrent = Math.max(maxConcurrent, concurrent)
-            await new Promise(r => setTimeout(r, 10))
+            await new Promise<void>(r => setTimeout(r, 10))
             concurrent--
             return true
         }
@@ -54,7 +54,7 @@ describe('RequestQueue', () => {
 
         // First enqueue a slow request to block the queue
         const slowRequest = queue.enqueue(async () => {
-            await new Promise(r => setTimeout(r, 50))
+            await new Promise<void>(r => setTimeout(r, 50))
             results.push('first')
             return 'first'
         })
@@ -85,7 +85,7 @@ describe('RequestQueue', () => {
         const queue = new RequestQueue({ maxConcurrent: 1, maxQueueSize: 2 })
 
         // Fill the queue
-        queue.enqueue(() => new Promise(r => setTimeout(r, 100)))
+        queue.enqueue(() => new Promise<void>(r => setTimeout(r, 100)))
         queue.enqueue(() => Promise.resolve(1))
         queue.enqueue(() => Promise.resolve(2))
 
@@ -109,7 +109,7 @@ describe('RequestQueue', () => {
         const queue = new RequestQueue({ maxConcurrent: 1, timeoutMs: 50 })
 
         await expect(
-            queue.enqueue(() => new Promise(r => setTimeout(r, 100)))
+            queue.enqueue(() => new Promise<void>(r => setTimeout(r, 100)))
         ).rejects.toThrow('Request timeout')
     })
 
@@ -118,11 +118,11 @@ describe('RequestQueue', () => {
         const completed: number[] = []
 
         queue.enqueue(async () => {
-            await new Promise(r => setTimeout(r, 20))
+            await new Promise<void>(r => setTimeout(r, 20))
             completed.push(1)
         })
         queue.enqueue(async () => {
-            await new Promise(r => setTimeout(r, 10))
+            await new Promise<void>(r => setTimeout(r, 10))
             completed.push(2)
         })
 

@@ -1,10 +1,11 @@
 import { ipcMain } from 'electron'
 import { CommandService } from '../services/command.service'
 import { ToolExecutor } from '../tools/tool-executor'
+import { JsonObject } from '../../shared/types/common'
 
 export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: CommandService) {
-    ipcMain.handle('tools:execute', async (_event, toolName: string, args: any, toolCallId?: string) => {
-        return await toolExecutor.execute(toolName, args, toolCallId)
+    ipcMain.handle('tools:execute', async (_event, toolName: string, args: JsonObject) => {
+        return await toolExecutor.execute(toolName, args)
     })
 
     ipcMain.handle('tools:kill', (_event, toolCallId: string) => {

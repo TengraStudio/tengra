@@ -35,43 +35,21 @@ export function useProjectManager() {
     const loadProjects = useCallback(async () => {
         try {
             const data = await window.electron.db.getProjects()
-            const normalized = (Array.isArray(data) ? data : []).map((project: any) => {
-                let councilConfig = project.councilConfig
-                if (typeof councilConfig === 'string') {
-                    try { councilConfig = JSON.parse(councilConfig) } catch { councilConfig = null }
-                }
-                let mounts = project.mounts
-                if (typeof mounts === 'string') {
-                    try { mounts = JSON.parse(mounts) } catch { mounts = null }
-                }
-
-                const createdAt = project.createdAt instanceof Date
+            // Database now returns properly typed Project data
+            // Only need to convert timestamp to Date for frontend use
+            const projects = (Array.isArray(data) ? data : []).map((project) => ({
+                ...project,
+                createdAt: project.createdAt instanceof Date
                     ? project.createdAt
-                    : new Date(project.createdAt || Date.now())
-
-                if (!Array.isArray(mounts) || mounts.length === 0) {
-                    if (project.path) {
-                        mounts = [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }]
-                    } else {
-                        mounts = []
-                    }
-                }
-
-                return {
-                    id: project.id,
-                    title: project.title || project.name || 'Yeni Proje',
-                    description: project.description || '',
-                    path: project.path || '',
-                    mounts,
-                    createdAt,
-                    chatIds: Array.isArray(project.chatIds) ? project.chatIds : [],
-                    councilConfig: councilConfig && typeof councilConfig === 'object'
-                        ? councilConfig
-                        : { enabled: false, members: [], consensusThreshold: 0.7 },
-                    status: project.status || 'active'
-                } as Project
-            })
-            setProjects(normalized)
+                    : new Date(project.createdAt || Date.now()),
+                // Ensure mounts has a default local mount if empty
+                mounts: Array.isArray(project.mounts) && project.mounts.length > 0
+                    ? project.mounts
+                    : project.path
+                        ? [{ id: `local-${project.id}`, name: 'Local', type: 'local' as const, rootPath: project.path }]
+                        : []
+            }))
+            setProjects(projects)
         } catch (e) {
             console.error('Failed to load projects:', e)
         }

@@ -1,3 +1,43 @@
+import {
+    AppSettings, ProjectAnalysis, Chat, Message, Folder, Project,
+    AgentDefinition, SSHConnection, SSHFile,
+    SSHConfig, ToolCall, ToolDefinition, ToolResult, IpcValue, AuthStatus, QuotaResponse,
+    SSHSystemStats, SSHPackageInfo, FileSearchResult, CopilotQuota, CouncilSession
+} from '@/shared/types'
+import { IpcRendererEvent } from 'electron'
+
+export interface TodoItem {
+    file: string
+    line: number
+    text: string
+}
+
+export interface FileEntry {
+    name: string
+    isDirectory: boolean
+    size: number
+    mtime: number
+    path: string
+}
+
+export interface ProcessInfo {
+    pid: number
+    name: string
+    cmd: string
+    cpu: number
+    memory: number
+}
+
+export interface ModelDefinition {
+    id: string
+    name: string
+    provider: string
+    quotaInfo?: { remainingQuota?: number; totalQuota?: number; resetTime?: string; remainingFraction?: number }
+    percentage?: number
+    reset?: string
+    [key: string]: IpcValue | undefined
+}
+
 export interface ElectronAPI {
     // Window controls
     minimize: () => void
@@ -10,38 +50,38 @@ export interface ElectronAPI {
     githubLogin: (appId?: 'profile' | 'copilot') => Promise<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => Promise<{ success: boolean; token?: string; error?: string }>
     antigravityLogin: () => Promise<{ url: string; state: string }>
-    geminiLogin: () => Promise<{ url: string; state: string }>
+
     claudeLogin: () => Promise<{ url: string; state: string }>
     anthropicLogin: () => Promise<{ url: string; state: string }>
     codexLogin: () => Promise<{ url: string; state: string }>
 
-    checkAuthStatus: () => Promise<any>
-    deleteProxyAuthFile: (name: string) => Promise<any>
+    checkAuthStatus: () => Promise<AuthStatus>
+    deleteProxyAuthFile: (name: string) => Promise<{ success: boolean }>
 
     code: {
-        scanTodos: (rootPath: string) => Promise<any[]>
-        findSymbols: (rootPath: string, query: string) => Promise<any[]>
-        searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<any[]>
+        scanTodos: (rootPath: string) => Promise<TodoItem[]>
+        findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>
+        searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<FileSearchResult[]>
         indexProject: (rootPath: string, projectId: string) => Promise<void>
-        queryIndexedSymbols: (query: string) => Promise<any[]>
+        queryIndexedSymbols: (query: string) => Promise<{ name: string; path: string; line: number }[]>
     }
 
     // Project System
     project: {
-        analyze: (rootPath: string, projectId: string) => Promise<any>
-        saveState: (rootPath: string, state: any) => Promise<boolean>
-        loadState: (rootPath: string) => Promise<any>
+        analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>
+        saveState: (rootPath: string, state: Record<string, IpcValue>) => Promise<boolean>
+        loadState: (rootPath: string) => Promise<Record<string, IpcValue>>
         generateLogo: (projectPath: string, prompt: string, style: string) => Promise<string>
         analyzeIdentity: (projectPath: string) => Promise<{ suggestedPrompts: string[], colors: string[] }>
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>
         getCompletion: (text: string) => Promise<string>
-        analyzeDirectory: (dirPath: string) => Promise<any>
+        analyzeDirectory: (dirPath: string) => Promise<{ hasPackageJson: boolean; pkg: Record<string, IpcValue>; readme: string | null; stats: ProjectStats }>
     }
 
     process: {
         spawn: (command: string, args: string[], cwd: string) => Promise<string>
         kill: (id: string) => Promise<boolean>
-        list: () => Promise<any[]>
+        list: () => Promise<ProcessInfo[]>
         scanScripts: (rootPath: string) => Promise<Record<string, string>>
         resize: (id: string, cols: number, rows: number) => Promise<void>
         write: (id: string, data: string) => Promise<void>
@@ -51,7 +91,7 @@ export interface ElectronAPI {
     }
 
     files: {
-        listDirectory: (path: string) => Promise<any[]>
+        listDirectory: (path: string) => Promise<FileEntry[]>
         readFile: (path: string) => Promise<string>
         readImage: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
         writeFile: (path: string, content: string) => Promise<void>
@@ -59,49 +99,49 @@ export interface ElectronAPI {
     }
 
     // Proxy
-    getProxyModels: () => Promise<any[]>
-    getQuota: (provider?: string) => Promise<any>
-    getCopilotQuota: () => Promise<any>
-    getCodexUsage: () => Promise<any>
+    getProxyModels: () => Promise<{ id: string; object: string }[]>
+    getQuota: (provider?: string) => Promise<QuotaResponse | null>
+    getCopilotQuota: () => Promise<CopilotQuota>
+    getCodexUsage: () => Promise<Partial<QuotaResponse>>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
 
-    // Ollama chat
-    getModels: () => Promise<any[]>
-    chat: (messages: any[], model: string) => Promise<any>
-    chatOpenAI: (messages: any[], model: string, tools?: any[], provider?: string, options?: any, projectId?: string) => Promise<any>
-    chatStream: (messages: any[], model: string, tools?: any[], provider?: string, options?: any, chatId?: string, projectId?: string) => Promise<any>
+    // LLM chat
+    getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>
+    chat: (messages: Message[], model: string) => Promise<{ content: string }>
+    chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, projectId?: string) => Promise<IpcValue>
+    chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, chatId?: string, projectId?: string) => Promise<void>
     abortChat: () => void
-    onStreamChunk: (callback: (chunk: any) => void) => void
-    removeStreamChunkListener: (callback?: (chunk: any) => void) => void
+    onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
+    removeStreamChunkListener: (callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>
     startOllama: () => Promise<{ success: boolean; message: string }>
     pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>
     deleteOllamaModel: (modelName: string) => Promise<{ success: boolean; error?: string }>
-    getLibraryModels: () => Promise<any[]>
-    onPullProgress: (callback: (progress: any) => void) => void
+    getLibraryModels: () => Promise<{ name: string; description: string; tags: string[] }[]>
+    onPullProgress: (callback: (progress: { status: string; digest?: string; total?: number; completed?: number }) => void) => void
     removePullProgressListener: () => void
 
-    // New health and GPU checks
-    getOllamaHealthStatus: () => Promise<any>
-    forceOllamaHealthCheck: () => Promise<any>
+    // Health and GPU checks
+    getOllamaHealthStatus: () => Promise<{ status: 'ok' | 'error' }>
+    forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>
-    onOllamaStatusChange: (callback: (status: any) => void) => void
+    onOllamaStatusChange: (callback: (status: { status: string }) => void) => void
 
     // llama.cpp
     llama: {
-        loadModel: (modelPath: string, config?: any) => Promise<{ success: boolean; error?: string }>
+        loadModel: (modelPath: string, config?: Record<string, IpcValue>) => Promise<{ success: boolean; error?: string }>
         unloadModel: () => Promise<{ success: boolean }>
         chat: (message: string, systemPrompt?: string) => Promise<{ success: boolean; response?: string; error?: string }>
         resetSession: () => Promise<{ success: boolean }>
-        getModels: () => Promise<any[]>
+        getModels: () => Promise<{ name: string; path: string; size: number }[]>
         downloadModel: (url: string, filename: string) => Promise<{ success: boolean; path?: string; error?: string }>
         deleteModel: (modelPath: string) => Promise<{ success: boolean; error?: string }>
-        getConfig: () => Promise<any>
-        setConfig: (config: any) => Promise<{ success: boolean }>
+        getConfig: () => Promise<Record<string, IpcValue>>
+        setConfig: (config: Record<string, IpcValue>) => Promise<{ success: boolean }>
         getGpuInfo: () => Promise<{ available: boolean; name?: string; vram?: number }>
         getModelsDir: () => Promise<string>
         onToken: (callback: (token: string) => void) => void
@@ -112,20 +152,20 @@ export interface ElectronAPI {
 
     // Database
     db: {
-        createChat: (chat: any) => Promise<{ success: boolean }>
-        updateChat: (id: string, updates: any) => Promise<{ success: boolean }>
+        createChat: (chat: Chat) => Promise<{ success: boolean }>
+        updateChat: (id: string, updates: Partial<Chat>) => Promise<{ success: boolean }>
         deleteChat: (id: string) => Promise<{ success: boolean }>
-        duplicateChat: (id: string) => Promise<any>
+        duplicateChat: (id: string) => Promise<Chat | null>
         archiveChat: (id: string, isArchived: boolean) => Promise<{ success: boolean }>
-        getChat: (id: string) => Promise<any>
-        getAllChats: () => Promise<any[]>
-        searchChats: (query: string) => Promise<any[]>
-        addMessage: (message: any) => Promise<{ success: boolean }>
+        getChat: (id: string) => Promise<Chat | null>
+        getAllChats: () => Promise<Chat[]>
+        searchChats: (query: string) => Promise<Chat[]>
+        addMessage: (message: Message) => Promise<{ success: boolean }>
         deleteMessage: (id: string) => Promise<{ success: boolean }>
-        updateMessage: (id: string, updates: any) => Promise<{ success: boolean }>
+        updateMessage: (id: string, updates: Partial<Message>) => Promise<{ success: boolean }>
         deleteAllChats: () => Promise<{ success: boolean }>
         deleteMessages: (chatId: string) => Promise<{ success: boolean }>
-        getMessages: (chatId: string) => Promise<any[]>
+        getMessages: (chatId: string) => Promise<Message[]>
         getStats: () => Promise<{ chatCount: number; messageCount: number; dbSize: number }>
         getDetailedStats: (period: string) => Promise<{
             chatCount: number
@@ -137,21 +177,21 @@ export interface ElectronAPI {
             tokenTimeline: { timestamp: number; promptTokens: number; completionTokens: number }[]
             activity: number[]
         }>
-        getProjects: () => Promise<any[]>
-        getFolders: () => Promise<any[]>
+        getProjects: () => Promise<Project[]>
+        getFolders: () => Promise<Folder[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
-        updateProject: (id: string, updates: any) => Promise<void>
+        updateProject: (id: string, updates: Partial<Project>) => Promise<void>
         deleteProject: (id: string) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
-        createFolder: (name: string, color?: string) => Promise<any>
+        createFolder: (name: string, color?: string) => Promise<Folder>
         deleteFolder: (id: string) => Promise<void>
-        updateFolder: (id: string, updates: any) => Promise<void>
+        updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>
 
         // Prompts
-        createPrompt: (title: string, content: string, tags?: string[]) => Promise<any>
+        createPrompt: (title: string, content: string, tags?: string[]) => Promise<{ id: string }>
         deletePrompt: (id: string) => Promise<void>
-        updatePrompt: (id: string, updates: any) => Promise<void>
-        getPrompts: () => Promise<any[]>
+        updatePrompt: (id: string, updates: Record<string, IpcValue>) => Promise<void>
+        getPrompts: () => Promise<IpcValue[]>
     }
 
     terminal: {
@@ -162,16 +202,16 @@ export interface ElectronAPI {
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
         kill: (sessionId: string) => Promise<boolean>
         getSessions: () => Promise<string[]>
+        onData: (callback: (data: { id: string; data: string }) => void) => () => void
+        onExit: (callback: (data: { id: string; code: number }) => void) => () => void
         readBuffer: (sessionId: string) => Promise<string>
-        onData: (callback: (data: { id: string; data: string }) => void) => void
-        onExit: (callback: (data: { id: string; code: number }) => void) => void
         removeAllListeners: () => void
     }
 
     council: {
-        createSession: (goal: string) => Promise<any>
-        getSessions: () => Promise<any[]>
-        getSession: (id: string) => Promise<any>
+        createSession: (goal: string) => Promise<CouncilSession>
+        getSessions: () => Promise<CouncilSession[]>
+        getSession: (id: string) => Promise<CouncilSession | null>
         addLog: (sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action') => Promise<void>
         runStep: (sessionId: string) => void
         startLoop: (sessionId: string) => void
@@ -179,65 +219,65 @@ export interface ElectronAPI {
     }
 
     agent: {
-        getAll: () => Promise<any[]>
-        get: (id: string) => Promise<any>
+        getAll: () => Promise<AgentDefinition[]>
+        get: (id: string) => Promise<AgentDefinition | null>
     }
 
     // SSH
     ssh: {
-        connect: (connection: any) => Promise<{ success: boolean; error?: string; id?: string }>
+        connect: (connection: SSHConnection) => Promise<{ success: boolean; error?: string; id?: string }>
         disconnect: (connectionId: string) => Promise<{ success: boolean }>
-        execute: (connectionId: string, command: string, options?: any) => Promise<any>
+        execute: (connectionId: string, command: string, options?: SSHExecOptions) => Promise<{ stdout: string; stderr: string; code: number }>
         upload: (connectionId: string, localPath: string, remotePath: string) => Promise<{ success: boolean; error?: string }>
         download: (connectionId: string, remotePath: string, localPath: string) => Promise<{ success: boolean; error?: string }>
-        listDir: (connectionId: string, remotePath: string) => Promise<{ success: boolean; files?: any[]; error?: string }>
+        listDir: (connectionId: string, remotePath: string) => Promise<{ success: boolean; files?: SSHFile[]; error?: string }>
         readFile: (connectionId: string, remotePath: string) => Promise<{ success: boolean; content?: string; error?: string }>
         writeFile: (connectionId: string, remotePath: string, content: string) => Promise<{ success: boolean; error?: string }>
         deleteDir: (connectionId: string, path: string) => Promise<{ success: boolean; error?: string }>
         deleteFile: (connectionId: string, path: string) => Promise<{ success: boolean; error?: string }>
         mkdir: (connectionId: string, path: string) => Promise<{ success: boolean; error?: string }>
         rename: (connectionId: string, oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>
-        getConnections: () => Promise<any[]>
+        getConnections: () => Promise<SSHConnection[]>
         isConnected: (connectionId: string) => Promise<boolean>
-        onStdout: (callback: (data: any) => void) => void
-        onStderr: (callback: (data: any) => void) => void
+        onStdout: (callback: (data: string | Uint8Array) => void) => void
+        onStderr: (callback: (data: string | Uint8Array) => void) => void
         onConnected: (callback: (connectionId: string) => void) => void
         onDisconnected: (callback: (connectionId: string) => void) => void
         onUploadProgress: (callback: (progress: { transferred: number; total: number }) => void) => void
         onDownloadProgress: (callback: (progress: { transferred: number; total: number }) => void) => void
         removeAllListeners: () => void
-        onShellData: (callback: (data: any) => void) => void
+        onShellData: (callback: (data: { data: string }) => void) => void
         shellStart: (connectionId: string) => Promise<{ success: boolean; error?: string }>
         shellWrite: (connectionId: string, data: string) => Promise<{ success: boolean; error?: string }>
-        getSystemStats: (connectionId: string) => Promise<any>
-        getInstalledPackages: (connectionId: string, manager?: 'apt' | 'npm' | 'pip') => Promise<any[]>
+        getSystemStats: (connectionId: string) => Promise<SSHSystemStats>
+        getInstalledPackages: (connectionId: string, manager?: 'apt' | 'npm' | 'pip') => Promise<SSHPackageInfo[]>
         getLogFiles: (connectionId: string) => Promise<string[]>
         readLogFile: (connectionId: string, path: string, lines?: number) => Promise<string>
-        getProfiles: () => Promise<any[]>
-        saveProfile: (profile: any) => Promise<boolean>
+        getProfiles: () => Promise<SSHConfig[]>
+        saveProfile: (profile: SSHConfig) => Promise<boolean>
         deleteProfile: (id: string) => Promise<boolean>
     }
 
     // Tools
-    executeTools: (toolName: string, args: any, toolCallId?: string) => Promise<any>
-    killTool: (toolCallId: string) => Promise<any>
-    getToolDefinitions: () => Promise<any[]>
+    executeTools: (toolName: string, args: Record<string, IpcValue>, toolCallId?: string) => Promise<ToolResult>
+    killTool: (toolCallId: string) => Promise<boolean>
+    getToolDefinitions: () => Promise<ToolDefinition[]>
 
     // MCP
     mcp: {
-        list: () => Promise<any[]>
-        dispatch: (service: string, action: string, args?: any) => Promise<any>
+        list: () => Promise<{ name: string; status: string }[]>
+        dispatch: (service: string, action: string, args?: Record<string, IpcValue>) => Promise<IpcValue>
         toggle: (service: string, enabled: boolean) => Promise<{ success: boolean; isEnabled: boolean }>
-        install: (config: any) => Promise<{ success: boolean; error?: string }>
+        install: (config: Record<string, IpcValue>) => Promise<{ success: boolean; error?: string }>
         uninstall: (name: string) => Promise<{ success: boolean }>
-        onResult: (callback: (result: any) => void) => void
+        onResult: (callback: (result: IpcValue) => void) => void
         removeResultListener: () => void
     }
 
     proxyEmbed: {
-        start: (options?: { configPath?: string; port?: number; health?: boolean }) => Promise<any>
-        stop: () => Promise<any>
-        status: () => Promise<any>
+        start: (options?: { configPath?: string; port?: number; health?: boolean }) => Promise<IpcValue>
+        stop: () => Promise<IpcValue>
+        status: () => Promise<IpcValue>
     }
 
     // Screenshot
@@ -250,7 +290,7 @@ export interface ElectronAPI {
     // Files
     readPdf: (path: string) => Promise<{ success: boolean; text?: string; error?: string }>
     selectDirectory: () => Promise<{ success: boolean; path?: string }>
-    listDirectory: (path: string) => Promise<{ success: boolean; files?: any[]; error?: string }>
+    listDirectory: (path: string) => Promise<{ success: boolean; files?: FileEntry[]; error?: string }>
     readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
     writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>
     createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>
@@ -262,23 +302,23 @@ export interface ElectronAPI {
     exportChatToPdf: (chatId: string, title: string) => Promise<{ success: boolean; path?: string; error?: string }>
 
     // Settings
-    getSettings: () => Promise<any>
-    saveSettings: (settings: any) => Promise<any>
+    getSettings: () => Promise<AppSettings>
+    saveSettings: (settings: AppSettings) => Promise<void>
 
     huggingface: {
-        searchModels: (query: string, limit: number, page: number, sort: string) => Promise<{ models: any[], total: number }>
-        getFiles: (modelId: string) => Promise<any[]>
+        searchModels: (query: string, limit: number, page: number, sort: string) => Promise<{ models: { id: string; name: string; author: string; description: string; downloads: number; likes: number; tags: string[]; lastModified: string }[], total: number }>
+        getFiles: (modelId: string) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>
         downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => Promise<{ success: boolean; error?: string }>
         onDownloadProgress: (callback: (progress: { filename: string; received: number; total: number }) => void) => void
         cancelDownload: () => void
     }
 
     log: {
-        write: (level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any) => void
-        debug: (message: string, data?: any) => void
-        info: (message: string, data?: any) => void
-        warn: (message: string, data?: any) => void
-        error: (message: string, data?: any) => void
+        write: (level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: IpcValue) => void
+        debug: (message: string, data?: IpcValue) => void
+        info: (message: string, data?: IpcValue) => void
+        warn: (message: string, data?: IpcValue) => void
+        error: (message: string, data?: IpcValue) => void
     }
 
     gallery: {
@@ -288,13 +328,6 @@ export interface ElectronAPI {
         reveal: (path: string) => Promise<boolean>
     }
 
-    on: (channel: string, listener: (event: any, ...args: any[]) => void) => () => void
-
-
-
-
-    // Generic event listener
-    on: (channel: string, callback: (...args: any[]) => void) => () => void
     getUserDataPath: () => Promise<string>
 
     update: {
@@ -305,12 +338,14 @@ export interface ElectronAPI {
 
     // Explicit ipcRenderer exposure for flexible components
     ipcRenderer: {
-        on: (channel: string, listener: (event: any, ...args: any[]) => void) => () => void
-        off: (channel: string, listener: (...args: any[]) => void) => void
-        send: (channel: string, ...args: any[]) => void
-        invoke: (channel: string, ...args: any[]) => Promise<any>
+        on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => () => void
+        off: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => void
+        send: (channel: string, ...args: IpcValue[]) => void
+        invoke: (channel: string, ...args: IpcValue[]) => Promise<IpcValue>
         removeAllListeners: (channel: string) => void
     }
+    // Backward compatibility for components using window.electron.on
+    on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => () => void
 }
 
 declare global {

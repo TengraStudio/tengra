@@ -1,365 +1,355 @@
 import type { ElectronAPI } from './electron.d.ts'
+import type { Message, ToolDefinition, Chat, ToolResult, ToolCall, Folder } from '../shared/types/chat'
+import type { AppSettings } from '../shared/types/settings'
+import type { IpcValue, AuthStatus } from '../shared/types/common'
+import type { IpcRendererEvent } from 'electron'
+import type { ProjectAnalysis, Project } from '../shared/types/project'
+import type { QuotaResponse, CopilotQuota } from '../shared/types/quota'
+import type { CouncilSession } from '../shared/types/agent'
+import type { SSHConnection, SSHSystemStats, SSHConfig } from '../shared/types/ssh'
 
-const getStoredSettings = () => {
-    const stored = localStorage.getItem('ai-chat-settings')
-    const mock = {
-        ollama: { url: 'http://localhost:11434' },
-        openai: { apiKey: '' },
-        appearance: { theme: 'dark' },
-        general: { defaultModel: 'llama3.1:8b', lastModel: 'llama3.1:8b', favoriteModels: [], recentModels: [], hiddenModels: [] }
-    }
-    return stored ? JSON.parse(stored) : mock
-}
+// Mock Electron API for Web/Standalone development
+export const webElectronMock: ElectronAPI = {
+    minimize: () => console.log('minimize'),
+    maximize: () => console.log('maximize'),
+    close: () => console.log('close'),
+    resizeWindow: (res: string) => console.log('resize', res),
+    toggleCompact: (enabled: boolean) => console.log('compact', enabled),
 
-const mockDB = {
-    chats: JSON.parse(localStorage.getItem('ai-chat-chats') || '[]'),
-    messages: JSON.parse(localStorage.getItem('ai-chat-messages') || '{}'),
-    folders: JSON.parse(localStorage.getItem('ai-chat-folders') || '[]'),
-    projects: []
-}
+    githubLogin: async (_appId?: 'profile' | 'copilot') => ({ device_code: '123', user_code: 'ABC', verification_uri: 'http://locahost', expires_in: 900, interval: 5 }),
+    pollToken: async (_deviceCode: string, _interval: number, _appId?: 'profile' | 'copilot') => ({ success: true, token: 'mock-token' }),
+    antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
-const saveDB = () => {
-    localStorage.setItem('ai-chat-chats', JSON.stringify(mockDB.chats))
-    localStorage.setItem('ai-chat-messages', JSON.stringify(mockDB.messages))
-    localStorage.setItem('ai-chat-folders', JSON.stringify(mockDB.folders))
-}
+    claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
-const webBridge: ElectronAPI = {
-    minimize: () => console.log('Window: Minimize'),
-    maximize: () => console.log('Window: Maximize'),
-    close: () => console.log('Window: Close'),
-    resizeWindow: (res) => console.log('Window: Resize', res),
-    toggleCompact: (enabled) => console.log('Window: Toggle Compact', enabled),
+    checkAuthStatus: async () => ({
+        authenticated: false,
+        files: [],
+        github: false,
+        copilot: false,
+        antigravity: false,
 
-    githubLogin: async () => ({ device_code: 'mock', user_code: 'mock', verification_uri: 'mock', expires_in: 600, interval: 5 }),
-    pollToken: async () => ({ success: true, token: 'mock-token' }),
-    antigravityLogin: async () => ({ url: 'mock', state: 'mock' }),
-    geminiLogin: async () => ({ url: 'mock', state: 'mock' }),
-    claudeLogin: async () => ({ url: 'mock', state: 'mock' }),
-    anthropicLogin: async () => ({ url: 'mock', state: 'mock' }),
-    codexLogin: async () => ({ url: 'mock', state: 'mock' }),
-    checkAuthStatus: async () => ({ authenticated: true }),
+        claude: false,
+        anthropic: false,
+        codex: false
+    } as AuthStatus),
+    deleteProxyAuthFile: async (_name: string) => ({ success: true }),
 
     code: {
-        scanTodos: async () => [],
-        findSymbols: async () => [],
-        searchFiles: async () => [],
-        indexProject: async () => { },
-        queryIndexedSymbols: async () => []
+        scanTodos: async (_rootPath: string) => [],
+        findSymbols: async (_rootPath: string, _query: string) => [],
+        searchFiles: async (_rootPath: string, _query: string, _isRegex?: boolean) => [],
+        indexProject: async (_rootPath: string, _projectId: string) => { },
+        queryIndexedSymbols: async (_query: string) => []
+    },
+
+    project: {
+        analyze: async (_rootPath: string) => ({
+            name: 'Mock Project',
+            path: _rootPath,
+            type: 'unknown',
+            files: [],
+            dependencies: {},
+            scripts: {},
+            frameworks: [],
+            devDependencies: {},
+            languages: {},
+            stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() }
+        } as ProjectAnalysis),
+        saveState: async (_rootPath: string, _state: Record<string, IpcValue>) => true,
+        loadState: async (_rootPath: string) => ({}),
+        generateLogo: async (_projectPath: string, _prompt: string, _style: string) => '',
+        analyzeIdentity: async (_projectPath: string) => ({ suggestedPrompts: [], colors: [] }),
+        applyLogo: async (_projectPath: string, _tempLogoPath: string) => '',
+        getCompletion: async (_text: string) => '',
+        analyzeDirectory: async (_dirPath: string) => ({ hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 } })
+    },
+
+    process: {
+        spawn: async (_command: string, _args: string[], _cwd: string) => 'mock-id',
+        kill: async (_id: string) => true,
+        list: async () => [],
+        scanScripts: async (_rootPath: string) => ({}),
+        resize: async (_id: string, _cols: number, _rows: number) => { },
+        write: async (_id: string, _data: string) => { },
+        onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
+        onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
+        removeListeners: () => { }
+    },
+
+    files: {
+        listDirectory: async (_path: string) => [],
+        readFile: async (_path: string) => '',
+        readImage: async (_path: string) => ({ success: true }),
+        writeFile: async (_path: string, _content: string) => { },
+        exists: async (_path: string) => true
     },
 
     getProxyModels: async () => [],
-    getQuota: async () => ({}),
-    getCopilotQuota: async () => ({}),
+    getQuota: async (_provider?: string) => ({
+        status: 'ok',
+        next_reset: new Date().toISOString(),
+        models: [],
+        limit: 100,
+        remaining: 100,
+        reset: new Date().toISOString()
+    } as QuotaResponse),
+    getCopilotQuota: async () => ({
+        remaining: 100,
+        limit: 100,
+        chat_enabled: true,
+        code_search_enabled: true,
+        copilot_plan: 'business'
+    } as CopilotQuota),
     getCodexUsage: async () => ({}),
-    importChatHistory: async () => ({ success: true }),
-    importChatHistoryJson: async () => ({ success: true }),
+    importChatHistory: async (_provider: string) => ({ success: true }),
+    importChatHistoryJson: async (_jsonContent: string) => ({ success: true }),
 
-    getModels: async () => [{ name: 'llama3.1:8b', details: { family: 'llama' } }],
-    chat: async (_messages, _model) => ({}),
-    chatStream: async (_messages, _model, _tools, _provider, _options, _chatId, _projectId) => ({}),
-    chatOpenAI: async (_messages, _model, _tools, _provider, _options, _projectId) => ({}),
+    getModels: async () => [],
+    chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
+    chatOpenAI: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _projectId?: string) => ({}),
+    chatStream: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _chatId?: string, _projectId?: string) => { },
     abortChat: () => { },
-    onStreamChunk: () => { },
-    removeStreamChunkListener: () => { },
+    onStreamChunk: (_callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
+    removeStreamChunkListener: (_callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
 
     isOllamaRunning: async () => true,
-    startOllama: async () => ({ success: true, message: 'Running' }),
-    pullModel: async () => ({ success: true }),
-    deleteOllamaModel: async () => ({ success: true }),
+    startOllama: async () => ({ success: true, message: 'Ollama is starting' }),
+    pullModel: async (_modelName: string) => ({ success: true }),
+    deleteOllamaModel: async (_modelName: string) => ({ success: true }),
     getLibraryModels: async () => [],
-    onPullProgress: () => { },
+    onPullProgress: (_callback: (progress: { status: string; digest?: string; total?: number; completed?: number }) => void) => { },
     removePullProgressListener: () => { },
 
-    getOllamaHealthStatus: async () => ({}),
-    forceOllamaHealthCheck: async () => ({}),
-    checkCuda: async () => ({ hasCuda: false }),
-    onOllamaStatusChange: () => { },
+    getOllamaHealthStatus: async () => ({ status: 'ok' as const }),
+    forceOllamaHealthCheck: async () => ({ status: 'ok' as const }),
+    checkCuda: async () => ({ hasCuda: true }),
+    onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
 
     llama: {
-        loadModel: async () => ({ success: true }),
+        loadModel: async (_modelPath: string, _config?: Record<string, IpcValue>) => ({ success: true }),
         unloadModel: async () => ({ success: true }),
-        chat: async () => ({ success: true, response: 'Mock' }),
+        chat: async (_message: string, _systemPrompt?: string) => ({ success: true, response: 'Mock response' }),
         resetSession: async () => ({ success: true }),
         getModels: async () => [],
-        downloadModel: async () => ({ success: true }),
-        deleteModel: async () => ({ success: true }),
+        downloadModel: async (_url: string, _filename: string) => ({ success: true }),
+        deleteModel: async (_modelPath: string) => ({ success: true }),
         getConfig: async () => ({}),
-        setConfig: async () => ({ success: true }),
-        getGpuInfo: async () => ({ available: false }),
-        getModelsDir: async () => '',
-        onToken: () => { },
+        setConfig: async (_config: Record<string, IpcValue>) => ({ success: true }),
+        getGpuInfo: async () => ({ available: true }),
+        getModelsDir: async () => '/mock/dir',
+        onToken: (_callback: (token: string) => void) => { },
         removeTokenListener: () => { },
-        onDownloadProgress: () => { },
+        onDownloadProgress: (_callback: (progress: { downloaded: number; total: number }) => void) => { },
         removeDownloadProgressListener: () => { }
     },
 
     db: {
-        createChat: async (chat) => { mockDB.chats.push(chat); saveDB(); return { success: true } },
-        updateChat: async (id, updates) => {
-            const idx = mockDB.chats.findIndex((c: any) => c.id === id)
-            if (idx !== -1) { mockDB.chats[idx] = { ...mockDB.chats[idx], ...updates }; saveDB() }
-            return { success: true }
-        },
-        deleteChat: async (id) => {
-            mockDB.chats = mockDB.chats.filter((c: any) => c.id !== id)
-            delete (mockDB.messages as any)[id]
-            saveDB()
-            return { success: true }
-        },
-        duplicateChat: async (id) => {
-            const chat = mockDB.chats.find((c: any) => c.id === id)
-            if (!chat) return null
-            const dup = { ...chat, id: `${chat.id}-copy`, title: `${chat.title} (Kopya)`, createdAt: new Date() }
-            mockDB.chats.push(dup)
-            saveDB()
-            return dup
-        },
-        archiveChat: async (id, isArchived) => {
-            const idx = mockDB.chats.findIndex((c: any) => c.id === id)
-            if (idx !== -1) { mockDB.chats[idx] = { ...mockDB.chats[idx], isArchived }; saveDB() }
-            return { success: true }
-        },
-        getChat: async (id) => mockDB.chats.find((c: any) => c.id === id) || null,
-        getAllChats: async () => [...mockDB.chats].reverse(),
-        searchChats: async (q) => mockDB.chats.filter((c: any) => c.title.toLowerCase().includes(q.toLowerCase())),
-        addMessage: async (m) => {
-            const cid = (m as any).chatId || 'default'
-            if (!(mockDB.messages as any)[cid]) (mockDB.messages as any)[cid] = []
-                ; (mockDB.messages as any)[cid].push(m)
-            saveDB()
-            return { success: true }
-        },
-        deleteMessage: async (id) => {
-            Object.keys(mockDB.messages).forEach(cid => { (mockDB.messages as any)[cid] = ((mockDB.messages as any)[cid] || []).filter((m: any) => m.id !== id) })
-            saveDB()
-            return { success: true }
-        },
-        deleteMessages: async (chatId) => {
-            delete (mockDB.messages as any)[chatId]
-            saveDB()
-            return { success: true }
-        },
-        updateMessage: async (id, up) => {
-            Object.keys(mockDB.messages).forEach(cid => { (mockDB.messages as any)[cid] = ((mockDB.messages as any)[cid] || []).map((m: any) => m.id === id ? { ...m, ...up } : m) })
-            saveDB()
-            return { success: true }
-        },
-        deleteAllChats: async () => { mockDB.chats = []; mockDB.messages = {}; saveDB(); return { success: true } },
-        getMessages: async (cid) => (mockDB.messages as any)[cid] || [],
-        getStats: async () => ({ chatCount: mockDB.chats.length, messageCount: 0, dbSize: 0 }),
-        getDetailedStats: async () => ({ chatCount: 0, messageCount: 0, dbSize: 0, totalTokens: 0, promptTokens: 0, completionTokens: 0, tokenTimeline: [], activity: [] }),
+        createChat: async (_chat: Chat) => ({ success: true }),
+        updateChat: async (_id: string, _updates: Partial<Chat>) => ({ success: true }),
+        deleteChat: async (_id: string) => ({ success: true }),
+        duplicateChat: async (_id: string) => null,
+        archiveChat: async (_id: string, _isArchived: boolean) => ({ success: true }),
+        getChat: async (_id: string) => null,
+        getAllChats: async () => [],
+        searchChats: async (_query: string) => [],
+        addMessage: async (_message: Message) => ({ success: true }),
+        deleteMessage: async (_id: string) => ({ success: true }),
+        updateMessage: async (_id: string, _updates: Partial<Message>) => ({ success: true }),
+        deleteAllChats: async () => ({ success: true }),
+        deleteMessages: async (_chatId: string) => ({ success: true }),
+        getMessages: async (_chatId: string) => [],
+        getStats: async () => ({ chatCount: 0, messageCount: 0, dbSize: 0 }),
+        getDetailedStats: async (_period: string) => ({
+            chatCount: 0,
+            messageCount: 0,
+            dbSize: 0,
+            totalTokens: 0,
+            promptTokens: 0,
+            completionTokens: 0,
+            tokenTimeline: [],
+            activity: []
+        }),
         getProjects: async () => [],
-        createProject: async () => { },
-        updateProject: async () => { },
-        deleteProject: async () => { },
-        archiveProject: async () => { },
-        createFolder: async (name: string, color?: string) => {
-            const f = { id: Date.now().toString(), name, color: color || '#3b82f6', createdAt: Date.now(), updatedAt: Date.now() }
-            mockDB.folders.push(f)
-            saveDB()
-            return f
-        },
-        deleteFolder: async (id: string) => { mockDB.folders = mockDB.folders.filter((f: any) => f.id !== id); saveDB(); },
-        updateFolder: async (id: string, updates: any) => {
-            const idx = mockDB.folders.findIndex((f: any) => f.id === id)
-            if (idx !== -1) { mockDB.folders[idx] = { ...mockDB.folders[idx], ...updates, updatedAt: Date.now() }; saveDB() }
-        },
-        getFolders: async () => mockDB.folders,
-        createPrompt: async () => ({ id: Date.now().toString(), title: '', content: '', tags: [], createdAt: Date.now() }),
-        deletePrompt: async () => { },
-        updatePrompt: async () => { },
+        getFolders: async () => [],
+        createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => { },
+        updateProject: async (_id: string, _updates: Partial<Project>) => { },
+        deleteProject: async (_id: string) => { },
+        archiveProject: async (_id: string, _isArchived: boolean) => { },
+        createFolder: async (_name: string, _color?: string) => ({ id: '1', name: _name, color: _color || 'blue', createdAt: new Date(), updatedAt: new Date() } as Folder),
+        deleteFolder: async (_id: string) => { },
+        updateFolder: async (_id: string, _updates: Partial<Folder>) => { },
+
+        createPrompt: async (_title: string, _content: string, _tags?: string[]) => ({ id: '1' }),
+        deletePrompt: async (_id: string) => { },
+        updatePrompt: async (_id: string, _updates: Record<string, IpcValue>) => { },
         getPrompts: async () => []
     },
 
-    council: {
-        createSession: async (_goal: string) => ({ id: Date.now().toString() }),
-        getSessions: async () => [],
-        getSession: async (_id: string) => null,
-        addLog: async () => { },
-        runStep: () => { },
-        startLoop: () => { },
-        stopLoop: () => { }
-    },
-
     agent: {
-        getAll: async () => [
-            { id: '1', name: 'TechLead', description: 'Mock Agent', systemPrompt: '', tools: [], parentModel: 'gpt-4o' }
-        ],
+        getAll: async () => [],
         get: async (_id: string) => null
-    },
-
-
-    ssh: {
-        connect: async () => ({ success: true, id: 'mock-id' }),
-        disconnect: async () => ({ success: true }),
-        execute: async () => ({}),
-        upload: async () => ({ success: true }),
-        download: async () => ({ success: true }),
-        listDir: async () => ({ success: true, files: [] }),
-        readFile: async () => ({ success: true, content: '' }),
-        writeFile: async () => ({ success: true }),
-        deleteDir: async () => ({ success: true }),
-        deleteFile: async () => ({ success: true }),
-        mkdir: async () => ({ success: true }),
-        rename: async () => ({ success: true }),
-        getConnections: async () => [],
-        isConnected: async () => false,
-        onStdout: () => { },
-        onStderr: () => { },
-        onConnected: () => { },
-        onDisconnected: () => { },
-        onUploadProgress: () => { },
-        onDownloadProgress: () => { },
-        removeAllListeners: () => { },
-        onShellData: () => { },
-        shellStart: async () => ({ success: true }),
-        shellWrite: async () => ({ success: true }),
-        getSystemStats: async () => ({ cpu: 0, memory: { total: 0, used: 0, free: 0 }, disk: [], uptime: '0s' }),
-        getInstalledPackages: async (_id, _manager) => [],
-        getLogFiles: async () => [],
-        readLogFile: async () => '',
-        getProfiles: async () => [],
-        saveProfile: async () => true,
-        deleteProfile: async () => true
-    },
-
-    executeTools: async () => ({}),
-    killTool: async () => ({}),
-    getToolDefinitions: async () => [],
-
-    mcp: {
-        list: async () => [],
-        dispatch: async () => ({}),
-        toggle: async () => ({ success: true, isEnabled: true }),
-        install: async () => ({ success: true }),
-        uninstall: async () => ({ success: true }),
-        onResult: () => { },
-        removeResultListener: () => { }
-    },
-
-    proxyEmbed: {
-        start: async () => ({}),
-        stop: async () => ({}),
-        status: async () => ({})
     },
 
     terminal: {
         isAvailable: async () => true,
         getShells: async () => [],
-        create: async () => ({ success: true }),
-        write: async () => true,
-        resize: async () => true,
-        kill: async () => true,
-        getSessions: async () => [],
-        readBuffer: async () => '',
-        onData: () => { },
-        onExit: () => { },
+        create: async (_options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => ({ success: true }),
+        write: async (_sessionId: string, _data: string) => true,
+        resize: async (_sessionId: string, _cols: number, _rows: number) => true,
+        kill: async (_sessionId: string) => true,
+        onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
+        onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
         removeAllListeners: () => { }
+    },
+
+    council: {
+        createSession: async (_goal: string) => ({
+            id: '1',
+            goal: _goal,
+            status: 'created',
+            agents: [],
+            logs: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        } as CouncilSession),
+        getSessions: async () => [],
+        getSession: async (_id: string) => null,
+        addLog: async (_sessionId: string, _agentId: string, _message: string, _type: 'info' | 'error' | 'success' | 'plan' | 'action') => { },
+        runStep: (_sessionId: string) => { },
+        startLoop: (_sessionId: string) => { },
+        stopLoop: (_sessionId: string) => { }
+    },
+
+    ssh: {
+        connect: async (_connection: SSHConnection) => ({ success: true, id: '1' }),
+        disconnect: async (_connectionId: string) => ({ success: true }),
+        execute: async (_connectionId: string, _command: string, _options?: Record<string, IpcValue>) => ({ stdout: '', stderr: '', code: 0 }),
+        upload: async (_connectionId: string, _localPath: string, _remotePath: string) => ({ success: true }),
+        download: async (_connectionId: string, _remotePath: string, _localPath: string) => ({ success: true }),
+        listDir: async (_connectionId: string, _remotePath: string) => ({ success: true, files: [] }),
+        readFile: async (_connectionId: string, _remotePath: string) => ({ success: true, content: '' }),
+        writeFile: async (_connectionId: string, _remotePath: string, _content: string) => ({ success: true }),
+        deleteDir: async (_connectionId: string, _path: string) => ({ success: true }),
+        deleteFile: async (_connectionId: string, _path: string) => ({ success: true }),
+        mkdir: async (_connectionId: string, _path: string) => ({ success: true }),
+        rename: async (_connectionId: string, _oldPath: string, _newPath: string) => ({ success: true }),
+        getConnections: async () => [],
+        isConnected: async (_connectionId: string) => true,
+        onStdout: (_callback: (data: string | Uint8Array) => void) => { },
+        onStderr: (_callback: (data: string | Uint8Array) => void) => { },
+        onConnected: (_callback: (connectionId: string) => void) => { },
+        onDisconnected: (_callback: (connectionId: string) => void) => { },
+        onUploadProgress: (_callback: (progress: { transferred: number; total: number }) => void) => { },
+        onDownloadProgress: (_callback: (progress: { transferred: number; total: number }) => void) => { },
+        removeAllListeners: () => { },
+        onShellData: (_callback: (data: { data: string }) => void) => { },
+        shellStart: async (_connectionId: string) => ({ success: true }),
+        shellWrite: async (_connectionId: string, _data: string) => ({ success: true }),
+        getSystemStats: async (_connectionId: string) => ({
+            uptime: '',
+            memory: { total: 0, used: 0, percent: 0 },
+            cpu: 0,
+            disk: '0%'
+        } as SSHSystemStats),
+        getInstalledPackages: async (_connectionId: string, _manager?: 'apt' | 'npm' | 'pip') => [],
+        getLogFiles: async (_connectionId: string) => [],
+        readLogFile: async (_connectionId: string, _path: string, _lines?: number) => '',
+        getProfiles: async () => [],
+        saveProfile: async (_profile: SSHConfig) => true,
+        deleteProfile: async (_id: string) => true
+    },
+
+    executeTools: async (_toolName: string, _args: Record<string, IpcValue>, _toolCallId?: string) => ({
+        toolCallId: _toolCallId || 'mock',
+        name: _toolName,
+        success: true,
+        result: null
+    } as ToolResult),
+    killTool: async (_toolCallId: string) => true,
+    getToolDefinitions: async () => [],
+
+    mcp: {
+        list: async () => [],
+        dispatch: async (_service: string, _action: string, _args?: Record<string, IpcValue>) => ({}),
+        toggle: async (_service: string, _enabled: boolean) => ({ success: true, isEnabled: true }),
+        install: async (_config: Record<string, IpcValue>) => ({ success: true }),
+        uninstall: async (_name: string) => ({ success: true }),
+        onResult: (_callback: (result: IpcValue) => void) => { },
+        removeResultListener: () => { }
+    },
+
+    proxyEmbed: {
+        start: async (_options?: Record<string, IpcValue>) => ({}),
+        stop: async () => ({}),
+        status: async () => ({})
+    },
+
+    captureScreenshot: async () => ({ success: true }),
+    openExternal: (_url: string) => { },
+    openTerminal: async (_command: string) => true,
+    runCommand: async (_command: string, _args: string[], _cwd?: string) => ({ stdout: '', stderr: '', code: 0 }),
+
+    readPdf: async (_path: string) => ({ success: true, text: '' }),
+    selectDirectory: async () => ({ success: true, path: '' }),
+    listDirectory: async (_path: string) => ({ success: true, files: [] }),
+    readFile: async (_path: string) => ({ success: true, content: '' }),
+    writeFile: async (_path: string, _content: string) => ({ success: true }),
+    createDirectory: async (_path: string) => ({ success: true }),
+    deleteFile: async (_path: string) => ({ success: true }),
+    deleteDirectory: async (_path: string) => ({ success: true }),
+    renamePath: async (_oldPath: string, _newPath: string) => ({ success: true }),
+    searchFiles: async (_rootPath: string, _pattern: string) => ({ success: true, matches: [] }),
+    saveFile: async (_content: string, _filename: string) => ({ success: true, path: '' }),
+    exportChatToPdf: async (_chatId: string, _title: string) => ({ success: true, path: '' }),
+
+    getSettings: async () => ({} as AppSettings),
+    saveSettings: async (_settings: AppSettings) => { },
+
+    huggingface: {
+        searchModels: async (_query: string, _limit: number, _page: number, _sort: string) => ({ models: [], total: 0 }),
+        getFiles: async (_modelId: string) => [],
+        downloadFile: async (_url: string, _outputPath: string, _expectedSize: number, _expectedSha256: string) => ({ success: true }),
+        onDownloadProgress: (_callback: (progress: { filename: string; received: number; total: number }) => void) => { },
+        cancelDownload: () => { }
+    },
+
+    log: {
+        write: (_level: 'debug' | 'info' | 'warn' | 'error', _message: string, _data?: IpcValue) => { },
+        debug: (_message: string, _data?: IpcValue) => { },
+        info: (_message: string, _data?: IpcValue) => { },
+        warn: (_message: string, _data?: IpcValue) => { },
+        error: (_message: string, _data?: IpcValue) => { }
     },
 
     gallery: {
         list: async () => [],
-        delete: async () => true,
-        open: async () => true,
-        reveal: async () => true
+        delete: async (_path: string) => true,
+        open: async (_path: string) => true,
+        reveal: async (_path: string) => true
     },
 
-
-
-    exportChatToPdf: async () => ({ success: true }),
-
-    captureScreenshot: async () => ({ success: true }),
-    openExternal: async (_url: string) => { },
-    openTerminal: async () => true,
-    runCommand: async () => ({ stdout: '', stderr: '', code: 0 }),
-
-    readPdf: async () => ({ success: true, text: '' }),
-    selectDirectory: async () => ({ success: true, path: '' }),
-    listDirectory: async () => ({ success: true, files: [] }),
-    readFile: async () => ({ success: true, content: '' }),
-    writeFile: async () => ({ success: true }),
-    createDirectory: async () => ({ success: true }),
-    deleteFile: async () => ({ success: true }),
-    deleteDirectory: async () => ({ success: true }),
-    renamePath: async () => ({ success: true }),
-    searchFiles: async () => ({ success: true, matches: [] }),
-    saveFile: async () => ({ success: true, path: '' }),
-
-    getSettings: async () => getStoredSettings(),
-    saveSettings: async (s) => { localStorage.setItem('ai-chat-settings', JSON.stringify(s)); return s },
-
-    huggingface: {
-        searchModels: async (_q, _l, _p, _s) => ({ models: [], total: 0 }),
-        getFiles: async () => [],
-        downloadFile: async () => ({ success: true }),
-        onDownloadProgress: () => { },
-        cancelDownload: () => { }
-    },
-
-    project: {
-        analyze: async (_rootPath: string, _projectId?: string) => ({}),
-        saveState: async () => true,
-        loadState: async () => ({}),
-        analyzeIdentity: async () => ({ suggestedPrompts: [], colors: [] }),
-        generateLogo: async () => '',
-        getCompletion: async () => '',
-        applyLogo: async () => '',
-        analyzeDirectory: async () => ({ hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 } })
-    },
-
-    process: {
-        spawn: async () => 'mock-id',
-        kill: async () => true,
-        list: async () => [],
-        scanScripts: async () => ({}),
-        resize: async () => { },
-        write: async () => { },
-        onData: () => { },
-        onExit: () => { },
-        removeListeners: () => { }
-    },
-
-    files: {
-        listDirectory: async () => [],
-        readFile: async () => '',
-        readImage: async () => ({ success: false, error: 'Not implemented in web mode' }),
-        writeFile: async () => { },
-        exists: async () => false
-    },
-
-    log: {
-        write: () => { },
-        debug: () => { },
-        info: () => { },
-        warn: () => { },
-        error: () => { }
-    },
-
-    deleteProxyAuthFile: async (name: string) => {
-        console.log('[deleteProxyAuthFile] Deleting auth file:', name)
-        return { success: true }
-    },
-
-    getUserDataPath: async () => '/mock/userData',
-
+    getUserDataPath: async () => '',
     update: {
-        checkForUpdates: async () => { return },
-        downloadUpdate: async () => { return },
-        installUpdate: async () => { return }
+        checkForUpdates: async () => { },
+        downloadUpdate: async () => { },
+        installUpdate: async () => { }
     },
 
     ipcRenderer: {
-        on: (_channel: string, _listener: (...args: any[]) => void) => () => { },
-        off: (_channel: string, _listener: (...args: any[]) => void) => { },
-        send: (_channel: string, ..._args: any[]) => { },
-        invoke: async (_channel: string, ..._args: any[]) => { },
+        on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },
+        off: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => { },
+        send: (_channel: string, ..._args: IpcValue[]) => { },
+        invoke: async (_channel: string, ..._args: IpcValue[]) => ({}),
         removeAllListeners: (_channel: string) => { }
     },
-
-
-
-    on: () => () => { }
+    on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { }
 }
 
-export default webBridge
+if (typeof window !== 'undefined' && !(window as any).electron) {
+    (window as any).electron = webElectronMock
+}
+
+export default webElectronMock

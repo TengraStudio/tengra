@@ -2,6 +2,7 @@ import { join } from 'path';
 import { promises as fs } from 'fs';
 import { LLMService } from './llm/llm.service';
 import { ProjectService } from './project.service';
+import { JsonObject } from '../../shared/types';
 
 export class LogoService {
     constructor(private llmService: LLMService, private projectService: ProjectService) { }
@@ -18,12 +19,12 @@ export class LogoService {
     }
 
     async analyzeProjectIdentity(projectPath: string): Promise<{ suggestedPrompts: string[], colors: string[] }> {
-        let pkgData: any = {};
+        let pkgData: JsonObject = {};
         try {
             const pkgPath = join(projectPath, 'package.json');
             const content = await fs.readFile(pkgPath, 'utf-8');
-            pkgData = JSON.parse(content);
-        } catch (e) {
+            pkgData = JSON.parse(content) as JsonObject;
+        } catch {
             console.warn(`[LogoService] No package.json found at ${projectPath}`);
         }
 
@@ -126,7 +127,7 @@ ${context}`;
                     await fs.copyFile(tempLogoPath, join(publicDir, 'icon.png'));
                     await fs.copyFile(tempLogoPath, join(publicDir, 'favicon.png'));
                 }
-            } catch (e) {
+            } catch {
                 // Ignore if public dir doesn't exist
             }
 

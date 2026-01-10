@@ -9,7 +9,7 @@ interface GalleryViewProps {
 
 export function GalleryView({ language }: GalleryViewProps) {
     const { t } = useTranslation(language);
-    const [images, setImages] = useState<any[]>([]);
+    const [images, setImages] = useState<Array<{ name: string; path: string; url: string; mtime: number }>>([]);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
 

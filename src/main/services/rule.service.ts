@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { isNodeError } from '../../shared/utils/error.util';
 
 export interface WorkspaceRules {
     content: string; // The raw or processed content of RULES.md
@@ -40,8 +41,8 @@ export class RuleService {
             });
 
             return content;
-        } catch (error: any) {
-            if (error.code !== 'ENOENT') {
+        } catch (error) {
+            if (isNodeError(error as Error) && (error as { code?: string }).code !== 'ENOENT') {
                 console.warn(`[RuleService] Error reading rules from ${rulesPath}:`, error);
             }
             return null; // File doesn't exist or error

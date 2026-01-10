@@ -8,6 +8,8 @@ import { SettingsService } from '../settings.service'
 import { SecurityService } from '../security.service'
 import { DataService } from '../data/data.service'
 import { app } from 'electron'
+import { JsonObject } from '../../../shared/types/common'
+import { AppSettings } from '../../../shared/types'
 
 export interface ProxyEmbedStatus {
     running: boolean
@@ -100,10 +102,31 @@ export class ProxyProcessManager {
         return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed', binName)
     }
 
-    private logProxyChunk(buffer: string, chunk: string, level: 'info' | 'error'): string {
-        const lines = (buffer + chunk).split(/\r?\n/)
+    private logProxyChunk(currentBuffer: string, chunk: string, defaultLevel: 'info' | 'error'): string {
+        const buffer = currentBuffer + chunk
+        const lines = buffer.split(/\r?\n/)
         const remainder = lines.pop() || ''
-        for (const line of lines) if (line.trim()) (appLogger[level] as any)('Proxy', line.trim())
+        for (const line of lines) {
+            if (!line.trim()) continue
+
+            // Try to detect level from structured log
+            let level: 'info' | 'warning' | 'error' = defaultLevel
+            if (line.includes('level=info') || line.includes('[INFO]')) level = 'info'
+            else if (line.includes('level=warning') || line.includes('level=warn') || line.includes('[WARN]')) level = 'warning'
+            else if (line.includes('level=error') || line.includes('level=fatal') || line.includes('[ERROR]')) level = 'error'
+
+            // Special case: Go logs often go to stderr but are just info
+            if (defaultLevel === 'error' && (level === 'info' || level === 'warning')) {
+                // It was on stderr but content says info/warn -> trust content
+            } else if (defaultLevel === 'error' && !line.toLowerCase().includes('error') && !line.toLowerCase().includes('fatal')) {
+                // It was on stderr but doesn't look like an error -> downgrade to info to avoid scary red logs
+                level = 'info'
+            }
+
+            if (level === 'error') appLogger.error('Proxy', line.trim())
+            else if (level === 'warning') appLogger.warn('Proxy', line.trim())
+            else appLogger.info('Proxy', line.trim())
+        }
         return remainder
     }
 
@@ -119,6 +142,12 @@ export class ProxyProcessManager {
                             // Decrypt and copy
                             const json = this.readAuthFile(path.join(realAuthDir, file))
                             if (!json) continue
+
+                            // The proxy expects the internal "cliproxy format" (usually { access_token: ... })
+                            // Or the decrypted payload of our own format.
+                            // If we decrypted it and it's our format { provider, token, updatedAt },
+                            // we should probably just save the token itself if it's GitHub/Copilot, 
+                            // or keep the structure if it's already a complex object (like Gemini session).
 
                             const textToSave = JSON.stringify(json)
                             fs.writeFileSync(path.join(this.tempAuthDir, file), textToSave)
@@ -140,18 +169,44 @@ export class ProxyProcessManager {
         return path.join(app.getPath('userData'), 'auth')
     }
 
-    private readAuthFile(filePath: string): any | null {
+    private readAuthFile(filePath: string): JsonObject | null {
         try {
             const content = fs.readFileSync(filePath, 'utf8')
-            let json = JSON.parse(content)
+            const json = JSON.parse(content) as JsonObject
 
-            if (json.encryptedPayload && this.securityService) {
-                const decrypted = this.securityService.decryptSync(json.encryptedPayload)
-                json = JSON.parse(decrypted)
+            if (this.securityService) {
+                // Handle new Orbit format { provider, token, updatedAt }
+                if (json.token && typeof json.token === 'string') {
+                    const decrypted = this.securityService.decryptSync(json.token)
+                    if (decrypted) {
+                        try {
+                            // If the decrypted content is JSON itself (like Gemini session), parse it
+                            return JSON.parse(decrypted) as JsonObject
+                        } catch {
+                            // Otherwise it's a raw string (like a GitHub token)
+                            // The proxy binary often expects { "access_token": "..." } or similar if it's a raw token file
+                            // But for simple "cliproxy" usage, it depends on the provider.
+                            // Let's return the string-as-token if it's not JSON.
+                            return { access_token: decrypted } as JsonObject
+                        }
+                    }
+                }
+
+                // Handle old/legacy format { encryptedPayload, version }
+                if (json.encryptedPayload) {
+                    const encryptedPayload = typeof json.encryptedPayload === 'string' ? json.encryptedPayload : ''
+                    const decrypted = this.securityService.decryptSync(encryptedPayload)
+                    if (!decrypted) {
+                        console.warn(`[ProxyProcessManager] Deleting corrupted auth file: ${path.basename(filePath)}`)
+                        try { fs.unlinkSync(filePath) } catch (e) { /* ignore */ }
+                        return null
+                    }
+                    return JSON.parse(decrypted) as JsonObject
+                }
             }
             return json
-        } catch (e) {
-            // console.warn('[ProxyProcessManager] Failed to read/decrypt auth file:', filePath, e)
+        } catch {
+            // console.warn('[ProxyProcessManager] Failed to read/decrypt auth file:', filePath)
             return null
         }
     }
@@ -184,6 +239,6 @@ export class ProxyProcessManager {
                 debug: true,
                 "logging-to-file": false
             }
-        } as any)
+        } as Partial<AppSettings>)
     }
 }

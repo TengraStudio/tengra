@@ -4,6 +4,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as net from 'net';
 import * as os from 'os';
+import { WebSocketServer } from 'ws';
+import { JsonObject } from '../../shared/types/common';
+import { getErrorMessage } from '../../shared/utils/error.util';
 
 const execAsync = promisify(exec);
 
@@ -13,8 +16,8 @@ export class NetworkService implements INetworkService {
             const cmd = process.platform === 'win32' ? `ping -n 4 ${host}` : `ping -c 4 ${host}`;
             const { stdout } = await execAsync(cmd);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -22,7 +25,7 @@ export class NetworkService implements INetworkService {
         try {
             const { stdout } = await execAsync(`whois ${domain}`);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
+        } catch {
             return { success: false, error: 'WHOIS command failed. Is it installed?' };
         }
     }
@@ -52,42 +55,41 @@ export class NetworkService implements INetworkService {
             const cmd = process.platform === 'win32' ? `tracert ${host}` : `traceroute ${host}`;
             const { stdout } = await execAsync(cmd);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
     startWebSocketServer(port: number = 8080): ServiceResponse {
         try {
-            const WebSocket = require('ws');
-            const wsServer = new WebSocket.Server({ port });
-            wsServer.on('connection', (ws: any) => {
+            const wsServer = new WebSocketServer({ port });
+            wsServer.on('connection', (ws) => {
                 console.log('[WS] Connected');
                 ws.on('message', (message: string) => {
                     console.log('[WS] Received:', message);
                 });
             });
             return { success: true, message: `WebSocket server started on port ${port}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
-    async getNetworkInterfaces(): Promise<ServiceResponse<any>> {
+    async getNetworkInterfaces(): Promise<ServiceResponse<JsonObject>> {
         try {
             const interfaces = os.networkInterfaces();
-            return { success: true, result: interfaces };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+            return { success: true, result: interfaces as JsonObject };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
     async getPublicIP(): Promise<ServiceResponse<{ ip: string }>> {
         try {
             const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
+            const data = await response.json() as { ip: string };
             return { success: true, result: { ip: data.ip } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 }

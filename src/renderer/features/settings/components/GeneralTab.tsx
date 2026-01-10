@@ -1,6 +1,6 @@
 ﻿import React from 'react'
 import { Globe, Activity, Database, Download, RefreshCw } from 'lucide-react'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
 
 interface GeneralTabProps {
@@ -32,9 +32,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <Globe className="w-3 h-3" /> {t('settings.language')}
                     </label>
                     <SelectDropdown
-                        value={settings?.general?.language || 'tr'}
+                        value={settings?.general?.language || 'en'}
                         options={languageOptions}
-                        onChange={(val) => updateGeneral({ language: val })}
+                        onChange={(val) => updateGeneral({ language: val as 'tr' | 'en' })}
                         className="mt-2"
                     />
                 </div>
@@ -62,7 +62,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <div className="text-xs text-muted-foreground">{t('general.onboardingTourDesc')}</div>
                     </div>
                     <button
-                        onClick={() => updateGeneral({ onboardingCompleted: false } as any)}
+                        onClick={() => updateGeneral({ onboardingCompleted: false })}
                         className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold uppercase rounded-lg border border-primary/20 transition-all"
                     >
                         {t('general.startTour')}

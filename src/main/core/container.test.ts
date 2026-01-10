@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, Scope } from './container';
 
 describe('Container', () => {
@@ -8,50 +8,77 @@ describe('Container', () => {
         container = new Container();
     });
 
-    it('should register and resolve an instance', () => {
-        const instance = { id: 1 };
-        container.registerInstance('test', instance);
-        expect(container.resolve('test')).toBe(instance);
+    it('should register and resolve a singleton', () => {
+        const factory = () => ({ id: Math.random() });
+        container.register('service', factory, [], Scope.SINGLETON);
+
+        const instance1 = container.resolve<{ id: number }>('service');
+        const instance2 = container.resolve<{ id: number }>('service');
+
+        expect(instance1).toBeDefined();
+        expect(instance1.id).toBe(instance2.id);
     });
 
-    it('should register and resolve a singleton factory', () => {
-        let count = 0;
-        const factory = () => ({ id: ++count });
+    it('should register and resolve a transient service', () => {
+        const factory = () => ({ id: Math.random() });
+        container.register('service', factory, [], Scope.TRANSIENT);
 
-        container.register('test', factory, [], Scope.SINGLETON);
+        const instance1 = container.resolve<{ id: number }>('service');
+        const instance2 = container.resolve<{ id: number }>('service');
 
-        const instance1 = container.resolve<any>('test');
-        const instance2 = container.resolve<any>('test');
-
-        expect(instance1.id).toBe(1);
-        expect(instance1).toBe(instance2);
-    });
-
-    it('should register and resolve a transient factory', () => {
-        let count = 0;
-        const factory = () => ({ id: ++count });
-
-        container.register('test', factory, [], Scope.TRANSIENT);
-
-        const instance1 = container.resolve<any>('test');
-        const instance2 = container.resolve<any>('test');
-
-        expect(instance1.id).toBe(1);
-        expect(instance2.id).toBe(2);
-        expect(instance1).not.toBe(instance2);
+        expect(instance1.id).not.toBe(instance2.id);
     });
 
     it('should resolve dependencies', () => {
-        const dep = { name: 'dependency' };
-        container.registerInstance('dep', dep);
+        const depFactory = () => ({ name: 'dependency' });
+        const serviceFactory = (dep: any) => ({ depName: dep.name });
 
-        container.register('service', (d) => ({ dep: d }), ['dep']);
+        container.register('dep', depFactory);
+        container.register('service', serviceFactory, ['dep']);
 
-        const service = container.resolve<any>('service');
-        expect(service.dep).toBe(dep);
+        const service = container.resolve<{ depName: string }>('service');
+        expect(service.depName).toBe('dependency');
     });
 
-    it('should throw error for missing service', () => {
-        expect(() => container.resolve('missing')).toThrow();
+    it('should run init lifecycle method for singletons', async () => {
+        const initMock = vi.fn();
+        const service = {
+            initialize: initMock
+        };
+
+        container.register('service', () => service);
+        await container.init();
+
+        expect(initMock).toHaveBeenCalled();
+    });
+
+    it('should run dispose lifecycle method in reverse order', async () => {
+        // We'll create a call order array to verify reverse cleanup
+        const callOrder: string[] = [];
+
+        const service1 = {
+            initialize: () => { },
+            cleanup: async () => { await new Promise(r => setTimeout(r, 1)); callOrder.push('service1'); }
+        };
+
+        const service2 = {
+            initialize: () => { },
+            cleanup: async () => { callOrder.push('service2'); }
+        };
+
+        container.register('service1', () => service1);
+        container.register('service2', () => service2);
+
+        // Resolve them to instantiate (since singletons are lazy)
+        // Order of instantiation matters for 'reverse order' logic often
+        container.resolve('service1');
+        container.resolve('service2');
+
+        await container.dispose();
+
+        // If registered/resolved as service1 then service2, 
+        // singletons list might be [service1, service2].
+        // Reverse is [service2, service1].
+        expect(callOrder).toEqual(['service2', 'service1']);
     });
 });

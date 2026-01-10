@@ -1,5 +1,8 @@
 import { DatabaseService } from './data/database.service'
 import { ProxyService } from './proxy/proxy.service'
+import { JsonObject, JsonValue } from '../../shared/types'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 
 type ImportResult = {
     success: boolean
@@ -19,6 +22,77 @@ type ImportedMessage = {
     role: 'user' | 'assistant' | 'system'
     content: string
     timestamp: number
+}
+
+// OpenAI API Types
+interface OpenAIConversationItem {
+    id: string
+    title: string
+    create_time: number
+    update_time: number
+    model?: string // Legacy api field
+}
+
+interface OpenAIConversationDetail {
+    title: string
+    create_time: number
+    update_time: number
+    mapping: Record<string, OpenAINode>
+    model?: string
+    model_slug?: string
+    default_model_slug?: string
+}
+
+interface OpenAINode {
+    id: string
+    message?: OpenAIMessage | null
+    parent?: string
+    children: string[]
+}
+
+interface OpenAIMessage {
+    id: string
+    author: { role: string; name?: string; metadata?: JsonObject }
+    create_time: number
+    update_time?: number
+    content: {
+        content_type: string
+        parts?: JsonValue[]
+        text?: string
+    }
+    status?: string
+    end_turn?: boolean
+    weight?: number
+    metadata?: JsonObject
+    recipient?: string
+}
+
+interface OpenAIConversationListResponse {
+    items: OpenAIConversationItem[]
+    total: number
+    limit: number
+    offset: number
+    has_missing_conversations: boolean
+}
+
+// Import JSON Format Types
+interface ImportJsonChat {
+    id: string
+    title?: string
+    model?: string
+    backend?: string
+    createdAt?: number
+    updatedAt?: number
+    messages: ImportJsonMessage[]
+}
+
+interface ImportJsonMessage {
+    id?: string
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    timestamp?: number
+    model?: string
+    provider?: string
 }
 
 const OPENAI_HISTORY_LIMIT = 50
@@ -52,11 +126,11 @@ export class HistoryImportService {
             return { success: false, message: 'OpenAI token bulunamadi.' }
         }
 
-        let items: any[] = []
+        let items: OpenAIConversationItem[] = []
         try {
             items = await this.fetchOpenAIConversationList(accessToken, OPENAI_HISTORY_LIMIT)
-        } catch (error: any) {
-            return { success: false, message: `OpenAI sohbet listesi alinamadi: ${error?.message || 'unknown error'}` }
+        } catch (error) {
+            return { success: false, message: `OpenAI sohbet listesi alinamadi: ${getErrorMessage(error as Error)}` }
         }
 
         if (items.length === 0) {
@@ -67,7 +141,7 @@ export class HistoryImportService {
         let importedMessages = 0
 
         for (const item of items) {
-            const conversationId = item?.id
+            const conversationId = item.id
             if (!conversationId) continue
 
             const chatId = `openai:${conversationId}`
@@ -85,10 +159,10 @@ export class HistoryImportService {
                 continue
             }
 
-            const createdAt = this.toMillis(item?.create_time ?? detail?.create_time)
-            const updatedAt = this.toMillis(item?.update_time ?? detail?.update_time ?? createdAt)
-            const model = detail?.model || detail?.model_slug || detail?.default_model_slug || item?.model || ''
-            const title = item?.title || detail?.title || 'OpenAI Chat'
+            const createdAt = this.toMillis(item.create_time ?? detail.create_time)
+            const updatedAt = this.toMillis(item.update_time ?? detail.update_time ?? createdAt)
+            const model = detail.model || detail.model_slug || detail.default_model_slug || item.model || ''
+            const title = item.title || detail.title || 'OpenAI Chat'
 
             await this.databaseService.createChat({
                 id: chatId,
@@ -122,27 +196,29 @@ export class HistoryImportService {
 
     private async findAuthFile(providers: string[]): Promise<AuthFileEntry | null> {
         const response = await this.proxyService.getAuthFiles()
-        const files = Array.isArray(response?.files) ? response.files : []
-        if (files.length === 0) return null
+        const files = response.files
+        if (!Array.isArray(files) || files.length === 0) return null
 
         const targets = providers.map((p) => p.toLowerCase())
         for (const file of files) {
             const authFile = file as AuthFileEntry
-            const provider = String(authFile?.provider || authFile?.type || '').toLowerCase()
+            const provider = String(authFile.provider || authFile.type || '').toLowerCase()
             if (!provider) continue
             if (targets.includes(provider)) {
-                return file
+                return file as AuthFileEntry
             }
         }
 
         return null
     }
 
-    private pickToken(authData: any): string | null {
+    private pickToken(authData: JsonObject | null): string | null {
+        if (!authData) return null
+        const data = authData as JsonObject
         const candidates = [
-            authData?.access_token,
-            authData?.accessToken,
-            authData?.AccessToken
+            data?.access_token,
+            data?.accessToken,
+            data?.AccessToken
         ]
         for (const value of candidates) {
             if (typeof value === 'string' && value.trim()) {
@@ -152,7 +228,7 @@ export class HistoryImportService {
         return null
     }
 
-    private async fetchOpenAIConversationList(token: string, limit: number): Promise<any[]> {
+    private async fetchOpenAIConversationList(token: string, limit: number): Promise<OpenAIConversationItem[]> {
         const url = new URL('https://chat.openai.com/backend-api/conversations')
         url.searchParams.set('offset', '0')
         url.searchParams.set('limit', String(limit))
@@ -162,17 +238,17 @@ export class HistoryImportService {
         if (!response.ok) {
             throw new Error(`status ${response.status}`)
         }
-        const data = await response.json()
+        const data = await response.json() as OpenAIConversationListResponse
         return Array.isArray(data?.items) ? data.items : []
     }
 
-    private async fetchOpenAIConversationDetail(token: string, conversationId: string): Promise<any | null> {
+    private async fetchOpenAIConversationDetail(token: string, conversationId: string): Promise<OpenAIConversationDetail | null> {
         const url = `https://chat.openai.com/backend-api/conversation/${conversationId}`
         const response = await fetch(url, { headers: this.openAIHeaders(token) })
         if (!response.ok) {
             return null
         }
-        return response.json()
+        return response.json() as Promise<OpenAIConversationDetail>
     }
 
     private openAIHeaders(token: string): HeadersInit {
@@ -182,18 +258,18 @@ export class HistoryImportService {
         }
     }
 
-    private extractOpenAIMessages(detail: any): ImportedMessage[] {
-        const mapping = detail?.mapping
+    private extractOpenAIMessages(detail: OpenAIConversationDetail): ImportedMessage[] {
+        const mapping = detail.mapping
         if (!mapping || typeof mapping !== 'object') {
             return []
         }
 
         const messages: ImportedMessage[] = []
-        for (const node of Object.values(mapping) as any[]) {
-            const message = node?.message
+        for (const node of Object.values(mapping)) {
+            const message = node.message
             if (!message) continue
 
-            const role = message?.author?.role
+            const role = message.author?.role
             if (role !== 'user' && role !== 'assistant' && role !== 'system') {
                 continue
             }
@@ -201,14 +277,14 @@ export class HistoryImportService {
             const content = this.extractOpenAIContent(message)
             if (!content) continue
 
-            const id = message?.id || node?.id
+            const id = message.id || node.id
             if (!id) continue
 
             messages.push({
                 id,
-                role,
+                role: role as 'user' | 'assistant' | 'system',
                 content,
-                timestamp: this.toMillis(message?.create_time)
+                timestamp: this.toMillis(message.create_time)
             })
         }
 
@@ -216,24 +292,23 @@ export class HistoryImportService {
         return messages
     }
 
-    private extractOpenAIContent(message: any): string {
-        const content = message?.content
+    private extractOpenAIContent(message: OpenAIMessage): string {
+        const content = message.content
         if (!content) return ''
 
-        const parts = Array.isArray(content?.parts)
-            ? content.parts.filter((part: any) => typeof part === 'string' && part.trim() !== '')
-            : []
-        if (parts.length > 0) {
-            return parts.join('\n')
+        if (Array.isArray(content.parts)) {
+            const parts = content.parts.filter((part): part is string => typeof part === 'string' && part.trim() !== '')
+            if (parts.length > 0) {
+                return parts.join('\n')
+            }
         }
 
-        if (typeof content?.text === 'string') {
+        if (typeof content.text === 'string') {
             return content.text
         }
 
-        if (typeof content === 'string') {
-            return content
-        }
+        // Try fallback if content itself is a string string (legacy?)
+        if (typeof content === 'string') return content
 
         return ''
     }
@@ -260,15 +335,18 @@ export class HistoryImportService {
 
     async importFromJson(jsonContent: string): Promise<ImportResult> {
         try {
-            const data = JSON.parse(jsonContent)
-            let chatsToImport: any[] = []
+            const data = JSON.parse(jsonContent) as ImportJsonChat | ImportJsonChat[] | { chats: ImportJsonChat[] }
+            let chatsToImport: ImportJsonChat[] = []
 
-            if (Array.isArray(data.chats)) {
+            if (Array.isArray(data)) {
+                // Assumption: It's an array of chats
+                chatsToImport = data as ImportJsonChat[]
+            } else if ('chats' in data && Array.isArray(data.chats)) {
+                // Format: { chats: [...] }
                 chatsToImport = data.chats
-            } else if (Array.isArray(data)) {
-                chatsToImport = data
-            } else if (data.id && data.messages) {
-                chatsToImport = [data]
+            } else if ('id' in data && 'messages' in data) {
+                // Single chat object
+                chatsToImport = [data as ImportJsonChat]
             } else {
                 return { success: false, message: 'Gecersiz JSON formati. "chats" dizisi veya tek bir sohbet objesi bekleniyor.' }
             }
@@ -306,15 +384,15 @@ export class HistoryImportService {
                             provider: msg.provider
                         })
                         importedMessages++
-                    } catch (e) {
+                    } catch {
                         // ignore duplicate message ids
                     }
                 }
             }
 
             return { success: true, importedChats, importedMessages }
-        } catch (error: any) {
-            return { success: false, message: `JSON isleme hatasi: ${error.message}` }
+        } catch (error) {
+            return { success: false, message: `JSON isleme hatasi: ${getErrorMessage(error as Error)}` }
         }
     }
 }

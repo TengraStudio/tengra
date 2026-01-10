@@ -1,9 +1,10 @@
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, exec, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import * as fsPromises from 'fs/promises'
 import { join } from 'path'
 import { app } from 'electron'
 import { SettingsService } from '../settings.service'
+
 
 export interface LocalAIModel {
     id: string
@@ -27,6 +28,14 @@ export interface OllamaChatMessage {
     content: string
 }
 
+export interface OllamaResponse {
+    models?: OllamaModel[]
+}
+
+export interface OllamaChatResponse {
+    message: OllamaChatMessage
+}
+
 export class LocalAIService {
     private llamaProcess: ChildProcess | null = null
     private llamaModelPath: string | null = null
@@ -40,14 +49,15 @@ export class LocalAIService {
     async getOllamaModels(): Promise<OllamaModel[]> {
         try {
             console.log('[LocalAI] Fetching Ollama models from http://127.0.0.1:11434/api/tags...');
-            const res = await this.ollamaRequest('/api/tags')
-            if (res && res.models) {
+            const res = await this.ollamaRequest<OllamaResponse>('/api/tags')
+            if (res && res.models && Array.isArray(res.models)) {
                 console.log(`[LocalAI] Found ${res.models.length} models in Ollama`);
                 return res.models;
             }
             return []
-        } catch (error: any) {
-            console.error('[LocalAI] Failed to fetch Ollama models (Ollama might be closed):', error?.message || String(error));
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error)
+            console.error('[LocalAI] Failed to fetch Ollama models (Ollama might be closed):', msg);
             // Attempt auto-start on connection failure
             this.maybeStartOllama();
             return []
@@ -85,11 +95,11 @@ export class LocalAIService {
         }
     }
 
-    async ollamaChat(model: string, messages: OllamaChatMessage[]): Promise<any> {
+    async ollamaChat(model: string, messages: OllamaChatMessage[]): Promise<OllamaChatResponse> {
         const settings = this.settingsService.getSettings()
         const num_ctx = settings.ollama.numCtx || 4096
 
-        return this.ollamaRequest('/api/chat', 'POST', {
+        return await this.ollamaRequest<OllamaChatResponse>('/api/chat', 'POST', {
             model,
             messages,
             stream: false,
@@ -97,19 +107,15 @@ export class LocalAIService {
         })
     }
 
-    private async ollamaRequest(endpoint: string, method = 'GET', body?: any) {
+    private async ollamaRequest<T>(endpoint: string, method = 'GET', body?: object): Promise<T> {
         const url = `http://127.0.0.1:11434${endpoint}`
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: body ? JSON.stringify(body) : undefined
-            })
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return await response.json()
-        } catch (error) {
-            throw error
-        }
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json() as T
     }
 
     // --- Llama.cpp Ops ---
@@ -156,8 +162,7 @@ export class LocalAIService {
 
     async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
         return new Promise((resolve) => {
-            const { exec } = require('child_process')
-            exec('nvidia-smi', (error: any, stdout: string) => {
+            exec('nvidia-smi', (error: Error | null, stdout: string) => {
                 if (error) {
                     resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' })
                 } else {

@@ -1,4 +1,5 @@
 import { ServiceResponse } from '../../../shared/types';
+import { getErrorMessage } from '../../../shared/utils/error.util';
 import * as fs from 'fs/promises';
 import { watch } from 'fs';
 import * as path from 'path';
@@ -27,8 +28,8 @@ export class FileManagementService {
                 }
             }
             return { success: true, result: { strings: strings } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -38,8 +39,8 @@ export class FileManagementService {
             const fullPath = path.join(dir, fileName);
             await fs.writeFile(fullPath, content);
             return { success: true, result: { path: fullPath } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -51,8 +52,8 @@ export class FileManagementService {
                 await execAsync(`unzip -o "${zipPath}" -d "${destPath}"`);
             }
             return { success: true, message: `Extracted to ${destPath}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -68,8 +69,8 @@ export class FileManagementService {
                 }
             }
             return { success: true, message: `${count} files renamed.` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
@@ -79,30 +80,30 @@ export class FileManagementService {
                 console.log(`Folder changed: ${eventType} on ${filename}`);
             });
             return { success: true, message: `Watching ${dir} for changes...` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
     async downloadFile(url: string, destPath: string): Promise<ServiceResponse<{ path: string }>> {
         return new Promise((resolve) => {
             const file = createWriteStream(destPath);
-            https.get(url, (response: any) => {
+            https.get(url, (response) => {
                 response.pipe(file);
                 file.on('finish', () => {
                     file.close();
                     resolve({ success: true, result: { path: destPath } });
                 });
-            }).on('error', (err: any) => {
-                fs.unlink(destPath).catch(() => { });
+            }).on('error', (err) => {
+                fs.unlink(destPath).catch(() => { /* ignore */ });
                 resolve({ success: false, error: err.message });
             });
         });
     }
 
-    async applyEdits(path: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
+    async applyEdits(filePath: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
         try {
-            const content = await fs.readFile(path, 'utf8');
+            const content = await fs.readFile(filePath, 'utf8');
             const lines = content.split('\n');
             const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine); // Apply from bottom to top to preserve indices
 
@@ -124,10 +125,10 @@ export class FileManagementService {
             }
 
             const newContent = lines.join('\n');
-            await fs.writeFile(path, newContent, 'utf8');
-            return { success: true, message: `Applied ${edits.length} edits to ${path}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+            await fs.writeFile(filePath, newContent, 'utf8');
+            return { success: true, message: `Applied ${edits.length} edits to ${filePath}` };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 }

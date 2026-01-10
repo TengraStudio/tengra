@@ -47,10 +47,7 @@ const MODEL_REGISTRY: ModelInfo[] = [
     { id: 'claude-3-sonnet-20240229', provider: 'anthropic', priority: 85, contextWindow: 200000 },
     { id: 'claude-3-haiku-20240307', provider: 'anthropic', priority: 70, contextWindow: 200000 },
 
-    // Gemini
-    { id: 'gemini-2.0-flash', provider: 'gemini', priority: 88, contextWindow: 1000000 },
-    { id: 'gemini-1.5-pro', provider: 'gemini', priority: 85, contextWindow: 2000000 },
-    { id: 'gemini-1.5-flash', provider: 'gemini', priority: 80, contextWindow: 1000000 },
+
 
     // Groq (fast inference)
     { id: 'llama-3.3-70b-versatile', provider: 'groq', priority: 78, contextWindow: 128000 },
@@ -64,10 +61,9 @@ const MODEL_REGISTRY: ModelInfo[] = [
 
 // Provider fallback chains
 const FALLBACK_CHAINS: Record<string, string[]> = {
-    openai: ['anthropic', 'gemini', 'groq'],
-    anthropic: ['openai', 'gemini', 'groq'],
-    gemini: ['openai', 'anthropic', 'groq'],
-    groq: ['openai', 'anthropic', 'gemini'],
+    openai: ['anthropic', 'groq'],
+    anthropic: ['openai', 'groq'],
+    groq: ['openai', 'anthropic'],
     copilot: ['openai', 'anthropic'],
     ollama: [] // No fallback for local models
 }
@@ -76,17 +72,14 @@ const FALLBACK_CHAINS: Record<string, string[]> = {
 const MODEL_EQUIVALENTS: Record<string, Record<string, string>> = {
     'gpt-4o': {
         anthropic: 'claude-3-5-sonnet-20241022',
-        gemini: 'gemini-1.5-pro',
         groq: 'llama-3.3-70b-versatile'
     },
     'gpt-4o-mini': {
         anthropic: 'claude-3-haiku-20240307',
-        gemini: 'gemini-1.5-flash',
         groq: 'llama3-70b-8192'
     },
     'claude-3-5-sonnet-20241022': {
         openai: 'gpt-4o',
-        gemini: 'gemini-1.5-pro',
         groq: 'llama-3.3-70b-versatile'
     }
 }
@@ -221,7 +214,7 @@ export class ModelRouter {
 
         if (lower.includes('gpt') || lower.includes('o1')) return 'openai'
         if (lower.includes('claude')) return 'anthropic'
-        if (lower.includes('gemini')) return 'gemini'
+
         if (lower.includes('llama') || lower.includes('mixtral')) return 'groq'
         if (lower.includes('codex')) return 'copilot'
 

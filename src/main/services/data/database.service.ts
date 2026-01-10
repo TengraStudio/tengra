@@ -1,8 +1,37 @@
 import { DataService } from './data.service'
 import { LanceDbService } from './lancedb.service'
+import Database from 'better-sqlite3'
+import type { Database as DatabaseType } from 'better-sqlite3'
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { WorkspaceMount } from '../../../shared/types/workspace'
+import { JsonObject, JsonValue } from '../../../shared/types/common'
+import { getErrorMessage } from '../../../shared/utils/error.util'
+
+// Code intelligence types for stub methods
+export interface CodeSymbolSearchResult {
+    id: string;
+    name: string;
+    path: string;
+    line: number;
+    score?: number;
+}
+
+export interface CodeSymbolRecord {
+    id: string;
+    project_path?: string;  // Alternative for projectId
+    projectId?: string;
+    file_path?: string;     // Alternative for path
+    name: string;
+    path?: string;
+    line: number;
+    kind: string;
+    signature?: string;
+    docstring?: string;
+    embedding?: number[];
+    vector?: number[];      // Alternative for embedding
+}
 
 /**
  * Represents a logical grouping of chats.
@@ -56,7 +85,7 @@ export interface ChatMessage {
     content: string
     timestamp?: number
     vector?: number[]
-    [key: string]: any
+    [key: string]: JsonValue | undefined
 }
 
 /**
@@ -83,6 +112,7 @@ export interface SemanticFragment {
     importance: number
     createdAt: number
     updatedAt: number
+    [key: string]: string | number | string[] | number[]
 }
 
 /**
@@ -189,6 +219,42 @@ export interface CouncilSession {
 }
 
 /**
+ * Project workspace configuration.
+ * 
+ * @interface Project
+ * @property {string} id - Unique identifier
+ * @property {string} title - Display name
+ * @property {string} description - Short description
+ * @property {string} path - Absolute filesystem path
+ * @property {WorkspaceMount[]} mounts - Mounted directories (local/SSH)
+ * @property {string[]} chatIds - Associated chat IDs
+ * @property {object} councilConfig - AI Council configuration
+ * @property {'active' | 'archived' | 'draft'} status - Project state
+ * @property {string} [logo] - Optional logo path or data URI
+ * @property {JsonObject} [metadata] - Extra metadata
+ * @property {number} createdAt - Creation timestamp
+ * @property {number} updatedAt - Update timestamp
+ */
+export interface Project {
+    id: string
+    title: string
+    description: string
+    path: string
+    mounts: WorkspaceMount[]
+    chatIds: string[]
+    councilConfig: {
+        enabled: boolean
+        members: string[]
+        consensusThreshold: number
+    }
+    status: 'active' | 'archived' | 'draft'
+    logo?: string
+    metadata?: JsonObject
+    createdAt: number
+    updatedAt: number
+}
+
+/**
  * Persists and manages application state, including Folders, Prompts, Sessions, and Projects.
  * 
  * Acts as a local JSON-based database with basic CRUD operations and vector search capabilities.
@@ -200,14 +266,97 @@ export class DatabaseService {
     private prompts: Prompt[] = []
     private councilPath: string
     private councilSessions: CouncilSession[] = []
-    private projectsPath: string
-    private projects: any[] = []
+    private projectsPath: string // Legacy JSON path for migration
+    private db: DatabaseType // SQLite database connection
 
     constructor(private dataService: DataService, _lanceDbService: LanceDbService) {
         this.foldersPath = path.join(this.dataService.getPath('db'), 'folders.json')
         this.promptsPath = path.join(this.dataService.getPath('db'), 'prompts.json')
         this.councilPath = path.join(this.dataService.getPath('db'), 'council.json')
         this.projectsPath = path.join(this.dataService.getPath('db'), 'projects.json')
+
+        // Initialize SQLite database
+        const dbPath = path.join(this.dataService.getPath('db'), 'orbit.db')
+        this.db = new Database(dbPath)
+
+        // Task 13: SQLite Optimizations ("Connection Pooling" context)
+        this.db.pragma('journal_mode = WAL') // Better concurrency
+        this.db.pragma('synchronous = NORMAL') // Faster writes, still safe in WAL
+        this.db.pragma('busy_timeout = 5000') // Wait up to 5s if locked
+        this.db.pragma('cache_size = -4000') // Use ~4MB cache
+
+        this.runMigrations()
+    }
+
+    getDatabase(): DatabaseType {
+        return this.db;
+    }
+
+    /**
+     * Runs database migrations (Task 12).
+     */
+    private runMigrations() {
+        // Ensure migrations table exists
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS migrations (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                run_at INTEGER NOT NULL
+            )
+        `);
+
+        const migrations = [
+            {
+                id: 1,
+                name: 'Initial Schema',
+                up: () => {
+                    this.db.exec(`
+                        CREATE TABLE IF NOT EXISTS projects (
+                            id TEXT PRIMARY KEY,
+                            title TEXT NOT NULL,
+                            description TEXT DEFAULT '',
+                            path TEXT NOT NULL,
+                            mounts TEXT DEFAULT '[]',
+                            chat_ids TEXT DEFAULT '[]',
+                            council_config TEXT DEFAULT '{"enabled":false,"members":[],"consensusThreshold":0.7}',
+                            status TEXT DEFAULT 'active',
+                            logo TEXT,
+                            metadata TEXT DEFAULT '{}',
+                            created_at INTEGER NOT NULL,
+                            updated_at INTEGER NOT NULL
+                        );
+                        CREATE TABLE IF NOT EXISTS chat_events (
+                            id TEXT PRIMARY KEY,
+                            thread_id TEXT NOT NULL,
+                            type TEXT NOT NULL,
+                            payload TEXT NOT NULL,
+                            timestamp INTEGER NOT NULL,
+                            metadata TEXT DEFAULT '{}'
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_chat_events_thread_id ON chat_events(thread_id);
+                    `);
+                }
+            },
+            // Future migrations can be added here
+        ];
+
+        const getAppliedMigrations = this.db.prepare('SELECT id FROM migrations').pluck();
+        const appliedIds = new Set(getAppliedMigrations.all() as number[]);
+
+        for (const migration of migrations) {
+            if (!appliedIds.has(migration.id)) {
+                console.log(`[Database] Running migration ${migration.id}: ${migration.name}`);
+                try {
+                    this.db.transaction(() => {
+                        migration.up();
+                        this.db.prepare('INSERT INTO migrations (id, name, run_at) VALUES (?, ?, ?)').run(migration.id, migration.name, Date.now());
+                    })();
+                } catch (error) {
+                    console.error(`[Database] Migration ${migration.id} failed:`, error);
+                    throw error; // Stop startup if migration fails
+                }
+            }
+        }
     }
 
     /**
@@ -220,7 +369,96 @@ export class DatabaseService {
         await this.loadFolders()
         await this.loadPrompts()
         await this.loadCouncilSessions()
-        await this.loadProjects()
+        await this.migrateProjectsFromJson() // One-time migration
+    }
+
+    /**
+     * Migrates projects from legacy JSON file to SQLite.
+     * Only runs if projects.json exists and SQLite projects table is empty.
+     * @private
+     */
+    private async migrateProjectsFromJson() {
+        try {
+            // Check if migration is needed
+            const count = this.db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number }
+            if (count.count > 0) return // Already migrated
+
+            // Check if legacy JSON file exists
+            if (!fs.existsSync(this.projectsPath)) return
+
+            const data = await fs.promises.readFile(this.projectsPath, 'utf-8')
+            const legacyProjects = JSON.parse(data) as JsonObject[]
+
+            if (!Array.isArray(legacyProjects) || legacyProjects.length === 0) return
+
+            // Prepare insert statement
+            const insert = this.db.prepare(`
+                INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config, status, logo, metadata, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `)
+
+            // Migrate each project
+            const transaction = this.db.transaction((projects: JsonObject[]) => {
+                for (const p of projects) {
+                    const id = (p.id as string) || uuidv4()
+                    const title = (p.title as string) || (p.name as string) || 'Untitled'
+                    const description = (p.description as string) || ''
+                    const projectPath = (p.path as string) || ''
+
+                    // Handle mounts - could be string[] or WorkspaceMount[]
+                    let mounts = p.mounts
+                    if (typeof mounts === 'string') {
+                        try { mounts = JSON.parse(mounts) } catch { mounts = [] }
+                    }
+                    if (!Array.isArray(mounts)) mounts = []
+
+                    // Handle chatIds
+                    let chatIds = p.chatIds
+                    if (typeof chatIds === 'string') {
+                        try { chatIds = JSON.parse(chatIds) } catch { chatIds = [] }
+                    }
+                    if (!Array.isArray(chatIds)) chatIds = []
+
+                    // Handle councilConfig
+                    let councilConfig = p.councilConfig
+                    if (typeof councilConfig === 'string') {
+                        try { councilConfig = JSON.parse(councilConfig) } catch { councilConfig = null }
+                    }
+                    if (!councilConfig || typeof councilConfig !== 'object') {
+                        councilConfig = { enabled: false, members: [], consensusThreshold: 0.7 }
+                    }
+
+                    const status = (p.status as string) || 'active'
+                    const logo = (p.logo as string) || null
+                    const metadata = p.metadata && typeof p.metadata === 'object' ? p.metadata : {}
+                    const createdAt = (p.createdAt as number) || Date.now()
+                    const updatedAt = (p.updatedAt as number) || Date.now()
+
+                    insert.run(
+                        id,
+                        title,
+                        description,
+                        projectPath,
+                        JSON.stringify(mounts),
+                        JSON.stringify(chatIds),
+                        JSON.stringify(councilConfig),
+                        status,
+                        logo,
+                        JSON.stringify(metadata),
+                        createdAt,
+                        updatedAt
+                    )
+                }
+            })
+
+            transaction(legacyProjects)
+            console.log(`Migrated ${legacyProjects.length} projects from JSON to SQLite`)
+
+            // Optionally rename old file to mark as migrated
+            await fs.promises.rename(this.projectsPath, this.projectsPath + '.migrated')
+        } catch (error) {
+            console.error('Failed to migrate projects from JSON:', getErrorMessage(error as Error))
+        }
     }
 
     /**
@@ -235,7 +473,7 @@ export class DatabaseService {
                 this.councilSessions = JSON.parse(data)
             }
         } catch (error) {
-            console.error('Failed to load council sessions:', error)
+            console.error('Failed to load council sessions:', getErrorMessage(error as Error))
             this.councilSessions = []
         }
     }
@@ -248,7 +486,7 @@ export class DatabaseService {
         try {
             await fs.promises.writeFile(this.councilPath, JSON.stringify(this.councilSessions, null, 2), 'utf-8')
         } catch (error) {
-            console.error('Failed to save council sessions:', error)
+            console.error('Failed to save council sessions:', getErrorMessage(error as Error))
         }
     }
 
@@ -263,7 +501,7 @@ export class DatabaseService {
                 this.prompts = JSON.parse(data)
             }
         } catch (error) {
-            console.error('Failed to load prompts:', error)
+            console.error('Failed to load prompts:', getErrorMessage(error as Error))
             this.prompts = []
         }
     }
@@ -276,7 +514,7 @@ export class DatabaseService {
         try {
             await fs.promises.writeFile(this.promptsPath, JSON.stringify(this.prompts, null, 2), 'utf-8')
         } catch (error) {
-            console.error('Failed to save prompts:', error)
+            console.error('Failed to save prompts:', getErrorMessage(error as Error))
         }
     }
 
@@ -291,7 +529,7 @@ export class DatabaseService {
                 this.folders = JSON.parse(data)
             }
         } catch (error) {
-            console.error('Failed to load folders:', error)
+            console.error('Failed to load folders:', getErrorMessage(error as Error))
             this.folders = []
         }
     }
@@ -304,37 +542,50 @@ export class DatabaseService {
         try {
             await fs.promises.writeFile(this.foldersPath, JSON.stringify(this.folders, null, 2), 'utf-8')
         } catch (error) {
-            console.error('Failed to save folders:', error)
+            console.error('Failed to save folders:', getErrorMessage(error as Error))
         }
     }
 
     /**
-     * Loads project configurations from disk.
+     * Maps a SQLite row to a Project object.
+     * Parses JSON fields and applies defaults.
      * @private
      */
-    private async loadProjects() {
-        try {
-            if (await fs.promises.stat(this.projectsPath).then(() => true).catch(() => false)) {
-                const data = await fs.promises.readFile(this.projectsPath, 'utf-8')
-                this.projects = JSON.parse(data)
-            }
-        } catch (error) {
-            console.error('Failed to load projects:', error)
-            this.projects = []
+    private mapRowToProject(row: JsonObject): Project {
+        return {
+            id: row.id as string,
+            title: row.title as string,
+            description: (row.description as string) || '',
+            path: row.path as string,
+            mounts: this.parseJsonField<WorkspaceMount[]>(row.mounts as string, []),
+            chatIds: this.parseJsonField<string[]>(row.chat_ids as string, []),
+            councilConfig: this.parseJsonField(row.council_config as string, {
+                enabled: false,
+                members: [],
+                consensusThreshold: 0.7
+            }),
+            status: (row.status as Project['status']) || 'active',
+            logo: row.logo as string | undefined,
+            metadata: this.parseJsonField<JsonObject>(row.metadata as string, {}),
+            createdAt: row.created_at as number,
+            updatedAt: row.updated_at as number
         }
     }
 
     /**
-     * Persists projects to `projects.json`.
+     * Safely parses a JSON string with a fallback default.
      * @private
      */
-    private async saveProjects() {
+    private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
+        if (!json) return defaultValue
         try {
-            await fs.promises.writeFile(this.projectsPath, JSON.stringify(this.projects, null, 2), 'utf-8')
-        } catch (error) {
-            console.error('Failed to save projects:', error)
+            return JSON.parse(json) as T
+        } catch {
+            return defaultValue
         }
     }
+
+
 
     // --- Chat Management (Stubs) ---
 
@@ -342,14 +593,14 @@ export class DatabaseService {
      * Creates a new chat session.
      * @param _chat - Chat data object
      */
-    async createChat(_chat: any) { return { success: true } }
+    async createChat(_chat: JsonObject) { return { success: true } }
 
     /**
      * Updates an existing chat.
      * @param _id - Chat ID
      * @param _updates - Fields to update
      */
-    async updateChat(_id: string, _updates: any) { return { success: true } }
+    async updateChat(_id: string, _updates: JsonObject) { return { success: true } }
 
     /**
      * Deletes a chat session.
@@ -390,7 +641,7 @@ export class DatabaseService {
     /**
      * Adds a message to a chat.
      */
-    async addMessage(_message: any) { return { success: true } }
+    async addMessage(_message: JsonObject) { return { success: true } }
 
     /**
      * Deletes a specific message.
@@ -400,7 +651,7 @@ export class DatabaseService {
     /**
      * Updates a specific message.
      */
-    async updateMessage(_id: string, _updates: any) { return { success: true } }
+    async updateMessage(_id: string, _updates: JsonObject) { return { success: true } }
 
     /**
      * Deletes all chat sessions.
@@ -443,35 +694,77 @@ export class DatabaseService {
     // --- Project Management ---
 
     /**
-     * Retrieves all registered projects.
+     * Retrieves all registered projects from SQLite.
      */
-    async getProjects() {
-        return this.projects
+    async getProjects(): Promise<Project[]> {
+        const rows = this.db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all() as JsonObject[]
+        return rows.map(row => this.mapRowToProject(row))
+    }
+
+    /**
+     * Retrieves a single project by ID.
+     */
+    async getProject(id: string): Promise<Project | undefined> {
+        const row = this.db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as JsonObject | undefined
+        return row ? this.mapRowToProject(row) : undefined
     }
 
     /**
      * Creates a new project workspace.
      * 
      * @param name - Project display name
-     * @param path - Absolute filesystem path
+     * @param projectPath - Absolute filesystem path
      * @param description - Short description
      * @param mounts - JSON string of mounted directories
+     * @param councilConfig - Optional council configuration
      * @returns Created project object
      */
-    async createProject(name: string, path: string, description: string, mounts?: string) {
-        const project = {
-            id: uuidv4(),
-            title: name,
-            path,
-            description,
-            mounts: mounts ? JSON.parse(mounts) : [],
-            status: 'active',
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+    async createProject(
+        name: string,
+        projectPath: string,
+        description: string,
+        mounts?: string,
+        councilConfig?: string
+    ): Promise<Project> {
+        const id = uuidv4()
+        const now = Date.now()
+        const parsedMounts = mounts ? JSON.parse(mounts) : []
+        const parsedCouncilConfig = councilConfig ? JSON.parse(councilConfig) : {
+            enabled: false,
+            members: [],
+            consensusThreshold: 0.7
         }
-        this.projects.push(project)
-        await this.saveProjects()
-        return project
+
+        this.db.prepare(`
+            INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config, status, logo, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            id,
+            name,
+            description || '',
+            projectPath,
+            JSON.stringify(parsedMounts),
+            JSON.stringify([]),
+            JSON.stringify(parsedCouncilConfig),
+            'active',
+            null,
+            JSON.stringify({}),
+            now,
+            now
+        )
+
+        return {
+            id,
+            title: name,
+            description: description || '',
+            path: projectPath,
+            mounts: parsedMounts,
+            chatIds: [],
+            councilConfig: parsedCouncilConfig,
+            status: 'active',
+            createdAt: now,
+            updatedAt: now
+        }
     }
 
     /**
@@ -481,33 +774,57 @@ export class DatabaseService {
      * @param updates - Partial update object
      * @returns Updated project or undefined if not found
      */
-    async updateProject(id: string, updates: any) {
-        const index = this.projects.findIndex(p => p.id === id)
-        if (index !== -1) {
-            this.projects[index] = { ...this.projects[index], ...updates, updatedAt: Date.now() }
-            await this.saveProjects()
-            return this.projects[index]
-        }
+    async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
+        const existing = await this.getProject(id)
+        if (!existing) return undefined
+
+        const now = Date.now()
+        const merged = { ...existing, ...updates, updatedAt: now }
+
+        this.db.prepare(`
+            UPDATE projects SET
+                title = ?,
+                description = ?,
+                path = ?,
+                mounts = ?,
+                chat_ids = ?,
+                council_config = ?,
+                status = ?,
+                logo = ?,
+                metadata = ?,
+                updated_at = ?
+            WHERE id = ?
+        `).run(
+            merged.title,
+            merged.description,
+            merged.path,
+            JSON.stringify(merged.mounts),
+            JSON.stringify(merged.chatIds),
+            JSON.stringify(merged.councilConfig),
+            merged.status,
+            merged.logo || null,
+            JSON.stringify(merged.metadata || {}),
+            now,
+            id
+        )
+
+        return merged
     }
 
     /**
      * Deletes a project by ID.
      */
-    async deleteProject(id: string) {
-        this.projects = this.projects.filter(p => p.id !== id)
-        await this.saveProjects()
+    async deleteProject(id: string): Promise<void> {
+        this.db.prepare('DELETE FROM projects WHERE id = ?').run(id)
     }
 
     /**
      * Toggles a project's archived status.
      */
-    async archiveProject(id: string, isArchived: boolean) {
-        const index = this.projects.findIndex(p => p.id === id)
-        if (index !== -1) {
-            this.projects[index].status = isArchived ? 'archived' : 'active'
-            this.projects[index].updatedAt = Date.now()
-            await this.saveProjects()
-        }
+    async archiveProject(id: string, isArchived: boolean): Promise<void> {
+        const now = Date.now()
+        this.db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?')
+            .run(isArchived ? 'archived' : 'active', now, id)
     }
 
     // --- Folder Management ---
@@ -556,7 +873,7 @@ export class DatabaseService {
     /**
      * Updates an existing folder.
      */
-    async updateFolder(id: string, updates: any) {
+    async updateFolder(id: string, updates: Partial<Folder>) {
         const index = this.folders.findIndex(f => f.id === id)
         if (index !== -1) {
             this.folders[index] = { ...this.folders[index], ...updates, updatedAt: Date.now() }
@@ -641,9 +958,9 @@ export class DatabaseService {
     async storeMemory(_key: string, _value: string) { }
 
     // --- Code Intelligence (Stubs) ---
-    async searchCodeSymbols(_vector: number[]): Promise<any[]> { return [] }
+    async searchCodeSymbols(_vector: number[]): Promise<CodeSymbolSearchResult[]> { return [] }
     async clearCodeSymbols(_projectId: string) { }
-    async storeCodeSymbol(_symbol: any) { }
+    async storeCodeSymbol(_symbol: CodeSymbolRecord) { }
 
     // --- Council / Agents ---
 
@@ -672,8 +989,8 @@ export class DatabaseService {
     async createCouncilSession(goal: string) {
         // Default agents for now
         const agents: AgentProfile[] = [
-            { id: 'planner', name: 'Planner', role: 'planner', description: 'Decomposes complex goals into actionable plans.' },
-            { id: 'executor', name: 'Executor', role: 'executor', description: 'Executes commands and tools.' },
+            { id: 'uuid-planner', name: 'Planner', role: 'planner', description: 'Decomposes complex goals into actionable plans.' },
+            { id: 'uuid-executor', name: 'Executor', role: 'executor', description: 'Executes commands and tools.' },
         ]
 
         const session: CouncilSession = {
@@ -752,7 +1069,7 @@ export class DatabaseService {
     /**
      * @deprecated Use createCouncilSession logic instead.
      */
-    async saveCouncilSession(_session: any, _agents: any[]) {
+    async saveCouncilSession(_session: JsonObject, _agents: JsonObject[]) {
         // Deprecated/Shim: Use createCouncilSession logic or update
     }
 
@@ -762,7 +1079,7 @@ export class DatabaseService {
      * In-memory storage for vector embeddings.
      * @private
      */
-    private vectorStore: { path: string; content: string; embedding: number[]; metadata: any }[] = []
+    private vectorStore: { path: string; content: string; embedding: number[]; metadata: JsonObject }[] = []
 
     /**
      * Calculates Cosine Similarity between two vectors.
@@ -802,7 +1119,7 @@ export class DatabaseService {
      * @param vector - Embedding vector
      * @param metadata - Arbitrary metadata
      */
-    async storeVector(path: string, content: string, vector: number[], metadata: any) {
+    async storeVector(path: string, content: string, vector: number[], metadata: JsonObject) {
         this.vectorStore.push({ path, content, embedding: vector, metadata })
     }
 
@@ -813,7 +1130,7 @@ export class DatabaseService {
      * @param limit - Max results
      * @returns Ranked list of matches with similarity score
      */
-    async searchVectors(vector: number[], limit: number): Promise<any[]> {
+    async searchVectors(vector: number[], limit: number): Promise<VectorSearchResult[]> {
         if (!this.vectorStore.length) return []
 
         const scored = this.vectorStore.map(item => ({
@@ -826,4 +1143,12 @@ export class DatabaseService {
 
         return scored.slice(0, limit)
     }
+}
+
+interface VectorSearchResult {
+    path: string;
+    content: string;
+    embedding: number[];
+    metadata: JsonObject;
+    score: number;
 }

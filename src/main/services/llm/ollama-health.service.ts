@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events'
+import { getErrorMessage } from '../../../shared/utils/error.util'
 
 export interface OllamaStatus {
     online: boolean
@@ -87,16 +88,17 @@ export class OllamaHealthService extends EventEmitter {
             } else {
                 throw new Error(`HTTP ${response.status}`)
             }
-        } catch (error: any) {
+        } catch (error) {
+            const errorMsg = getErrorMessage(error as Error)
             this.status = {
                 online: false,
                 lastCheck: new Date(),
-                error: error.message || 'Connection failed'
+                error: errorMsg
             }
 
             // Emit event if status changed
             if (wasOnline) {
-                console.log('[OllamaHealth] Server went offline:', error.message)
+                console.log('[OllamaHealth] Server went offline:', errorMsg)
                 this.emit('offline', this.status)
                 this.emit('statusChange', this.status)
             }

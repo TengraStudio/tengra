@@ -1,25 +1,25 @@
 ﻿import React from 'react'
 import { RefreshCw, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types'
 import chatgptLogo from '@/assets/chatgpt.svg'
 import antigravityLogo from '@/assets/antigravity.svg'
 import claudeLogo from '@/assets/claude.svg'
-import geminiLogo from '@/assets/gemini.png'
+
 import copilotLogo from '@/assets/copilot.png'
 import ollamaLogo from '@/assets/ollama.svg'
 
 interface AccountsTabProps {
     settings: AppSettings | null
-    authStatus: any
+    authStatus: { codex: boolean; claude: boolean; antigravity: boolean }
     authBusy: string | null
     authMessage: string
     isOllamaRunning: boolean
     refreshAuthStatus: () => void
     connectGitHubProfile: () => void
     connectCopilot: () => void
-    connectBrowserProvider: (p: any) => void
-    disconnectProvider: (p: any) => void
+    connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity') => void
+    disconnectProvider: (p: 'copilot' | 'codex' | 'claude' | 'antigravity') => void
     startOllama: () => void
     checkOllama: () => void
     handleSave: (s?: AppSettings) => void
@@ -38,7 +38,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
     const isGitHubConnected = Boolean(settings.github?.token)
     const isCodexConnected = authStatus.codex
     const isClaudeConnected = authStatus.claude
-    const isGeminiConnected = authStatus.gemini
+
     const isAntigravityConnected = authStatus.antigravity
 
     const accountCards = [
@@ -46,11 +46,37 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
         { id: 'copilot', title: t('accounts.services.copilot'), description: t('accounts.copilotDesc'), logo: copilotLogo, connected: isCopilotConnected, onConnect: connectCopilot, onDisconnect: () => disconnectProvider('copilot') },
         { id: 'antigravity', title: t('accounts.services.antigravity'), description: t('accounts.antigravityDesc'), logo: antigravityLogo, connected: isAntigravityConnected, onConnect: () => connectBrowserProvider('antigravity'), onDisconnect: () => disconnectProvider('antigravity') },
         { id: 'codex', title: t('accounts.services.codex'), description: t('accounts.codexDesc'), logo: chatgptLogo, connected: isCodexConnected, onConnect: () => connectBrowserProvider('codex'), onDisconnect: () => disconnectProvider('codex') },
-        { id: 'claude', title: t('accounts.services.claude'), description: t('accounts.claudeDesc'), logo: claudeLogo, connected: isClaudeConnected, onConnect: () => connectBrowserProvider('claude'), onDisconnect: () => disconnectProvider('claude') },
-        { id: 'gemini', title: t('accounts.services.gemini'), description: t('accounts.geminiDesc'), logo: geminiLogo, connected: isGeminiConnected, onConnect: () => connectBrowserProvider('gemini'), onDisconnect: () => disconnectProvider('gemini') }
+        { id: 'claude', title: t('accounts.services.claude'), description: t('accounts.claudeDesc'), logo: claudeLogo, connected: isClaudeConnected, onConnect: () => connectBrowserProvider('claude'), onDisconnect: () => disconnectProvider('claude') }
     ]
 
     const normalizeKeyValue = (value?: string) => (value === 'connected' ? '' : (value || ''))
+    const apiKeyProviders = ['openai', 'anthropic', 'groq', 'huggingface'] as const
+    type ApiKeyProvider = typeof apiKeyProviders[number]
+
+    const getProviderApiKey = (provider: ApiKeyProvider): string => {
+        if (provider === 'huggingface') return normalizeKeyValue(settings.huggingface?.apiKey)
+        if (provider === 'openai') return normalizeKeyValue(settings.openai?.apiKey)
+        if (provider === 'anthropic') return normalizeKeyValue(settings.anthropic?.apiKey)
+
+        if (provider === 'groq') return normalizeKeyValue(settings.groq?.apiKey)
+        return ''
+    }
+
+    const updateProviderApiKey = (provider: ApiKeyProvider, apiKey: string) => {
+        const updated = { ...settings }
+        if (provider === 'huggingface') {
+            updated.huggingface = { apiKey }
+        } else if (provider === 'openai') {
+            updated.openai = { apiKey, model: updated.openai?.model || '' }
+        } else if (provider === 'anthropic') {
+            updated.anthropic = { apiKey, model: updated.anthropic?.model || '' }
+
+        } else if (provider === 'groq') {
+            updated.groq = { apiKey, model: updated.groq?.model || '' }
+        }
+        setSettings(updated)
+        handleSave(updated)
+    }
 
     return (
         <div className="space-y-8">
@@ -124,20 +150,13 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
             <div className="space-y-4">
                 <h3 className="text-lg font-bold text-white">{t('accounts.apiKey')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {['openai', 'anthropic', 'gemini', 'groq', 'huggingface'].map(p => (
+                    {apiKeyProviders.map(p => (
                         <div key={p} className="bg-card p-4 rounded-xl border border-border space-y-2">
                             <label className="text-xs font-bold uppercase text-muted-foreground">{p}</label>
                             <input
                                 type="password"
-                                value={p === 'huggingface' ? (settings.huggingface?.apiKey || '') : normalizeKeyValue((settings as any)[p]?.apiKey)}
-                                onChange={e => {
-                                    const val = e.target.value
-                                    let updated = { ...settings }
-                                    if (p === 'huggingface') updated.huggingface = { apiKey: val }
-                                    else (updated as any)[p] = { ...(updated as any)[p], apiKey: val }
-                                    setSettings(updated)
-                                    handleSave(updated)
-                                }}
+                                value={getProviderApiKey(p)}
+                                onChange={e => updateProviderApiKey(p, e.target.value)}
                                 className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-primary"
                                 placeholder={t('accounts.enterApiKey')}
                             />

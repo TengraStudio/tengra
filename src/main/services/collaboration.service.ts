@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import { JsonObject } from '../../shared/types/common'
 
 export interface AgentMessage {
     id: string
@@ -7,7 +8,7 @@ export interface AgentMessage {
     content: string
     timestamp: number
     type: 'text' | 'status' | 'code' | 'help'
-    metadata?: any
+    metadata?: JsonObject
 }
 
 export class CollaborationService {

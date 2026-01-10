@@ -40,7 +40,7 @@ You have access to the following TOOLS:
 
 6. **callSystem** (GOD MODE)
    - Call ANY internal system service method.
-   - Arguments: { "service": "string", "method": "string", "args": any[] }
+   - Arguments: { "service": "string", "method": "string", "args": unknown[] }
    - Available services: "llm", "db", "fs", "process", "codeIntel", "web", "collaboration", "git", "ssh"
 
 OUTPUT FORMAT:

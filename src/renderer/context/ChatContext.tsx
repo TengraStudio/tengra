@@ -5,6 +5,8 @@ import { useModel } from './ModelContext'
 import { useTextToSpeech } from '../features/chat/hooks/useTextToSpeech'
 import { useTranslation } from '../i18n'
 import { useProjectManager } from '../features/projects/hooks/useProjectManager'
+import { Project } from '@/types'
+import { CatchError } from '../../shared/types/common'
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {
@@ -13,9 +15,9 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     isSpeaking: boolean
     speakingMessageId: string | null
     // Project context is also needed for chat
-    projects: any[]
-    selectedProject: any
-    setSelectedProject: (p: any) => void
+    projects: Project[]
+    selectedProject: Project | null
+    setSelectedProject: (p: Project | null) => void
     loadProjects: () => Promise<void>
 }
 
@@ -37,10 +39,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         selectedModel,
         selectedProvider,
         language,
-        appSettings,
+        appSettings: appSettings || undefined,
         autoReadEnabled: false, // Could be moved to settings/context
         handleSpeak: (id, text) => handleSpeak(text, id), // Adapter
-        formatChatError: (e: any) => e?.message || 'Unknown error',
+        formatChatError: (e: CatchError) => (e instanceof Error ? e.message : String(e || 'Unknown error')),
         t,
         projectId: selectedProject?.id,
         activeWorkspacePath: selectedProject?.path

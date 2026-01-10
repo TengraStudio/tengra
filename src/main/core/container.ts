@@ -1,5 +1,15 @@
 import { ValidationError } from '../utils/error.util';
+import { getErrorMessage } from '../../shared/utils/error.util';
 
+
+
+/**
+ * Interface for services that require initialization and cleanup.
+ */
+export interface LifecycleAware {
+    initialize?(): Promise<void> | void;
+    cleanup?(): Promise<void> | void;
+}
 
 /**
  * Service lifecycle scope.
@@ -11,9 +21,12 @@ export enum Scope {
     TRANSIENT = 'TRANSIENT'
 }
 
-interface ServiceDefinition<T> {
+type ServiceValue = object | string | number | boolean | symbol | bigint | null | undefined;
+type ServiceFactory<T extends ServiceValue> = (...args: ServiceValue[]) => T;
+
+interface ServiceDefinition<T extends ServiceValue> {
     name: string;
-    factory: (...args: any[]) => T;
+    factory: ServiceFactory<T>;
     dependencies: string[];
     scope: Scope;
     instance?: T;
@@ -24,14 +37,15 @@ interface ServiceDefinition<T> {
  * Manages service registration, resolution, and lifecycle.
  */
 export class Container {
-    private services: Map<string, ServiceDefinition<any>> = new Map();
+    private services: Map<string, ServiceDefinition<ServiceValue>> = new Map();
+    private initialized = false;
 
     /**
      * Register a service factory.
      */
-    register<T>(
+    register<T extends ServiceValue>(
         name: string,
-        factory: (...args: any[]) => T,
+        factory: ServiceFactory<T>,
         dependencies: string[] = [],
         scope: Scope = Scope.SINGLETON
     ): void {
@@ -46,7 +60,7 @@ export class Container {
     /**
      * Register a pre-existing instance as a singleton.
      */
-    registerInstance<T>(name: string, instance: T): void {
+    registerInstance<T extends ServiceValue>(name: string, instance: T): void {
         this.services.set(name, {
             name,
             factory: () => instance,
@@ -59,8 +73,8 @@ export class Container {
     /**
      * Resolve a service by name.
      */
-    resolve<T>(name: string): T {
-        const definition = this.services.get(name);
+    resolve<T extends ServiceValue>(name: string): T {
+        const definition = this.services.get(name) as ServiceDefinition<T> | undefined;
         if (!definition) {
             throw new ValidationError(`Service not found: ${name}`);
         }
@@ -80,14 +94,72 @@ export class Container {
         }
     }
 
-    private instantiate<T>(definition: ServiceDefinition<T>): T {
+    /**
+     * Initialize all singleton services that implement LifecycleAware.
+     */
+    async init(): Promise<void> {
+        if (this.initialized) return;
+
+        const singletons = Array.from(this.services.values())
+            .filter(def => def.scope === Scope.SINGLETON);
+
+        // Instantiate all singletons first
+        for (const def of singletons) {
+            try {
+                this.resolve(def.name);
+            } catch (error) {
+                console.error(`[Container] Failed to instantiate ${def.name}:`, error);
+                throw error;
+            }
+        }
+
+        // Run initialize() on them
+        for (const def of singletons) {
+            const instance = def.instance as LifecycleAware;
+            if (instance && typeof instance.initialize === 'function') {
+                try {
+                    await instance.initialize();
+                } catch (error) {
+                    console.error(`[Container] Failed to initialize ${def.name}:`, error);
+                    throw error;
+                }
+            }
+        }
+
+        this.initialized = true;
+    }
+
+    /**
+     * Dispose all singleton services that implement LifecycleAware.
+     */
+    async dispose(): Promise<void> {
+        const singletons = Array.from(this.services.values())
+            .filter(def => def.scope === Scope.SINGLETON && def.instance)
+            .reverse(); // Dispose in reverse order of registration/creation roughly
+
+        for (const def of singletons) {
+            const instance = def.instance as LifecycleAware;
+            if (instance && typeof instance.cleanup === 'function') {
+                try {
+                    await instance.cleanup();
+                } catch (error) {
+                    console.error(`[Container] Failed to cleanup ${def.name}:`, error);
+                }
+            }
+        }
+
+        this.services.clear();
+        this.initialized = false;
+    }
+
+    private instantiate<T extends ServiceValue>(definition: ServiceDefinition<T>): T {
         try {
             const deps = definition.dependencies.map(depName => this.resolve(depName));
             return definition.factory(...deps);
-        } catch (error: any) {
+        } catch (error) {
             throw new ValidationError(
-                `Failed to resolve service ${definition.name}: ${error.message}`,
-                { originalError: error }
+                `Failed to resolve service ${definition.name}: ${getErrorMessage(error as Error)}`,
+                { originalError: error instanceof Error ? error : String(error) }
             );
         }
     }
@@ -104,5 +176,6 @@ export class Container {
      */
     clear(): void {
         this.services.clear();
+        this.initialized = false;
     }
 }

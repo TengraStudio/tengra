@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useModel } from '@/context/ModelContext'
 import { useChat } from '@/context/ChatContext'
 import { useProject } from '@/context/ProjectContext'
+import { ChatTemplate } from '../features/chat/types'
 
 interface ViewManagerProps {
     currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp'
@@ -20,8 +21,7 @@ interface ViewManagerProps {
     setShowScrollButton: (show: boolean) => void
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
-    // Templates might be static or context, but for now passing them or defining them inside
-    templates: any[]
+    templates: ChatTemplate[]
 }
 
 export const ViewManager: React.FC<ViewManagerProps> = ({
@@ -37,12 +37,16 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     templates
 }) => {
     // Context Consumption
-    const { language, settingsCategory, setSettingsCategory, appSettings, quotas, codexUsage } = useAuth()
+    const { language, settingsCategory, appSettings, quotas, codexUsage } = useAuth()
     const {
         models, proxyModels, loadModels,
         selectedProvider, selectedModel, setSelectedModel, setSelectedProvider,
         groupedModels, persistLastSelection, setIsModelMenuOpen
     } = useModel()
+
+    // Fix: extract models array from grouped result if it exists (using .models), otherwise filter models array
+    const installedModels = groupedModels?.ollama?.models || models.filter(m => m.provider === 'ollama')
+
     const {
         projects, selectedProject, setSelectedProject, loadProjects,
         terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId,
@@ -84,7 +88,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             {currentView === 'projects' && (
                 <motion.div key="projects" className="h-full overflow-hidden">
                     <ProjectsPage
-                        projects={projects}
+                        projects={projects || []}
                         onRefresh={loadProjects}
                         selectedProject={selectedProject}
                         onSelectProject={setSelectedProject}
@@ -96,14 +100,14 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
                         onSelectModel={(p, m) => {
-                            setSelectedProvider(p as any)
+                            setSelectedProvider(p)
                             setSelectedModel(m)
-                            persistLastSelection(p as any, m)
+                            persistLastSelection(p, m)
                         }}
-                        groupedModels={groupedModels}
+                        groupedModels={groupedModels || undefined}
                         quotas={quotas}
                         codexUsage={codexUsage}
-                        settings={appSettings}
+                        settings={appSettings || undefined}
                         sendMessage={(text) => {
                             setInput(text || '')
                             sendMessage()
@@ -116,19 +120,16 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             {currentView === 'council' && (
                 <motion.div key="council" className="h-full overflow-hidden">
                     <AgentDashboard
-                        groupedModels={groupedModels}
-                        models={models}
                     />
                 </motion.div>
             )}
             {currentView === 'settings' && (
                 <motion.div key="settings" className="h-full overflow-hidden">
                     <SettingsPage
-                        installedModels={models}
+                        installedModels={installedModels}
                         proxyModels={proxyModels}
                         onRefreshModels={loadModels}
-                        activeTab={settingsCategory as any}
-                        onTabChange={setSettingsCategory as any}
+                        activeTab={settingsCategory}
                     />
                 </motion.div>
             )}

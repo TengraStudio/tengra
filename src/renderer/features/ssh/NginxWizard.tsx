@@ -59,8 +59,8 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId }) => {
             } else {
                 setStatus({ type: 'error', message: `Failed to apply: ${result.stderr || 'Unknown error'}. Make sure you have sudo privileges.` })
             }
-        } catch (error: any) {
-            setStatus({ type: 'error', message: `Error: ${error.message}` })
+        } catch (error) {
+            setStatus({ type: 'error', message: `Error: ${error instanceof Error ? error.message : String(error)}` })
         } finally {
             setIsGenerating(false)
         }

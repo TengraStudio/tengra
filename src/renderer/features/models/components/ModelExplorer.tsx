@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Loader2, X, Box, Download, Database, Server, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -36,10 +36,12 @@ interface HFFile {
 import { useTranslation } from '@/i18n'
 import type { Language } from '@/i18n'
 
+import type { ModelInfo } from '../utils/model-fetcher'
+
 interface ModelExplorerProps {
     onClose?: () => void
     onRefreshModels?: () => void
-    installedModels?: any[]
+    installedModels?: ModelInfo[]
     language?: Language
 }
 
@@ -57,8 +59,8 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
     const [totalHf, setTotalHf] = useState(0)
 
     const isInstalled = useMemo(() => {
-        const names = new Set(installedModels.map(m => m.name))
-        return (id: string) => names.has(id)
+        const ids = new Set(installedModels.map(m => m.id))
+        return (id: string) => ids.has(id)
     }, [installedModels])
 
     // Selection & Files
@@ -71,9 +73,11 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
     useEffect(() => {
         // Load Ollama Library
-        window.electron.getLibraryModels().then((libs: any[]) => {
-            console.log(`[ModelExplorer] Fetched ${libs.length} models from Ollama library. Sample pulls: ${libs.slice(0, 3).map(l => `${l.name}: ${l.pulls}`).join(', ')}`);
-            setOllamaLibrary(libs.map(l => ({ ...l, provider: 'ollama' })))
+        window.electron.getLibraryModels().then((libs) => {
+            // Map the strictly typed response to OllamaLibraryModel
+            const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }))
+            console.log(`[ModelExplorer] Fetched ${typedLibs.length} models from Ollama library.`);
+            setOllamaLibrary(typedLibs)
         })
 
         // Get models dir
@@ -99,7 +103,30 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         return () => {
             window.electron.removePullProgressListener()
         }
-    }, [])
+    }, [onRefreshModels])
+
+    const fetchModels = useCallback(async () => {
+        setLoading(true)
+        try {
+            if (activeSource !== 'ollama') {
+                // HF API is 0-indexed usually
+                const hfSort = sortBy === 'popularity' ? 'downloads' : (sortBy === 'updated' ? 'updated' : 'name');
+                const result = await window.electron.huggingface.searchModels(query, 40, page, hfSort)
+                const { models, total } = result
+                console.log(`[ModelExplorer] Fetched ${models.length} of ${total} models from HuggingFace (Query: "${query}", Page: ${page}, Sort: ${sortBy})`);
+                setHfResults(models.map((r) => ({ ...r, provider: 'huggingface' })))
+                setTotalHf(total)
+            } else {
+                setHfResults([])
+                setTotalHf(0)
+            }
+        } catch (e) {
+            console.error(e)
+            setHfResults([])
+        } finally {
+            setLoading(false)
+        }
+    }, [activeSource, query, page, sortBy])
 
     // HF fetch effect
     useEffect(() => {
@@ -113,29 +140,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
             fetchModels()
         }, 500)
         return () => clearTimeout(timer)
-    }, [query, page, activeSource, sortBy])
-
-    const fetchModels = async () => {
-        setLoading(true)
-        try {
-            if (activeSource !== 'ollama') {
-                // HF API is 0-indexed usually
-                const hfSort = sortBy === 'popularity' ? 'downloads' : (sortBy === 'updated' ? 'updated' : 'name');
-                const { models, total } = await window.electron.huggingface.searchModels(query, 40, page, hfSort) as { models: any[], total: number }
-                console.log(`[ModelExplorer] Fetched ${models.length} of ${total} models from HuggingFace (Query: "${query}", Page: ${page}, Sort: ${sortBy})`);
-                setHfResults(models.map((r: any) => ({ ...r, provider: 'huggingface' })))
-                setTotalHf(total)
-            } else {
-                setHfResults([])
-                setTotalHf(0)
-            }
-        } catch (e) {
-            console.error(e)
-            setHfResults([])
-        } finally {
-            setLoading(false)
-        }
-    }
+    }, [query, hfResults.length, fetchModels])
 
     // Filter Ollama locally
     const filteredOllama = useMemo(() => {
@@ -169,7 +174,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
     }, [ollamaLibrary, query, activeSource, page])
 
     const displayModels = useMemo(() => {
-        let base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])]
+        const base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])]
 
         const parsePulls = (pulls?: string): number => {
             if (!pulls) return 0;
@@ -202,7 +207,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
             setLoadingFiles(true)
             try {
                 const fileList = await window.electron.huggingface.getFiles((model as HFModel).id)
-                setFiles(fileList.sort((a: any, b: any) => a.size - b.size))
+                setFiles(fileList.sort((a, b) => a.size - b.size))
             } catch (e) {
                 console.error(e)
             } finally {
@@ -218,8 +223,9 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
             await window.electron.pullModel(fullModelName)
             alert(`Successfully pulled ${fullModelName}`)
             onRefreshModels?.()
-        } catch (e: any) {
-            alert(`Failed to pull: ${e.message}`)
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e)
+            alert(`Failed to pull: ${message}`)
         } finally {
             setPullingOllama(null)
         }
@@ -319,7 +325,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                     { value: 'name', label: t('modelExplorer.name') },
                                     { value: 'updated', label: t('modelExplorer.newest') }
                                 ]}
-                                onChange={(val) => setSortBy(val as any)}
+                                onChange={(val) => setSortBy(val as 'name' | 'popularity' | 'updated')}
                                 className="min-w-[120px]"
                             />
                         </div>

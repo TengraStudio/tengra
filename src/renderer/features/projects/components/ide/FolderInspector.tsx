@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Folder, Package, FileText, Activity } from 'lucide-react'
 import { useTranslation } from '@/i18n'
+import type { IpcValue } from '@/types'
+
+interface DirectoryAnalysis {
+    hasPackageJson: boolean
+    pkg: Record<string, IpcValue>
+    readme: string | null
+    stats: { fileCount: number; totalSize: number }
+}
 
 interface FolderInspectorProps {
     folderPath: string | null
@@ -9,7 +17,7 @@ interface FolderInspectorProps {
 
 export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) => {
     const { t } = useTranslation()
-    const [data, setData] = useState<any>(null)
+    const [data, setData] = useState<DirectoryAnalysis | null>(null)
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
@@ -77,11 +85,11 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                         <div className="bg-black/20 rounded-lg p-3 border border-white/5 space-y-2">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Name:</span>
-                                <span className="font-mono text-emerald-400">{data.pkg.name || 'unnamed'}</span>
+                                <span className="font-mono text-emerald-400">{String(data.pkg.name || 'unnamed')}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Version:</span>
-                                <span className="font-mono">{data.pkg.version || '0.0.0'}</span>
+                                <span className="font-mono">{String(data.pkg.version || '0.0.0')}</span>
                             </div>
 
                             {/* Scripts */}

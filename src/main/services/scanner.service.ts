@@ -1,10 +1,14 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { getErrorMessage } from '../../shared/utils/error.util';
+
+import { JsonValue } from '../../shared/types/common';
 
 export interface ScanResult {
     path: string;
     content: string;
     chunks: string[];
+    [key: string]: JsonValue | undefined;
 }
 
 export class ScannerService {
@@ -54,7 +58,7 @@ export class ScannerService {
                             });
                         }
                     } catch (e) {
-                        console.error(`Error reading file ${fullPath}:`, e);
+                        console.error(`Error reading file ${fullPath}:`, getErrorMessage(e as Error));
                     }
                 }
             }
@@ -70,7 +74,7 @@ export class ScannerService {
         }
 
         while (start < text.length) {
-            let end = start + chunkSize;
+            const end = start + chunkSize;
             chunks.push(text.slice(start, end));
             start += (chunkSize - overlap);
         }

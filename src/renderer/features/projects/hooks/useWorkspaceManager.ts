@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo } from 'react'
-import { WorkspaceMount, EditorTab, Project, WorkspaceEntry } from '@/types'
+import { WorkspaceMount, EditorTab, Project, WorkspaceEntry, ServiceResponse, WorkspaceDashboardTab } from '@/types'
 
 interface UseWorkspaceManagerProps {
     project: Project
@@ -25,23 +25,32 @@ export function useWorkspaceManager({
         if (Array.isArray(project.mounts) && project.mounts.length > 0) return project.mounts
         return project.path ? [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }] : []
     })
+    const [prevProjectData, setPrevProjectData] = useState({ id: project.id, mounts: project.mounts, path: project.path })
+
+    // Adjust state during render when props change (React recommended pattern)
+    if (project.id !== prevProjectData.id || project.mounts !== prevProjectData.mounts || project.path !== prevProjectData.path) {
+        setPrevProjectData({ id: project.id, mounts: project.mounts, path: project.path })
+        const nextMounts: WorkspaceMount[] = (Array.isArray(project.mounts) && project.mounts.length > 0)
+            ? project.mounts
+            : project.path
+                ? [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }]
+                : []
+
+        if (JSON.stringify(nextMounts) !== JSON.stringify(mounts)) {
+            setMounts(nextMounts)
+        }
+    }
 
     const [mountStatus, setMountStatus] = useState<Record<string, 'connected' | 'disconnected' | 'connecting'>>({})
     const [openTabs, setOpenTabs] = useState<EditorTab[]>([])
     const [activeTabId, setActiveEditorTabId] = useState<string | null>(null)
     const [refreshSignal, setRefreshSignal] = useState(0)
     const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig?.enabled))
+    const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview')
 
     const activeTab = useMemo(() => openTabs.find(t => t.id === activeTabId) || null, [openTabs, activeTabId])
 
-    // Sync mounts with project
-    useEffect(() => {
-        if (Array.isArray(project.mounts) && project.mounts.length > 0) {
-            setMounts(project.mounts)
-        } else if (project.path) {
-            setMounts([{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }])
-        }
-    }, [project.mounts, project.path, project.id])
+
 
     // SSH Connection Status Sync
     useEffect(() => {
@@ -116,21 +125,21 @@ export function useWorkspaceManager({
         const ext = entry.name.split('.').pop()?.toLowerCase() || ''
         const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)
 
-        let result: any
+        let result: ServiceResponse<string> | undefined
         let content = ''
         let type: 'code' | 'image' = 'code'
 
         if (isImage) {
             if (mount.type === 'local') result = await window.electron.files.readImage(entry.path)
             else { notify('info', 'SSH image preview not supported yet.'); return }
-            if (result?.success) { content = result.content || ''; type = 'image' }
+            if (result?.success) { content = result.data || result.content || ''; type = 'image' }
         } else {
-            result = mount.type === 'local' ? await window.electron.readFile(entry.path) : await window.electron.ssh.readFile(mount.id, entry.path)
+            result = (mount.type === 'local' ? await window.electron.readFile(entry.path) : await window.electron.ssh.readFile(mount.id, entry.path))
             if (!result?.success && result?.error === 'File is binary' && mount.type === 'local') {
                 const imgResult = await window.electron.files.readImage(entry.path)
                 if (imgResult?.success) { result = imgResult; type = 'image' }
             }
-            if (result?.success) content = result.content || ''
+            if (result?.success) content = result.data || result.content || ''
         }
 
         if (!result?.success) { notify('error', result?.error || 'Failed to read file.'); return }
@@ -148,6 +157,7 @@ export function useWorkspaceManager({
         }
         setOpenTabs(prev => [...prev, tab])
         setActiveEditorTabId(tabId)
+        setDashboardTab('editor')
     }, [mounts, openTabs, ensureMountReady, notify])
 
     const saveActiveTab = useCallback(async () => {
@@ -175,8 +185,12 @@ export function useWorkspaceManager({
         }
         setOpenTabs(prev => prev.filter(t => t.id !== tabId))
         if (activeTabId === tabId) {
-            const next = openTabs.filter(t => t.id !== tabId).pop()
+            const remainingTabs = openTabs.filter(t => t.id !== tabId)
+            const next = remainingTabs.pop()
             setActiveEditorTabId(next?.id || null)
+            if (!next) {
+                setDashboardTab('overview')
+            }
         }
     }, [activeTabId, openTabs])
 
@@ -184,7 +198,10 @@ export function useWorkspaceManager({
         setMounts(nextMounts)
         try {
             await window.electron.db.updateProject(project.id, { mounts: JSON.stringify(nextMounts) })
-        } catch (error) { console.error('Failed to save mounts', error); notify('error', 'Failed to save mounts.') }
+        } catch (error) {
+            console.error('Failed to save mounts', error);
+            notify('error', 'Failed to save mounts.')
+        }
     }, [project.id, notify])
 
     const createFile = useCallback(async (path: string) => {
@@ -247,6 +264,7 @@ export function useWorkspaceManager({
     return {
         mounts, mountStatus, openTabs, activeTabId, setActiveEditorTabId, refreshSignal, setRefreshSignal,
         councilEnabled, setCouncilEnabled, openFile, saveActiveTab, closeTab, ensureMountReady, persistMounts,
-        setOpenTabs, activeTab, createFile, createFolder, renameEntry, deleteEntry, updateTabContent
+        setOpenTabs, activeTab, createFile, createFolder, renameEntry, deleteEntry, updateTabContent,
+        dashboardTab, setDashboardTab
     }
 }

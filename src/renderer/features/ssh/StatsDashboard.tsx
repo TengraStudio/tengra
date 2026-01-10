@@ -5,29 +5,45 @@ import { Activity, HardDrive, Cpu, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from '@/i18n'
 
+interface SystemStats {
+    cpu: number
+    memory: {
+        total: number
+        used: number
+        percent: number
+    }
+    disk: number
+    uptime: string
+    error?: string
+}
+
 interface StatsDashboardProps {
     connectionId: string
 }
 
 export function StatsDashboard({ connectionId }: StatsDashboardProps) {
     const { t } = useTranslation()
-    const [stats, setStats] = useState<any>(null)
-
-    const fetchStats = async () => {
-        try {
-            const data = await window.electron.ssh.getSystemStats(connectionId)
-            if (!data.error) {
-                setStats(data)
-            }
-        } catch (e) {
-            console.error(e)
-        }
-    }
+    const [stats, setStats] = useState<SystemStats | null>(null)
 
     useEffect(() => {
-        fetchStats()
-        const interval = setInterval(fetchStats, 5000)
-        return () => clearInterval(interval)
+        let isMounted = true
+        const load = async () => {
+            try {
+                const data = await window.electron.ssh.getSystemStats(connectionId) as SystemStats
+                if (isMounted && data && !data.error) {
+                    setStats(data)
+                }
+            } catch (e) {
+                console.error(e)
+            }
+        }
+
+        load()
+        const interval = setInterval(load, 5000)
+        return () => {
+            isMounted = false
+            clearInterval(interval)
+        }
     }, [connectionId])
 
     if (!stats) return <div className="flex items-center justify-center p-8 text-zinc-500">{t('ssh.loadingStats')}</div>
@@ -83,14 +99,14 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold text-white">{stats.disk}</span>
+                        <span className="text-2xl font-bold text-white">{stats.disk}%</span>
                         <span className="text-xs text-zinc-500 mb-1">{t('ssh.rootPartition')}</span>
                     </div>
                     <div className="mt-3 h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-emerald-500"
                             initial={{ width: 0 }}
-                            animate={{ width: stats.disk }}
+                            animate={{ width: `${Math.min(stats.disk, 100)}%` }}
                         />
                     </div>
                 </CardContent>

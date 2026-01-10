@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { ArrowLeft, Play, Terminal, Search, PanelRightClose, PanelRightOpen, Settings, Pencil } from 'lucide-react';
+import { ArrowLeft, Play, Terminal, Search, PanelRightClose, PanelRightOpen, Settings, Pencil, Activity, RefreshCw, GitBranch, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 import { useTranslation, Language } from '@/i18n';
@@ -18,6 +18,12 @@ interface WorkspaceToolbarProps {
     toggleSettings: () => void;
     onOpenGit?: () => void;
     language: Language;
+    // New props for dashboard tabs
+    dashboardTab?: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor';
+    onDashboardTabChange?: (tab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor') => void;
+    // Sidebar toggle
+    sidebarCollapsed?: boolean;
+    toggleSidebar?: () => void;
 }
 
 /**
@@ -34,14 +40,18 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     onBack,
     onUpdate,
     handleRunProject,
-    showTerminal,
-    toggleTerminal,
+    showTerminal: _showTerminal,
+    toggleTerminal: _toggleTerminal,
     handleSearch,
     showAgentPanel,
     toggleAgentPanel,
     toggleSettings,
     onOpenGit,
-    language
+    language,
+    dashboardTab = 'overview',
+    onDashboardTabChange,
+    sidebarCollapsed = false,
+    toggleSidebar
 }) => {
     const { t } = useTranslation(language);
     const [isEditing, setIsEditing] = React.useState(false);
@@ -55,7 +65,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     };
 
     return (
-        <div className="h-10 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-10 select-none">
+        <div className="h-10 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-40 select-none">
             <div className="flex items-center gap-4">
                 <button
                     onClick={onBack}
@@ -93,21 +103,57 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
 
             {/* Center Toolbar */}
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
-                <div className="flex items-center bg-white/5 rounded-md p-0.5 border border-white/5 shadow-sm">
-                    <button onClick={handleRunProject} className="p-1.5 rounded-sm hover:bg-white/10 text-emerald-400 transition-colors" title={t('workspace.run')}>
-                        <Play className="w-3.5 h-3.5 fill-current" />
+                {/* Sidebar Toggle */}
+                <button
+                    onClick={toggleSidebar}
+                    className={cn("p-1.5 rounded-md transition-colors", sidebarCollapsed ? "text-muted-foreground hover:text-white" : "text-white bg-white/10")}
+                    title={t('workspace.toggleSidebar')}
+                >
+                    {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
+                </button>
+                <div className="w-px h-4 bg-white/10 mx-2" />
+
+                {/* Dashboard Tabs */}
+                <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/5 shadow-sm gap-0.5">
+                    <button
+                        onClick={() => onDashboardTabChange?.('overview')}
+                        className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'overview' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
+                        title={t('projectDashboard.overview')}
+                    >
+                        <Activity className="w-3.5 h-3.5" />
                     </button>
-                    <div className="w-px h-3 bg-white/10 mx-1" />
-                    <button onClick={toggleTerminal} className={cn("p-1.5 rounded-sm transition-colors", showTerminal ? "text-white bg-white/10" : "text-muted-foreground hover:text-white")} title={t('workspace.terminal')}>
+                    <button
+                        onClick={() => onDashboardTabChange?.('terminal')}
+                        className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'terminal' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
+                        title={t('projectDashboard.terminal')}
+                    >
                         <Terminal className="w-3.5 h-3.5" />
                     </button>
+                    <button onClick={handleRunProject} className="p-1.5 rounded-md hover:bg-white/10 text-emerald-400 transition-colors" title={t('workspace.run')}>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                    <button
+                        onClick={() => onDashboardTabChange?.('search')}
+                        className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'search' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
+                        title={t('projectDashboard.search')}
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={() => onDashboardTabChange?.('git')}
+                        className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'git' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
+                        title="Git"
+                    >
+                        <GitBranch className="w-3.5 h-3.5" />
+                    </button>
                 </div>
-                <button onClick={handleSearch} className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors ml-2" title={t('workspace.search')}>
+                <div className="w-px h-4 bg-white/10 mx-2" />
+                <button onClick={handleSearch} className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors" title={t('workspace.search')}>
                     <Search className="w-4 h-4" />
                 </button>
                 <button
                     onClick={toggleSettings}
-                    className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors ml-1"
+                    className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors"
                     title={t('settings.projectSettings')}
                 >
                     <Settings className="w-4 h-4" />

@@ -2,10 +2,29 @@ import { McpService, McpDispatchResult } from './types'
 import { SettingsService } from '../services/settings.service'
 import { spawn, ChildProcess } from 'child_process'
 import { randomUUID } from 'crypto'
+import { ToolDefinition } from '../../shared/types/chat'
+import { JsonObject, CatchError } from '../../shared/types/common'
+import { MCPServerConfig } from '../../shared/types/settings'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
+type McpToolContent = {
+    type?: string
+    text?: string
+}
+
+type McpToolResult = {
+    isError?: boolean
+    content?: McpToolContent[]
+}
+
+type PendingRequest = {
+    resolve: (val: McpToolResult) => void
+    reject: (err: CatchError) => void
+}
 
 export class McpDispatcher {
     private activeServers = new Map<string, ChildProcess>()
-    private requestQueue = new Map<string, { resolve: (val: any) => void, reject: (err: any) => void }>()
+    private requestQueue = new Map<string, PendingRequest>()
     private bufferMap = new Map<string, string>()
 
     constructor(
@@ -41,7 +60,7 @@ export class McpDispatcher {
         const settings = this.settingsService.getSettings()
         const disabledServers = settings.mcpDisabledServers || []
 
-        const tools: any[] = []
+        const tools: ToolDefinition[] = []
 
         // Add tools from core services
         const enabledCoreServices = this.services.filter(s => !disabledServers.includes(s.name))
@@ -89,7 +108,7 @@ export class McpDispatcher {
         return tools
     }
 
-    installService(config: { name: string, command: string, args: string[], description: string, tools?: { name: string, description: string }[] }) {
+    installService(config: MCPServerConfig) {
         const settings = this.settingsService.getSettings()
         const userServers = [...(settings.mcpUserServers || [])]
 
@@ -129,7 +148,7 @@ export class McpDispatcher {
         return { success: true, isEnabled: enabled }
     }
 
-    async dispatch(serviceName: string, actionName: string, args: any): Promise<McpDispatchResult> {
+    async dispatch(serviceName: string, actionName: string, args: JsonObject): Promise<McpDispatchResult> {
         const disabledServers = this.settingsService.getSettings().mcpDisabledServers || []
         if (disabledServers.includes(serviceName)) {
             return { success: false, error: `Service ${serviceName} is currently disabled.` }
@@ -145,8 +164,8 @@ export class McpDispatcher {
             try {
                 const result = await action.handler(args)
                 return { ...result, service: serviceName, action: actionName }
-            } catch (error: any) {
-                return { success: false, error: error.message }
+            } catch (error) {
+                return { success: false, error: getErrorMessage(error as Error) }
             }
         }
 
@@ -160,7 +179,7 @@ export class McpDispatcher {
         return { success: false, error: `Unknown service: ${serviceName}` }
     }
 
-    private async dispatchExternal(serverConfig: any, toolName: string, args: any): Promise<McpDispatchResult> {
+    private async dispatchExternal(serverConfig: MCPServerConfig, toolName: string, args: JsonObject): Promise<McpDispatchResult> {
         try {
             const server = await this.getOrStartServer(serverConfig)
             const id = randomUUID()
@@ -183,19 +202,19 @@ export class McpDispatcher {
                 }, 30000)
 
                 this.requestQueue.set(id, {
-                    resolve: (result: any) => {
+                    resolve: (result: McpToolResult) => {
                         clearTimeout(timeout)
                         if (result.isError) {
-                            resolve({ success: false, error: result.content?.map((c: any) => c.text).join('\n') || 'Unknown tool error' })
+                            resolve({ success: false, error: result.content?.map((c) => c.text).join('\n') || 'Unknown tool error' })
                         } else {
                             // Extract content from MCP tool result
-                            const text = result.content?.map((c: any) => c.text).join('\n')
+                            const text = result.content?.map((c) => c.text).join('\n')
                             resolve({ success: true, data: text, service: serverConfig.name, action: toolName })
                         }
                     },
-                    reject: (err: any) => {
+                    reject: (err) => {
                         clearTimeout(timeout)
-                        resolve({ success: false, error: err.message || String(err) })
+                        resolve({ success: false, error: getErrorMessage(err as Error) })
                     }
                 })
 
@@ -207,12 +226,13 @@ export class McpDispatcher {
                 }
             })
 
-        } catch (error: any) {
-            return { success: false, error: `Failed to execute: ${error.message}` }
+        } catch (error) {
+            const message = getErrorMessage(error as Error)
+            return { success: false, error: `Failed to execute: ${message}` }
         }
     }
 
-    private async getOrStartServer(config: any): Promise<ChildProcess> {
+    private async getOrStartServer(config: MCPServerConfig): Promise<ChildProcess> {
         if (this.activeServers.has(config.name)) {
             const process = this.activeServers.get(config.name)
             if (process && !process.killed) return process
@@ -254,7 +274,7 @@ export class McpDispatcher {
     }
 
     private handleServerOutput(serverName: string, chunk: string) {
-        let buffer = (this.bufferMap.get(serverName) || '') + chunk
+        const buffer = (this.bufferMap.get(serverName) || '') + chunk
         const lines = buffer.split('\n')
         // Keep the last part if not complete line
         this.bufferMap.set(serverName, lines.pop() || '')
@@ -262,21 +282,26 @@ export class McpDispatcher {
         for (const line of lines) {
             if (!line.trim()) continue
             try {
-                const msg = JSON.parse(line)
+                const msg = JSON.parse(line) as JsonObject
                 if (msg.jsonrpc === '2.0' && msg.id) {
-                    const handler = this.requestQueue.get(msg.id)
+                    const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
+                    if (!msgId) continue
+                    const handler = this.requestQueue.get(msgId)
                     if (handler) {
-                        this.requestQueue.delete(msg.id)
-                        if (msg.error) {
-                            handler.reject(new Error(msg.error.message))
+                        this.requestQueue.delete(msgId)
+                        if (msg.error && typeof msg.error === 'object') {
+                            const message = typeof (msg.error as JsonObject).message === 'string'
+                                ? (msg.error as JsonObject).message as string
+                                : 'Unknown MCP error'
+                            handler.reject(new Error(message))
                         } else {
-                            handler.resolve(msg.result)
+                            handler.resolve((msg.result as McpToolResult) || {})
                         }
                     }
                 } else {
                     // console.log(`[MCP:${serverName}] Log:`, line)
                 }
-            } catch (e) {
+            } catch {
                 // Not JSON, maybe raw output
                 // console.log(`[MCP:${serverName}] Raw:`, line)
             }

@@ -1,4 +1,23 @@
 import axios from 'axios';
+import { getErrorMessage } from '../../shared/utils/error.util';
+
+interface PageSpeedParams {
+    url: string;
+    strategy: 'mobile' | 'desktop';
+    category: string;
+    key?: string;
+}
+
+interface LighthouseAudit {
+    title: string;
+    description: string;
+    score: number;
+    displayValue?: string;
+    details?: {
+        type?: string;
+        overallSavingsMs?: number;
+    };
+}
 
 export interface PageSpeedResult {
     url: string;
@@ -29,7 +48,7 @@ export class PageSpeedService {
     async analyze(url: string, strategy: 'mobile' | 'desktop' = 'mobile'): Promise<PageSpeedResult> {
         try {
             const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed`;
-            const params: any = {
+            const params: PageSpeedParams = {
                 url,
                 strategy,
                 category: 'PERFORMANCE'
@@ -45,27 +64,27 @@ export class PageSpeedService {
             const data = response.data;
             const lighthouse = data.lighthouseResult;
 
-            const audits = lighthouse.audits;
+            const audits = lighthouse.audits as Record<string, LighthouseAudit>;
 
             const result: PageSpeedResult = {
                 url,
                 performanceScore: lighthouse.categories.performance.score * 100,
                 metrics: {
-                    fcp: audits['first-contentful-paint']?.displayValue,
-                    lcp: audits['largest-contentful-paint']?.displayValue,
-                    tbt: audits['total-blocking-time']?.displayValue,
-                    cls: audits['cumulative-layout-shift']?.displayValue,
-                    speedIndex: audits['speed-index']?.displayValue
+                    fcp: audits['first-contentful-paint']?.displayValue || '',
+                    lcp: audits['largest-contentful-paint']?.displayValue || '',
+                    tbt: audits['total-blocking-time']?.displayValue || '',
+                    cls: audits['cumulative-layout-shift']?.displayValue || '',
+                    speedIndex: audits['speed-index']?.displayValue || ''
                 },
                 opportunities: []
             };
 
             // Extract opportunities (suggestions for improvement)
             const opportunities = Object.values(audits)
-                .filter((audit: any) => audit.details?.type === 'opportunity' && audit.score < 0.9)
-                .sort((a: any, b: any) => (a.score || 0) - (b.score || 0))
+                .filter((audit) => audit.details?.type === 'opportunity' && audit.score < 0.9)
+                .sort((a, b) => (a.score || 0) - (b.score || 0))
                 .slice(0, 5) // Top 5 issues
-                .map((audit: any) => ({
+                .map((audit) => ({
                     title: audit.title,
                     description: audit.description,
                     savings: audit.details?.overallSavingsMs ? `${Math.round(audit.details.overallSavingsMs)}ms` : ''
@@ -74,9 +93,9 @@ export class PageSpeedService {
             result.opportunities = opportunities;
             return result;
 
-        } catch (error: any) {
-            console.error('[PageSpeedService] Analysis failed:', error?.response?.data || error.message);
-            throw new Error(`PageSpeed analysis failed: ${error.message}`);
+        } catch (error) {
+            console.error('[PageSpeedService] Analysis failed:', error);
+            throw new Error(`PageSpeed analysis failed: ${getErrorMessage(error)}`);
         }
     }
 

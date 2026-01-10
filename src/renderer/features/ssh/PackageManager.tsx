@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Search, RefreshCw, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'
+import type { SSHPackageInfo } from '@/types/ssh'
 
 interface PackageManagerProps {
     connectionId: string
@@ -11,7 +12,7 @@ interface PackageManagerProps {
 export function PackageManager({ connectionId }: PackageManagerProps) {
     const { t } = useTranslation()
     const [manager, setManager] = useState<'apt' | 'npm' | 'pip'>('apt')
-    const [packages, setPackages] = useState<any[]>([])
+    const [packages, setPackages] = useState<SSHPackageInfo[]>([])
     const [search, setSearch] = useState('')
     const [loading, setLoading] = useState(false)
 

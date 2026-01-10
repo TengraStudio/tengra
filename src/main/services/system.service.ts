@@ -1,8 +1,10 @@
 import { ISystemService } from '../types/services';
-import { ServiceResponse } from '../../shared/types';
+import { ServiceResponse, SystemInfo } from '../../shared/types';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as os from 'os';
+import { getErrorMessage } from '../../shared/utils/error.util';
+
 
 const execAsync = promisify(exec);
 
@@ -17,12 +19,12 @@ export class SystemService implements ISystemService {
                 await execAsync(`osascript -e "set volume output volume ${percent}"`);
             }
             return { success: true, message: `Volume adjusted to approx ${percent}%` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
-    async setBrightness(percent: number): Promise<ServiceResponse> {
+    async setBrightness(percent: number): Promise<ServiceResponse<{ brightness: number }>> {
         try {
             if (process.platform === 'win32') {
                 const cmd = `powershell -Command "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1,${percent})"`;
@@ -32,8 +34,8 @@ export class SystemService implements ISystemService {
                 await execAsync(`xbacklight -set ${percent}`);
             }
             return { success: true, result: { brightness: percent } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
@@ -42,8 +44,8 @@ export class SystemService implements ISystemService {
             const cmd = process.platform === 'win32' ? 'wmic logicaldisk get size,freespace,caption' : 'df -h';
             const { stdout } = await execAsync(cmd);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
@@ -52,8 +54,8 @@ export class SystemService implements ISystemService {
             const cmd = process.platform === 'win32' ? `netstat -ano | findstr :${port}` : `lsof -i :${port}`;
             const { stdout } = await execAsync(cmd);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
-            return { success: false, error: 'No process found on this port' };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) || 'No process found on this port' };
         }
     }
 
@@ -74,13 +76,13 @@ export class SystemService implements ISystemService {
                 await execAsync(`powershell -Command "${code.replace(/\n/g, ' ')}"`);
             }
             return { success: true, message: 'Wallpaper changed' };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
-    async mediaControl(action: string): Promise<ServiceResponse> {
-        const keys: any = {
+    async mediaControl(action: string): Promise<ServiceResponse<{ action: string }>> {
+        const keys: Record<string, number> = {
             'playpause': 179,
             'next': 176,
             'prev': 177,
@@ -92,8 +94,8 @@ export class SystemService implements ISystemService {
                 await execAsync(`powershell -Command "$obj = new-object -com wscript.shell; $obj.SendKeys([char]${keyCode})"`);
             }
             return { success: true, result: { action } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
@@ -112,12 +114,12 @@ export class SystemService implements ISystemService {
                 await execAsync(`${appName} &`);
             }
             return { success: true, message: `Started ${appName}` };
-        } catch (e: any) {
-            return { success: false, error: `Could not find or launch app: ${appName}` };
+        } catch (e) {
+            return { success: false, error: `${getErrorMessage(e as Error) || 'Could not find or launch app'}: ${appName}` };
         }
     }
 
-    async getSystemInfo(): Promise<any> {
+    async getSystemInfo(): Promise<SystemInfo> {
         return {
             platform: process.platform,
             arch: process.arch,
@@ -136,12 +138,12 @@ export class SystemService implements ISystemService {
             const cmd = process.platform === 'win32' ? 'tasklist' : 'ps aux';
             const { stdout } = await execAsync(cmd);
             return { success: true, result: { output: stdout } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
-    async healthCheck(): Promise<ServiceResponse> {
+    async healthCheck(): Promise<ServiceResponse<{ status: string; timestamp: number; memory: NodeJS.MemoryUsage; uptime: number; platform: NodeJS.Platform }>> {
         return {
             success: true,
             result: {

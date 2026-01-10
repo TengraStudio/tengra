@@ -6,6 +6,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { DataService } from './data/data.service'
+import { JsonObject, JsonValue } from '../../shared/types/common'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export interface BackupMetadata {
     version: string
@@ -26,6 +28,15 @@ export interface RestoreResult {
     success: boolean
     restored: string[]
     errors: string[]
+}
+
+export interface BackupData {
+    settings?: JsonObject
+    chats?: JsonValue[]
+    prompts?: JsonValue[]
+    folders?: JsonValue[]
+    _metadata: BackupMetadata
+    [key: string]: JsonValue | BackupMetadata | undefined
 }
 
 export class BackupService {
@@ -64,7 +75,7 @@ export class BackupService {
             const backupName = `backup-${timestamp}`
             const backupPath = path.join(this.backupDir, `${backupName}.json`)
 
-            const backup: Record<string, any> = {}
+            const backup: Partial<BackupData> = {}
             const includes: string[] = []
 
             // Settings
@@ -122,11 +133,12 @@ export class BackupService {
                 path: backupPath,
                 metadata
             }
-        } catch (error: any) {
-            console.error('[BackupService] Backup failed:', error)
+        } catch (error) {
+            const msg = getErrorMessage(error as Error)
+            console.error('[BackupService] Backup failed:', msg)
             return {
                 success: false,
-                error: error.message
+                error: msg
             }
         }
     }
@@ -171,8 +183,8 @@ export class BackupService {
                     const settingsPath = path.join(this.dataService.getPath('config'), 'settings.json')
                     fs.writeFileSync(settingsPath, JSON.stringify(backup.settings, null, 2))
                     restored.push('settings')
-                } catch (e: any) {
-                    errors.push(`Settings: ${e.message}`)
+                } catch (e) {
+                    errors.push(`Settings: ${getErrorMessage(e as Error)}`)
                 }
             }
 
@@ -182,9 +194,9 @@ export class BackupService {
                     const chatsPath = path.join(this.dataService.getPath('data'), 'chats.json')
 
                     if (opts.mergeChats && fs.existsSync(chatsPath)) {
-                        const existingChats = JSON.parse(fs.readFileSync(chatsPath, 'utf8'))
-                        const existingIds = new Set(existingChats.map((c: any) => c.id))
-                        const newChats = backup.chats.filter((c: any) => !existingIds.has(c.id))
+                        const existingChats = JSON.parse(fs.readFileSync(chatsPath, 'utf8')) as { id: string }[]
+                        const existingIds = new Set(existingChats.map((c) => c.id))
+                        const newChats = (backup.chats as { id: string }[]).filter((c) => !existingIds.has(c.id))
                         const merged = [...existingChats, ...newChats]
                         fs.writeFileSync(chatsPath, JSON.stringify(merged, null, 2))
                         restored.push(`chats (merged ${newChats.length} new)`)
@@ -192,8 +204,8 @@ export class BackupService {
                         fs.writeFileSync(chatsPath, JSON.stringify(backup.chats, null, 2))
                         restored.push('chats')
                     }
-                } catch (e: any) {
-                    errors.push(`Chats: ${e.message}`)
+                } catch (e) {
+                    errors.push(`Chats: ${getErrorMessage(e as Error)}`)
                 }
             }
 
@@ -203,8 +215,8 @@ export class BackupService {
                     const promptsPath = path.join(this.dataService.getPath('data'), 'prompts.json')
                     fs.writeFileSync(promptsPath, JSON.stringify(backup.prompts, null, 2))
                     restored.push('prompts')
-                } catch (e: any) {
-                    errors.push(`Prompts: ${e.message}`)
+                } catch (e) {
+                    errors.push(`Prompts: ${getErrorMessage(e as Error)}`)
                 }
             }
 
@@ -214,8 +226,8 @@ export class BackupService {
                     const foldersPath = path.join(this.dataService.getPath('data'), 'folders.json')
                     fs.writeFileSync(foldersPath, JSON.stringify(backup.folders, null, 2))
                     restored.push('folders')
-                } catch (e: any) {
-                    errors.push(`Folders: ${e.message}`)
+                } catch (e) {
+                    errors.push(`Folders: ${getErrorMessage(e as Error)}`)
                 }
             }
 
@@ -224,11 +236,12 @@ export class BackupService {
                 restored,
                 errors
             }
-        } catch (error: any) {
+        } catch (error) {
+            const msg = getErrorMessage(error as Error)
             return {
                 success: false,
                 restored,
-                errors: [...errors, error.message]
+                errors: [...errors, msg]
             }
         }
     }

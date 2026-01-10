@@ -6,6 +6,8 @@ import https from 'https'
 import http from 'http'
 import { appLogger } from '../logging/logger'
 import { DataService } from './data/data.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 
 export class ImagePersistenceService {
     private galleryPath: string
@@ -43,7 +45,7 @@ export class ImagePersistenceService {
 
             if (imageData.startsWith('data:')) {
                 // Handle Data URI
-                const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
+                const matches = imageData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
                 if (!matches || matches.length !== 3) {
                     throw new Error('Invalid base64 string')
                 }
@@ -75,7 +77,8 @@ export class ImagePersistenceService {
             return `safe-file:///${filePath.replace(/\\/g, '/')}`
 
         } catch (error) {
-            appLogger.error('ImagePersistence', `Failed to save image: ${error}`)
+            const message = getErrorMessage(error as Error)
+            appLogger.error('ImagePersistence', `Failed to save image: ${message}`)
             return imageData // Fallback to original if save fails
         }
     }
@@ -84,7 +87,7 @@ export class ImagePersistenceService {
         return new Promise((resolve, reject) => {
             const client = url.startsWith('https') ? https : http
             client.get(url, (res) => {
-                const data: any[] = []
+                const data: Buffer[] = []
                 res.on('data', (chunk) => data.push(chunk))
                 res.on('end', () => resolve(Buffer.concat(data)))
             }).on('error', reject)

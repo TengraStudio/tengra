@@ -3,6 +3,32 @@ import * as path from 'path'
 
 import { DatabaseService } from './data/database.service'
 import { EmbeddingService } from './llm/embedding.service'
+import { BrowserWindow } from 'electron'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
+export interface CodeSymbol {
+    file: string;
+    line: number;
+    name: string;
+    kind: string;
+    signature: string;
+    docstring: string;
+}
+
+export interface IndexingProgress {
+    projectId: string;
+    current: number;
+    total: number;
+    status: string;
+}
+
+export interface SearchResult {
+    file: string;
+    line: number;
+    text: string;
+    type?: string;
+    name?: string;
+}
 
 export class CodeIntelligenceService {
 
@@ -12,19 +38,25 @@ export class CodeIntelligenceService {
     ) { }
 
     // Indexing
-    async queryIndexedSymbols(query: string): Promise<any[]> {
+    async queryIndexedSymbols(query: string): Promise<SearchResult[]> {
         const vector = await this.embedding.generateEmbedding(query)
-        return this.db.searchCodeSymbols(vector)
+        const results = await this.db.searchCodeSymbols(vector)
+        return results.map(r => ({
+            file: r.path,
+            line: r.line,
+            text: r.name,
+            name: r.name
+        }))
     }
 
     async indexProject(rootPath: string, projectId: string): Promise<void> {
         console.log(`[CodeIntelligence] Indexing project ${projectId} at ${rootPath}`)
-        const { BrowserWindow } = require('electron')
 
         const sendProgress = (current: number, total: number, status: string) => {
             const windows = BrowserWindow.getAllWindows()
-            windows.forEach((win: any) => {
-                win.webContents.send('code:indexing-progress', { projectId, current, total, status })
+            windows.forEach((win) => {
+                const progress: IndexingProgress = { projectId, current, total, status };
+                win.webContents.send('code:indexing-progress', progress)
             })
         }
 
@@ -32,7 +64,7 @@ export class CodeIntelligenceService {
             sendProgress(0, 0, 'Scanning...')
             await this.db.clearCodeSymbols(projectId)
 
-            const results: any[] = []
+            const results: CodeSymbol[] = []
             await this.scanDirForIndexing(rootPath, results)
 
             const total = results.length
@@ -63,12 +95,12 @@ export class CodeIntelligenceService {
             sendProgress(total, total, 'Complete')
             console.log(`[CodeIntelligence] Indexing complete for ${projectId}`)
         } catch (error) {
-            console.error('[CodeIntelligence] Indexing failed:', error)
+            console.error('[CodeIntelligence] Indexing failed:', getErrorMessage(error as Error))
             sendProgress(0, 0, 'Failed')
         }
     }
 
-    private async scanDirForIndexing(dir: string, results: any[]) {
+    private async scanDirForIndexing(dir: string, results: CodeSymbol[]) {
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
@@ -82,10 +114,12 @@ export class CodeIntelligenceService {
                     await this.parseFileSymbols(fullPath, results)
                 }
             }
-        } catch { }
+        } catch (error) {
+            console.error(`[CodeIntelligence] Failed to scan dir ${dir}:`, getErrorMessage(error as Error))
+        }
     }
 
-    private async parseFileSymbols(filePath: string, results: any[]) {
+    private async parseFileSymbols(filePath: string, results: CodeSymbol[]) {
         try {
             const content = await fs.readFile(filePath, 'utf-8')
             const lines = content.split('\n')
@@ -145,38 +179,38 @@ export class CodeIntelligenceService {
                 }
             }
 
-        } catch { }
+        } catch (error) {
+            console.error(`[CodeIntelligence] Failed to parse file ${filePath}:`, getErrorMessage(error as Error))
+        }
     }
 
     // 2.4.41 Symbol Search (Regex) - Legacy/Quick
-    async findSymbols(rootPath: string, query: string): Promise<any[]> {
-        const results: any[] = []
+    async findSymbols(rootPath: string, query: string): Promise<SearchResult[]> {
+        const results: SearchResult[] = []
         await this.scanDirForSymbols(rootPath, query, results)
         return results
     }
 
     // 2.5.50 General Search Panel
-    async searchFiles(rootPath: string, query: string, isRegex: boolean = false): Promise<any[]> {
-        const results: any[] = []
+    async searchFiles(rootPath: string, query: string, isRegex: boolean = false): Promise<SearchResult[]> {
+        const results: SearchResult[] = []
         await this.scanDirForText(rootPath, query, isRegex, results)
         return results
     }
 
     // 2.4.42 TODO Scanner
-    async scanTodos(rootPath: string): Promise<{ file: string, line: number, text: string }[]> {
-        const todos: { file: string, line: number, text: string }[] = []
+    async scanTodos(rootPath: string): Promise<SearchResult[]> {
+        const todos: SearchResult[] = []
         await this.scanDirForTodos(rootPath, todos)
         return todos
     }
 
     // 2.4.47 Code Structure (Outline)
-    async getFileDimensions(filePath: string): Promise<any[]> {
-        // Reuse parseFileSymbols logic but just return specific format?
-        // For now keep legacy implementation to avoid breakages in outline view
-        // or better: call parseFileSymbols and map it
-        const results: any[] = []
+    async getFileDimensions(filePath: string): Promise<SearchResult[]> {
+        const results: CodeSymbol[] = []
         await this.parseFileSymbols(filePath, results)
         return results.map(r => ({
+            file: filePath,
             type: r.kind,
             name: r.name,
             line: r.line,
@@ -185,17 +219,13 @@ export class CodeIntelligenceService {
     }
 
     // 2.5 Advanced Agent Tool: Find Usage
-    async findUsage(rootPath: string, symbol: string): Promise<any[]> {
-        const results: any[] = []
+    async findUsage(rootPath: string, symbol: string): Promise<SearchResult[]> {
+        const results: SearchResult[] = []
         await this.scanDirForText(rootPath, `\\b${symbol}\\b`, true, results)
         return results
     }
 
-    // ... Keep private scan methods for legacy support if needed, or remove duplication
-    // To minimize complexity, I will keep scanDirForTodos/Symbols/Text as they are specialized
-    // for their specific tasks (Search Panel vs Outline).
-
-    private async scanDirForTodos(dir: string, results: any[]) {
+    private async scanDirForTodos(dir: string, results: SearchResult[]) {
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
@@ -218,10 +248,12 @@ export class CodeIntelligenceService {
                     })
                 }
             }
-        } catch { }
+        } catch (error) {
+            console.error(`[CodeIntelligence] Failed to scan todos in ${dir}:`, getErrorMessage(error as Error))
+        }
     }
 
-    private async scanDirForSymbols(dir: string, query: string, results: any[]) {
+    private async scanDirForSymbols(dir: string, query: string, results: SearchResult[]) {
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
@@ -249,10 +281,12 @@ export class CodeIntelligenceService {
                     })
                 }
             }
-        } catch { }
+        } catch (error) {
+            console.error(`[CodeIntelligence] Failed to scan symbols in ${dir}:`, getErrorMessage(error as Error))
+        }
     }
 
-    private async scanDirForText(dir: string, query: string, isRegex: boolean, results: any[]) {
+    private async scanDirForText(dir: string, query: string, isRegex: boolean, results: SearchResult[]) {
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
@@ -270,7 +304,7 @@ export class CodeIntelligenceService {
                         if (isRegex) {
                             try {
                                 if (new RegExp(query).test(line)) match = true
-                            } catch { }
+                            } catch { /* ignore invalid regex */ }
                         } else {
                             if (line.includes(query)) match = true
                         }
@@ -287,6 +321,8 @@ export class CodeIntelligenceService {
                     })
                 }
             }
-        } catch { }
+        } catch (error) {
+            console.error(`[CodeIntelligence] Failed to scan text in ${dir}:`, getErrorMessage(error as Error))
+        }
     }
 }

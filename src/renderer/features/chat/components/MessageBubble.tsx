@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, isValidElement, memo } from 'react'
+﻿import { useState, useEffect, useMemo, isValidElement, memo, useId } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -14,7 +14,7 @@ import LogoAntigravity from '@/assets/antigravity.svg'
 import LogoClaude from '@/assets/claude.svg'
 import LogoOllama from '@/assets/ollama.svg'
 import LogoOpenAI from '@/assets/chatgpt.svg'
-import LogoGemini from '@/assets/gemini.png'
+
 import LogoCopilot from '@/assets/copilot.png'
 
 import { Message } from '@/types'
@@ -103,7 +103,7 @@ const CopyHtmlButton = memo(({ text, t }: { text: string, t: (key: string) => st
 
     const handleCopy = async () => {
         // Simple html conversion
-        let html = text
+        const html = text
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -129,7 +129,7 @@ const CopyHtmlButton = memo(({ text, t }: { text: string, t: (key: string) => st
 const MermaidDiagram = memo(({ code }: { code: string }) => {
     const [svg, setSvg] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
-    const id = useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, [])
+    const id = useId()
 
     useEffect(() => {
         const render = async () => {
@@ -137,8 +137,9 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
                 const { svg } = await mermaid.render(id, code)
                 setSvg(svg)
                 setError(null)
-            } catch (err: any) {
-                setError(err.message)
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err)
+                setError(message)
             }
         }
         render()
@@ -220,13 +221,12 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
             ? 'openai'
             : modelName.startsWith('claude-')
                 ? 'anthropic'
-                : modelName.startsWith('gemini-')
-                    ? 'gemini'
-                    : modelName.startsWith('grok-')
-                        ? 'groq'
-                        : modelName.startsWith('antigravity-')
-                            ? 'antigravity'
-                            : ''
+
+                : modelName.startsWith('grok-')
+                    ? 'groq'
+                    : modelName.startsWith('antigravity-')
+                        ? 'antigravity'
+                        : ''
         const provider = message.provider || backend || inferredProvider || 'ollama'
         const p = provider.toLowerCase()
 
@@ -245,13 +245,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
                 </div>
             )
         }
-        if (p.includes('gemini')) {
-            return (
-                <div className="w-6 h-6 rounded-md border border-border/50 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" title="Gemini">
-                    <img src={LogoGemini} className="w-full h-full object-cover opacity-70" alt="Gemini" />
-                </div>
-            )
-        }
+
 
         // Family Icons for Local/Ollama Models
         if (modelName.includes('llama')) {
@@ -320,7 +314,14 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
     }
 
     const { thought, plan, displayContent } = useMemo(() => {
-        let content = message.content || ''
+        let content = typeof message.content === 'string'
+            ? message.content
+            : Array.isArray(message.content)
+                ? message.content.map((c) => {
+                    if (typeof c === 'string') return c
+                    return typeof c.text === 'string' ? c.text : ''
+                }).join('')
+                : ''
         let thought = message.reasoning || null
         let plan = null
 
@@ -345,11 +346,15 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
         }
     }, [message.content, message.reasoning, streamingReasoning])
 
+    // During render, determine if thought should be auto-expanded
+    const shouldAutoExpand = isLast && thought && !displayContent && !isThoughtExpanded
+
     useEffect(() => {
-        if (isLast && thought && !displayContent && !isThoughtExpanded) {
-            setIsThoughtExpanded(true)
+        if (shouldAutoExpand) {
+            const timer = setTimeout(() => setIsThoughtExpanded(true), 0)
+            return () => clearTimeout(timer)
         }
-    }, [isLast, thought, displayContent, isThoughtExpanded])
+    }, [shouldAutoExpand])
 
     const lineCount = displayContent?.split('\n').length || 0
     const isLongContent = lineCount > COLLAPSE_THRESHOLD
@@ -381,7 +386,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
                     model: errData.error?.model || errData.model
                 };
             }
-        } catch { }
+        } catch { /* JSON parse failed */ }
         return { message: t('messageBubble.quotaMessage'), resets_at: null, model: null };
     };
 
@@ -541,7 +546,11 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
                                                 <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) window.electron.openExternal(href) }}>{children}</a>
                                             ),
                                             li: ({ children }) => {
-                                                const isCheckbox = Array.isArray(children) && children.some(c => isValidElement(c) && (c.props as any).type === 'checkbox')
+                                                const isCheckbox = Array.isArray(children) && children.some(c => {
+                                                    if (!isValidElement(c)) return false
+                                                    const element = c as React.ReactElement<{ type?: string }>
+                                                    return element.props?.type === 'checkbox'
+                                                })
                                                 return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                                             },
                                             input: ({ type, checked, ...props }) => {

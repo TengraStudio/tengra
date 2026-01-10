@@ -3,16 +3,18 @@ import { StreamParser } from './stream-parser.util';
 
 describe('StreamParser', () => {
     it('should parse simple chunks', async () => {
-        const mockStream = {
-            body: [
-                new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n'),
-                new TextEncoder().encode('data: {"choices":[{"delta":{"content":" World"}}]}\n\n'),
-                new TextEncoder().encode('data: [DONE]\n\n')
-            ]
-        };
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":" World"}}]}\n\n'));
+                controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as any;
 
         const chunks = [];
-        for await (const chunk of StreamParser.parseChatStream(mockStream)) {
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
             chunks.push(chunk);
         }
 
@@ -22,15 +24,17 @@ describe('StreamParser', () => {
     });
 
     it('should handle split lines', async () => {
-        const mockStream = {
-            body: [
-                new TextEncoder().encode('data: {"choices":[{"delta":{"con'),
-                new TextEncoder().encode('tent":"Split"}}]}\n\n')
-            ]
-        };
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"con'));
+                controller.enqueue(new TextEncoder().encode('tent":"Split"}}]}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as any;
 
         const chunks = [];
-        for await (const chunk of StreamParser.parseChatStream(mockStream)) {
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
             chunks.push(chunk);
         }
 
@@ -39,14 +43,16 @@ describe('StreamParser', () => {
     });
 
     it('should pass through images', async () => {
-        const mockStream = {
-            body: [
-                new TextEncoder().encode('data: {"choices":[{"delta":{"images":["img1"]}}]}\n\n')
-            ]
-        };
+        const stream = new ReadableStream({
+            start(controller) {
+                controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"images":["img1"]}}]}\n\n'));
+                controller.close();
+            }
+        });
+        const mockResponse = { body: stream } as any;
 
         const chunks = [];
-        for await (const chunk of StreamParser.parseChatStream(mockStream)) {
+        for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
             chunks.push(chunk);
         }
 

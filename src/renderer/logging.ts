@@ -1,6 +1,9 @@
+import { JsonValue } from '../shared/types/common'
+
 let installed = false
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+type LogValue = JsonValue | Error | object
 
 export function installRendererLogger() {
     if (installed) return
@@ -17,7 +20,7 @@ export function installRendererLogger() {
         error: console.error.bind(console)
     }
 
-    const send = (level: LogLevel, args: unknown[]) => {
+    const send = (level: LogLevel, args: LogValue[]) => {
         // Temporarily sending all logs to main for debugging
         // if (level === 'error' || level === 'warn') {
         const message = formatArgs(args)
@@ -25,23 +28,23 @@ export function installRendererLogger() {
         // }
     }
 
-    console.debug = (...args: unknown[]) => {
+    console.debug = (...args: LogValue[]) => {
         original.debug(...args)
         send('debug', args)
     }
-    console.log = (...args: unknown[]) => {
+    console.log = (...args: LogValue[]) => {
         original.log(...args)
         send('info', args)
     }
-    console.info = (...args: unknown[]) => {
+    console.info = (...args: LogValue[]) => {
         original.info(...args)
         send('info', args)
     }
-    console.warn = (...args: unknown[]) => {
+    console.warn = (...args: LogValue[]) => {
         original.warn(...args)
         send('warn', args)
     }
-    console.error = (...args: unknown[]) => {
+    console.error = (...args: LogValue[]) => {
         original.error(...args)
         send('error', args)
     }
@@ -60,11 +63,11 @@ export function installRendererLogger() {
     })
 }
 
-function formatArgs(args: unknown[]): string {
+function formatArgs(args: LogValue[]): string {
     return args.map(formatValue).join(' ')
 }
 
-function formatValue(value: unknown): string {
+function formatValue(value: LogValue): string {
     if (value instanceof Error) {
         return value.stack ? `${value.message} | ${value.stack}` : value.message
     }

@@ -4,17 +4,19 @@ import { Users, ArrowLeft } from 'lucide-react';
 import { MessageBubble } from '../../../chat/components/MessageBubble';
 import { ModelSelector } from '../../../models/components/ModelSelector';
 import { CouncilPanel } from './CouncilPanel';
-import { CouncilAgent, ActivityEntry } from '@/types';
+import { CouncilAgent, ActivityEntry, Message, AppSettings, QuotaResponse, CodexUsage } from '@/types';
+import { GroupedModels } from '../../../models/utils/model-fetcher';
+import { Language } from '@/i18n';
 
 interface AIAssistantSidebarProps {
     viewTab: 'editor' | 'council' | 'logs';
     selectedProvider: string;
     selectedModel: string;
     onSelectModel: (provider: string, model: string) => void;
-    settings: any;
-    groupedModels: any;
-    quotas: any;
-    codexUsage: any;
+    settings: AppSettings;
+    groupedModels: GroupedModels;
+    quotas: QuotaResponse | null;
+    codexUsage: CodexUsage | null;
     agentChatMessage: string;
     setAgentChatMessage: (val: string) => void;
     // Council Props
@@ -27,7 +29,7 @@ interface AIAssistantSidebarProps {
     activityLog: ActivityEntry[];
     clearLogs: () => void;
     t: (key: string) => string;
-    messages?: any[];
+    messages?: Message[];
     isLoading?: boolean;
     language: string;
     onSourceClick?: (path: string) => void;
@@ -119,12 +121,12 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                     </div>
                                 </div>
                             ) : (
-                                messages.map((m: any, idx: number) => (
+                                messages.map((m: Message, idx: number) => (
                                     <MessageBubble
                                         key={m.id || idx}
                                         message={m}
                                         isLast={idx === messages.length - 1}
-                                        language={language as any}
+                                        language={language as Language}
                                         isStreaming={isLoading && idx === messages.length - 1 && m.role === 'assistant'}
                                         onSourceClick={onSourceClick}
                                     />

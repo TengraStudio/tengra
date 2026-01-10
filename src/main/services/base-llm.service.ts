@@ -1,23 +1,34 @@
 
-export interface ChatMessage {
-    role: string;
-    content: string | null;
-    tool_calls?: any[];
-    name?: string;
-    tool_call_id?: string;
+import { getErrorMessage } from '../../shared/utils/error.util';
+import { CatchError, JsonObject } from '../../shared/types/common';
+import { ChatMessage, ToolCall } from '../types/llm.types';
+
+export interface LLMTool {
+    type: string;
+    function: {
+        name: string;
+        description: string;
+        parameters: JsonObject;
+    };
+}
+
+export interface ChatResponse {
+    content: string;
+    tool_calls?: ToolCall[];
+    images?: string[];
 }
 
 export abstract class BaseLLMService {
     constructor() { }
 
-    abstract chat(messages: ChatMessage[], model: string, tools?: any[]): Promise<any>;
-    abstract streamChat(messages: ChatMessage[], model: string, tools?: any[]): Promise<ReadableStream<Uint8Array> | null | AsyncIterable<string>>;
+    abstract chat(messages: ChatMessage[], model: string, tools?: LLMTool[]): Promise<ChatResponse>;
+    abstract streamChat(messages: ChatMessage[], model: string, tools?: LLMTool[]): Promise<ReadableStream<Uint8Array> | null | AsyncIterable<string>>;
 
     /**
      * Standardizes and filters tools for LLM consumption.
      * Ensures MCP tools and native tools are formatted flexibly for diff providers.
      */
-    protected prepareTools(tools?: any[]): any[] | undefined {
+    protected prepareTools(tools?: LLMTool[]): LLMTool[] | undefined {
         if (!tools || tools.length === 0) return undefined;
 
         // Common filtering logic can go here if needed
@@ -38,8 +49,8 @@ export abstract class BaseLLMService {
     /**
      * Common error handling wrapper
      */
-    protected handleError(error: any, context: string): never {
-        console.error(`[${this.constructor.name}] ${context} Error:`, error);
+    protected handleError(error: CatchError, context: string): never {
+        console.error(`[${this.constructor.name}] ${context} Error:`, getErrorMessage(error));
         throw error; // Re-throw for caller to handle
     }
 }

@@ -4,10 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Plus, Calendar, Search, Terminal, ArrowRight, Monitor, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { Project, TerminalTab } from '@/types'
+import { Project, TerminalTab, Message } from '@/types'
 import { ProjectWorkspace } from './components/ProjectWorkspace'
 import { Language } from '@/i18n'
 import { ProjectWizardModal } from './components/ProjectWizardModal'
+
+import { AppSettings } from '../../../shared/types/settings'
+import { ProjectMount } from '../../../shared/types/renderer'
+import { GroupedModels } from '@/features/models/utils/model-fetcher'
+import { CodexUsage, QuotaResponse } from '../../../shared/types/quota'
 
 interface ProjectsPageProps {
     projects: Project[]
@@ -23,12 +28,12 @@ interface ProjectsPageProps {
     selectedProvider: string
     selectedModel: string
     onSelectModel: (provider: string, model: string) => void
-    groupedModels?: any
-    quotas?: any
-    codexUsage?: any
-    settings?: any
+    groupedModels?: GroupedModels
+    quotas?: QuotaResponse | null
+    codexUsage?: CodexUsage | null
+    settings?: AppSettings | null
     sendMessage?: (content?: string) => void
-    messages?: any[]
+    messages?: Message[]
     isLoading?: boolean
 }
 
@@ -47,7 +52,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     const [showWizard, setShowWizard] = useState(false)
 
     // Wizard Callbacks
-    const handleWizardCreate = async (path: string, name: string, description: string, userMounts?: any[]) => {
+    const handleWizardCreate = async (path: string, name: string, description: string, userMounts?: ProjectMount[]) => {
         try {
             const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
                 id: `local-${Date.now()}`,
@@ -120,8 +125,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
             onSelectModel={onSelectModel}
             groupedModels={groupedModels}
             quotas={quotas}
-            codexUsage={codexUsage}
-            settings={settings}
+            codexUsage={codexUsage || undefined}
+            settings={settings || undefined}
             sendMessage={sendMessage}
             messages={messages}
             isLoading={isLoading}
@@ -227,7 +232,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleDeleteClick(project, e)}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-red-500/10 text-red-400 transition-colors text-left"
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-red-500/10 text-red-400 hover:bg-red-500/10 transition-colors text-left"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                         {t('common.delete')}

@@ -3,6 +3,8 @@
  * Based on Anthropic's MCP specification
  */
 
+import { JsonObject, JsonValue } from '../../shared/types/common'
+
 export interface MCPServerConfig {
     id: string
     name: string
@@ -17,7 +19,7 @@ export interface MCPTool {
     description?: string
     inputSchema: {
         type: string
-        properties?: Record<string, any>
+        properties?: JsonObject
         required?: string[]
     }
 }
@@ -63,17 +65,17 @@ export interface JSONRPCRequest {
     jsonrpc: '2.0'
     id: number | string
     method: string
-    params?: any
+    params?: JsonObject
 }
 
 export interface JSONRPCResponse {
     jsonrpc: '2.0'
     id: number | string
-    result?: any
+    result?: JsonValue
     error?: {
         code: number
         message: string
-        data?: any
+        data?: JsonValue
     }
 }
 

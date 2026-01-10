@@ -11,6 +11,8 @@ export interface FileNode {
     path: string
 }
 
+type MountFileEntry = { name: string; isDirectory: boolean }
+
 interface WorkspaceTreeItemProps {
     node: FileNode
     mount: WorkspaceMount
@@ -33,6 +35,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     const [loading, setLoading] = useState(false)
     const [loaded, setLoaded] = useState(false)
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const loadChildren = async () => {
         if (!node.isDirectory) return
         setLoading(true)
@@ -45,14 +48,19 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
             const result = mount.type === 'local'
                 ? await window.electron.listDirectory(node.path)
                 : await window.electron.ssh.listDir(mount.id, node.path)
-            if (result?.success && Array.isArray(result.files)) {
-                const mapped = result.files.map((item: any) => ({
-                    name: item.name,
-                    isDirectory: mount.type === 'local' ? Boolean(item.isDirectory) : item.type === 'directory',
-                    path: joinPath(node.path, item.name, mount.type)
-                }))
-                setChildren(sortNodes(mapped))
-                setLoaded(true)
+
+            if (result?.success) {
+                // Handle both response formats: { files } or { data }
+                const fileList = (result as any).files || (result as any).data
+                if (Array.isArray(fileList)) {
+                    const mapped = fileList.map((item: MountFileEntry) => ({
+                        name: item.name,
+                        isDirectory: Boolean(item.isDirectory),
+                        path: joinPath(node.path, item.name, mount.type)
+                    }))
+                    setChildren(sortNodes(mapped))
+                    setLoaded(true)
+                }
             }
         } catch (error) {
             console.error('Failed to load directory', error)
@@ -63,7 +71,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
 
     useEffect(() => {
         if (expanded) loadChildren()
-    }, [expanded, refreshSignal])
+    }, [expanded, refreshSignal, loadChildren])
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation()

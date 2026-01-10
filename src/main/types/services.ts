@@ -1,4 +1,5 @@
-import { ServiceResponse } from '../../shared/types';
+import { ServiceResponse, SystemInfo } from '../../shared/types';
+import { JsonObject } from '../../shared/types/common';
 
 export interface ISecurityService {
     generatePassword(length: number, numbers: boolean, symbols: boolean): ServiceResponse<{ password: string }>;
@@ -9,13 +10,13 @@ export interface ISecurityService {
 
 export interface ISystemService {
     setVolume(percent: number): Promise<ServiceResponse>;
-    setBrightness(percent: number): Promise<ServiceResponse>;
+    setBrightness(percent: number): Promise<ServiceResponse<{ brightness: number }>>;
     getDiskSpace(): Promise<ServiceResponse<{ output: string }>>;
     getProcessOnPort(port: number): Promise<ServiceResponse<{ output: string }>>;
     setWallpaper(imagePath: string): Promise<ServiceResponse>;
-    mediaControl(action: string): Promise<ServiceResponse>;
+    mediaControl(action: string): Promise<ServiceResponse<{ action: string }>>;
     launchApp(appName: string): Promise<ServiceResponse>;
-    getSystemInfo(): Promise<any>;
+    getSystemInfo(): Promise<SystemInfo>;
     getProcessList(): Promise<ServiceResponse<{ output: string }>>;
 }
 
@@ -25,6 +26,6 @@ export interface INetworkService {
     scanPort(host: string, port: number, timeout?: number): Promise<ServiceResponse<{ port: number; status: string }>>;
     traceroute(host: string): Promise<ServiceResponse<{ output: string }>>;
     startWebSocketServer(port: number): ServiceResponse;
-    getNetworkInterfaces(): Promise<ServiceResponse<any>>;
+    getNetworkInterfaces(): Promise<ServiceResponse<JsonObject>>;
     getPublicIP(): Promise<ServiceResponse<{ ip: string }>>;
 }

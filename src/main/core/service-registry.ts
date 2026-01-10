@@ -1,0 +1,91 @@
+import { appLogger } from '../logging/logger';
+import { EventEmitter } from 'events';
+
+export interface ServiceMetadata {
+    id: string;
+    version: string;
+    tags: string[];
+    description?: string;
+}
+
+/**
+ * Dynamic Service Registry for decoupling service lookups and enabling plugin architectures.
+ */
+export class ServiceRegistry extends EventEmitter {
+    private services: Map<string, any> = new Map();
+    private metadata: Map<string, ServiceMetadata> = new Map();
+
+    private static instance: ServiceRegistry;
+
+    private constructor() {
+        super();
+    }
+
+    public static getInstance(): ServiceRegistry {
+        if (!ServiceRegistry.instance) {
+            ServiceRegistry.instance = new ServiceRegistry();
+        }
+        return ServiceRegistry.instance;
+    }
+
+    /**
+     * Registers a service instance.
+     * @param id Unique service identifier (e.g., 'llm-provider:openai')
+     * @param instance The service instance
+     * @param metadata Optional metadata
+     */
+    register(id: string, instance: any, metadata?: Partial<ServiceMetadata>) {
+        if (this.services.has(id)) {
+            appLogger.warn('ServiceRegistry', `Overwriting existing service: ${id}`);
+        }
+
+        this.services.set(id, instance);
+        this.metadata.set(id, {
+            id,
+            version: metadata?.version || '1.0.0',
+            tags: metadata?.tags || [],
+            description: metadata?.description
+        });
+
+        appLogger.info('ServiceRegistry', `Registered service: ${id}`);
+        this.emit('service:registered', id);
+    }
+
+    /**
+     * Unregisters a service.
+     */
+    unregister(id: string) {
+        if (this.services.delete(id)) {
+            this.metadata.delete(id);
+            appLogger.info('ServiceRegistry', `Unregistered service: ${id}`);
+            this.emit('service:unregistered', id);
+        }
+    }
+
+    /**
+     * Retrieves a service by ID.
+     */
+    get<T>(id: string): T | undefined {
+        return this.services.get(id) as T;
+    }
+
+    /**
+     * Finds services matching a predicate on their metadata.
+     */
+    find(predicate: (meta: ServiceMetadata) => boolean): any[] {
+        const results: any[] = [];
+        for (const [id, meta] of this.metadata) {
+            if (predicate(meta)) {
+                results.push(this.services.get(id));
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Finds services by tag.
+     */
+    findByTag(tag: string): any[] {
+        return this.find(meta => meta.tags.includes(tag));
+    }
+}

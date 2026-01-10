@@ -1,5 +1,6 @@
 ﻿import React from 'react'
 import { ExternalLink, Activity, AlertTriangle } from 'lucide-react'
+
 import antigravityLogo from '@/assets/antigravity.svg'
 
 interface AboutTabProps {

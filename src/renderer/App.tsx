@@ -16,7 +16,9 @@ import { ViewManager } from './views/ViewManager'
 import './App.css'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { Toast } from '@/types'
+import { Toast, Chat } from '@/types'
+import { ChatTemplate } from './features/chat/types'
+import { SettingsCategory } from './features/settings/types'
 import { KeyboardShortcutsModal } from './components/shared/KeyboardShortcutsModal'
 import { useTranslation } from './i18n'
 import { useAuth } from '@/context/AuthContext'
@@ -39,7 +41,7 @@ export default function App() {
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech()
 
     const { models, loadModels, selectedModel, setSelectedModel } = useModel()
-    const { projects, setSelectedProject } = useProject()
+    const { projects, setSelectedProject, selectedProject } = useProject()
 
     const { t } = useTranslation(language || 'en')
 
@@ -67,7 +69,7 @@ export default function App() {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
-    const CHAT_TEMPLATES = [
+    const CHAT_TEMPLATES: ChatTemplate[] = [
         { id: 'code', icon: 'Code', iconColor: 'text-blue-400', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
         { id: 'analyze', icon: 'FileSearch', iconColor: 'text-emerald-400', title: t('templates.analyze.title'), description: t('templates.analyze.description'), prompt: t('templates.analyze.prompt') },
         { id: 'creative', icon: 'Sparkles', iconColor: 'text-purple-400', title: t('templates.creative.title'), description: t('templates.creative.description'), prompt: t('templates.creative.prompt') },
@@ -77,14 +79,17 @@ export default function App() {
     return (
         <div className="app-container">
             <div className="app-drag-region" />
-            <Sidebar
-                currentView={currentView}
-                onChangeView={setCurrentView}
-                isCollapsed={isSidebarCollapsed}
-                toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                onOpenSettings={(cat) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat as any) }}
-                onSearch={() => { }}
-            />
+            {/* Hide main sidebar when project workspace is open */}
+            {!(currentView === 'projects' && selectedProject) && (
+                <Sidebar
+                    currentView={currentView}
+                    onChangeView={setCurrentView}
+                    isCollapsed={isSidebarCollapsed}
+                    toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    onOpenSettings={(cat?: SettingsCategory) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }}
+                    onSearch={() => { }}
+                />
+            )}
 
             <div className="main-layout">
                 <div className="relative z-10 flex-none">
@@ -122,13 +127,13 @@ export default function App() {
                     onNewChat={createNewChat}
                     projects={projects}
                     onSelectProject={(id: string) => { const p = projects.find(pro => pro.id === id); if (p) { setSelectedProject(p); setCurrentView('projects') } }}
-                    onOpenSettings={(cat: any) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }}
+                    onOpenSettings={(cat?: SettingsCategory) => { setCurrentView('settings'); if (cat) setSettingsCategory(cat) }}
                     onOpenSSHManager={() => setShowSSHManager(true)}
                     onRefreshModels={loadModels}
                     models={models}
-                    onSelectModel={setSelectedModel}
+                    onSelectModel={(m) => setSelectedModel(m)}
                     selectedModel={selectedModel}
-                    onClearChat={async () => { if (currentChatId) { await window.electron.db.deleteMessages(currentChatId); setChats(await window.electron.db.getAllChats()) } }}
+                    onClearChat={async () => { if (currentChatId) { await window.electron.db.deleteMessages(currentChatId); const chats = await window.electron.db.getAllChats(); setChats(chats as Chat[]) } }}
                     t={t}
                 />
             </div>

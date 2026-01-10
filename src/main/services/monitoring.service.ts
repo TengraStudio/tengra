@@ -1,4 +1,5 @@
 import { ServiceResponse } from '../../shared/types';
+import { getErrorMessage } from '../../shared/utils/error.util';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as os from 'os';
@@ -21,7 +22,7 @@ export class MonitoringService {
         };
     }
 
-    async getSystemMonitor(): Promise<ServiceResponse> {
+    async getSystemMonitor(): Promise<ServiceResponse<{ output: string }>> {
         try {
             let output = "";
             if (process.platform === 'win32') {
@@ -32,12 +33,12 @@ export class MonitoringService {
                 output = stdout;
             }
             return { success: true, result: { output } };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error) };
         }
     }
 
-    async getBatteryStatus(): Promise<ServiceResponse> {
+    async getBatteryStatus(): Promise<ServiceResponse<{ output: string }>> {
         try {
             if (process.platform === 'win32') {
                 const { stdout } = await execAsync('powershell -Command "Get-CimInstance -ClassName Win32_Battery | Select-Object -Property EstimatedChargeRemaining, BatteryStatus"');
@@ -47,8 +48,8 @@ export class MonitoringService {
                 return { success: true, result: { output: stdout } };
             }
             return { success: false, error: 'Battery status not supported on this platform' };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e) };
         }
     }
 }

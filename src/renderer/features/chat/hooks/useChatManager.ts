@@ -2,18 +2,44 @@
 import { generateId } from '@/lib/utils'
 import { chatStream } from '@/lib/chat-stream'
 import { getSystemPrompt } from '@/lib/identity'
-// ToolResult and Attachment are NOT in '@/shared/types/chat', removing import and using 'any' for now if needed or local interface
-import { Chat, Message, Folder, Prompt } from '@/types'
+import { Chat, Message, Folder, Prompt, AppSettings, Attachment, ToolDefinition } from '@/types'
+import { CatchError, IpcValue } from '../../../../shared/types/common'
+
+type SpeechRecognitionResultLike = { isFinal: boolean; 0: { transcript: string } }
+type SpeechRecognitionResultListLike = { length: number;[index: number]: SpeechRecognitionResultLike }
+type SpeechRecognitionEventLike = { resultIndex: number; results: SpeechRecognitionResultListLike }
+type SpeechRecognitionErrorEventLike = { error: string }
+
+interface SpeechRecognitionLike {
+    continuous: boolean
+    interimResults: boolean
+    lang: string
+    onresult: ((event: SpeechRecognitionEventLike) => void) | null
+    onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null
+    onend: (() => void) | null
+    start: () => void
+    stop: () => void
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
+
+declare global {
+    interface Window {
+        SpeechRecognition?: SpeechRecognitionConstructor
+        webkitSpeechRecognition?: SpeechRecognitionConstructor
+        _activeRecognition?: SpeechRecognitionLike
+    }
+}
 
 interface UseChatManagerOptions {
     selectedModel: string
     selectedProvider: string
     language: string
     selectedPersona?: { id: string, name: string, description: string, prompt: string } | null
-    appSettings: any
+    appSettings?: AppSettings
     autoReadEnabled: boolean
     handleSpeak: (id: string, text: string) => void
-    formatChatError: (err: unknown) => string
+    formatChatError: (err: CatchError) => string
     t: (key: string) => string
     activeWorkspacePath?: string
     projectId?: string
@@ -56,22 +82,26 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const displayMessages = useMemo(() => {
         if (!searchTerm) return messages
-        return messages.filter(m => m.content?.toLowerCase().includes(searchTerm.toLowerCase()))
+        return messages.filter(m => {
+            const content = typeof m.content === 'string' ? m.content : ''
+            return content.toLowerCase().includes(searchTerm.toLowerCase())
+        })
     }, [messages, searchTerm])
 
     // Load initial chats and folders
     useEffect(() => {
         const load = async () => {
             const allChats = await window.electron.db.getAllChats()
-            setChats(allChats)
+            setChats(allChats as Chat[])
             const allFolders = await window.electron.db.getFolders()
-            setFolders(allFolders)
+            setFolders(allFolders as Folder[])
             const allPrompts = await window.electron.db.getPrompts()
-            setPrompts(allPrompts)
+            setPrompts(allPrompts as Prompt[])
         }
         load()
 
-        const removeStatusListener = window.electron.on('chat:generation-status', (_event: any, data: { chatId: string, isGenerating: boolean }) => {
+        const removeStatusListener = window.electron.on('chat:generation-status', (_event, ...args: IpcValue[]) => {
+            const data = (args[0] && typeof args[0] === 'object') ? args[0] as { chatId?: string; isGenerating?: boolean } : {}
             setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c))
         })
         return () => removeStatusListener()
@@ -90,33 +120,37 @@ export function useChatManager(options: UseChatManagerOptions) {
         let finalReasoning = ''
 
         try {
-            const allTools = await window.electron.getToolDefinitions()
-            const tools = allTools.filter((t: any) =>
+            const allTools: ToolDefinition[] = await window.electron.getToolDefinitions()
+            const tools = allTools.filter((t) =>
                 t.function.name === 'generate_image' && selectedProvider === 'antigravity'
             )
 
             const dbRefChat = chats.find(c => c.id === chatId)
             const smartContext = getSmartContext([...(dbRefChat?.messages || []), userMessage])
 
-            const chatMessages = smartContext.map((msg: any) => {
+            const chatMessages = smartContext.map((msg: Message) => {
+                let content = msg.content
+                const text = typeof msg.content === 'string' ? msg.content : ''
+
                 if (msg.images && msg.images.length > 0) {
-                    const contentParts: any[] = []
-                    if (msg.content) contentParts.push({ type: 'text', text: msg.content })
+                    const contentParts: Array<{ type: string, text?: string, image_url?: { url: string } }> = []
+                    if (text) contentParts.push({ type: 'text', text })
                     for (const img of msg.images) contentParts.push({ type: 'image_url', image_url: { url: img } })
-                    return { role: msg.role, content: contentParts }
+                    content = contentParts
                 }
-                return { role: msg.role, content: msg.content }
+                return { ...msg, content }
             })
             const activeModel = retryModel || selectedModel
             const currentProvider = selectedProvider
 
-            const modelConfig = (appSettings as any)?.modelSettings?.[selectedModel] || {}
+            const modelSettings = appSettings?.modelSettings || {}
+            const modelConfig = modelSettings[selectedModel] || {}
             const systemPrompt = modelConfig.systemPrompt || getSystemPrompt(language as 'tr' | 'en', selectedPersona?.prompt, selectedProvider, activeModel)
-            const systemMessage = { role: 'system', content: systemPrompt }
+            const systemMessage: Message = { role: 'system', content: systemPrompt, id: generateId(), timestamp: new Date() }
             const allMessages = [systemMessage, ...chatMessages]
 
-            const modelPresets = (appSettings as any)?.presets || []
-            const preset = modelPresets.find((p: any) => p.id === modelConfig.presetId)
+            const modelPresets = appSettings?.presets || []
+            const preset = modelPresets.find((p) => p.id === modelConfig.presetId)
             const presetOptions = preset ? {
                 temperature: preset.temperature,
                 top_p: preset.topP,
@@ -132,8 +166,8 @@ export function useChatManager(options: UseChatManagerOptions) {
             const streamStartTime = performance.now()
             let finalSources: string[] = []
             for await (const chunk of stream) {
-                if (chunk.type === 'metadata' && chunk.sources) {
-                    finalSources = chunk.sources
+                if (chunk.type === 'metadata') {
+                    finalSources = chunk.sources || []
                     setStreamingStates(prev => ({
                         ...prev,
                         [chatId]: { ...prev[chatId], sources: finalSources }
@@ -172,7 +206,8 @@ export function useChatManager(options: UseChatManagerOptions) {
             setChats(prev => prev.map(c => {
                 if (c.id === chatId) {
                     let title = c.title
-                    if (c.messages.length <= 1 && assistantMsg.content) title = assistantMsg.content.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
+                    const textContent = typeof finalContent === 'string' ? finalContent : ''
+                    if (c.messages.length <= 1 && textContent) title = textContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
                     return { ...c, title, messages: [...c.messages, assistantMsg], isGenerating: false }
                 }
                 return c
@@ -185,7 +220,7 @@ export function useChatManager(options: UseChatManagerOptions) {
             })
         } catch (e) {
             console.error('[generateResponse] Error:', e)
-            const errText = formatChatError(e)
+            const errText = formatChatError(e as CatchError)
             const errMsg: Message = { id: generateId(), role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date() }
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, errMsg] } : c))
         } finally {
@@ -217,7 +252,7 @@ export function useChatManager(options: UseChatManagerOptions) {
                 id: newChatId,
                 title: content.slice(0, 50),
                 model: selectedModel,
-                backend: selectedProvider as any,
+                backend: selectedProvider as string,
                 createdAt: timestamp,
                 updatedAt: timestamp,
                 isGenerating: true
@@ -272,8 +307,8 @@ export function useChatManager(options: UseChatManagerOptions) {
     const createFolder = async (name: string, color?: string) => {
         try {
             const newFolder = await window.electron.db.createFolder(name, color)
-            setFolders(prev => [...prev, newFolder])
-            return newFolder
+            setFolders(prev => [...prev, newFolder as Folder])
+            return newFolder as Folder
         } catch (error) {
             console.error('Failed to create folder:', error)
             return null
@@ -313,9 +348,9 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const addMessage = async (chatId: string, role: string, content: string) => {
         try {
-            const messageObj: any = { role, content, timestamp: Date.now() }
+            const messageObj = { role, content, timestamp: Date.now() }
             await window.electron.db.addMessage({ ...messageObj, chatId })
-            const uiMessage = { ...messageObj, id: generateId() }
+            const uiMessage: Message = { ...messageObj, id: generateId(), timestamp: new Date(messageObj.timestamp), role: role as 'user' | 'assistant' | 'system' }
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, uiMessage] } : c))
         } catch (error) {
             console.error('Failed to add message:', error)
@@ -325,7 +360,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const createPrompt = async (title: string, content: string, tags: string[] = []) => {
         try {
             const newPrompt = await window.electron.db.createPrompt(title, content, tags)
-            setPrompts(prev => [...prev, newPrompt])
+            setPrompts(prev => [...prev, newPrompt as Prompt])
         } catch (error) {
             console.error('Failed to create prompt:', error)
         }
@@ -350,18 +385,18 @@ export function useChatManager(options: UseChatManagerOptions) {
     }
 
     const startListening = () => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        if (!SpeechRecognition) {
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition
+        if (!SpeechRecognitionCtor) {
             console.error('Speech recognition not supported')
             return
         }
 
-        const recognition = new SpeechRecognition()
+        const recognition = new SpeechRecognitionCtor()
         recognition.continuous = true
         recognition.interimResults = false
         recognition.lang = language || 'tr-TR'
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEventLike) => {
             let finalTranscript = ''
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
@@ -373,7 +408,7 @@ export function useChatManager(options: UseChatManagerOptions) {
             }
         }
 
-        recognition.onerror = (event: any) => {
+        recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
             console.error('Speech recognition error:', event.error)
             setIsListeningActive(false)
         }
@@ -385,7 +420,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         try {
             recognition.start()
             setIsListeningActive(true)
-                ; (window as any)._activeRecognition = recognition
+            window._activeRecognition = recognition
         } catch (err) {
             console.error('Failed to start recognition:', err)
             setIsListeningActive(false)
@@ -393,9 +428,9 @@ export function useChatManager(options: UseChatManagerOptions) {
     }
 
     const stopListening = () => {
-        if ((window as any)._activeRecognition) {
-            (window as any)._activeRecognition.stop()
-            delete (window as any)._activeRecognition
+        if (window._activeRecognition) {
+            window._activeRecognition.stop()
+            delete window._activeRecognition
             setIsListeningActive(false)
         }
     }
@@ -417,15 +452,6 @@ export function useChatManager(options: UseChatManagerOptions) {
         await updateChat(id, { isFavorite })
     }
 
-    interface Attachment {
-        id: string;
-        name: string;
-        type: 'image' | 'file';
-        size: number;
-        status: 'uploading' | 'ready' | 'error';
-        content?: string;
-    }
-
     const [attachments, setAttachments] = useState<Attachment[]>([])
 
     const processFile = async (file: File) => {
@@ -442,7 +468,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         try {
             const content = await file.text()
             setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'ready', content } : a))
-        } catch (error) {
+        } catch {
             setAttachments(prev => prev.map(a => a.id === id ? { ...a, status: 'error' } : a))
         }
     }

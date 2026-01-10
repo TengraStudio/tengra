@@ -6,6 +6,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { DataService } from '../services/data/data.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export interface Migration {
     version: number
@@ -52,7 +53,7 @@ export class MigrationService {
                 this.applied = JSON.parse(content)
             }
         } catch (e) {
-            console.error('[MigrationService] Failed to load migration history:', e)
+            console.error('[MigrationService] Failed to load migration history:', getErrorMessage(e as Error))
             this.applied = []
         }
     }
@@ -68,7 +69,7 @@ export class MigrationService {
             }
             fs.writeFileSync(this.migrationsPath, JSON.stringify(this.applied, null, 2))
         } catch (e) {
-            console.error('[MigrationService] Failed to save migration history:', e)
+            console.error('[MigrationService] Failed to save migration history:', getErrorMessage(e as Error))
         }
     }
 
@@ -119,12 +120,12 @@ export class MigrationService {
 
                 appliedMigrations.push(migration.name)
                 console.log(`[MigrationService] Completed: ${migration.name}`)
-            } catch (e: any) {
+            } catch (e) {
                 console.error(`[MigrationService] Failed migration ${migration.name}:`, e)
                 return {
                     success: false,
                     applied: appliedMigrations,
-                    error: `Migration ${migration.name} failed: ${e.message}`
+                    error: `Migration ${migration.name} failed: ${getErrorMessage(e as Error)}`
                 }
             }
         }
@@ -163,9 +164,9 @@ export class MigrationService {
 
             console.log(`[MigrationService] Rolled back: ${migration.name}`)
             return { success: true, rolledBack: migration.name }
-        } catch (e: any) {
+        } catch (e) {
             console.error(`[MigrationService] Rollback failed for ${migration.name}:`, e)
-            return { success: false, error: e.message }
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 

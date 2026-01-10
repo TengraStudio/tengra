@@ -1,3 +1,6 @@
+export type ProjectDashboardTab = 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git'
+export type WorkspaceDashboardTab = ProjectDashboardTab | 'editor'
+
 export type WorkspaceMountType = 'local' | 'ssh'
 
 export interface WorkspaceSshConfig {
@@ -46,4 +49,22 @@ export interface ActivityEntry {
     timestamp: Date
     title: string
     detail?: string
+}
+export interface MountForm {
+    type: 'local' | 'ssh'
+    name: string
+    rootPath: string
+    host: string
+    port: string
+    username: string
+    authType: 'password' | 'key'
+    password: string
+    privateKey: string
+    passphrase: string
+}
+
+export interface TodoItem {
+    file: string
+    line: number
+    text: string
 }

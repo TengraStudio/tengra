@@ -1,3 +1,5 @@
+import { JsonObject, JsonValue } from './common';
+
 export interface Attachment {
     id: string
     name: string
@@ -10,10 +12,28 @@ export interface Attachment {
     error?: string
 }
 
+export interface ToolCall {
+    id: string
+    type: 'function'
+    function: {
+        name: string
+        arguments: string
+    }
+}
+
+export interface ToolDefinition {
+    type: 'function';
+    function: {
+        name: string;
+        description?: string;
+        parameters?: JsonObject;
+    };
+}
+
 export interface ToolResult {
     toolCallId: string
     name: string
-    result: any
+    result: JsonValue
     isImage?: boolean
     success?: boolean
     error?: string
@@ -22,11 +42,11 @@ export interface ToolResult {
 export interface Message {
     id: string
     role: 'user' | 'assistant' | 'system'
-    content: string
+    content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
     timestamp: Date
     images?: string[]
     reasoning?: string
-    toolCalls?: any[]
+    toolCalls?: ToolCall[]
     toolResults?: ToolResult[] | string // Can be string in DB
     isPinned?: boolean
     isBookmarked?: boolean
