@@ -15,6 +15,8 @@ import {
     Trash2
 } from 'lucide-react'
 import { Chat, Project } from '@/types'
+import { SettingsCategory } from '@/features/settings/types'
+import { ModelInfo } from '@/features/models/utils/model-fetcher'
 
 interface CommandItem {
     id: string
@@ -34,10 +36,10 @@ interface CommandPaletteProps {
     onNewChat: () => void
     projects: Project[]
     onSelectProject: (id: string) => void
-    onOpenSettings: (category?: any) => void
+    onOpenSettings: (category?: SettingsCategory) => void
     onOpenSSHManager: () => void
     onRefreshModels: () => void
-    models: { name: string }[]
+    models: ModelInfo[]
     onSelectModel: (model: string) => void
     selectedModel: string
     onClearChat: () => void
@@ -133,17 +135,20 @@ export function CommandPalette({
                 action: () => { onRefreshModels(); onClose(); },
                 category: 'model'
             },
-            ...models.map(model => ({
-                id: `model-${model.name}`,
-                label: model.name,
-                description: model.name === selectedModel ? '✓ ' + t('commandPalette.activeModel') : t('commandPalette.switchToModel'),
-                icon: <Cpu className="w-4 h-4" />,
-                action: () => {
-                    onSelectModel(model.name);
-                    onClose();
-                },
-                category: 'model' as const
-            }))
+            ...models.map(model => {
+                const name = model.name || model.id || 'Unknown Model'
+                return {
+                    id: `model-${name}`,
+                    label: name,
+                    description: name === selectedModel ? '✓ ' + t('commandPalette.activeModel') : t('commandPalette.switchToModel'),
+                    icon: <Cpu className="w-4 h-4" />,
+                    action: () => {
+                        onSelectModel(name);
+                        onClose();
+                    },
+                    category: 'model' as const
+                }
+            })
         ]
 
         return [...baseCommands, ...chatCommands, ...projectCommands, ...modelCommands]

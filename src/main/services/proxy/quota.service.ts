@@ -1,4 +1,3 @@
-
 import { net, session } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -7,6 +6,9 @@ import { SettingsService } from '../settings.service'
 import { DataService } from '../data/data.service'
 import { SecurityService } from '../security.service'
 import { app } from 'electron'
+import { QuotaInfo, ModelQuotaItem, QuotaResponse, CodexUsage } from '../../../shared/types/quota'
+import { JsonObject, JsonValue } from '../../../shared/types/common'
+import { getErrorMessage } from '../../../shared/utils/error.util'
 
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
 const ANTIGRAVITY_CLIENT_SECRET = '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'
@@ -19,7 +21,30 @@ export class QuotaService {
         private securityService: SecurityService
     ) { }
 
-    async getQuota(proxyPort: number, proxyKey: string): Promise<any> {
+    private async makeRequest(path: string, port: number, apiKey: string): Promise<JsonObject | { success: boolean; error?: string; raw?: string }> {
+        return new Promise((resolve, reject) => {
+            const options = {
+                method: 'GET', protocol: 'http:' as const, hostname: '127.0.0.1', port, path
+            }
+            const request = net.request(options)
+            request.setHeader('Authorization', `Bearer ${apiKey}`)
+            request.on('response', (res) => {
+                let d = '';
+                res.on('data', chunk => d += chunk);
+                res.on('end', () => {
+                    if (res.statusCode && res.statusCode >= 400) {
+                        resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
+                        return
+                    }
+                    try { resolve(JSON.parse(d) as JsonObject); } catch { resolve({ success: false, error: 'Invalid JSON', raw: d }); }
+                })
+            })
+            request.on('error', e => reject(e))
+            request.end()
+        })
+    }
+
+    async getQuota(proxyPort: number, proxyKey: string): Promise<QuotaResponse | null> {
         const settings = this.settingsService.getSettings()
         if (settings.proxy?.enabled === false) return null
 
@@ -45,172 +70,159 @@ export class QuotaService {
 
     // --- Antigravity ---
 
-    async fetchAntigravityUpstream(): Promise<any | null> {
+    async fetchAntigravityUpstream(): Promise<JsonObject | null> {
+        const authData = await this.getAntigravityAuthData()
+        if (!authData) return null
+
+        let accessToken = typeof authData.access_token === 'string' ? authData.access_token : ''
+        const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
+        const expiresIn = typeof authData.expires_in === 'number' ? authData.expires_in : 0
+        const timestamp = typeof authData.timestamp === 'number' ? authData.timestamp : 0
+        const email = typeof authData.email === 'string' ? authData.email : ''
+
+        if (!accessToken) return null
+
+        if (this.isTokenExpired({ timestamp, expires_in: expiresIn })) {
+            console.log('[QuotaService] AG Token expired, refreshing...')
+            if (!refreshToken) throw new Error('AUTH_EXPIRED')
+            const newToken = await this.refreshAntigravityToken(refreshToken)
+            if (newToken) {
+                accessToken = newToken.access_token
+                authData.access_token = newToken.access_token
+                authData.expires_in = newToken.expires_in || 3599
+                authData.timestamp = Date.now()
+                this.updateAuthFile('antigravity-' + (email ? email.replace(/[@.]/g, '_') + '.json' : 'json'), authData)
+            } else {
+                throw new Error('AUTH_EXPIRED')
+            }
+        }
+
+        const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
+        const response = await axios.post(upstreamUrl, {}, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'antigravity/1.104.0 darwin/arm64'
+            },
+            timeout: 8000
+        })
+        if (response.status === 200 && response.data) return response.data
+        return null
+    }
+
+    async fetchAntigravityQuota(): Promise<QuotaResponse | null> {
         try {
-            const authData = await this.getAntigravityAuthData()
-            if (!authData) {
-                // console.warn('[QuotaService] fetchAntigravityUpstream: No auth data found. User might not be logged in.')
-                return null
-            }
-
-            // Check expiry
-            if (this.isTokenExpired(authData)) {
-                console.log('[QuotaService] AG Token expired, refreshing...')
-                const newToken = await this.refreshAntigravityToken(authData.refresh_token)
-                if (newToken) {
-                    authData.access_token = newToken.access_token
-                    authData.expires_in = newToken.expires_in || 3599
-                    authData.timestamp = Date.now()
-                    this.updateAuthFile('antigravity-' + (authData.email ? authData.email.replace(/[@.]/g, '_') + '.json' : 'json'), authData)
-                } else {
-                    throw new Error('AUTH_EXPIRED')
-                }
-            }
-
-            const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
-            try {
-                const response = await axios.post(upstreamUrl, {}, {
-                    headers: {
-                        'Authorization': `Bearer ${authData.access_token}`,
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'antigravity/1.104.0 darwin/arm64'
-                    },
-                    timeout: 8000
-                })
-                if (response.status === 200 && response.data) return response.data
-            } catch (e: any) {
-                // console.warn('[QuotaService] Upstream fetch failed:', e.message)
-                throw e
-            }
-        } catch (e) {
-            // console.warn('[QuotaService] Upstream fetch failed:', e)
-            throw e
+            const data = await this.fetchAntigravityUpstream()
+            if (data) return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
+        } catch (error) {
+            if (error instanceof Error && error.message === 'AUTH_EXPIRED') return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
         }
         return null
     }
 
-    async fetchAntigravityQuota(): Promise<any | null> {
+    async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
         try {
-            const data = await this.fetchAntigravityUpstream()
-            if (data) {
-                return this.parseQuotaResponse(data)
-            }
-        } catch (e: any) {
-            if (e.message === 'AUTH_EXPIRED') return { success: false, authExpired: true }
-        }
-        return null
-    }
-
-    async getAntigravityAvailableModels(): Promise<any[]> {
-        try {
-            const data = await this.fetchAntigravityUpstream()
+            const data = await this.fetchAntigravityUpstream() as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
             if (data && data.models) {
-                const models: any[] = []
+                const models: ModelQuotaItem[] = []
                 const nameMap: Record<string, string> = {
                     "gemini-2.5-pro": "Gemini 2.5 Pro",
                     "gemini-2.5-flash": "Gemini 2.5 Flash",
-                    "gemini-2.0-flash": "Gemini 2.0 Flash",
-                    "gemini-exp-1206": "Gemini Exp",
-                    "claude-sonnet-4-5": "Claude Sonnet 4.5",
-                    "claude-opus-4-5": "Claude Opus 4.5"
+                    "gemini-2.0-flash": "Gemini 2.0 Flash"
                 }
 
-                for (const [key, val] of Object.entries(data.models) as any) {
-                    try {
-                        if (key.startsWith('chat_') || key.startsWith('rev')) continue
+                for (const [key, val] of Object.entries(data.models)) {
+                    if (key.startsWith('chat_') || key.startsWith('rev')) continue
 
-                        let percentage = 100
-                        let reset = '-'
+                    let percentage = 100
+                    let reset = '-'
 
-                        if (val.quotaInfo) {
-                            if (typeof val.quotaInfo.remainingFraction === 'number') {
-                                percentage = Math.round(val.quotaInfo.remainingFraction * 100)
-                            } else if (typeof val.quotaInfo.remainingQuota === 'number' && typeof val.quotaInfo.totalQuota === 'number' && val.quotaInfo.totalQuota > 0) {
-                                percentage = Math.round((val.quotaInfo.remainingQuota / val.quotaInfo.totalQuota) * 100)
-                            } else if (val.quotaInfo.resetTime) {
-                                percentage = 0
-                            }
-
-                            if (val.quotaInfo.resetTime) {
-                                try {
-                                    reset = new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })
-                                } catch (dateError) {
-                                    // ignore
-                                }
-                            }
+                    if (val.quotaInfo) {
+                        const q = val.quotaInfo;
+                        if (typeof q.remainingFraction === 'number') {
+                            percentage = Math.round(q.remainingFraction * 100)
+                        } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
+                            percentage = Math.round((q.remainingQuota / q.totalQuota) * 100)
+                        } else if (q.resetTime) {
+                            percentage = 0
                         }
 
-                        models.push({
-                            id: key,
-                            name: val.displayName || nameMap[key] || key,
-                            object: 'model',
-                            owned_by: 'antigravity',
-                            provider: 'antigravity',
-                            percentage,
-                            reset,
-                            permission: [],
-                            quotaInfo: val.quotaInfo
-                        })
-                    } catch (itemError) {
-                        // ignore
+                        if (q.resetTime) {
+                            try {
+                                reset = new Date(q.resetTime).toLocaleString('tr-TR', {
+                                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })
+                            } catch {
+                                // ignore
+                            }
+                        }
                     }
+
+                    models.push({
+                        id: key,
+                        name: val.displayName || nameMap[key] || key,
+                        object: 'model',
+                        owned_by: 'antigravity',
+                        provider: 'antigravity',
+                        percentage,
+                        reset,
+                        permission: [],
+                        quotaInfo: val.quotaInfo
+                    })
                 }
                 return models
             }
-        } catch (e) {
-            console.error('[QuotaService] getAntigravityAvailableModels failed:', e)
+        } catch (error) {
+            console.error('[QuotaService] getAntigravityAvailableModels failed:', getErrorMessage(error))
         }
         return []
     }
 
     // --- Legacy ---
 
-    async fetchLegacyQuota(): Promise<any | null> {
+    async fetchLegacyQuota(): Promise<QuotaResponse | null> {
         try {
             const legacy = await this.getLegacyQuota()
-            if (legacy && legacy.success) return legacy
-        } catch (e) { }
+            if (legacy && legacy.success) return legacy as QuotaResponse
+        } catch {
+            // ignore
+        }
         return null
     }
 
-    async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: any }> {
+    async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: JsonObject } & Partial<QuotaResponse>> {
         const authData = await this.getAntigravityAuthData()
-        if (!authData) {
-            return { success: false }
-        }
-        return { success: true, data: { authenticated: true } }
+        if (!authData) return { success: false, next_reset: '-', models: [], status: 'Error' }
+        return { success: true, data: { authenticated: true }, models: [], next_reset: '-', status: 'Authenticated' }
     }
 
     // --- Proxy ---
 
-    async fetchProxyQuota(port: number, key: string): Promise<any | null> {
+    async fetchProxyQuota(port: number, key: string): Promise<QuotaResponse | null> {
         try {
-            return await this.makeRequest('/v1/quota', port, key)
-        } catch (e) { }
+            const res = await this.makeRequest('/v1/quota', port, key)
+            return res as QuotaResponse
+        } catch {
+            // ignore
+        }
         return null
     }
 
     // --- Codex ---
 
-    async fetchCodexQuota(): Promise<any | null> {
+    async fetchCodexQuota(): Promise<QuotaResponse | null> {
         try {
             const codexData = await this.fetchCodexUsage()
-            if (codexData) {
-                return this.parseCodexUsageToQuota(codexData)
-            }
-        } catch (e) { }
+            if (codexData) return this.parseCodexUsageToQuota(codexData)
+        } catch {
+            // ignore
+        }
         return null
     }
 
-    async getCodexUsage(): Promise<any> {
-        const result: any = { usageSource: 'none' }
+    async getCodexUsage(): Promise<Partial<QuotaResponse>> {
+        const result: Partial<QuotaResponse> & { usageSource: 'none' | 'chatgpt' } = { usageSource: 'none' }
         const whamData = await this.fetchCodexUsage()
-
         if (whamData) {
             const usage = this.extractCodexUsageFromWham(whamData)
             if (usage) {
@@ -218,26 +230,18 @@ export class QuotaService {
                 result.usageSource = 'chatgpt'
             }
 
-            const rawPlan = whamData.plan_type ||
-                whamData.rate_limit?.plan_type ||
-                (usage as any)?.planType ||
-                'free'
-
+            const rawPlan = String(whamData.plan_type || (whamData.rate_limit as JsonObject)?.plan_type || usage?.planType || 'free')
             result.planType = rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1)
-            if (result.usage) {
-                result.usage.planType = result.planType
-            }
-
-            result.accountId = whamData.account_id || whamData.user_id || 'unknown'
-            if (whamData.email) result.email = whamData.email
+            if (result.usage) (result.usage as CodexUsage).planType = result.planType
+            result.accountId = (whamData.account_id as string) || (whamData.user_id as string) || 'unknown'
+            if (whamData.email) result.email = whamData.email as string
         }
-
         return result
     }
 
-    async fetchCodexUsage(): Promise<any | null> {
+    async fetchCodexUsage(): Promise<JsonObject | null> {
         const settings = this.settingsService.getSettings()
-        let token = (settings as any).openai?.accessToken || settings.openai?.apiKey
+        let token = settings.openai?.accessToken || settings.openai?.apiKey
 
         if (!token || token === 'connected') {
             try {
@@ -248,12 +252,12 @@ export class QuotaService {
                         const authFile = path.join(authDir, files[0])
                         const content = this.readAuthFile(authFile)
                         const fileToken = content ? this.pickOpenAiAccessToken(content) : null
-                        if (fileToken) {
-                            token = fileToken
-                        }
+                        if (fileToken) token = fileToken
                     }
                 }
-            } catch (e: any) { }
+            } catch {
+                // ignore
+            }
         }
 
         if (!token || token === 'connected') {
@@ -264,28 +268,26 @@ export class QuotaService {
                     const sessionRes = await axios.get('https://chatgpt.com/api/auth/session', {
                         headers: {
                             'Cookie': cookieHeader,
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                         }
                     })
-                    if (sessionRes.data?.accessToken) {
-                        token = sessionRes.data.accessToken
-                    }
+                    const sessionData = sessionRes.data as { accessToken?: string } | null
+                    if (sessionData?.accessToken) token = sessionData.accessToken
                 }
-            } catch (e: any) { }
+            } catch (error) {
+                console.debug('[QuotaService] Failed to fetch ChatGPT session cookies:', getErrorMessage(error))
+            }
         }
 
         if (!token || token === 'connected') return null
 
-        const data = await this.fetchCodexUsageFromWham(token)
+        const data = await this.fetchCodexUsageFromWham(token) as ({ email?: string } & JsonObject) | null
         if (data) {
-            // Optional: We can choose NOT to persist session here to keep QuotaService clean, 
-            // but ProxyService used to persist it for the binary. 
-            // Let's persist it using a helper similar to ProxyService.
             this.updateAuthFile('codex-session.json', {
                 accessToken: token,
                 provider: 'codex',
                 timestamp: Date.now(),
-                email: data.email || (settings as any).openai?.email
+                email: data.email || settings.openai?.email
             })
         }
         return data
@@ -293,12 +295,11 @@ export class QuotaService {
 
     // --- Copilot ---
 
-    async getCopilotQuota() {
-        const data = await this.fetchCopilotBilling()
-        if (!data) return { success: false }
-
+    async getCopilotQuota(): Promise<{ success: boolean; plan?: string; limit?: number; remaining?: number; used?: number; percentage?: number | null }> {
+        const rawData = await this.fetchCopilotBilling()
+        if (!rawData) return { success: false }
+        const data = rawData as { copilot_plan?: string; quota_snapshots?: { premium_interactions?: { entitlement: number; remaining: number; percent_remaining: number } } }
         const premium = data.quota_snapshots?.premium_interactions
-
         return {
             success: true,
             plan: data.copilot_plan || 'unknown',
@@ -309,332 +310,357 @@ export class QuotaService {
         }
     }
 
-    private async fetchCopilotBilling(): Promise<any | null> {
+    private async fetchCopilotBilling(): Promise<JsonObject | null> {
         const settings = this.settingsService.getSettings()
-        const token = (settings as any).copilot?.token
+        const token = settings.copilot?.token
         if (!token) return null
-
         try {
             const response = await axios.get('https://api.github.com/copilot_internal/user', {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'User-Agent': 'GithubCopilot/1.250.0'
-                }
+                headers: { 'Authorization': `token ${token}`, 'User-Agent': 'GithubCopilot/1.250.0' }
             })
-            return response.data
-        } catch (e: any) {
+            return response.data as JsonObject
+        } catch (error) {
+            console.debug('[QuotaService] fetchCopilotBilling failed:', getErrorMessage(error))
             return null
         }
     }
 
     // --- Helpers ---
 
-    extractCodexUsageFromWham(data: any): any | null {
+    extractCodexUsageFromWham(data: JsonValue): CodexUsage | null {
         if (!data || typeof data !== 'object') return null
+        const d = data as JsonObject
+        const rateLimit = this.asObject(d.rate_limit)
+        const primaryWindow = rateLimit ? this.asObject(rateLimit.primary_window) : null
+        const secondaryWindow = rateLimit ? this.asObject(rateLimit.secondary_window) : null
 
-        const totalRequests = this.findNumberByKeys(data, ['total_requests', 'totalRequests', 'request_count', 'requests_used', 'requests'])
-        const totalTokens = this.findNumberByKeys(data, ['total_tokens', 'totalTokens', 'token_count', 'tokens_used', 'tokens'])
-        const remainingRequests = this.findNumberByKeys(data, ['remaining_requests', 'remainingRequests', 'requests_remaining'])
-        const remainingTokens = this.findNumberByKeys(data, ['remaining_tokens', 'remainingTokens', 'tokens_remaining'])
-        const dailyUsage = this.findNumberByKeys(data, ['daily_usage', 'dailyUsage', 'daily_used', 'usage_daily', 'requests_daily', 'requests_today', 'cap_usage', 'usage'])
-        const dailyLimit = this.findNumberByKeys(data, ['daily_limit', 'dailyLimit', 'limit_daily', 'daily_quota', 'cap_limit', 'limit'])
-        const weeklyUsage = this.findNumberByKeys(data, ['weekly_usage', 'weeklyUsage', 'weekly_used', 'usage_weekly', 'requests_weekly'])
-        const weeklyLimit = this.findNumberByKeys(data, ['weekly_limit', 'weeklyLimit', 'limit_weekly', 'weekly_quota'])
+        const totalRequests = this.findNumberByKeys(d, ['total_requests', 'totalRequests', 'request_count', 'requests_used', 'requests'])
+        const totalTokens = this.findNumberByKeys(d, ['total_tokens', 'totalTokens', 'token_count', 'tokens_used', 'tokens'])
+        const remainingRequests = this.findNumberByKeys(d, ['remaining_requests', 'remainingRequests', 'requests_remaining'])
+        const remainingTokens = this.findNumberByKeys(d, ['remaining_tokens', 'remainingTokens', 'tokens_remaining'])
+        const dailyUsage = this.findNumberByKeys(d, ['daily_usage', 'dailyUsage', 'daily_used', 'usage_daily', 'requests_daily', 'requests_today', 'cap_usage', 'usage'])
+        const dailyLimit = this.findNumberByKeys(d, ['daily_limit', 'dailyLimit', 'limit_daily', 'daily_quota', 'cap_limit', 'limit'])
+        const weeklyUsage = this.findNumberByKeys(d, ['weekly_usage', 'weeklyUsage', 'weekly_used', 'usage_weekly', 'requests_weekly'])
+        const weeklyLimit = this.findNumberByKeys(d, ['weekly_limit', 'weeklyLimit', 'limit_weekly', 'weekly_quota'])
 
-        const dailyUsedPercent = data?.rate_limit?.primary_window?.used_percent ?? this.findNumberByKeys(data, ['rate_limit.primary_window.used_percent'])
-        const weeklyUsedPercent = data?.rate_limit?.secondary_window?.used_percent ?? this.findNumberByKeys(data, ['rate_limit.secondary_window.used_percent'])
+        const dailyUsedPercent = this.toNumber(primaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.primary_window.used_percent'])
+        const weeklyUsedPercent = this.toNumber(secondaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.used_percent'])
 
-        const dailyResetAt = this.normalizeResetAt(data?.rate_limit?.primary_window?.reset_at ?? this.findNumberByKeys(data, ['rate_limit.primary_window.reset_at']))
-        const weeklyResetAt = this.normalizeResetAt(data?.rate_limit?.secondary_window?.reset_at ?? this.findNumberByKeys(data, ['rate_limit.secondary_window.reset_at']))
+        const dailyResetAt = this.normalizeResetAt(primaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.primary_window.reset_at']))
+        const weeklyResetAt = this.normalizeResetAt(secondaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.reset_at']))
         const resetAt = this.normalizeResetAt(
-            this.findStringByKeys(data, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt']) ??
-            this.findNumberByKeys(data, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt'])
+            this.findStringByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt']) ??
+            this.findNumberByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt'])
         )
 
-        if (
-            totalRequests === null && totalTokens === null && remainingRequests === null && remainingTokens === null &&
-            dailyUsage === null && dailyLimit === null && weeklyUsage === null && weeklyLimit === null &&
-            dailyUsedPercent === null && weeklyUsedPercent === null && !dailyResetAt && !weeklyResetAt && !resetAt
-        ) {
-            return null
-        }
+        const result: CodexUsage = {}
+        if (totalRequests !== null) result.totalRequests = totalRequests
+        if (totalTokens !== null) result.totalTokens = totalTokens
+        if (remainingRequests !== null) result.remainingRequests = remainingRequests
+        if (remainingTokens !== null) result.remainingTokens = remainingTokens
+        if (dailyUsage !== null) result.dailyUsage = dailyUsage
+        if (dailyLimit !== null) result.dailyLimit = dailyLimit
+        if (weeklyUsage !== null) result.weeklyUsage = weeklyUsage
+        if (weeklyLimit !== null) result.weeklyLimit = weeklyLimit
+        if (dailyUsedPercent !== null) result.dailyUsedPercent = dailyUsedPercent
+        if (weeklyUsedPercent !== null) result.weeklyUsedPercent = weeklyUsedPercent
+        if (dailyResetAt) result.dailyResetAt = dailyResetAt
+        if (weeklyResetAt) result.weeklyResetAt = weeklyResetAt
+        if (resetAt) result.resetAt = resetAt
 
-        return {
-            ...(totalRequests !== null ? { totalRequests } : {}),
-            ...(totalTokens !== null ? { totalTokens } : {}),
-            ...(remainingRequests !== null ? { remainingRequests } : {}),
-            ...(remainingTokens !== null ? { remainingTokens } : {}),
-            ...(dailyUsage !== null ? { dailyUsage } : {}),
-            ...(dailyLimit !== null ? { dailyLimit } : {}),
-            ...(weeklyUsage !== null ? { weeklyUsage } : {}),
-            ...(weeklyLimit !== null ? { weeklyLimit } : {}),
-            ...(dailyUsedPercent !== null ? { dailyUsedPercent } : {}),
-            ...(weeklyUsedPercent !== null ? { weeklyUsedPercent } : {}),
-            ...(dailyResetAt ? { dailyResetAt } : {}),
-            ...(weeklyResetAt ? { weeklyResetAt } : {}),
-            ...(resetAt ? { resetAt } : {})
-        }
+        return Object.keys(result).length > 0 ? result : null
     }
 
-    private async fetchCodexUsageFromWham(accessToken: string): Promise<any | null> {
-        const endpoints = [
-            'https://chatgpt.com/backend-api/wham/usage',
-            'https://chat.openai.com/backend-api/wham/usage'
-        ]
-
+    private async fetchCodexUsageFromWham(accessToken: string): Promise<JsonObject | null> {
+        const endpoints = ['https://chatgpt.com/backend-api/wham/usage', 'https://chat.openai.com/backend-api/wham/usage']
         for (const endpoint of endpoints) {
             try {
                 const response = await axios.get(endpoint, {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        Accept: 'application/json'
-                    },
+                    headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
                     timeout: 10000
                 })
-                if (response?.data) {
-                    return response.data
-                }
-            } catch (e: any) {
-                const status = e?.response?.status
-                if (status === 401 || status === 403) {
-                    break
-                }
+                if (response?.data && typeof response.data === 'object') return response.data as JsonObject
+            } catch (e) {
+                if (axios.isAxiosError(e) && (e.response?.status === 401 || e.response?.status === 403)) break
             }
         }
         return null
     }
 
-    private parseQuotaResponse(data: any): any {
+    private parseQuotaResponse(data: { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> }): QuotaResponse | null {
         if (!data.models) return null
-        const models = []
-        for (const [key, val] of Object.entries(data.models) as any) {
+        const models: ModelQuotaItem[] = []
+        for (const [key, val] of Object.entries(data.models)) {
             try {
                 if (key.startsWith('chat_') || key.startsWith('rev')) continue
                 let percentage = 100
                 let reset = '-'
-                let quotaInfo: any = undefined
+                let quotaInfo: QuotaInfo | undefined = undefined
 
                 if (val.quotaInfo) {
-                    if (typeof val.quotaInfo.remainingFraction === 'number') {
-                        percentage = Math.round(val.quotaInfo.remainingFraction * 100)
-                    } else if (typeof val.quotaInfo.remainingQuota === 'number' && typeof val.quotaInfo.totalQuota === 'number' && val.quotaInfo.totalQuota > 0) {
-                        percentage = Math.round((val.quotaInfo.remainingQuota / val.quotaInfo.totalQuota) * 100)
-                    } else if (val.quotaInfo.resetTime) {
+                    const q = val.quotaInfo;
+                    if (typeof q.remainingFraction === 'number') {
+                        percentage = Math.round(q.remainingFraction * 100)
+                    } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
+                        percentage = Math.round((q.remainingQuota / q.totalQuota) * 100)
+                    } else if (q.resetTime) {
                         percentage = 0
                     }
 
-                    if (val.quotaInfo.resetTime) {
+                    if (q.resetTime) {
                         try {
-                            reset = new Date(val.quotaInfo.resetTime).toLocaleString('tr-TR', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                            reset = new Date(q.resetTime).toLocaleString('tr-TR', {
+                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                             })
-                        } catch { }
+                        } catch {
+                            // ignore
+                        }
                     }
                     quotaInfo = {
-                        remainingQuota: val.quotaInfo.remainingQuota,
-                        totalQuota: val.quotaInfo.totalQuota,
-                        remainingFraction: val.quotaInfo.remainingFraction ?? (percentage / 100),
-                        resetTime: val.quotaInfo.resetTime
+                        remainingQuota: q.remainingQuota,
+                        totalQuota: q.totalQuota,
+                        remainingFraction: q.remainingFraction ?? (percentage / 100),
+                        resetTime: q.resetTime
                     }
                 }
 
                 models.push({
                     id: key,
                     name: val.displayName || key,
+                    object: 'model',
+                    owned_by: 'antigravity',
                     provider: 'antigravity',
                     percentage,
                     reset,
+                    permission: [],
                     quotaInfo
                 })
-            } catch { }
+            } catch (error) {
+                console.warn('[QuotaService] parseQuotaResponse model error:', getErrorMessage(error))
+            }
         }
 
         return {
-            status: models.length > 0 ? `${Math.round(models.reduce((sum: number, m: any) => sum + m.percentage, 0) / models.length)}%` : 'Available',
+            status: models.length > 0 ? `${Math.round(models.reduce((sum, m) => sum + m.percentage, 0) / models.length)}%` : 'Available',
             next_reset: models.length > 0 ? models[0].reset : '-',
-            models: models.sort((a: any, b: any) => a.name.localeCompare(b.name))
+            models: models.sort((a, b) => a.name.localeCompare(b.name))
         }
     }
 
-    private parseCodexUsageToQuota(data: any): any {
+    private parseCodexUsageToQuota(data: JsonObject): QuotaResponse {
+        const rateLimit = this.asObject(data.rate_limit)
+        const primaryWindow = rateLimit ? this.asObject(rateLimit.primary_window) : null
+        const secondaryWindow = rateLimit ? this.asObject(rateLimit.secondary_window) : null
+        const planType = typeof data.plan_type === 'string' ? data.plan_type : ''
         return {
             success: true,
+            status: 'ChatGPT Usage',
+            next_reset: typeof primaryWindow?.reset_at === 'string' ? primaryWindow.reset_at : '-',
+            models: [],
             usage: {
-                dailyUsedPercent: data.rate_limit?.primary_window?.used_percent || 0,
-                weeklyUsedPercent: data.rate_limit?.secondary_window?.used_percent || 0,
-                dailyResetAt: data.rate_limit?.primary_window?.reset_at,
-                weeklyResetAt: data.rate_limit?.secondary_window?.reset_at,
-                planType: String(data.plan_type || 'Free').toLowerCase().includes('plus') ? 'Plus' : (data.plan_type ? data.plan_type.charAt(0).toUpperCase() + data.plan_type.slice(1) : 'Free')
+                dailyUsedPercent: this.toNumber(primaryWindow?.used_percent ?? null) || 0,
+                weeklyUsedPercent: this.toNumber(secondaryWindow?.used_percent ?? null) || 0,
+                dailyResetAt: typeof primaryWindow?.reset_at === 'string' ? primaryWindow.reset_at : undefined,
+                weeklyResetAt: typeof secondaryWindow?.reset_at === 'string' ? secondaryWindow.reset_at : undefined,
+                planType: String(planType || 'Free').toLowerCase().includes('plus') ? 'Plus' : (planType ? planType.charAt(0).toUpperCase() + planType.slice(1) : 'Free')
             }
         }
     }
 
-    // --- Auth Utils ---
-
-    private async getAntigravityAuthData(): Promise<any | null> {
-        const dir = this.getAuthWorkDir()
+    private async getAntigravityAuthData(): Promise<JsonObject | null> {
         try {
-            if (!fs.existsSync(dir)) return null
-            const files = fs.readdirSync(dir)
-            const specific = files.find(f => f.startsWith('antigravity-') && f.endsWith('.json'))
-            if (specific) return this.readAuthFile(path.join(dir, specific))
-            const generic = files.find(f => f === 'antigravity.json')
-            if (generic) return this.readAuthFile(path.join(dir, generic))
+            const dir = this.getAuthWorkDir()
+            if (dir && fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir)
+                const findFile = (pattern: string | RegExp) => {
+                    return files.find(f => {
+                        const name = f.toLowerCase()
+                        if (typeof pattern === 'string') {
+                            return (name.startsWith(pattern.toLowerCase()) || name === pattern.toLowerCase()) &&
+                                (name.endsWith('.json') || name.endsWith('.enc'))
+                        }
+                        return pattern.test(name)
+                    })
+                }
+
+                const specific = findFile('antigravity-')
+                if (specific) return this.readAuthFile(path.join(dir, specific))
+                const tokenFile = findFile('antigravity_token')
+                if (tokenFile) return this.readAuthFile(path.join(dir, tokenFile))
+                const generic = findFile('antigravity')
+                if (generic) return this.readAuthFile(path.join(dir, generic))
+
+            }
             return null
-        } catch { return null }
+        } catch (error) {
+            console.debug('[QuotaService] getAntigravityAuthData failed:', getErrorMessage(error))
+            return null
+        }
     }
 
-    private isTokenExpired(authData: any): boolean {
+    private isTokenExpired(authData: { timestamp: number; expires_in: number }): boolean {
         if (!authData.timestamp || !authData.expires_in) return true
         const expiry = authData.timestamp + (authData.expires_in * 1000)
         return Date.now() > (expiry - 60000)
     }
 
-    private async refreshAntigravityToken(refreshToken: string): Promise<any> {
+    private async refreshAntigravityToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
         if (!refreshToken) return null
         try {
-            const params = new URLSearchParams()
-            params.append('client_id', ANTIGRAVITY_CLIENT_ID)
-            params.append('client_secret', ANTIGRAVITY_CLIENT_SECRET)
-            params.append('refresh_token', refreshToken)
-            params.append('grant_type', 'refresh_token')
-
+            const params = new URLSearchParams({
+                client_id: ANTIGRAVITY_CLIENT_ID,
+                client_secret: ANTIGRAVITY_CLIENT_SECRET,
+                refresh_token: refreshToken,
+                grant_type: 'refresh_token'
+            })
             const res = await axios.post('https://oauth2.googleapis.com/token', params.toString(), {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             })
-            return res.data
-        } catch (e: any) {
-            console.error('[QuotaService] refreshAntigravityToken failed:', e.message)
+            return res.data as { access_token: string; expires_in: number }
+        } catch (error) {
+            console.error('[QuotaService] refreshAntigravityToken failed:', getErrorMessage(error))
             return null
         }
     }
-
-    // --- Common Utils ---
 
     private getAuthWorkDir(): string {
-        if (this.dataService) {
-            return this.dataService.getPath('auth')
-        }
-        return path.join(app.getPath('userData'), 'auth')
+        return this.dataService ? this.dataService.getPath('auth') : path.join(app.getPath('userData'), 'auth')
     }
 
-    private readAuthFile(filePath: string): any | null {
+    private readAuthFile(filePath: string): JsonObject | null {
         try {
             const content = fs.readFileSync(filePath, 'utf8')
-            let json = JSON.parse(content)
-            if (json.encryptedPayload && this.securityService) {
-                const decrypted = this.securityService.decryptSync(json.encryptedPayload)
-                json = JSON.parse(decrypted)
+            let extracted: string = content;
+
+            // Try to see if it's a JSON wrapper first
+            try {
+                const data = JSON.parse(content);
+                const extractString = (obj: Record<string, unknown>): string | null => {
+                    if (!obj) return null;
+                    const candidates = ['token', 'encryptedPayload', 'ciphertext', 'data', 'access_token', 'accessToken'];
+                    for (const c of candidates) {
+                        if (typeof obj[c] === 'string' && obj[c]) return obj[c] as string;
+                        if (typeof obj[c] === 'object' && obj[c] !== null) {
+                            const nested = extractString(obj[c] as Record<string, unknown>);
+                            if (nested) return nested;
+                        }
+                    }
+                    return null;
+                };
+                const payload = extractString(data);
+                if (payload) extracted = payload;
+            } catch { /* Not JSON at top level */ }
+
+            let decrypted: string | null = null;
+            if (this.securityService && !extracted.trim().startsWith('{')) {
+                decrypted = this.securityService.decryptSync(extracted);
+                // Fallback to content if extraction was wrong and not JSON
+                if (!decrypted && extracted !== content && !content.trim().startsWith('{')) {
+                    decrypted = this.securityService.decryptSync(content);
+                }
             }
-            return json
-        } catch (e) {
+
+            if (decrypted) {
+                try {
+                    const json = JSON.parse(decrypted);
+                    return json && typeof json === 'object' && !Array.isArray(json) ? (json as JsonObject) : { access_token: decrypted.trim() } as JsonObject;
+                } catch {
+                    return { access_token: decrypted.trim() } as JsonObject
+                }
+            } else {
+                // Final fallback: Maybe it's already plain text?
+                const potential = extracted.trim();
+                if (potential && !potential.startsWith('{')) {
+                    return { access_token: potential } as JsonObject;
+                }
+            }
+            return null
+        } catch (error) {
+            console.debug('[QuotaService] readAuthFile failed:', getErrorMessage(error))
             return null
         }
     }
 
-    private updateAuthFile(nameOrPrefix: string, data: any) {
+    private updateAuthFile(nameOrPrefix: string, data: JsonObject) {
         try {
             const dir = this.getAuthWorkDir()
             let fileName: string
-            if (nameOrPrefix.endsWith('.json')) {
-                fileName = nameOrPrefix
-            } else {
+            if (nameOrPrefix.endsWith('.json')) fileName = nameOrPrefix
+            else {
                 const files = fs.readdirSync(dir).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
-                if (files.length > 0) {
-                    fileName = files[0]
-                } else {
-                    fileName = `${nameOrPrefix}.json`
-                }
+                fileName = files.length > 0 ? files[0] : `${nameOrPrefix}.json`
             }
             const filePath = path.join(dir, fileName)
-            const contentString = JSON.stringify(data, null, 2)
-            let persistedData = contentString
+            let persistedData = JSON.stringify(data, null, 2)
             if (this.securityService) {
-                const encrypted = this.securityService.encryptSync(contentString)
+                const encrypted = this.securityService.encryptSync(persistedData)
                 persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 })
             }
             fs.writeFileSync(filePath, persistedData)
-        } catch (e) {
-            console.error('[QuotaService] Failed to update auth file:', e)
+        } catch (error) {
+            console.error('[QuotaService] updateAuthFile failed:', getErrorMessage(error))
         }
     }
 
-    private pickOpenAiAccessToken(authData: any): string | null {
+    private pickOpenAiAccessToken(authData: JsonObject): string | null {
+        const ad = authData
         const candidates = [
-            authData?.access_token,
-            authData?.accessToken,
-            authData?.AccessToken,
-            authData?.token?.access_token,
-            authData?.token?.accessToken,
-            authData?.session?.access_token,
-            authData?.session?.accessToken,
-            authData?.auth?.access_token,
-            authData?.auth?.accessToken
+            ad?.access_token, ad?.accessToken, ad?.AccessToken,
+            (ad?.token as JsonObject)?.access_token, (ad?.token as JsonObject)?.accessToken,
+            (ad?.session as JsonObject)?.access_token, (ad?.session as JsonObject)?.accessToken
         ]
-        for (const value of candidates) {
-            if (typeof value === 'string' && value.trim()) {
-                return value.trim()
-            }
-        }
+        for (const value of candidates) if (typeof value === 'string' && value.trim()) return value.trim()
         return null
     }
 
-    private findNumberByKeys(root: any, keys: string[]): number | null {
-        const queue: Array<{ value: any; depth: number }> = [{ value: root, depth: 0 }]
+    private findNumberByKeys(root: JsonValue, keys: string[]): number | null {
+        const queue: Array<{ value: JsonValue; depth: number }> = [{ value: root, depth: 0 }]
         while (queue.length > 0) {
             const current = queue.shift()
             if (!current) continue
             const { value, depth } = current
             if (!value || typeof value !== 'object') continue
             if (depth >= 4) continue
+            const v = value as JsonObject
             for (const key of keys) {
-                if (value[key] !== undefined && value[key] !== null) {
-                    const num = Number(value[key])
+                const candidate = v[key]
+                if (candidate !== undefined && candidate !== null) {
+                    const num = Number(candidate)
                     if (!Number.isNaN(num)) return num
                 }
             }
             const children = Array.isArray(value) ? value : Object.values(value)
             for (const child of children) {
-                if (child && typeof child === 'object') {
-                    queue.push({ value: child, depth: depth + 1 })
-                }
+                if (child && typeof child === 'object') queue.push({ value: child, depth: depth + 1 })
             }
         }
         return null
     }
 
-    private findStringByKeys(root: any, keys: string[]): string | null {
-        const queue: Array<{ value: any; depth: number }> = [{ value: root, depth: 0 }]
+    private findStringByKeys(root: JsonValue, keys: string[]): string | null {
+        const queue: Array<{ value: JsonValue; depth: number }> = [{ value: root, depth: 0 }]
         while (queue.length > 0) {
             const current = queue.shift()
             if (!current) continue
             const { value, depth } = current
             if (!value || typeof value !== 'object') continue
             if (!Array.isArray(value)) {
+                const v = value as JsonObject
                 for (const key of keys) {
-                    if (Object.prototype.hasOwnProperty.call(value, key)) {
-                        const candidate = value[key]
-                        if (typeof candidate === 'string' && candidate.trim()) {
-                            return candidate.trim()
-                        }
-                    }
+                    const candidate = v[key]
+                    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
                 }
             }
             if (depth >= 4) continue
             const children = Array.isArray(value) ? value : Object.values(value)
             for (const child of children) {
-                if (child && typeof child === 'object') {
-                    queue.push({ value: child, depth: depth + 1 })
-                }
+                if (child && typeof child === 'object') queue.push({ value: child, depth: depth + 1 })
             }
         }
         return null
     }
 
-    private normalizeResetAt(value: any): string | null {
+    private normalizeResetAt(value: JsonValue): string | null {
         if (typeof value === 'string' && value.trim()) return value.trim()
         const numeric = this.toNumber(value)
         if (numeric === null) return null
@@ -642,7 +668,7 @@ export class QuotaService {
         return new Date(ms).toISOString()
     }
 
-    private toNumber(value: any): number | null {
+    private toNumber(value: JsonValue): number | null {
         if (typeof value === 'number' && Number.isFinite(value)) return value
         if (typeof value === 'string') {
             const trimmed = value.trim()
@@ -653,36 +679,9 @@ export class QuotaService {
         return null
     }
 
-    private makeRequest(path: string, port: number, apiKey: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            const options = {
-                method: 'GET',
-                protocol: 'http:' as 'http:',
-                hostname: '127.0.0.1',
-                port: port,
-                path
-            }
-            const request = net.request(options)
-            request.setHeader('Authorization', `Bearer ${apiKey}`)
-            request.on('response', (res) => {
-                let d = '';
-                res.on('data', chunk => d += chunk);
-                res.on('end', () => {
-                    if (res.statusCode && res.statusCode >= 400) {
-                        resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
-                        return
-                    }
-                    try {
-                        const json = JSON.parse(d);
-                        resolve(json);
-                    } catch (e) {
-                        resolve({ success: false, error: 'Invalid JSON', raw: d });
-                    }
-                })
-            })
-            request.on('error', e => reject(e))
-            request.end()
-        })
+    private asObject(value: JsonValue | undefined): JsonObject | null {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+        return value as JsonObject
     }
 
 }

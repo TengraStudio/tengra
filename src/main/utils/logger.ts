@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
+import { JsonValue } from '../../shared/types/common';
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
@@ -16,31 +17,31 @@ export class Logger {
         }
     }
 
-    private static format(level: LogLevel, message: string, meta?: any): string {
+    private static format(level: LogLevel, message: string, meta?: JsonValue): string {
         const timestamp = new Date().toISOString();
         const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
         return `[${timestamp}] [${level}] ${message}${metaStr}\n`;
     }
 
-    static info(message: string, meta?: any) {
+    static info(message: string, meta?: JsonValue) {
         this.log('INFO', message, meta);
     }
 
-    static warn(message: string, meta?: any) {
+    static warn(message: string, meta?: JsonValue) {
         this.log('WARN', message, meta);
     }
 
-    static error(message: string, meta?: any) {
+    static error(message: string, meta?: JsonValue) {
         this.log('ERROR', message, meta);
     }
 
-    static debug(message: string, meta?: any) {
+    static debug(message: string, meta?: JsonValue) {
         if (process.env.DEBUG) {
             this.log('DEBUG', message, meta);
         }
     }
 
-    private static log(level: LogLevel, message: string, meta?: any) {
+    private static log(level: LogLevel, message: string, meta?: JsonValue) {
         const line = this.format(level, message, meta);
         console.log(line.trim());
         if (this.logFile) {

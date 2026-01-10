@@ -1,0 +1,14 @@
+export type SettingsCategory =
+    | 'accounts'
+    | 'general'
+    | 'appearance'
+    | 'models'
+    | 'statistics'
+    | 'gallery'
+    | 'personas'
+    | 'speech'
+    | 'developer'
+    | 'advanced'
+    | 'about'
+    | 'mcp-servers'
+    | 'mcp-marketplace';

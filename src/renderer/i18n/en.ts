@@ -242,7 +242,7 @@ export const en = {
         antigravityDesc: 'Antigravity cloud services.',
         codexDesc: 'OpenAI Codex API access.',
         claudeDesc: 'Anthropic Claude models.',
-        geminiDesc: 'Google Gemini integration.',
+
         connected: 'CONNECTED',
         disconnected: 'DISCONNECTED',
         connect: 'Connect',
@@ -261,7 +261,7 @@ export const en = {
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
             claude: 'Claude',
-            gemini: 'Gemini'
+
         }
     },
     speech: {

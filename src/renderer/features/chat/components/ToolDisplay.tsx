@@ -2,14 +2,23 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ToolResult } from '@/types'
+import { JsonObject, JsonValue } from '../../../../shared/types/common'
 import { useTranslation, Language } from '@/i18n'
 
+interface CommandExecutionResult {
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+}
+
+interface ToolCallType {
+    id: string;
+    name: string;
+    arguments: JsonObject;
+}
+
 interface ToolDisplayProps {
-    toolCall: {
-        id: string
-        name: string
-        arguments: any
-    }
+    toolCall: ToolCallType
     result?: ToolResult
     isExecuting?: boolean
     language?: Language
@@ -20,9 +29,10 @@ import { cn } from '@/lib/utils'
 export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) {
     const { t } = useTranslation(language)
     const hasError = result?.error
-    const execStdout = result?.result?.stdout
-    const execStderr = result?.result?.stderr
-    const execError = result?.result?.error
+    const resultData = result?.result as CommandExecutionResult | undefined
+    const execStdout = resultData?.stdout
+    const execStderr = resultData?.stderr
+    const execError = resultData?.error
     const [commandExpanded, setCommandExpanded] = useState(false)
     const [showMarkdown, setShowMarkdown] = useState(false)
 
@@ -35,7 +45,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
 
     // SPECIAL HANDLING: Terminal Commands ("Direct & Real-time")
     if (toolCall.name === 'execute_command') {
-        const command = toolCall.arguments.command
+        const command = String(toolCall.arguments.command || '')
         const stdout = execStdout
         const stderr = execStderr
         const error = execError
@@ -253,17 +263,24 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     )
 }
 
-function ToolArguments({ name, args }: { name: string, args: any }) {
+function ToolArguments({ name, args }: { name: string; args: JsonObject }) {
     if (name === 'read_file' || name === 'write_file') {
-        return <div className="font-mono text-primary bg-primary/10 px-2 py-1 rounded inline-block">Path: {args.path || args.file}</div>
+        const pathValue = typeof args.path === 'string'
+            ? args.path
+            : (typeof args.file === 'string' ? args.file : '')
+        return <div className="font-mono text-primary bg-primary/10 px-2 py-1 rounded inline-block">Path: {pathValue}</div>
     }
     return <pre className="font-mono text-muted-foreground bg-muted/50 p-2 rounded overflow-x-auto">{JSON.stringify(args, null, 2)}</pre>
 }
 
-function ToolOutput({ name, result, t }: { name: string, result: any, t: (key: string) => string }) {
+function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (key: string) => string }) {
     // Other tool outputs remain the same but cleaner
     if (name === 'read_file') {
-        const content = typeof result === 'string' ? result : result.content
+        const content = typeof result === 'string'
+            ? result
+            : (result && typeof result === 'object' && !Array.isArray(result) && typeof (result as JsonObject).content === 'string'
+                ? (result as JsonObject).content as string
+                : '')
         return (
             <div className="relative group">
                 <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50">{t('tools.filePreview')}</div>
@@ -282,23 +299,37 @@ function ToolOutput({ name, result, t }: { name: string, result: any, t: (key: s
     }
 
     if (name === 'search_web') {
-        if (result.results && Array.isArray(result.results)) {
-            return (
-                <div className="flex flex-col gap-2">
-                    {result.results.map((r: any, i: number) => (
-                        <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="block p-2 bg-card border border-border rounded hover:border-primary/50 transition-colors group">
-                            <div className="font-medium text-primary group-hover:underline truncate">{r.title}</div>
-                            <div className="text-muted-foreground line-clamp-2 mt-1">{r.content || r.snippet}</div>
-                        </a>
-                    ))}
-                </div>
-            )
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            const resultsValue = (result as JsonObject).results
+            const results = Array.isArray(resultsValue)
+                ? resultsValue.filter((item): item is JsonObject => !!item && typeof item === 'object' && !Array.isArray(item))
+                : []
+            if (results.length > 0) {
+                return (
+                    <div className="flex flex-col gap-2">
+                        {results.map((r, i) => {
+                            const url = typeof r.url === 'string' ? r.url : ''
+                            const title = typeof r.title === 'string' ? r.title : ''
+                            const snippet = typeof r.snippet === 'string' ? r.snippet : ''
+                            const content = typeof r.content === 'string' ? r.content : ''
+                            return (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block p-2 bg-card border border-border rounded hover:border-primary/50 transition-colors group">
+                                    <div className="font-medium text-primary group-hover:underline truncate">{title}</div>
+                                    <div className="text-muted-foreground line-clamp-2 mt-1">{content || snippet}</div>
+                                </a>
+                            )
+                        })}
+                    </div>
+                )
+            }
         }
     }
 
     if (name === 'capture_screenshot') {
-        const imgParams = typeof result === 'string' ? result : result.image
-        if (imgParams) return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />
+        const imgParams = typeof result === 'string'
+            ? result
+            : (result && typeof result === 'object' && !Array.isArray(result) ? (result as JsonObject).image : undefined)
+        if (typeof imgParams === 'string') return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />
     }
 
     if (typeof result === 'string') {

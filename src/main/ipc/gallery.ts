@@ -3,6 +3,15 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { appLogger } from '../logging/logger'
 
+
+interface GalleryItem {
+    name: string
+    path: string
+    url: string
+    mtime: number
+    type: 'image' | 'video'
+}
+
 export function registerGalleryIpc(galleryPath: string) {
 
     // Ensure gallery exists
@@ -16,7 +25,7 @@ export function registerGalleryIpc(galleryPath: string) {
 
     ipcMain.handle('gallery:list', async () => {
         try {
-            const results: any[] = []
+            const results: GalleryItem[] = []
             const subdirs = ['images', 'videos']
 
             for (const sub of subdirs) {

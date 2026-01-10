@@ -1,10 +1,24 @@
+import { ToolCall } from '../../shared/types/chat';
+import { getErrorMessage } from '../../shared/utils/error.util';
 
 export interface StreamChunk {
     content?: string
     reasoning?: string
-    images?: any[]
+    images?: Array<string | { image_url: { url: string } }>
     type?: string
-    tool_calls?: any[]
+    tool_calls?: ToolCall[]
+}
+
+type OpenAIStreamDelta = {
+    content?: string
+    reasoning_content?: string
+    reasoning?: string
+    images?: Array<string | { image_url: { url: string } }>
+    tool_calls?: ToolCall[]
+}
+
+type OpenAIStreamPayload = {
+    choices?: Array<{ delta?: OpenAIStreamDelta }>
 }
 
 export class StreamParser {
@@ -12,15 +26,15 @@ export class StreamParser {
      * Parses a chat stream response (SSE) and yields structured chunks.
      * Supports both Web Streams (ReadableStream) and Node.js Streams (AsyncIterable).
      */
-    static async *parseChatStream(response: any): AsyncGenerator<StreamChunk> {
+    static async *parseChatStream(response: Response): AsyncGenerator<StreamChunk> {
         if (!response.body) throw new Error('No response body');
 
         const decoder = new TextDecoder();
         let buffer = '';
-        const body = response.body;
+        const body = response.body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
 
         try {
-            if (typeof body.getReader === 'function') {
+            if ('getReader' in body && typeof body.getReader === 'function') {
                 // Web Standard ReadableStream
                 const reader = body.getReader();
                 try {
@@ -35,14 +49,14 @@ export class StreamParser {
                 }
             } else {
                 // Node.js Stream
-                for await (const value of body) {
+                for await (const value of body as AsyncIterable<Uint8Array>) {
                     buffer += decoder.decode(value, { stream: true });
                     yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
                 }
             }
-        } catch (e) {
-            console.error('[StreamParser] Parse error:', e)
-            throw e
+        } catch (error) {
+            console.error('[StreamParser] Parse error:', getErrorMessage(error))
+            throw error
         }
     }
 
@@ -66,24 +80,27 @@ export class StreamParser {
             if (jsonData === '[DONE]') continue;
 
             try {
-                const json = JSON.parse(jsonData);
+                const json = JSON.parse(jsonData) as OpenAIStreamPayload;
                 const delta = json.choices?.[0]?.delta;
                 if (!delta) continue;
 
                 const content = delta.content || '';
                 const reasoning = delta.reasoning_content || delta.reasoning || '';
-                const images = delta.images || [];
+                const images = Array.isArray(delta.images) ? delta.images : [];
 
                 if (content || reasoning || images.length > 0 || delta.tool_calls) {
                     yield {
                         content,
                         reasoning,
-                        images: images,
+                        images,
                         type: delta.tool_calls ? 'tool_calls' : undefined,
                         tool_calls: delta.tool_calls
                     };
                 }
-            } catch { }
+            } catch (error) {
+                // Silent catch for malformed JSON chunks
+                console.debug('[StreamParser] Skipping malformed chunk:', getErrorMessage(error));
+            }
         }
     }
 }

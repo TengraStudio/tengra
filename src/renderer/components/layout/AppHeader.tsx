@@ -27,7 +27,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     const currentChat = chats.find(c => c.id === currentChatId)
 
-    const viewIcons: Record<string, any> = {
+    const viewIcons: Record<string, React.ComponentType<{ className?: string }>> = {
         chat: MessageSquare,
         projects: LayoutGrid,
         settings: SettingsIcon,

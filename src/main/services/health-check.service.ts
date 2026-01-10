@@ -3,6 +3,7 @@
  */
 
 import { EventEmitter } from 'events'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export interface HealthStatus {
     name: string
@@ -136,13 +137,13 @@ export class HealthCheckService extends EventEmitter {
                 this.emit('statusChange', status)
                 console.log(`[HealthCheck] ${name}: ${previous?.status || 'unknown'} -> ${status.status}`)
             }
-        } catch (error: any) {
+        } catch (error) {
             const status: HealthStatus = {
                 name,
                 status: 'unhealthy',
                 latencyMs: Date.now() - startTime,
                 lastChecked: new Date(),
-                error: error.message || 'Unknown error'
+                error: getErrorMessage(error)
             }
 
             const previous = this.statuses.get(name)
@@ -191,6 +192,51 @@ export class HealthCheckService extends EventEmitter {
     async checkNow(name: string): Promise<HealthStatus | null> {
         await this.runCheck(name)
         return this.statuses.get(name) || null
+    }
+
+    /**
+     * Registers default critical system checks.
+     * @param components Dependencies needed for checks
+     */
+    registerCriticalChecks(components: {
+        databaseService: any;
+        networkService: any;
+    }) {
+        const { databaseService } = components;
+
+        // 1. Database Check
+        this.register('database', async () => {
+            try {
+                const db = databaseService.getDatabase();
+                const stmt = db.prepare('SELECT 1');
+                stmt.get();
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }, { intervalMs: 60000, critical: true });
+
+        // 2. Network Check (Ping Google DNS or similar high-availability host)
+        this.register('internet', async () => {
+            try {
+                // Simple ping-like check using fetch to a reliable CDN/DNS
+                // Using 1.1.1.1 (Cloudflare) or generic connectivity check
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 2000);
+                const res = await fetch('https://1.1.1.1', { method: 'HEAD', signal: controller.signal });
+                clearTimeout(id);
+                return res.ok || res.status === 405; // 405 is fine for HEAD, means we reached it
+            } catch {
+                return false;
+            }
+        }, { intervalMs: 60000, critical: false }); // Not strictly critical for offline app usage
+
+        // 3. Memory Check
+        this.register('memory', async () => {
+            const used = process.memoryUsage().heapUsed / 1024 / 1024;
+            const limit = 4096; // 4GB arbitrary soft limit for warning
+            return used < limit;
+        }, { intervalMs: 30000, critical: false });
     }
 }
 

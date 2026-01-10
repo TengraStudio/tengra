@@ -1,3 +1,4 @@
+import { JsonObject } from '../../shared/types/common';
 import { CommandService } from './command.service';
 import { SSHService } from './ssh.service';
 
@@ -7,13 +8,21 @@ export class DockerService {
         private ssh: SSHService
     ) { }
 
-    private async execute(cmd: string, connectionId?: string): Promise<any> {
+    private async execute(cmd: string, connectionId?: string): Promise<{ success: boolean; stdout: string; stderr: string }> {
         if (connectionId) {
-            const result = await this.ssh.executeCommand(connectionId, cmd);
-            return result;
+            const sshResult = await this.ssh.executeCommand(connectionId, cmd);
+            return {
+                success: sshResult.code === 0,
+                stdout: sshResult.stdout,
+                stderr: sshResult.stderr
+            };
         } else {
             const result = await this.command.executeCommand(cmd);
-            return result;
+            return {
+                success: result.success,
+                stdout: result.stdout || '',
+                stderr: result.stderr || ''
+            };
         }
     }
 
@@ -26,10 +35,11 @@ export class DockerService {
         try {
             // Docker outputs multiple JSON objects, one per line
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const containers = lines.map((l: string) => JSON.parse(l));
+            const containers = lines.map((l: string) => JSON.parse(l) as JsonObject);
             return { success: true, containers };
-        } catch (e: any) {
-            return { success: false, error: 'Failed to parse docker output: ' + e.message, raw: result.stdout };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: 'Failed to parse docker output: ' + message, raw: result.stdout };
         }
     }
 
@@ -51,10 +61,11 @@ export class DockerService {
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const stats = lines.map((l: string) => JSON.parse(l));
+            const stats = lines.map((l: string) => JSON.parse(l) as JsonObject);
             return { success: true, stats };
-        } catch (e: any) {
-            return { success: false, error: 'Failed to parse docker stats: ' + e.message, raw: result.stdout };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: 'Failed to parse docker stats: ' + message, raw: result.stdout };
         }
     }
 
@@ -66,10 +77,11 @@ export class DockerService {
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const images = lines.map((l: string) => JSON.parse(l));
+            const images = lines.map((l: string) => JSON.parse(l) as JsonObject);
             return { success: true, images };
-        } catch (e: any) {
-            return { success: false, error: 'Failed to parse docker images: ' + e.message, raw: result.stdout };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: 'Failed to parse docker images: ' + message, raw: result.stdout };
         }
     }
 }

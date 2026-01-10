@@ -32,6 +32,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     className
 }) => {
     const [isOpen, setIsOpen] = useState(false)
+    const [width, setWidth] = useState<number>(0)
 
     const {
         x,
@@ -50,6 +51,14 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
         whileElementsMounted: autoUpdate,
     })
 
+    const setReferenceNode = React.useCallback((node: HTMLElement | null) => {
+        refs.setReference(node)
+    }, [refs])
+
+    const setFloatingNode = React.useCallback((node: HTMLElement | null) => {
+        refs.setFloating(node)
+    }, [refs])
+
     const selectedOption = options.find(opt => opt.value === value)
     const isUp = placement.startsWith('top')
 
@@ -58,8 +67,15 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
         setIsOpen(false)
     }
 
+    React.useEffect(() => {
+        const reference = refs.domReference.current
+        if (isOpen && reference) {
+            setWidth((reference as HTMLElement).offsetWidth)
+        }
+    }, [isOpen, refs.domReference])
+
     return (
-        <div ref={refs.setReference} className={cn("relative w-full", className)}>
+        <div ref={setReferenceNode} className={cn("relative w-full", className)}>
             <button
                 type="button"
                 onClick={(e) => {
@@ -79,7 +95,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                 {isOpen && (
                     <FloatingPortal>
                         <motion.div
-                            ref={refs.setFloating}
+                            ref={setFloatingNode}
                             initial={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
@@ -89,7 +105,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                                 top: y ?? 0,
                                 left: x ?? 0,
                                 zIndex: 10000,
-                                width: (refs.domReference.current as HTMLElement)?.offsetWidth
+                                width: width || 'auto'
                             }}
                             className="bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
                             onMouseDown={(e) => e.stopPropagation()}

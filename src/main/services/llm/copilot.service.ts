@@ -1,10 +1,83 @@
 import { randomUUID } from 'node:crypto';
-import { Message } from '../../../shared/types/chat';
+import { Message, ToolCall, JsonValue, JsonObject, ToolDefinition } from '../../../shared/types';
+import { getErrorMessage } from '../../../shared/utils/error.util';
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
 const API_VERSION = '2023-07-07';
 const EDITOR_PLUGIN_VERSION = 'copilot/1.250.0';
 const FALLBACK_VSCODE_VERSION = '1.107';
+
+
+
+export interface CopilotTokenResponse {
+    token: string;
+    expires_at: number;
+}
+
+export interface CopilotUsageData {
+    copilot_plan?: 'individual' | 'business' | 'enterprise';
+}
+
+export interface CopilotToolFunction {
+    name: string;
+    description?: string;
+    parameters: JsonObject;
+}
+
+export interface CopilotTool {
+    type: 'function';
+    function: CopilotToolFunction;
+}
+
+
+
+interface CopilotPayload {
+    model: string;
+    messages?: Message[];
+    prompt?: string;
+    input?: string; // For /responses endpoint
+    stream: boolean;
+    temperature?: number;
+    max_tokens?: number;
+    stop?: string[];
+    tools?: CopilotTool[];
+    tool_choice?: 'auto' | 'none' | 'required';
+}
+
+export interface CopilotChatResponse {
+    choices: Array<{
+        message: Message;
+        text?: string;
+    }>;
+    type?: string;
+    content?: string | Array<{ type: string; text?: string }>;
+    output_text?: string;
+}
+
+interface DiagnosticResponse {
+    response?: {
+        output: Array<{
+            type: string;
+            id?: string;
+            name?: string;
+            arguments?: string;
+            text?: string;
+            content?: string;
+        } | string>;
+        output_text?: string;
+        text?: string;
+    };
+    output?: Array<{
+        type: string;
+        id?: string;
+        name?: string;
+        arguments?: string;
+        text?: string;
+        content?: string;
+    } | string>;
+    output_text?: string;
+    text?: string;
+}
 
 export class CopilotService {
     private githubToken: string | null = null;
@@ -14,7 +87,7 @@ export class CopilotService {
     private accountType: 'individual' | 'business' | 'enterprise' = 'individual';
     private tokenPromise: Promise<string> | null = null;
 
-    constructor() {
+    constructor(private authService?: { getToken: (p: string) => string | undefined }) {
         this.fetchVsCodeVersion();
     }
 
@@ -27,14 +100,23 @@ export class CopilotService {
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 2000);
-            const response = await fetch('https://raw.githubusercontent.com/microsoft/vscode/main/pkgbuild.json', { signal: controller.signal });
-            const pkgbuild = await response.text();
-            const match = pkgbuild.match(/pkgver=([0-9.]+)/);
-            if (match) this.vsCodeVersion = match[1];
+            const response = await fetch('https://raw.githubusercontent.com/microsoft/vscode/main/package.json', { signal: controller.signal });
+            const packageJson = await response.json() as { version: string };
+            if (packageJson.version) this.vsCodeVersion = packageJson.version;
             clearTimeout(timeout);
-        } catch (e) {
-            console.warn('[CopilotService] Failed to fetch latest VSCode version, using fallback:', FALLBACK_VSCODE_VERSION);
+        } catch (error) {
+            console.warn('[CopilotService] Failed to fetch latest VSCode version, using fallback:', FALLBACK_VSCODE_VERSION, getErrorMessage(error as Error));
         }
+    }
+
+    isConfigured(): boolean {
+        // fast check
+        if (this.githubToken || this.copilotSessionToken) return true;
+        // deep check via AuthService
+        if (this.authService) {
+            return !!(this.authService.getToken('copilot_token') || this.authService.getToken('github_token') || this.authService.getToken('proxy-auth-token'));
+        }
+        return false;
     }
 
     private async ensureCopilotToken(): Promise<string> {
@@ -47,7 +129,19 @@ export class CopilotService {
         this.tokenPromise = (async () => {
             try {
                 if (!this.githubToken) {
-                    throw new Error('GitHub Authentication failed: No token found. Please login via Settings.');
+                    // Try to recover from AuthService if available
+                    if (this.authService) {
+                        // First try the specific copilot token, then fallback to github token
+                        const stored = this.authService.getToken('copilot_token') || this.authService.getToken('github_token');
+                        if (stored) {
+                            console.log('[CopilotService] Recovered GitHub/Copilot token from AuthService');
+                            this.githubToken = stored;
+                        }
+                    }
+
+                    if (!this.githubToken) {
+                        throw new Error('GitHub Authentication failed: No token found. Please login via Settings.');
+                    }
                 }
 
                 try {
@@ -59,14 +153,12 @@ export class CopilotService {
                         }
                     });
                     if (usageRes.ok) {
-                        const usageData = await usageRes.json() as any;
-                        if (usageData.copilot_plan === 'business') this.accountType = 'business';
-                        else if (usageData.copilot_plan === 'enterprise') this.accountType = 'enterprise';
-                        else this.accountType = 'individual';
-                        console.log(`[CopilotService] Detected Plan: ${usageData.copilot_plan} -> Endpoint: ${this.getBaseUrl()}`);
+                        const usageData = await usageRes.json() as CopilotUsageData;
+                        this.accountType = usageData.copilot_plan || 'individual';
+                        console.log(`[CopilotService] Detected Plan: ${this.accountType} -> Endpoint: ${this.getBaseUrl()}`);
                     }
-                } catch (e) {
-                    console.warn('[CopilotService] Failed to detect account type, defaulting to individual');
+                } catch (error) {
+                    console.warn('[CopilotService] Failed to detect account type, defaulting to individual', getErrorMessage(error as Error));
                 }
 
                 const response = await fetch('https://api.github.com/copilot_internal/v2/token', {
@@ -82,36 +174,53 @@ export class CopilotService {
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        console.warn('[CopilotService] v2/token returned 404, trying v1/token...');
+                        console.warn('[CopilotService] v2/token 404, attempting fallback to v1/token');
                         const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
                             headers: {
                                 'Authorization': `token ${this.githubToken}`,
                                 'Accept': 'application/json',
                                 'Editor-Version': `vscode/${this.vsCodeVersion}`,
                                 'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
-                                'User-Agent': USER_AGENT
+                                'User-Agent': USER_AGENT,
+                                'X-GitHub-Api-Version': API_VERSION // Ensure version is sent
                             }
                         });
+
                         if (v1Response.ok) {
-                            const data = await v1Response.json() as any;
+                            const data = await v1Response.json() as CopilotTokenResponse;
                             this.copilotSessionToken = data.token;
                             this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
-                            return this.copilotSessionToken!;
+                            return this.copilotSessionToken;
+                        } else {
+                            console.error(`[CopilotService] v1 fallback failed: ${v1Response.status} ${await v1Response.text()}`);
                         }
                     }
-                    throw new Error(`Failed to get Copilot token: ${response.status} ${await response.text()}`);
+
+                    const errorText = await response.text();
+                    // If Unauthorized (401), the token is definitely bad. 
+                    // For 403 (Forbidden) or 404 (Not Found), it might be plan-related or API changes, don't delete yet.
+                    if (response.status === 401) {
+                        console.warn(`[CopilotService] Token unauthorized (401). Clearing token.`);
+                        this.githubToken = null;
+                        this.copilotSessionToken = null;
+                        if (this.authService && 'deleteToken' in this.authService) {
+                            (this.authService as any).deleteToken?.('github_token');
+                        }
+                    }
+
+                    throw new Error(`Failed to get Copilot token: ${response.status} ${errorText}`);
                 }
 
-                const data = await response.json() as any;
+                const data = await response.json() as CopilotTokenResponse;
                 this.copilotSessionToken = data.token;
                 this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
-                return this.copilotSessionToken!;
+                return this.copilotSessionToken;
             } finally {
                 this.tokenPromise = null;
             }
         })();
 
-        return this.tokenPromise;
+        return this.tokenPromise!;
     }
 
     private getBaseUrl(): string {
@@ -142,14 +251,14 @@ export class CopilotService {
         return headers;
     }
 
-    private prepareTools(tools?: any[]) {
+    private prepareTools(tools?: ToolDefinition[]): CopilotTool[] | undefined {
         if (!tools || tools.length === 0) return undefined;
         return tools.map(tool => ({
             type: 'function',
             function: {
-                name: tool.name || tool.function?.name,
-                description: tool.description || tool.function?.description,
-                parameters: tool.parameters || tool.function?.parameters
+                name: tool.function.name,
+                description: tool.function.description || '',
+                parameters: tool.function.parameters || {}
             }
         }));
     }
@@ -162,11 +271,16 @@ export class CopilotService {
         }).join('\n') + '\nAssistant:';
     }
 
-    private async diagnosticCodexRequest(messages: Message[], finalModel: string, headers: any, stream: boolean = false, tools?: any[]): Promise<any> {
-        console.warn(`[CopilotService] ${finalModel} diagnostic mode (${stream ? 'stream' : 'chat'}): testing all possible paths...`);
+    private async diagnosticCodexRequest(
+        messages: Message[],
+        finalModel: string,
+        headers: Record<string, string>,
+        stream: boolean = false,
+        tools?: ToolDefinition[]
+    ): Promise<Message | ReadableStream<Uint8Array> | null> {
         const prompt = this.formatCodexPrompt(messages);
 
-        const completionPayload = {
+        const completionPayload: CopilotPayload = {
             model: finalModel,
             prompt,
             stream,
@@ -175,11 +289,11 @@ export class CopilotService {
             stop: ['\nUser:', '\nSystem:']
         };
 
-        const chatPayload: any = {
+        const chatPayload: CopilotPayload = {
             model: finalModel,
             messages,
             stream,
-            temperature: 0.7,
+            temperature: 0.7
         };
 
         const gateways = [
@@ -203,26 +317,27 @@ export class CopilotService {
                     const isChatPath = endpoint.includes('/chat/');
                     const isResponsesPath = endpoint === '/responses';
 
-                    let currentPayload: any;
-                    let currentHeaders = { ...headers };
+                    let currentPayload: CopilotPayload;
+                    const currentHeaders = { ...headers };
 
                     if (isResponsesPath) {
                         currentPayload = {
                             model: finalModel,
-                            input: prompt.replace(/Assistant:$/, ''), // Remove trailing Assistant
+                            input: prompt.replace(/Assistant:$/, ''),
                             stream
                         };
                         currentHeaders['Openai-Intent'] = 'conversation-panel';
 
                         if (tools && tools.length > 0) {
-                            // Flatten tools for /responses endpoint
                             currentPayload.tools = tools.map(t => ({
-                                name: t.name || t.function?.name,
-                                description: t.description || t.function?.description,
                                 type: 'function',
-                                parameters: t.parameters || t.function?.parameters
+                                function: {
+                                    name: t.function.name,
+                                    description: t.function.description || '',
+                                    parameters: t.function.parameters || {}
+                                }
                             }));
-                            currentPayload.tool_choice = 'auto'; // Or 'function_call': 'auto' if legacy
+                            currentPayload.tool_choice = 'auto';
                         }
                     } else {
                         currentPayload = isChatPath ? chatPayload : completionPayload;
@@ -234,8 +349,6 @@ export class CopilotService {
                         }
                     }
 
-                    console.log(`[CopilotService] Diagnostic: Testing ${url} ...`);
-
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: currentHeaders,
@@ -243,42 +356,18 @@ export class CopilotService {
                     });
 
                     if (res.ok) {
-                        console.log(`[CopilotService] HIT! Successfully reached ${finalModel} via ${url}`);
-
                         if (isResponsesPath) {
-                            // Map /responses output to standard format
-                            let data: any = {};
-                            try {
-                                if (stream) {
-                                    console.log(`[CopilotService] Returning stream body from ${url}`);
-                                    // Log first chunk to see format
-                                    const clonedRes = res.clone();
-                                    const reader = clonedRes.body?.getReader();
-                                    if (reader) {
-                                        const { value } = await reader.read();
-                                        if (value) {
-                                            const sample = new TextDecoder().decode(value);
-                                            console.log(`[CopilotService] Stream sample (first 500 chars): ${sample.substring(0, 500)}`);
-                                        }
-                                        reader.releaseLock();
-                                    }
-                                    return res.body;
-                                }
-                                data = await res.json() as any;
-                                console.log(`[CopilotService] Non-stream response:`, JSON.stringify(data).substring(0, 500));
-                            } catch (e) {
-                                console.log(`[CopilotService] Parse error:`, e);
-                                return null;
-                            }
+                            if (stream && res.body) return res.body;
 
-                            // Parse /responses format - might be nested under 'response' key
+                            const data = await res.json() as DiagnosticResponse;
                             const responseData = data.response || data;
-
-                            // Check for tool calls in output
                             const outputItems = Array.isArray(responseData.output) ? responseData.output : [];
-                            const toolCalls = outputItems
-                                .filter((item: any) => item.type === 'function_call')
-                                .map((item: any) => ({
+
+                            const toolCalls: ToolCall[] = outputItems
+                                .filter((item): item is { type: 'function_call'; id?: string; name: string; arguments: string } =>
+                                    typeof item === 'object' && item.type === 'function_call' && typeof item.name === 'string' && typeof item.arguments === 'string'
+                                )
+                                .map(item => ({
                                     id: item.id || randomUUID(),
                                     type: 'function',
                                     function: {
@@ -287,57 +376,59 @@ export class CopilotService {
                                     }
                                 }));
 
-                            // Try multiple possible content locations - ensure string type
                             let contentText: string | null = null;
-
                             if (typeof responseData.output_text === 'string') contentText = responseData.output_text;
                             else if (typeof responseData.text === 'string') contentText = responseData.text;
-                            else if (typeof responseData.content === 'string') contentText = responseData.content;
                             else if (outputItems.length > 0) {
                                 contentText = outputItems
-                                    .filter((item: any) => item.type !== 'function_call')
-                                    .map((item: any) => {
+                                    .filter((item) => typeof item === 'string' || (typeof item === 'object' && item.type !== 'function_call'))
+                                    .map((item) => {
                                         if (typeof item === 'string') return item;
-                                        if (typeof item.text === 'string') return item.text;
-                                        if (typeof item.content === 'string') return item.content;
-                                        return JSON.stringify(item);
+                                        if (typeof item === 'object') return item.text || item.content || JSON.stringify(item);
+                                        return '';
                                     })
                                     .join('');
                             }
 
-                            // Fallback: stringify the whole response for debugging
-                            if (!contentText) {
-                                contentText = `[/responses format unknown] ${JSON.stringify(responseData).substring(0, 500)}`;
-                            }
-
-                            console.log(`[CopilotService] Extracted content: ${contentText.substring(0, 100)}`);
-
-                            const message: any = { role: 'assistant', content: contentText };
-                            if (toolCalls.length > 0) {
-                                message.tool_calls = toolCalls;
-                            }
+                            const message: Message = {
+                                id: randomUUID(),
+                                role: 'assistant',
+                                content: contentText || `[Unknown format] ${JSON.stringify(responseData).substring(0, 100)}`,
+                                timestamp: new Date()
+                            };
+                            if (toolCalls.length > 0) message.toolCalls = toolCalls;
                             return message;
                         }
 
-                        if (stream) return res.body;
-                        const json = await res.json() as any;
-                        return isChatPath ? json.choices[0].message : { role: 'assistant', content: json.choices[0].text.trim() };
-                    } else {
-                        const err = await res.text();
-                        console.log(`[CopilotService] MISS: ${url} returned ${res.status} - ${err.substring(0, 100)}`);
+                        if (stream && res.body) return res.body;
+
+                        const json = await res.json() as CopilotChatResponse;
+                        if (isChatPath) return json.choices[0].message;
+                        return {
+                            id: randomUUID(),
+                            role: 'assistant',
+                            content: json.choices[0].text?.trim() || '',
+                            timestamp: new Date()
+                        };
                     }
-                } catch (e: any) {
-                    console.log(`[CopilotService] ERROR: ${url} failed: ${e.message}`);
+                } catch (error) {
+                    // continue to next gateway/endpoint
+                    console.debug(`[CopilotService] Gateway ${gateway} endpoint ${endpoint} failed:`, getErrorMessage(error as Error));
                 }
             }
         }
         return null;
     }
 
-    async chat(messages: Message[], model: string = 'gpt-4o', tools?: any[]): Promise<any> {
+    async chat(messages: Message[], model: string = 'gpt-4o', tools?: ToolDefinition[]): Promise<Message | null> {
         try {
             const token = await this.ensureCopilotToken();
-            const hasImages = messages.some(m => Array.isArray(m.content) && (m.content as any).some((c: any) => c.type === 'image_url'));
+            const hasImages = messages.some(m => {
+                if (Array.isArray(m.content)) {
+                    return m.content.some(c => c.type === 'image_url');
+                }
+                return false;
+            });
 
             let finalModel = model;
             if (model.startsWith('copilot-')) finalModel = model.replace('copilot-', '');
@@ -347,9 +438,7 @@ export class CopilotService {
             const headers = this.getHeaders(token, hasImages);
             headers['X-Initiator'] = isAgentCall ? 'agent' : 'user';
 
-            const chatUrl = `${this.getBaseUrl()}/chat/completions`;
-
-            const payload: any = {
+            const payload: CopilotPayload = {
                 messages,
                 model: finalModel,
                 stream: false,
@@ -362,72 +451,60 @@ export class CopilotService {
                 payload.tool_choice = 'auto';
             }
 
-            let response = await fetch(chatUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
+            const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
+                method: 'POST', headers, body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const errText = await response.text();
-                let errorBody: any = {};
-                try { errorBody = JSON.parse(errText); } catch { }
+                let errorBody: { error?: { code?: string } } | undefined;
+                try { errorBody = JSON.parse(errText); } catch { /* ignore */ }
 
-                const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
-                const is400Codex = response.status === 400 && finalModel.toLowerCase().includes('codex');
-
-                if (isUnsupported || is400Codex) {
+                if (errorBody?.error?.code === 'unsupported_api_for_model' || (response.status === 400 && finalModel.toLowerCase().includes('codex'))) {
                     const result = await this.diagnosticCodexRequest(messages, finalModel, headers, false, tools);
-                    if (result) return result;
+                    if (result && !(result instanceof ReadableStream)) return result;
                 }
 
                 if (response.status === 404 && this.accountType === 'individual') {
-                    const bizUrl = 'https://api.business.githubcopilot.com/chat/completions';
-                    const bizRes = await fetch(bizUrl, { method: 'POST', headers, body: JSON.stringify(payload) });
-                    if (bizRes.ok) return ((await bizRes.json()) as any).choices[0].message;
+                    const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', { method: 'POST', headers, body: JSON.stringify(payload) });
+                    if (bizRes.ok) return ((await bizRes.json()) as CopilotChatResponse).choices[0].message;
                 }
                 throw new Error(`Copilot API Error: ${response.status} - ${errText}`);
             }
 
-            const json = await response.json() as any;
+            const json = await response.json() as CopilotChatResponse;
+            if (json.choices && json.choices[0]?.message) return json.choices[0].message;
 
-            // Handle standard OpenAI format
-            if (json.choices && json.choices[0]?.message) {
-                return json.choices[0].message;
-            }
-
-            // Handle new Copilot format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
             if (json.type === 'message' && Array.isArray(json.content)) {
-                const textContent = json.content
-                    .filter((item: any) => item.type === 'output_text' || item.text)
-                    .map((item: any) => item.text || '')
-                    .join('');
-                return { role: 'assistant', content: textContent };
+                const contentArr = json.content;
+                const textContent = contentArr.map((item) => item.text || '').join('');
+                return {
+                    id: randomUUID(),
+                    role: 'assistant',
+                    content: textContent,
+                    timestamp: new Date()
+                };
             }
 
-            // Handle output_text directly in response
-            if (json.output_text) {
-                return { role: 'assistant', content: json.output_text };
-            }
+            if (json.output_text) return { id: randomUUID(), role: 'assistant', content: json.output_text, timestamp: new Date() };
+            if (typeof json.content === 'string') return { id: randomUUID(), role: 'assistant', content: json.content, timestamp: new Date() };
 
-            // Fallback - return content as-is if it's a string
-            if (typeof json.content === 'string') {
-                return { role: 'assistant', content: json.content };
-            }
-
-            // Last resort - stringify and return for debugging
-            console.warn('[CopilotService] Unknown response format:', JSON.stringify(json).substring(0, 200));
-            return { role: 'assistant', content: JSON.stringify(json) };
-
+            return { id: randomUUID(), role: 'assistant', content: JSON.stringify(json), timestamp: new Date() };
         } catch (error) {
-            this.handleError(error, 'chat');
+            this.handleError(error as Error, 'chat');
+            return null;
         }
     }
 
-    async streamChat(messages: Message[], model: string, tools?: any[]): Promise<ReadableStream<Uint8Array> | null> {
+    async streamChat(messages: Message[], model: string, tools?: ToolDefinition[]): Promise<ReadableStream<Uint8Array> | null> {
         try {
             const token = await this.ensureCopilotToken();
-            const hasImages = messages.some(m => Array.isArray(m.content) && (m.content as any).some((c: any) => c.type === 'image_url'));
+            const hasImages = messages.some(m => {
+                if (Array.isArray(m.content)) {
+                    return m.content.some(c => c.type === 'image_url');
+                }
+                return false;
+            });
 
             let finalModel = model;
             if (model.startsWith('copilot-')) finalModel = model.replace('copilot-', '');
@@ -437,7 +514,7 @@ export class CopilotService {
             const headers = this.getHeaders(token, hasImages);
             headers['X-Initiator'] = isAgentCall ? 'agent' : 'user';
 
-            const payload: any = {
+            const payload: CopilotPayload = {
                 messages,
                 model: finalModel,
                 stream: true,
@@ -450,61 +527,52 @@ export class CopilotService {
                 payload.tool_choice = 'auto';
             }
 
-            const chatUrl = `${this.getBaseUrl()}/chat/completions`;
-
-            const response = await fetch(chatUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
+            const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
+                method: 'POST', headers, body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const errText = await response.text();
-                let errorBody: any = {};
-                try { errorBody = JSON.parse(errText); } catch { }
+                let errorBody: { error?: { code?: string } } | undefined;
+                try { errorBody = JSON.parse(errText); } catch { /* ignore */ }
 
-                const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
-                const is400Codex = response.status === 400 && finalModel.toLowerCase().includes('codex');
-
-                if (isUnsupported || is400Codex) {
+                if (errorBody?.error?.code === 'unsupported_api_for_model' || (response.status === 400 && finalModel.toLowerCase().includes('codex'))) {
                     const body = await this.diagnosticCodexRequest(messages, finalModel, headers, true, tools);
-                    if (body) return body as ReadableStream<Uint8Array>;
+                    if (body instanceof ReadableStream) return body;
                 }
 
                 if (response.status === 404 && this.accountType === 'individual') {
-                    const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify(payload)
-                    });
-                    if (bizRes.ok) return bizRes.body as ReadableStream<Uint8Array>;
+                    const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', { method: 'POST', headers, body: JSON.stringify(payload) });
+                    if (bizRes.ok) return bizRes.body;
                 }
                 throw new Error(`Copilot API Error: ${response.status} - ${errText}`);
             }
 
-            return response.body as ReadableStream<Uint8Array>;
-
+            return response.body;
         } catch (error) {
-            this.handleError(error, 'streamChat');
+            this.handleError(error as Error, 'streamChat');
             return null;
         }
     }
 
-    async getModels(): Promise<any> {
+    async getModels(): Promise<{ data: JsonValue[] }> {
+        if (!this.isConfigured()) return { data: [] };
+
         try {
             const token = await this.ensureCopilotToken();
-            const url = `${this.getBaseUrl()}/models`;
-            const response = await fetch(url, { headers: this.getHeaders(token) });
+            const response = await fetch(`${this.getBaseUrl()}/models`, { headers: this.getHeaders(token) });
             if (!response.ok) return { data: [] };
-            return await response.json();
+            return await response.json() as { data: JsonValue[] };
         } catch (error) {
-            console.error('[CopilotService] Failed to fetch models:', error);
+            console.error('[CopilotService] Failed to get models:', getErrorMessage(error as Error));
             return { data: [] };
         }
     }
 
-    private handleError(error: any, context: string) {
-        console.error(`[CopilotService] Error in ${context}:`, error);
-        throw error;
+    private handleError(error: Error | string | unknown, context: string): never {
+        const message = getErrorMessage(error as Error);
+        console.error(`[CopilotService] Error in ${context}:`, message);
+        if (error instanceof Error) throw error;
+        throw new Error(`Error in ${context}: ${message}`);
     }
 }

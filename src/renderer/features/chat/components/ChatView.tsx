@@ -5,13 +5,14 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { WelcomeScreen } from './WelcomeScreen';
+import { ChatTemplate } from '../types';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
 
 interface ChatViewProps {
-    templates: any[];
+    templates: ChatTemplate[];
     showScrollButton?: boolean;
     setShowScrollButton?: (show: boolean) => void;
     messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -52,11 +53,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
             exit={{ opacity: 0 }}
             className="h-full flex flex-col overflow-hidden"
         >
-            <ChatHeader
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                t={t}
-            />
+            {displayMessages.length !== 0 && (
+                <ChatHeader
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    t={t}
+                />
+            )}
 
             <div
                 className="flex-1 overflow-y-auto w-full p-0 flex flex-col scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent relative"

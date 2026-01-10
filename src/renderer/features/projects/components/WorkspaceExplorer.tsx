@@ -34,6 +34,8 @@ interface ContextMenuState {
     mountId?: string // For mount-level context menu
 }
 
+type MountFileEntry = { name: string; isDirectory: boolean }
+
 export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     mounts,
     mountStatus,
@@ -65,13 +67,18 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             const result = mount.type === 'local'
                 ? await window.electron.listDirectory(mount.rootPath)
                 : await window.electron.ssh.listDir(mount.id, mount.rootPath)
-            if (result?.success && Array.isArray(result.files)) {
-                const mapped = result.files.map((item: any) => ({
-                    name: item.name,
-                    isDirectory: mount.type === 'local' ? Boolean(item.isDirectory) : item.type === 'directory',
-                    path: joinPath(mount.rootPath, item.name, mount.type)
-                }))
-                setRootNodes((prev) => ({ ...prev, [mount.id]: sortNodes(mapped) }))
+            if (result?.success) {
+                // Handle both response formats: { files } or { data }
+                const anyResult = result as { files?: MountFileEntry[]; data?: MountFileEntry[] }
+                const fileList = anyResult.files || anyResult.data || []
+                if (Array.isArray(fileList)) {
+                    const mapped = fileList.map((item: MountFileEntry) => ({
+                        name: item.name,
+                        isDirectory: Boolean(item.isDirectory),
+                        path: joinPath(mount.rootPath, item.name, mount.type)
+                    }))
+                    setRootNodes((prev) => ({ ...prev, [mount.id]: sortNodes(mapped) }))
+                }
             }
         } catch (error) {
             console.error('Failed to load mount root', error)

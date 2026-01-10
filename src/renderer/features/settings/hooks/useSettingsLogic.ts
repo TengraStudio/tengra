@@ -1,81 +1,13 @@
-﻿import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
+import { AppSettings, QuotaResponse, CodexUsage, JsonValue } from '../../../../shared/types'
+import { CopilotQuota } from '@/types';
 
-export interface AppSettings {
-    ollama: {
-        url: string
-        numCtx?: number
-        backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal'
-        gpuLayers?: number
-        orchestrationPolicy?: 'auto' | 'fifo' | 'parallel'
-    }
-    general: {
-        language: string
-        theme: string
-        resolution: string
-        fontSize: number
-        fontFamily?: string
-        defaultModel?: string
-        lastModel?: string
-        lastProvider?: string
-        responseStyle?: 'concise' | 'balanced' | 'detailed'
-        responseTone?: 'neutral' | 'friendly' | 'professional'
-        responseFormat?: 'auto' | 'structured' | 'steps'
-        customInstructions?: string
-        contextMessageLimit?: number
-        favoriteModels?: string[]
-        recentModels?: string[]
-        hiddenModels?: string[]
-        agentMode?: 'adaptive' | 'speed' | 'accuracy'
-        agentSoftDeadlineMs?: number
-        agentHardDeadlineMs?: number
-        agentRequireLocalForActions?: boolean
-        agentAllowLateSuggestions?: boolean
-    }
-    github?: { username?: string; token?: string }
-    openai?: { apiKey: string; model: string }
-    anthropic?: { apiKey: string; model: string }
-    gemini?: { apiKey: string; model: string }
-    claude?: { apiKey: string; model: string }
-    groq?: { apiKey: string; model: string }
-    codex?: { connected?: boolean; username?: string; token?: string }
-    copilot?: { connected?: boolean; username?: string; token?: string }
-    huggingface?: { apiKey?: string }
-    proxy?: { enabled: boolean; url: string; key: string }
-    personas?: { id: string, name: string, description: string, prompt: string }[]
-    antigravity?: { connected: boolean; username?: string; token?: string }
-    speech?: {
-        voiceURI?: string
-        rate?: number
-        pitch?: number
-        volume?: number
-        audioInputDeviceId?: string
-        audioOutputDeviceId?: string
-    }
-    modelSettings?: Record<string, {
-        systemPrompt?: string
-        presetId?: string
-    }>
-    presets?: {
-        id: string
-        name: string
-        temperature: number
-        topP: number
-        frequencyPenalty: number
-        presencePenalty: number
-        maxTokens?: number
-    }[]
-    autoUpdate?: {
-        enabled: boolean
-        checkOnStartup: boolean
-        downloadAutomatically: boolean
-        notifyOnly: boolean
-    }
-    crashReporting?: {
-        enabled: boolean
-    }
-}
+type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
+type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean }
+type AuthFile = { provider?: string; type?: string; name?: string }
+type PersonaDraft = { name: string; description: string; prompt: string }
 
-const deepEqual = (obj1: any, obj2: any) => JSON.stringify(obj1) === JSON.stringify(obj2)
+const deepEqual = (obj1: JsonValue, obj2: JsonValue) => JSON.stringify(obj1) === JSON.stringify(obj2)
 
 export function useSettingsLogic(onRefreshModels?: () => void) {
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -86,15 +18,15 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     const [authMessage, setAuthMessage] = useState('')
     const [authBusy, setAuthBusy] = useState<string | null>(null)
     const [isOllamaRunning, setIsOllamaRunning] = useState(false)
-    const [authStatus, setAuthStatus] = useState({ codex: false, claude: false, gemini: false, antigravity: false })
+    const [authStatus, setAuthStatus] = useState<AuthStatusState>({ codex: false, claude: false, antigravity: false })
 
     // Stats and Quota State
     const [statsLoading, setStatsLoading] = useState(false)
     const [statsPeriod, setStatsPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily')
-    const [statsData, setStatsData] = useState<any>(null)
-    const [quotaData, setQuotaData] = useState<any>(null)
-    const [copilotQuota, setCopilotQuota] = useState<any>(null)
-    const [codexUsage, setCodexUsage] = useState<any>(null)
+    const [statsData, setStatsData] = useState<DetailedStats | null>(null)
+    const [quotaData, setQuotaData] = useState<QuotaResponse | null>(null)
+    const [copilotQuota, setCopilotQuota] = useState<CopilotQuota | null>(null)
+    const [codexUsage, setCodexUsage] = useState<CodexUsage | null>(null)
     const [reloadTrigger, setReloadTrigger] = useState(0)
 
     // Benchmark State
@@ -103,32 +35,71 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
     // Personas State
     const [editingPersonaId, setEditingPersonaId] = useState<string | null>(null)
-    const [personaDraft, setPersonaDraft] = useState({ name: '', description: '', prompt: '' })
+    const [personaDraft, setPersonaDraft] = useState<PersonaDraft>({ name: '', description: '', prompt: '' })
 
-    const authMessageTimer = useRef<any>(null)
+    const authMessageTimer = useRef<NodeJS.Timeout | null>(null)
+
+    const refreshAuthStatus = useCallback(async () => {
+        try {
+            const status = await window.electron.checkAuthStatus()
+            const files = (status?.files || []) as AuthFile[]
+            const hasProvider = (providerNames: string[]) => {
+                return files.some((f: AuthFile) => {
+                    const fileProvider = (f.provider || f.type || '').toLowerCase()
+                    const fileName = (f.name || '').toLowerCase()
+                    return providerNames.some(name =>
+                        fileProvider === name || fileName.startsWith(name + '-')
+                    )
+                })
+            }
+
+            console.log('[SettingsLogic] refreshAuthStatus: Auth files found:', files);
+            const newStatus = {
+                codex: hasProvider(['codex', 'openai']),
+                claude: hasProvider(['claude', 'anthropic']),
+                antigravity: hasProvider(['antigravity'])
+            };
+            console.log('[SettingsLogic] refreshAuthStatus: Computed status:', newStatus);
+            setAuthStatus(newStatus)
+        } catch (error) {
+            console.error('Auth check failed:', error)
+        }
+    }, [])
+
+    const loadSettings = useCallback(async () => {
+        console.log('[useSettingsLogic] loadSettings: Calling window.electron.getSettings()');
+        const data = await window.electron.getSettings()
+        console.log(`[useSettingsLogic] loadSettings: Received settings. GitHub token length: ${data.github?.token?.length || 0}, Copilot token length: ${data.copilot?.token?.length || 0}, Antigravity token length: ${data.antigravity?.token?.length || 0}`);
+        setOriginalSettings(JSON.parse(JSON.stringify(data)))
+        setSettings(data)
+        refreshAuthStatus()
+    }, [refreshAuthStatus])
+
+    const checkOllama = useCallback(async () => {
+        try {
+            const running = await window.electron.isOllamaRunning()
+            setIsOllamaRunning(!!running)
+        } catch {
+            setIsOllamaRunning(false)
+        }
+    }, [])
 
     useEffect(() => {
         loadSettings()
         checkOllama()
-    }, [])
+    }, [loadSettings, checkOllama])
 
     useEffect(() => {
         if (settings && originalSettings) setIsDirty(!deepEqual(settings, originalSettings))
     }, [settings, originalSettings])
-
-    const loadSettings = async () => {
-        const data = await window.electron.getSettings()
-        setOriginalSettings(JSON.parse(JSON.stringify(data)))
-        setSettings(data)
-        refreshAuthStatus()
-    }
 
     const handleSave = async (newSettings?: AppSettings) => {
         const toSave = newSettings || settings
         if (!toSave) return
         setIsLoading(true)
         try {
-            const saved = await window.electron.saveSettings(toSave)
+            await window.electron.saveSettings(toSave)
+            const saved = await window.electron.getSettings()
             setOriginalSettings(JSON.parse(JSON.stringify(saved)))
             setSettings(saved)
             onRefreshModels?.()
@@ -140,16 +111,21 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     // Auto-save debounce
     useEffect(() => {
         if (!settings || !originalSettings) return
-        if (deepEqual(settings, originalSettings)) return
+        const equal = deepEqual(settings, originalSettings)
+        if (equal) return
+
+        console.log('[useSettingsLogic] Auto-save triggered! Settings differ from originalSettings.');
 
         const timeout = setTimeout(async () => {
             try {
+                console.log('[useSettingsLogic] Executing auto-save...');
                 await window.electron.saveSettings(settings)
                 setOriginalSettings(JSON.parse(JSON.stringify(settings)))
                 setStatusMessage('Ayarlar otomatik kaydedildi')
                 setTimeout(() => setStatusMessage(''), 2000)
+                console.log('[useSettingsLogic] Auto-save success.');
             } catch (e) {
-                console.error('Auto-save failed:', e)
+                console.error('[useSettingsLogic] Auto-save failed:', e)
             }
         }, 2000)
 
@@ -163,19 +139,10 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         handleSave(updated)
     }
 
-    const updateSpeech = (patch: Partial<AppSettings['speech']>) => {
+    const updateSpeech = (patch: Partial<NonNullable<AppSettings['speech']>>) => {
         if (!settings) return
-        const updated = { ...settings, speech: { ...settings.speech, ...patch } }
+        const updated = { ...settings, speech: { ...settings.speech, ...patch } } as AppSettings
         setSettings(updated)
-    }
-
-    const checkOllama = async () => {
-        try {
-            const running = await window.electron.isOllamaRunning()
-            setIsOllamaRunning(!!running)
-        } catch {
-            setIsOllamaRunning(false)
-        }
     }
 
     const startOllama = async () => {
@@ -189,31 +156,6 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
             console.error('Failed to start Ollama:', error)
         } finally {
             checkOllama()
-        }
-    }
-
-    const refreshAuthStatus = async () => {
-        try {
-            const status = await window.electron.checkAuthStatus()
-            const files = status?.files || []
-            const hasProvider = (providerNames: string[]) => {
-                return files.some((f: any) => {
-                    const fileProvider = (f.provider || f.type || '').toLowerCase()
-                    const fileName = (f.name || '').toLowerCase()
-                    return providerNames.some(name =>
-                        fileProvider === name || fileName.startsWith(name + '-')
-                    )
-                })
-            }
-
-            setAuthStatus({
-                codex: hasProvider(['codex', 'openai']),
-                claude: hasProvider(['claude', 'anthropic']),
-                gemini: hasProvider(['gemini', 'gemini-cli']),
-                antigravity: hasProvider(['antigravity'])
-            })
-        } catch (error) {
-            console.error('Auth check failed:', error)
         }
     }
 
@@ -236,9 +178,9 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
             const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'profile')
             if (pollResult.success && pollResult.token) {
-                const updated = {
+                const updated: AppSettings = {
                     ...settings,
-                    github: { username: settings.github?.username || 'GitHub User', token: pollResult.token }
+                    github: { username: (settings.github as { username?: string })?.username || 'GitHub User', token: pollResult.token }
                 }
                 setSettings(updated)
                 handleSave(updated)
@@ -265,9 +207,9 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
             const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'copilot')
             if (pollResult.success && pollResult.token) {
-                const updated = {
+                const updated: AppSettings = {
                     ...settings,
-                    copilot: { ...settings.copilot, connected: true, token: pollResult.token }
+                    copilot: { ...(settings.copilot || { connected: false }), connected: true, token: pollResult.token }
                 }
                 setSettings(updated)
                 handleSave(updated)
@@ -283,14 +225,13 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         }
     }
 
-    const connectBrowserProvider = async (provider: 'codex' | 'claude' | 'gemini' | 'antigravity') => {
+    const connectBrowserProvider = async (provider: 'codex' | 'claude' | 'antigravity') => {
         setAuthBusy(provider)
         setAuthNotice('')
         try {
             const loginFn = {
                 codex: window.electron.codexLogin,
                 claude: window.electron.claudeLogin,
-                gemini: window.electron.geminiLogin,
                 antigravity: window.electron.antigravityLogin
             }[provider]
 
@@ -312,16 +253,15 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
                 attempts++
                 try {
                     const status = await window.electron.checkAuthStatus()
-                    const files = status?.files || []
+                    const files = (status?.files || []) as AuthFile[]
                     const providerIdentifiers: string[] = []
                     switch (provider) {
-                        case 'gemini': providerIdentifiers.push('gemini', 'gemini-cli'); break
                         case 'claude': providerIdentifiers.push('claude', 'anthropic'); break
                         case 'antigravity': providerIdentifiers.push('antigravity'); break
                         case 'codex': providerIdentifiers.push('codex', 'openai'); break
                     }
 
-                    const isConnected = files.some((f: any) => {
+                    const isConnected = files.some((f: AuthFile) => {
                         const fileProvider = (f.provider || f.type || '').toLowerCase()
                         const fileName = (f.name || '').toLowerCase()
                         return providerIdentifiers.some(name => fileProvider === name || fileName.startsWith(name + '-'))
@@ -342,6 +282,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
                 } else {
                     setAuthNotice('Zaman asimi: Token tespit edilemedi. Lutfen sayfayi yenileyin.', 0)
                 }
+                return false
             }
             setTimeout(check, 2000)
         } catch (error) {
@@ -352,36 +293,35 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         }
     }
 
-    const disconnectProvider = async (provider: 'copilot' | 'codex' | 'claude' | 'gemini' | 'antigravity') => {
+    const disconnectProvider = async (provider: 'copilot' | 'codex' | 'claude' | 'antigravity') => {
         if (!settings) return
         const updated: AppSettings = { ...settings }
 
         try {
             const status = await window.electron.checkAuthStatus()
-            const files = status?.files || []
+            const files = (status?.files || []) as AuthFile[]
             const providerIdentifiers: string[] = []
             switch (provider) {
-                case 'gemini': providerIdentifiers.push('gemini', 'gemini-cli'); break
                 case 'claude': providerIdentifiers.push('claude', 'anthropic'); break
                 case 'antigravity': providerIdentifiers.push('antigravity'); break
                 case 'codex': providerIdentifiers.push('codex'); break
                 case 'copilot': providerIdentifiers.push('copilot'); break
             }
 
-            const targets = files.filter((f: any) => {
+            const targets = files.filter((f) => {
                 const fileProvider = (f.provider || f.type || '').toLowerCase()
                 const fileName = (f.name || '').toLowerCase()
                 return providerIdentifiers.some(id => fileProvider === id || fileName.startsWith(id + '-'))
             })
 
             for (const t of targets) {
-                await window.electron.deleteProxyAuthFile(t.name)
+                await window.electron.deleteProxyAuthFile(t.name || '')
             }
         } catch (e) {
             console.error('[SettingsLogic] Backend auth deletion failed:', e)
         }
 
-        if (provider === 'copilot') updated.copilot = { connected: false, username: '', token: '' }
+        if (provider === 'copilot') updated.copilot = { connected: false }
         if (provider === 'codex') {
             if (updated.openai?.apiKey === 'connected') updated.openai = { ...updated.openai, apiKey: '' }
             updated.codex = { connected: false }
@@ -389,13 +329,10 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         }
         if (provider === 'claude') {
             if (updated.claude?.apiKey === 'connected') updated.claude = { ...updated.claude, apiKey: '' }
-            if (updated.anthropic?.apiKey === 'connected') updated.anthropic = { ...updated.anthropic, apiKey: '', model: updated.anthropic?.model || '' }
+            if (updated.anthropic?.apiKey === 'connected') updated.anthropic = { ...updated.anthropic, apiKey: '' }
             setAuthStatus(prev => ({ ...prev, claude: false }))
         }
-        if (provider === 'gemini') {
-            if (updated.gemini?.apiKey === 'connected') updated.gemini = { ...updated.gemini, apiKey: '' }
-            setAuthStatus(prev => ({ ...prev, gemini: false }))
-        }
+
         if (provider === 'antigravity') {
             updated.antigravity = { ...(updated.antigravity || { connected: false }), connected: false }
             setAuthStatus(prev => ({ ...prev, antigravity: false }))
@@ -418,17 +355,23 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
                 try {
                     const quota = await window.electron.getQuota()
                     setQuotaData(quota)
-                } catch (e) { }
+                } catch (e) {
+                    console.error('Failed to load quota:', e)
+                }
 
                 try {
                     const cpQuota = await window.electron.getCopilotQuota()
                     setCopilotQuota(cpQuota)
-                } catch (e) { }
+                } catch (e) {
+                    console.error('Failed to load copilot quota:', e)
+                }
 
                 try {
                     const usage = await window.electron.getCodexUsage()
-                    setCodexUsage(usage)
-                } catch (e) { }
+                    setCodexUsage(usage?.usage || null)
+                } catch (e) {
+                    console.error('Failed to load codex usage:', e)
+                }
             } catch (error) {
                 console.error('Failed to load stats:', error)
             } finally {
@@ -475,7 +418,8 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     const handleDeletePersona = (personaId: string) => {
         if (!settings) return
         const next = { ...settings }
-        next.personas = (settings.personas || []).filter(p => p.id !== personaId)
+        const personas = settings.personas || []
+        next.personas = personas.filter(p => p.id !== personaId)
         setSettings(next)
         handleSave(next)
         if (editingPersonaId === personaId) {

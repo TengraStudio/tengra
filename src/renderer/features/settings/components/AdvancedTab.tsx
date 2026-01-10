@@ -1,16 +1,23 @@
 ﻿import React, { useState } from 'react'
 import { MessageSquare, Sliders, Zap, Activity, Thermometer } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+
+import type { ModelInfo } from '@/features/models/utils/model-fetcher'
+
+interface BenchmarkResult {
+    tokensPerSec: number
+    latency: number
+}
 
 interface AdvancedTabProps {
     settings: AppSettings | null
-    installedModels: any[]
-    proxyModels?: any[]
+    installedModels: ModelInfo[]
+    proxyModels?: ModelInfo[]
     setSettings: (s: AppSettings) => void
     handleSave: (s?: AppSettings) => void
-    benchmarkResult: any
+    benchmarkResult: BenchmarkResult | null
     isBenchmarking: boolean
     handleRunBenchmark: (id: string) => void
     t: (key: string) => string
@@ -21,7 +28,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 }) => {
     const [selectedConfigModel, setSelectedConfigModel] = useState<string | null>(null)
     const availableModels = [...(installedModels || []), ...(proxyModels || [])]
-    const currentModelId = selectedConfigModel || availableModels[0]?.id
+    const currentModelId = selectedConfigModel || (availableModels[0]?.id || '')
     const modelSettings = settings?.modelSettings?.[currentModelId] || {}
     const modelPresets = settings?.presets || [
         { id: 'creative', name: 'Yaratıcı', temperature: 0.9, topP: 0.95, frequencyPenalty: 0.1, presencePenalty: 0.1 },
@@ -29,9 +36,10 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
         { id: 'balanced', name: 'Dengeli', temperature: 0.7, topP: 0.9, frequencyPenalty: 0, presencePenalty: 0 }
     ]
 
-    const modelOptions = availableModels.map(m => ({ value: m.id, label: m.id }))
+    const modelOptions = availableModels.map(m => ({ value: m.id || '', label: m.id || '' }))
 
-    const updateModelSetting = (patch: any) => {
+    type ModelSettingsPatch = Partial<NonNullable<AppSettings['modelSettings']>[string]>
+    const updateModelSetting = (patch: ModelSettingsPatch) => {
         if (!settings || !currentModelId) return
         const updated = { ...settings, modelSettings: { ...settings.modelSettings, [currentModelId]: { ...(settings.modelSettings?.[currentModelId] || {}), ...patch } } }
         setSettings(updated)
@@ -86,7 +94,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         ]}
                         onChange={(val) => {
                             if (!settings) return
-                            const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as any } }
+                            const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as 'auto' | 'fifo' | 'parallel' } }
                             setSettings(updated)
                             handleSave(updated)
                         }}

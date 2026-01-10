@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { getErrorMessage } from '../../shared/utils/error.util';
 
 const execAsync = promisify(exec);
 
@@ -8,8 +9,8 @@ export class GitService {
         try {
             const { stdout, stderr } = await execAsync(`git ${command}`, { cwd });
             return { success: true, stdout, stderr };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error) };
         }
     }
 

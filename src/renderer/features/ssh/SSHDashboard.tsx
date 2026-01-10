@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from '@/i18n'
 
 interface SSHDashboardProps {
@@ -6,24 +6,26 @@ interface SSHDashboardProps {
     active: boolean
 }
 
+import { SSHSystemStats, SSHDiskStat } from '@/types'
+
 export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active }) => {
     const { t } = useTranslation()
-    const [stats, setStats] = useState<any>(null)
+    const [stats, setStats] = useState<SSHSystemStats | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             setLoading(true)
             const data = await window.electron.ssh.getSystemStats(connectionId)
             setStats(data)
             setError(null)
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch stats')
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Failed to fetch stats')
         } finally {
             setLoading(false)
         }
-    }
+    }, [connectionId])
 
     useEffect(() => {
         if (active) {
@@ -31,7 +33,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
             const interval = setInterval(fetchStats, 5000) // Poll every 5s
             return () => clearInterval(interval)
         }
-    }, [connectionId, active])
+    }, [fetchStats, active])
 
     if (!active) return null
     if (loading && !stats) return <div className="p-8 text-center text-muted-foreground">{t('ssh.loadingStats')}</div>
@@ -80,7 +82,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
             <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
                 <h4 className="text-sm font-medium text-muted-foreground mb-4">{t('ssh.diskUsage')}</h4>
                 <div className="space-y-4">
-                    {stats.disk.map((disk: any, idx: number) => (
+                    {Array.isArray(stats.disk) && stats.disk.map((disk: SSHDiskStat, idx: number) => (
                         <div key={idx} className="space-y-1">
                             <div className="flex justify-between text-sm">
                                 <span className="font-mono text-xs text-muted-foreground">{disk.filesystem}</span>

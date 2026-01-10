@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useTranslation } from '@/i18n'
-import { ChevronRight, ChevronDown, File, Folder, FileText, Image, Code } from 'lucide-react'
+import { ChevronRight, ChevronDown, File, Folder, FileText, Image, Code, FileJson, FileCode, Box, Hash, Terminal, Database, Book, Layers, Cpu, Component, Coffee } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileNode {
@@ -29,11 +29,12 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
             if (!isOpen && children.length === 0) {
                 setLoading(true)
                 try {
-                    const files = await window.electron.files.listDirectory(node.path)
-                    // Transform to FileNode
-                    const nodes: FileNode[] = files.map((f: any) => ({
+                    const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
+                    // Handle ServiceResponse format: { success, data } or direct array
+                    const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : [])
+                    const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                         name: f.name,
-                        path: f.path,
+                        path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
                         isDirectory: f.isDirectory
                     })).sort((a: FileNode, b: FileNode) => {
                         if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
@@ -55,11 +56,29 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
     }
 
     const getIcon = () => {
-        if (node.isDirectory) return isOpen ? <Folder size={14} className="text-blue-400" /> : <Folder size={14} className="text-blue-400" />
-        if (node.name.endsWith('.tsx') || node.name.endsWith('.ts')) return <Code size={14} className="text-blue-300" />
-        if (node.name.endsWith('.css') || node.name.endsWith('.scss')) return <FileText size={14} className="text-pink-300" />
-        if (node.name.endsWith('.png') || node.name.endsWith('.svg')) return <Image size={14} className="text-purple-300" />
-        return <File size={14} className="text-muted-foreground" />
+        if (node.isDirectory) return isOpen ? <Folder size={14} className="text-blue-400/80" /> : <Folder size={14} className="text-blue-400/80" />
+
+        const name = node.name.toLowerCase()
+        if (name.endsWith('.tsx') || name.endsWith('.jsx')) return <Code size={14} className="text-cyan-400" />
+        if (name.endsWith('.ts')) return <FileCode size={14} className="text-blue-400" />
+        if (name.endsWith('.js')) return <FileCode size={14} className="text-yellow-400" />
+        if (name.endsWith('.py')) return <Box size={14} className="text-blue-500" />
+        if (name.endsWith('.go')) return <Cpu size={14} className="text-cyan-500" />
+        if (name.endsWith('.rs')) return <Layers size={14} className="text-orange-500" />
+        if (name.endsWith('.java')) return <Coffee size={14} className="text-red-400" />
+        if (name.endsWith('.php')) return <FileCode size={14} className="text-purple-400" />
+        if (name.endsWith('.html')) return <Code size={14} className="text-orange-400" />
+        if (name.endsWith('.css') || name.endsWith('.scss') || name.endsWith('.sass')) return <FileText size={14} className="text-pink-400" />
+        if (name.endsWith('.json')) return <FileJson size={14} className="text-yellow-500/80" />
+        if (name.endsWith('.md')) return <Book size={14} className="text-blue-300" />
+        if (name.endsWith('.yaml') || name.endsWith('.yml')) return <Layers size={14} className="text-purple-300" />
+        if (name.endsWith('.sql')) return <Database size={14} className="text-emerald-400" />
+        if (name.endsWith('.sh') || name.endsWith('.bash') || name.endsWith('.zsh')) return <Terminal size={14} className="text-emerald-500" />
+        if (name.endsWith('.png') || name.endsWith('.svg') || name.endsWith('.jpg') || name.endsWith('.jpeg')) return <Image size={14} className="text-purple-400" />
+        if (name.includes('package.json') || name.includes('cargo.toml') || name.includes('go.mod')) return <Hash size={14} className="text-red-400" />
+        if (name.endsWith('.vue') || name.endsWith('.svelte')) return <Component size={14} className="text-emerald-400" />
+
+        return <File size={14} className="text-muted-foreground/60" />
     }
 
     return (
@@ -105,10 +124,12 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             if (!rootPath) return
             setLoading(true)
             try {
-                const files = await window.electron.files.listDirectory(rootPath)
-                const nodes: FileNode[] = files.map((f: any) => ({
+                const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
+                // Handle ServiceResponse format: { success, data } or direct array
+                const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : [])
+                const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                     name: f.name,
-                    path: f.path,
+                    path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
                     isDirectory: f.isDirectory
                 })).sort((a: FileNode, b: FileNode) => {
                     if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)

@@ -1,3 +1,7 @@
+import { JsonValue } from '../../shared/types/common'
+import { QuotaResponse } from '../../shared/types/quota'
+import { AppSettings } from '../../shared/types/settings'
+
 /**
  * @fileoverview In-memory cache utility with TTL and LRU eviction.
  * 
@@ -20,10 +24,10 @@
  * @property {number} [defaultTTL=300000] - Default time-to-live in milliseconds (default: 5 mins)
  * @property {Function} [onEvict] - Callback invoked when an item is removed (expired or evicted)
  */
-export interface CacheOptions {
+export interface CacheOptions<T = JsonValue> {
     maxSize?: number           // Maximum number of entries
     defaultTTL?: number        // Default TTL in milliseconds
-    onEvict?: (key: string, value: any) => void
+    onEvict?: (key: string, value: T) => void
 }
 
 /**
@@ -50,7 +54,7 @@ interface CacheEntry<T> {
  * const user = userCache.get('user:1');
  * ```
  */
-export class Cache<T = any> {
+export class Cache<T = JsonValue> {
     private entries: Map<string, CacheEntry<T>> = new Map()
     private readonly maxSize: number
     private readonly defaultTTL: number
@@ -61,7 +65,7 @@ export class Cache<T = any> {
      * 
      * @param options - Cache configuration options
      */
-    constructor(options: CacheOptions = {}) {
+    constructor(options: CacheOptions<T> = {}) {
         this.maxSize = options.maxSize ?? 100
         this.defaultTTL = options.defaultTTL ?? 5 * 60 * 1000 // 5 minutes
         this.onEvict = options.onEvict
@@ -248,18 +252,18 @@ export class Cache<T = any> {
  * const fetchUser = memoize(async (id) => api.getUser(id), { ttl: 60000 });
  * ```
  */
-export function memoize<T extends (...args: any[]) => Promise<any>>(
-    fn: T,
+export function memoize<Args extends JsonValue[], Result extends JsonValue>(
+    fn: (...args: Args) => Promise<Result>,
     options?: {
-        cache?: Cache
-        keyFn?: (...args: Parameters<T>) => string
+        cache?: Cache<Result>
+        keyFn?: (...args: Args) => string
         ttl?: number
     }
-): T {
-    const cache = options?.cache ?? new Cache({ defaultTTL: options?.ttl ?? 60000 })
+): (...args: Args) => Promise<Result> {
+    const cache = options?.cache ?? new Cache<Result>({ defaultTTL: options?.ttl ?? 60000 })
     const keyFn = options?.keyFn ?? ((...args) => JSON.stringify(args))
 
-    return (async (...args: Parameters<T>) => {
+    return async (...args: Args) => {
         const key = keyFn(...args)
 
         const cached = cache.get(key)
@@ -270,25 +274,25 @@ export function memoize<T extends (...args: any[]) => Promise<any>>(
         const result = await fn(...args)
         cache.set(key, result, options?.ttl)
         return result
-    }) as T
+    }
 }
 
 // Pre-configured caches for common use cases
 
 /** Cache for LLM model lists (Short TTL) */
-export const modelCache = new Cache<any[]>({
+export const modelCache = new Cache<JsonValue[]>({
     maxSize: 10,
     defaultTTL: 5 * 60 * 1000 // 5 minutes
 })
 
 /** Cache for API quota information (Very short TTL) */
-export const quotaCache = new Cache<any>({
+export const quotaCache = new Cache<QuotaResponse>({
     maxSize: 20,
     defaultTTL: 60 * 1000 // 1 minute
 })
 
 /** Cache for application settings (Short TTL) */
-export const settingsCache = new Cache<any>({
+export const settingsCache = new Cache<AppSettings>({
     maxSize: 5,
     defaultTTL: 30 * 1000 // 30 seconds
 })

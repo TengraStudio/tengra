@@ -1,7 +1,7 @@
 ﻿
-export type ModelProvider = 'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'antigravity' | 'custom';
+export type ModelProvider = 'copilot' | 'openai' | 'anthropic' | 'ollama' | 'antigravity' | 'custom';
 
-const VALID_PROVIDERS: Set<string> = new Set(['copilot', 'openai', 'anthropic', 'gemini', 'ollama', 'antigravity']);
+const VALID_PROVIDERS: Set<string> = new Set(['copilot', 'openai', 'anthropic', 'ollama', 'antigravity']);
 
 export interface ModelDefinition {
     id: string;
@@ -41,7 +41,7 @@ export function categorizeModel(modelId: string, providerHint?: string): ModelDe
     // Fallback Heuristics (only if no valid hint)
     let provider: ModelProvider = 'custom';
     if (lower.startsWith('copilot-') || lower.startsWith('github-')) provider = 'copilot';
-    else if (lower.startsWith('gemini-')) provider = 'gemini';
+
     else if (lower.startsWith('claude-')) provider = 'anthropic';
     else if (lower.includes('gpt-') || lower.startsWith('o1')) provider = 'openai';
 
@@ -54,7 +54,7 @@ export function categorizeModel(modelId: string, providerHint?: string): ModelDe
 }
 
 function formatLabel(slug: string): string {
-    let label = slug.replace(/^(github-|copilot-|openai-|codex-|antigravity-|ollama-)/i, '');
+    const label = slug.replace(/^(github-|copilot-|openai-|codex-|antigravity-|ollama-)/i, '');
     return label
         .split(/[-_]/)
         .map(word => {

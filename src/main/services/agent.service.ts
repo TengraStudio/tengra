@@ -50,7 +50,7 @@ export class AgentService {
 
         if (results.length === 0) return null
 
-        const record = results[0] as unknown as AgentRecord
+        const record = results[0] as AgentRecord
         return {
             id: record.id,
             name: record.name,
@@ -63,7 +63,7 @@ export class AgentService {
 
     async getAllAgents(): Promise<AgentDefinition[]> {
         const table = await this.lanceDb.getTable('agents')
-        const records = await table.query().toArray() as unknown as AgentRecord[]
+        const records = await table.query().toArray() as AgentRecord[]
 
         return records.map(r => ({
             id: r.id,

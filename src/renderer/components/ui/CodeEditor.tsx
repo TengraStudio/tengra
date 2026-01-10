@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
-import Editor, { OnMount } from '@monaco-editor/react';
+import Editor, { OnMount, Monaco } from '@monaco-editor/react';
+import type * as monaco from 'monaco-editor';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
-interface CodeEditorProps {
+export interface CodeEditorProps {
     value?: string;
     language?: string;
     onChange?: (value: string | undefined) => void;
@@ -26,17 +27,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     initialLine
 }) => {
     const { isLight } = useTheme();
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const decorationRef = useRef<string[]>([]);
-    const monacoRef = useRef<any>(null);
+    const monacoRef = useRef<Monaco | null>(null);
 
-    const updateDecorations = (editor: any) => {
+    const updateDecorations = (editor: monaco.editor.IStandaloneCodeEditor) => {
         if (!editor) return;
         const model = editor.getModel();
         if (!model) return;
 
         const lineCount = model.getLineCount();
-        const newDecorations: any[] = [];
+        const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
         for (let i = 1; i <= lineCount; i++) {
             const lineContent = model.getLineContent(i).trim();
@@ -63,7 +64,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         updateDecorations(editor);
 
         // Click handler for gutter
-        editor.onMouseDown((e: any) => {
+        editor.onMouseDown((e: monaco.editor.IEditorMouseEvent) => {
             if (e.target.type === 2) { // 2 = Gutter Glyph Margin
                 const line = e.target.position.lineNumber;
                 document.dispatchEvent(new CustomEvent('ai-refactor-request', {
@@ -77,10 +78,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             // Debounce would be better here
             setTimeout(() => updateDecorations(editor), 500);
         });
+    };
 
-        // Inline Completions (Ghost Text)
-        monaco.languages.registerInlineCompletionsProvider(language, {
-            provideInlineCompletions: async (model: any, position: any) => {
+    // Inline Completions Provider registration
+    React.useEffect(() => {
+        if (!monacoRef.current) return;
+        const monaco = monacoRef.current;
+
+        const provider = monaco.languages.registerInlineCompletionsProvider(language, {
+            provideInlineCompletions: async (model: monaco.editor.ITextModel, position: monaco.Position) => {
                 const textBefore = model.getValueInRange({
                     startLineNumber: 1,
                     startColumn: 1,
@@ -92,7 +98,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
                 try {
                     // Call backend for suggestion
-                    const suggestion = await (window.electron as any).project.getCompletion(textBefore);
+                    const suggestion = await window.electron.project.getCompletion(textBefore);
                     if (!suggestion) return { items: [] };
 
                     return {
@@ -106,15 +112,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                             }
                         }]
                     };
-                } catch (error) {
+                } catch {
                     return { items: [] };
                 }
             },
-            freeInlineCompletions: () => { }
+            freeInlineCompletions: () => { },
+            handleItemDidShow: () => { }
         });
-    };
 
-    // Auto-scroll to initial line
+        return () => {
+            provider.dispose();
+        };
+    }, [language]);
+
     React.useEffect(() => {
         if (editorRef.current && initialLine) {
             const editor = editorRef.current;
@@ -124,7 +134,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 editor.focus();
             }, 100);
         }
-    }, [initialLine, editorRef.current]);
+    }, [initialLine]);
 
     // React to theme changes
     const monacoTheme = isLight ? 'light' : 'vs-dark';

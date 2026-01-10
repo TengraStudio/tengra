@@ -4,6 +4,8 @@ import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Badge } from '@renderer/components/ui/badge'
 import { Brain, Terminal, User, Play } from 'lucide-react'
+import { JsonValue } from '../../../../shared/types/common'
+import { getErrorMessage } from '../../../../shared/utils/error.util'
 
 // Types aligned with backend CouncilSession
 interface AgentConfig {
@@ -26,7 +28,7 @@ interface LocalCouncilSession {
     id: string
     projectId: string
     status: 'planning' | 'working' | 'reviewing' | 'waiting_for_approval' | 'completed' | 'failed'
-    plan: any
+    plan: JsonValue
     task: string
     agents: AgentConfig[]
     logs: LogEntry[]
@@ -59,7 +61,7 @@ const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) =
 
 export const AgentCouncil = () => {
     // const { project } = props
-    const [session, _setSession] = useState<LocalCouncilSession | null>(null)
+    const [session] = useState<LocalCouncilSession | null>(null)
     const [taskInput, setTaskInput] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
 
@@ -81,7 +83,7 @@ export const AgentCouncil = () => {
         try {
             await window.electron.council.createSession(taskInput)
         } catch (err) {
-            console.error('Failed to create council session', err)
+            console.error('Failed to create council session', getErrorMessage(err as Error))
         }
         setIsGenerating(false)
     }

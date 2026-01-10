@@ -1,4 +1,22 @@
 import axios from 'axios'
+import { getErrorMessage } from '../../../shared/utils/error.util'
+
+interface HFApiModel {
+    modelId: string;
+    author: string;
+    cardData?: { short_description?: string };
+    downloads?: number;
+    likes?: number;
+    tags?: string[];
+    lastModified: string;
+}
+
+interface HFFileInfo {
+    path: string;
+    size: number;
+    oid?: string;
+    lfs?: { oid?: string };
+}
 
 export interface HFModel {
     id: string
@@ -9,6 +27,13 @@ export interface HFModel {
     likes: number
     tags: string[]
     lastModified: string
+}
+
+export interface HFModelFile {
+    path: string;
+    size: number;
+    oid: string | undefined;
+    quantization: string;
 }
 
 export class HuggingFaceService {
@@ -27,7 +52,7 @@ export class HuggingFaceService {
                 }
             })
 
-            return response.data.map((m: any) => ({
+            return (response.data as HFApiModel[]).map((m) => ({
                 id: m.modelId,
                 name: m.modelId.split('/')[1] || m.modelId,
                 author: m.author,
@@ -38,26 +63,26 @@ export class HuggingFaceService {
                 lastModified: m.lastModified
             }))
         } catch (error) {
-            console.error('Failed to fetch models from HuggingFace:', error)
+            console.error('Failed to fetch models from HuggingFace:', getErrorMessage(error as Error))
             return []
         }
     }
-    async getModelFiles(modelId: string): Promise<any[]> {
+    async getModelFiles(modelId: string): Promise<HFModelFile[]> {
         try {
             const response = await axios.get(`https://huggingface.co/api/models/${modelId}/tree/main`, {
                 params: { recursive: true }
             })
 
-            return response.data
-                .filter((f: any) => f.path.endsWith('.gguf'))
-                .map((f: any) => ({
+            return (response.data as HFFileInfo[])
+                .filter((f) => f.path.endsWith('.gguf'))
+                .map((f) => ({
                     path: f.path,
                     size: f.size,
                     oid: f.lfs?.oid || f.oid, // SHA256 usually in lfs.oid
                     quantization: this.extractQuantization(f.path)
                 }))
         } catch (error) {
-            console.error(`Failed to fetch files for ${modelId}:`, error)
+            console.error(`Failed to fetch files for ${modelId}:`, getErrorMessage(error as Error))
             return []
         }
     }
@@ -118,9 +143,9 @@ export class HuggingFaceService {
 
             return { success: true }
 
-        } catch (error: any) {
-            console.error('Download failed:', error)
-            return { success: false, error: error.message }
+        } catch (error) {
+            console.error('Download failed:', getErrorMessage(error as Error))
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 

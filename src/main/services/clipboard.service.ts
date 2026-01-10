@@ -1,4 +1,4 @@
-import { clipboard } from 'electron'
+import { clipboard, nativeImage } from 'electron'
 
 export class ClipboardService {
     private history: string[] = []
@@ -65,7 +65,6 @@ export class ClipboardService {
     }
 
     writeImage(dataUrl: string) {
-        const { nativeImage } = require('electron')
         const img = nativeImage.createFromDataURL(dataUrl)
         clipboard.writeImage(img)
         return { success: true }

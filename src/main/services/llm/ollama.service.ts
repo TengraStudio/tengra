@@ -1,14 +1,17 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
 import axios from 'axios'
+import { JsonObject, JsonValue } from '../../../shared/types/common';
 import { SettingsService } from '../settings.service';
+import { ToolCall } from '../../../shared/types/chat';
+import { getErrorMessage } from '../../../shared/utils/error.util'
 
 
-interface Message {
+interface OllamaMessage {
     role: 'user' | 'assistant' | 'system' | 'tool'
     content: string
     images?: string[] // Base64 encoded images
-    tool_calls?: any[]
+    tool_calls?: ToolCall[]
     tool_call_id?: string
 }
 
@@ -17,6 +20,7 @@ interface OllamaModel {
     modified_at: string
     size: number
     digest: string
+    [key: string]: JsonValue | undefined // For JsonValue compatibility
     details?: {
         format: string
         family: string
@@ -28,12 +32,7 @@ interface OllamaModel {
 export interface OllamaResponse {
     model: string
     created_at: string
-    message?: {
-        role: string
-        content: string
-        images?: string[]
-        tool_calls?: any[]
-    }
+    message: OllamaMessage
     done: boolean
     total_duration?: number
     load_duration?: number
@@ -65,7 +64,7 @@ export class OllamaService {
                 this.host = url.hostname
                 this.port = parseInt(url.port) || 11434
             } catch (e) {
-                console.error('Invalid Ollama URL provided, using default', e)
+                console.error('Invalid Ollama URL provided, using default', getErrorMessage(e as Error))
             }
         }
     }
@@ -166,12 +165,23 @@ export class OllamaService {
             const data = JSON.parse(response.data)
             return data.models || []
         } catch (error) {
-            console.error('Failed to get models:', error)
+            console.error('Failed to get models:', getErrorMessage(error as Error))
             return []
         }
     }
 
-    async chat(messages: Message[], model: string): Promise<any> {
+    async ps(): Promise<JsonObject[]> {
+        try {
+            const response = await this.httpRequest({ path: '/api/ps', timeout: 5000 })
+            const data = JSON.parse(response.data)
+            return (data.models || []) as JsonObject[]
+        } catch (error) {
+            console.error('Failed to get running models:', getErrorMessage(error as Error))
+            return []
+        }
+    }
+
+    async chat(messages: OllamaMessage[], model: string): Promise<OllamaResponse> {
         try {
             const response = await this.httpRequest({
                 method: 'POST',
@@ -188,20 +198,25 @@ export class OllamaService {
             })
             return JSON.parse(response.data)
         } catch (error) {
-            console.error('Chat error:', error)
+            console.error('Chat error:', getErrorMessage(error as Error))
             throw error
         }
     }
 
 
     async chatStream(
-        messages: Message[],
+        messages: OllamaMessage[],
         model: string,
-        tools?: any[],
+        tools?: ToolCall[],
         onChunk?: (chunk: string) => void
-    ): Promise<any> {
+    ): Promise<{
+        content: string;
+        tool_calls?: ToolCall[];
+        promptTokens: number;
+        completionTokens: number;
+    }> {
         let fullResponse = ''
-        let toolCalls: any[] = []
+        let toolCalls: ToolCall[] = []
         let promptTokens = 0
         let completionTokens = 0
 
@@ -234,7 +249,7 @@ export class OllamaService {
                                 if (data.prompt_eval_count) promptTokens = data.prompt_eval_count
                                 if (data.eval_count) completionTokens = data.eval_count
                             }
-                        } catch (e) {
+                        } catch {
                             // Ignore parse errors
                         }
                     }
@@ -251,7 +266,7 @@ export class OllamaService {
             }
         } catch (error) {
             this.currentRequest = null
-            console.error('Stream chat error:', error)
+            console.error('Stream chat error:', getErrorMessage(error as Error))
             throw error
         }
     }
@@ -269,7 +284,7 @@ export class OllamaService {
             const data = JSON.parse(response.data)
             return data.embeddings?.[0] || []
         } catch (error) {
-            console.error('Error generating embeddings with Ollama:', error)
+            console.error('Error generating embeddings with Ollama:', getErrorMessage(error as Error))
             throw error
         }
     }
@@ -293,15 +308,17 @@ export class OllamaService {
                                 completed: data.completed,
                                 total: data.total
                             })
-                        } catch (e) {
+                        } catch {
                             // Ignore
                         }
                     }
                 }
             })
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            this.currentRequest = null
+            const message = getErrorMessage(error as Error)
+            return { success: false, error: message }
         }
     }
 
@@ -319,8 +336,9 @@ export class OllamaService {
                 const data = JSON.parse(response.data)
                 return { success: false, error: data.error || 'Failed to delete model' }
             }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            const message = getErrorMessage(error as Error)
+            return { success: false, error: message }
         }
     }
 
@@ -369,8 +387,9 @@ export class OllamaService {
             }
             console.log(`[OllamaService] Library enriched with Pulls. Found counts for ${Object.keys(pullsMap).length} models.`);
             return results;
-        } catch (e: any) {
-            console.warn('[OllamaService] Could not fetch live pulls from registry, using static list', e.message);
+        } catch (e) {
+            const message = getErrorMessage(e as Error)
+            console.warn('[OllamaService] Could not fetch live pulls from registry, using static list', message);
             return staticList;
         }
     }

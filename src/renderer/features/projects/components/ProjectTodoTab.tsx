@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 
 interface ProjectTodoTabProps {
     projectRoot: string
-    t: any
+    t: (key: string) => string
 }
 
 interface TodoItem {
@@ -37,8 +37,9 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
         const foundFiles: string[] = []
         try {
             const entries = await window.electron.files.listDirectory(dirPath)
+            const entryList = Array.isArray(entries) ? entries : []
 
-            for (const entry of entries) {
+            for (const entry of entryList) {
                 if (IGNORED_FOLDERS.includes(entry.name)) continue
                 if (entry.name.startsWith('.')) continue
 
@@ -110,9 +111,9 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             validFiles.forEach(f => expanded[f.path] = true)
             setExpandedFiles(expanded)
 
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to fetch todos:', err)
-            setError(err.message)
+            setError(err instanceof Error ? err.message : String(err))
         } finally {
             setLoading(false)
         }
@@ -144,8 +145,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                     items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
                 }
             }))
-        } catch (e: any) {
-            setError(e.message)
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e))
             fetchTodos() // Revert/Refresh on error
         }
     }
@@ -174,8 +175,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             setIsAdding(false)
             await fetchTodos()
 
-        } catch (e: any) {
-            setError(e.message)
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e))
         }
     }
 

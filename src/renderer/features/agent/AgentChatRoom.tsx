@@ -2,21 +2,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { Bot, Terminal, Sparkles, Clock } from 'lucide-react'
+import { AgentLog, AgentMessage } from '../../../shared/types/agent'
 
-// Schema from backend
-interface AgentMessage {
-    id: string
-    sessionId: string
-    sender: string
-    content: string
-    timestamp: number
-    type: 'text' | 'status' | 'code' | 'help'
-    metadata?: any
-}
 
 interface AgentChatRoomProps {
     sessionId: string
-    initialLogs: any[] // Load logs as initial history
+    initialLogs: AgentLog[] // Load logs as initial history
     isRunning?: boolean
 }
 
@@ -34,7 +25,10 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
             timestamp: log.timestamp,
             type: (log.type === 'plan' || log.type === 'action') ? 'code' : 'text'
         }))
-        setMessages(history)
+        const timer = setTimeout(() => {
+            setMessages(history)
+        }, 0)
+        return () => clearTimeout(timer)
     }, [initialLogs])
 
     // WebSocket Connection

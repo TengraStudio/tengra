@@ -9,12 +9,14 @@ import { GalleryView } from '@/features/chat/components/GalleryView'
 import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab } from '@/features/settings/components'
 import './SettingsPage.css'
 
-interface SettingsPageProps {
-    installedModels: any[]
-    proxyModels?: any[]
+import type { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { SettingsCategory } from './types'
+
+export interface SettingsPageProps {
+    installedModels: ModelInfo[]
+    proxyModels?: ModelInfo[]
     onRefreshModels: () => void
-    activeTab?: string,
-    onTabChange?: (tab: string) => void
+    activeTab?: SettingsCategory
 }
 
 export function SettingsPage({
@@ -33,7 +35,7 @@ export function SettingsPage({
         setSettings
     } = useSettingsLogic(onRefreshModels)
 
-    const { t } = useTranslation(settings?.general?.language as any || 'tr')
+    const { t } = useTranslation(settings?.general?.language || 'tr')
 
     // tabs removed because unused
 
@@ -85,7 +87,7 @@ export function SettingsPage({
                         {activeTab === 'developer' && <DeveloperTab {...sharedProps} />}
                         {activeTab === 'advanced' && <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />}
                         {activeTab === 'about' && <AboutTab {...sharedProps} onReset={handleFactoryReset} />}
-                        {activeTab === 'gallery' && <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20"><GalleryView language={settings?.general?.language as any || 'tr'} /></div>}
+                        {activeTab === 'gallery' && <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20"><GalleryView language={settings?.general?.language || 'tr'} /></div>}
                     </div>
                 </main>
             </div>

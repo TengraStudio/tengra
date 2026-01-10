@@ -5,9 +5,7 @@ import { ChatMessage } from '../../types/llm.types';
 import { ApiError, AuthenticationError } from '../../utils/error.util';
 
 // Mock dependencies
-const mockDataService = {
-    getPath: vi.fn().mockReturnValue('/tmp'),
-};
+
 
 const mockImagePersistence = {
     saveImage: vi.fn().mockResolvedValue('/tmp/image.png')
@@ -17,12 +15,22 @@ const mockImagePersistence = {
 const globalFetch = vi.fn();
 global.fetch = globalFetch;
 
+const mockHttpService = { get: vi.fn(), post: vi.fn() };
+const mockConfigService = { get: vi.fn() };
+const mockKeyRotationService = { getApiKey: vi.fn() };
+const mockRateLimitService = { checkRateLimit: vi.fn() };
+
 describe('LLMService', () => {
     let service: LLMService;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new LLMService(mockDataService as any);
+        service = new LLMService(
+            mockHttpService as any,
+            mockConfigService as any,
+            mockKeyRotationService as any,
+            mockRateLimitService as any
+        );
         // Inject mock image persistence (private property hack for testing)
         (service as any).imagePersistence = mockImagePersistence;
     });

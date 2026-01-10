@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import electron from 'vite-plugin-electron'
-import renderer from 'vite-plugin-electron-renderer'
+
 import { resolve } from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
 
@@ -43,7 +43,8 @@ export default defineConfig({
                                 'apache-arrow',
                                 'ws',
                                 'bufferutil',
-                                'utf-8-validate'
+                                'utf-8-validate',
+                                'better-sqlite3'
                             ]
                         }
                     }
@@ -68,7 +69,7 @@ export default defineConfig({
                 }
             }
         ]),
-        renderer(),
+
         // Bundle analyzer - generates stats.html after build
         visualizer({
             filename: 'stats.html',

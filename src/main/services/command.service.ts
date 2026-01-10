@@ -1,7 +1,10 @@
-import { spawn, exec } from 'child_process'
+import { spawn, exec, ChildProcess } from 'child_process'
 import { promisify } from 'util'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 const execAsync = promisify(exec)
+
+import { JsonValue } from '../../shared/types/common'
 
 interface CommandResult {
     success: boolean
@@ -9,11 +12,12 @@ interface CommandResult {
     stderr?: string
     exitCode?: number
     error?: string
+    [key: string]: JsonValue | undefined;
 }
 
 export class CommandService {
     private maxTimeout: number = 60000 // 60 seconds default timeout
-    private activeProcesses: Map<string, any> = new Map() // ID -> ChildProcess
+    private activeProcesses: Map<string, ChildProcess> = new Map()
     private maxCommandLength = 10000
 
     killCommand(id: string): boolean {
@@ -23,14 +27,14 @@ export class CommandService {
                 // Kill process tree
                 const killCmd = `taskkill /PID ${child.pid} /T /F`
                 exec(killCmd, (err) => {
-                    if (err) console.error('Failed to kill process tree:', err)
+                    if (err) console.error('Failed to kill process tree:', getErrorMessage(err as Error))
                 })
                 // Also try direct kill safety net
                 child.kill()
                 this.activeProcesses.delete(id)
                 return true
             } catch (err) {
-                console.error('Error killing process:', err)
+                console.error('Error killing process:', getErrorMessage(err as Error))
                 return false
             }
         }
@@ -89,7 +93,7 @@ export class CommandService {
                             stdout: stdout?.trim(),
                             stderr: stderr?.trim(),
                             exitCode: error.code,
-                            error: error.message
+                            error: getErrorMessage(error)
                         })
                     } else {
                         resolve({
@@ -120,13 +124,14 @@ export class CommandService {
                 stderr: stderr.trim(),
                 exitCode: 0
             }
-        } catch (error: any) {
+        } catch (error) {
+            const execError = error as { stdout?: string; stderr?: string; code?: number; message: string };
             return {
                 success: false,
-                stdout: error.stdout?.trim(),
-                stderr: error.stderr?.trim(),
-                exitCode: error.code,
-                error: error.message
+                stdout: execError.stdout?.trim(),
+                stderr: execError.stderr?.trim(),
+                exitCode: execError.code,
+                error: getErrorMessage(error as Error)
             }
         }
     }
@@ -201,13 +206,13 @@ export class CommandService {
                     success: false,
                     stdout,
                     stderr,
-                    error: error.message
+                    error: getErrorMessage(error)
                 })
             })
         })
     }
 
-    async getSystemInfo(): Promise<any> {
+    async getSystemInfo(): Promise<SystemInfoResult> {
         const [hostname, username, osInfo] = await Promise.all([
             this.executeCommand('hostname'),
             this.executeCommand('$env:USERNAME'),
@@ -223,4 +228,13 @@ export class CommandService {
             arch: process.arch
         }
     }
+}
+
+interface SystemInfoResult {
+    hostname: string | undefined;
+    username: string | undefined;
+    os: string | undefined;
+    cwd: string;
+    platform: NodeJS.Platform;
+    arch: string;
 }

@@ -1,12 +1,12 @@
-﻿import { useState, useEffect } from 'react'
-import { FileCode, Activity, Terminal as TerminalIcon, X, Play, RefreshCw, Pencil, Camera, Sparkles, Check } from 'lucide-react'
+﻿import { useState, useEffect, useCallback } from 'react'
+import { FileCode, X, Pencil, Camera, Sparkles, Check, RefreshCw } from 'lucide-react'
 import { TerminalComponent } from './ide/Terminal'
 import { FileExplorer } from './ide/FileExplorer'
 import { CodeEditor } from './ide/CodeEditor'
 import { FolderInspector } from './ide/FolderInspector'
 import { AgentCouncil } from '@/features/chat/components/AgentCouncil'
 import { ProjectTodoTab } from './ProjectTodoTab'
-import { Project } from '@/types'
+import { Project, ProjectAnalysis, ProjectStats } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface OpenFile {
@@ -23,19 +23,27 @@ interface ProjectDashboardProps {
     onUpdate?: (updates: Partial<Project>) => Promise<void>
     onOpenLogoGenerator?: () => void
     language?: Language
+    // External tab control
+    activeTab?: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git'
+    onTabChange?: (tab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git') => void
 }
 
 export const ProjectDashboard = ({
     project,
     onUpdate,
     onOpenLogoGenerator,
-    language = 'en'
+    language = 'en',
+    activeTab: externalTab,
+    onTabChange
 }: ProjectDashboardProps) => {
     const { t } = useTranslation(language)
-    const [stats, setStats] = useState<any>(null)
-    const [analysis, setAnalysis] = useState<any>(null)
+    const [stats, setStats] = useState<ProjectStats | null>(null)
+    const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null)
     const [loading, setLoading] = useState(false)
-    const [activeTab, setActiveTab] = useState<'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council'>('overview')
+    const [internalTab, setInternalTab] = useState<'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git'>('overview')
+    // Use external tab if provided, otherwise use internal
+    const activeTab = externalTab ?? internalTab
+    const setActiveTab = onTabChange ?? setInternalTab
     const [projectRoot, setProjectRoot] = useState<string>(project.path)
     const [openFiles, setOpenFiles] = useState<OpenFile[]>([])
     const [activeFile, setActiveFile] = useState<string | null>(null)
@@ -47,13 +55,13 @@ export const ProjectDashboard = ({
     const [editName, setEditName] = useState(project.title)
     const [editDesc, setEditDesc] = useState(project.description || '')
 
-    const analyzeProject = async () => {
+    const analyzeProject = useCallback(async () => {
         setLoading(true)
         try {
             const rootPath = project.path
             if (rootPath) {
                 setProjectRoot(rootPath)
-                const data = await (window.electron as any).project.analyze(rootPath)
+                const data = await window.electron.project.analyze(rootPath, project.id)
                 setAnalysis(data)
                 setStats(data.stats)
             }
@@ -62,7 +70,7 @@ export const ProjectDashboard = ({
         } finally {
             setLoading(false)
         }
-    }
+    }, [project.path, project.id])
 
     const handleSaveName = async () => {
         if (editName.trim() && editName !== project.title) {
@@ -80,7 +88,7 @@ export const ProjectDashboard = ({
 
     useEffect(() => {
         analyzeProject()
-    }, [project.path])
+    }, [project.path, project.id, analyzeProject])
 
     const handleFileSelect = async (path: string) => {
         if (openFiles.find(f => f.path === path)) {
@@ -129,45 +137,6 @@ export const ProjectDashboard = ({
 
     return (
         <div className="h-full flex flex-col bg-background text-foreground">
-            <div className="flex items-center gap-1 p-2 border-b border-white/10 bg-black/20 backdrop-blur-md">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'overview' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <Activity className="w-3.5 h-3.5" /> {t('projectDashboard.overview')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('terminal')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'terminal' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <TerminalIcon className="w-3.5 h-3.5" /> {t('projectDashboard.terminal')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('files')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'files' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <FileCode className="w-3.5 h-3.5" /> {t('projectDashboard.files')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('tasks')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'tasks' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <Play className="w-3.5 h-3.5" /> {t('projectDashboard.tasks')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('search')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'search' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <RefreshCw className="w-3.5 h-3.5" /> {t('projectDashboard.search')}
-                </button>
-                <button
-                    onClick={() => setActiveTab('council')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-2 ${activeTab === 'council' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
-                >
-                    <Activity className="w-3.5 h-3.5" /> {t('projectDashboard.council')}
-                </button>
-            </div>
-
             {/* Content */}
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-2">
                 {activeTab === 'overview' && (
@@ -255,6 +224,15 @@ export const ProjectDashboard = ({
                                     <div className="text-[10px] font-medium text-muted-foreground font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
                                         {projectRoot}
                                     </div>
+                                    <button
+                                        onClick={analyzeProject}
+                                        disabled={loading}
+                                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 text-xs"
+                                        title={t('common.refresh')}
+                                    >
+                                        <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+                                        {loading ? t('common.loading') : t('common.refresh')}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -287,12 +265,12 @@ export const ProjectDashboard = ({
                                     {t('projectDashboard.techStack')}
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {analysis.frameworks.map((fw: string) => (
+                                    {(analysis.frameworks || []).map((fw: string) => (
                                         <span key={fw} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-blue-300 font-medium">
                                             {fw}
                                         </span>
                                     ))}
-                                    {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
+                                    {(analysis.frameworks?.length ?? 0) === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
                                 </div>
                             </div>
 
@@ -302,12 +280,12 @@ export const ProjectDashboard = ({
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                     {t('projectDashboard.langDist')}
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
                                     {Object.entries(analysis.languages || {})
                                         .sort(([, a], [, b]) => (b as number) - (a as number))
-                                        .slice(0, 5)
+                                        .slice(0, 15)
                                         .map(([lang, count]) => {
-                                            const percentage = Math.round(((count as number) / stats.fileCount) * 100)
+                                            const percentage = stats ? Math.round(((count as number) / stats.fileCount) * 100) : 0
                                             return (
                                                 <div key={lang} className="space-y-1">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold tracking-tight">
@@ -372,6 +350,54 @@ export const ProjectDashboard = ({
                 {activeTab === 'council' && (
                     <div className="h-full">
                         <AgentCouncil />
+                    </div>
+                )}
+
+                {activeTab === 'git' && (
+                    <div className="h-full flex flex-col gap-6 overflow-y-auto px-6 py-6">
+                        {/* Git Status Header */}
+                        <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                            <h2 className="text-lg font-bold text-white flex items-center gap-3 mb-4">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                Git Repository
+                            </h2>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.branch')}</div>
+                                    <div className="text-sm font-semibold text-white">main</div>
+                                </div>
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.status')}</div>
+                                    <div className="text-sm font-semibold text-emerald-400">Clean</div>
+                                </div>
+                                <div className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.lastCommit')}</div>
+                                    <div className="text-sm font-semibold text-white">2 hours ago</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Commits */}
+                        <div className="bg-card/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                            <h3 className="text-sm font-bold text-white mb-4">{t('projectDashboard.recentCommits')}</h3>
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div key={i} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                            {String.fromCharCode(65 + (i % 26))}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm text-white font-medium truncate">
+                                                {['fix: resolve login issue', 'feat: add new dashboard', 'chore: update deps', 'docs: update readme', 'refactor: clean code'][i - 1]}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                                {i} day{i > 1 ? 's' : ''} ago • abc{i}def
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
 

@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/electron/main'
 import { app } from 'electron'
 import { SettingsService } from './settings.service'
+import { JsonValue } from '../../shared/types/common'
 
 // IMPORTANT: Replace this with your actual Sentry DSN
 const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000'
@@ -52,7 +53,7 @@ export class SentryService {
         }
     }
 
-    captureException(error: Error, context?: Record<string, any>) {
+    captureException(error: Error, context?: Record<string, JsonValue | Error>) {
         if (!this.isInitialized) return
         Sentry.captureException(error, { extra: context })
     }
@@ -67,7 +68,7 @@ export class SentryService {
         Sentry.setUser(id ? { id } : null)
     }
 
-    addBreadcrumb(message: string, category?: string, data?: Record<string, any>) {
+    addBreadcrumb(message: string, category?: string, data?: Record<string, JsonValue | Error>) {
         if (!this.isInitialized) return
         Sentry.addBreadcrumb({ message, category, data })
     }

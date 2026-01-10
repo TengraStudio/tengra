@@ -1,4 +1,4 @@
-﻿import { Chat, Folder } from '@/types'
+﻿import { Chat, Folder, IpcValue } from '@/types'
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -9,19 +9,20 @@ import {
     LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
     FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin
 } from 'lucide-react'
-import { useState, useEffect, useRef, ChangeEvent } from 'react'
+import { useState, useEffect, useRef, ChangeEvent, type ComponentType } from 'react'
 import { useTranslation } from '@/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
 import { useProject } from '@/context/ProjectContext'
+import { SettingsCategory } from '@/features/settings/types'
 
 interface SidebarProps {
     isCollapsed: boolean
     toggleSidebar: () => void
     currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council'
     onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council') => void
-    onOpenSettings: (category?: any) => void
+    onOpenSettings: (category?: SettingsCategory) => void
     onSearch: (query: string) => void
 }
 
@@ -32,7 +33,7 @@ const SettingsMenuItem = ({
     onClick
 }: {
     id: string,
-    icon: any,
+    icon: ComponentType<{ className?: string }>,
     label: string,
     isActive: boolean,
     onClick: () => void
@@ -94,7 +95,9 @@ export function Sidebar({
             if (currentChatId && chats) {
                 const chat = chats.find(c => c.id === currentChatId)
                 if (chat?.folderId) {
-                    setExpandedFolders(prev => new Set(prev).add(chat.folderId!))
+                    setTimeout(() => {
+                        setExpandedFolders(prev => new Set(prev).add(chat.folderId!))
+                    }, 0)
                 }
             }
         }
@@ -174,8 +177,11 @@ export function Sidebar({
     const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
-        const removeStatusListener = window.electron.on('chat:generation-status', (_event: any, data: { chatId: string, isGenerating: boolean }) => {
-            setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: data.isGenerating }))
+        const removeStatusListener = window.electron.on('chat:generation-status', (_event, ...args: IpcValue[]) => {
+            const payload = args[0]
+            const data = payload && typeof payload === 'object' ? payload as { chatId?: string; isGenerating?: boolean } : {}
+            if (!data.chatId) return
+            setLocalGeneratingMap(prev => ({ ...prev, [data.chatId as string]: !!data.isGenerating }))
         })
         return () => { removeStatusListener() }
     }, [])
@@ -275,7 +281,7 @@ export function Sidebar({
                                                         icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : LayoutGrid}
                                                         label={t(`settings.${id}`)}
                                                         isActive={currentView === 'settings' && settingsCategory === id}
-                                                        onClick={() => { onOpenSettings(id); if (setSettingsCategory) setSettingsCategory(id as any) }}
+                                                        onClick={() => { const category = id as SettingsCategory; onOpenSettings(category); if (setSettingsCategory) setSettingsCategory(category) }}
                                                     />
                                                 ))}
                                             </div>
@@ -668,3 +674,5 @@ export function Sidebar({
         </>
     )
 }
+
+

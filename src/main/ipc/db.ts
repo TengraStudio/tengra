@@ -1,16 +1,41 @@
 import { ipcMain } from 'electron'
 import { DatabaseService } from '../services/data/database.service'
 import { EmbeddingService } from '../services/llm/embedding.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService) {
-    ipcMain.handle('db:createChat', (_event, chat) => databaseService.createChat(chat))
-    ipcMain.handle('db:updateChat', (_event, id, updates) => databaseService.updateChat(id, updates))
-    ipcMain.handle('db:deleteChat', (_event, id) => databaseService.deleteChat(id))
-    ipcMain.handle('db:duplicateChat', (_event, id) => databaseService.duplicateChat(id))
-    ipcMain.handle('db:archiveChat', (_event, id, isArchived) => databaseService.archiveChat(id, isArchived))
-    ipcMain.handle('db:getChat', (_event, id) => databaseService.getChat(id))
-    ipcMain.handle('db:getAllChats', () => databaseService.getAllChats())
-    ipcMain.handle('db:searchChats', (_event, query) => databaseService.searchChats(query))
+    ipcMain.handle('db:createChat', async (_event, chat) => {
+        try { return await databaseService.createChat(chat) }
+        catch (e) { console.error('[IPC] db:createChat failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:updateChat', async (_event, id, updates) => {
+        try { return await databaseService.updateChat(id, updates) }
+        catch (e) { console.error('[IPC] db:updateChat failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:deleteChat', async (_event, id) => {
+        try { return await databaseService.deleteChat(id) }
+        catch (e) { console.error('[IPC] db:deleteChat failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:duplicateChat', async (_event, id) => {
+        try { return await databaseService.duplicateChat(id) }
+        catch (e) { console.error('[IPC] db:duplicateChat failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:archiveChat', async (_event, id, isArchived) => {
+        try { return await databaseService.archiveChat(id, isArchived) }
+        catch (e) { console.error('[IPC] db:archiveChat failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:getChat', async (_event, id) => {
+        try { return await databaseService.getChat(id) }
+        catch (e) { console.error('[IPC] db:getChat failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:getAllChats', async () => {
+        try { return await databaseService.getAllChats() }
+        catch (e) { console.error('[IPC] db:getAllChats failed:', getErrorMessage(e as Error)); return [] }
+    })
+    ipcMain.handle('db:searchChats', async (_event, query) => {
+        try { return await databaseService.searchChats(query) }
+        catch (e) { console.error('[IPC] db:searchChats failed:', getErrorMessage(e as Error)); return [] }
+    })
     ipcMain.handle('db:addMessage', async (_event, message) => {
         if (embeddingService) {
             try {
@@ -21,34 +46,102 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
                     message.vector = vector
                 }
             } catch (error) {
-                console.error('[DB IPC] Failed to generate embedding for message:', error)
+                console.error('[DB IPC] Failed to generate embedding for message:', getErrorMessage(error as Error))
             }
         }
-        return databaseService.addMessage(message)
+        try {
+            return await databaseService.addMessage(message)
+        } catch (e) {
+            console.error('[IPC] db:addMessage failed:', getErrorMessage(e as Error))
+            return { success: false }
+        }
     })
-    ipcMain.handle('db:getMessages', (_event, chatId) => databaseService.getChatMessages(chatId))
-    ipcMain.handle('db:getStats', () => databaseService.getStats())
-    ipcMain.handle('db:getDetailedStats', (_event, period) => databaseService.getDetailedStats(period))
-    ipcMain.handle('db:getProjects', () => databaseService.getProjects())
-    ipcMain.handle('db:createProject', (_event, name, path, desc, mounts) => databaseService.createProject(name, path, desc, mounts))
-    ipcMain.handle('db:updateProject', (_event, id, updates) => databaseService.updateProject(id, updates))
-    ipcMain.handle('db:deleteProject', (_event, id) => databaseService.deleteProject(id))
-    ipcMain.handle('db:archiveProject', (_event, id, isArchived) => databaseService.archiveProject(id, isArchived))
-    ipcMain.handle('db:deleteMessage', (_event, id) => databaseService.deleteMessage(id))
-    ipcMain.handle('db:deleteMessages', (_event, chatId) => databaseService.deleteMessages(chatId))
-    ipcMain.handle('db:updateMessage', (_event, id, updates) => databaseService.updateMessage(id, updates))
-    ipcMain.handle('db:deleteAllChats', () => databaseService.deleteAllChats())
-    ipcMain.handle('db:deleteChatsByTitle', (_event, title) => databaseService.deleteChatsByTitle(title))
+    ipcMain.handle('db:getMessages', async (_event, chatId) => {
+        try { return await databaseService.getChatMessages(chatId) }
+        catch (e) { console.error('[IPC] db:getMessages failed:', getErrorMessage(e as Error)); return [] }
+    })
+    ipcMain.handle('db:getStats', async () => {
+        try { return await databaseService.getStats() }
+        catch (e) { console.error('[IPC] db:getStats failed:', getErrorMessage(e as Error)); return { chatCount: 0, messageCount: 0, dbSize: 0 } }
+    })
+    ipcMain.handle('db:getDetailedStats', async (_event, period) => {
+        try { return await databaseService.getDetailedStats(period) }
+        catch (e) { console.error('[IPC] db:getDetailedStats failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:getProjects', async () => {
+        try { return await databaseService.getProjects() }
+        catch (e) { console.error('[IPC] db:getProjects failed:', getErrorMessage(e as Error)); return [] }
+    })
+    ipcMain.handle('db:createProject', async (_event, name, path, desc, mounts) => {
+        try { return await databaseService.createProject(name, path, desc, mounts) }
+        catch (e) { console.error('[IPC] db:createProject failed:', getErrorMessage(e as Error)); throw e }
+    })
+    ipcMain.handle('db:updateProject', async (_event, id, updates) => {
+        try { return await databaseService.updateProject(id, updates) }
+        catch (e) { console.error('[IPC] db:updateProject failed:', getErrorMessage(e as Error)); return undefined }
+    })
+    ipcMain.handle('db:deleteProject', async (_event, id) => {
+        try { return await databaseService.deleteProject(id) }
+        catch (e) { console.error('[IPC] db:deleteProject failed:', getErrorMessage(e as Error)) }
+    })
+    ipcMain.handle('db:archiveProject', async (_event, id, isArchived) => {
+        try { return await databaseService.archiveProject(id, isArchived) }
+        catch (e) { console.error('[IPC] db:archiveProject failed:', getErrorMessage(e as Error)) }
+    })
+    ipcMain.handle('db:deleteMessage', async (_event, id) => {
+        try { return await databaseService.deleteMessage(id) }
+        catch (e) { console.error('[IPC] db:deleteMessage failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:deleteMessages', async (_event, chatId) => {
+        try { return await databaseService.deleteMessages(chatId) }
+        catch (e) { console.error('[IPC] db:deleteMessages failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:updateMessage', async (_event, id, updates) => {
+        try { return await databaseService.updateMessage(id, updates) }
+        catch (e) { console.error('[IPC] db:updateMessage failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:deleteAllChats', async () => {
+        try { return await databaseService.deleteAllChats() }
+        catch (e) { console.error('[IPC] db:deleteAllChats failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:deleteChatsByTitle', async (_event, title) => {
+        try { return await databaseService.deleteChatsByTitle(title) }
+        catch (e) { console.error('[IPC] db:deleteChatsByTitle failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
 
     // Folders
-    ipcMain.handle('db:createFolder', (_event, name, color) => databaseService.createFolder(name, color))
-    ipcMain.handle('db:deleteFolder', (_event, id) => databaseService.deleteFolder(id))
-    ipcMain.handle('db:updateFolder', (_event, id, updates) => databaseService.updateFolder(id, updates))
-    ipcMain.handle('db:getFolders', () => databaseService.getAllFolders())
+    ipcMain.handle('db:createFolder', async (_event, name, color) => {
+        try { return await databaseService.createFolder(name, color) }
+        catch (e) { console.error('[IPC] db:createFolder failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:deleteFolder', async (_event, id) => {
+        try { return await databaseService.deleteFolder(id) }
+        catch (e) { console.error('[IPC] db:deleteFolder failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:updateFolder', async (_event, id, updates) => {
+        try { return await databaseService.updateFolder(id, updates) }
+        catch (e) { console.error('[IPC] db:updateFolder failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:getFolders', async () => {
+        try { return await databaseService.getAllFolders() }
+        catch (e) { console.error('[IPC] db:getFolders failed:', getErrorMessage(e as Error)); return [] }
+    })
 
     // Prompts
-    ipcMain.handle('db:createPrompt', (_event, title, content, tags) => databaseService.createPrompt(title, content, tags))
-    ipcMain.handle('db:deletePrompt', (_event, id) => databaseService.deletePrompt(id))
-    ipcMain.handle('db:updatePrompt', (_event, id, updates) => databaseService.updatePrompt(id, updates))
-    ipcMain.handle('db:getPrompts', () => databaseService.getPrompts())
+    ipcMain.handle('db:createPrompt', async (_event, title, content, tags) => {
+        try { return await databaseService.createPrompt(title, content, tags) }
+        catch (e) { console.error('[IPC] db:createPrompt failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:deletePrompt', async (_event, id) => {
+        try { return await databaseService.deletePrompt(id) }
+        catch (e) { console.error('[IPC] db:deletePrompt failed:', getErrorMessage(e as Error)); return { success: false } }
+    })
+    ipcMain.handle('db:updatePrompt', async (_event, id, updates) => {
+        try { return await databaseService.updatePrompt(id, updates) }
+        catch (e) { console.error('[IPC] db:updatePrompt failed:', getErrorMessage(e as Error)); return null }
+    })
+    ipcMain.handle('db:getPrompts', async () => {
+        try { return await databaseService.getPrompts() }
+        catch (e) { console.error('[IPC] db:getPrompts failed:', getErrorMessage(e as Error)); return [] }
+    })
 }

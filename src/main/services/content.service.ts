@@ -1,5 +1,7 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import { getErrorMessage } from '../../shared/utils/error.util';
+import { JsonValue } from '../../shared/types/common';
 
 export interface ScanResult {
     path: string;
@@ -20,10 +22,10 @@ export class ContentService {
             const content = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').trim().slice(0, 15000)
             const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
             return { success: true, content, title: titleMatch ? titleMatch[1].trim() : '' }
-        } catch (e: any) { return { success: false, error: e.message } }
+        } catch (e) { return { success: false, error: getErrorMessage(e as Error) } }
     }
 
-    async searchWeb(query: string): Promise<{ success: boolean; results?: any[] }> {
+    async searchWeb(query: string): Promise<{ success: boolean; results?: { title: string; url: string }[] }> {
         const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`
         try {
             const res = await fetch(url, { headers: { 'User-Agent': this.userAgent } })
@@ -77,7 +79,7 @@ export class ContentService {
         return `Transcript for ${url} (Requires complex parsing)`
     }
 
-    formatJson(json: any): string {
+    formatJson(json: JsonValue): string {
         try {
             return JSON.stringify(typeof json === 'string' ? JSON.parse(json) : json, null, 2);
         } catch {

@@ -1,6 +1,11 @@
 import { DatabaseService } from './data/database.service';
 import { ScannerService } from './scanner.service';
 import { EmbeddingService } from './llm/embedding.service';
+import * as fs from 'fs/promises';
+
+interface ExchangeRateResponse {
+    rates: Record<string, number>;
+}
 
 export class UtilityService {
     constructor(
@@ -14,11 +19,12 @@ export class UtilityService {
         try {
             // Using a demo free API
             const res = await fetch(`https://open.er-api.com/v6/latest/${from.toUpperCase()}`);
-            const data: any = await res.json();
+            const data = await res.json() as ExchangeRateResponse;
             const rate = data.rates[to.toUpperCase()];
             return rate ? { success: true, rate } : { success: false, error: 'Rate not found' };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 
@@ -32,14 +38,14 @@ export class UtilityService {
                 await fetch(url, { method: 'HEAD', mode: 'no-cors' });
                 console.log(`[Uptime] ${url} is UP`);
             } catch (e) {
-                console.error(`[Uptime] ${url} is DOWN!`);
+                console.error(`[Uptime] ${url} is DOWN!`, e);
             }
         }, interval);
         return { success: true, message: `Started monitoring ${url}` };
     }
 
     // 29. Smart Reminders
-    private reminders: Map<string, any> = new Map();
+    private reminders: Map<string, NodeJS.Timeout> = new Map();
     scheduleReminder(text: string, delayMs: number, onTrigger: (msg: string) => void) {
         const id = Math.random().toString(36).substring(2, 9);
         const timeout = setTimeout(() => {
@@ -51,8 +57,9 @@ export class UtilityService {
     }
 
     cancelReminder(id: string) {
-        if (this.reminders.has(id)) {
-            clearTimeout(this.reminders.get(id));
+        const reminder = this.reminders.get(id);
+        if (reminder) {
+            clearTimeout(reminder);
             this.reminders.delete(id);
             return { success: true, message: 'Reminder cancelled' };
         }
@@ -77,8 +84,9 @@ export class UtilityService {
             });
             const data = await response.json();
             return { success: true, data };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 
@@ -89,8 +97,9 @@ export class UtilityService {
             const response = await fetch(`https://api.shodan.io/shodan/host/${ip}?key=${apiKey}`);
             const data = await response.json();
             return { success: true, data };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 
@@ -113,13 +122,13 @@ export class UtilityService {
     // 40. Local RAG (Vector-based)
     async indexDocument(path: string) {
         try {
-            const fs = require('fs/promises');
             const content = await fs.readFile(path, 'utf8');
             const chunks = [content];
             await this.embedding.indexChunks(path, chunks);
             return { success: true, message: `Document indexed: ${path}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 
@@ -127,8 +136,9 @@ export class UtilityService {
         try {
             const results = await this.embedding.search(query);
             return { success: true, results };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 
@@ -142,9 +152,9 @@ export class UtilityService {
                 indexedCount++;
             }
             return { success: true, message: `Scanned and indexed ${indexedCount} files from ${dir}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            return { success: false, error: message };
         }
     }
 }
-

@@ -5,10 +5,12 @@ import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRig
 import { cn } from '@/lib/utils'
 import { useTranslation, Language } from '@/i18n'
 
+import { ProjectMount, SSHFile } from '../../../../shared/types'
+
 interface ProjectWizardModalProps {
     isOpen: boolean
     onClose: () => void
-    onProjectCreated: (path: string, name: string, description: string, mounts?: any[]) => void
+    onProjectCreated: (path: string, name: string, description: string, mounts?: ProjectMount[]) => void
     language: Language
 }
 
@@ -46,7 +48,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
 
     const [sshConnectionId, setSshConnectionId] = useState<string | null>(null)
     const [sshPath, setSshPath] = useState<string>('/')
-    const [sshFiles, setSshFiles] = useState<any[]>([])
+    const [sshFiles, setSshFiles] = useState<SSHFile[]>([])
 
     // Reset state on open
     useEffect(() => {
@@ -79,8 +81,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 onProjectCreated(result.path, formData.name, formData.description)
                 onClose()
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to select directory')
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to select directory')
         } finally {
             setIsLoading(false)
         }
@@ -106,8 +108,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             } else {
                 setError(result.error || 'Failed to connect')
             }
-        } catch (err: any) {
-            setError(err.message || 'Connection failed')
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Connection failed')
         } finally {
             setIsLoading(false)
         }
@@ -123,8 +125,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             } else {
                 setError(result.error || 'Failed to list directory')
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to list directory')
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to list directory')
         } finally {
             setIsLoading(false)
         }
@@ -150,9 +152,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             onProjectCreated(projectPath, formData.name, formData.description)
             onClose()
 
-        } catch (err: any) {
+        } catch (err) {
             console.error('Project Creation Failed:', err)
-            setError(err.message || 'Failed to create project')
+            setError(err instanceof Error ? err.message : 'Failed to create project')
             setStep('selection')
         } finally {
             setIsLoading(false)

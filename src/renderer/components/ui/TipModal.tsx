@@ -14,11 +14,21 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
         const today = new Date().toDateString()
 
         if (lastShown !== today) {
-            const tips = (t('tips.list', { returnObjects: true }) as unknown) as string[]
-            const randomTip = tips[Math.floor(Math.random() * tips.length)]
-            setCurrentTip(randomTip)
-            setIsOpen(true)
-            localStorage.setItem('last_tip_date', today)
+            const tips = [
+                t('tips.tip1'),
+                t('tips.tip2'),
+                t('tips.tip3'),
+                t('tips.tip4'),
+                t('tips.tip5')
+            ].filter(Boolean)
+            if (tips.length > 0) {
+                const randomTip = tips[Math.floor(Math.random() * tips.length)]
+                setTimeout(() => {
+                    setCurrentTip(randomTip)
+                    setIsOpen(true)
+                }, 0)
+                localStorage.setItem('last_tip_date', today)
+            }
         }
     }, [t])
 

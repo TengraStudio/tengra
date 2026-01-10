@@ -3,6 +3,8 @@
  * Reusable prompts with variable substitution
  */
 
+import { JsonObject } from '../../shared/types/common'
+
 export interface PromptTemplate {
     id: string
     name: string
@@ -19,7 +21,7 @@ export interface TemplateVariable {
     name: string
     type: 'string' | 'number' | 'boolean' | 'select' | 'textarea'
     description?: string
-    defaultValue?: any
+    defaultValue?: string | number | boolean
     required?: boolean
     options?: string[] // For 'select' type
     placeholder?: string
@@ -36,7 +38,7 @@ export interface RenderResult {
  */
 export function renderTemplate(
     template: string,
-    variables: Record<string, any>
+    variables: JsonObject
 ): RenderResult {
     const missingVariables: string[] = []
     const usedVariables: string[] = []
@@ -44,14 +46,14 @@ export function renderTemplate(
     // Find all variable placeholders: {{variableName}} or {{variableName|default}}
     const varPattern = /\{\{(\w+)(?:\|([^}]*))?\}\}/g
 
-    const content = template.replace(varPattern, (match, varName, defaultValue) => {
+    const content = template.replace(varPattern, (match, varName: string, defaultValue) => {
         if (variables[varName] !== undefined) {
             usedVariables.push(varName)
             return String(variables[varName])
         }
 
         if (defaultValue !== undefined) {
-            return defaultValue
+            return defaultValue as string
         }
 
         missingVariables.push(varName)
@@ -71,7 +73,7 @@ export function renderTemplate(
 export function extractVariables(template: string): string[] {
     const varPattern = /\{\{(\w+)(?:\|[^}]*)?\}\}/g
     const variables: string[] = []
-    let match
+    let match: RegExpExecArray | null
 
     while ((match = varPattern.exec(template)) !== null) {
         if (!variables.includes(match[1])) {
@@ -343,7 +345,7 @@ export class TemplateManager {
     /**
      * Render a template by ID
      */
-    render(templateId: string, variables: Record<string, any>): RenderResult {
+    render(templateId: string, variables: JsonObject): RenderResult {
         const template = this.findById(templateId)
         if (!template) {
             throw new Error(`Template not found: ${templateId}`)

@@ -1,7 +1,19 @@
 // MemoryService - Refactored for Async DatabaseService
-import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge, ChatMessage } from './data/database.service'
+import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge, ChatMessage as DbChatMessage } from './data/database.service'
 import { EmbeddingService } from './llm/embedding.service'
 import { LLMService } from './llm/llm.service'
+import { ChatMessage } from '../types/llm.types'
+
+interface PersonalitySettings {
+    traits: string[];
+    responseStyle: 'formal' | 'casual' | 'professional' | 'playful';
+    allowProfanity: boolean;
+    customInstructions: string;
+}
+
+interface OllamaTagsResponse {
+    models: { name: string }[];
+}
 
 // Preferred models in order of priority (smallest first for speed)
 const PREFERRED_OLLAMA_MODELS = [
@@ -65,7 +77,7 @@ export class MemoryService {
         return await this.summarizeAndStoreSession(chatId, messages, provider, model)
     }
 
-    async summarizeAndStoreSession(chatId: string, messages: ChatMessage[], provider?: string, model: string = 'gpt-4o-mini'): Promise<EpisodicMemory | null> {
+    async summarizeAndStoreSession(chatId: string, messages: DbChatMessage[], provider?: string, model: string = 'gpt-4o-mini'): Promise<EpisodicMemory | null> {
         if (messages.length < 5) return null;
 
         const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
@@ -186,19 +198,19 @@ ${transcript}`;
     }
 
     // --- Personality Memory ---
-    async getPersonality(): Promise<any> {
+    async getPersonality(): Promise<PersonalitySettings | null> {
         const value = await this.db.recallMemory('system:personality')
         if (value) {
             try {
-                return JSON.parse(value)
-            } catch (e) {
-                console.error('[MemoryService] Failed to parse personality:', e)
+                return JSON.parse(value) as PersonalitySettings
+            } catch {
+                console.error('[MemoryService] Failed to parse personality')
             }
         }
         return null
     }
 
-    async updatePersonality(personality: any): Promise<void> {
+    async updatePersonality(personality: PersonalitySettings): Promise<void> {
         await this.db.storeMemory('system:personality', JSON.stringify(personality))
         console.log('[MemoryService] Personality updated:', personality)
     }
@@ -280,7 +292,7 @@ User Message: "${content}"`;
                 await this.updatePersonality(merged);
                 console.log('[MemoryService] Personality auto-updated based on conversation');
             }
-        } catch (e) {
+        } catch {
             console.warn('[MemoryService] Personality detection failed (might not be an update request)');
         }
     }
@@ -295,8 +307,8 @@ User Message: "${content}"`;
             const res = await fetch('http://127.0.0.1:11434/api/tags');
             if (!res.ok) return null;
 
-            const data = await res.json() as any;
-            const installedModels = (data.models || []).map((m: any) => m.name?.toLowerCase());
+            const data = await res.json() as OllamaTagsResponse;
+            const installedModels = (data.models || []).map((m) => m.name?.toLowerCase());
 
             // Find first preferred model that's installed
             for (const preferred of PREFERRED_OLLAMA_MODELS) {
@@ -327,7 +339,7 @@ User Message: "${content}"`;
      * Unified LLM call for background memory tasks.
      * Auto-detects available Ollama model for free local processing.
      */
-    private async callLLM(messages: any[], _model: string, _provider?: string): Promise<{ content: string }> {
+    private async callLLM(messages: ChatMessage[], _model: string, _provider?: string): Promise<{ content: string }> {
         const backgroundModel = await this.getAvailableOllamaModel();
 
         if (!backgroundModel) {

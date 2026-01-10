@@ -9,6 +9,25 @@ import { WebService } from './web.service'
 import { CollaborationService } from './collaboration.service'
 
 import { EmbeddingService } from './llm/embedding.service'
+import { JsonObject, JsonValue } from '../../shared/types/common'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
+interface ToolCallArgs {
+    command?: string;
+    cwd?: string;
+    path?: string;
+    content?: string;
+    code?: string;
+    language?: 'node' | 'python';
+    service?: string;
+    method?: string;
+    args?: JsonValue[];
+}
+
+interface ParsedToolCall {
+    tool: string;
+    args: ToolCallArgs;
+}
 
 /**
  * orchestrates the autonomous "Council of Agents" system.
@@ -43,9 +62,10 @@ export class AgentCouncilService {
         this.activeLoops.add(sessionId)
 
         // Run in background (fire and forget from caller's perspective, but we log errors)
-        this.runLoop(sessionId).catch(async err => {
-            console.error('Loop error:', err)
-            await this.db.addCouncilLog(sessionId, 'system', `Loop crashed: ${err.message}`, 'error')
+        this.runLoop(sessionId).catch(async (err) => {
+            const message = getErrorMessage(err as Error)
+            console.error('Loop error:', message)
+            await this.db.addCouncilLog(sessionId, 'system', `Loop crashed: ${message}`, 'error')
             this.activeLoops.delete(sessionId)
         })
     }
@@ -78,8 +98,9 @@ export class AgentCouncilService {
 
             try {
                 await this.runSessionStep(sessionId)
-            } catch (e: any) {
-                await this.db.addCouncilLog(sessionId, 'system', `Step failed: ${e.message}`, 'error')
+            } catch (e) {
+                const msg = getErrorMessage(e as Error)
+                await this.db.addCouncilLog(sessionId, 'system', `Step failed: ${msg}`, 'error')
                 // decide whether to stop or retry. for now stop.
                 this.activeLoops.delete(sessionId)
                 break
@@ -180,8 +201,12 @@ export class AgentCouncilService {
                 const memories = await this.embedding.search(session.goal, 3)
                 if (memories.length > 0) {
                     const relevantMemories = memories
-                        .filter((m: any) => m.score > 0.8) // Only high relevance
-                        .map((m: any) => `- Past Goal: "${m.metadata.goal}"\n  Plan Used: ${m.content}`)
+                        .filter((m) => (m.score ?? 0) > 0.8) // Only high relevance
+                        .map((m) => {
+                            const metadata = (m.metadata && typeof m.metadata === 'object') ? (m.metadata as JsonObject) : undefined
+                            const goal = typeof metadata?.goal === 'string' ? metadata.goal : 'Unknown goal'
+                            return `- Past Goal: "${goal}"\n  Plan Used: ${m.content}`
+                        })
                         .join('\n\n')
 
                     if (relevantMemories) {
@@ -190,7 +215,7 @@ export class AgentCouncilService {
                     }
                 }
             } catch (err) {
-                console.warn('Memory recall failed:', err)
+                console.warn('Memory recall failed:', getErrorMessage(err as Error))
             }
 
             try {
@@ -205,8 +230,9 @@ export class AgentCouncilService {
                 await this.addLog(sessionId, 'planner', plan, 'plan')
 
                 await this.db.updateCouncilStatus(sessionId, 'executing', plan)
-            } catch (error: any) {
-                await this.db.addCouncilLog(sessionId, 'planner', `Planning failed: ${error.message}`, 'error')
+            } catch (error) {
+                const msg = getErrorMessage(error as Error)
+                await this.db.addCouncilLog(sessionId, 'planner', `Planning failed: ${msg}`, 'error')
                 await this.db.updateCouncilStatus(sessionId, 'failed')
             }
             return
@@ -240,8 +266,9 @@ export class AgentCouncilService {
 
                         // Continue loop logic here if we were running automously.
                         // For now we stop to let user trigger next step.
-                    } catch (err: any) {
-                        await this.db.addCouncilLog(sessionId, 'system', `Tool Execution Failed: ${err.message}`, 'error')
+                    } catch (err) {
+                        const msg = getErrorMessage(err as Error)
+                        await this.db.addCouncilLog(sessionId, 'system', `Tool Execution Failed: ${msg}`, 'error')
                     }
                 } else {
                     // No tool call, just text
@@ -271,13 +298,14 @@ export class AgentCouncilService {
                             )
                             await this.addLog(sessionId, 'system', 'Experience memorized for future tasks.', 'success')
                         } catch (err) {
-                            console.error('Failed to index memory', err)
+                            console.error('Failed to index memory', getErrorMessage(err as Error))
                         }
                     }
                 }
 
-            } catch (error: any) {
-                await this.db.addCouncilLog(sessionId, 'executor', `Execution failed: ${error.message}`, 'error')
+            } catch (error) {
+                const msg = getErrorMessage(error as Error)
+                await this.db.addCouncilLog(sessionId, 'executor', `Execution failed: ${msg}`, 'error')
             }
         }
     }
@@ -290,8 +318,8 @@ export class AgentCouncilService {
      * @param content - LLM output text
      * @returns Array of parsed tool calls
      */
-    private extractToolCalls(content: string): { tool: string, args: any }[] {
-        const results: { tool: string, args: any }[] = []
+    private extractToolCalls(content: string): ParsedToolCall[] {
+        const results: ParsedToolCall[] = []
         try {
             // Find all JSON blocks
             const jsonRegex = /```json\n([\s\S]*?)\n```/g
@@ -311,7 +339,9 @@ export class AgentCouncilService {
                 try {
                     const parsed = JSON.parse(content)
                     if (parsed.tool && parsed.args) results.push(parsed)
-                } catch (e) { }
+                } catch (e) {
+                    console.error('Failed to parse tool calls raw:', e)
+                }
             }
         } catch (e) {
             console.error('Failed to parse tool calls:', e)
@@ -334,26 +364,29 @@ export class AgentCouncilService {
      * @param args - Tool arguments
      * @returns Tool execution logic
      */
-    private async executeTool(name: string, args: any): Promise<string> {
+    private async executeTool(name: string, args: ToolCallArgs): Promise<string> {
         switch (name) {
-            case 'runCommand':
+            case 'runCommand': {
                 if (!args.command) throw new Error('Missing command argument')
                 // Use execute instead of spawn to get output directly for the agent
                 return await this.process.execute(args.command, args.cwd || process.cwd())
+            }
 
-            case 'readFile':
+            case 'readFile': {
                 if (!args.path) throw new Error('Missing path argument')
                 const readRes = await this.fs.readFile(args.path)
                 if (!readRes.success) throw new Error(readRes.error || 'Failed to read file')
-                return readRes.content || ''
+                return readRes.data || ''
+            }
 
-            case 'writeFile':
+            case 'writeFile': {
                 if (!args.path || !args.content) throw new Error('Missing path or content')
                 const writeRes = await this.fs.writeFile(args.path, args.content)
                 if (!writeRes.success) throw new Error(writeRes.error || 'Failed to write file')
                 return `File written to ${args.path}`
+            }
 
-            case 'runScript':
+            case 'runScript': {
                 if (!args.code || !args.language) throw new Error('Missing code or language (node/python)')
                 const ext = args.language === 'python' ? 'py' : 'js'
                 const scriptPath = `.orbit/temp/agent_script_${Date.now()}.${ext}`
@@ -370,19 +403,21 @@ export class AgentCouncilService {
                 // await this.fs.deleteFile(scriptPath)
 
                 return `Script Output:\n${output}`
+            }
 
-            case 'listDir':
+            case 'listDir': {
                 if (!args.path) throw new Error('Missing path argument')
                 const listRes = await this.fs.listDirectory(args.path)
                 if (!listRes.success) throw new Error(listRes.error || 'Failed to list directory')
-                const files = listRes.files || []
-                return files.map((f: any) => f.name).join('\n')
+                const files = listRes.data || []
+                return files.map((f: { name: string }) => f.name).join('\n')
+            }
 
-            case 'callSystem':
+            case 'callSystem': {
                 if (!args.service || !args.method) throw new Error('Missing service or method')
 
                 // Construct a service map dynamically (or typed if we want strictness)
-                const services: any = {
+                const services = {
                     llm: this.llm,
                     db: this.db,
                     fs: this.fs,
@@ -392,20 +427,24 @@ export class AgentCouncilService {
                     collaboration: this.collaboration
                 }
 
-                const serviceInstance = services[args.service]
+                const serviceKey = args.service as keyof typeof services
+                const serviceInstance = services[serviceKey]
                 if (!serviceInstance) throw new Error(`Service ${args.service} not found available for agents.`)
 
-                if (typeof serviceInstance[args.method] !== 'function') {
+                const methodName = args.method as keyof typeof serviceInstance
+                const method = serviceInstance[methodName]
+                if (typeof method !== 'function') {
                     throw new Error(`Method ${args.method} not found on service ${args.service}`)
                 }
 
                 // Call the method with spread args
                 // args.args should be an array
                 const methodArgs = Array.isArray(args.args) ? args.args : []
-                const result = await serviceInstance[args.method](...methodArgs)
+                const result = await (method as (...fnArgs: JsonValue[]) => Promise<JsonValue> | JsonValue)(...methodArgs)
 
                 // Serialize result
                 return JSON.stringify(result, null, 2)
+            }
 
             default:
                 throw new Error(`Unknown tool: ${name}`)

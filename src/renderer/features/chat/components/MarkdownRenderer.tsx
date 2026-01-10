@@ -28,8 +28,9 @@ const MermaidDiagram = ({ code }: { code: string }) => {
                 const { svg } = await mermaid.render(id, code)
                 setSvg(svg)
                 setError(null)
-            } catch (err: any) {
-                setError(err.message)
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err)
+                setError(message)
             }
         }
         render()
@@ -104,7 +105,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                         <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) window.electron?.openExternal(href) }}>{children}</a>
                     ),
                     li: ({ children }) => {
-                        const isCheckbox = Array.isArray(children) && children.some(c => isValidElement(c) && (c.props as any).type === 'checkbox')
+                        const isCheckbox = Array.isArray(children) && children.some(c => {
+                            if (!isValidElement(c)) return false
+                            const element = c as React.ReactElement<{ type?: string }>
+                            return element.props?.type === 'checkbox'
+                        })
                         return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                     },
                     input: ({ type, checked, ...props }) => {

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Search, Loader2, Info } from 'lucide-react'
 import { useTranslation, Language } from '@/i18n'
 import { FileIcon } from '../../../lib/file-icons'
+import { IpcRendererEvent } from 'electron'
+import { IpcValue, JsonValue } from '@/types'
 
 interface SemanticSearchPanelProps {
     projectId: string
@@ -11,9 +13,19 @@ interface SemanticSearchPanelProps {
 }
 
 interface IndexingProgress {
+    projectId: string
     current: number
     total: number
     status: string
+    [key: string]: JsonValue | undefined
+}
+
+interface IndexedSymbolResult {
+    name?: string
+    path?: string
+    file?: string
+    line?: number
+    text?: string
 }
 
 interface SearchResult {
@@ -33,9 +45,28 @@ export const SemanticSearchPanel: React.FC<SemanticSearchPanelProps> = ({ projec
     const [searching, setSearching] = useState(false)
     const [progress, setProgress] = useState<IndexingProgress | null>(null)
 
+    const isIndexingProgress = (value: IpcValue): value is IndexingProgress => {
+        return !!value && typeof value === 'object'
+            && 'projectId' in value && 'current' in value && 'total' in value && 'status' in value
+    }
+
+    const normalizeResult = (res: IndexedSymbolResult): SearchResult => {
+        const filePath = res.path || res.file || ''
+        const name = res.name || res.text || filePath.split(/[/\\]/).pop() || 'Symbol'
+        return {
+            file_path: filePath,
+            name,
+            kind: 'symbol',
+            line: typeof res.line === 'number' ? res.line : 0,
+            signature: res.text || name,
+            docstring: '',
+            score: 0
+        }
+    }
+
     useEffect(() => {
-        const removeListener = window.electron.on('code:indexing-progress', (_event: any, data: any) => {
-            if (data.projectId === projectId) {
+        const removeListener = window.electron.on('code:indexing-progress', (_event: IpcRendererEvent, data: IpcValue) => {
+            if (isIndexingProgress(data) && data.projectId === projectId) {
                 setProgress(data)
                 if (data.status === 'Complete') {
                     setTimeout(() => setProgress(null), 3000)
@@ -52,7 +83,8 @@ export const SemanticSearchPanel: React.FC<SemanticSearchPanelProps> = ({ projec
         setSearching(true)
         try {
             const searchResults = await window.electron.code.queryIndexedSymbols(query)
-            setResults(searchResults || [])
+            const normalized = (searchResults || []).map((res) => normalizeResult(res))
+            setResults(normalized)
         } catch (error) {
             console.error('Semantic search failed:', error)
         } finally {

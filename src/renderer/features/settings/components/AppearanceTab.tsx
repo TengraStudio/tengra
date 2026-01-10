@@ -1,6 +1,6 @@
 ﻿import React from 'react'
 import { cn } from '@/lib/utils'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
 import { Type, Palette } from 'lucide-react'
 
 interface AppearanceTabProps {
@@ -167,9 +167,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
                             type="checkbox"
-                            checked={!!(settings?.general as any)?.highContrast}
+                            checked={!!settings?.general?.highContrast}
                             onChange={e => {
-                                updateGeneral({ highContrast: e.target.checked } as any);
+                                updateGeneral({ highContrast: e.target.checked });
                                 document.documentElement.classList.toggle('high-contrast', e.target.checked);
                             }}
                             className="sr-only peer"

@@ -1,12 +1,16 @@
-﻿import React, { useState } from 'react'
+﻿
+import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ModelExplorer } from '@/features/models/components/ModelExplorer'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
+
+import { CombinedModel } from '../../../../shared/types/renderer'
+import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 
 interface ModelsTabProps {
     settings: AppSettings | null
-    installedModels: any[]
-    proxyModels?: any[]
+    installedModels: ModelInfo[]
+    proxyModels?: ModelInfo[]
     setSettings: (s: AppSettings) => void
     handleSave: (s?: AppSettings) => void
     onRefreshModels: () => void
@@ -24,19 +28,19 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
 
     const combined = new Map()
     for (const model of installedModels) {
-        if (!model?.name) continue
-        combined.set(model.name, { id: model.name, sources: ['ollama'], details: model })
+        if (!model?.id) continue
+        combined.set(model.id, { id: model.id, sources: ['ollama'], details: model })
     }
     for (const model of (proxyModels || [])) {
-        const id = String(model?.id || model?.name || '').trim()
+        const id = String(model?.id || '').trim()
         if (!id) continue
         const existing = combined.get(id)
-        const source = model?.owned_by ? String(model.owned_by) : 'proxy'
+        const source = model?.provider || 'proxy'
         if (existing) existing.sources = Array.from(new Set([...(existing.sources || []), source]))
         else combined.set(id, { id, sources: [source] })
     }
 
-    const filtered = Array.from(combined.values()).filter((m: any) => {
+    const filtered = Array.from(combined.values()).filter((m: CombinedModel) => {
         if (!showHiddenModels && hiddenModels.includes(m.id)) return false
         if (!modelSearch) return true
         return m.id.toLowerCase().includes(modelSearch.toLowerCase())
@@ -50,7 +54,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
     }
 
     const setDefault = (modelId: string) => {
-        const updated = { ...settings, general: { ...settings.general, defaultModel: modelId } } as any
+        const updated = { ...settings, general: { ...settings.general, defaultModel: modelId } }
         setSettings(updated)
         handleSave(updated)
     }
@@ -73,11 +77,11 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
                         <button onClick={() => setShowHiddenModels(prev => !prev)} className="px-3 py-2 rounded-lg text-xs font-bold bg-white/5 text-muted-foreground border border-white/10">{showHiddenModels ? t('projects.hideHidden') : t('projects.showHidden')}</button>
                     </div>
                     <div className="grid grid-cols-1 gap-3">
-                        {filtered.map((model: any) => (
+                        {filtered.map((model: CombinedModel) => (
                             <div key={model.id} className="bg-card p-4 rounded-xl border border-border flex items-center justify-between gap-4">
                                 <div>
                                     <div className="text-sm font-bold text-white">{model.id}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">{(model.sources || []).map((s: any) => <span key={s} className="mr-2 uppercase tracking-wider">{s}</span>)}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">{(model.sources || []).map((s: string) => <span key={s} className="mr-2 uppercase tracking-wider">{s}</span>)}</div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {defaultModel === model.id ? <span className="text-xs font-bold uppercase text-emerald-400">{t('projects.default')}</span> : <button onClick={() => setDefault(model.id)} className="px-2.5 py-1 rounded-md text-xs font-bold bg-primary/20 text-primary border border-white/10">{t('projects.makeDefault')}</button>}
@@ -89,7 +93,7 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
                 </div>
             ) : (
                 <div className="flex-1 min-h-0">
-                    <ModelExplorer onRefreshModels={onRefreshModels} installedModels={installedModels} language={settings.general.language as any} />
+                    <ModelExplorer onRefreshModels={onRefreshModels} installedModels={installedModels} language={settings.general.language} />
                 </div>
             )}
         </div>

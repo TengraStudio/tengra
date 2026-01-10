@@ -1,8 +1,10 @@
 import { ipcMain } from 'electron'
 import { LlamaService } from '../services/llm/llama.service'
+import { IpcValue } from '../../shared/types/common'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export function registerLlamaIpc(llamaService: LlamaService) {
-    ipcMain.handle('llama:loadModel', async (_event, modelPath: string, config: any) => {
+    ipcMain.handle('llama:loadModel', async (_event, modelPath: string, config: Record<string, IpcValue>) => {
         return await llamaService.loadModel(modelPath, config)
     })
 
@@ -15,8 +17,9 @@ export function registerLlamaIpc(llamaService: LlamaService) {
         try {
             const response = await llamaService.chat(message, systemPrompt)
             return { success: true, response }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            const message = getErrorMessage(error as Error)
+            return { success: false, error: message }
         }
     })
 
@@ -41,7 +44,7 @@ export function registerLlamaIpc(llamaService: LlamaService) {
         return llamaService.getConfig()
     })
 
-    ipcMain.handle('llama:setConfig', async (_event, config: any) => {
+    ipcMain.handle('llama:setConfig', async (_event, config: Record<string, IpcValue>) => {
         llamaService.setConfig(config)
         return { success: true }
     })

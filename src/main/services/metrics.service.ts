@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
+import { JsonValue } from '../../shared/types/common'
 
 export interface MetricData {
     name: string
@@ -186,10 +187,10 @@ export function getMetricsService(): MetricsService {
  * Decorator to automatically measure method duration
  */
 export function measureDuration(provider: string) {
-    return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor) {
         const original = descriptor.value
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (...args: Array<JsonValue | object | null | undefined>) {
             const metrics = getMetricsService()
             const timer = metrics.startTimer()
             let success = true
@@ -197,8 +198,8 @@ export function measureDuration(provider: string) {
             try {
                 return await original.apply(this, args)
             } catch (error) {
-                success = false
-                throw error
+                success = false;
+                throw error;
             } finally {
                 metrics.recordRequest(provider, timer(), success)
             }

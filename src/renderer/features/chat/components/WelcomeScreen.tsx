@@ -1,15 +1,7 @@
 ﻿import React from 'react';
 import { Box, Code, PenTool, Activity, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ChatTemplate {
-    id: string;
-    icon: string;
-    iconColor: string;
-    title: string;
-    description: string;
-    prompt: string;
-}
+import { ChatTemplate } from '../types';
 
 interface WelcomeScreenProps {
     t: (key: string) => string;

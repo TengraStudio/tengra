@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { resolve } from 'path'
 import { FileSystemService } from '../services/data/filesystem.service'
 
@@ -58,7 +58,29 @@ export function registerFilesIpc(
         return await fileSystemService.searchFiles(rootPath, pattern)
     })
 
+    ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
+        const win = getMainWindow()
+        if (!win) return { success: false }
+
+        // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
+        // Actually for a stream we should probably just return 'started' and emit events
+        // But handling the promise ensures strictly sequential if needed.
+        // Better: fire and forget the search, let generic events handle results.
+
+        fileSystemService.searchFilesStream(rootPath, pattern, (filePath) => {
+            if (!win.isDestroyed()) {
+                win.webContents.send(`files:search-result:${jobId}`, filePath)
+            }
+        }).then(() => {
+            if (!win.isDestroyed()) {
+                win.webContents.send(`files:search-complete:${jobId}`)
+            }
+        })
+
+        return { success: true, jobId }
+    })
+
     ipcMain.handle('app:getUserDataPath', () => {
-        return require('electron').app.getPath('userData')
+        return app.getPath('userData')
     })
 }

@@ -1,13 +1,15 @@
+import { JsonObject, JsonValue } from '../../shared/types/common'
+
 export interface McpResult {
     success: boolean
-    data?: any
+    data?: JsonValue
     error?: string
 }
 
 export interface McpAction {
     name: string
     description: string
-    handler: (args: any) => Promise<McpResult>
+    handler: (args: JsonObject) => Promise<McpResult>
 }
 
 export interface McpService {

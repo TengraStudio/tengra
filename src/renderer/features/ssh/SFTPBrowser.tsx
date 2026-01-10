@@ -1,12 +1,7 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from '@/i18n'
 
-interface FileItem {
-    name: string
-    type: 'file' | 'directory'
-    size: number
-    modified: string
-}
+import { SSHFile, ServiceResponse } from '@/types'
 
 interface SFTPBrowserProps {
     connectionId: string
@@ -16,30 +11,30 @@ interface SFTPBrowserProps {
 export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     const { t } = useTranslation()
     const [currentPath, setCurrentPath] = useState('/')
-    const [files, setFiles] = useState<FileItem[]>([])
+    const [files, setFiles] = useState<SSHFile[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        loadFiles(currentPath)
-    }, [connectionId, currentPath])
-
-    const loadFiles = async (path: string) => {
+    const loadFiles = useCallback(async (path: string) => {
         setLoading(true)
         setError(null)
         try {
-            const result = await window.electron.ssh.listDir(connectionId, path)
+            const result = await window.electron.ssh.listDir(connectionId, path) as ServiceResponse<SSHFile[]>
             if (result.success) {
-                setFiles(result.files || [])
+                setFiles(result.data || [])
             } else {
                 setError(result.error || t('ssh.unknownError'))
             }
-        } catch (e: any) {
-            setError(e.message)
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e))
         } finally {
             setLoading(false)
         }
-    }
+    }, [connectionId, t])
+
+    useEffect(() => {
+        loadFiles(currentPath)
+    }, [loadFiles, currentPath])
 
     const handleNavigate = (name: string) => {
         const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`
@@ -53,18 +48,18 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         setCurrentPath('/' + parts.join('/'))
     }
 
-    const handleDelete = async (item: FileItem) => {
+    const handleDelete = async (item: SSHFile) => {
         if (!confirm(t('ssh.confirmDeleteFile', { name: item.name }))) return
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
-        const result = item.type === 'directory'
+        const result = item.isDirectory
             ? await window.electron.ssh.deleteDir(connectionId, path)
             : await window.electron.ssh.deleteFile(connectionId, path)
 
         if (result.success) {
             loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error }))
+            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
@@ -77,11 +72,11 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error }))
+            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
-    const handleRename = async (item: FileItem) => {
+    const handleRename = async (item: SSHFile) => {
         const newName = prompt(t('ssh.newName'), item.name)
         if (!newName || newName === item.name) return
 
@@ -92,11 +87,11 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error }))
+            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
-    const handleDownload = async (item: FileItem) => {
+    const handleDownload = async (item: SSHFile) => {
         // Simple download trigger
         alert(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)')
     }
@@ -131,17 +126,17 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                             {files.map(file => (
                                 <tr key={file.name} className="file-row border-b border-border/30 hover:bg-muted/10 transition-colors">
                                     <td
-                                        style={{ padding: '8px', cursor: file.type === 'directory' ? 'pointer' : 'default' }}
-                                        onClick={() => file.type === 'directory' && handleNavigate(file.name)}
+                                        style={{ padding: '8px', cursor: file.isDirectory ? 'pointer' : 'default' }}
+                                        onClick={() => file.isDirectory && handleNavigate(file.name)}
                                     >
-                                        {file.type === 'directory' ? '📁 ' : '📄 '} {file.name}
+                                        {file.isDirectory ? '📁 ' : '📄 '} {file.name}
                                     </td>
-                                    <td style={{ padding: '8px' }}>{file.type === 'file' ? (file.size / 1024).toFixed(1) + ' KB' : '-'}</td>
-                                    <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{new Date(file.modified).toLocaleDateString()}</td>
+                                    <td style={{ padding: '8px' }}>{!file.isDirectory && file.size ? (file.size / 1024).toFixed(1) + ' KB' : '-'}</td>
+                                    <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{file.mtime ? new Date(file.mtime).toLocaleDateString() : '-'}</td>
                                     <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
                                         <button onClick={() => handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
                                         <button onClick={() => handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-red-500 hover:text-red-400">🗑</button>
-                                        {file.type === 'file' && <button onClick={() => handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
+                                        {!file.isDirectory && <button onClick={() => handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
                                     </td>
                                 </tr>
                             ))}

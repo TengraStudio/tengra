@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { appLogger, LogLevel } from '../logging/logger'
+import { JsonValue } from '../../shared/types/common'
 
 // Log buffer for streaming to renderer
 const logBuffer: Array<{
@@ -44,11 +45,11 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
 
 export function registerLoggingIpc() {
     // Existing log:write handler
-    ipcMain.on('log:write', (_event, arg1: any, arg2?: any) => {
+    ipcMain.on('log:write', (_event, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) => {
         let level: LogLevel = LogLevel.INFO
         let message = ''
         let context = 'renderer'
-        let data: any = undefined
+        let data: JsonValue | Error | undefined = undefined
 
         if (typeof arg1 === 'string') {
             // log:write, level, message
@@ -58,7 +59,7 @@ export function registerLoggingIpc() {
             else if (upper === 'WARN') level = LogLevel.WARN
             else if (upper === 'ERROR') level = LogLevel.ERROR
             message = arg2 || ''
-        } else if (arg1 && typeof arg1 === 'object') {
+        } else if (typeof arg1 === 'object' && arg1 !== null) {
             // log:write, { level, message, context, data }
             level = arg1.level ?? LogLevel.INFO
             message = arg1.message ?? ''

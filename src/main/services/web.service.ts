@@ -1,16 +1,20 @@
 // Web service using native fetch and simplified HTML parsing (Electron compatible)
+import { getErrorMessage } from '../../shared/utils/error.util';
+import { JsonValue } from '../../shared/types/common';
 
 interface WebResult {
     success: boolean
     content?: string
     title?: string
     error?: string
+    [key: string]: JsonValue | undefined;
 }
 
 interface SearchResult {
     title: string
     url: string
     snippet: string
+    [key: string]: JsonValue | undefined;
 }
 
 export class WebService {
@@ -33,7 +37,7 @@ export class WebService {
             const html = await response.text()
 
             // Simple HTML to text extraction
-            let content = html
+            const content = html
                 // Remove scripts and styles
                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -58,8 +62,8 @@ export class WebService {
             const title = titleMatch ? titleMatch[1].trim() : ''
 
             return { success: true, content, title }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
@@ -94,12 +98,12 @@ export class WebService {
             }
 
             return { success: true, results }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async fetchJson(url: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    async fetchJson(url: string): Promise<{ success: boolean; data?: JsonValue; error?: string }> {
         try {
             const response = await fetch(url, {
                 headers: {
@@ -108,9 +112,9 @@ export class WebService {
                 }
             })
 
-            return { success: true, data: await response.json() }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            return { success: true, data: await response.json() as JsonValue }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 }

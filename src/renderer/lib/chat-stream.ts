@@ -1,28 +1,43 @@
+import { Message, ToolCall, ToolDefinition } from '@/types'
+import { CatchError, JsonObject, JsonValue } from '../../shared/types/common'
+
+export interface ChatStreamChunk {
+    type?: 'content' | 'reasoning' | 'images' | 'tool_calls' | 'metadata' | 'error'
+    content?: string
+    reasoning?: string
+    images?: string[]
+    tool_calls?: ToolCall[]
+    chatId?: string
+    metadata?: JsonObject
+    sources?: string[]
+    error?: string
+}
+
 export async function* chatStream(
-    messages: any[],
+    messages: Message[],
     model: string,
-    tools: any[] = [],
+    tools: ToolDefinition[] = [],
     provider?: string,
-    options?: any,
+    options?: JsonObject,
     chatId?: string,
     projectId?: string
-) {
-    let currentResolver: ((value: any) => void) | null = null;
-    let queue: any[] = [];
+): AsyncGenerator<ChatStreamChunk> {
+    let currentResolver: ((value: void | null) => void) | null = null;
+    const queue: ChatStreamChunk[] = [];
     let isDone = false;
-    let error: any = null;
+    let error: CatchError = null;
 
     // Type for the listener callback
-    const listener = (chunk: any) => {
+    const listener = (chunk: JsonValue) => {
+        const typedChunk = chunk as ChatStreamChunk;
         if (isDone) return;
         // If chatId is provided and chunk has chatId, filter it. 
-        // If either is missing, we fall back to global (for partial backward compat)
-        if (chatId && chunk.chatId && chunk.chatId !== chatId) return;
+        if (chatId && typedChunk.chatId && typedChunk.chatId !== chatId) return;
 
-        queue.push(chunk);
+        queue.push(typedChunk);
 
         if (currentResolver) {
-            currentResolver(null); // Signal that data is available
+            currentResolver(); // Signal that data is available
             currentResolver = null;
         }
     };
@@ -34,28 +49,33 @@ export async function* chatStream(
     window.electron.chatStream(messages, model, tools, provider, options, chatId, projectId)
         .then(() => {
             isDone = true;
-            if (currentResolver) currentResolver(null);
+            if (currentResolver) currentResolver();
         })
         .catch(err => {
             error = err;
             isDone = true;
-            if (currentResolver) currentResolver(null);
+            if (currentResolver) currentResolver();
         });
 
     try {
         while (true) {
             while (queue.length > 0) {
                 const chunk = queue.shift();
+                if (!chunk) continue;
 
                 // Inspect chunk structure and normalize keys
-                if (chunk && typeof chunk === 'object') {
-                    if (chunk.content) yield { type: 'content', content: chunk.content };
-                    if (chunk.reasoning) yield { type: 'reasoning', content: chunk.reasoning };
-                    if (chunk.images) yield { type: 'images', images: chunk.images };
-                    if (chunk.type === 'tool_calls') yield chunk; // Pass through tool calls if structure matches
-                    if (chunk.type === 'metadata') yield chunk; // Yield metadata (sources)
-                    if (chunk.type === 'error') yield chunk;
+                if (chunk.content) yield { type: 'content', content: chunk.content };
+                if (chunk.reasoning) yield { type: 'reasoning', content: chunk.reasoning };
+                if (chunk.images) yield { type: 'images', images: chunk.images };
+                if (chunk.type === 'tool_calls') yield chunk;
+                if (chunk.type === 'metadata') {
+                    const rawSources = chunk.metadata?.sources
+                    const sources = Array.isArray(rawSources)
+                        ? rawSources.filter((value): value is string => typeof value === 'string')
+                        : undefined
+                    yield { ...chunk, sources: chunk.sources || sources };
                 }
+                if (chunk.type === 'error') yield chunk;
             }
 
             if (isDone) {
@@ -64,7 +84,7 @@ export async function* chatStream(
             }
 
             // Wait for next chunk or completion
-            await new Promise(resolve => currentResolver = resolve);
+            await new Promise<void | null>(resolve => currentResolver = resolve);
         }
     } finally {
         // Clean up listener

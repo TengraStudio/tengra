@@ -88,6 +88,19 @@ export const CopyMarkdownButton = ({ text, role }: { text: string; role: string 
     )
 }
 
+interface MessageActionsGroupProps {
+    displayContent: string
+    role: 'user' | 'assistant' | 'system'
+    isBookmarked?: boolean
+    onBookmark?: (value: boolean) => void
+    rating?: 1 | -1 | 0
+    onRate?: (val: 1 | -1 | 0) => void
+    isSpeaking?: boolean
+    onSpeak?: (text: string) => void
+    onStop?: () => void
+    onReact?: (emoji: string) => void
+}
+
 export const MessageActionsGroup = ({
     displayContent,
     role,
@@ -99,12 +112,12 @@ export const MessageActionsGroup = ({
     onSpeak,
     onStop,
     onReact
-}: any) => {
+}: MessageActionsGroupProps) => {
     return (
         <div className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
             <ActionButton
                 title={isSpeaking ? "Durdur" : "Sesli Oku"}
-                onClick={isSpeaking ? onStop : () => onSpeak?.(displayContent)}
+                onClick={isSpeaking ? (onStop || (() => { })) : () => onSpeak?.(displayContent)}
                 active={isSpeaking}
             >
                 {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Box, RefreshCw, Play, Square, Trash2, Terminal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -9,7 +9,7 @@ interface ContainerInfo {
     name: string
     image: string
     status: string
-    state: 'running' | 'exited' | 'paused' | 'created'
+    state: 'running' | 'exited' | 'paused' | 'created' | 'unknown'
     ports: string
     created: string
 }
@@ -28,7 +28,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const loadContainers = async () => {
+    const loadContainers = useCallback(async () => {
         setIsLoading(true)
         setError(null)
 
@@ -52,7 +52,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                         name: data.Names,
                         image: data.Image,
                         status: data.Status,
-                        state: data.State?.toLowerCase() || 'unknown',
+                        state: (data.State?.toLowerCase() || 'unknown') as ContainerInfo['state'],
                         ports: data.Ports || '',
                         created: data.CreatedAt
                     }
@@ -62,31 +62,32 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
             }).filter(Boolean) as ContainerInfo[]
 
             setContainers(parsed)
-        } catch (err: any) {
-            setError(err.message || t('docker.failedLoad'))
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err)
+            setError(message || t('docker.failedLoad'))
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [t])
 
-    const loadLogs = async (containerId: string) => {
+    const loadLogs = useCallback(async (containerId: string) => {
         try {
             const result = await window.electron.runCommand('docker', [
                 'logs', '--tail', '100', containerId
             ], process.cwd())
 
             setLogs(result.stdout || result.stderr || t('docker.noLogs'))
-        } catch (err: any) {
-            setLogs(`Error: ${err.message}`)
+        } catch (err) {
+            setLogs(`Error: ${err instanceof Error ? err.message : String(err)}`)
         }
-    }
+    }, [t])
 
     const containerAction = async (action: 'start' | 'stop' | 'rm', containerId: string) => {
         try {
             await window.electron.runCommand('docker', [action, containerId], process.cwd())
             await loadContainers()
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err))
         }
     }
 
@@ -94,13 +95,13 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
         if (isOpen) {
             loadContainers()
         }
-    }, [isOpen])
+    }, [isOpen, loadContainers])
 
     useEffect(() => {
         if (selectedContainer) {
             loadLogs(selectedContainer)
         }
-    }, [selectedContainer])
+    }, [selectedContainer, loadLogs])
 
     const getStateColor = (state: string) => {
         switch (state) {

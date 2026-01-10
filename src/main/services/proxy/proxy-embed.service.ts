@@ -6,6 +6,7 @@ import { promisify } from 'util'
 import { ProxyService } from './proxy.service'
 import { appLogger } from '../../logging/logger'
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const execAsync = promisify(require('child_process').exec)
 
 interface ProxyEmbedStatus {

@@ -1,3 +1,6 @@
+import { JsonObject } from './common'
+
+// Basic agent definition
 export interface AgentDefinition {
     id: string
     name: string
@@ -6,4 +9,37 @@ export interface AgentDefinition {
     tools?: string[]
     parentModel?: string
     avatar?: string // Optional for UI
+}
+
+// Message schema
+export interface AgentMessage {
+    id: string
+    sessionId: string
+    sender: string
+    content: string
+    timestamp: number
+    type: 'text' | 'status' | 'code' | 'help'
+    metadata?: JsonObject
+}
+
+// Log schema (flat structure for storage/history)
+export interface AgentLog {
+    id: string
+    sessionId: string
+    agentId: string
+    message: string
+    timestamp: number
+    type: string
+}
+
+// Session schema
+export interface CouncilSession {
+    id: string
+    goal: string
+    status: 'created' | 'executing' | 'completed' | 'failed'
+    createdAt: number
+    updatedAt: number
+    agents: AgentDefinition[]
+    plan?: string
+    logs: AgentLog[]
 }

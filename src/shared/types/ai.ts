@@ -23,4 +23,12 @@ export interface OllamaModel {
     }
 }
 
-export type AIProvider = 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'claude' | 'gemini' | 'groq' | 'antigravity' | 'copilot'
+export interface OllamaLibraryModel {
+    name: string
+    description: string
+    tags: string[]
+    pulls: string
+    lastUpdated: string
+}
+
+export type AIProvider = 'ollama' | 'llama.cpp' | 'openai' | 'anthropic' | 'claude' | 'groq' | 'antigravity' | 'copilot'

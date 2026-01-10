@@ -3,7 +3,7 @@ import { CodeEditor } from '@/components/ui/CodeEditor';
 import { EditorTab } from '@/types';
 import { getLanguageFromExtension } from '@/utils/language-map';
 
-interface WorkspaceEditorProps {
+export interface WorkspaceEditorProps {
     activeTab: EditorTab | null;
     updateTabContent: (value: string) => void;
     emptyState: React.ReactNode;

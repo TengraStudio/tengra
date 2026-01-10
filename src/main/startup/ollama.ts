@@ -2,6 +2,8 @@ import { BrowserWindow, dialog } from 'electron'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as http from 'http'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 
 const execAsync = promisify(exec)
 
@@ -9,12 +11,15 @@ const execAsync = promisify(exec)
 function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
     return new Promise((resolve, reject) => {
         const urlObj = new URL(url)
+        const headers = options?.headers
+            ? Object.fromEntries(new Headers(options.headers).entries())
+            : undefined
         const reqOptions: http.RequestOptions = {
             hostname: urlObj.hostname,
             port: urlObj.port || 80,
             path: urlObj.pathname + urlObj.search,
             method: options?.method || 'GET',
-            headers: options?.headers as any,
+            headers,
             family: 4 // Force IPv4
         }
 
@@ -107,7 +112,7 @@ export async function startOllama(
                 'Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden',
                 { shell: 'powershell.exe' }
             )
-        } catch (e) {
+        } catch {
             try {
                 await execAsync(
                     'Start-Process -FilePath "$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe" -ArgumentList "serve" -WindowStyle Hidden',
@@ -126,7 +131,8 @@ export async function startOllama(
         }
 
         return { success: false, message: 'Ollama baYlatŽñlamadŽñ. LÇ¬tfen manuel olarak baYlatŽñn.' }
-    } catch (error: any) {
-        return { success: false, message: `Ollama baYlatma hatasŽñ: ${error.message}` }
+    } catch (error) {
+        const message = getErrorMessage(error as Error)
+        return { success: false, message: `Ollama ba Ylatma hatasŽñ: ${message}` }
     }
 }

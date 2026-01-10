@@ -2,70 +2,52 @@ import { ipcMain } from 'electron'
 import { ProjectService } from '../services/project.service'
 import { LogoService } from '../services/logo.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
+import { createIpcHandler } from '../utils/ipc-wrapper.util'
 
-export const registerProjectIpc = (projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService) => {
-    ipcMain.handle('project:analyze', async (_: any, rootPath: string, projectId: string) => {
-        try {
-            const results = await projectService.analyzeProject(rootPath)
-            // Trigger background indexing
-            if (projectId) {
-                codeIntelligenceService.indexProject(rootPath, projectId).catch(err => {
-                    console.error('Failed to auto-index project:', err)
-                })
+export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService) => {
+    ipcMain.handle('project:analyze', createIpcHandler('project:analyze', async (_event, rootPath: string, projectId: string) => {
+        const results = await projectService.analyzeProject(rootPath)
+        // Trigger background indexing
+        if (projectId) {
+            codeIntelligenceService.indexProject(rootPath, projectId).catch(err => {
+                console.error('Failed to auto-index project:', err)
+            })
+        }
+        return results
+    }))
+
+    ipcMain.handle('project:watch', createIpcHandler('project:watch', async (_event, rootPath: string) => {
+        const win = getWindow()
+        await projectService.watchProject(rootPath, (event, filePath) => {
+            if (win && !win.isDestroyed()) {
+                win.webContents.send('project:file-change', { event, path: filePath, rootPath })
             }
-            return results
-        } catch (error) {
-            console.error('Failed to analyze project:', error)
-            throw error
-        }
-    })
+        })
+        return { success: true }
+    }))
 
-    ipcMain.handle('project:generateLogo', async (_: any, projectPath: string, prompt: string, style: string) => {
-        try {
-            return await logoService.generateLogo(projectPath, prompt, style)
-        } catch (error) {
-            console.error('Failed to generate logo:', error)
-            throw error
-        }
-    })
+    ipcMain.handle('project:unwatch', createIpcHandler('project:unwatch', async (_event, rootPath: string) => {
+        await projectService.stopWatch(rootPath)
+        return { success: true }
+    }))
 
-    ipcMain.handle('project:analyzeIdentity', async (_: any, projectPath: string) => {
-        try {
-            return await logoService.analyzeProjectIdentity(projectPath)
-        } catch (error) {
-            console.error('Failed to analyze project identity:', error)
-            throw error
-        }
-    })
+    ipcMain.handle('project:generateLogo', createIpcHandler('project:generateLogo', async (_event, projectPath: string, prompt: string, style: string) => {
+        return await logoService.generateLogo(projectPath, prompt, style)
+    }))
 
-    ipcMain.handle('project:analyzeDirectory', async (_: any, dirPath: string) => {
-        try {
-            return await projectService.analyzeDirectory(dirPath)
-        } catch (error) {
-            console.error('Failed to analyze directory:', error)
-            throw error
-        }
-    })
+    ipcMain.handle('project:analyzeIdentity', createIpcHandler('project:analyzeIdentity', async (_event, projectPath: string) => {
+        return await logoService.analyzeProjectIdentity(projectPath)
+    }))
 
-    ipcMain.handle('project:applyLogo', async (_: any, projectPath: string, tempLogoPath: string) => {
-        try {
-            return await logoService.applyLogo(projectPath, tempLogoPath)
-        } catch (error) {
-            console.error('Failed to apply logo:', error)
-            throw error
-        }
-    })
+    ipcMain.handle('project:analyzeDirectory', createIpcHandler('project:analyzeDirectory', async (_event, dirPath: string) => {
+        return await projectService.analyzeDirectory(dirPath)
+    }))
 
-    ipcMain.handle('project:getCompletion', async (_: any, text: string) => {
-        try {
-            // We'll use the LLMService for this.
-            // For now, let's assume LogoService or a new service.
-            // Actually, LogoService has access to LLM.
-            // Let's add it to logoService for now or a generic place.
-            return await logoService.getCompletion(text)
-        } catch (error) {
-            console.error('Failed to get completion:', error)
-            throw error
-        }
-    })
+    ipcMain.handle('project:applyLogo', createIpcHandler('project:applyLogo', async (_event, projectPath: string, tempLogoPath: string) => {
+        return await logoService.applyLogo(projectPath, tempLogoPath)
+    }))
+
+    ipcMain.handle('project:getCompletion', createIpcHandler('project:getCompletion', async (_event, text: string) => {
+        return await logoService.getCompletion(text)
+    }))
 }

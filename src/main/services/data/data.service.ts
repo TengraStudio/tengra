@@ -2,14 +2,18 @@ import { app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
 import { appLogger } from '../../logging/logger'
+import { getErrorMessage } from '../../../shared/utils/error.util'
+import { BaseService } from '../base.service'
 
 export type DataType = 'auth' | 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
 
-export class DataService {
+export class DataService extends BaseService {
     private baseDir: string
     private paths: Record<DataType, string>
 
     constructor() {
+        super('DataService')
+
         // Use standard AppData/Orbit/data structure
         // app.getPath('userData') usually points to AppData/Roaming/Orbit (or similar)
         // We want to organize things cleanly inside it.
@@ -149,7 +153,9 @@ export class DataService {
                             if (fs.readdirSync(m.old).length === 0) {
                                 fs.rmdirSync(m.old)
                             }
-                        } catch { }
+                        } catch {
+                            // Ignore error during cleanup of empty dir
+                        }
                     } else {
                         // Move single file
                         if (!fs.existsSync(m.new) && fs.existsSync(m.old)) {
@@ -162,7 +168,7 @@ export class DataService {
                     }
                 }
             } catch (error) {
-                appLogger.error('DataService', `Failed to migrate ${m.old}: ${error}`)
+                appLogger.error('DataService', `Failed to migrate ${m.old}: ${getErrorMessage(error as Error)}`)
             }
         }
 
@@ -174,7 +180,7 @@ export class DataService {
                 fs.rmSync(legacyPath, { recursive: true, force: true })
             }
         } catch (e) {
-            appLogger.error('DataService', `Failed to cleanup legacy folder: ${e}`)
+            appLogger.error('DataService', `Failed to cleanup legacy folder: ${getErrorMessage(e as Error)}`)
         }
     }
 }

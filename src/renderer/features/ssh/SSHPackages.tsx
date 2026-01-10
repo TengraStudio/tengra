@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useTranslation } from '@/i18n'
+import type { SSHPackageInfo } from '@/types/ssh'
 
 interface SSHPackagesProps {
     connectionId: string
@@ -9,7 +10,7 @@ interface SSHPackagesProps {
 
 export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }) => {
     const { t } = useTranslation()
-    const [packages, setPackages] = useState<any[]>([])
+    const [packages, setPackages] = useState<SSHPackageInfo[]>([])
     const [loading, setLoading] = useState(false)
     const [search, setSearch] = useState('')
 

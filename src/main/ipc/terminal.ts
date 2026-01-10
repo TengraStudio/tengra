@@ -1,10 +1,10 @@
-/**
- * Terminal IPC - Exposes terminal service to renderer process
- */
 import { ipcMain, BrowserWindow } from 'electron'
 import { TerminalService } from '../services/terminal.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 let terminalService: TerminalService | null = null
+
+ipcMain.setMaxListeners(50)
 
 export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     terminalService = new TerminalService()
@@ -20,7 +20,7 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     })
 
     // Create session
-    ipcMain.handle('terminal:create', (_event, options: {
+    ipcMain.handle('terminal:create', async (_event, options: {
         id: string
         shell?: string
         cwd?: string
@@ -29,32 +29,51 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     }) => {
         if (!terminalService) return { success: false, error: 'Service not initialized' }
 
-        const success = terminalService.createSession({
-            ...options,
-            onData: (data: string) => {
-                getWindow()?.webContents.send('terminal:data', { id: options.id, data })
-            },
-            onExit: (code: number) => {
-                getWindow()?.webContents.send('terminal:exit', { id: options.id, code })
-            }
-        })
-
-        return { success }
+        try {
+            const success = terminalService.createSession({
+                ...options,
+                onData: (data: string) => {
+                    getWindow()?.webContents.send('terminal:data', { id: options.id, data })
+                },
+                onExit: (code: number) => {
+                    getWindow()?.webContents.send('terminal:exit', { id: options.id, code })
+                }
+            })
+            return { success }
+        } catch (error) {
+            console.error('[IPC] terminal:create failed:', getErrorMessage(error as Error))
+            return { success: false, error: getErrorMessage(error as Error) }
+        }
     })
 
     // Write to session
     ipcMain.handle('terminal:write', (_event, sessionId: string, data: string) => {
-        return terminalService?.write(sessionId, data) ?? false
+        try {
+            return terminalService?.write(sessionId, data) ?? false
+        } catch (error) {
+            console.error('[IPC] terminal:write failed:', getErrorMessage(error as Error))
+            return false
+        }
     })
 
     // Resize session
     ipcMain.handle('terminal:resize', (_event, sessionId: string, cols: number, rows: number) => {
-        return terminalService?.resize(sessionId, cols, rows) ?? false
+        try {
+            return terminalService?.resize(sessionId, cols, rows) ?? false
+        } catch (error) {
+            console.error('[IPC] terminal:resize failed:', getErrorMessage(error as Error))
+            return false
+        }
     })
 
     // Kill session
     ipcMain.handle('terminal:kill', (_event, sessionId: string) => {
-        return terminalService?.kill(sessionId) ?? false
+        try {
+            return terminalService?.kill(sessionId) ?? false
+        } catch (error) {
+            console.error('[IPC] terminal:kill failed:', getErrorMessage(error as Error))
+            return false
+        }
     })
 
     // Get active sessions

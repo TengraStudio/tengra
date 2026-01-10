@@ -72,10 +72,10 @@ describe('QuotaService', () => {
 
         const usage = service.extractCodexUsageFromWham(whamData)
         expect(usage).not.toBeNull()
-        expect(usage.totalRequests).toBe(100)
-        expect(usage.remainingRequests).toBe(50)
-        expect(usage.dailyUsedPercent).toBe(50)
-        expect(usage.dailyResetAt).toBe(new Date(1234567890 * 1000).toISOString())
+        expect(usage!.totalRequests).toBe(100)
+        expect(usage!.remainingRequests).toBe(50)
+        expect(usage!.dailyUsedPercent).toBe(50)
+        expect(usage!.dailyResetAt).toBe(new Date(1234567890 * 1000).toISOString())
     })
 
     it('should handle nested wham structures', () => {
@@ -92,8 +92,8 @@ describe('QuotaService', () => {
 
         const usage = service.extractCodexUsageFromWham(whamData)
         expect(usage).not.toBeNull()
-        expect(usage.dailyLimit).toBe(200)
-        expect(usage.dailyUsage).toBe(10)
+        expect(usage!.dailyLimit).toBe(200)
+        expect(usage!.dailyUsage).toBe(10)
     })
 
     it('should return null for empty/invalid data', () => {

@@ -3,6 +3,8 @@
  * Validates application settings with type safety
  */
 
+import { JsonObject, JsonValue } from '../../shared/types/common'
+
 export type ValidationResult = {
     valid: boolean
     errors: ValidationError[]
@@ -12,7 +14,7 @@ export type ValidationResult = {
 export interface ValidationError {
     path: string
     message: string
-    value?: any
+    value?: JsonValue
 }
 
 export interface ValidationWarning {
@@ -21,40 +23,41 @@ export interface ValidationWarning {
     suggestion?: string
 }
 
-type Validator<T> = (value: T, path: string) => ValidationError[]
+type Validator<T = JsonValue | undefined> = (value: T, path: string) => ValidationError[]
 
 // Built-in validators
 export const validators = {
-    required: <T>(value: T, path: string): ValidationError[] => {
+    required: <T extends JsonValue | undefined>(value: T, path: string): ValidationError[] => {
         if (value === undefined || value === null || value === '') {
             return [{ path, message: 'Value is required' }]
         }
         return []
     },
 
-    string: (value: any, path: string): ValidationError[] => {
+    string: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'string') {
             return [{ path, message: 'Must be a string', value }]
         }
         return []
     },
 
-    number: (value: any, path: string): ValidationError[] => {
+    number: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'number') {
             return [{ path, message: 'Must be a number', value }]
         }
         return []
     },
 
-    boolean: (value: any, path: string): ValidationError[] => {
+    boolean: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value !== 'boolean') {
             return [{ path, message: 'Must be a boolean', value }]
         }
         return []
     },
 
-    url: (value: any, path: string): ValidationError[] => {
+    url: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined || value === '') return []
+        if (typeof value !== 'string') return [{ path, message: 'Must be a string', value }]
         try {
             new URL(value)
             return []
@@ -63,7 +66,7 @@ export const validators = {
         }
     },
 
-    port: (value: any, path: string): ValidationError[] => {
+    port: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined) return []
         if (typeof value !== 'number' || value < 1 || value > 65535) {
             return [{ path, message: 'Must be a valid port (1-65535)', value }]
@@ -71,37 +74,38 @@ export const validators = {
         return []
     },
 
-    email: (value: any, path: string): ValidationError[] => {
+    email: (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value === undefined || value === '') return []
+        if (typeof value !== 'string') return [{ path, message: 'Must be a string', value }]
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) {
+        if (!emailRegex.test(value as string)) {
             return [{ path, message: 'Must be a valid email address', value }]
         }
         return []
     },
 
-    min: (minValue: number) => (value: any, path: string): ValidationError[] => {
+    min: (minValue: number) => (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value === 'number' && value < minValue) {
             return [{ path, message: `Must be at least ${minValue}`, value }]
         }
         return []
     },
 
-    max: (maxValue: number) => (value: any, path: string): ValidationError[] => {
+    max: (maxValue: number) => (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value === 'number' && value > maxValue) {
             return [{ path, message: `Must be at most ${maxValue}`, value }]
         }
         return []
     },
 
-    oneOf: <T>(allowedValues: T[]) => (value: any, path: string): ValidationError[] => {
-        if (value !== undefined && !allowedValues.includes(value)) {
+    oneOf: <T extends JsonValue>(allowedValues: T[]) => (value: JsonValue | undefined, path: string): ValidationError[] => {
+        if (value !== undefined && !allowedValues.includes(value as T)) {
             return [{ path, message: `Must be one of: ${allowedValues.join(', ')}`, value }]
         }
         return []
     },
 
-    pattern: (regex: RegExp, message: string) => (value: any, path: string): ValidationError[] => {
+    pattern: (regex: RegExp, message: string) => (value: JsonValue | undefined, path: string): ValidationError[] => {
         if (value !== undefined && typeof value === 'string' && !regex.test(value)) {
             return [{ path, message, value }]
         }
@@ -113,8 +117,8 @@ export const validators = {
 export interface SchemaField {
     type: 'string' | 'number' | 'boolean' | 'object' | 'array'
     required?: boolean
-    validators?: Validator<any>[]
-    default?: any
+    validators?: Validator[]
+    default?: JsonValue
     children?: Record<string, SchemaField>
 }
 
@@ -123,7 +127,7 @@ export type Schema = Record<string, SchemaField>
 /**
  * Validate a config object against a schema
  */
-export function validateConfig(config: any, schema: Schema, basePath = ''): ValidationResult {
+export function validateConfig(config: JsonObject, schema: Schema, basePath = ''): ValidationResult {
     const errors: ValidationError[] = []
     const warnings: ValidationWarning[] = []
 
@@ -152,7 +156,7 @@ export function validateConfig(config: any, schema: Schema, basePath = ''): Vali
 
         // Nested object validation
         if (field.type === 'object' && field.children && value) {
-            const nestedResult = validateConfig(value, field.children, path)
+            const nestedResult = validateConfig(value as JsonObject, field.children, path)
             errors.push(...nestedResult.errors)
             warnings.push(...nestedResult.warnings)
         }
@@ -179,7 +183,7 @@ export function validateConfig(config: any, schema: Schema, basePath = ''): Vali
     }
 }
 
-function validateType(value: any, type: string, path: string): ValidationError[] {
+function validateType(value: JsonValue, type: string, path: string): ValidationError[] {
     switch (type) {
         case 'string':
             return validators.string(value, path)
@@ -205,8 +209,8 @@ function validateType(value: any, type: string, path: string): ValidationError[]
 /**
  * Apply defaults from schema to config
  */
-export function applyDefaults(config: any, schema: Schema): any {
-    const result = { ...config }
+export function applyDefaults(config: JsonObject, schema: Schema): JsonObject {
+    const result: JsonObject = { ...config }
 
     for (const [key, field] of Object.entries(schema)) {
         if (result[key] === undefined && field.default !== undefined) {
@@ -214,7 +218,7 @@ export function applyDefaults(config: any, schema: Schema): any {
         }
 
         if (field.type === 'object' && field.children) {
-            result[key] = applyDefaults(result[key] || {}, field.children)
+            result[key] = applyDefaults((result[key] || {}) as JsonObject, field.children)
         }
     }
 

@@ -105,7 +105,7 @@ export const MessageList = memo(({
                         role: 'assistant',
                         content: streamingContent,
                         timestamp: new Date(),
-                        provider: (selectedProvider as any),
+                        provider: selectedProvider,
                         model: selectedModel
                     }}
                     isStreaming

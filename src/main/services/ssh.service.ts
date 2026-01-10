@@ -2,6 +2,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { Client } from 'ssh2'
 import { EventEmitter } from 'events'
+import { SSHExecOptions, SSHFile, SSHSystemStats, SSHPackageInfo } from '../../shared/types/ssh'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export interface SSHConnection {
     id: string
@@ -14,6 +16,7 @@ export interface SSHConnection {
     privateKey?: string
     passphrase?: string
     connected: boolean
+    [key: string]: string | number | boolean | undefined
 }
 
 export class SSHService extends EventEmitter {
@@ -44,9 +47,9 @@ export class SSHService extends EventEmitter {
         try {
             if (!fs.existsSync(this.profilesPath)) return []
             const content = fs.readFileSync(this.profilesPath, 'utf-8')
-            return JSON.parse(content)
+            return JSON.parse(content) as SSHConnection[]
         } catch (error) {
-            console.error('Failed to load SSH profiles:', error)
+            console.error('Failed to load SSH profiles:', getErrorMessage(error as Error))
             return []
         }
     }
@@ -58,8 +61,6 @@ export class SSHService extends EventEmitter {
 
             // simple obfuscation for password/key (NOT SECURE PRODUCTION STORAGE)
             const safeProfile = { ...profile }
-            // In a real app, use keytar or valid encryption. For now, we store as is or simple base64 if needed.
-            // We'll trust the user has secured their machine for this iteration.
 
             if (index >= 0) {
                 profiles[index] = safeProfile
@@ -70,7 +71,7 @@ export class SSHService extends EventEmitter {
             fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
             return true
         } catch (error) {
-            console.error('Failed to save SSH profile:', error)
+            console.error('Failed to save SSH profile:', getErrorMessage(error as Error))
             return false
         }
     }
@@ -82,7 +83,7 @@ export class SSHService extends EventEmitter {
             fs.writeFileSync(this.profilesPath, JSON.stringify(filtered, null, 2))
             return true
         } catch (error) {
-            console.error('Failed to delete SSH profile:', error)
+            console.error('Failed to delete SSH profile:', getErrorMessage(error as Error))
             return false
         }
     }
@@ -96,7 +97,7 @@ export class SSHService extends EventEmitter {
                 this.connectionDetails.set(config.id, { ...config, connected: true })
                 this.emit('connected', config.id)
                 resolve({ success: true })
-            }).on('error', (err) => {
+            }).on('error', (err: Error) => {
                 this.emit('error', { id: config.id, message: err.message })
                 resolve({ success: false, error: err.message })
             }).on('close', () => {
@@ -105,19 +106,17 @@ export class SSHService extends EventEmitter {
                 this.emit('disconnected', config.id)
             })
 
-            // Auto-save if requested? Handled by caller manually calling saveProfile.
-
             try {
                 conn.connect({
                     host: config.host,
                     port: config.port,
                     username: config.username,
                     password: config.password,
-                    privateKey: config.privateKey ? require('fs').readFileSync(config.privateKey) : undefined,
+                    privateKey: config.privateKey ? fs.readFileSync(config.privateKey) : undefined,
                     passphrase: config.passphrase
                 })
-            } catch (error: any) {
-                resolve({ success: false, error: error.message })
+            } catch (error) {
+                resolve({ success: false, error: getErrorMessage(error as Error) })
             }
         })
     }
@@ -141,7 +140,7 @@ export class SSHService extends EventEmitter {
         return this.connections.has(connectionId)
     }
 
-    async executeCommand(connectionId: string, command: string, _options?: any): Promise<{ stdout: string; stderr: string; code: number }> {
+    async executeCommand(connectionId: string, command: string, _options?: SSHExecOptions): Promise<{ stdout: string; stderr: string; code: number }> {
         const conn = this.connections.get(connectionId)
         if (!conn) throw new Error('Not connected')
 
@@ -150,27 +149,44 @@ export class SSHService extends EventEmitter {
                 if (err) return reject(err)
                 let stdout = ''
                 let stderr = ''
-                stream.on('close', (code: number, _signal: any) => {
+                stream.on('close', (code: number) => {
                     resolve({ stdout, stderr, code })
-                }).on('data', (data: any) => {
-                    stdout += data
-                }).stderr.on('data', (data: any) => {
-                    stderr += data
+                }).on('data', (data: Buffer | string) => {
+                    stdout += data.toString()
+                }).stderr.on('data', (data: Buffer | string) => {
+                    stderr += data.toString()
                 })
             })
         })
     }
 
-    async listDirectory(connectionId: string, path: string): Promise<any[]> {
+    async listDirectory(connectionId: string, path: string): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
         const conn = this.connections.get(connectionId)
         if (!conn) throw new Error('Not connected')
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) return resolve({ success: false, error: err.message })
                 sftp.readdir(path, (err, list) => {
-                    if (err) return reject(err)
-                    resolve(list)
+                    if (err) return resolve({ success: false, error: err.message })
+                    const files = list.map((entry) => {
+                        const permissions = typeof entry.longname === 'string'
+                            ? entry.longname.split(/\s+/)[0]
+                            : undefined
+                        const size = typeof entry.attrs?.size === 'number' ? entry.attrs.size : undefined
+                        const mtime = typeof entry.attrs?.mtime === 'number' ? entry.attrs.mtime : undefined
+                        const isDirectory = typeof entry.attrs?.isDirectory === 'function'
+                            ? entry.attrs.isDirectory()
+                            : (typeof entry.longname === 'string' ? entry.longname.startsWith('d') : false)
+                        return {
+                            name: entry.filename,
+                            isDirectory,
+                            size,
+                            mtime,
+                            permissions
+                        }
+                    })
+                    resolve({ success: true, files })
                 })
             })
         })
@@ -185,9 +201,9 @@ export class SSHService extends EventEmitter {
                 if (err) return reject(err)
                 const stream = sftp.createReadStream(path)
                 let data = ''
-                stream.on('data', (d: any) => data += d)
+                stream.on('data', (d: Buffer | string) => data += d.toString())
                 stream.on('end', () => resolve(data))
-                stream.on('error', (err: any) => reject(err))
+                stream.on('error', (err: Error) => reject(err))
             })
         })
     }
@@ -203,7 +219,7 @@ export class SSHService extends EventEmitter {
                 stream.write(content)
                 stream.end()
                 stream.on('close', () => resolve(true))
-                stream.on('error', (err: any) => reject(err))
+                stream.on('error', (err: Error) => reject(err))
             })
         })
     }
@@ -314,9 +330,6 @@ export class SSHService extends EventEmitter {
         return { success: true }
     }
 
-    // Old methods removed
-
-
     async getLogFiles(connectionId: string): Promise<string[]> {
         const conn = this.connections.get(connectionId)
         if (!conn) throw new Error('Not connected')
@@ -327,6 +340,7 @@ export class SSHService extends EventEmitter {
             const { stdout } = await this.executeCommand(connectionId, cmd)
             return stdout.split('\n').filter(l => l.trim())
         } catch (e) {
+            console.error('Failed to get log files:', getErrorMessage(e as Error))
             return []
         }
     }
@@ -346,7 +360,7 @@ export class SSHService extends EventEmitter {
         return true
     }
 
-    async getSystemStats(connectionId: string): Promise<any> {
+    async getSystemStats(connectionId: string): Promise<SSHSystemStats> {
         try {
             const uptime = (await this.executeCommand(connectionId, 'uptime -p')).stdout.trim()
             const memory = (await this.executeCommand(connectionId, 'free -m')).stdout
@@ -355,7 +369,7 @@ export class SSHService extends EventEmitter {
 
             // Parse Memory
             const memLines = memory.split('\n')
-            const memValues = memLines[1]?.split(/\s+/) || []
+            const memValues = memLines[1]?.split(/\s+/).filter(Boolean) || []
             const totalMem = parseInt(memValues[1] || '0')
             const usedMem = parseInt(memValues[2] || '0')
 
@@ -364,7 +378,7 @@ export class SSHService extends EventEmitter {
 
             // Parse Disk
             const diskLines = disk.split('\n')
-            const diskValues = diskLines[1]?.split(/\s+/) || []
+            const diskValues = diskLines[1]?.split(/\s+/).filter(Boolean) || []
             const diskUsage = diskValues[4] || '0%'
 
             return {
@@ -374,12 +388,13 @@ export class SSHService extends EventEmitter {
                 disk: diskUsage
             }
         } catch (error) {
-            console.error('Failed to get system stats:', error)
-            return { error: 'Failed to fetch stats' }
+            const message = getErrorMessage(error as Error)
+            console.error('Failed to get system stats:', message)
+            return { error: message, uptime: '-', memory: { total: 0, used: 0, percent: 0 }, cpu: 0, disk: '0%' }
         }
     }
 
-    async getInstalledPackages(connectionId: string, manager: 'apt' | 'npm' | 'pip' = 'apt'): Promise<any[]> {
+    async getInstalledPackages(connectionId: string, manager: 'apt' | 'npm' | 'pip' = 'apt'): Promise<SSHPackageInfo[]> {
         try {
             let command = ''
             if (manager === 'apt') command = 'apt list --installed'
@@ -393,24 +408,24 @@ export class SSHService extends EventEmitter {
                 return lines.slice(1).map(l => {
                     const parts = l.split('/')
                     return parts[0] ? { name: parts[0], version: 'latest' } : null
-                }).filter(Boolean)
+                }).filter((p): p is SSHPackageInfo => p !== null)
             }
             if (manager === 'npm') {
                 return lines.slice(1).map(l => {
                     const parts = l.split('@')
-                    return parts[0] ? { name: parts[0].trim().replace(/^.* /, ''), version: parts[1]?.trim() } : null
-                }).filter(Boolean)
+                    return parts[0] ? { name: parts[0].trim().replace(/^.* /, ''), version: parts[1]?.trim() || 'unknown' } : null
+                }).filter((p): p is SSHPackageInfo => p !== null)
             }
             if (manager === 'pip') {
                 return lines.slice(2).map(l => {
                     const parts = l.split(/\s+/)
-                    return parts[0] ? { name: parts[0], version: parts[1] } : null
-                }).filter(Boolean)
+                    return parts[0] ? { name: parts[0], version: parts[1] || 'unknown' } : null
+                }).filter((p): p is SSHPackageInfo => p !== null)
             }
 
             return []
         } catch (error) {
-            console.error('Failed to get packages:', error)
+            console.error('Failed to get packages:', getErrorMessage(error as Error))
             return []
         }
     }

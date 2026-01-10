@@ -4,8 +4,9 @@
  */
 
 import { EventEmitter } from 'events'
+import { JsonObject, JsonValue } from '../../shared/types/common'
 
-export type EventHandler<T = any> = (data: T) => void | Promise<void>
+export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>
 
 export interface EventSubscription {
     unsubscribe: () => void
@@ -15,13 +16,13 @@ export interface EventSubscription {
 export interface AppEvents {
     // Chat events
     'chat:created': { chatId: string; title: string }
-    'chat:updated': { chatId: string; updates: Record<string, any> }
+    'chat:updated': { chatId: string; updates: JsonObject }
     'chat:deleted': { chatId: string }
     'chat:message': { chatId: string; messageId: string; role: string; content: string }
 
     // Model events
     'model:selected': { modelId: string; provider: string }
-    'model:list:updated': { provider: string; models: any[] }
+    'model:list:updated': { provider: string; models: JsonValue[] }
 
     // Auth events
     'auth:login': { provider: string; email?: string }
@@ -31,7 +32,7 @@ export interface AppEvents {
 
     // Proxy events
     'proxy:started': { port: number }
-    'proxy:stopped': {}
+    'proxy:stopped': Record<string, never>
     'proxy:error': { error: string }
 
     // Quota events
@@ -40,23 +41,23 @@ export interface AppEvents {
     'quota:exhausted': { provider: string }
 
     // Settings events
-    'settings:changed': { key: string; value: any }
-    'settings:saved': {}
+    'settings:changed': { key: string; value: JsonValue }
+    'settings:saved': Record<string, never>
 
     // Health events
     'health:changed': { service: string; status: 'healthy' | 'unhealthy' | 'unknown' }
 
     // App lifecycle
-    'app:ready': {}
-    'app:closing': {}
+    'app:ready': Record<string, never>
+    'app:closing': Record<string, never>
 
     // Generic
-    [key: string]: any
+    [key: string]: JsonValue
 }
 
 class EventBus {
     private emitter = new EventEmitter()
-    private eventHistory: Array<{ event: string; data: any; timestamp: number }> = []
+    private eventHistory: Array<{ event: string; data: JsonValue; timestamp: number }> = []
     private readonly maxHistory = 100
 
     constructor() {
@@ -126,7 +127,7 @@ class EventBus {
     /**
      * Get event history
      */
-    getHistory(event?: string): Array<{ event: string; data: any; timestamp: number }> {
+    getHistory(event?: string): Array<{ event: string; data: JsonValue; timestamp: number }> {
         if (event) {
             return this.eventHistory.filter(e => e.event === event)
         }

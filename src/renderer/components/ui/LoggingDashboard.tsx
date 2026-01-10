@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import type { IpcRendererEvent } from 'electron'
 
 interface LogEntry {
     id: string
@@ -39,7 +40,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ isOpen, onCl
         if (!isOpen) return
 
         // Subscribe to logs from main process
-        const handler = (_event: any, log: LogEntry) => {
+        const handler = (_event: IpcRendererEvent, log: LogEntry) => {
             if (!isPaused) {
                 setLogs(prev => [...prev.slice(-500), { ...log, id: `${Date.now()}-${Math.random()}` }])
             }
@@ -48,7 +49,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = ({ isOpen, onCl
         window.electron?.ipcRenderer.on('log:entry', handler)
 
         return () => {
-            ; (window.electron?.ipcRenderer as any).removeListener('log:entry', handler)
+            window.electron?.ipcRenderer.off('log:entry', handler)
         }
     }, [isOpen, isPaused])
 

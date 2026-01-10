@@ -1,19 +1,26 @@
 import { ipcMain } from 'electron'
 import { AgentService } from '../services/agent.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 
 export function registerAgentIpc(agentService: AgentService) {
     ipcMain.handle('agent:get-all', async () => {
         try {
             const agents = await agentService.getAllAgents()
             return JSON.parse(JSON.stringify(agents))
-        } catch (error: any) {
-            console.error('[IPC] agent:get-all failed:', error)
+        } catch (error) {
+            console.error('[IPC] agent:get-all failed:', getErrorMessage(error as Error))
             return []
         }
     })
 
     ipcMain.handle('agent:get', async (_event, id) => {
-        return await agentService.getAgent(id)
+        try {
+            return await agentService.getAgent(id)
+        } catch (error) {
+            console.error('[IPC] agent:get failed:', getErrorMessage(error as Error))
+            return null
+        }
     })
 
     // Future: agent:create, agent:delete

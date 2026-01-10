@@ -3,7 +3,9 @@ import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, app, ipcMain } from 'electron'
 import { SettingsService } from './settings.service'
 import { DataService } from './data/data.service'
+import { IpcValue } from '../../shared/types'
 import log from 'electron-log'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export class UpdateService {
     private settingsService: SettingsService
@@ -72,10 +74,7 @@ export class UpdateService {
         })
 
         autoUpdater.on('download-progress', (progressObj) => {
-            let log_message = 'Download speed: ' + progressObj.bytesPerSecond
-            log_message = log_message + ' - Downloaded ' + progressObj.percent + '%'
-            log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')'
-            // log.info(log_message) // Too verbose for file log usually
+            // log.info('Download speed: ' + progressObj.bytesPerSecond + ...)
 
             this.sendToWindow('update:status', {
                 state: 'downloading',
@@ -110,7 +109,7 @@ export class UpdateService {
         try {
             await autoUpdater.checkForUpdates()
         } catch (error) {
-            log.error('Failed to check for updates', error)
+            log.error('Failed to check for updates', getErrorMessage(error as Error))
             throw error
         }
     }
@@ -119,7 +118,7 @@ export class UpdateService {
         try {
             await autoUpdater.downloadUpdate()
         } catch (error) {
-            log.error('Failed to download update', error)
+            log.error('Failed to download update', getErrorMessage(error as Error))
             throw error
         }
     }
@@ -128,7 +127,7 @@ export class UpdateService {
         autoUpdater.quitAndInstall()
     }
 
-    private sendToWindow(channel: string, ...args: any[]) {
+    private sendToWindow(channel: string, ...args: IpcValue[]) {
         if (this.window && !this.window.isDestroyed()) {
             this.window.webContents.send(channel, ...args)
         }

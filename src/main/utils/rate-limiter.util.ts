@@ -1,33 +1,10 @@
 /**
  * @fileoverview Rate limiter utility using the Token Bucket algorithm.
- * 
- * Provides rate limiting functionality to control the frequency of operations,
- * primarily API requests. Supports provider-specific limits, automatic
- * refilling of tokens, and queuing mechanisms for waiting until tokens
- * become available.
- * 
- * @module utils/rate-limiter
- * @author Orbit Team
- * @license MIT
  */
 
+import { JsonValue } from '../../shared/types/common'
 /**
  * Configuration for a rate limiter instance.
- * 
- * @interface RateLimiterOptions
- * @property {number} maxTokens - Maximum capacity of the bucket (burst limit)
- * @property {number} refillRate - Number of tokens added per interval
- * @property {number} refillIntervalMs - Time interval in milliseconds for adding tokens
- * 
- * @example
- * ```typescript
- * // Allow 10 requests per minute, with a burst of 10
- * const options = {
- *   maxTokens: 10,
- *   refillRate: 10,
- *   refillIntervalMs: 60000
- * };
- * ```
  */
 export interface RateLimiterOptions {
     maxTokens: number          // Maximum tokens in bucket
@@ -37,10 +14,6 @@ export interface RateLimiterOptions {
 
 /**
  * Implementation of the Token Bucket algorithm for rate limiting.
- * 
- * Tokens are added to the bucket at a fixed rate up to a maximum capacity.
- * Operations must consume a token to proceed. If no tokens are available,
- * the operation can either fail immediately or wait until a token is refilled.
  */
 export class RateLimiter {
     private tokens: number
@@ -52,8 +25,6 @@ export class RateLimiter {
 
     /**
      * Creates a new RateLimiter instance.
-     * 
-     * @param options - Configuration options
      */
     constructor(options: RateLimiterOptions) {
         this.maxTokens = options.maxTokens
@@ -65,8 +36,6 @@ export class RateLimiter {
 
     /**
      * Updates token count based on elapsed time since last refill.
-     * 
-     * @private
      */
     private refill() {
         const now = Date.now()
@@ -81,17 +50,6 @@ export class RateLimiter {
 
     /**
      * Attempts to acquire a token immediately without waiting.
-     * 
-     * @returns {boolean} True if a token was acquired, false otherwise
-     * 
-     * @example
-     * ```typescript
-     * if (limiter.tryAcquire()) {
-     *   // Proceed with operation
-     * } else {
-     *   // Rate limit exceeded
-     * }
-     * ```
      */
     tryAcquire(): boolean {
         this.refill()
@@ -104,11 +62,6 @@ export class RateLimiter {
 
     /**
      * Acquires a token, asynchronously waiting if necessary.
-     * 
-     * If tokens are available, resolves immediately.
-     * If not, queues the request and resolves once a token becomes available via refill.
-     * 
-     * @returns {Promise<void>} Resolves when a token is acquired
      */
     async acquire(): Promise<void> {
         if (this.tryAcquire()) {
@@ -138,8 +91,6 @@ export class RateLimiter {
 
     /**
      * Returns the current number of available tokens.
-     * 
-     * @returns {number} Count of available tokens
      */
     getAvailableTokens(): number {
         this.refill()
@@ -148,8 +99,6 @@ export class RateLimiter {
 
     /**
      * Calculates the time in milliseconds until the next token refill.
-     * 
-     * @returns {number} Milliseconds until next refill, or 0 if tokens are available
      */
     getTimeUntilNextToken(): number {
         if (this.tokens >= 1) return 0
@@ -169,7 +118,7 @@ const limiters: Map<string, RateLimiter> = new Map()
 const DEFAULT_LIMITS: Record<string, RateLimiterOptions> = {
     openai: { maxTokens: 60, refillRate: 60, refillIntervalMs: 60000 },      // 60 RPM
     anthropic: { maxTokens: 50, refillRate: 50, refillIntervalMs: 60000 },   // 50 RPM
-    gemini: { maxTokens: 60, refillRate: 60, refillIntervalMs: 60000 },      // 60 RPM
+
     groq: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 },        // 30 RPM
     ollama: { maxTokens: 100, refillRate: 100, refillIntervalMs: 60000 },    // Local, generous
     copilot: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 },     // Conservative
@@ -195,10 +144,10 @@ export function getRateLimiter(provider: string): RateLimiter {
  * Decorator to rate-limit a function
  */
 export function rateLimited(provider: string) {
-    return function (_target: any, _propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor) {
         const original = descriptor.value
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (this: object, ...args: Array<JsonValue | object | null | undefined>) {
             const limiter = getRateLimiter(provider)
             await limiter.acquire()
             return original.apply(this, args)

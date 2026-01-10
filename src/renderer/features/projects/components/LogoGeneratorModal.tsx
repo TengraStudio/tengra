@@ -28,7 +28,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     const handleAnalyze = async () => {
         setIsAnalyzing(true)
         try {
-            const result = await (window.electron as any).project.analyzeIdentity(project.path)
+            const result = await window.electron.project.analyzeIdentity(project.path)
             setSuggestions(result.suggestedPrompts || [])
             setPalette(result.colors || [])
             if (result.suggestedPrompts?.length > 0 && !prompt) {
@@ -48,7 +48,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
             // Include palette colors in prompt if available
             const colorContext = palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : ''
             const finalPrompt = `${prompt}${colorContext}`
-            const logoPath = await (window.electron as any).project.generateLogo(project.path, finalPrompt, style)
+            const logoPath = await window.electron.project.generateLogo(project.path, finalPrompt, style)
             setGeneratedLogo(logoPath)
         } catch (error) {
             console.error('Generation failed', error)

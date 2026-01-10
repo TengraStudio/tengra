@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
+import { JsonValue, AppError } from '../../shared/types/common'
 
 export enum LogLevel {
     DEBUG = 0,
@@ -13,7 +14,7 @@ type LogPayload = {
     level: LogLevel
     message: string
     context: string
-    data?: unknown
+    data?: JsonValue | Error | AppError
 }
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -25,7 +26,13 @@ class AppLogger {
     private size = 0
     private initialized = false
     private queue: Promise<void> = Promise.resolve()
-    private originalConsole: any = null
+    private originalConsole: {
+        debug: Console['debug']
+        info: Console['info']
+        log: Console['log']
+        warn: Console['warn']
+        error: Console['error']
+    } | null = null
     private currentLevel: LogLevel = LogLevel.INFO
 
     init(logDir?: string) {
@@ -65,47 +72,47 @@ class AppLogger {
             error: console.error.bind(console)
         }
 
-        console.debug = (...args: unknown[]) => {
+        console.debug = (...args: Array<JsonValue | Error | object>) => {
             this.debug('console', formatArgs(args))
             this.originalConsole?.debug(...args)
         }
-        console.log = (...args: unknown[]) => {
+        console.log = (...args: Array<JsonValue | Error | object>) => {
             this.info('console', formatArgs(args))
             this.originalConsole?.log(...args)
         }
-        console.info = (...args: unknown[]) => {
+        console.info = (...args: Array<JsonValue | Error | object>) => {
             this.info('console', formatArgs(args))
             this.originalConsole?.info(...args)
         }
-        console.warn = (...args: unknown[]) => {
+        console.warn = (...args: Array<JsonValue | Error | object>) => {
             this.warn('console', formatArgs(args))
             this.originalConsole?.warn(...args)
         }
-        console.error = (...args: unknown[]) => {
+        console.error = (...args: Array<JsonValue | Error | object>) => {
             this.error('console', formatArgs(args))
             this.originalConsole?.error(...args)
         }
     }
 
-    debug(context: string, message: string, data?: unknown) {
+    debug(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.DEBUG) {
             this.write({ level: LogLevel.DEBUG, message, context, data })
         }
     }
 
-    info(context: string, message: string, data?: unknown) {
+    info(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.INFO) {
             this.write({ level: LogLevel.INFO, message, context, data })
         }
     }
 
-    warn(context: string, message: string, data?: unknown) {
+    warn(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.WARN) {
             this.write({ level: LogLevel.WARN, message, context, data })
         }
     }
 
-    error(context: string, message: string, data?: unknown) {
+    error(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.ERROR) {
             this.write({ level: LogLevel.ERROR, message, context, data })
         }
@@ -180,10 +187,10 @@ export const appLogger = new AppLogger()
 export class Logger {
     static init(logDir?: string) { appLogger.init(logDir) }
     static setLevel(level: LogLevel) { appLogger.setLevel(level) }
-    static debug(context: string, message: string, data?: unknown) { appLogger.debug(context, message, data) }
-    static info(context: string, message: string, data?: unknown) { appLogger.info(context, message, data) }
-    static warn(context: string, message: string, data?: unknown) { appLogger.warn(context, message, data) }
-    static error(context: string, message: string, data?: unknown) { appLogger.error(context, message, data) }
+    static debug(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.debug(context, message, data) }
+    static info(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.info(context, message, data) }
+    static warn(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.warn(context, message, data) }
+    static error(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.error(context, message, data) }
 }
 
 export function initAppLogger() {
@@ -200,13 +207,20 @@ function formatLine(payload: LogPayload): string {
     return `[${timestamp}] [${level}] [${context}] ${base}${meta}\n`
 }
 
-function formatArgs(args: unknown[]): string {
+function formatArgs(args: Array<JsonValue | Error | object>): string {
     return args.map(formatValue).join(' ')
 }
 
-function formatValue(value: unknown): string {
+function formatValue(value: JsonValue | Error | AppError | object): string {
     if (value instanceof Error) {
         return value.stack ? `${value.message} | ${value.stack}` : value.message
+    }
+    if (value && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)) {
+        const ae = value as AppError
+        let res = ae.message
+        if (ae.code) res = `[${ae.code}] ${res}`
+        if (ae.stack) res = `${res} | ${ae.stack}`
+        return res
     }
     if (typeof value === 'string') {
         return value
@@ -221,4 +235,3 @@ function formatValue(value: unknown): string {
 function sanitize(message: string): string {
     return String(message).replace(/\r?\n/g, '\\n')
 }
-

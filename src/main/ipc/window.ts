@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, shell } from 'electron'
 import { appLogger } from '../logging/logger'
-import { exec } from 'child_process'
+import { exec, spawn } from 'child_process'
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:minimize', () => getMainWindow()?.minimize())
@@ -83,7 +83,6 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     })
 
     ipcMain.handle('shell:openTerminal', async (_event, command) => {
-        const { spawn } = require('child_process')
         if (process.platform === 'win32') {
             spawn('start', ['cmd', '/k', command], { shell: true })
         } else {
@@ -94,7 +93,6 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     })
 
     ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
-        const { spawn } = require('child_process')
         return new Promise((resolve) => {
             const child = spawn(command, args, {
                 cwd: cwd || process.cwd(),

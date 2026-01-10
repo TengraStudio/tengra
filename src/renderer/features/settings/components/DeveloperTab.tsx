@@ -1,6 +1,6 @@
 ﻿import React from 'react'
 import { Terminal, RefreshCw } from 'lucide-react'
-import { AppSettings } from '../hooks/useSettingsLogic'
+import { AppSettings } from '../../../../shared/types/settings'
 
 interface DeveloperTabProps {
     settings: AppSettings | null

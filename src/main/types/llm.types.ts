@@ -1,4 +1,6 @@
 
+import { ToolDefinition } from '../../shared/types';
+
 /**
  * Role of the message sender.
  */
@@ -49,7 +51,6 @@ export interface ChatMessage {
 export interface ChatOptions {
     model: string;
     temperature?: number;
-    max_tokens?: number;
     stream?: boolean;
-    tools?: any[]; // Keep any for tools def for now as it's complex schema
+    tools?: ToolDefinition[];
 }

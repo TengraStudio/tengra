@@ -1,9 +1,11 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import { SSHService, SSHConnection } from '../services/ssh.service'
 import { randomUUID } from 'crypto'
+import { IpcValue, JsonValue } from '../../shared/types/common'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService) {
-    const send = (channel: string, data: any) => {
+    const send = (channel: string, data: JsonValue) => {
         const win = getMainWindow()
         if (win) {
             win.webContents.send(channel, data)
@@ -38,52 +40,105 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     })
 
     ipcMain.handle('ssh:disconnect', async (_event, connectionId: string) => {
-        await sshService.disconnect(connectionId)
-        return { success: true }
+        try {
+            await sshService.disconnect(connectionId)
+            return { success: true }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
-    ipcMain.handle('ssh:execute', async (_event, connectionId: string, command: string, options?: any) => {
-        return await sshService.executeCommand(connectionId, command, options)
+    ipcMain.handle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
+        try {
+            return await sshService.executeCommand(connectionId, command, options)
+        } catch (error) {
+            const message = getErrorMessage(error as Error)
+            return { success: false, error: message, stdout: '', stderr: message, code: 1 }
+        }
     })
 
     ipcMain.handle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
-        return await sshService.listDirectory(payload.connectionId, payload.path)
+        try {
+            return await sshService.listDirectory(payload.connectionId, payload.path)
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:readFile', async (_event, payload: { connectionId: string; path: string }) => {
-        return await sshService.readFile(payload.connectionId, payload.path)
+        try {
+            const content = await sshService.readFile(payload.connectionId, payload.path)
+            return { success: true, content }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:writeFile', async (_event, payload: { connectionId: string; path: string; content: string }) => {
-        return await sshService.writeFile(payload.connectionId, payload.path, payload.content)
+        try {
+            const success = await sshService.writeFile(payload.connectionId, payload.path, payload.content)
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:deleteDir', async (_event, payload: { connectionId: string; path: string }) => {
-        return await sshService.deleteDirectory(payload.connectionId, payload.path)
+        try {
+            const success = await sshService.deleteDirectory(payload.connectionId, payload.path)
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:deleteFile', async (_event, payload: { connectionId: string; path: string }) => {
-        return await sshService.deleteFile(payload.connectionId, payload.path)
+        try {
+            const success = await sshService.deleteFile(payload.connectionId, payload.path)
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:mkdir', async (_event, payload: { connectionId: string; path: string }) => {
-        return await sshService.createDirectory(payload.connectionId, payload.path)
+        try {
+            const success = await sshService.createDirectory(payload.connectionId, payload.path)
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:rename', async (_event, payload: { connectionId: string; oldPath: string; newPath: string }) => {
-        return await sshService.rename(payload.connectionId, payload.oldPath, payload.newPath)
+        try {
+            const success = await sshService.rename(payload.connectionId, payload.oldPath, payload.newPath)
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:upload', async (_event, payload: { connectionId: string; local: string; remote: string }) => {
-        return await sshService.uploadFile(payload.connectionId, payload.local, payload.remote, (transferred, total) => {
-            send('ssh:uploadProgress', { connectionId: payload.connectionId, transferred, total })
-        })
+        try {
+            const success = await sshService.uploadFile(payload.connectionId, payload.local, payload.remote, (transferred, total) => {
+                send('ssh:uploadProgress', { connectionId: payload.connectionId, transferred, total })
+            })
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:download', async (_event, payload: { connectionId: string; remote: string; local: string }) => {
-        return await sshService.downloadFile(payload.connectionId, payload.remote, payload.local, (transferred, total) => {
-            send('ssh:downloadProgress', { connectionId: payload.connectionId, transferred, total })
-        })
+        try {
+            const success = await sshService.downloadFile(payload.connectionId, payload.remote, payload.local, (transferred, total) => {
+                send('ssh:downloadProgress', { connectionId: payload.connectionId, transferred, total })
+            })
+            return { success }
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) }
+        }
     })
 
     ipcMain.handle('ssh:getConnections', async () => {
@@ -108,29 +163,54 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     })
 
     ipcMain.handle('ssh:getSystemStats', async (_event, connectionId: string) => {
-        return await sshService.getSystemStats(connectionId)
+        try {
+            return await sshService.getSystemStats(connectionId)
+        } catch (error) {
+            const message = getErrorMessage(error as Error)
+            return { error: message, uptime: '-', memory: { total: 0, used: 0, percent: 0 }, cpu: 0, disk: '0%' }
+        }
     })
 
     ipcMain.handle('ssh:getInstalledPackages', async (_event, connectionId: string, manager?: 'apt' | 'npm' | 'pip') => {
-        return await sshService.getInstalledPackages(connectionId, manager)
+        try {
+            return await sshService.getInstalledPackages(connectionId, manager)
+        } catch {
+            return []
+        }
     })
 
     ipcMain.handle('ssh:getLogFiles', async (_event, connectionId: string) => {
-        return await sshService.getLogFiles(connectionId)
+        try {
+            return await sshService.getLogFiles(connectionId)
+        } catch {
+            return []
+        }
     })
 
     ipcMain.handle('ssh:readLogFile', async (_event, payload: { connectionId: string; path: string; lines?: number }) => {
-        return await sshService.readLogFile(payload.connectionId, payload.path, payload.lines)
+        try {
+            return await sshService.readLogFile(payload.connectionId, payload.path, payload.lines)
+        } catch (error) {
+            return getErrorMessage(error as Error)
+        }
     })
     ipcMain.handle('ssh:getProfiles', async () => {
         return await sshService.getSavedProfiles()
     })
 
     ipcMain.handle('ssh:saveProfile', async (_event, profile: SSHConnection) => {
-        return await sshService.saveProfile(profile)
+        try {
+            return await sshService.saveProfile(profile)
+        } catch {
+            return false
+        }
     })
 
     ipcMain.handle('ssh:deleteProfile', async (_event, id: string) => {
-        return await sshService.deleteProfile(id)
+        try {
+            return await sshService.deleteProfile(id)
+        } catch {
+            return false
+        }
     })
 }

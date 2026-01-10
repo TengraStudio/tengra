@@ -7,6 +7,28 @@ import { LlamaService } from '../services/llm/llama.service'
 import { OllamaHealthService } from '../services/llm/ollama-health.service'
 import { ProxyService } from '../services/proxy/proxy.service'
 import { CopilotService } from '../services/llm/copilot.service';
+import { JsonValue } from '../../shared/types/common';
+import { getErrorMessage } from '../../shared/utils/error.util';
+
+interface ModelDefinition {
+    id: string;
+    name: string;
+    provider: string;
+    digest?: string;
+    size?: number;
+    modified_at?: string;
+    path?: string;
+    loaded?: boolean;
+    object?: string;
+    owned_by?: string;
+    percentage?: number;
+    reset?: string;
+    permission?: JsonValue[];
+    quotaInfo?: Record<string, JsonValue>;
+    [key: string]: JsonValue | undefined;
+}
+
+
 
 export function registerOllamaIpc(options: {
     localAIService: LocalAIService
@@ -20,100 +42,121 @@ export function registerOllamaIpc(options: {
 }) {
     const { localAIService, ollamaService, ollamaHealthService, copilotService, proxyService, llamaService } = options
 
+
     ipcMain.handle('ollama:tags', async () => localAIService.getOllamaModels())
 
-    ipcMain.handle('ollama:getModels', async () => {
-        let copilotModels: any[] = []
-        let codexModels: any[] = []
-        let localModels: any[] = []
-        let antigravityModels: any[] = []
-        let llamaModels: any[] = []
+    ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
+        let copilotModels: ModelDefinition[] = []
+        let codexModels: ModelDefinition[] = []
+        let localModels: ModelDefinition[] = []
+        let antigravityModels: ModelDefinition[] = []
+        let llamaModels: ModelDefinition[] = []
 
         // 1. LOCAL MODELS (Ollama)
         try {
-            const res = await localAIService.getOllamaModels();
-            localModels = (Array.isArray(res) ? res : ((res as any)?.models || [])).map((m: any) => ({
-                ...m,
-                id: m.name,
-                provider: 'ollama',
-                name: m.name
-            }));
-            console.log(`[Main:Ollama] Fetched ${localModels.length} local models`);
-        } catch (e) {
-            console.error('Failed to fetch local models', e);
+            const modelsArray = await localAIService.getOllamaModels()
+            localModels = modelsArray.map((m) => {
+                const name = m?.name
+                if (!name) return null
+                return {
+                    ...m,
+                    id: name,
+                    provider: 'ollama',
+                    name,
+                    digest: m.digest,
+                    size: m.size,
+                    modified_at: m.modified_at
+                } as ModelDefinition
+            }).filter((m): m is ModelDefinition => m !== null)
+        } catch (err) {
+            console.error('Failed to fetch local models', getErrorMessage(err as Error))
         }
 
         // 2. COPILOT MODELS
-        if (copilotService) {
+        if (copilotService && copilotService.isConfigured()) {
             try {
-                const res = await copilotService.getModels();
-                copilotModels = Array.isArray(res) ? res : (res?.data || []);
-            } catch (e) {
-                console.error('Failed to fetch copilot models', e)
+                const res = await copilotService.getModels()
+                const data = Array.isArray(res) ? res : (res?.data || [])
+                copilotModels = data.map((m) => {
+                    const id = m?.id
+                    if (!id) return null
+                    const name = m.name || id
+                    return { ...m, id, provider: 'copilot', name }
+                }).filter((m): m is ModelDefinition => m !== null)
+            } catch (err) {
+                console.error('Failed to fetch copilot models', getErrorMessage(err as Error))
             }
         }
 
         // 3. CODEX MODELS
-        const CODEX_MODELS = [
-            { id: 'gpt-5-codex', name: 'GPT-5 Codex', provider: 'codex' },
-            { id: 'gpt-5-codex-mini', name: 'GPT-5 Codex Mini', provider: 'codex' },
-            { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'codex' },
-            { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'codex' },
-            { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'codex' },
-            { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', provider: 'codex' },
-        ];
-        codexModels = CODEX_MODELS;
+        if (proxyService) {
+            try {
+                const usage = await proxyService.getCodexUsage() as { usageSource?: string }
+                if (usage && usage.usageSource === 'chatgpt') {
+                    codexModels = [
+                        { id: 'gpt-5-codex', name: 'GPT-5 Codex', provider: 'codex' },
+                        { id: 'gpt-5-codex-mini', name: 'GPT-5 Codex Mini', provider: 'codex' },
+                        { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'codex' },
+                        { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'codex' },
+                        { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'codex' },
+                        { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', provider: 'codex' },
+                    ];
+                }
+            } catch (err) {
+                console.warn('Failed to check Codex usage', err)
+            }
+        }
 
 
 
         // 4. ANTIGRAVITY MODELS (via ProxyService)
         if (proxyService) {
             try {
-                const ag = await (proxyService as any).getAntigravityAvailableModels();
-                antigravityModels = Array.isArray(ag) ? ag : [];
-            } catch (e) {
-                console.error('Failed to fetch Antigravity models', e);
+                const ag = await proxyService.getAntigravityAvailableModels()
+
+                // Track existing IDs to prevent duplicates/collisions
+                const existingIds = new Set([
+                    ...localModels.map(m => m.id),
+                    ...copilotModels.map(m => m.id),
+                    ...codexModels.map(m => m.id),
+                    ...codexModels.map(m => m.id)
+                ])
+
+                antigravityModels = (ag || []).map((m) => {
+                    if (!m || typeof m !== 'object') return null
+                    let id = m.id
+                    let name = m.name || m.id
+
+                    // If ID collides (e.g. gemini-1.5-pro exists in Gemini AND Antigravity), rename the Antigravity one
+                    if (existingIds.has(id)) {
+                        id = `${id}-antigravity`
+                        name = `${name} (Antigravity)`
+                    }
+
+                    return { ...m, id, name, provider: 'antigravity' } as ModelDefinition
+                }).filter((m): m is ModelDefinition => m !== null)
+            } catch (err) {
+                console.error('Failed to fetch Antigravity models', getErrorMessage(err as Error))
             }
         }
 
         // 5. LLAMA.CPP MODELS
         if (llamaService) {
             try {
-                const lm = await llamaService.getModels();
-                llamaModels = Array.isArray(lm) ? lm : [];
-            } catch (e) {
-                console.error('Failed to fetch Llama models', e);
+                const lm = await llamaService.getModels()
+                llamaModels = (lm || []).map((m) => {
+                    const name = m?.name
+                    if (!name) return null
+                    const path = (m as { path?: string }).path || ''
+                    const id = (m as { id?: string }).id || ''
+                    return { ...m, id: path || id || 'llama-cpp-unknown', name, provider: 'llama-cpp' } as ModelDefinition
+                }).filter((m): m is ModelDefinition => m !== null)
+            } catch (err) {
+                console.error('Failed to fetch Llama models', getErrorMessage(err as Error))
             }
         }
 
-        // Format: Keep raw names, just add provider
-        const formattedCopilot = copilotModels.map(m => ({
-            ...m,
-            id: m.id,
-            provider: 'copilot',
-            name: m.name || m.id
-        }));
-
-        const formattedCodex = codexModels.map(m => ({
-            ...m,
-            provider: 'codex' // This will be mapped to 'openai' group in UI but routed as 'copilot' if needed, 
-            // though ModelSelector now handles the 'copilot' routing for proxy sources.
-        }));
-
-        const formattedAntigravity = antigravityModels.map(m => ({
-            ...m,
-            provider: 'antigravity'
-        }));
-
-        const formattedLlama = llamaModels.map(m => ({
-            ...m,
-            id: m.path, // Use path as unique ID for llama.cpp models
-            name: m.name,
-            provider: 'llama-cpp'
-        }));
-
-        // Return all models
-        return [...localModels, ...formattedCopilot, ...formattedCodex, ...formattedAntigravity, ...formattedLlama];
+        return [...localModels, ...copilotModels, ...codexModels, ...antigravityModels, ...llamaModels];
     })
 
     // Use health service for isRunning check
@@ -159,31 +202,27 @@ export function registerOllamaIpc(options: {
     })
 
     ipcMain.handle('ollama:chatStream', async (event, messages, model) => {
-        // Simple non-streaming fallback for now as LocalAIService is sync-heavy
-        // This handler is specifically for local models (Ollama/Llama.cpp)
         try {
             const res = await localAIService.ollamaChat(model, messages)
-            // Even if not truly streaming from the backend yet, we send the full response to keep renderer logic happy
             if (res.message?.content) {
                 event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' })
             }
             return { content: res.message?.content || '', role: 'assistant' }
-        } catch (error: any) {
-            console.error('[Main:Ollama] Chat Error:', error)
-            return { error: error.message }
+        } catch (err) {
+            const message = getErrorMessage(err as Error)
+            console.error('[Main:Ollama] Chat Error:', message)
+            return { error: message }
         }
     })
 
-    // Library models (available for download)
     ipcMain.handle('ollama:getLibraryModels', async () => {
         try {
             if (ollamaService) {
                 return await ollamaService.getLibraryModels()
             }
-            // Fallback: return empty array if service not available
             return []
-        } catch (error: any) {
-            console.error('[Main:Ollama] getLibraryModels Error:', error)
+        } catch (err) {
+            console.error('[Main:Ollama] getLibraryModels Error:', getErrorMessage(err as Error))
             return []
         }
     })

@@ -22,11 +22,14 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
 
     useEffect(() => {
         // Simple logic: Show tip 20% of the time on mount
-        if (Math.random() > 0.8) {
-            setTipIndex(Math.floor(Math.random() * TIPS.length));
-            setIsOpen(true);
-        }
-    }, []);
+        const timer = setTimeout(() => {
+            if (Math.random() > 0.8) {
+                setTipIndex(Math.floor(Math.random() * TIPS.length));
+                setIsOpen(true);
+            }
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [TIPS.length]);
 
     if (!isOpen) return null;
 

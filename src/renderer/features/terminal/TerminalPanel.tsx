@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, memo } from 'react'
+﻿import { useState, useEffect, useRef, memo, useCallback } from 'react'
 import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
@@ -38,11 +38,11 @@ const TerminalSession = memo(({
     const containerRef = useRef<HTMLDivElement>(null)
     const xtermRef = useRef<XTerm | null>(null)
     const fitAddonRef = useRef<FitAddon | null>(null)
-    const { theme } = useTheme() // Assuming this hook returns 'dark' or 'light'
+    const { theme } = useTheme()
     const [isReady, setIsReady] = useState(false)
 
     // Theme definitions
-    const getTheme = (isDark: boolean) => ({
+    const getTheme = useCallback((isDark: boolean) => ({
         background: isDark ? '#09090b' : '#ffffff',
         foreground: isDark ? '#e4e4e7' : '#18181b',
         cursor: isDark ? '#ffffff' : '#000000',
@@ -63,14 +63,14 @@ const TerminalSession = memo(({
         brightMagenta: isDark ? '#f472b6' : '#f472b6',
         brightCyan: isDark ? '#22d3ee' : '#22d3ee',
         brightWhite: isDark ? '#ffffff' : '#ffffff'
-    })
+    }), [])
 
     // Update theme on change
     useEffect(() => {
         if (xtermRef.current) {
             xtermRef.current.options.theme = getTheme(theme === 'dark')
         }
-    }, [theme])
+    }, [theme, getTheme])
 
     // Initialize xterm
     useEffect(() => {
@@ -81,26 +81,39 @@ const TerminalSession = memo(({
             fontSize: 13,
             fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
             theme: getTheme(theme === 'dark'),
-            allowProposedApi: true
+            allowProposedApi: true,
+            scrollback: 10000,
+            cols: 80,
+            rows: 24
         })
 
         const fitAddon = new FitAddon()
         term.loadAddon(fitAddon)
         term.open(containerRef.current)
-        fitAddon.fit()
 
         xtermRef.current = term
         fitAddonRef.current = fitAddon
 
         // Initialize backend session
         const initSession = async () => {
-            const cols = term.cols
-            const rows = term.rows
+            // Give a moment for the DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 50))
+
+            try {
+                if (containerRef.current && (containerRef.current as HTMLElement).offsetParent) {
+                    fitAddon.fit()
+                }
+            } catch (e) {
+                console.warn('Initial terminal fit failed', e)
+            }
+
+            const cols = term.cols || 80
+            const rows = term.rows || 24
 
             await window.electron.terminal.create({
                 id: tab.id,
                 shell: tab.type,
-                cwd: projectPath, // Use provided project path or default
+                cwd: projectPath,
                 cols,
                 rows
             })
@@ -115,6 +128,12 @@ const TerminalSession = memo(({
                 window.electron.terminal.write(tab.id, data)
             })
 
+            // Request initial buffer if any (re-attachment support)
+            const buffer = await window.electron.terminal.readBuffer(tab.id)
+            if (buffer) {
+                term.write(buffer)
+            }
+
             setIsReady(true)
         }
 
@@ -122,68 +141,81 @@ const TerminalSession = memo(({
 
         // Cleanup
         return () => {
-            window.electron.terminal.kill(tab.id)
+            // Note: We don't kill the backend session here to allow re-attachment if needed,
+            // or we could kill it if that's the desired behavior.
+            // Following the current pattern of 'kill on close' which is handled in closeTab
             term.dispose()
         }
-    }, []) // Run once on mount
+    }, [tab.id, tab.type, projectPath, getTheme, theme])
 
-    // Handle incoming data
+    // Helper to safely fit terminal
+    const safeFit = useCallback(() => {
+        if (!fitAddonRef.current || !containerRef.current || !isActive) return
+        try {
+            // Check if element is actually visible and has dimensions
+            const rect = containerRef.current.getBoundingClientRect()
+            if (rect.width > 0 && rect.height > 0 && (containerRef.current as HTMLElement).offsetParent) {
+                fitAddonRef.current.fit()
+            }
+        } catch (e) {
+            console.warn('[TerminalSession] Fit failed:', e)
+        }
+    }, [isActive])
+
+    // Handle incoming data via global multiplexer
     useEffect(() => {
         if (!isReady) return
 
-        const handleData = (_: any, { id, data }: { id: string, data: string }) => {
-            if (id === tab.id && xtermRef.current) {
-                xtermRef.current.write(data)
+        const handleData = (e: Event) => {
+            const detail = (e as CustomEvent).detail
+            if (detail.id === tab.id && xtermRef.current) {
+                xtermRef.current.write(detail.data)
             }
         }
 
-        const handleExit = (_: any, { id }: { id: string }) => {
-            if (id === tab.id) {
+        const handleExit = (e: Event) => {
+            const detail = (e as CustomEvent).detail
+            if (detail.id === tab.id) {
                 onClose()
             }
         }
 
-        const cleanupData = window.electron.on('terminal:data', handleData)
-        const cleanupExit = window.electron.on('terminal:exit', handleExit)
+        window.addEventListener('terminal-data-multiplex', handleData)
+        window.addEventListener('terminal-exit-multiplex', handleExit)
 
         return () => {
-            cleanupData()
-            cleanupExit()
+            window.removeEventListener('terminal-data-multiplex', handleData)
+            window.removeEventListener('terminal-exit-multiplex', handleExit)
         }
     }, [tab.id, isReady, onClose])
 
     // Handle fit on resize or visibility change
     useEffect(() => {
-        if (isActive && fitAddonRef.current) {
-            // Small timeout to allow layout to settle
-            setTimeout(() => {
-                fitAddonRef.current?.fit()
-            }, 50)
+        if (isActive) {
+            const timer = setTimeout(safeFit, 100)
+            return () => clearTimeout(timer)
         }
-    }, [isActive, tab.id])
+        return undefined
+    }, [isActive, safeFit])
 
     // Resize observer for container
     useEffect(() => {
-        if (!containerRef.current || !fitAddonRef.current) return
+        if (!containerRef.current) return
 
         const observer = new ResizeObserver(() => {
             if (isActive) {
-                try {
-                    fitAddonRef.current?.fit()
-                } catch (e) {
-                    // Ignore fit errors (can happen if element is hidden)
-                }
+                safeFit()
             }
         })
 
         observer.observe(containerRef.current)
         return () => observer.disconnect()
-    }, [isActive])
+    }, [isActive, safeFit])
 
     return (
         <div
             className={cn("h-full w-full bg-zinc-950", isActive ? "block" : "hidden")}
-            style={{ paddingLeft: '8px' }} // Tiny padding for aesthetic
+            style={{ paddingLeft: '8px' }}
         >
             <div ref={containerRef} className="h-full w-full" />
         </div>
@@ -205,28 +237,10 @@ export function TerminalPanel({
     const [isResizing, setIsResizing] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [showNewTerminalMenu, setShowNewTerminalMenu] = useState(false)
-
     const [availableShells, setAvailableShells] = useState<{ id: string, name: string, path: string }[]>([])
 
-    // Create default terminal 
-    useEffect(() => {
-        const loadShells = async () => {
-            const shells = await window.electron.terminal.getShells()
-            setAvailableShells(shells)
-
-            // Auto-create if empty and open
-            if (isOpen && tabs.length === 0 && shells.length > 0) {
-                // Defer slightly to ensure shells are loaded
-                setTimeout(() => createTerminal(shells[0].id), 100)
-            }
-        }
-        loadShells()
-    }, [isOpen]) // Reload if re-opened? Or just once. isOpen dep is fine.
-
-    const generateId = () => Math.random().toString(36).substr(2, 9)
-
-    const createTerminal = (type: string) => {
-        const id = generateId()
+    const createTerminal = useCallback((type: string) => {
+        const id = Math.random().toString(36).substring(2, 9)
         const shellInfo = availableShells.find(s => s.id === type)
         const typeLabel = shellInfo?.name || type
         const count = tabs.filter(t => t.type === type).length + 1
@@ -235,10 +249,6 @@ export function TerminalPanel({
             id,
             name: `${typeLabel} ${count}`,
             type,
-            content: [],
-            inputHistory: [],
-            historyIndex: -1,
-            currentInput: '',
             cwd: projectPath || '',
             isRunning: true,
             status: 'idle',
@@ -249,7 +259,19 @@ export function TerminalPanel({
         setTabs(prev => [...prev, newTab])
         setActiveTabId(id)
         setShowNewTerminalMenu(false)
-    }
+    }, [availableShells, tabs, projectPath, setTabs, setActiveTabId])
+
+    useEffect(() => {
+        const loadShells = async () => {
+            const shells = await window.electron.terminal.getShells()
+            setAvailableShells(shells)
+
+            if (isOpen && tabs.length === 0 && shells.length > 0) {
+                setTimeout(() => createTerminal(shells[0].id), 100)
+            }
+        }
+        loadShells()
+    }, [isOpen, createTerminal, tabs.length])
 
     const closeTab = (id: string) => {
         setTabs(prev => {
@@ -262,6 +284,21 @@ export function TerminalPanel({
             return newTabs
         })
     }
+
+    // Centralized IPC Listeners to prevent MaxListenersExceeded
+    useEffect(() => {
+        const cleanupData = window.electron.terminal.onData((payload) => {
+            window.dispatchEvent(new CustomEvent('terminal-data-multiplex', { detail: payload }))
+        })
+        const cleanupExit = window.electron.terminal.onExit((payload) => {
+            window.dispatchEvent(new CustomEvent('terminal-exit-multiplex', { detail: payload }))
+        })
+
+        return () => {
+            if (cleanupData) cleanupData()
+            if (cleanupExit) cleanupExit()
+        }
+    }, [])
 
     // Resize logic
     useEffect(() => {
@@ -281,9 +318,6 @@ export function TerminalPanel({
             document.removeEventListener('mouseup', handleMouseUp)
         }
     }, [isResizing, onHeightChange])
-
-    // Logic for closed state handled by parent (hidden) but we can keep minimal check
-    // if (!isOpen) return null 
 
     return (
         <motion.div

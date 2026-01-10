@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, ComponentType } from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Loader2 } from 'lucide-react'
 
 // Loading skeleton component
@@ -20,7 +20,7 @@ export const CodeEditorSkeleton: React.FC = () => (
                 <div
                     key={i}
                     className="h-4 bg-[#2d2d2d] rounded animate-pulse"
-                    style={{ width: `${Math.random() * 40 + 40}%` }}
+                    style={{ width: `${(i * 17) % 40 + 40}%` }}
                 />
             ))}
         </div>
@@ -35,48 +35,52 @@ export const ChartSkeleton: React.FC = () => (
                 <div
                     key={i}
                     className="flex-1 bg-muted/20 rounded-t animate-pulse"
-                    style={{ height: `${Math.random() * 60 + 20}%` }}
+                    style={{ height: `${(i * 13) % 60 + 20}%` }}
                 />
             ))}
         </div>
     </div>
 )
 
-// Generic lazy loading wrapper
-export function withLazyLoading<T extends ComponentType<any>>(
-    importFn: () => Promise<{ default: T }>,
-    FallbackComponent: React.FC = LoadingSpinner
-): React.FC<React.ComponentProps<T>> {
-    const LazyComponent = lazy(importFn)
+// Import prop types for explicit casting
+import type { CodeEditorProps } from '@/components/ui/CodeEditor'
+import type { WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor'
+import type { SettingsPageProps } from '@/features/settings/SettingsPage'
 
-    return (props: React.ComponentProps<T>) => (
-        <Suspense fallback={<FallbackComponent />}>
-            <LazyComponent {...props} />
+/**
+ * Creates a lazily-loaded component with proper React.Suspense wrapping.
+ * 
+ * Note: React.lazy has complex typing that doesn't play well with generics.
+ * The implementations below use explicit typing for safety while avoiding `any`.
+ */
+
+// Pre-configured lazy components with explicit prop types
+export const LazyCodeEditor: React.FC<CodeEditorProps> = (props) => {
+    const Component = lazy(() => import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor })))
+    return (
+        <Suspense fallback={<CodeEditorSkeleton />}>
+            <Component {...props} />
         </Suspense>
     )
 }
 
-// Pre-configured lazy components
-export const LazyCodeEditor = withLazyLoading(
-    () => import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor })),
-    CodeEditorSkeleton
-)
-
-export const LazyWorkspaceEditor = withLazyLoading(
-    () => import('@/features/projects/components/workspace/WorkspaceEditor').then(m => ({ default: m.WorkspaceEditor })),
-    CodeEditorSkeleton
-)
+export const LazyWorkspaceEditor: React.FC<WorkspaceEditorProps> = (props) => {
+    const Component = lazy(() => import('@/features/projects/components/workspace/WorkspaceEditor').then(m => ({ default: m.WorkspaceEditor })))
+    return (
+        <Suspense fallback={<CodeEditorSkeleton />}>
+            <Component {...props} />
+        </Suspense>
+    )
+}
 
 // Settings page lazy loaded
-export const LazySettingsPage = withLazyLoading(
-    () => import('@/features/settings/SettingsPage'),
-    LoadingSpinner
-)
-
-// Gallery lazy loaded
-export const LazyGalleryView = withLazyLoading(
-    () => import('@/features/chat/components/GalleryView').then(m => ({ default: m.GalleryView })),
-    LoadingSpinner
-)
+export const LazySettingsPage: React.FC<SettingsPageProps> = (props) => {
+    const Component = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            <Component {...props} />
+        </Suspense>
+    )
+}
 
 export { LoadingSpinner }

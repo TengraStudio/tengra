@@ -3,14 +3,19 @@
  * Manages concurrent API requests with priority and throttling
  */
 
+import { CatchError } from '../../shared/types/common'
+import { getErrorMessage } from '../../shared/utils/error.util'
+
 export type Priority = 'high' | 'normal' | 'low'
+
+type QueueResult = unknown
 
 interface QueuedRequest<T> {
     id: string
     priority: Priority
     fn: () => Promise<T>
     resolve: (value: T) => void
-    reject: (error: any) => void
+    reject: (error: CatchError) => void
     createdAt: number
     provider?: string
 }
@@ -20,6 +25,7 @@ export interface QueueOptions {
     maxQueueSize?: number
     timeoutMs?: number
 }
+
 
 const DEFAULT_OPTIONS: Required<QueueOptions> = {
     maxConcurrent: 5,
@@ -34,7 +40,7 @@ const PRIORITY_ORDER: Record<Priority, number> = {
 }
 
 export class RequestQueue {
-    private queue: QueuedRequest<any>[] = []
+    private queue: QueuedRequest<QueueResult>[] = []
     private running = 0
     private readonly options: Required<QueueOptions>
     private requestId = 0
@@ -46,14 +52,14 @@ export class RequestQueue {
     /**
      * Add a request to the queue
      */
-    enqueue<T>(
+    enqueue<T extends QueueResult>(
         fn: () => Promise<T>,
         options?: {
             priority?: Priority
             provider?: string
         }
     ): Promise<T> {
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             // Check queue size limit
             if (this.queue.length >= this.options.maxQueueSize) {
                 reject(new Error('Request queue is full'))
@@ -72,7 +78,7 @@ export class RequestQueue {
 
             // Insert based on priority
             const insertIndex = this.findInsertIndex(request.priority)
-            this.queue.splice(insertIndex, 0, request)
+            this.queue.splice(insertIndex, 0, request as QueuedRequest<unknown>)
 
             // Try to process
             this.processQueue()
@@ -128,9 +134,9 @@ export class RequestQueue {
                 )
             ])
 
-            request.resolve(result)
+            request.resolve(result as T)
         } catch (error) {
-            request.reject(error)
+            request.reject(getErrorMessage(error as Error))
         }
     }
 

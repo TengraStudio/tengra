@@ -1,4 +1,4 @@
-
+import { JsonValue } from '../../shared/types/common'
 export enum LogLevel {
     DEBUG = 0,
     INFO = 1,
@@ -13,25 +13,25 @@ export class Logger {
         this.level = level
     }
 
-    static debug(context: string, message: string, ...args: any[]) {
+    static debug(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.DEBUG) {
             console.debug(`[DEBUG] [${context}] ${message}`, ...args)
         }
     }
 
-    static info(context: string, message: string, ...args: any[]) {
+    static info(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.INFO) {
             console.info(`[INFO] [${context}] ${message}`, ...args)
         }
     }
 
-    static warn(context: string, message: string, ...args: any[]) {
+    static warn(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.WARN) {
             console.warn(`[WARN] [${context}] ${message}`, ...args)
         }
     }
 
-    static error(context: string, message: string, ...args: any[]) {
+    static error(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.ERROR) {
             console.error(`[ERROR] [${context}] ${message}`, ...args)
         }

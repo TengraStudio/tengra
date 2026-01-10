@@ -7,6 +7,7 @@ import { app } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import * as http from 'http'
 import { DataService } from '../data/data.service'
+import { getErrorMessage } from '../../../shared/utils/error.util'
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -49,10 +50,9 @@ export class LlamaService {
                 this.modelsDir = join(app.getPath('userData'), 'models')
             }
 
-            if (!existsSync(this.modelsDir)) {
-                mkdirSync(this.modelsDir, { recursive: true })
-            }
+            mkdirSync(this.modelsDir, { recursive: true })
         } catch (e) {
+            console.warn('[LlamaService] Failed to setup models directory:', getErrorMessage(e as Error))
             this.modelsDir = './models'
         }
 
@@ -185,8 +185,8 @@ export class LlamaService {
             await this.stopServer()
             return { success: false, error: 'llama-server başlatılamadı (timeout)' }
 
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
@@ -258,7 +258,7 @@ export class LlamaService {
                                         fullResponse += content
                                         onToken(content)
                                     }
-                                } catch (e) { }
+                                } catch { /* ignore parse error in stream */ }
                             }
                         }
                     } else {
@@ -275,7 +275,7 @@ export class LlamaService {
                             const content = result.choices?.[0]?.message?.content || ''
                             resolve({ success: true, response: content })
                         } catch (e) {
-                            resolve({ success: false, error: 'Invalid response' })
+                            resolve({ success: false, error: `Invalid response: ${getErrorMessage(e as Error)}` })
                         }
                     }
                 })
@@ -318,7 +318,7 @@ export class LlamaService {
                         const json = JSON.parse(data)
                         resolve(json.data[0].embedding)
                     } catch (e) {
-                        reject(new Error('Failed to parse llama-server embeddings response'))
+                        reject(new Error(`Failed to parse llama-server embeddings response: ${getErrorMessage(e as Error)}`))
                     }
                 })
             })
@@ -366,7 +366,7 @@ export class LlamaService {
                 }
             }
         } catch (e) {
-            console.error('Error reading models directory:', e)
+            console.error('Error reading models directory:', getErrorMessage(e as Error))
         }
 
         return models
@@ -388,7 +388,7 @@ export class LlamaService {
             const protocol = url.startsWith('https') ? https : httpModule
 
             const download = (downloadUrl: string) => {
-                protocol.get(downloadUrl, (response: any) => {
+                protocol.get(downloadUrl, (response: http.IncomingMessage) => {
                     if (response.statusCode === 302 || response.statusCode === 301) {
                         const redirectUrl = response.headers.location
                         if (redirectUrl) {
@@ -437,8 +437,8 @@ export class LlamaService {
                 await fs.unlink(modelPath)
             }
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 

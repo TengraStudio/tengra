@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 // import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Sparkles, Play, RefreshCw, Clock, CheckCircle2, Pause } from 'lucide-react'
 // import { ModelSelector } from '@/features/models/components/ModelSelector'
@@ -7,42 +7,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { AgentChatRoom } from './AgentChatRoom'
 
-interface AgentDashboardProps {
-    groupedModels: any
-    models: any[]
-}
+import { CouncilSession, AgentDefinition } from '../../../shared/types/agent'
 
-export const AgentDashboard: React.FC<AgentDashboardProps> = () => {
+export const AgentDashboard: React.FC = () => {
     const [goal, setGoal] = useState('')
-    const [sessions, setSessions] = useState<any[]>([])
+    const [sessions, setSessions] = useState<CouncilSession[]>([])
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-    const [activeSession, setActiveSession] = useState<any | null>(null)
+    const [activeSession, setActiveSession] = useState<CouncilSession | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isRunning, setIsRunning] = useState(false)
     const logEndRef = useRef<HTMLDivElement>(null)
 
-    // Load sessions on mount
-    useEffect(() => {
-        loadSessions()
-    }, [])
-
-    // Poll active session details
-    useEffect(() => {
-        let interval: NodeJS.Timeout
-        if (activeSessionId) {
-            loadSession(activeSessionId)
-            interval = setInterval(() => loadSession(activeSessionId), 1000)
-        }
-        return () => clearInterval(interval)
-    }, [activeSessionId])
-
-    useEffect(() => {
-        if (logEndRef.current) {
-            logEndRef.current.scrollIntoView({ behavior: 'smooth' })
-        }
-    }, [activeSession?.logs?.length])
-
-    const loadSessions = async () => {
+    const loadSessions = useCallback(async () => {
         try {
             const list = await window.electron.council.getSessions()
             setSessions(list || [])
@@ -53,20 +29,40 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = () => {
         } catch (error) {
             console.error('Failed to load sessions:', error)
         }
-    }
+    }, [activeSessionId])
 
-    const loadSession = async (id: string) => {
+    const loadSession = useCallback(async (id: string) => {
         try {
             const session = await window.electron.council.getSession(id)
             setActiveSession(session)
-            // Auto stop if done
-            if (session.status === 'completed' || session.status === 'failed') {
+            if (session && (session.status === 'completed' || session.status === 'failed')) {
                 setIsRunning(false)
             }
         } catch (error) {
             console.error('Failed to load session:', error)
         }
-    }
+    }, [])
+
+    // Load sessions on mount
+    useEffect(() => {
+        loadSessions()
+    }, [loadSessions])
+
+    // Poll active session details
+    useEffect(() => {
+        let interval: NodeJS.Timeout
+        if (activeSessionId) {
+            loadSession(activeSessionId)
+            interval = setInterval(() => loadSession(activeSessionId), 1000)
+        }
+        return () => clearInterval(interval)
+    }, [activeSessionId, loadSession])
+
+    useEffect(() => {
+        if (logEndRef.current) {
+            logEndRef.current.scrollIntoView({ behavior: 'smooth' })
+        }
+    }, [activeSession?.logs?.length])
 
     const handleCreateSession = async () => {
         if (!goal.trim()) return
@@ -195,7 +191,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = () => {
                                 <div className="bg-card/50 border border-border/40 rounded-xl p-4">
                                     <div className="text-xs text-muted-foreground uppercase">Active Agents</div>
                                     <div className="flex -space-x-2 mt-2">
-                                        {activeSession.agents?.map((agent: any) => (
+                                        {activeSession.agents?.map((agent: AgentDefinition) => ( // Explicit type if needed or infer
                                             <div key={agent.id} className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-950 flex items-center justify-center text-xs font-bold" title={agent.name}>
                                                 {agent.name[0]}
                                             </div>

@@ -1,4 +1,4 @@
-
+import { CatchError, JsonValue } from '../../shared/types/common'
 export enum AppErrorCode {
     UNKNOWN = 'UNKNOWN',
     NETWORK_ERROR = 'NETWORK_ERROR',
@@ -17,9 +17,9 @@ export enum AppErrorCode {
 export abstract class OrbitError extends Error {
     public readonly timestamp: string;
     public readonly code: AppErrorCode;
-    public readonly context?: Record<string, any>;
+    public readonly context?: Record<string, JsonValue | Error>;
 
-    constructor(message: string, code: AppErrorCode = AppErrorCode.UNKNOWN, context?: Record<string, any>) {
+    constructor(message: string, code: AppErrorCode = AppErrorCode.UNKNOWN, context?: Record<string, JsonValue | Error>) {
         super(message);
         this.name = this.constructor.name;
         this.code = code;
@@ -50,7 +50,7 @@ export class ApiError extends OrbitError {
     public readonly provider: string;
     public readonly retryable: boolean;
 
-    constructor(message: string, provider: string, statusCode?: number, retryable: boolean = true, context?: Record<string, any>) {
+    constructor(message: string, provider: string, statusCode?: number, retryable: boolean = true, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.API_ERROR, context);
         this.provider = provider;
         this.statusCode = statusCode;
@@ -62,7 +62,7 @@ export class ApiError extends OrbitError {
  * Thrown when a network request fails due to connectivity issues.
  */
 export class NetworkError extends OrbitError {
-    constructor(message: string, context?: Record<string, any>) {
+    constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.NETWORK_ERROR, context);
     }
 }
@@ -71,7 +71,7 @@ export class NetworkError extends OrbitError {
  * Thrown when authentication fails (local or remote).
  */
 export class AuthenticationError extends OrbitError {
-    constructor(message: string, context?: Record<string, any>) {
+    constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.AUTH_ERROR, context);
     }
 }
@@ -80,7 +80,7 @@ export class AuthenticationError extends OrbitError {
  * Thrown when input validation or configuration check fails.
  */
 export class ValidationError extends OrbitError {
-    constructor(message: string, context?: Record<string, any>) {
+    constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.VALIDATION_ERROR, context);
     }
 }
@@ -88,6 +88,6 @@ export class ValidationError extends OrbitError {
 /**
  * Helper to check if an error is an OrbitError.
  */
-export function isOrbitError(error: unknown): error is OrbitError {
+export function isOrbitError(error: CatchError): error is OrbitError {
     return error instanceof OrbitError;
 }

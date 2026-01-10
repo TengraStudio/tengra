@@ -1,8 +1,9 @@
-import { app, BrowserWindow, shell, protocol } from 'electron'
+import { app, BrowserWindow, shell, protocol, HandlerDetails } from 'electron'
 import { join } from 'path'
 import * as path from 'path'
+import * as fs from 'fs'
 
-import { createServices } from './startup/services'
+import { createServices, container } from './startup/services'
 import { McpDispatcher } from './mcp/dispatcher'
 import { appLogger, LogLevel } from './logging/logger'
 
@@ -70,13 +71,12 @@ function createWindow(): BrowserWindow {
 
     win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
         const levels = ['debug', 'info', 'warn', 'error']
-        const lvl = levels[level] || 'info'
+        const lvl = levels[level] as 'debug' | 'info' | 'warn' | 'error'
         const context = `renderer:${path.basename(sourceId)}:${line}`
-        // @ts-ignore
         appLogger[lvl](context, message)
     })
 
-    win.webContents.setWindowOpenHandler((details: any) => {
+    win.webContents.setWindowOpenHandler((details: HandlerDetails) => {
         shell.openExternal(details.url)
         return { action: 'deny' }
     })
@@ -103,8 +103,6 @@ app.whenReady().then(async () => {
     app.setPath('userData', runtimePath)
 
     // Migration from orbit-ai to Orbit
-    const fs = require('fs')
-    const path = require('path')
     const oldPath = path.join(app.getPath('appData'), 'orbit-ai')
     const newPath = app.getPath('userData') // This should now point to Orbit due to app.name change
 
@@ -149,6 +147,12 @@ app.whenReady().then(async () => {
     })
 
     const services = await createServices(allowedFileRoots)
+    console.log(`[Main] !!! createServices completed.`);
+    if (services.settingsService['authService']) {
+        const tokens = services.settingsService['authService'].getAllTokens();
+        console.log(`[Main] !!! AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`);
+    }
+
     await services.databaseService.initialize()
     await services.proxyService.startEmbeddedProxy()
 
@@ -157,18 +161,18 @@ app.whenReady().then(async () => {
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
         command: services.commandService,
-        web: services.utilityService as any,
+        web: services.webService,
         screenshot: services.screenshotService,
         system: services.systemService,
         network: services.networkService,
         notification: services.notificationService,
         docker: services.dockerService,
         ssh: services.sshService,
-        scanner: services.monitoringService as any,
+        scanner: services.scannerService,
         embedding: services.embeddingService,
         utility: services.utilityService,
         content: services.contentService,
-        file: services.fileSystemService as any,
+        file: services.fileManagementService,
         monitor: services.monitoringService,
         clipboard: services.clipboardService,
         git: services.gitService,
@@ -184,9 +188,11 @@ app.whenReady().then(async () => {
 
     // Initialize Copilot Token
     const settings = services.settingsService.getSettings()
-    const validToken = settings.copilot?.token || settings.github?.token
-    if (validToken) {
-        services.copilotService.setGithubToken(validToken)
+    console.log(`[Main] !!! settings.github.token length: ${settings.github?.token?.length || 0}`);
+    console.log(`[Main] !!! settings.copilot.token length: ${settings.copilot?.token?.length || 0}`);
+    const copilotToken = settings.copilot?.token || settings.github?.token
+    if (copilotToken) {
+        services.copilotService.setGithubToken(copilotToken)
     }
 
     // Sync proxy settings to LLMService
@@ -215,7 +221,7 @@ app.whenReady().then(async () => {
         llamaService: services.llamaService
     })
 
-    registerProjectIpc(services.projectService, services.logoService, services.codeIntelligenceService)
+    registerProjectIpc(() => mainWindow, services.projectService, services.logoService, services.codeIntelligenceService)
     registerAgentIpc(services.agentService)
     registerProcessIpc(services.processService)
     setupProcessEvents(services.processService)
@@ -292,6 +298,10 @@ app.on('before-quit', async () => {
             global.gc()
             console.log('[Main] Manual GC triggered')
         }
+
+        await container.dispose();
+        console.log('[Main] Services disposed gracefully');
+
     } catch (e) {
         console.error('[Main] Cleanup error:', e)
     }

@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as https from 'https'
 import { createWriteStream } from 'fs'
 import { ServiceResponse } from '../../../shared/types/index'
+import { getErrorMessage } from '../../../shared/utils/error.util'
 
 export class FileSystemService {
     private allowedRoots: string[] = []
@@ -44,7 +45,7 @@ export class FileSystemService {
 
     // --- Core Operations ---
 
-    async readFile(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+    async readFile(filePath: string): Promise<ServiceResponse<string>> {
         try {
             this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
@@ -67,13 +68,13 @@ export class FileSystemService {
             }
 
             const content = await fs.readFile(absolutePath, 'utf-8')
-            return { success: true, content }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            return { success: true, data: content }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async readImage(filePath: string): Promise<{ success: boolean; content?: string; error?: string }> {
+    async readImage(filePath: string): Promise<ServiceResponse<string>> {
         try {
             this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
@@ -92,9 +93,9 @@ export class FileSystemService {
             if (ext === '.webp') mime = 'image/webp'
             if (ext === '.svg') mime = 'image/svg+xml'
 
-            return { success: true, content: `data:${mime};base64,${base64}` }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            return { success: true, data: `data:${mime};base64,${base64}` }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
@@ -116,7 +117,7 @@ export class FileSystemService {
         }
     }
 
-    async writeFile(filePath: string, content: string): Promise<{ success: boolean; error?: string }> {
+    async writeFile(filePath: string, content: string): Promise<ServiceResponse> {
         try {
             this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
@@ -124,12 +125,12 @@ export class FileSystemService {
             await fs.mkdir(dir, { recursive: true })
             await fs.writeFile(absolutePath, content, 'utf-8')
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async listDirectory(dirPath: string): Promise<{ success: boolean; files?: any[]; error?: string }> {
+    async listDirectory(dirPath: string): Promise<ServiceResponse<Array<{ name: string; isDirectory: boolean; size?: number; modified?: string }>>> {
         try {
             this.validatePath(dirPath)
             const absolutePath = path.resolve(dirPath)
@@ -141,12 +142,14 @@ export class FileSystemService {
                 filteredEntries.map(async (entry) => {
                     const entryPath = path.join(absolutePath, entry.name)
                     let size: number | undefined
-                    let modified: Date | undefined
+                    let modified: string | undefined
                     try {
                         const stats = await fs.stat(entryPath)
                         size = stats.size
-                        modified = stats.mtime
-                    } catch { }
+                        modified = stats.mtime.toISOString()
+                    } catch (e) {
+                        console.error(`Failed to stat ${entryPath}:`, e)
+                    }
                     return {
                         name: entry.name,
                         isDirectory: entry.isDirectory(),
@@ -155,40 +158,40 @@ export class FileSystemService {
                     }
                 })
             )
-            return { success: true, files }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            return { success: true, data: files }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async createDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
+    async createDirectory(dirPath: string): Promise<ServiceResponse> {
         try {
             this.validatePath(dirPath)
             const absolutePath = path.resolve(dirPath)
             await fs.mkdir(absolutePath, { recursive: true })
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async deleteFile(filePath: string): Promise<{ success: boolean; error?: string }> {
+    async deleteFile(filePath: string): Promise<ServiceResponse> {
         try {
             this.validatePath(filePath)
             await fs.unlink(path.resolve(filePath))
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async deleteDirectory(dirPath: string): Promise<{ success: boolean; error?: string }> {
+    async deleteDirectory(dirPath: string): Promise<ServiceResponse> {
         try {
             this.validatePath(dirPath)
             await fs.rm(path.resolve(dirPath), { recursive: true, force: true })
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
@@ -201,40 +204,40 @@ export class FileSystemService {
         }
     }
 
-    async getFileInfo(filePath: string): Promise<{ success: boolean; info?: any; error?: string }> {
+    async getFileInfo(filePath: string): Promise<ServiceResponse<{ path: string; size: number; isDirectory: boolean; isFile: boolean; created: string; modified: string; accessed: string }>> {
         try {
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
             return {
                 success: true,
-                info: {
+                data: {
                     path: absolutePath,
                     size: stats.size,
                     isDirectory: stats.isDirectory(),
                     isFile: stats.isFile(),
-                    created: stats.birthtime,
-                    modified: stats.mtime,
-                    accessed: stats.atime
+                    created: stats.birthtime.toISOString(),
+                    modified: stats.mtime.toISOString(),
+                    accessed: stats.atime.toISOString()
                 }
             }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async copyFile(source: string, destination: string): Promise<{ success: boolean; error?: string }> {
+    async copyFile(source: string, destination: string): Promise<ServiceResponse> {
         try {
             const srcPath = path.resolve(source)
             const destPath = path.resolve(destination)
             await fs.mkdir(path.dirname(destPath), { recursive: true })
             await fs.copyFile(srcPath, destPath)
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async moveFile(source: string, destination: string): Promise<{ success: boolean; error?: string }> {
+    async moveFile(source: string, destination: string): Promise<ServiceResponse> {
         try {
             this.validatePath(source)
             this.validatePath(destination)
@@ -243,8 +246,8 @@ export class FileSystemService {
             await fs.mkdir(path.dirname(destPath), { recursive: true })
             await fs.rename(srcPath, destPath)
             return { success: true }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
@@ -264,9 +267,9 @@ export class FileSystemService {
                     current = ""
                 }
             }
-            return { success: true, result: { strings } }
-        } catch (e: any) {
-            return { success: false, error: e.message }
+            return { success: true, data: { strings } }
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 
@@ -275,9 +278,9 @@ export class FileSystemService {
             const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`
             const fullPath = path.join(dir, fileName)
             await fs.writeFile(fullPath, content)
-            return { success: true, result: { path: fullPath } }
-        } catch (e: any) {
-            return { success: false, error: e.message }
+            return { success: true, data: { path: fullPath } }
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 
@@ -314,8 +317,8 @@ export class FileSystemService {
                     else resolve({ success: false, error: error || `Exit code ${code}` })
                 })
             })
-        } catch (e: any) {
-            return { success: false, error: e.message }
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 
@@ -331,8 +334,8 @@ export class FileSystemService {
                 }
             }
             return { success: true, message: `${count} files renamed.` }
-        } catch (e: any) {
-            return { success: false, error: e.message }
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 
@@ -351,67 +354,77 @@ export class FileSystemService {
             return {
                 success: true,
                 message: `Watching ${dir} for changes...`,
-                result: { close: () => watcher.close() }
+                data: { close: () => watcher.close() }
             }
-        } catch (e: any) {
-            return { success: false, error: e.message }
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) }
         }
     }
 
     async downloadFile(url: string, destPath: string): Promise<ServiceResponse<{ path: string }>> {
         return new Promise((resolve) => {
             const file = createWriteStream(destPath)
-            https.get(url, (response: any) => {
+            https.get(url, (response: import('http').IncomingMessage) => {
                 response.pipe(file)
                 file.on('finish', () => {
                     file.close()
-                    resolve({ success: true, result: { path: destPath } })
+                    resolve({ success: true, data: { path: destPath } })
                 })
-            }).on('error', (err: any) => {
+            }).on('error', (err: Error) => {
                 fs.unlink(destPath).catch(() => { })
                 resolve({ success: false, error: err.message })
             })
         })
     }
 
-    async getFileHash(filePath: string, algorithm: 'md5' | 'sha1' | 'sha256' = 'sha256'): Promise<{ success: boolean; hash?: string; error?: string }> {
+    async getFileHash(filePath: string, algorithm: 'md5' | 'sha1' | 'sha256' = 'sha256'): Promise<ServiceResponse<string>> {
         try {
             const { createHash } = await import('crypto')
             const content = await fs.readFile(path.resolve(filePath))
             const hash = createHash(algorithm).update(content).digest('hex')
-            return { success: true, hash }
-        } catch (error: any) {
-            return { success: false, error: error.message }
+            return { success: true, data: hash }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async searchFiles(rootPath: string, pattern: string): Promise<{ success: boolean; files?: string[]; error?: string }> {
+    async searchFiles(rootPath: string, pattern: string): Promise<ServiceResponse<string[]>> {
         try {
             const results: string[] = []
-            const walk = async (dir: string) => {
+            await this.searchFilesStream(rootPath, pattern, (path) => results.push(path))
+            return { success: true, data: results }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
+        }
+    }
+
+    async searchFilesStream(rootPath: string, pattern: string, onResult: (path: string) => void): Promise<void> {
+        const walk = async (dir: string) => {
+            try {
                 const entries = await fs.readdir(dir, { withFileTypes: true })
                 for (const entry of entries) {
                     const full = path.join(dir, entry.name)
+                    if (this.shouldIgnore(full)) continue
+
                     if (entry.isDirectory()) {
-                        if (entry.name !== 'node_modules' && entry.name !== '.git') await walk(full)
+                        await walk(full)
                     } else if (entry.name.includes(pattern)) {
-                        results.push(full)
+                        onResult(full)
                     }
                 }
+            } catch {
+                // Ignore access errors during search
             }
-            await walk(path.resolve(rootPath))
-            return { success: true, files: results }
-        } catch (error: any) {
-            return { success: false, error: error.message }
         }
+        await walk(path.resolve(rootPath))
     }
 
-    async applyEdits(path: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
+    async applyEdits(filePath: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
         try {
-            const result = await this.readFile(path)
-            if (!result.success || !result.content) return { success: false, error: result.error || 'File read failed' }
+            const result = await this.readFile(filePath)
+            if (!result.success || !result.data) return { success: false, error: result.error || 'File read failed' }
 
-            const lines = result.content.split('\n');
+            const lines = result.data.split('\n');
             const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine);
 
             for (const edit of sortedEdits) {
@@ -425,10 +438,10 @@ export class FileSystemService {
             }
 
             const newContent = lines.join('\n');
-            await this.writeFile(path, newContent);
-            return { success: true, message: `Applied ${edits.length} edits to ${path}` };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+            await this.writeFile(filePath, newContent);
+            return { success: true, message: `Applied ${edits.length} edits to ${filePath}` };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 }

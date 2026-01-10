@@ -39,7 +39,7 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
     const handleSuggestIdeas = async () => {
         setIsAnalyzing(true)
         try {
-            const result = await (window.electron as any).project.analyzeIdentity(project.path)
+            const result = await window.electron.project.analyzeIdentity(project.path)
             setSuggestedIdeas(result.suggestedPrompts || [])
             setSuggestedColors(result.colors || [])
         } catch (error) {
@@ -53,7 +53,7 @@ export const ProjectSettingsView: React.FC<ProjectSettingsViewProps> = ({
         if (!logoPrompt) return
         setIsGenerating(true)
         try {
-            const logoPath = await (window.electron as any).project.generateLogo(project.path, logoPrompt, logoStyle)
+            const logoPath = await window.electron.project.generateLogo(project.path, logoPrompt, logoStyle)
             setGeneratedLogo(logoPath)
         } catch (error) {
             console.error('Logo generation failed:', error)

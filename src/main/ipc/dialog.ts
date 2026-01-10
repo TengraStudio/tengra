@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import * as fs from 'fs'
 
 export function registerDialogIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.handle('dialog:selectDirectory', async () => {
@@ -20,7 +21,7 @@ export function registerDialogIpc(getMainWindow: () => BrowserWindow | null) {
             defaultPath: filename
         })
         if (filePath) {
-            require('fs').writeFileSync(filePath, content)
+            fs.writeFileSync(filePath, content)
             return { success: true, path: filePath }
         }
         return { success: false, error: 'Canceled' }

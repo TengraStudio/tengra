@@ -3,7 +3,7 @@ import LogoAntigravity from '@/assets/antigravity.svg'
 import LogoClaude from '@/assets/claude.svg'
 import LogoOllama from '@/assets/ollama.svg'
 import LogoOpenAI from '@/assets/chatgpt.svg'
-import LogoGemini from '@/assets/gemini.png'
+
 import LogoCopilot from '@/assets/copilot.png'
 
 interface AssistantIdentityProps {
@@ -23,13 +23,12 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
         ? 'openai'
         : modelName.startsWith('claude-')
             ? 'anthropic'
-            : modelName.startsWith('gemini-')
-                ? 'gemini'
-                : modelName.startsWith('grok-')
-                    ? 'groq'
-                    : modelName.startsWith('antigravity-')
-                        ? 'antigravity'
-                        : ''
+
+            : modelName.startsWith('grok-')
+                ? 'groq'
+                : modelName.startsWith('antigravity-')
+                    ? 'antigravity'
+                    : ''
 
     const p = (provider || backend || inferredProvider || 'ollama').toLowerCase()
 
@@ -51,14 +50,7 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
         )
     }
 
-    // Google / Gemini
-    if (p.includes('gemini')) {
-        return (
-            <div className="w-6 h-6 rounded-md border border-border/50 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" title="Gemini">
-                <img src={LogoGemini} className="w-full h-full object-cover opacity-70" alt="Gemini" />
-            </div>
-        )
-    }
+
 
     // Local Model Families
     if (modelName.includes('llama')) {

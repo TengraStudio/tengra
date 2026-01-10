@@ -37,8 +37,9 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             if (result.stdout) {
                 await generateCommitMessage(result.stdout)
             }
-        } catch (err: any) {
-            setError(err.message || t('git.error'))
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : t('git.error')
+            setError(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -58,7 +59,7 @@ ${truncatedDiff}
 Commit message:`
 
             const stream = chatStream(
-                [{ role: 'user', content: prompt }],
+                [{ role: 'user', content: prompt, id: 'temp-git', timestamp: new Date() }],
                 'llama3.2', // Use local Ollama model as requested
                 [],
                 'ollama'
@@ -74,7 +75,7 @@ Commit message:`
             if (response.content) {
                 setSuggestion(response.content.trim().replace(/^["']|["']$/g, ''))
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to generate commit message:', err)
             setSuggestion('feat: update code') // Fallback
         }
@@ -103,8 +104,9 @@ Commit message:`
             }
             // Success - close the modal
             onClose?.()
-        } catch (err: any) {
-            setError(err.message || t('git.error'))
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : t('git.error')
+            setError(errorMessage)
         }
     }
 

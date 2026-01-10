@@ -1,19 +1,16 @@
 /**
- * Utility functions for parsing AI responses from various providers
+ * Utility functions for parsing AI responses from various formats
  */
+
+import { JsonObject, JsonValue } from '../../shared/types/common'
+
+const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
  * Parse content from various API response formats
- * Handles:
- * - Standard OpenAI format: {choices: [{message: {content: '...'}}]}
- * - Copilot new format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
- * - Direct string content
- * - Nested JSON in strings
- * 
- * @param response - The response object or string to parse
- * @returns The extracted text content
  */
-export function parseAIResponseContent(response: any): string {
+export function parseAIResponseContent(response: JsonValue | undefined): string {
     if (!response) return ''
 
     // If response is a string, try to parse it
@@ -22,7 +19,7 @@ export function parseAIResponseContent(response: any): string {
         // Check if it looks like JSON
         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
             try {
-                const parsed = JSON.parse(trimmed)
+                const parsed = JSON.parse(trimmed) as JsonValue
                 return parseAIResponseContent(parsed)
             } catch {
                 // Not valid JSON, return as-is
@@ -40,64 +37,81 @@ export function parseAIResponseContent(response: any): string {
             .join('')
     }
 
+    if (!isJsonObject(response)) return ''
+    const res = response
+
     // Handle new Copilot format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
-    if (response.type === 'message' && Array.isArray(response.content)) {
-        return response.content
-            .filter((item: any) => item.type === 'output_text' || item.text)
-            .map((item: any) => item.text || '')
+    if (res.type === 'message' && Array.isArray(res.content)) {
+        return res.content
+            .filter((item) => isJsonObject(item) && (item.type === 'output_text' || item.text))
+            .map((item) => (isJsonObject(item) && typeof item.text === 'string' ? item.text : ''))
             .join('')
     }
 
     // Handle content array directly
-    if (Array.isArray(response.content)) {
-        return response.content
-            .filter((item: any) => item.type === 'output_text' || item.text || typeof item === 'string')
-            .map((item: any) => {
+    if (Array.isArray(res.content)) {
+        return res.content
+            .filter((item) => {
+                if (!item) return false
+                if (typeof item === 'string') return true
+                return isJsonObject(item) && (item.type === 'output_text' || item.text)
+            })
+            .map((item) => {
                 if (typeof item === 'string') return item
-                return item.text || ''
+                if (!isJsonObject(item)) return ''
+                return typeof item.text === 'string' ? item.text : ''
             })
             .join('')
     }
 
     // Handle standard OpenAI format
-    if (response.choices && response.choices[0]?.message?.content) {
-        return response.choices[0].message.content
+    if (res.choices && Array.isArray(res.choices)) {
+        const choice = res.choices[0]
+        const message = isJsonObject(choice) ? choice.message : undefined
+        if (isJsonObject(message) && typeof message.content === 'string') {
+            return message.content
+        }
     }
 
     // Handle message wrapper
-    if (response.message?.content) {
-        return parseAIResponseContent(response.message.content)
+    if (res.message && typeof res.message === 'object') {
+        const m = isJsonObject(res.message) ? res.message : undefined
+        if (m?.content !== undefined) {
+            return parseAIResponseContent(m.content)
+        }
     }
 
     // Handle output_text directly
-    if (response.output_text) {
-        return response.output_text
+    if (typeof res.output_text === 'string') {
+        return res.output_text
     }
 
     // Handle direct content string
-    if (typeof response.content === 'string') {
+    if (typeof res.content === 'string') {
         // Check if content is nested JSON
-        const c = response.content.trim()
+        const c = res.content.trim()
         if (c.startsWith('{') && c.includes('"content"')) {
             try {
                 const parsed = JSON.parse(c)
                 return parseAIResponseContent(parsed)
-            } catch { }
+            } catch {
+                // Fallback to raw content if parsing fails
+            }
         }
         return c
     }
 
     // Handle output array (some response formats)
-    if (Array.isArray(response.output)) {
-        return response.output
-            .filter((item: any) => item.type === 'output_text' || item.text)
-            .map((item: any) => item.text || '')
+    if (Array.isArray(res.output)) {
+        return res.output
+            .filter((item) => isJsonObject(item) && (item.type === 'output_text' || item.text))
+            .map((item) => (isJsonObject(item) && typeof item.text === 'string' ? item.text : ''))
             .join('')
     }
 
     // Fallback - if nothing else works
-    if (response.text) return response.text
-    if (response.role === 'assistant' && !response.content) return ''
+    if (typeof res.text === 'string') return res.text
+    if (res.role === 'assistant' && !res.content) return ''
 
     return ''
 }
@@ -105,17 +119,21 @@ export function parseAIResponseContent(response: any): string {
 /**
  * Check if a response contains a reasoning block
  */
-export function extractReasoning(response: any): { reasoning: string | null, content: string } {
+export function extractReasoning(response: JsonValue | undefined): { reasoning: string | null, content: string } {
     const content = parseAIResponseContent(response)
 
-    // Check for reasoning in the response object
-    if (response?.reasoning) {
-        return { reasoning: response.reasoning, content }
-    }
+    if (isJsonObject(response)) {
+        const res = response
 
-    // Check for summary field (some formats use this for reasoning)
-    if (response?.summary && Array.isArray(response.summary) && response.summary.length > 0) {
-        return { reasoning: response.summary.join('\n'), content }
+        // Check for reasoning in the response object
+        if (typeof res.reasoning === 'string') {
+            return { reasoning: res.reasoning, content }
+        }
+
+        // Check for summary field (some formats use this for reasoning)
+        if (Array.isArray(res.summary) && res.summary.length > 0) {
+            return { reasoning: res.summary.filter((item): item is string => typeof item === 'string').join('\n'), content }
+        }
     }
 
     return { reasoning: null, content }

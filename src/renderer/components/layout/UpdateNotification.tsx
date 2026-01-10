@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react'
+import type { IpcRendererEvent } from 'electron'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react'
 
@@ -18,7 +19,7 @@ export const UpdateNotification: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
-        const handleUpdateStatus = (_event: any, newStatus: UpdateStatus) => {
+        const handleUpdateStatus = (_event: IpcRendererEvent, newStatus: UpdateStatus) => {
             console.log('Update status received:', newStatus)
             setStatus(newStatus)
 
