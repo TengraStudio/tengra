@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, isValidElement } from 'react'
+import React, { useState, useEffect, useMemo, isValidElement } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -8,6 +8,7 @@ import mermaid from 'mermaid'
 import { Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MonacoBlock } from './MonacoBlock'
+import { useTranslation, Language } from '@/i18n'
 
 // Initialize mermaid
 mermaid.initialize({
@@ -47,6 +48,7 @@ interface MarkdownRendererProps {
     onStop?: () => void
     onCodeConvert?: (imageUrl: string) => void
     isUser?: boolean
+    language?: Language
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
@@ -55,8 +57,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     onSpeak,
     onStop,
     onCodeConvert,
-    isUser
+    isUser,
+    language = 'en'
 }) => {
+    const { t } = useTranslation(language)
     return (
         <div className="markdown-body">
             <ReactMarkdown
@@ -80,6 +84,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                                 isSpeaking={isSpeaking}
                                 onSpeak={() => onSpeak?.(codeString)}
                                 onStop={onStop}
+                                i18nLanguage={language}
                             />
                         )
                     },
@@ -96,7 +101,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                                     className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
-                                    Koda Çevir
+                                    {t('workspace.convertToCode')}
                                 </button>
                             )}
                         </span>

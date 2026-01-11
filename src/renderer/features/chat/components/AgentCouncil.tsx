@@ -1,11 +1,8 @@
-﻿import { useState, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@renderer/components/ui/card'
-import { Button } from '@renderer/components/ui/button'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import { Badge } from '@renderer/components/ui/badge'
-import { Brain, Terminal, User, Play } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Brain, Terminal, User, Play, Loader2, AlertCircle } from 'lucide-react'
 import { JsonValue } from '../../../../shared/types/common'
 import { getErrorMessage } from '../../../../shared/utils/error.util'
+import { cn } from '@/lib/utils'
 
 // Types aligned with backend CouncilSession
 interface AgentConfig {
@@ -34,41 +31,92 @@ interface LocalCouncilSession {
     logs: LogEntry[]
 }
 
-const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) => (
-    <Card className={`w-64 transition-all duration-300 ${active ? 'ring-2 ring-primary border-primary' : 'opacity-80'}`}>
-        <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                        <User className="w-4 h-4" />
+const statusConfig = {
+    planning: { label: 'Planning', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+    working: { label: 'Working', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+    reviewing: { label: 'Reviewing', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+    waiting_for_approval: { label: 'Waiting for Approval', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    completed: { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    failed: { label: 'Failed', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' }
+}
+
+const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) => {
+    const statusColors = {
+        thinking: 'bg-blue-500',
+        working: 'bg-amber-500',
+        waiting: 'bg-zinc-500'
+    }
+
+    return (
+        <div
+            className={cn(
+                "relative flex flex-col gap-3 p-4 rounded-xl border transition-all duration-300",
+                "bg-card/50 backdrop-blur-sm",
+                active
+                    ? "border-primary/50 shadow-lg shadow-primary/5 ring-2 ring-primary/20"
+                    : "border-border/50 hover:border-border",
+                active && "scale-[1.02]"
+            )}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={cn(
+                        "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
+                        active ? "bg-primary/20" : "bg-muted/50"
+                    )}>
+                        <User className={cn("w-5 h-5", active ? "text-primary" : "text-muted-foreground")} />
+                        {active && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse ring-2 ring-background" />
+                        )}
                     </div>
-                    <div>
-                        <CardTitle className="text-sm font-bold">{agent.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{agent.role}</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className={cn(
+                            "text-sm font-semibold truncate",
+                            active ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                            {agent.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground/70 truncate mt-0.5">
+                            {agent.role}
+                        </p>
                     </div>
                 </div>
-                {active && <Badge variant="default" className="text-[10px] animate-pulse">Active</Badge>}
             </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-            <div className="flex gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline">{agent.model}</Badge>
-                <Badge variant="outline">{agent.provider}</Badge>
+
+            <div className="flex flex-wrap gap-2">
+                <span className="px-2 py-1 text-[10px] font-medium rounded-md bg-background/50 border border-border/50 text-muted-foreground">
+                    {agent.model}
+                </span>
+                <span className="px-2 py-1 text-[10px] font-medium rounded-md bg-background/50 border border-border/50 text-muted-foreground">
+                    {agent.provider}
+                </span>
+                {agent.status && (
+                    <span className={cn(
+                        "px-2 py-1 text-[10px] font-medium rounded-md flex items-center gap-1",
+                        statusColors[agent.status] || "bg-zinc-500",
+                        "text-white"
+                    )}>
+                        <div className={cn("w-1.5 h-1.5 rounded-full", statusColors[agent.status] || "bg-zinc-500")} />
+                        {agent.status}
+                    </span>
+                )}
             </div>
-        </CardContent>
-    </Card>
-)
+
+            {active && (
+                <div className="absolute inset-0 rounded-xl border-2 border-primary/30 pointer-events-none animate-pulse" />
+            )}
+        </div>
+    )
+}
 
 export const AgentCouncil = () => {
-    // const { project } = props
-    const [session] = useState<LocalCouncilSession | null>(null)
+    const [session, setSession] = useState<LocalCouncilSession | null>(null)
     const [taskInput, setTaskInput] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
 
-    // Mock data for initial dev (replace with real IPC later)
+    // TODO: Implement real IPC session updates
     useEffect(() => {
         // Listen for IPC updates
-        // Note: council.onUpdate and council.runSession are deprecated
         // if (window.electron?.council) {
         //     window.electron.council.onUpdate((data: any) => {
         //         setSession(data)
@@ -77,88 +125,178 @@ export const AgentCouncil = () => {
     }, [])
 
     const handleStart = async () => {
-        if (!taskInput) return
+        if (!taskInput.trim()) return
         setIsGenerating(true)
-        // Call backend to start council (use createSession instead)
         try {
-            await window.electron.council.createSession(taskInput)
+            const newSession = await window.electron.council.createSession(taskInput)
+            if (newSession) {
+                setSession(newSession as LocalCouncilSession)
+            }
         } catch (err) {
             console.error('Failed to create council session', getErrorMessage(err as Error))
+        } finally {
+            setIsGenerating(false)
         }
-        setIsGenerating(false)
     }
 
+    const activeAgentName = session?.logs && session.logs.length > 0 ? session.logs[session.logs.length - 1].agent : null
+    const statusInfo = session ? statusConfig[session.status] : null
+
     return (
-        <div className="h-full flex flex-col gap-4 p-4">
-            {/* Header / Control */}
-            <div className="flex justify-between items-center bg-card p-4 rounded-lg border">
+        <div className="h-full flex flex-col gap-4 p-4 md:p-6 overflow-hidden">
+            {/* Header Section - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 md:p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                    <Brain className="w-6 h-6 text-primary" />
-                    <h2 className="text-xl font-bold">Agent Council</h2>
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Brain className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg md:text-xl font-bold text-foreground">Agent Council</h2>
+                        <p className="text-xs text-muted-foreground hidden sm:block">
+                            Collaborative AI agents working together
+                        </p>
+                    </div>
                 </div>
-                {!session || session.status === 'completed' || session.status === 'failed' ? (
-                    <div className="flex gap-2 w-1/2">
+
+                {(!session || session.status === 'completed' || session.status === 'failed') ? (
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:min-w-[400px]">
                         <input
                             type="text"
                             placeholder="Describe a task for the council..."
-                            className="flex-1 px-3 py-2 bg-background border rounded-md text-sm"
+                            className="flex-1 px-4 py-2.5 bg-background/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                             value={taskInput}
                             onChange={(e) => setTaskInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !isGenerating && taskInput.trim()) {
+                                    handleStart()
+                                }
+                            }}
+                            disabled={isGenerating}
                         />
-                        <Button onClick={handleStart} disabled={isGenerating}>
-                            <Play className="w-4 h-4 mr-2" /> Start
-                        </Button>
+                        <button
+                            onClick={handleStart}
+                            disabled={isGenerating || !taskInput.trim()}
+                            className={cn(
+                                "px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all",
+                                "bg-primary text-primary-foreground hover:bg-primary/90",
+                                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary",
+                                "focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            )}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="hidden sm:inline">Starting...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-4 h-4" />
+                                    <span>Start</span>
+                                </>
+                            )}
+                        </button>
                     </div>
                 ) : (
-                    <Badge variant={(session.status as string) === 'failed' ? 'destructive' : 'secondary'}>
-                        {(session.status as string) === 'failed' ? 'FAILED' : session.status.replace(/_/g, ' ').toUpperCase()}
-                    </Badge>
+                    statusInfo && (
+                        <div className={cn(
+                            "px-4 py-2 rounded-lg border flex items-center gap-2",
+                            statusInfo.bg,
+                            statusInfo.border
+                        )}>
+                            <div className={cn("w-2 h-2 rounded-full", statusInfo.color.replace('text-', 'bg-'))} />
+                            <span className={cn("text-sm font-medium", statusInfo.color)}>
+                                {statusInfo.label}
+                            </span>
+                        </div>
+                    )
                 )}
             </div>
 
-            {/* Agent Stage */}
-            <div className="flex gap-4 overflow-x-auto pb-2">
-                {session?.agents.map(agent => (
-                    <AgentCard
-                        key={agent.id}
-                        agent={agent}
-                        active={session.logs.length > 0 && session.logs[session.logs.length - 1].agent === agent.name}
-                    />
-                ))}
-            </div>
+            {/* Agent Cards - Responsive Grid */}
+            {session?.agents && session.agents.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {session.agents.map((agent) => (
+                        <AgentCard
+                            key={agent.id}
+                            agent={agent}
+                            active={activeAgentName === agent.name}
+                        />
+                    ))}
+                </div>
+            )}
 
-            {/* Activity Stream */}
-            <Card className="flex-1 flex flex-col overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                        <Terminal className="w-4 h-4" /> Live Activity
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 p-0">
-                    <ScrollArea className="h-full p-4">
-                        <div className="space-y-4">
-                            {session?.logs.map((log, i) => (
-                                <div key={i} className={`flex gap-3 ${log.agent === 'System' ? 'opacity-70' : ''}`}>
-                                    <div className={`mt-1 min-w-[3rem] text-xs font-bold ${log.agent === 'System' ? 'text-yellow-500' : 'text-primary'}`}>
-                                        {log.agent}
+            {/* Activity Stream - Responsive */}
+            <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex items-center gap-2">
+                        <Terminal className="w-4 h-4 text-muted-foreground" />
+                        <h3 className="text-sm font-semibold text-foreground">Live Activity</h3>
+                    </div>
+                    {session?.logs && session.logs.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                            {session.logs.length} {session.logs.length === 1 ? 'entry' : 'entries'}
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    {session?.logs && session.logs.length > 0 ? (
+                        session.logs.map((log, i) => {
+                            const logType = log.type || 'chat'
+                            
+                            const typeConfig = {
+                                thought: { icon: Brain, color: 'text-blue-400', bg: 'bg-blue-500/5' },
+                                tool: { icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/5' },
+                                chat: { icon: User, color: 'text-primary', bg: 'bg-primary/5' },
+                                system: { icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-500/5' }
+                            }
+
+                            const config = typeConfig[logType] || typeConfig.chat
+                            const Icon = config.icon
+
+                            return (
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        "flex gap-3 p-3 rounded-lg border transition-all animate-in fade-in slide-in-from-bottom-2 duration-300",
+                                        config.bg,
+                                        "border-border/50 hover:border-border"
+                                    )}
+                                >
+                                    <div className={cn("flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center", config.bg)}>
+                                        <Icon className={cn("w-4 h-4", config.color)} />
                                     </div>
-                                    <div className="flex-1 bg-muted/50 p-2 rounded-md text-sm font-mono whitespace-pre-wrap">
-                                        {log.message}
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                        {new Date(log.timestamp).toLocaleTimeString()}
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={cn("text-xs font-semibold uppercase tracking-wider", config.color)}>
+                                                {log.agent}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground/60">
+                                                {new Date(log.timestamp).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words font-mono leading-relaxed">
+                                            {log.message}
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                            {!session && (
-                                <div className="text-center text-muted-foreground py-10">
-                                    No active council session. Start a task to assemble the agents.
-                                </div>
-                            )}
+                            )
+                        })
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
+                                <Brain className="w-8 h-8 text-muted-foreground/30" />
+                            </div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                                No active session
+                            </h3>
+                            <p className="text-xs text-muted-foreground/60 max-w-md">
+                                Start a task to see the council agents in action. Activity logs will appear here.
+                            </p>
                         </div>
-                    </ScrollArea>
-                </CardContent>
-            </Card>
+                    )}
+                </div>
+            </div>
         </div>
     )
 }

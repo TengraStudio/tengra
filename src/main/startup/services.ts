@@ -42,8 +42,13 @@ import { ProjectService } from '../services/project.service'
 import { LogoService } from '../services/logo.service'
 import { ProcessService } from '../services/process.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
+
+import { ContextRetrievalService } from '../services/llm/context-retrieval.service'
+import { JobSchedulerService } from '../services/job-scheduler.service'
 import { WebService } from '../services/web.service'
+import { TokenRefreshService } from '../services/token-refresh.service'
 import { MemoryService } from '../services/memory.service'
+import { UsageTrackingService } from '../services/usage-tracking.service'
 import { PageSpeedService } from '../services/pagespeed.service'
 import { RuleService } from '../services/rule.service'
 import { AgentService } from '../services/agent.service'
@@ -90,6 +95,8 @@ export interface Services {
     logoService: LogoService;
     processService: ProcessService;
     codeIntelligenceService: CodeIntelligenceService;
+    contextRetrievalService: ContextRetrievalService;
+    jobSchedulerService: JobSchedulerService;
     webService: WebService;
     memoryService: MemoryService;
     pageSpeedService: PageSpeedService;
@@ -109,6 +116,8 @@ export interface Services {
     keyRotationService: KeyRotationService;
     rateLimitService: RateLimitService;
     utilityService: UtilityService;
+    tokenRefreshService: TokenRefreshService;
+    usageTrackingService: UsageTrackingService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>) {
@@ -177,14 +186,21 @@ export async function createServices(allowedFileRoots: Set<string>) {
 
     container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
 
+    // Token Refresh Service
+    container.register('tokenRefreshService', (ss, cs, ds, sec) => new TokenRefreshService(
+        ss as SettingsService,
+        cs as CopilotService,
+        ds as DataService,
+        sec as SecurityService
+    ), ['settingsService', 'copilotService', 'dataService', 'securityService']);
+
     // Complex Helpers
-    container.register('embeddingService', (dbs, os, ls, lms, ss) => new EmbeddingService(
-        dbs as DatabaseService,
+    container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(
         os as OllamaService,
         ls as LLMService,
         lms as LlamaService,
         ss as SettingsService
-    ), ['databaseService', 'ollamaService', 'llmService', 'llamaService', 'settingsService']);
+    ), ['ollamaService', 'llmService', 'llamaService', 'settingsService']);
 
     container.register('utilityService', (dbs, scs, es) => new UtilityService(
         dbs as DatabaseService,
@@ -210,8 +226,11 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('configService', (ss) => new ConfigService(ss as SettingsService), ['settingsService']);
     container.register('keyRotationService', (ss) => new KeyRotationService(ss as SettingsService), ['settingsService']);
     container.register('rateLimitService', () => new RateLimitService());
+    container.register('usageTrackingService', () => new UsageTrackingService());
 
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
+    container.register('contextRetrievalService', (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
+    container.register('jobSchedulerService', () => new JobSchedulerService());
 
     container.register('logoService', (ls, ps) => new LogoService(ls as LLMService, ps as ProjectService), ['llmService', 'projectService']);
 
@@ -276,6 +295,8 @@ export async function createServices(allowedFileRoots: Set<string>) {
         logoService: container.resolve<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         codeIntelligenceService: container.resolve<CodeIntelligenceService>('codeIntelligenceService'),
+        contextRetrievalService: container.resolve<ContextRetrievalService>('contextRetrievalService'),
+        jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
         webService: container.resolve<WebService>('webService'),
         memoryService: container.resolve<MemoryService>('memoryService'),
         pageSpeedService: container.resolve<PageSpeedService>('pageSpeedService'),
@@ -293,7 +314,9 @@ export async function createServices(allowedFileRoots: Set<string>) {
         httpService: container.resolve<HttpService>('httpService'),
         configService: container.resolve<ConfigService>('configService'),
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
-        rateLimitService: container.resolve<RateLimitService>('rateLimitService')
+        rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
+        tokenRefreshService: container.resolve<TokenRefreshService>('tokenRefreshService'),
+        usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService')
     };
 
     healthCheckService.registerCriticalChecks({
@@ -301,6 +324,9 @@ export async function createServices(allowedFileRoots: Set<string>) {
         networkService: services.networkService
     });
     healthCheckService.start();
+
+    // Start token refresh service
+    services.tokenRefreshService.start();
 
     return services;
 }

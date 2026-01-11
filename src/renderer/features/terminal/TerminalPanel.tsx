@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, memo, useCallback } from 'react'
+import { useState, useEffect, useRef, memo, useCallback } from 'react'
 import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
@@ -10,6 +10,10 @@ import {
     Maximize2, Minimize2, TerminalSquare
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
+
+// Global registry to track initialized terminal sessions (prevents duplicate spawns across remounts)
+const initializedTerminals = new Set<string>()
+const initializingTerminals = new Set<string>()
 
 interface TerminalPanelProps {
     isOpen: boolean
@@ -40,6 +44,9 @@ const TerminalSession = memo(({
     const fitAddonRef = useRef<FitAddon | null>(null)
     const { theme } = useTheme()
     const [isReady, setIsReady] = useState(false)
+    const [hasError, setHasError] = useState(false)
+    const sessionIdRef = useRef<string | null>(null)
+    const isInitializedRef = useRef(false) // Prevent multiple initializations
 
     // Theme definitions
     const getTheme = useCallback((isDark: boolean) => ({
@@ -72,9 +79,33 @@ const TerminalSession = memo(({
         }
     }, [theme, getTheme])
 
-    // Initialize xterm
+    // Initialize xterm - only once per tab.id using global registry
     useEffect(() => {
-        if (!containerRef.current) return
+        // Use global registry to prevent duplicate sessions even across remounts
+        if (initializedTerminals.has(tab.id)) {
+            console.log(`[TerminalSession] Terminal ${tab.id} already initialized globally, skipping`)
+            return
+        }
+
+        if (initializingTerminals.has(tab.id)) {
+            console.log(`[TerminalSession] Terminal ${tab.id} is already initializing, skipping`)
+            return
+        }
+
+        if (!containerRef.current) {
+            console.log(`[TerminalSession] No container for tab ${tab.id}, skipping`)
+            return
+        }
+
+        // Prevent multiple initializations for the same tab
+        if (isInitializedRef.current) {
+            console.log(`[TerminalSession] Already initialized locally for tab ${tab.id}, skipping`)
+            return
+        }
+
+        console.log(`[TerminalSession] Initializing terminal for tab ${tab.id}`)
+        isInitializedRef.current = true
+        initializingTerminals.add(tab.id)
 
         const term = new XTerm({
             cursorBlink: true,
@@ -94,8 +125,20 @@ const TerminalSession = memo(({
         xtermRef.current = term
         fitAddonRef.current = fitAddon
 
+        let sessionCreated = false
+
         // Initialize backend session
         const initSession = async () => {
+            // Final check - if someone else initialized while we were setting up
+            if (initializedTerminals.has(tab.id)) {
+                console.warn(`[TerminalSession] Terminal ${tab.id} was initialized by another component, skipping`)
+                initializingTerminals.delete(tab.id)
+                return
+            }
+
+            // Mark that we're initializing to prevent concurrent calls
+            sessionIdRef.current = tab.id
+
             // Give a moment for the DOM to settle
             await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -104,49 +147,107 @@ const TerminalSession = memo(({
                     fitAddon.fit()
                 }
             } catch (e) {
-                console.warn('Initial terminal fit failed', e)
+                console.warn('[TerminalSession] Initial terminal fit failed', e)
             }
 
             const cols = term.cols || 80
             const rows = term.rows || 24
 
-            await window.electron.terminal.create({
-                id: tab.id,
-                shell: tab.type,
-                cwd: projectPath,
-                cols,
-                rows
-            })
+            try {
+                // Check if terminal service is available
+                const isAvailable = await window.electron.terminal.isAvailable()
+                if (!isAvailable) {
+                    term.write('\r\n\x1b[31m[ERROR] Terminal service is not available. Please ensure node-pty is installed.\x1b[0m\r\n')
+                    console.error('[TerminalSession] Terminal service not available')
+                    sessionIdRef.current = null
+                    initializingTerminals.delete(tab.id)
+                    return
+                }
 
-            // Hook up resize
-            term.onResize((size) => {
-                window.electron.terminal.resize(tab.id, size.cols, size.rows)
-            })
+                // Create the terminal session
+                console.log(`[TerminalSession] Creating terminal session: ${tab.id}`)
+                const result = await window.electron.terminal.create({
+                    id: tab.id,
+                    shell: tab.type,
+                    cwd: projectPath,
+                    cols,
+                    rows
+                })
 
-            // Hook up data input
-            term.onData((data) => {
-                window.electron.terminal.write(tab.id, data)
-            })
+                if (!result.success) {
+                    const errorMsg = result.error || 'Failed to create terminal session'
+                    term.write(`\r\n\x1b[31m[ERROR] ${errorMsg}\x1b[0m\r\n`)
+                    console.error('[TerminalSession] Failed to create session:', errorMsg)
+                    setHasError(true)
+                    sessionIdRef.current = null
+                    initializingTerminals.delete(tab.id)
+                    return
+                }
 
-            // Request initial buffer if any (re-attachment support)
-            const buffer = await window.electron.terminal.readBuffer(tab.id)
-            if (buffer) {
-                term.write(buffer)
+                sessionCreated = true
+                initializedTerminals.add(tab.id)
+                initializingTerminals.delete(tab.id)
+
+                // Hook up resize
+                term.onResize((size) => {
+                    if (sessionCreated) {
+                        window.electron.terminal.resize(tab.id, size.cols, size.rows).catch(err => {
+                            console.error('[TerminalSession] Resize failed:', err)
+                        })
+                    }
+                })
+
+                // Hook up data input
+                term.onData((data) => {
+                    if (sessionCreated) {
+                        window.electron.terminal.write(tab.id, data).catch(err => {
+                            console.error('[TerminalSession] Write failed:', err)
+                        })
+                    }
+                })
+
+                // Request initial buffer if any (re-attachment support)
+                try {
+                    const buffer = await window.electron.terminal.readBuffer(tab.id)
+                    if (buffer) {
+                        term.write(buffer)
+                    }
+                } catch (err) {
+                    console.warn('[TerminalSession] Failed to read buffer:', err)
+                }
+
+                setIsReady(true)
+                setHasError(false)
+            } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+                term.write(`\r\n\x1b[31m[ERROR] Failed to initialize terminal: ${errorMsg}\x1b[0m\r\n`)
+                console.error('[TerminalSession] Initialization error:', error)
+                setHasError(true)
+                initializingTerminals.delete(tab.id)
             }
-
-            setIsReady(true)
         }
 
         initSession()
 
         // Cleanup
         return () => {
-            // Note: We don't kill the backend session here to allow re-attachment if needed,
-            // or we could kill it if that's the desired behavior.
-            // Following the current pattern of 'kill on close' which is handled in closeTab
-            term.dispose()
+            isInitializedRef.current = false
+            const sessionId = sessionIdRef.current || tab.id
+            if (sessionCreated && sessionId) {
+                // Remove from registry and kill the backend session on cleanup
+                initializedTerminals.delete(tab.id)
+                window.electron.terminal.kill(sessionId).catch(err => {
+                    console.error('[TerminalSession] Failed to kill session on cleanup:', err)
+                })
+            }
+            initializingTerminals.delete(tab.id)
+            try {
+                term.dispose()
+            } catch (err) {
+                console.error('[TerminalSession] Error disposing terminal:', err)
+            }
         }
-    }, [tab.id, tab.type, projectPath, getTheme, theme])
+    }, [tab.id, projectPath]) // Only depend on tab.id and projectPath
 
     // Helper to safely fit terminal
     const safeFit = useCallback(() => {
@@ -164,19 +265,31 @@ const TerminalSession = memo(({
 
     // Handle incoming data via global multiplexer
     useEffect(() => {
-        if (!isReady) return
+        if (!isReady || !xtermRef.current) return
 
         const handleData = (e: Event) => {
-            const detail = (e as CustomEvent).detail
-            if (detail.id === tab.id && xtermRef.current) {
-                xtermRef.current.write(detail.data)
+            try {
+                const detail = (e as CustomEvent).detail
+                if (detail && detail.id === tab.id && xtermRef.current) {
+                    xtermRef.current.write(detail.data)
+                }
+            } catch (error) {
+                console.error('[TerminalSession] Error handling data:', error)
             }
         }
 
         const handleExit = (e: Event) => {
-            const detail = (e as CustomEvent).detail
-            if (detail.id === tab.id) {
-                onClose()
+            try {
+                const detail = (e as CustomEvent).detail
+                if (detail && detail.id === tab.id) {
+                    // Write exit message to terminal
+                    if (xtermRef.current) {
+                        xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code || 0}]\x1b[0m\r\n`)
+                    }
+                    onClose()
+                }
+            } catch (error) {
+                console.error('[TerminalSession] Error handling exit:', error)
             }
         }
 
@@ -217,6 +330,14 @@ const TerminalSession = memo(({
             className={cn("h-full w-full bg-zinc-950", isActive ? "block" : "hidden")}
             style={{ paddingLeft: '8px' }}
         >
+            {hasError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
+                    <div className="text-center px-4">
+                        <p className="text-red-400 text-sm mb-1">Terminal session failed to start</p>
+                        <p className="text-muted-foreground text-xs">Close this tab and create a new terminal session</p>
+                    </div>
+                </div>
+            )}
             <div ref={containerRef} className="h-full w-full" />
         </div>
     )
@@ -243,37 +364,102 @@ export function TerminalPanel({
         const id = Math.random().toString(36).substring(2, 9)
         const shellInfo = availableShells.find(s => s.id === type)
         const typeLabel = shellInfo?.name || type
-        const count = tabs.filter(t => t.type === type).length + 1
 
-        const newTab: TerminalTab = {
-            id,
-            name: `${typeLabel} ${count}`,
-            type,
-            cwd: projectPath || '',
-            isRunning: true,
-            status: 'idle',
-            history: [],
-            command: ''
-        }
-
-        setTabs(prev => [...prev, newTab])
+        setTabs(prev => {
+            const count = prev.filter(t => t.type === type).length + 1
+            const newTab: TerminalTab = {
+                id,
+                name: `${typeLabel} ${count}`,
+                type,
+                cwd: projectPath || '',
+                isRunning: true,
+                status: 'idle',
+                history: [],
+                command: ''
+            }
+            return [...prev, newTab]
+        })
         setActiveTabId(id)
         setShowNewTerminalMenu(false)
-    }, [availableShells, tabs, projectPath, setTabs, setActiveTabId])
+    }, [availableShells, projectPath, setTabs, setActiveTabId])
+
+    // Track if we're currently creating a terminal to prevent infinite loops
+    const isCreatingRef = useRef(false)
+    const hasAutoCreatedRef = useRef(false)
+
+    // Reset auto-create flag when panel closes
+    useEffect(() => {
+        if (!isOpen) {
+            hasAutoCreatedRef.current = false
+            isCreatingRef.current = false
+        }
+    }, [isOpen])
 
     useEffect(() => {
         const loadShells = async () => {
-            const shells = await window.electron.terminal.getShells()
-            setAvailableShells(shells)
+            // Prevent multiple simultaneous terminal creations
+            if (isCreatingRef.current || hasAutoCreatedRef.current) {
+                console.log('[TerminalPanel] Already creating or has created, skipping')
+                return
+            }
 
-            if (isOpen && tabs.length === 0 && shells.length > 0) {
-                setTimeout(() => createTerminal(shells[0].id), 100)
+            // Double-check tabs length to prevent race conditions
+            if (tabs.length > 0) {
+                console.log(`[TerminalPanel] Tabs already exist (${tabs.length}), skipping auto-create`)
+                return
+            }
+
+            try {
+                // Check if terminal is available
+                const isAvailable = await window.electron.terminal.isAvailable()
+                if (!isAvailable) {
+                    console.warn('[TerminalPanel] Terminal service not available')
+                    return
+                }
+
+                const shells = await window.electron.terminal.getShells()
+                setAvailableShells(shells)
+
+                // Only auto-create if panel is open, no tabs exist, and we have shells
+                if (isOpen && tabs.length === 0 && shells.length > 0) {
+                    console.log('[TerminalPanel] Auto-creating terminal')
+                    isCreatingRef.current = true
+                    hasAutoCreatedRef.current = true
+                    setTimeout(() => {
+                        // Final check before creating
+                        if (tabs.length === 0) {
+                            createTerminal(shells[0].id)
+                        } else {
+                            console.log('[TerminalPanel] Tabs appeared before creation, cancelling')
+                            hasAutoCreatedRef.current = false
+                        }
+                        // Reset creating flag after a delay to allow state to update
+                        setTimeout(() => {
+                            isCreatingRef.current = false
+                        }, 200)
+                    }, 100)
+                }
+            } catch (error) {
+                console.error('[TerminalPanel] Failed to load shells:', error)
+                isCreatingRef.current = false
+                hasAutoCreatedRef.current = false
             }
         }
-        loadShells()
-    }, [isOpen, createTerminal, tabs.length])
+        if (isOpen) {
+            loadShells()
+        }
+    }, [isOpen, tabs.length]) // Removed createTerminal from dependencies to prevent infinite loop
 
-    const closeTab = (id: string) => {
+    const closeTab = useCallback((id: string) => {
+        // Clean up from global registry
+        initializedTerminals.delete(id)
+        initializingTerminals.delete(id)
+        
+        // Kill the terminal session on close
+        window.electron.terminal.kill(id).catch(err => {
+            console.error('[TerminalPanel] Failed to kill terminal session:', err)
+        })
+        
         setTabs(prev => {
             const newTabs = prev.filter(t => t.id !== id)
             if (activeTabId === id && newTabs.length > 0) {
@@ -283,7 +469,7 @@ export function TerminalPanel({
             }
             return newTabs
         })
-    }
+    }, [activeTabId, setTabs, setActiveTabId])
 
     // Centralized IPC Listeners to prevent MaxListenersExceeded
     useEffect(() => {

@@ -112,25 +112,56 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     }
 
     if (selectedProject) {
-        return <ProjectWorkspace
-            project={selectedProject}
-            onBack={() => onSelectProject?.(null)}
-            language={language}
-            tabs={tabs}
-            activeTabId={activeTabId}
-            setTabs={setTabs}
-            setActiveTabId={setActiveTabId}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onSelectModel={onSelectModel}
-            groupedModels={groupedModels}
-            quotas={quotas}
-            codexUsage={codexUsage || undefined}
-            settings={settings || undefined}
-            sendMessage={sendMessage}
-            messages={messages}
-            isLoading={isLoading}
-        />
+        return (
+            <>
+                <ProjectWorkspace
+                    project={selectedProject}
+                    onBack={() => onSelectProject?.(null)}
+                    onDeleteProject={() => setDeletingProject(selectedProject)}
+                    language={language}
+                    tabs={tabs}
+                    activeTabId={activeTabId}
+                    setTabs={setTabs}
+                    setActiveTabId={setActiveTabId}
+                    selectedProvider={selectedProvider}
+                    selectedModel={selectedModel}
+                    onSelectModel={onSelectModel}
+                    groupedModels={groupedModels}
+                    quotas={quotas}
+                    codexUsage={codexUsage || undefined}
+                    settings={settings || undefined}
+                    sendMessage={sendMessage}
+                    messages={messages}
+                    isLoading={isLoading}
+                />
+                <AnimatePresence>
+                    {deletingProject && (
+                        <Modal isOpen={!!deletingProject} onClose={() => setDeletingProject(null)} title={t('projects.deleteProject')}>
+                            <div className="space-y-4 pt-2">
+                                <p className="text-sm text-muted-foreground">
+                                    {t('projects.deleteConfirmation')} <span className="text-foreground font-medium">{deletingProject.title}</span>.
+                                    {t('projects.deleteWarning')}
+                                </p>
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        onClick={() => setDeletingProject(null)}
+                                        className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
+                                    >
+                                        {t('common.cancel')}
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteProject}
+                                        className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                    >
+                                        {t('common.delete')}
+                                    </button>
+                                </div>
+                            </div>
+                        </Modal>
+                    )}
+                </AnimatePresence>
+            </>
+        )
     }
 
     const filteredProjects = projects.filter(p =>

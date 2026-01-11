@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect } from 'react'
 import { useTranslation } from '@/i18n'
-import { ChevronRight, ChevronDown, File, Folder, FileText, Image, Code, FileJson, FileCode, Box, Hash, Terminal, Database, Book, Layers, Cpu, Component, Coffee } from 'lucide-react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { renderIcon } from '@/lib/file-icons'
 
 interface FileNode {
     name: string
@@ -55,31 +56,8 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
         }
     }
 
-    const getIcon = () => {
-        if (node.isDirectory) return isOpen ? <Folder size={14} className="text-blue-400/80" /> : <Folder size={14} className="text-blue-400/80" />
-
-        const name = node.name.toLowerCase()
-        if (name.endsWith('.tsx') || name.endsWith('.jsx')) return <Code size={14} className="text-cyan-400" />
-        if (name.endsWith('.ts')) return <FileCode size={14} className="text-blue-400" />
-        if (name.endsWith('.js')) return <FileCode size={14} className="text-yellow-400" />
-        if (name.endsWith('.py')) return <Box size={14} className="text-blue-500" />
-        if (name.endsWith('.go')) return <Cpu size={14} className="text-cyan-500" />
-        if (name.endsWith('.rs')) return <Layers size={14} className="text-orange-500" />
-        if (name.endsWith('.java')) return <Coffee size={14} className="text-red-400" />
-        if (name.endsWith('.php')) return <FileCode size={14} className="text-purple-400" />
-        if (name.endsWith('.html')) return <Code size={14} className="text-orange-400" />
-        if (name.endsWith('.css') || name.endsWith('.scss') || name.endsWith('.sass')) return <FileText size={14} className="text-pink-400" />
-        if (name.endsWith('.json')) return <FileJson size={14} className="text-yellow-500/80" />
-        if (name.endsWith('.md')) return <Book size={14} className="text-blue-300" />
-        if (name.endsWith('.yaml') || name.endsWith('.yml')) return <Layers size={14} className="text-purple-300" />
-        if (name.endsWith('.sql')) return <Database size={14} className="text-emerald-400" />
-        if (name.endsWith('.sh') || name.endsWith('.bash') || name.endsWith('.zsh')) return <Terminal size={14} className="text-emerald-500" />
-        if (name.endsWith('.png') || name.endsWith('.svg') || name.endsWith('.jpg') || name.endsWith('.jpeg')) return <Image size={14} className="text-purple-400" />
-        if (name.includes('package.json') || name.includes('cargo.toml') || name.includes('go.mod')) return <Hash size={14} className="text-red-400" />
-        if (name.endsWith('.vue') || name.endsWith('.svelte')) return <Component size={14} className="text-emerald-400" />
-
-        return <File size={14} className="text-muted-foreground/60" />
-    }
+    // Use the new centralized file icons system
+    const icon = renderIcon(node.name, node.isDirectory, isOpen, { size: 14 })
 
     return (
         <div>
@@ -96,7 +74,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                         isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />
                     )}
                 </span>
-                {getIcon()}
+                {icon}
                 <span className="truncate">{node.name}</span>
             </div>
             {isOpen && (

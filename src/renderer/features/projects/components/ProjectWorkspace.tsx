@@ -1,17 +1,18 @@
-﻿import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation, Language } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { Project, WorkspaceEntry, TerminalTab, Message, QuotaResponse, CodexUsage, AppSettings, CouncilAgent, ActivityEntry, ProjectDashboardTab } from '@/types'
+import { Project, WorkspaceEntry, TerminalTab, Message, QuotaResponse, CodexUsage, AppSettings, CouncilAgent, ActivityEntry, ProjectDashboardTab, CouncilSession } from '@/types'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { WorkspaceToolbar } from './workspace/WorkspaceToolbar'
+import { CommandStrip } from './workspace/CommandStrip'
 import { WorkspaceExplorer } from './WorkspaceExplorer'
 import { WorkspaceEditor } from './workspace/WorkspaceEditor'
 import { TerminalPanel } from '@/features/terminal/TerminalPanel'
-import { SemanticSearchPanel } from './SemanticSearchPanel'
 import { ProjectDashboard } from './ProjectDashboard'
 import { AIAssistantSidebar } from './workspace/AIAssistantSidebar'
 import { useWorkspaceManager } from '../hooks/useWorkspaceManager'
 import { EditorTabs } from './workspace/EditorTabs'
+import { LogoGeneratorModal } from './LogoGeneratorModal'
 import { X, Activity } from 'lucide-react'
 
 // Types are now shared from @/types
@@ -20,6 +21,7 @@ interface ProjectWorkspaceProps {
     project: Project
     onBack: () => void
     onUpdateProject?: (updates: Partial<Project>) => Promise<void>
+    onDeleteProject?: () => void
     language: Language
     // Terminal props passed from parent
     tabs: TerminalTab[]
@@ -43,6 +45,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     project,
     onBack,
     onUpdateProject,
+    onDeleteProject,
     language,
     tabs,
     activeTabId,
@@ -55,7 +58,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     quotas,
     codexUsage,
     settings,
-    sendMessage,
+    sendMessage: _sendMessage,
     messages,
     isLoading
 }) => {
@@ -75,20 +78,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const wm = useWorkspaceManager({ project, notify, logActivity })
 
     const [selectedEntry, setSelectedEntry] = useState<WorkspaceEntry | null>(null)
-    const [sidebarMode, setSidebarMode] = useState<'files' | 'search'>('files')
+    const [viewTab, setViewTab] = useState<'editor' | 'council' | 'logs'>('editor')
+
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
     // AI Assistant Panel
     const [showAgentPanel, setShowAgentPanel] = useState(false)
     const [agentPanelWidth, setAgentPanelWidth] = useState(380)
-    const [viewTab, setViewTab] = useState<'editor' | 'council' | 'logs'>('editor')
-    const [agentChatMessage, setAgentChatMessage] = useState('')
-    const [agents, setAgents] = useState<CouncilAgent[]>([
-        { id: '1', name: 'Architect', role: 'System Design & Structure', enabled: true, status: 'ready', kind: 'local' },
-        { id: '2', name: 'Developer', role: 'Implementation & Logic', enabled: true, status: 'ready', kind: 'local' },
-        { id: '3', name: 'Reviewer', role: 'Security & Optimization', enabled: true, status: 'ready', kind: 'cloud' }
-    ])
-    const [activityLog, setActivityLog] = useState<ActivityEntry[]>([])
 
     // Terminal
     const [showTerminal, setShowTerminal] = useState(false)
@@ -97,9 +93,67 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     // Modals
     const [, setShowMountModal] = useState(false)
     const [, setEntryModal] = useState<{ type: 'createFile' | 'createFolder' | 'rename' | 'delete'; entry: WorkspaceEntry } | null>(null)
+    const [showLogoModal, setShowLogoModal] = useState(false)
     const [, setEntryName] = useState('')
-    const [, setShowSettings] = useState(false)
-    // Sync dashboard tab with editor state - MOVED TO useWorkspaceManager
+
+    const handleUpdateProject = async (updates: Partial<Project>) => {
+        if (onUpdateProject) {
+            await onUpdateProject(updates)
+            notify('success', t('workspace.projectUpdated'))
+        }
+    }
+
+    const [councilSession, setCouncilSession] = useState<CouncilSession | null>(null)
+    const [activityLog, setActivityLog] = useState<ActivityEntry[]>([])
+
+    // WebSocket Connection for Council
+    useEffect(() => {
+        if (!councilSession?.id) return
+
+        const ws = new WebSocket('ws://localhost:3001')
+
+        ws.onopen = () => {
+            ws.send(JSON.stringify({ type: 'join', sessionId: councilSession.id }))
+        }
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data)
+                if (msg.sessionId === councilSession.id) {
+                    setActivityLog(prev => [...prev, {
+                        id: msg.id,
+                        title: msg.sender.toUpperCase(),
+                        agentId: msg.sender, // generic sender from WS
+                        message: msg.content,
+                        type: (msg.type === 'job' ? 'info' : (msg.type === 'error' ? 'error' : 'info')) as 'info' | 'error' | 'success' | 'plan', // Map types broadly
+                        timestamp: msg.timestamp
+                    }])
+                }
+            } catch (e) {
+                console.error('Failed to parse WS message:', e)
+            }
+        }
+
+        return () => ws.close()
+    }, [councilSession])
+
+    const [agentChatMessage, setAgentChatMessage] = useState('')
+
+    const runCouncil = async () => {
+        if (!agentChatMessage.trim()) return;
+        try {
+            notify('info', 'Initializing Council Session...')
+            const session = await window.electron.council.createSession(agentChatMessage)
+            if (session) {
+                setCouncilSession(session)
+                setActivityLog([]) // Clear previous logs
+                window.electron.council.startLoop(session.id)
+                notify('success', 'Council started.')
+            }
+        } catch (e: unknown) {
+            notify('error', 'Failed to start council: ' + (e instanceof Error ? e.message : 'Unknown error'))
+        }
+    }
 
     useEffect(() => {
         if (wm.dashboardTab === 'council') {
@@ -111,56 +165,31 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         }
     }, [wm.dashboardTab])
 
-    const handleUpdateProject = async (updates: Partial<Project>) => {
-        if (onUpdateProject) {
-            await onUpdateProject(updates)
-            notify('success', t('workspace.projectUpdated'))
-        }
-    }
+
+    const [agents, setAgents] = useState<CouncilAgent[]>([
+        { id: '1', name: 'Architect', role: 'System Design & Structure', enabled: true, status: 'ready', kind: 'local' },
+        { id: '2', name: 'Developer', role: 'Implementation & Logic', enabled: true, status: 'ready', kind: 'local' },
+        { id: '3', name: 'Reviewer', role: 'Security & Optimization', enabled: true, status: 'ready', kind: 'cloud' }
+    ])
 
     const toggleAgent = (id: string) => {
         setAgents(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a))
     }
 
-    const runCouncil = () => {
-        if (agentChatMessage.trim() && sendMessage) {
-            sendMessage(agentChatMessage)
-            setAgentChatMessage('')
-            notify('info', 'Council session started')
-        }
-    }
 
-    const handleRunProject = () => {
-        setShowTerminal(true)
-        if (tabs.length === 0) {
-            const id = `term-${Math.random().toString(36).substr(2, 9)}`
-            const newTab: TerminalTab = {
-                id,
-                name: 'Terminal',
-                type: 'local',
-                status: 'idle',
-                history: [],
-                command: ''
-            }
-            setTabs([newTab])
-            setActiveTabId(id)
-        }
-    }
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden font-sans antialiased">
-            {/* Toolbar */}
+        <div className="h-full flex flex-col bg-background relative overflow-hidden">
+            {/* Top Toolbar */}
             <WorkspaceToolbar
                 project={project}
                 onBack={onBack}
-                onUpdate={onUpdateProject}
-                handleRunProject={handleRunProject}
-                showTerminal={showTerminal}
-                toggleTerminal={() => setShowTerminal(!showTerminal)}
-                handleSearch={() => setSidebarMode('search')}
+                onUpdate={handleUpdateProject}
+                handleRunProject={() => wm.setDashboardTab('terminal')}
+                showTerminal={showTerminal} // deprecated
+                toggleTerminal={() => setShowTerminal(!showTerminal)} // deprecated
                 showAgentPanel={showAgentPanel}
                 toggleAgentPanel={() => setShowAgentPanel(!showAgentPanel)}
-                toggleSettings={() => setShowSettings(true)}
                 language={language}
                 dashboardTab={wm.dashboardTab}
                 onDashboardTabChange={wm.setDashboardTab}
@@ -169,134 +198,88 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             />
 
             <div className="flex-1 flex overflow-hidden relative">
-                {/* Main Content Area */}
-                <div className="flex-1 flex overflow-hidden relative">
-                    <>
-                        {/* Left Panel: Explorer / Search - Collapsible */}
-                        <div className={cn(
-                            "flex flex-col border-r border-white/5 bg-background/20 shrink-0 transition-all duration-300",
-                            sidebarCollapsed ? "w-0 overflow-hidden opacity-0" : "w-72 opacity-100"
-                        )}>
-                            {/* Panel Switcher */}
-                            <div className="flex items-center px-4 pt-4 pb-0 gap-1">
-                                <button
-                                    onClick={() => setSidebarMode('files')}
-                                    className={cn(
-                                        "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-t-lg border-b-2",
-                                        sidebarMode === 'files' ? "text-primary border-primary bg-primary/5" : "text-muted-foreground/40 border-transparent hover:text-muted-foreground"
-                                    )}
-                                >
-                                    {t('workspace.files')}
-                                </button>
-                                <button
-                                    onClick={() => setSidebarMode('search')}
-                                    className={cn(
-                                        "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-t-lg border-b-2",
-                                        sidebarMode === 'search' ? "text-primary border-primary bg-primary/5" : "text-muted-foreground/40 border-transparent hover:text-muted-foreground"
-                                    )}
-                                >
-                                    {t('semanticSearch.title')}
-                                </button>
-                            </div>
+                {/* Left Panel: Explorer - Collapsible Navigation Plate */}
+                <div className={cn(
+                    "flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-20",
+                    sidebarCollapsed ? "w-0 overflow-hidden opacity-0" : "w-72 opacity-100"
+                )}>
+                    <div className="flex-1 overflow-hidden">
+                        <WorkspaceExplorer
+                            mounts={wm.mounts}
+                            mountStatus={wm.mountStatus}
+                            refreshSignal={wm.refreshSignal}
+                            onOpenFile={wm.openFile}
+                            onSelectEntry={setSelectedEntry}
+                            selectedEntry={selectedEntry}
+                            onAddMount={() => setShowMountModal(true)}
+                            onRemoveMount={(id) => wm.persistMounts(wm.mounts.filter(m => m.id !== id))}
+                            onEnsureMount={wm.ensureMountReady}
+                            onContextAction={(action) => {
+                                setEntryModal({ type: action.type, entry: action.entry })
+                                if (action.type !== 'delete') setEntryName(action.entry.name)
+                            }}
+                            variant="panel"
+                            language={language}
+                        />
+                    </div>
+                </div>
 
-                            <div className="flex-1 overflow-hidden">
-                                {sidebarMode === 'files' ? (
-                                    <WorkspaceExplorer
-                                        mounts={wm.mounts}
-                                        mountStatus={wm.mountStatus}
-                                        refreshSignal={wm.refreshSignal}
-                                        onOpenFile={wm.openFile}
-                                        onSelectEntry={setSelectedEntry}
-                                        selectedEntry={selectedEntry}
-                                        onAddMount={() => setShowMountModal(true)}
-                                        onRemoveMount={(id) => wm.persistMounts(wm.mounts.filter(m => m.id !== id))}
-                                        onEnsureMount={wm.ensureMountReady}
-                                        onContextAction={(action) => {
-                                            setEntryModal({ type: action.type, entry: action.entry })
-                                            if (action.type !== 'delete') setEntryName(action.entry.name)
-                                        }}
-                                        variant="panel"
-                                        language={language}
-                                    />
-                                ) : (
-                                    <SemanticSearchPanel
-                                        projectId={project.id}
-                                        rootPath={project.path}
-                                        onOpenResult={(file, line) => {
-                                            const mount = wm.mounts.find(m => file.startsWith(m.rootPath))
-                                            if (mount) {
-                                                wm.openFile({
-                                                    mountId: mount.id,
-                                                    name: file.split(/[/\\]/).pop() || '',
-                                                    path: file,
-                                                    isDirectory: false,
-                                                    initialLine: line
-                                                })
-                                            }
-                                        }}
-                                        language={language}
-                                    />
-                                )}
-                            </div>
+                {/* Center: Editor Area */}
+                <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
+                    {wm.openTabs.length > 0 && wm.dashboardTab === 'editor' && (
+                        <div className="z-20 relative">
+                            <EditorTabs
+                                openTabs={wm.openTabs}
+                                activeTabId={wm.activeTabId}
+                                setActiveTabId={wm.setActiveEditorTabId}
+                                closeTab={wm.closeTab}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex-1 relative overflow-hidden">
+                        <div className={cn("absolute inset-0 z-0", wm.dashboardTab !== 'editor' && "pointer-events-none opacity-0")}>
+                            <WorkspaceEditor
+                                activeTab={wm.activeTab}
+                                updateTabContent={wm.updateTabContent}
+                                emptyState={null}
+                            />
                         </div>
 
-                        {/* Center: Editor Area */}
-                        <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
-                            {wm.openTabs.length > 0 && wm.dashboardTab === 'editor' && (
-                                <div className="z-20 relative">
-                                    <EditorTabs
-                                        openTabs={wm.openTabs}
-                                        activeTabId={wm.activeTabId}
-                                        setActiveTabId={wm.setActiveEditorTabId}
-                                        closeTab={wm.closeTab}
-                                    />
-                                </div>
+                        {wm.dashboardTab !== 'editor' && (
+                            <div className="absolute inset-0 z-10 bg-background animate-in fade-in duration-200">
+                                <ProjectDashboard
+                                    project={project}
+                                    onUpdate={handleUpdateProject}
+                                    onOpenLogoGenerator={() => setShowLogoModal(true)}
+                                    language={language}
+                                    activeTab={wm.dashboardTab as ProjectDashboardTab}
+                                    onTabChange={(tab: ProjectDashboardTab) => wm.setDashboardTab(tab)}
+                                    onDelete={onDeleteProject}
+                                />
+                            </div>
+                        )}
+
+                        <div
+                            className={cn(
+                                "absolute bottom-0 left-0 right-0 bg-background border-t border-white/10 z-30",
+                                !showTerminal && "hidden"
                             )}
-
-                            <div className="flex-1 relative overflow-hidden">
-                                <div className={cn("absolute inset-0 z-0", wm.dashboardTab !== 'editor' && "pointer-events-none opacity-0")}>
-                                    <WorkspaceEditor
-                                        activeTab={wm.activeTab}
-                                        updateTabContent={wm.updateTabContent}
-                                        emptyState={null}
-                                    />
-                                </div>
-
-                                {wm.dashboardTab !== 'editor' && (
-                                    <div className="absolute inset-0 z-10 bg-background animate-in fade-in duration-200">
-                                        <ProjectDashboard
-                                            project={project}
-                                            onUpdate={handleUpdateProject}
-                                            onOpenLogoGenerator={() => { }}
-                                            language={language}
-                                            activeTab={wm.dashboardTab as ProjectDashboardTab}
-                                            onTabChange={(tab: ProjectDashboardTab) => wm.setDashboardTab(tab)}
-                                        />
-                                    </div>
-                                )}
-
-                                <div
-                                    className={cn(
-                                        "absolute bottom-0 left-0 right-0 bg-background border-t border-white/10 z-30",
-                                        !showTerminal && "hidden"
-                                    )}
-                                    style={{ height: terminalHeight }}
-                                >
-                                    <TerminalPanel
-                                        isOpen={showTerminal}
-                                        onToggle={() => setShowTerminal(!showTerminal)}
-                                        height={terminalHeight}
-                                        onHeightChange={setTerminalHeight}
-                                        projectPath={project.path}
-                                        tabs={tabs}
-                                        activeTabId={activeTabId}
-                                        setTabs={setTabs}
-                                        setActiveTabId={setActiveTabId}
-                                    />
-                                </div>
-                            </div>
+                            style={{ height: terminalHeight }}
+                        >
+                            <TerminalPanel
+                                isOpen={showTerminal}
+                                onToggle={() => setShowTerminal(!showTerminal)}
+                                height={terminalHeight}
+                                onHeightChange={setTerminalHeight}
+                                projectPath={project.path}
+                                tabs={tabs}
+                                activeTabId={activeTabId}
+                                setTabs={setTabs}
+                                setActiveTabId={setActiveTabId}
+                            />
                         </div>
-                    </>
+                    </div>
                 </div>
 
                 {/* Right Panel: AI Assistant */}
@@ -368,6 +351,27 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     </div>
                 ))}
             </div>
+
+            {/* Modals */}
+            <LogoGeneratorModal
+                isOpen={showLogoModal}
+                onClose={() => setShowLogoModal(false)}
+                project={project}
+                onApply={async (logoPath) => {
+                    await handleUpdateProject({ logo: logoPath })
+                    setShowLogoModal(false)
+                }}
+                language={language}
+            />
+
+            {/* Global Command Strip */}
+            <CommandStrip
+                language={language}
+                branchName="main"
+                notificationCount={notifications.length}
+                status={isLoading ? 'busy' : 'ready'}
+                onCommandClick={() => notify('info', 'Command Palette coming soon')}
+            />
         </div>
     )
 }

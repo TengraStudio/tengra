@@ -18,6 +18,11 @@ export interface ProjectAnalysis {
     stats: ProjectStats
     languages: Record<string, number>
     files: string[]
+    monorepo?: {
+        type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
+        packages: string[];
+    }
+    todos: string[]
 }
 
 export class ProjectService {
@@ -61,15 +66,23 @@ export class ProjectService {
     }
 
     async analyzeProject(rootPath: string): Promise<ProjectAnalysis> {
-        console.log('[ProjectService] Analyzing project at:', rootPath)
+        // Handle Windows paths from renderer that might have leading slash (e.g. /C:/...)
+        if (process.platform === 'win32' && rootPath.startsWith('/') && rootPath.charAt(2) === ':') {
+            rootPath = rootPath.slice(1)
+        }
+        rootPath = path.resolve(rootPath)
+        console.log('[ProjectService] Analyzing project at (normalized):', rootPath)
         const runStart = Date.now()
 
-        const files = await this.scanFiles(rootPath)
+        const files = await this.scanFiles(rootPath, rootPath)
+        console.log(`[ProjectService] Found ${files.length} files`)
         const type = await this.detectType(files)
-        const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type)
+        const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type, files)
         const stats = await this.calculateStats(files)
+        console.log(`[ProjectService] Stats calculated:`, stats)
         const languages = this.calculateLanguages(files)
         const monorepo = await this.detectMonorepo(rootPath, files)
+        const todos = await this.findTodos(rootPath, files)
 
         console.log(`[ProjectService] Analysis complete in ${Date.now() - runStart}ms`)
 
@@ -81,7 +94,8 @@ export class ProjectService {
             stats,
             languages,
             files: files.slice(0, 1000), // Limit file list for performance in IPC
-            monorepo
+            monorepo,
+            todos
         }
     }
 
@@ -109,6 +123,26 @@ export class ProjectService {
                 }
             }
 
+            // Gradle multi-project
+            const gradleSettings = fileNames.find(f => f === 'settings.gradle' || f === 'settings.gradle.kts')
+            if (gradleSettings) {
+                const settingsPath = path.join(rootPath, gradleSettings)
+                const content = await fs.readFile(settingsPath, 'utf-8')
+                // Match include 'module', include ':module', include(":module")
+                const moduleMatches = content.matchAll(/include\s*\(?([\s\S]*?)\)?(?:\n|$)/g)
+                const packages: string[] = []
+                for (const m of moduleMatches) {
+                    const block = m[1]
+                    const names = block.matchAll(/['"]:?([^'"]+)['"]/g)
+                    for (const n of names) {
+                        packages.push(n[1])
+                    }
+                }
+                if (packages.length > 0) {
+                    return { type: 'unknown', packages } // Gradle doesn't have a single "monorepo" type in the UI enum but we can use packages
+                }
+            }
+
             // Turbo
             if (fileNames.includes('turbo.json')) {
                 return { type: 'turbo', packages: [] }
@@ -118,6 +152,52 @@ export class ProjectService {
             console.warn('[ProjectService] Monorepo detection failed:', e)
         }
         return undefined
+    }
+
+    private async findTodos(rootPath: string, files: string[]): Promise<string[]> {
+        const todoFiles = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md']
+        const foundFile = files.find(f => {
+            const rel = path.relative(rootPath, f).toLowerCase()
+            return todoFiles.includes(rel)
+        })
+
+        if (foundFile) {
+            try {
+                const content = await fs.readFile(foundFile, 'utf-8')
+                // Extract tasks (lines starting with - [ ], - [x], etc.)
+                const lines = content.split('\n')
+                const tasks = lines
+                    .map(l => l.trim())
+                    .filter(l => /^[-*+]\s*\[[ xX]?\]/.test(l) || /^[-*+]\s+/.test(l))
+                    .map(l => l.replace(/^[-*+]\s*\[[ xX]?\]\s*/, '').replace(/^[-*+]\s+/, ''))
+
+                if (tasks.length > 0) return tasks
+
+                // If no checklist, just return first non-empty 10 lines
+                return lines.filter(l => l.trim().length > 0).slice(0, 10)
+            } catch (e) {
+                console.warn('[ProjectService] Failed to read todo file:', e)
+            }
+        }
+
+        // Fallback: look for TODO comments in code (first 10)
+        const codeFiles = files.filter(f => /\.(ts|tsx|js|jsx|py|go|rs|kt|java|cpp|h)$/.test(f)).slice(0, 100)
+        const todoComments: string[] = []
+        for (const file of codeFiles) {
+            try {
+                const content = await fs.readFile(file, 'utf-8')
+                const lines = content.split('\n')
+                for (const line of lines) {
+                    if (line.includes('TODO:') || line.includes('FIXME:')) {
+                        todoComments.push(line.split('TODO:')[1]?.trim() || line.split('FIXME:')[1]?.trim())
+                        if (todoComments.length >= 10) break
+                    }
+                }
+            } catch { /* ignore */ }
+            if (todoComments.length >= 10) break
+        }
+
+        return todoComments
     }
 
     private async findPackages(_rootPath: string, _configType: string): Promise<string[]> {
@@ -255,7 +335,8 @@ export class ProjectService {
         return langMap
     }
 
-    private async scanFiles(dir: string, fileList: string[] = []): Promise<string[]> {
+    private async scanFiles(dir: string, rootPath: string, fileList: string[] = []): Promise<string[]> {
+        console.log(`[ProjectService] Scanning directory: ${dir}`)
         // Simple recursive scan, respecting basic ignores
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
@@ -263,16 +344,19 @@ export class ProjectService {
                 const fullPath = path.join(dir, entry.name)
 
                 // Basic ignore list
-                if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'build' || entry.name === '.orbit') continue
+                if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'build' || entry.name === '.orbit' || entry.name === '.vscode' || entry.name === 'coverage') continue
 
                 if (entry.isDirectory()) {
-                    await this.scanFiles(fullPath, fileList)
+                    await this.scanFiles(fullPath, rootPath, fileList)
                 } else {
                     fileList.push(fullPath)
                 }
             }
         } catch (error) {
             console.warn(`[ProjectService] Failed to scan directory ${dir}:`, getErrorMessage(error as Error))
+        }
+        if (dir === rootPath) {
+            console.log(`[ProjectService] Scan complete for ${dir}. Found ${fileList.length} files. First 3:`, fileList.slice(0, 3))
         }
         return fileList
     }
@@ -284,15 +368,16 @@ export class ProjectService {
         if (fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'))) return 'python'
         if (fileNames.includes('cargo.toml')) return 'rust'
         if (fileNames.includes('go.mod')) return 'go'
-        if (fileNames.includes('pom.xml') || fileNames.includes('build.gradle')) return 'java'
-        if (fileNames.includes('cmakeLists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc'))) return 'cpp'
+        if (fileNames.includes('pom.xml') || fileNames.includes('build.gradle') || fileNames.includes('build.gradle.kts')) return 'java'
+        if (fileNames.includes('cmakelists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc') || f.endsWith('.h') || f.endsWith('.hpp'))) return 'cpp'
         if (fileNames.some(f => f.endsWith('.php'))) return 'php'
-        if (fileNames.some(f => f.endsWith('.cs'))) return 'csharp'
+        if (fileNames.some(f => f.endsWith('.cs')) || fileNames.some(f => f.endsWith('.csproj'))) return 'csharp'
+        if (fileNames.some(f => f.endsWith('.kt')) || fileNames.some(f => f.endsWith('.kts'))) return 'java' // Map Kotlin to Java for now as they share the ecosystem
 
         return 'unknown'
     }
 
-    private async analyzeDependencies(rootPath: string, type: string): Promise<{ frameworks: string[], dependencies: Record<string, string>, devDependencies: Record<string, string> }> {
+    private async analyzeDependencies(rootPath: string, type: string, allFiles: string[]): Promise<{ frameworks: string[], dependencies: Record<string, string>, devDependencies: Record<string, string> }> {
         const result = {
             frameworks: [] as string[],
             dependencies: {} as Record<string, string>,
@@ -481,6 +566,63 @@ export class ProjectService {
             if (allDeps.includes('serde')) result.frameworks.push('Serde')
             if (allDeps.includes('diesel')) result.frameworks.push('Diesel')
             if (allDeps.includes('sqlx')) result.frameworks.push('SQLx')
+        } else if (type === 'java') {
+            // Find ALL build.gradle / build.gradle.kts files
+            const gradleFiles = allFiles.filter(f => f.endsWith('build.gradle') || f.endsWith('build.gradle.kts'))
+
+            for (const file of gradleFiles) {
+                try {
+                    const content = await fs.readFile(file, 'utf-8')
+
+                    // Improved regex for dependencies (implementation "name" or implementation("name"))
+                    const depRegex = /(?:implementation|api|compile|runtimeOnly|compileOnly|testImplementation|classpath)\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g
+                    let match
+                    while ((match = depRegex.exec(content)) !== null) {
+                        const dep = match[1]
+                        const parts = dep.split(':')
+                        const name = parts.length > 1 ? parts[1] : dep
+                        result.dependencies[name] = parts.length > 2 ? parts[2] : '*'
+                    }
+
+                    // Framework detection from content
+                    if (content.includes('org.springframework.boot')) result.frameworks.push('Spring Boot')
+                    if (content.includes('com.android.application') || content.includes('com.android.library')) result.frameworks.push('Android')
+                    if (content.includes('androidx.compose')) result.frameworks.push('Jetpack Compose')
+                    if (content.includes('io.quarkus')) result.frameworks.push('Quarkus')
+                    if (content.includes('io.micronaut')) result.frameworks.push('Micronaut')
+                    if (content.includes('kotlin("jvm")') || content.includes('id "org.jetbrains.kotlin.jvm"')) result.frameworks.push('Kotlin JVM')
+                    if (content.includes('kotlin("android")') || content.includes('id "org.jetbrains.kotlin.android"')) result.frameworks.push('Kotlin Android')
+                } catch (error) {
+                    console.debug(`[ProjectService] Failed to read gradle file ${file}:`, getErrorMessage(error as Error))
+                }
+            }
+
+            // Framework detection from aggregated dependencies
+            const depKeys = Object.keys(result.dependencies)
+            if (depKeys.some(d => d.includes('junit'))) result.frameworks.push('JUnit')
+            if (depKeys.some(d => d.includes('hibernate'))) result.frameworks.push('Hibernate')
+            if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) result.frameworks.push('Dagger/Hilt')
+            if (depKeys.some(d => d.includes('retrofit'))) result.frameworks.push('Retrofit')
+            if (depKeys.some(d => d.includes('base09'))) result.frameworks.push('Base09') // Custom?
+
+            // Parse all pom.xml files
+            const pomFiles = allFiles.filter(f => f.endsWith('pom.xml'))
+            for (const file of pomFiles) {
+                try {
+                    const content = await fs.readFile(file, 'utf-8')
+                    const depRegex = /<dependency>[\s\S]*?<artifactId>([^<]+)<\/artifactId>[\s\S]*?(?:<version>([^<]+)<\/version>)?[\s\S]*?<\/dependency>/g
+                    let match
+                    while ((match = depRegex.exec(content)) !== null) {
+                        result.dependencies[match[1]] = match[2] || '*'
+                    }
+                    if (content.includes('spring-boot')) result.frameworks.push('Spring Boot')
+                } catch (error) {
+                    console.debug(`[ProjectService] Failed to read pom file ${file}:`, getErrorMessage(error as Error))
+                }
+            }
+
+            // Deduplicate frameworks
+            result.frameworks = [...new Set(result.frameworks)]
         }
 
         return result

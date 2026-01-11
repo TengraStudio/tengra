@@ -1,4 +1,4 @@
-﻿import { memo } from 'react'
+import { memo } from 'react'
 import { useTranslation } from '@/i18n'
 import { useSettingsLogic } from './hooks/useSettingsLogic'
 import { cn } from '@/lib/utils'
@@ -6,10 +6,11 @@ import { GalleryView } from '@/features/chat/components/GalleryView'
 // unused imports removed
 
 // Tab Components
-import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab } from '@/features/settings/components'
+import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab } from '@/features/settings/components'
 import './SettingsPage.css'
 
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { SettingsCategory } from './types'
 
 export interface SettingsPageProps {
@@ -17,13 +18,15 @@ export interface SettingsPageProps {
     proxyModels?: ModelInfo[]
     onRefreshModels: () => void
     activeTab?: SettingsCategory
+    groupedModels?: GroupedModels | null
 }
 
 export function SettingsPage({
     installedModels,
     proxyModels,
     onRefreshModels,
-    activeTab = 'general'
+    activeTab = 'general',
+    groupedModels
 }: SettingsPageProps) {
     const {
         settings, updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
@@ -69,6 +72,39 @@ export function SettingsPage({
         <div className="settings-container">
             <div className="settings-content flex h-full gap-6">
                 <main className="settings-main flex-1 overflow-y-auto">
+                    {/* Search Bar */}
+                    <div className="mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur-sm pb-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder={t('settings.searchPlaceholder')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                                aria-label={t('settings.searchPlaceholder')}
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-md transition-colors"
+                                    aria-label={t('common.clear')}
+                                >
+                                    <X className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                            )}
+                        </div>
+                        {searchQuery && (
+                            <div className="mt-3 text-xs text-muted-foreground">
+                                {filteredTabs.length > 0 ? (
+                                    <span>{t('settings.searchResults', { count: filteredTabs.length })}</span>
+                                ) : (
+                                    <span>{t('settings.noResults')}</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     <div className={cn("settings-section h-full pr-4", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
                         {statusMessage && (
                             <div className="mb-6 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
@@ -87,6 +123,7 @@ export function SettingsPage({
                         {activeTab === 'developer' && <DeveloperTab {...sharedProps} />}
                         {activeTab === 'advanced' && <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />}
                         {activeTab === 'about' && <AboutTab {...sharedProps} onReset={handleFactoryReset} />}
+                        {activeTab === 'usage-limits' && <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels || undefined} />}
                         {activeTab === 'gallery' && <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20"><GalleryView language={settings?.general?.language || 'tr'} /></div>}
                     </div>
                 </main>

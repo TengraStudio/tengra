@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { CodeEditor } from '@/components/ui/CodeEditor'
 import { Volume2, VolumeX, Copy, Check } from 'lucide-react'
 import { normalizeLanguage } from '@/utils/language-map'
+import { useTranslation, Language } from '@/i18n'
 // import { cn } from '@/lib/utils'
 
 interface MonacoBlockProps {
@@ -10,6 +11,7 @@ interface MonacoBlockProps {
     isSpeaking?: boolean
     onSpeak?: () => void
     onStop?: () => void
+    i18nLanguage?: Language
 }
 
 export const MonacoBlock: React.FC<MonacoBlockProps> = ({
@@ -17,18 +19,15 @@ export const MonacoBlock: React.FC<MonacoBlockProps> = ({
     code,
     isSpeaking,
     onSpeak,
-    onStop
+    onStop,
+    i18nLanguage = 'en'
 }) => {
+    const { t } = useTranslation(i18nLanguage)
     const [copied, setCopied] = useState(false)
-    const [height, setHeight] = useState(200) // Default start
 
     // Calculate initial height based on lines
-    useEffect(() => {
-        const lines = code.split('\n').length
-        // Approx 19px per line + padding
-        const newHeight = Math.min(Math.max(lines * 19 + 20, 100), 600) // Max 600px, then scroll
-        setHeight(newHeight)
-    }, [code])
+    const lines = code.split('\n').length
+    const height = Math.min(Math.max(lines * 19 + 20, 100), 600) // Max 600px, then scroll
 
     const handleCopy = () => {
         navigator.clipboard.writeText(code)
@@ -45,11 +44,11 @@ export const MonacoBlock: React.FC<MonacoBlockProps> = ({
                 </span>
                 <div className="flex items-center gap-1.5">
                     {isSpeaking ? (
-                        <button onClick={onStop} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-primary" title="Stop Speaking">
+                        <button onClick={onStop} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-primary" title={t('workspace.stopSpeaking')}>
                             <VolumeX className="w-3.5 h-3.5" />
                         </button>
                     ) : (
-                        <button onClick={onSpeak} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground" title="Speak Code">
+                        <button onClick={onSpeak} className="p-1 px-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('workspace.speakCode')}>
                             <Volume2 className="w-3.5 h-3.5" />
                         </button>
                     )}

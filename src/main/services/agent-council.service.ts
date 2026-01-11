@@ -1,5 +1,6 @@
 import { DatabaseService, CouncilSession } from './data/database.service'
-import { PLANNER_SYSTEM_PROMPT, EXECUTOR_SYSTEM_PROMPT } from './prompts/agent-prompts'
+import { v4 as uuidv4 } from 'uuid'
+import { PLANNER_SYSTEM_PROMPT, EXECUTOR_SYSTEM_PROMPT, REVIEWER_SYSTEM_PROMPT } from './prompts/agent-prompts'
 import { LLMService } from './llm/llm.service'
 import { FileSystemService } from './data/filesystem.service'
 import { ProcessService } from './process.service'
@@ -9,7 +10,7 @@ import { WebService } from './web.service'
 import { CollaborationService } from './collaboration.service'
 
 import { EmbeddingService } from './llm/embedding.service'
-import { JsonObject, JsonValue } from '../../shared/types/common'
+import { JsonValue } from '../../shared/types/common'
 import { getErrorMessage } from '../../shared/utils/error.util'
 
 interface ToolCallArgs {
@@ -139,7 +140,6 @@ export class AgentCouncilService {
      * Retrieves all sessions.
      */
     async getSessions(): Promise<CouncilSession[]> {
-        // Warning: This implementation in DB service might need updating to return correct type
         return this.db.getCouncilSessions()
     }
 
@@ -172,12 +172,9 @@ export class AgentCouncilService {
      * Executes a single step of the agent loop.
      * 
      * Logic:
-     * 1. If currently PLANNING, invokes the Planner Agent to generate a plan.
-     *    - Uses Retrieval Augmented Generation (RAG) to recall similar past sessions.
-     * 2. If currently EXECUTING, invokes the Executor Agent to perform the next action.
-     *    - Parses tool calls from LLM response.
-     *    - Executes tools via `executeTool`.
-     *    - Detects completion or help requests.
+     * 1. If PLANNING -> Planner.
+     * 2. If EXECUTING -> Executor.
+     * 3. If REVIEWING -> Reviewer.
      * 
      * @param sessionId - Active session ID
      */
@@ -192,31 +189,19 @@ export class AgentCouncilService {
         const provider = 'openai'
 
         // 1. Planner Agent Logic
-        if (!session.plan) {
+        if (!session.plan || session.status === 'planning') {
             await this.db.addCouncilLog(sessionId, 'planner', `Analyzing goal: "${session.goal}"...`, 'info')
 
-            // Memory Recall: Search for similar past sessions
-            let memoryContext = ''
+            // Memory Recall (Deprecated: EmbeddingService.search removed)
+            // TODO: Use ContextRetrievalService or new DatabaseService search methods
+            const memoryContext = '' // Default to empty
+            /*
             try {
-                const memories = await this.embedding.search(session.goal, 3)
-                if (memories.length > 0) {
-                    const relevantMemories = memories
-                        .filter((m) => (m.score ?? 0) > 0.8) // Only high relevance
-                        .map((m) => {
-                            const metadata = (m.metadata && typeof m.metadata === 'object') ? (m.metadata as JsonObject) : undefined
-                            const goal = typeof metadata?.goal === 'string' ? metadata.goal : 'Unknown goal'
-                            return `- Past Goal: "${goal}"\n  Plan Used: ${m.content}`
-                        })
-                        .join('\n\n')
-
-                    if (relevantMemories) {
-                        memoryContext = `\n\n**Reliable Memory (Use this experience):**\n${relevantMemories}`
-                        await this.addLog(sessionId, 'planner', 'Recalled relevant past experience.', 'success')
-                    }
-                }
+                // ... logic removed ...
             } catch (err) {
                 console.warn('Memory recall failed:', getErrorMessage(err as Error))
             }
+            */
 
             try {
                 const response = await this.llm.chat([
@@ -225,10 +210,7 @@ export class AgentCouncilService {
                 ], model, undefined, provider)
 
                 const plan = response.content || 'Failed to generate plan.'
-
-                // Broadcast Plan to Chat
                 await this.addLog(sessionId, 'planner', plan, 'plan')
-
                 await this.db.updateCouncilStatus(sessionId, 'executing', plan)
             } catch (error) {
                 const msg = getErrorMessage(error as Error)
@@ -243,8 +225,7 @@ export class AgentCouncilService {
             await this.db.addCouncilLog(sessionId, 'executor', 'Processing next step...', 'info')
 
             try {
-                // Build robust context from goals + logs
-                const recentLogs = session.logs.slice(-10).map(l => `[${l.agentId}]: ${l.message}`).join('\n')
+                const recentLogs = session.logs.slice(-15).map(l => `[${l.agentId}]: ${l.message}`).join('\n')
                 const context = `Goal: ${session.goal}\nPlan:\n${session.plan}\n\nRecent History:\n${recentLogs}\n\nCurrent Task: Execute the next logical step. If you need to run a tool, Output the JSON block.`
 
                 const response = await this.llm.chat([
@@ -256,49 +237,34 @@ export class AgentCouncilService {
                 const toolCalls = this.extractToolCalls(content)
 
                 if (toolCalls.length > 0) {
-                    const toolCall = toolCalls[0] // Backward compatibility for this block
-                    // In future we should loop over toolCalls like in the other block below
+                    const toolCall = toolCalls[0]
                     await this.db.addCouncilLog(sessionId, 'executor', `Calling tool: ${toolCall.tool}`, 'action')
 
                     try {
                         const result = await this.executeTool(toolCall.tool, toolCall.args)
                         await this.db.addCouncilLog(sessionId, 'system', `Tool Output:\n${result.slice(0, 500)}${result.length > 500 ? '...' : ''}`, 'success')
-
-                        // Continue loop logic here if we were running automously.
-                        // For now we stop to let user trigger next step.
                     } catch (err) {
                         const msg = getErrorMessage(err as Error)
                         await this.db.addCouncilLog(sessionId, 'system', `Tool Execution Failed: ${msg}`, 'error')
                     }
                 } else {
-                    // No tool call, just text
                     await this.addLog(sessionId, 'executor', content, 'action')
 
-                    // Detect Help Request
                     if (content.includes('ASK_PLANNER') || content.includes('@planner')) {
                         await this.addLog(sessionId, 'system', 'Executor requested help. Triggering Plan Revision...', 'info')
-                        await this.db.updateCouncilStatus(sessionId, 'planning') // Switch back to planning mode
-                        // The loop will pick this up in the next tick and run the Planner Logic
+                        await this.db.updateCouncilStatus(sessionId, 'planning')
                         return
                     }
 
                     if (content.includes('[DONE]') || content.toLowerCase().includes('task completed')) {
-                        await this.db.updateCouncilStatus(sessionId, 'completed', undefined, 'Task completed by agent.')
-                        await this.addLog(sessionId, 'system', 'Session completed.', 'success')
+                        // Check if Reviewer is active (assuming yes for now or based on session agents)
+                        const reviewerActive = session.agents.some(a => a.id === '3' || a.role.toLowerCase() === 'reviewer') || true // Default to true for now to force usage
 
-                        // Memory Indexing: Learn from this session
-                        try {
-                            const memoryContent = session.plan || ''
-                            // We use a virtual path to store this memory
-                            await this.db.storeVector(
-                                `memory://session/${sessionId}`,
-                                memoryContent,
-                                await this.embedding.generateEmbedding(session.goal),
-                                { type: 'session', goal: session.goal, timestamp: Date.now() }
-                            )
-                            await this.addLog(sessionId, 'system', 'Experience memorized for future tasks.', 'success')
-                        } catch (err) {
-                            console.error('Failed to index memory', getErrorMessage(err as Error))
+                        if (reviewerActive) {
+                            await this.db.updateCouncilStatus(sessionId, 'reviewing')
+                            await this.addLog(sessionId, 'system', 'Task marked as done. Requesting Review...', 'info')
+                        } else {
+                            await this.completeSession(sessionId, session)
                         }
                     }
                 }
@@ -307,6 +273,80 @@ export class AgentCouncilService {
                 const msg = getErrorMessage(error as Error)
                 await this.db.addCouncilLog(sessionId, 'executor', `Execution failed: ${msg}`, 'error')
             }
+            return
+        }
+
+        // 3. Reviewer Agent Logic
+        if (session.status === 'reviewing') {
+            await this.db.addCouncilLog(sessionId, 'reviewer', 'Reviewing execution...', 'info')
+
+            try {
+                const recentLogs = session.logs.slice(-20).map(l => `[${l.agentId}]: ${l.message}`).join('\n')
+                const context = `Goal: ${session.goal}\nPlan:\n${session.plan}\n\nSession Context:\n${recentLogs}\n\nTask: Verify if the goal is met and code is correct.`
+
+                const response = await this.llm.chat([
+                    { role: 'system', content: REVIEWER_SYSTEM_PROMPT },
+                    { role: 'user', content: context }
+                ], model, undefined, provider)
+
+                const content = response.content || ''
+                // Parse JSON output
+                let verdict: { status: string, feedback: string } | null = null
+                try {
+                    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*}/)
+                    if (jsonMatch) {
+                        verdict = JSON.parse(jsonMatch[1] || jsonMatch[0])
+                    }
+                } catch (e) {
+                    console.error('Failed to parse reviewer output', e)
+                }
+
+                if (verdict) {
+                    await this.addLog(sessionId, 'reviewer', `Verdict: ${verdict.status.toUpperCase()}\nFeedback: ${verdict.feedback}`, 'action')
+
+                    if (verdict.status === 'approved') {
+                        await this.completeSession(sessionId, session)
+                    } else {
+                        // Rejected
+                        await this.db.updateCouncilStatus(sessionId, 'executing')
+                        await this.addLog(sessionId, 'system', 'Review rejected. Returning to Executor.', 'error')
+                    }
+                } else {
+                    // Fallback if no JSON
+                    await this.addLog(sessionId, 'reviewer', content, 'action')
+                    // Assume rejection if unstructured? Or ask to retry? 
+                    // For safety, assume rejection and go back to executing to fix or ask.
+                    await this.db.updateCouncilStatus(sessionId, 'executing')
+                    await this.addLog(sessionId, 'system', 'Review format invalid. Returning to Executor to clarify.', 'error')
+                }
+
+            } catch (error) {
+                const msg = getErrorMessage(error as Error)
+                await this.db.addCouncilLog(sessionId, 'reviewer', `Review failed: ${msg}`, 'error')
+            }
+        }
+    }
+
+    private async completeSession(sessionId: string, session: CouncilSession) {
+        await this.db.updateCouncilStatus(sessionId, 'completed', undefined, 'Task completed and approved.')
+        await this.addLog(sessionId, 'system', 'Session completed successfully.', 'success')
+
+        try {
+            const memoryContent = session.plan || ''
+            await this.db.storeEpisodicMemory({
+                id: uuidv4(),
+                title: `Council Session: ${session.goal.slice(0, 50)}`,
+                summary: memoryContent,
+                embedding: await this.embedding.generateEmbedding(session.goal),
+                startDate: session.createdAt,
+                endDate: Date.now(),
+                chatId: sessionId,
+                participants: session.agents.map(a => a.name),
+                createdAt: Date.now()
+            })
+            await this.addLog(sessionId, 'system', 'Experience memorized.', 'success')
+        } catch (err) {
+            console.error('Failed to index memory', getErrorMessage(err as Error))
         }
     }
 
@@ -352,14 +392,6 @@ export class AgentCouncilService {
     /**
      * Executes a specific tool with provided arguments.
      * 
-     * Supported Tools:
-     * - runCommand: Execute shell command
-     * - readFile: Read local file
-     * - writeFile: Write local file
-     * - runScript: Execute dynamic Python/Node script
-     * - listDir: List directory contents
-     * - callSystem: Invoke internal service method
-     * 
      * @param name - Tool name
      * @param args - Tool arguments
      * @returns Tool execution logic
@@ -368,7 +400,6 @@ export class AgentCouncilService {
         switch (name) {
             case 'runCommand': {
                 if (!args.command) throw new Error('Missing command argument')
-                // Use execute instead of spawn to get output directly for the agent
                 return await this.process.execute(args.command, args.cwd || process.cwd())
             }
 
@@ -391,17 +422,12 @@ export class AgentCouncilService {
                 const ext = args.language === 'python' ? 'py' : 'js'
                 const scriptPath = `.orbit/temp/agent_script_${Date.now()}.${ext}`
 
-                // Ensure temp dir exists
                 await this.fs.createDirectory('.orbit/temp')
                 const writeScript = await this.fs.writeFile(scriptPath, args.code)
                 if (!writeScript.success) throw new Error(`Failed to write script: ${writeScript.error}`)
 
                 const cmd = args.language === 'python' ? `python "${scriptPath}"` : `node "${scriptPath}"`
                 const output = await this.process.execute(cmd, process.cwd())
-
-                // Cleanup (optional, maybe keep for debugging)
-                // await this.fs.deleteFile(scriptPath)
-
                 return `Script Output:\n${output}`
             }
 
@@ -416,7 +442,6 @@ export class AgentCouncilService {
             case 'callSystem': {
                 if (!args.service || !args.method) throw new Error('Missing service or method')
 
-                // Construct a service map dynamically (or typed if we want strictness)
                 const services = {
                     llm: this.llm,
                     db: this.db,
@@ -437,12 +462,9 @@ export class AgentCouncilService {
                     throw new Error(`Method ${args.method} not found on service ${args.service}`)
                 }
 
-                // Call the method with spread args
-                // args.args should be an array
                 const methodArgs = Array.isArray(args.args) ? args.args : []
                 const result = await (method as (...fnArgs: JsonValue[]) => Promise<JsonValue> | JsonValue)(...methodArgs)
 
-                // Serialize result
                 return JSON.stringify(result, null, 2)
             }
 

@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { cn } from '@/lib/utils'
 import { AppSettings } from '../../../../shared/types/settings'
 import { Type, Palette } from 'lucide-react'
@@ -159,23 +159,44 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/30">
-                    <div>
-                        <div className="text-sm font-bold text-foreground">{t('appearance.highContrast')}</div>
-                        <div className="text-xs text-muted-foreground">{t('appearance.highContrastDesc')}</div>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/30">
+                        <div>
+                            <div className="text-sm font-bold text-foreground">{t('appearance.highContrast')}</div>
+                            <div className="text-xs text-muted-foreground">{t('appearance.highContrastDesc')}</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={!!settings?.general?.highContrast}
+                                onChange={e => {
+                                    updateGeneral({ highContrast: e.target.checked });
+                                    document.documentElement.classList.toggle('high-contrast', e.target.checked);
+                                }}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={!!settings?.general?.highContrast}
-                            onChange={e => {
-                                updateGeneral({ highContrast: e.target.checked });
-                                document.documentElement.classList.toggle('high-contrast', e.target.checked);
-                            }}
-                            className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/30">
+                        <div>
+                            <div className="text-sm font-bold text-foreground">{t('appearance.reduceMotion')}</div>
+                            <div className="text-xs text-muted-foreground">{t('appearance.reduceMotionDesc')}</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={!!settings?.general?.reduceMotion}
+                                onChange={e => {
+                                    updateGeneral({ reduceMotion: e.target.checked });
+                                    document.documentElement.classList.toggle('reduce-motion', e.target.checked);
+                                }}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { DatabaseService } from './data/database.service';
 import { ScannerService } from './scanner.service';
 import { EmbeddingService } from './llm/embedding.service';
-import * as fs from 'fs/promises';
+// import * as fs from 'fs/promises'; (Unused)
 
 interface ExchangeRateResponse {
     rates: Record<string, number>;
@@ -10,8 +10,8 @@ interface ExchangeRateResponse {
 export class UtilityService {
     constructor(
         private db: DatabaseService,
-        private scanner: ScannerService,
-        private embedding: EmbeddingService
+        _scanner: ScannerService,
+        _embedding: EmbeddingService
     ) { }
 
     // 16. Currency Converter (Simple static/ratio for demo or small API)
@@ -120,41 +120,17 @@ export class UtilityService {
     }
 
     // 40. Local RAG (Vector-based)
-    async indexDocument(path: string) {
-        try {
-            const content = await fs.readFile(path, 'utf8');
-            const chunks = [content];
-            await this.embedding.indexChunks(path, chunks);
-            return { success: true, message: `Document indexed: ${path}` };
-        } catch (e) {
-            const message = e instanceof Error ? e.message : String(e);
-            return { success: false, error: message };
-        }
+    // 40. Local RAG (Deprecated)
+    async indexDocument(_path: string) {
+        return { success: false, error: 'Deprecated. Use CodeIntelligenceService for indexing.' };
     }
 
-    async searchDocuments(query: string) {
-        try {
-            const results = await this.embedding.search(query);
-            return { success: true, results };
-        } catch (e) {
-            const message = e instanceof Error ? e.message : String(e);
-            return { success: false, error: message };
-        }
+    async searchDocuments(_query: string) {
+        return { success: false, error: 'Deprecated. Use ContextRetrievalService for search.' };
     }
 
-    // 41. Codebase Scanner (New)
-    async scanCodebase(dir: string) {
-        try {
-            const scanResults = await this.scanner.scanDirectory(dir);
-            let indexedCount = 0;
-            for (const res of scanResults) {
-                await this.embedding.indexChunks(res.path, res.chunks);
-                indexedCount++;
-            }
-            return { success: true, message: `Scanned and indexed ${indexedCount} files from ${dir}` };
-        } catch (e) {
-            const message = e instanceof Error ? e.message : String(e);
-            return { success: false, error: message };
-        }
+    // 41. Codebase Scanner (Deprecated)
+    async scanCodebase(_dir: string) {
+        return { success: false, error: 'Deprecated. Use CodeIntelligenceService for scanning.' };
     }
 }

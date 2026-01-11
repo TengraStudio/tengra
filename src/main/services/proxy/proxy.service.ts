@@ -309,16 +309,17 @@ export class ProxyService {
       };
     }
 
-    let extra: ModelQuotaItem[] = []
+    const extra: ModelQuotaItem[] = []
     let antigravityError: string | undefined
 
-    try {
-      extra = await this.quotaService.getAntigravityAvailableModels();
-    } catch (error) {
-      if (getErrorMessage(error) === 'AUTH_EXPIRED') {
-        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.'
-      }
-    }
+    // Antigravity support removed
+    // try {
+    //   extra = await this.quotaService.getAntigravityAvailableModels();
+    // } catch (error) {
+    //   if (getErrorMessage(error) === 'AUTH_EXPIRED') {
+    //     antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.'
+    //   }
+    // }
 
     const base = Array.isArray(baseRes?.data) ? baseRes.data.map((m: ModelItem) => {
       const id = m.id.toLowerCase();

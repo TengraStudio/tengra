@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { CouncilAgent, ActivityEntry } from '@/types';
 
@@ -12,6 +12,8 @@ interface CouncilPanelProps {
     activityLog: ActivityEntry[];
     clearLogs: () => void;
     t: (key: string) => string;
+    goal: string;
+    setGoal: (val: string) => void;
 }
 
 /**
@@ -29,7 +31,12 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
     agents,
     toggleAgent,
     addAgent,
-    runCouncil
+    runCouncil,
+    activityLog,
+    clearLogs,
+    goal,
+    setGoal,
+    t
 }) => {
     const enabledAgents = agents.filter((agent) => agent.enabled);
     const localCount = enabledAgents.filter((agent) => agent.kind === 'local').length;
@@ -39,8 +46,8 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
         <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-                    <div className="text-xs uppercase text-zinc-500 tracking-widest">Council</div>
-                    <div className="text-2xl font-bold text-white">{councilEnabled ? 'Enabled' : 'Disabled'}</div>
+                    <div className="text-xs uppercase text-zinc-500 tracking-widest">{t('agents.council')}</div>
+                    <div className="text-2xl font-bold text-white">{councilEnabled ? t('agents.enabled') : t('agents.disabled')}</div>
                     <button
                         onClick={toggleCouncil}
                         className={cn(
@@ -50,41 +57,45 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                                 : "bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10"
                         )}
                     >
-                        {councilEnabled ? 'Disable council' : 'Enable council'}
+                        {councilEnabled ? t('agents.disableCouncil') : t('agents.enableCouncil')}
                     </button>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-                    <div className="text-xs uppercase text-zinc-500 tracking-widest">Agents</div>
+                    <div className="text-xs uppercase text-zinc-500 tracking-widest">{t('agents.agents')}</div>
                     <div className="text-2xl font-bold text-white">{enabledAgents.length}</div>
-                    <div className="text-xs text-zinc-500">{localCount} local / {cloudCount} cloud</div>
+                    <div className="text-xs text-zinc-500">{localCount} {t('agents.local')} / {cloudCount} {t('agents.cloud')}</div>
                     <button
                         onClick={addAgent}
                         className="w-full px-3 py-2 rounded-lg text-xs font-semibold border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10"
                     >
-                        Add agent
+                        {t('agents.addAgent')}
                     </button>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-                    <div className="text-xs uppercase text-zinc-500 tracking-widest">Consensus</div>
-                    <div className="text-2xl font-bold text-white">2/3</div>
-                    <div className="text-xs text-zinc-500">Default voting threshold</div>
+                    <div className="text-xs uppercase text-zinc-500 tracking-widest">{t('agents.goal')}</div>
+                    <textarea
+                        className="w-full h-16 bg-black/20 border border-white/10 rounded-lg p-2 text-xs text-zinc-300 resize-none focus:outline-none focus:border-primary/50 custom-scrollbar"
+                        placeholder={t('agents.describeObjective')}
+                        value={goal}
+                        onChange={e => setGoal(e.target.value)}
+                    />
                     <button
                         onClick={runCouncil}
-                        disabled={!councilEnabled}
+                        disabled={!councilEnabled || !goal.trim()}
                         className={cn(
                             "w-full px-3 py-2 rounded-lg text-xs font-semibold border border-white/10 bg-white/5 text-zinc-200 transition-colors",
-                            councilEnabled ? "hover:bg-white/10" : "opacity-60 cursor-not-allowed"
+                            (councilEnabled && goal.trim()) ? "hover:bg-white/10" : "opacity-60 cursor-not-allowed"
                         )}
                     >
-                        Run council
+                        {t('agents.runCouncil')}
                     </button>
                 </div>
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-semibold text-white">Agents</div>
-                    <div className="text-xs text-zinc-500">{enabledAgents.length} active</div>
+                    <div className="text-sm font-semibold text-white">{t('agents.agents')}</div>
+                    <div className="text-xs text-zinc-500">{enabledAgents.length} {t('agents.active')}</div>
                 </div>
                 <div className="space-y-3">
                     {agents.map((agent) => (
@@ -107,45 +118,94 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                                         : "bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10"
                                 )}
                             >
-                                {agent.enabled ? 'On' : 'Off'}
+                                {agent.enabled ? t('agents.on') : t('agents.off')}
                             </button>
                         </div>
                     ))}
                 </div>
             </div>
 
+            <div className="bg-card border border-border rounded-2xl p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-white">{t('agents.thoughtStream')}</div>
+                    <button onClick={clearLogs} className="text-xs text-zinc-500 hover:text-zinc-300">{t('agents.clear')}</button>
+                </div>
+                <div className="h-64 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl bg-black/40 p-4 space-y-3 font-mono text-xs">
+                    {activityLog.length === 0 ? (
+                        <div className="text-zinc-600 italic text-center py-10">
+                            {t('agents.waitingActivity')}
+                        </div>
+                    ) : (
+                        activityLog.map((log: any) => (
+                            <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className={cn(
+                                    "shrink-0 w-1.5 h-1.5 mt-1.5 rounded-full",
+                                    log.type === 'error' ? "bg-red-500" :
+                                        log.type === 'success' ? "bg-emerald-500" :
+                                            log.type === 'plan' ? "bg-blue-500" :
+                                                log.agentId === 'reviewer' ? "bg-purple-500" :
+                                                    "bg-zinc-500"
+                                )} />
+                                <div className="space-y-1 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn(
+                                            "uppercase font-bold tracking-wider text-[10px]",
+                                            (log.agentId === 'planner' || log.title === 'PLANNER') ? "text-blue-400" :
+                                                (log.agentId === 'executor' || log.title === 'EXECUTOR') ? "text-amber-400" :
+                                                    (log.agentId === 'reviewer' || log.title === 'REVIEWER') ? "text-purple-400" :
+                                                        "text-zinc-400"
+                                        )}>
+                                            {log.agentId || log.title || t('agents.system')}
+                                        </span>
+                                        <span className="text-[10px] text-zinc-600">
+                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                        </span>
+                                    </div>
+                                    <div className="text-zinc-300 whitespace-pre-wrap leading-relaxed break-words">
+                                        {/* Simple formatting for code blocks in logs */}
+                                        {log.message.split('```').map((part: string, i: number) => (
+                                            i % 2 === 1 ? <code key={i} className="block my-2 p-2 bg-white/5 rounded border border-white/5 text-amber-200/80">{part.trim()}</code> : <span key={i}>{part}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-card border border-border rounded-2xl p-5">
-                    <div className="text-sm font-semibold text-white mb-3">Task routing</div>
+                    <div className="text-sm font-semibold text-white mb-3">{t('agents.taskRouting')}</div>
                     <div className="space-y-2 text-xs text-zinc-500">
                         <div className="flex items-center justify-between">
-                            <span>Strategy</span>
-                            <span className="text-zinc-300">Round robin</span>
+                            <span>{t('agents.strategy')}</span>
+                            <span className="text-zinc-300">{t('agents.roundRobin')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Soft deadline</span>
+                            <span>{t('agents.softDeadline')}</span>
                             <span className="text-zinc-300">4s</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Hard deadline</span>
+                            <span>{t('agents.hardDeadline')}</span>
                             <span className="text-zinc-300">25s</span>
                         </div>
                     </div>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5">
-                    <div className="text-sm font-semibold text-white mb-3">Decision rules</div>
+                    <div className="text-sm font-semibold text-white mb-3">{t('agents.decisionRules')}</div>
                     <div className="space-y-2 text-xs text-zinc-500">
                         <div className="flex items-center justify-between">
-                            <span>Confidence gate</span>
+                            <span>{t('agents.confidenceGate')}</span>
                             <span className="text-zinc-300"> {'>'}= 0.7</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Conflict handling</span>
-                            <span className="text-zinc-300">Escalate to user</span>
+                            <span>{t('agents.conflictHandling')}</span>
+                            <span className="text-zinc-300">{t('agents.escalateToUser')}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span>Late suggestions</span>
-                            <span className="text-zinc-300">Allowed</span>
+                            <span>{t('agents.lateSuggestions')}</span>
+                            <span className="text-zinc-300">{t('agents.allowed')}</span>
                         </div>
                     </div>
                 </div>

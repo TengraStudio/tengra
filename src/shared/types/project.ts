@@ -44,4 +44,5 @@ export interface ProjectAnalysis {
         type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
         packages: string[];
     }
+    todos: string[]
 }

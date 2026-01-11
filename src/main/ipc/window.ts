@@ -32,6 +32,12 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
             win.center()
         }
     })
+    
+    ipcMain.on('window:toggle-fullscreen', () => {
+        const win = getMainWindow()
+        if (!win) return
+        win.setFullScreen(!win.isFullScreen())
+    })
 
     ipcMain.handle('shell:openExternal', async (_event, url) => {
         console.log('[MAIN] shell:openExternal handle called with URL:', url)

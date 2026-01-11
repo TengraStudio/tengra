@@ -1,11 +1,20 @@
 import { BaseService } from './base.service';
 import { SettingsService } from './settings.service';
+import { JsonValue } from '../../shared/types/common';
 // import * as dotenv from 'dotenv'; // Ensure dotenv is installed or load manually if not. Assuming typical electron setup. 
 // If dotenv is not available, we rely on process.env (already loaded) or simple file loading.
 // For Electron main process, usually envs are passed or loaded in main.ts. We assume process.env is populated.
 
+/**
+ * Service for managing configuration values with priority-based resolution.
+ * Configuration values are resolved in the following order:
+ * 1. Runtime cache (highest priority)
+ * 2. Environment variables
+ * 3. Settings file
+ * 4. Default value (lowest priority)
+ */
 export class ConfigService extends BaseService {
-    private cache: Map<string, any> = new Map();
+    private cache: Map<string, JsonValue> = new Map();
 
     constructor(private settingsService: SettingsService) {
         super('ConfigService');
@@ -13,8 +22,11 @@ export class ConfigService extends BaseService {
 
     /**
      * Sets a runtime configuration value.
+     * 
+     * @param key - The configuration key
+     * @param value - The value to set (must be JSON-serializable)
      */
-    setConfig(key: string, value: any) {
+    setConfig(key: string, value: JsonValue): void {
         this.cache.set(key, value);
     }
 
@@ -42,7 +54,12 @@ export class ConfigService extends BaseService {
         // 3. Check Settings Service
         const settings = this.settingsService.getSettings();
         const settingKey = key.toLowerCase().replace(/_/g, '.');
-        const settingValue = settingKey.split('.').reduce((obj, k) => (obj && (obj as any)[k] !== 'undefined') ? (obj as any)[k] : undefined, settings);
+        const settingValue = settingKey.split('.').reduce((obj: JsonValue | undefined, k: string) => {
+            if (obj && typeof obj === 'object' && k in obj) {
+                return (obj as Record<string, JsonValue>)[k];
+            }
+            return undefined;
+        }, settings as JsonValue);
 
         if (settingValue !== undefined && settingValue !== null) {
             return settingValue as T;

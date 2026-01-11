@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Send, Square, Paperclip, X, Image as ImageIcon, FileText, FileCode, File as FileIcon, Mic, MicOff } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Attachment } from '@/types'
@@ -50,6 +50,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const [showCommandMenu, setShowCommandMenu] = React.useState(false)
     const [commandQuery, setCommandQuery] = React.useState('')
     const [selectedIndex, setSelectedIndex] = React.useState(0)
+    const [isDragging, setIsDragging] = React.useState(false)
 
     const filteredPrompts = React.useMemo(() => {
         if (!prompts) return []
@@ -122,6 +123,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         }
     }
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(true)
+    }
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+    }
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDragging(false)
+
+        const files = e.dataTransfer.files
+        if (files && files.length > 0) {
+            // Process the first file (can be extended to support multiple files)
+            processFile(files[0])
+        }
+    }
+
     const getFileIcon = (type: string) => {
         if (type.startsWith('image/')) return <ImageIcon size={14} />
         if (type.includes('text') || type.includes('json') || type.includes('md')) return <FileText size={14} />
@@ -130,7 +155,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
 
     return (
-        <div className="p-4 border-t border-white/5 bg-zinc-950/50 backdrop-blur-sm relative z-30">
+        <div 
+            className={cn(
+                "p-4 border-t border-white/5 bg-zinc-950/50 backdrop-blur-sm relative z-30",
+                isDragging && "ring-2 ring-purple-500/50 border-purple-500/50"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
             {/* Attachments Preview */}
             <AnimatePresence>
                 {attachments.length > 0 && (
@@ -154,8 +187,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                 <button
                                     onClick={() => removeAttachment(i)}
                                     className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label={`Remove ${att.name}`}
                                 >
-                                    <X size={12} />
+                                    <X size={12} aria-hidden="true" />
                                 </button>
                             </div>
                         ))}
@@ -171,8 +205,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         className="absolute bottom-full left-0 mb-2 w-64 bg-zinc-900 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+                        role="listbox"
+                        aria-label="Prompt suggestions"
                     >
-                        <div className="text-[10px] uppercase font-bold text-zinc-500 px-3 py-1.5 bg-black/20">Prompts</div>
+                        <div className="text-[10px] uppercase font-bold text-zinc-500 px-3 py-1.5 bg-black/20" role="heading" aria-level={3}>Prompts</div>
                         {filteredPrompts.map((prompt, i) => (
                             <button
                                 key={prompt.id}
@@ -187,6 +223,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                     "w-full text-left px-3 py-2 text-xs transition-colors block",
                                     i === selectedIndex ? "bg-purple-500/20 text-purple-200" : "hover:bg-white/5 text-zinc-300"
                                 )}
+                                aria-label={`Use prompt: ${prompt.title}`}
+                                aria-selected={i === selectedIndex}
+                                role="option"
                             >
                                 <div className="font-medium">{prompt.title}</div>
                                 <div className="text-[10px] text-zinc-500 truncate">{prompt.content}</div>
@@ -204,8 +243,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             onClick={() => fileInputRef.current?.click()}
                             className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                             title={t('input.attachFile')}
+                            aria-label={t('input.attachFile')}
                         >
-                            <Paperclip size={20} />
+                            <Paperclip size={20} aria-hidden="true" />
                         </button>
                         <input
                             type="file"
@@ -223,8 +263,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             isListening ? "bg-red-500/20 text-red-500 animate-pulse" : "text-zinc-400 hover:text-white hover:bg-white/5"
                         )}
                         title={isListening ? t('input.stopListening') : t('input.startListening')}
+                        aria-label={isListening ? t('input.stopListening') : t('input.startListening')}
+                        aria-pressed={isListening}
                     >
-                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                        {isListening ? <MicOff size={20} aria-hidden="true" /> : <Mic size={20} aria-hidden="true" />}
                     </button>
 
                     <div className="h-8 w-px bg-white/5 mx-1" />
@@ -257,6 +299,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     }
                     className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-zinc-100 placeholder:text-zinc-600 resize-none py-2.5 max-h-[200px]"
                     rows={1}
+                    aria-label={t('input.placeholder.default')}
+                    aria-describedby="chat-input-hint"
                 />
 
                 {/* Send/Stop Button */}
@@ -271,11 +315,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                 ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500"
                                 : "bg-white/5 text-zinc-600 cursor-not-allowed"
                     )}
+                    aria-label={isLoading ? t('common.stop') : t('common.send')}
                 >
                     {isLoading ? (
-                        <Square size={18} fill="currentColor" className="animate-pulse" />
+                        <Square size={18} fill="currentColor" className="animate-pulse" aria-hidden="true" />
                     ) : (
-                        <Send size={18} className={cn((input.trim() || attachments.length > 0) && "ml-0.5")} />
+                        <Send size={18} className={cn((input.trim() || attachments.length > 0) && "ml-0.5")} aria-hidden="true" />
                     )}
                 </button>
             </div>

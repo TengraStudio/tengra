@@ -76,6 +76,124 @@ export default function App() {
         { id: 'debug', icon: 'Bug', iconColor: 'text-rose-400', title: t('templates.debug.title'), description: t('templates.debug.description'), prompt: t('templates.debug.prompt') }
     ]
 
+    // Global keyboard shortcuts handler
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in inputs, textareas, or contenteditable elements
+            const target = e.target as HTMLElement
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+                // Allow some shortcuts even in inputs
+                if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                    e.preventDefault()
+                    setShowShortcuts(true)
+                }
+                return
+            }
+
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+            const modKey = isMac ? e.metaKey : e.ctrlKey
+
+            // Ctrl/Cmd + K: Command Palette
+            if (modKey && e.key === 'k' && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                setShowCommandPalette(prev => !prev)
+                return
+            }
+
+            // Ctrl/Cmd + N: New Chat
+            if (modKey && e.key === 'n' && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                createNewChat()
+                return
+            }
+
+            // Ctrl/Cmd + ,: Open Settings
+            if (modKey && e.key === ',' && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                setCurrentView('settings')
+                return
+            }
+
+            // ?: Show Keyboard Shortcuts
+            if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                e.preventDefault()
+                setShowShortcuts(true)
+                return
+            }
+
+            // Ctrl/Cmd + L: Clear current chat
+            if (modKey && e.key === 'l' && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                if (currentChatId) {
+                    window.electron.db.deleteMessages(currentChatId).then(() => {
+                        window.electron.db.getAllChats().then(chats => setChats(chats as Chat[]))
+                    })
+                }
+                return
+            }
+
+            // Ctrl/Cmd + F: Focus search (if available)
+            if (modKey && e.key === 'f' && !e.shiftKey && !e.altKey) {
+                // This could focus a search input if one exists
+                // For now, we'll just prevent default to avoid browser search
+                e.preventDefault()
+                return
+            }
+
+            // Ctrl/Cmd + 1-4: Switch views
+            if (modKey && !e.shiftKey && !e.altKey) {
+                if (e.key === '1') {
+                    e.preventDefault()
+                    setCurrentView('chat')
+                    return
+                }
+                if (e.key === '2') {
+                    e.preventDefault()
+                    setCurrentView('projects')
+                    return
+                }
+                if (e.key === '3') {
+                    e.preventDefault()
+                    setCurrentView('council')
+                    return
+                }
+                if (e.key === '4') {
+                    e.preventDefault()
+                    setCurrentView('settings')
+                    return
+                }
+            }
+
+            // Ctrl/Cmd + B: Toggle Sidebar
+            if (modKey && e.key === 'b' && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                setIsSidebarCollapsed(prev => !prev)
+                return
+            }
+
+            // Escape: Close modals
+            if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                if (showCommandPalette) {
+                    setShowCommandPalette(false)
+                    return
+                }
+                if (showShortcuts) {
+                    setShowShortcuts(false)
+                    return
+                }
+                if (showSSHManager) {
+                    setShowSSHManager(false)
+                    return
+                }
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+        }
+    }, [createNewChat, currentChatId, setChats, setCurrentView, showCommandPalette, showShortcuts, showSSHManager, setIsSidebarCollapsed])
+
     return (
         <div className="app-container">
             <div className="app-drag-region" />
@@ -138,9 +256,9 @@ export default function App() {
                 />
             </div>
 
-            <Modal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} title="Kimlik Doğrulama Hatası" footer={<button onClick={async () => { await handleAntigravityLogout(); setIsAuthModalOpen(false); setCurrentView('settings'); setSettingsCategory('accounts') }} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">Hesaplara Git</button>}>
+            <Modal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} title={t('auth.authError')} footer={<button onClick={async () => { await handleAntigravityLogout(); setIsAuthModalOpen(false); setCurrentView('settings'); setSettingsCategory('accounts') }} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">{t('auth.goToAccounts')}</button>}>
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Antigravity sunucusuyla bağlantı kurulamadı. Lütfen oturum açın veya API anahtarınızı kontrol edin.</p>
+                    <p className="text-sm text-muted-foreground">{t('auth.connectionFailed')}</p>
                 </div>
             </Modal>
 

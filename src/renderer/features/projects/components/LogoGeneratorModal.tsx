@@ -57,6 +57,31 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         }
     }
 
+    const handleImprovePrompt = async () => {
+        if (!prompt || isAnalyzing) return
+        setIsAnalyzing(true)
+        try {
+            const improved = await window.electron.project.improveLogoPrompt(prompt)
+            setPrompt(improved)
+        } catch (error) {
+            console.error('Improvement failed', error)
+        } finally {
+            setIsAnalyzing(false)
+        }
+    }
+
+    const handleManualUpload = async () => {
+        try {
+            const uploadedPath = await window.electron.project.uploadLogo(project.path)
+            if (uploadedPath) {
+                onApply(uploadedPath)
+                onClose()
+            }
+        } catch (error) {
+            console.error('Manual upload failed', error)
+        }
+    }
+
     const handleApply = async () => {
         if (!generatedLogo) return
         setIsGenerating(true)
@@ -87,14 +112,25 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{t('projects.prompt')}</label>
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={isAnalyzing}
-                                className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-                            >
-                                {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                                {t('projects.analyzeContext') || 'Suggest Ideas'}
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleImprovePrompt}
+                                    disabled={isAnalyzing || !prompt}
+                                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                    title={t('workspace.improvePromptWithAI')}
+                                >
+                                    <Sparkles className="w-3 h-3" />
+                                    {t('projects.improvePrompt') || 'Improve'}
+                                </button>
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={isAnalyzing}
+                                    className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                >
+                                    {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                    {t('projects.analyzeContext') || 'Suggest Ideas'}
+                                </button>
+                            </div>
                         </div>
                         <textarea
                             value={prompt}
@@ -106,8 +142,8 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{t('projects.style') || 'Style'}</label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {['Minimalist', 'Cyberpunk', 'Modern', 'Retro', 'Modern gradient', 'Flat Design', '3D Render', 'Watercolor', 'Sketch'].map(s => (
+                        <div className="grid grid-cols-3 gap-2">
+                            {['Minimalist', 'Cyberpunk', 'Modern', 'Retro', 'Modern gradient', '3D Render'].map(s => (
                                 <button
                                     key={s}
                                     onClick={() => setStyle(s)}
@@ -173,9 +209,15 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         ) : generatedLogo ? (
                             <img src={`safe-file://${generatedLogo}`} alt="Generated" className="w-full h-full object-cover animate-in zoom-in-95 duration-500" />
                         ) : (
-                            <div className="text-center p-8 opacity-20">
-                                <ImageIcon className="w-16 h-16 mx-auto mb-4" />
-                                <p className="text-xs uppercase font-bold tracking-widest">{t('projects.preview') || 'Preview'}</p>
+                            <div className="text-center p-8 opacity-40">
+                                <ImageIcon className="w-16 h-16 mx-auto mb-4 text-primary/40" />
+                                <p className="text-xs uppercase font-bold tracking-widest mb-4">{t('projects.preview') || 'Preview Area'}</p>
+                                <button
+                                    onClick={handleManualUpload}
+                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                                >
+                                    {t('projects.uploadOriginal') || 'Upload Manual Image'}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -187,16 +229,25 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                             className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
                         >
                             <Sparkles className="w-4 h-4" />
-                            {t('projects.generate') || 'Generate'}
+                            {t('projects.generate') || 'Generate with AI'}
                         </button>
 
-                        {generatedLogo && (
+                        {generatedLogo ? (
                             <button
                                 onClick={handleApply}
                                 disabled={isGenerating}
                                 className="flex items-center justify-center px-6 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                title={t('workspace.applyLogo')}
                             >
                                 {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleManualUpload}
+                                className="flex items-center justify-center px-6 bg-white/5 text-muted-foreground hover:text-white border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95"
+                                title={t('workspace.uploadImage')}
+                            >
+                                <ImageIcon className="w-6 h-6" />
                             </button>
                         )}
                     </div>

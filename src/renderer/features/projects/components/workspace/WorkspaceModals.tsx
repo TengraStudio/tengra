@@ -1,4 +1,4 @@
-﻿import React, { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, MountForm } from '@/types';
@@ -115,11 +115,22 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
 
             {/* Entry Actions Modal (Rename/Delete/Create/Search) */}
             {entryModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="workspace-modal-title"
+                >
                     <div className="bg-[#121214] border border-white/10 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center">
-                            <h3 className="text-sm font-bold text-white capitalize">{entryModal.type}</h3>
-                            <button onClick={closeEntryModal} className="text-zinc-500 hover:text-white"><X className="w-4 h-4" /></button>
+                            <h3 id="workspace-modal-title" className="text-sm font-bold text-white capitalize">{entryModal.type}</h3>
+                            <button 
+                                onClick={closeEntryModal} 
+                                className="text-zinc-500 hover:text-white"
+                                aria-label="Close modal"
+                            >
+                                <X className="w-4 h-4" aria-hidden="true" />
+                            </button>
                         </div>
                         <div className="p-4 space-y-4">
                             {entryModal.type !== 'delete' && (
@@ -128,16 +139,29 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                     type="text"
                                     value={entryName}
                                     onChange={(e) => setEntryName(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && submitEntryModal()}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            submitEntryModal()
+                                        } else if (e.key === 'Escape') {
+                                            closeEntryModal()
+                                        }
+                                    }}
                                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50"
                                     placeholder="Name..."
+                                    aria-label={`${entryModal.type} name`}
                                 />
                             )}
                             {entryModal.type === 'delete' && (
                                 <p className="text-sm text-zinc-400">Are you sure you want to delete <span className="text-white font-medium">{entryModal.entry?.name}</span>?</p>
                             )}
                             <div className="flex justify-end gap-2">
-                                <button onClick={closeEntryModal} className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5">Cancel</button>
+                                <button 
+                                    onClick={closeEntryModal} 
+                                    className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5"
+                                    aria-label="Cancel"
+                                >
+                                    Cancel
+                                </button>
                                 <button
                                     onClick={submitEntryModal}
                                     disabled={entryBusy}

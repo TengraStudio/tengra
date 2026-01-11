@@ -306,6 +306,30 @@
   .bg-glow {
     box-shadow: inset 0 0 20px hsl(var(--glow-color) / 0.1);
   }
+
+  /* 1px Technical Grid System */
+  .bg-tech-grid {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.1) 1px, transparent 1px);
+    background-position: 0 0;
+  }
+  
+  .bg-tech-grid-sm {
+    background-size: 20px 20px;
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.08) 1px, transparent 1px);
+  }
+
+  .tech-border-r {
+    border-right: 1px solid hsl(var(--border) / 0.5);
+  }
+  
+  .tech-border-b {
+    border-bottom: 1px solid hsl(var(--border) / 0.5);
+  }
 }
 
 @layer base {
@@ -488,5 +512,41 @@
 
   .animate-slide-shimmer {
     animation: slide-shimmer 2s infinite;
+  }
+
+  /* High Contrast Mode */
+  .high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --border: 0 0% 50%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 80%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+  }
+
+  /* Reduce Motion */
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

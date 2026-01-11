@@ -130,6 +130,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                         proxyModels={proxyModels}
                         onRefreshModels={loadModels}
                         activeTab={settingsCategory}
+                        groupedModels={groupedModels}
                     />
                 </motion.div>
             )}

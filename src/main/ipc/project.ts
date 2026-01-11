@@ -1,12 +1,16 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
 import { ProjectService } from '../services/project.service'
 import { LogoService } from '../services/logo.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
+import { JobSchedulerService } from '../services/job-scheduler.service'
+import { DatabaseService } from '../services/data/database.service'
 import { createIpcHandler } from '../utils/ipc-wrapper.util'
 
-export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService) => {
+export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService, jobSchedulerService: JobSchedulerService, databaseService: DatabaseService) => {
     ipcMain.handle('project:analyze', createIpcHandler('project:analyze', async (_event, rootPath: string, projectId: string) => {
+        console.log(`[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`)
         const results = await projectService.analyzeProject(rootPath)
+        console.log(`[ProjectIPC] Analysis returned ${results?.files?.length || 0} files`)
         // Trigger background indexing
         if (projectId) {
             codeIntelligenceService.indexProject(rootPath, projectId).catch(err => {
@@ -18,9 +22,25 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
 
     ipcMain.handle('project:watch', createIpcHandler('project:watch', async (_event, rootPath: string) => {
         const win = getWindow()
-        await projectService.watchProject(rootPath, (event, filePath) => {
+        await projectService.watchProject(rootPath, async (event, filePath) => {
             if (win && !win.isDestroyed()) {
                 win.webContents.send('project:file-change', { event, path: filePath, rootPath })
+            }
+
+            // Proactive RAG Indexing
+            if (event === 'change' || event === 'rename') {
+                jobSchedulerService.schedule(`index:${filePath}`, async () => {
+                    try {
+                        const projects = await databaseService.getProjects();
+                        // Ideally matches rootPath.
+                        const exactProject = projects.find(p => p.path === rootPath);
+                        if (exactProject) {
+                            await codeIntelligenceService.updateFileIndex(exactProject.id, filePath);
+                        }
+                    } catch (e) {
+                        console.error('[ProjectIPC] Auto-index failed:', e)
+                    }
+                }, 5000)
             }
         })
         return { success: true }
@@ -49,5 +69,24 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
 
     ipcMain.handle('project:getCompletion', createIpcHandler('project:getCompletion', async (_event, text: string) => {
         return await logoService.getCompletion(text)
+    }))
+
+    ipcMain.handle('project:improveLogoPrompt', createIpcHandler('project:improveLogoPrompt', async (_event, prompt: string) => {
+        return await logoService.improveLogoPrompt(prompt)
+    }))
+
+    ipcMain.handle('project:uploadLogo', createIpcHandler('project:uploadLogo', async (_event, projectPath: string) => {
+        const result = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [
+                { name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'svg'] }
+            ]
+        })
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return null
+        }
+
+        return await logoService.applyLogo(projectPath, result.filePaths[0])
     }))
 }

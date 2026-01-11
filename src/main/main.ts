@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, protocol, HandlerDetails } from 'electron'
+import { app, BrowserWindow, shell, protocol, HandlerDetails, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -6,6 +6,7 @@ import * as fs from 'fs'
 import { createServices, container } from './startup/services'
 import { McpDispatcher } from './mcp/dispatcher'
 import { appLogger, LogLevel } from './logging/logger'
+import { getErrorMessage } from '../shared/utils/error.util'
 
 // Initialize Logger
 appLogger.setLevel(LogLevel.DEBUG)
@@ -20,6 +21,7 @@ import { registerWindowIpc } from './ipc/window'
 import { registerAuthIpc } from './ipc/auth'
 import { registerProxyIpc } from './ipc/proxy'
 import { registerChatIpc } from './ipc/chat'
+import { registerUsageIpc } from './ipc/usage'
 import { registerOllamaIpc } from './ipc/ollama'
 import { registerDbIpc } from './ipc/db'
 import { registerSettingsIpc } from './ipc/settings'
@@ -43,15 +45,27 @@ import { registerLlamaIpc } from './ipc/llama'
 import { registerProcessIpc, setupProcessEvents } from './ipc/process'
 import { registerCodeIntelligenceIpc } from './ipc/code-intelligence'
 import { registerMemoryIpc } from './ipc/memory'
+import { registerGitIpc } from './ipc/git'
 
 import { ToolExecutor } from './tools/tool-executor'
+import { SettingsService } from './services/settings.service'
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let globalServices: Awaited<ReturnType<typeof createServices>> | null = null
 
-function createWindow(): BrowserWindow {
+function createWindow(settingsService?: SettingsService): BrowserWindow {
+    // Get saved window settings or use defaults
+    const settings = settingsService?.getSettings()
+    const windowSettings = settings?.window
+    const defaultWidth = 1280
+    const defaultHeight = 800
+    
     const win = new BrowserWindow({
-        width: 1280,
-        height: 800,
+        width: windowSettings?.width ?? defaultWidth,
+        height: windowSettings?.height ?? defaultHeight,
+        x: windowSettings?.x,
+        y: windowSettings?.y,
         show: false,
         frame: false,
         backgroundColor: '#000000',
@@ -64,9 +78,75 @@ function createWindow(): BrowserWindow {
         }
     })
 
+    // Apply fullscreen if saved
+    if (windowSettings?.fullscreen === true) {
+        win.setFullScreen(true)
+    }
+
     win.on('ready-to-show', () => {
         win.show()
         win.setTitle('ORBIT')
+    })
+    
+    // Save window position and size on move/resize
+    let saveTimeout: NodeJS.Timeout | null = null
+    const saveWindowState = () => {
+        if (saveTimeout) clearTimeout(saveTimeout)
+        saveTimeout = setTimeout(() => {
+            if (settingsService && !win.isDestroyed()) {
+                const bounds = win.getBounds()
+                const isFullscreen = win.isFullScreen()
+                const currentSettings = settingsService.getSettings()
+                settingsService.saveSettings({
+                    ...currentSettings,
+                    window: {
+                        ...currentSettings.window,
+                        width: bounds.width,
+                        height: bounds.height,
+                        x: bounds.x,
+                        y: bounds.y,
+                        fullscreen: isFullscreen
+                    }
+                })
+            }
+        }, 500) // Debounce saves
+    }
+    
+    win.on('moved', saveWindowState)
+    win.on('resized', saveWindowState)
+    win.on('enter-full-screen', () => {
+        if (settingsService) {
+            const currentSettings = settingsService.getSettings()
+            const currentWindow = currentSettings.window
+            settingsService.saveSettings({
+                ...currentSettings,
+                window: { 
+                    width: currentWindow?.width ?? defaultWidth,
+                    height: currentWindow?.height ?? defaultHeight,
+                    x: currentWindow?.x ?? 0,
+                    y: currentWindow?.y ?? 0,
+                    ...currentWindow,
+                    fullscreen: true 
+                }
+            })
+        }
+    })
+    win.on('leave-full-screen', () => {
+        if (settingsService) {
+            const currentSettings = settingsService.getSettings()
+            const currentWindow = currentSettings.window
+            settingsService.saveSettings({
+                ...currentSettings,
+                window: { 
+                    width: currentWindow?.width ?? defaultWidth,
+                    height: currentWindow?.height ?? defaultHeight,
+                    x: currentWindow?.x ?? 0,
+                    y: currentWindow?.y ?? 0,
+                    ...currentWindow,
+                    fullscreen: false 
+                }
+            })
+        }
     })
 
     win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
@@ -115,7 +195,9 @@ app.whenReady().then(async () => {
         }
     }
 
-    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home')])
+    // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
+    const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery')
+    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath])
 
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '')
@@ -148,9 +230,19 @@ app.whenReady().then(async () => {
 
     const services = await createServices(allowedFileRoots)
     console.log(`[Main] !!! createServices completed.`);
+    
+    // Debug: Check what tokens are available
     if (services.settingsService['authService']) {
         const tokens = services.settingsService['authService'].getAllTokens();
         console.log(`[Main] !!! AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`);
+        if (tokens['copilot_token']) {
+            console.log(`[Main] !!! copilot_token found in AuthService, length: ${tokens['copilot_token'].length}`);
+        }
+        if (tokens['github_token']) {
+            console.log(`[Main] !!! github_token found in AuthService, length: ${tokens['github_token'].length}`);
+        }
+    } else {
+        console.warn(`[Main] !!! AuthService not available in settingsService`);
     }
 
     await services.databaseService.initialize()
@@ -187,27 +279,60 @@ app.whenReady().then(async () => {
     registerWindowIpc(() => mainWindow)
 
     // Initialize Copilot Token
-    const settings = services.settingsService.getSettings()
-    console.log(`[Main] !!! settings.github.token length: ${settings.github?.token?.length || 0}`);
-    console.log(`[Main] !!! settings.copilot.token length: ${settings.copilot?.token?.length || 0}`);
-    const copilotToken = settings.copilot?.token || settings.github?.token
+    // Tokens are stored in data/auth folder, NOT in settings.json
+    // We ONLY use copilot_token - NO fallback to github_token
+    const initialSettings = services.settingsService.getSettings()
+    console.log(`[Main] !!! settings.copilot.token length: ${initialSettings.copilot?.token?.length || 0}`);
+    
+    // Load token directly from AuthService (tokens are in data/auth folder)
+    // ONLY use copilot_token, no fallback
+    let copilotToken = initialSettings.copilot?.token
+    
+    // If not in settings, try AuthService directly
+    if (!copilotToken) {
+        console.log(`[Main] !!! Token not in settings, trying AuthService directly...`);
+        if (services.settingsService['authService']) {
+            const authService = services.settingsService['authService'] as any
+            console.log(`[Main] !!! Attempting to get copilot_token from AuthService...`);
+            copilotToken = authService.getToken('copilot_token')
+            console.log(`[Main] !!! authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'}`);
+            
+            if (copilotToken) {
+                console.log(`[Main] !!! Loaded copilot_token from AuthService, length: ${copilotToken.length}`)
+            } else {
+                console.warn(`[Main] !!! copilot_token not found in AuthService`)
+            }
+        } else {
+            console.error(`[Main] !!! AuthService not available in settingsService`)
+        }
+    } else {
+        console.log(`[Main] !!! Token found in settings, length: ${copilotToken.length}`)
+    }
+    
     if (copilotToken) {
         services.copilotService.setGithubToken(copilotToken)
+        console.log(`[Main] !!! Set copilot_token to CopilotService, length: ${copilotToken.length}`)
+        // Verify it was set
+        console.log(`[Main] !!! CopilotService.isConfigured(): ${services.copilotService.isConfigured()}`)
+    } else {
+        console.warn(`[Main] !!! No copilot_token found - CopilotService will try to recover from AuthService when needed`)
     }
 
     // Sync proxy settings to LLMService
-    const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
+    const proxyUrl = initialSettings.proxy?.url || 'http://localhost:8317/v1'
     const proxyKey = services.proxyService.getProxyKey()
     services.llmService.setProxySettings(proxyUrl, proxyKey)
 
     registerAuthIpc(services.proxyService, services.settingsService, services.copilotService)
     registerProxyIpc(services.proxyService)
+    registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService)
     registerChatIpc({
         settingsService: services.settingsService,
         copilotService: services.copilotService,
         llmService: services.llmService,
         proxyService: services.proxyService,
-        codeIntelligenceService: services.codeIntelligenceService
+        codeIntelligenceService: services.codeIntelligenceService,
+        contextRetrievalService: services.contextRetrievalService
     })
 
     registerOllamaIpc({
@@ -221,7 +346,7 @@ app.whenReady().then(async () => {
         llamaService: services.llamaService
     })
 
-    registerProjectIpc(() => mainWindow, services.projectService, services.logoService, services.codeIntelligenceService)
+    registerProjectIpc(() => mainWindow, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService)
     registerAgentIpc(services.agentService)
     registerProcessIpc(services.processService)
     setupProcessEvents(services.processService)
@@ -230,18 +355,32 @@ app.whenReady().then(async () => {
     registerDbIpc(services.databaseService, services.embeddingService)
     registerLlamaIpc(services.llamaService)
     registerMemoryIpc(services.memoryService)
-
+    registerGitIpc(services.gitService)
 
     registerSettingsIpc({
         settingsService: services.settingsService,
         llmService: services.llmService,
         copilotService: services.copilotService,
-        updateOpenAIConnection: () => mainWindow?.webContents.send('openai:connection-status', services.llmService.isOpenAIConnected()),
-        updateOllamaConnection: () => { }
+        updateOpenAIConnection: () => {
+            if (globalServices) {
+                mainWindow?.webContents.send('openai:connection-status', globalServices.llmService.isOpenAIConnected())
+            }
+        },
+        updateOllamaConnection: async () => {
+            if (globalServices) {
+                try {
+                    const status = await globalServices.ollamaHealthService.checkHealth()
+                    mainWindow?.webContents.send('ollama:connection-status', status.online)
+                } catch (error) {
+                    console.error('[Main] Failed to check Ollama connection:', error)
+                    mainWindow?.webContents.send('ollama:connection-status', false)
+                }
+            }
+        }
     })
 
     registerSshIpc(() => mainWindow, services.sshService)
-    registerFilesIpc(() => mainWindow, services.fileSystemService, new Set([app.getPath('userData'), app.getPath('home')]))
+    registerFilesIpc(() => mainWindow, services.fileSystemService, allowedFileRoots)
     registerHFModelIpc(services.llmService, services.huggingFaceService)
 
     registerToolsIpc(toolExecutor, services.commandService)
@@ -265,8 +404,25 @@ app.whenReady().then(async () => {
     // Register Gallery IPC
     registerGalleryIpc(services.dataService.getPath('gallery'))
 
+    // Store services for use in event handlers
+    globalServices = services
+
+    // Configure auto-start on boot
+    const settings = services.settingsService.getSettings()
+    if (settings.window?.startOnStartup !== undefined) {
+        app.setLoginItemSettings({
+            openAtLogin: settings.window.startOnStartup,
+            openAsHidden: settings.window.workAtBackground || false
+        })
+    }
+    
+    // Setup system tray if workAtBackground is enabled
+    if (settings.window?.workAtBackground) {
+        setupTray()
+    }
+    
     // NOW create window after all handlers are registered
-    mainWindow = createWindow()
+    mainWindow = createWindow(services.settingsService)
 
     // Initialize Auto-Updater
     services.updateService.init(mainWindow)
@@ -278,32 +434,170 @@ app.whenReady().then(async () => {
 
     // Re-create on activate if needed
     app.on('activate', function () {
-        if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow()
+        if (BrowserWindow.getAllWindows().length === 0) {
+            if (globalServices) {
+                mainWindow = createWindow(globalServices.settingsService)
+            } else {
+                mainWindow = createWindow()
+            }
+        } else if (mainWindow) {
+            mainWindow.show()
+        }
     })
 })
 
+function setupTray() {
+    if (tray) return // Already set up
+    
+    try {
+        // Create a simple icon (you can replace this with an actual icon file)
+        const icon = nativeImage.createEmpty()
+        // For now, use a simple approach - you may want to load an actual icon file
+        // const iconPath = path.join(__dirname, '../assets/icon.png')
+        // const icon = nativeImage.createFromPath(iconPath)
+        
+        tray = new Tray(icon)
+        
+        const contextMenu = Menu.buildFromTemplate([
+            {
+                label: 'Show Orbit',
+                click: () => {
+                    if (mainWindow) {
+                        mainWindow.show()
+                        mainWindow.focus()
+                    } else if (globalServices) {
+                        mainWindow = createWindow(globalServices.settingsService)
+                    }
+                }
+            },
+            {
+                label: 'Quit',
+                click: () => {
+                    app.quit()
+                }
+            }
+        ])
+        
+        tray.setToolTip('Orbit')
+        tray.setContextMenu(contextMenu)
+        
+        tray.on('click', () => {
+            if (mainWindow) {
+                if (mainWindow.isVisible()) {
+                    mainWindow.hide()
+                } else {
+                    mainWindow.show()
+                    mainWindow.focus()
+                }
+            } else if (globalServices) {
+                mainWindow = createWindow(globalServices.settingsService)
+            }
+        })
+    } catch (error) {
+        appLogger.error('Main', `Failed to setup tray: ${error}`)
+    }
+}
+
 app.on('window-all-closed', () => {
+    if (!globalServices) return
+    
+    const settings = globalServices.settingsService.getSettings()
+    // If workAtBackground is enabled, don't quit - keep app running in background
+    if (settings.window?.workAtBackground) {
+        // Hide window instead of closing
+        if (mainWindow) {
+            mainWindow.hide()
+        }
+        // Ensure tray is visible
+        if (!tray) {
+            setupTray()
+        }
+        return
+    }
+    
     if (process.platform !== 'darwin') {
         app.quit()
     }
 })
 
 // Cleanup on app quit - prevent memory leaks
-app.on('before-quit', async () => {
-    console.log('[Main] Cleaning up before quit...')
+app.on('before-quit', async (event) => {
+    appLogger.info('Main', 'Application shutdown initiated')
+    
+    // Prevent default quit to allow cleanup
+    event.preventDefault()
+    
     try {
-        // Services cleanup will be triggered via global reference
-        // This is a safety net for any remaining resources
-        if (global.gc) {
-            global.gc()
-            console.log('[Main] Manual GC triggered')
+        // Close all windows gracefully
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.removeAllListeners('close')
+            mainWindow.close()
         }
 
-        await container.dispose();
-        console.log('[Main] Services disposed gracefully');
+        // Cleanup services
+        if (globalServices) {
+            appLogger.info('Main', 'Cleaning up services...')
+            
+            // Stop proxy service
+            if (globalServices.proxyService) {
+                try {
+                    await globalServices.proxyService.stopEmbeddedProxy()
+                    appLogger.info('Main', 'Proxy service stopped')
+                } catch (e) {
+                    appLogger.error('Main', `Failed to stop proxy: ${getErrorMessage(e as Error)}`)
+                }
+            }
+
+            // Stop terminal service
+            if (globalServices.processService) {
+                try {
+                    // Kill all processes
+                    const processes = await globalServices.processService.list()
+                    for (const proc of processes) {
+                        await globalServices.processService.kill(proc.id)
+                    }
+                    appLogger.info('Main', 'Terminal processes cleaned up')
+                } catch (e) {
+                    appLogger.error('Main', `Failed to cleanup processes: ${getErrorMessage(e as Error)}`)
+                }
+            }
+
+            // Stop database connections
+            if (globalServices.databaseService) {
+                try {
+                    await globalServices.databaseService.close()
+                    appLogger.info('Main', 'Database connections closed')
+                } catch (e) {
+                    appLogger.error('Main', `Failed to close database: ${getErrorMessage(e as Error)}`)
+                }
+            }
+
+            // Dispose container (calls cleanup on all services)
+            await container.dispose()
+            appLogger.info('Main', 'All services disposed gracefully')
+        }
+
+        // Cleanup tray
+        if (tray) {
+            tray.destroy()
+            tray = null
+        }
+
+        // Manual GC if available
+        if (global.gc) {
+            global.gc()
+            appLogger.debug('Main', 'Manual GC triggered')
+        }
+
+        appLogger.info('Main', 'Cleanup completed, quitting application')
+        
+        // Now actually quit
+        app.exit(0)
 
     } catch (e) {
-        console.error('[Main] Cleanup error:', e)
+        appLogger.error('Main', `Cleanup error: ${getErrorMessage(e as Error)}`)
+        // Force quit even if cleanup fails
+        app.exit(1)
     }
 })
 

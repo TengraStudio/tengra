@@ -46,7 +46,7 @@ export const webElectronMock: ElectronAPI = {
     },
 
     project: {
-        analyze: async (_rootPath: string) => ({
+        analyze: async (_rootPath: string, _projectId: string) => ({
             name: 'Mock Project',
             path: _rootPath,
             type: 'unknown',
@@ -56,15 +56,24 @@ export const webElectronMock: ElectronAPI = {
             frameworks: [],
             devDependencies: {},
             languages: {},
-            stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() }
+            stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() },
+            todos: []
         } as ProjectAnalysis),
-        saveState: async (_rootPath: string, _state: Record<string, IpcValue>) => true,
-        loadState: async (_rootPath: string) => ({}),
         generateLogo: async (_projectPath: string, _prompt: string, _style: string) => '',
         analyzeIdentity: async (_projectPath: string) => ({ suggestedPrompts: [], colors: [] }),
         applyLogo: async (_projectPath: string, _tempLogoPath: string) => '',
         getCompletion: async (_text: string) => '',
-        analyzeDirectory: async (_dirPath: string) => ({ hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 } })
+        improveLogoPrompt: async (_prompt: string) => '',
+        uploadLogo: async (_projectPath: string) => null,
+        analyzeDirectory: async (_dirPath: string) => ({
+            hasPackageJson: false,
+            pkg: {},
+            readme: null,
+            stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() }
+        }),
+        watch: async (_rootPath: string) => true,
+        unwatch: async (_rootPath: string) => true,
+        onFileChange: (_callback: (event: string, path: string, rootPath: string) => void) => () => { }
     },
 
     process: {
@@ -172,6 +181,11 @@ export const webElectronMock: ElectronAPI = {
             tokenTimeline: [],
             activity: []
         }),
+        getTimeStats: async () => ({
+            totalOnlineTime: 0,
+            totalCodingTime: 0,
+            projectCodingTime: {}
+        }),
         getProjects: async () => [],
         getFolders: async () => [],
         createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => { },
@@ -202,7 +216,9 @@ export const webElectronMock: ElectronAPI = {
         kill: async (_sessionId: string) => true,
         onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
         onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
-        removeAllListeners: () => { }
+        removeAllListeners: () => { },
+        getSessions: async () => [],
+        readBuffer: async (_sessionId: string) => ''
     },
 
     council: {
@@ -260,6 +276,33 @@ export const webElectronMock: ElectronAPI = {
         getProfiles: async () => [],
         saveProfile: async (_profile: SSHConfig) => true,
         deleteProfile: async (_id: string) => true
+    },
+
+    git: {
+        getBranch: async (_cwd: string) => ({ success: true, branch: 'main' }),
+        getStatus: async (_cwd: string) => ({ success: true, isClean: true, changes: 0, files: [] }),
+        getLastCommit: async (_cwd: string) => ({ success: true, hash: 'abc123', message: 'Initial commit', author: 'User', relativeTime: '2 hours ago', date: new Date().toISOString() }),
+        getRecentCommits: async (_cwd: string, _count?: number) => ({ success: true, commits: [] }),
+        getBranches: async (_cwd: string) => ({ success: true, branches: ['main'] }),
+        isRepository: async (_cwd: string) => ({ success: true, isRepository: true }),
+        getFileDiff: async (_cwd: string, _filePath: string, _staged?: boolean) => ({ success: true, original: '', modified: '' }),
+        getUnifiedDiff: async (_cwd: string, _filePath: string, _staged?: boolean) => ({ success: true, diff: '' }),
+        stageFile: async (_cwd: string, _filePath: string) => ({ success: true }),
+        unstageFile: async (_cwd: string, _filePath: string) => ({ success: true }),
+        getDetailedStatus: async (_cwd: string) => ({ success: true, stagedFiles: [], unstagedFiles: [], allFiles: [] }),
+        checkout: async (_cwd: string, _branch: string) => ({ success: true }),
+        commit: async (_cwd: string, _message: string) => ({ success: true }),
+        push: async (_cwd: string, _remote?: string, _branch?: string) => ({ success: true, stdout: '', stderr: '' }),
+        pull: async (_cwd: string) => ({ success: true, stdout: '', stderr: '' }),
+        getRemotes: async (_cwd: string) => ({ success: true, remotes: [] }),
+        getTrackingInfo: async (_cwd: string) => ({ success: true, tracking: null, ahead: 0, behind: 0 }),
+        getCommitStats: async (_cwd: string, _days?: number) => ({ success: true, commitCounts: {} }),
+        getDiffStats: async (_cwd: string) => ({ 
+            success: true, 
+            staged: { added: 0, deleted: 0, files: 0 },
+            unstaged: { added: 0, deleted: 0, files: 0 },
+            total: { added: 0, deleted: 0, files: 0 }
+        })
     },
 
     executeTools: async (_toolName: string, _args: Record<string, IpcValue>, _toolCallId?: string) => ({

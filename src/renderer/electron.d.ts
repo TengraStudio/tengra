@@ -1,5 +1,5 @@
 import {
-    AppSettings, ProjectAnalysis, Chat, Message, Folder, Project,
+    AppSettings, ProjectAnalysis, ProjectStats, Chat, Message, Folder, Project,
     AgentDefinition, SSHConnection, SSHFile,
     SSHConfig, ToolCall, ToolDefinition, ToolResult, IpcValue, AuthStatus, QuotaResponse,
     SSHSystemStats, SSHPackageInfo, FileSearchResult, CopilotQuota, CouncilSession
@@ -38,17 +38,67 @@ export interface ModelDefinition {
     [key: string]: IpcValue | undefined
 }
 
+/**
+ * Main Electron API interface exposed to the renderer process.
+ * Provides access to all IPC handlers and window controls.
+ * 
+ * @example
+ * ```typescript
+ * // Get settings
+ * const settings = await window.electron.getSettings()
+ * 
+ * // Send a chat message
+ * await window.electron.chatStream(messages, model, tools, provider, options, chatId)
+ * ```
+ */
 export interface ElectronAPI {
-    // Window controls
+    /**
+     * Minimizes the application window.
+     */
     minimize: () => void
+    
+    /**
+     * Maximizes or restores the application window.
+     */
     maximize: () => void
+    
+    /**
+     * Closes the application window.
+     */
     close: () => void
+    
+    /**
+     * Resizes the window to a specific resolution.
+     * @param resolution - Resolution string in format "WIDTHxHEIGHT" (e.g., "1920x1080")
+     */
     resizeWindow: (resolution: string) => void
+    
+    /**
+     * Toggles compact mode for the window.
+     * @param enabled - Whether to enable compact mode
+     */
     toggleCompact: (enabled: boolean) => void
 
-    // Auth
+    /**
+     * Initiates GitHub OAuth login flow.
+     * @param appId - Optional app identifier ('profile' or 'copilot')
+     * @returns Promise resolving to OAuth device code information
+     */
     githubLogin: (appId?: 'profile' | 'copilot') => Promise<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>
+    
+    /**
+     * Polls for GitHub OAuth token after device code authentication.
+     * @param deviceCode - Device code received from githubLogin
+     * @param interval - Polling interval in seconds
+     * @param appId - Optional app identifier ('profile' or 'copilot')
+     * @returns Promise resolving to authentication result
+     */
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => Promise<{ success: boolean; token?: string; error?: string }>
+    
+    /**
+     * Initiates Antigravity OAuth login flow.
+     * @returns Promise resolving to OAuth URL and state
+     */
     antigravityLogin: () => Promise<{ url: string; state: string }>
 
     claudeLogin: () => Promise<{ url: string; state: string }>
@@ -69,13 +119,16 @@ export interface ElectronAPI {
     // Project System
     project: {
         analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>
-        saveState: (rootPath: string, state: Record<string, IpcValue>) => Promise<boolean>
-        loadState: (rootPath: string) => Promise<Record<string, IpcValue>>
         generateLogo: (projectPath: string, prompt: string, style: string) => Promise<string>
         analyzeIdentity: (projectPath: string) => Promise<{ suggestedPrompts: string[], colors: string[] }>
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>
         getCompletion: (text: string) => Promise<string>
+        improveLogoPrompt: (prompt: string) => Promise<string>
+        uploadLogo: (projectPath: string) => Promise<string | null>
         analyzeDirectory: (dirPath: string) => Promise<{ hasPackageJson: boolean; pkg: Record<string, IpcValue>; readme: string | null; stats: ProjectStats }>
+        watch: (rootPath: string) => Promise<boolean>
+        unwatch: (rootPath: string) => Promise<boolean>
+        onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => () => void
     }
 
     process: {
@@ -103,9 +156,32 @@ export interface ElectronAPI {
     getQuota: (provider?: string) => Promise<QuotaResponse | null>
     getCopilotQuota: () => Promise<CopilotQuota>
     getCodexUsage: () => Promise<Partial<QuotaResponse>>
+    checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
+    getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
+    git: {
+        getBranch: (cwd: string) => Promise<{ success: boolean; branch?: string; error?: string }>
+        getStatus: (cwd: string) => Promise<{ success: boolean; isClean?: boolean; changes?: number; files?: Array<{ path: string; status: string }>; error?: string }>
+        getLastCommit: (cwd: string) => Promise<{ success: boolean; hash?: string; message?: string; author?: string; relativeTime?: string; date?: string; error?: string }>
+        getRecentCommits: (cwd: string, count?: number) => Promise<{ success: boolean; commits?: Array<{ hash: string; message: string; author: string; date: string }>; error?: string }>
+        getBranches: (cwd: string) => Promise<{ success: boolean; branches?: string[]; error?: string }>
+        isRepository: (cwd: string) => Promise<{ success: boolean; isRepository?: boolean }>
+        getFileDiff: (cwd: string, filePath: string, staged?: boolean) => Promise<{ original: string; modified: string; success: boolean; error?: string }>
+        getUnifiedDiff: (cwd: string, filePath: string, staged?: boolean) => Promise<{ diff: string; success: boolean; error?: string }>
+        stageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+        unstageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+        getDetailedStatus: (cwd: string) => Promise<{ success: boolean; stagedFiles?: Array<{ status: string; path: string; staged: boolean }>; unstagedFiles?: Array<{ status: string; path: string; staged: boolean }>; allFiles?: Array<{ status: string; path: string; staged: boolean }>; error?: string }>
+        checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>
+        commit: (cwd: string, message: string) => Promise<{ success: boolean; error?: string }>
+        push: (cwd: string, remote?: string, branch?: string) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>
+        pull: (cwd: string) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>
+        getRemotes: (cwd: string) => Promise<{ success: boolean; remotes?: Array<{ name: string; url: string; fetch: boolean; push: boolean }>; error?: string }>
+        getTrackingInfo: (cwd: string) => Promise<{ success: boolean; tracking?: string | null; ahead?: number; behind?: number }>
+        getCommitStats: (cwd: string, days?: number) => Promise<{ success: boolean; commitCounts?: Record<string, number>; error?: string }>
+        getDiffStats: (cwd: string) => Promise<{ success: boolean; staged?: { added: number; deleted: number; files: number }; unstaged?: { added: number; deleted: number; files: number }; total?: { added: number; deleted: number; files: number }; error?: string }>
+    }
 
     // LLM chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>
@@ -176,6 +252,11 @@ export interface ElectronAPI {
             completionTokens: number
             tokenTimeline: { timestamp: number; promptTokens: number; completionTokens: number }[]
             activity: number[]
+        }>
+        getTimeStats: () => Promise<{
+            totalOnlineTime: number
+            totalCodingTime: number
+            projectCodingTime: Record<string, number>
         }>
         getProjects: () => Promise<Project[]>
         getFolders: () => Promise<Folder[]>

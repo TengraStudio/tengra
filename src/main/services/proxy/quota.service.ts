@@ -44,27 +44,45 @@ export class QuotaService {
         })
     }
 
-    async getQuota(proxyPort: number, proxyKey: string): Promise<QuotaResponse | null> {
-        const settings = this.settingsService.getSettings()
-        if (settings.proxy?.enabled === false) return null
-
-        // 1. Try Antigravity (Direct Upstream)
-        const antigravity = await this.fetchAntigravityQuota()
-        if (antigravity && !antigravity.authExpired) return antigravity
-        if (antigravity?.authExpired) return antigravity
+    async getQuota(_proxyPort: number, _proxyKey: string): Promise<QuotaResponse | null> {
+        // 1. Try Antigravity (Direct Upstream) - official API
+        try {
+            const antigravity = await this.fetchAntigravityQuota()
+            if (antigravity && !antigravity.authExpired) {
+                console.log('[QuotaService] getQuota: Successfully fetched from Antigravity')
+                return antigravity
+            }
+            if (antigravity?.authExpired) {
+                console.log('[QuotaService] getQuota: Antigravity auth expired, returning authExpired response')
+                return antigravity
+            }
+        } catch (e) {
+            console.debug('[QuotaService] getQuota: Antigravity fetch failed:', getErrorMessage(e))
+        }
 
         // 2. Try Legacy Fallback
-        const legacy = await this.fetchLegacyQuota()
-        if (legacy && legacy.success) return legacy
+        try {
+            const legacy = await this.fetchLegacyQuota()
+            if (legacy && legacy.success) {
+                console.log('[QuotaService] getQuota: Successfully fetched from Legacy')
+                return legacy
+            }
+        } catch (e) {
+            console.debug('[QuotaService] getQuota: Legacy fetch failed:', getErrorMessage(e))
+        }
 
-        // 3. Try Proxy /v1/quota
-        const proxy = await this.fetchProxyQuota(proxyPort, proxyKey)
-        if (proxy) return proxy
+        // 3. Try Codex
+        try {
+            const codex = await this.fetchCodexQuota()
+            if (codex && codex.success) {
+                console.log('[QuotaService] getQuota: Successfully fetched from Codex')
+                return codex
+            }
+        } catch (e) {
+            console.debug('[QuotaService] getQuota: Codex fetch failed:', getErrorMessage(e))
+        }
 
-        // 4. Try Codex
-        const codex = await this.fetchCodexQuota()
-        if (codex && codex.success) return codex
-
+        console.log('[QuotaService] getQuota: All fetch methods failed, returning null')
         return null
     }
 
@@ -113,7 +131,11 @@ export class QuotaService {
     async fetchAntigravityQuota(): Promise<QuotaResponse | null> {
         try {
             const data = await this.fetchAntigravityUpstream()
-            if (data) return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
+            if (data) {
+                // Log raw quota data for debugging
+                console.log('[QuotaService] Raw Antigravity quota data:', JSON.stringify(data, null, 2))
+                return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
+            }
         } catch (error) {
             if (error instanceof Error && error.message === 'AUTH_EXPIRED') return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
         }
@@ -201,7 +223,15 @@ export class QuotaService {
     async fetchProxyQuota(port: number, key: string): Promise<QuotaResponse | null> {
         try {
             const res = await this.makeRequest('/v1/quota', port, key)
-            return res as QuotaResponse
+            // Check if the response indicates an error (404, etc.)
+            if (res && typeof res === 'object' && 'success' in res && res.success === false) {
+                // Proxy doesn't have /v1/quota endpoint or returned error
+                return null
+            }
+            // Only return if it looks like a valid QuotaResponse
+            if (res && typeof res === 'object' && ('models' in res || 'status' in res)) {
+                return res as unknown as QuotaResponse
+            }
         } catch {
             // ignore
         }
@@ -312,8 +342,45 @@ export class QuotaService {
 
     private async fetchCopilotBilling(): Promise<JsonObject | null> {
         const settings = this.settingsService.getSettings()
-        const token = settings.copilot?.token
-        if (!token) return null
+        let token = settings.copilot?.token
+
+        // If no token in settings, check auth files
+        if (!token || token === 'connected') {
+            try {
+                const authDir = this.getAuthWorkDir()
+                if (fs.existsSync(authDir)) {
+                    const files = fs.readdirSync(authDir).filter(f => {
+                        const name = f.toLowerCase()
+                        return (name.startsWith('copilot') || name.startsWith('github')) && 
+                               (name.endsWith('.json') || name.endsWith('.enc'))
+                    })
+                    
+                    // Try copilot files first, then github files
+                    const copilotFiles = files.filter(f => f.toLowerCase().startsWith('copilot'))
+                    const githubFiles = files.filter(f => f.toLowerCase().startsWith('github'))
+                    
+                    for (const file of [...copilotFiles, ...githubFiles]) {
+                        const authFile = path.join(authDir, file)
+                        const content = this.readAuthFile(authFile)
+                        if (content) {
+                            // Try to extract token - could be in 'token' or 'access_token' field
+                            const fileToken = typeof content.token === 'string' ? content.token :
+                                            typeof content.access_token === 'string' ? content.access_token :
+                                            null
+                            if (fileToken && fileToken !== 'connected') {
+                                token = fileToken
+                                break
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.debug('[QuotaService] fetchCopilotBilling: Failed to check auth files:', getErrorMessage(e))
+            }
+        }
+
+        if (!token || token === 'connected') return null
+
         try {
             const response = await axios.get('https://api.github.com/copilot_internal/user', {
                 headers: { 'Authorization': `token ${token}`, 'User-Agent': 'GithubCopilot/1.250.0' }
@@ -399,6 +466,9 @@ export class QuotaService {
 
                 if (val.quotaInfo) {
                     const q = val.quotaInfo;
+                    // Log raw quotaInfo for debugging
+                    console.log(`[QuotaService] Raw quotaInfo for ${key}:`, JSON.stringify(q, null, 2))
+                    
                     if (typeof q.remainingFraction === 'number') {
                         percentage = Math.round(q.remainingFraction * 100)
                     } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
@@ -406,6 +476,9 @@ export class QuotaService {
                     } else if (q.resetTime) {
                         percentage = 0
                     }
+                    
+                    // Log quota info for debugging 429 errors
+                    console.log(`[QuotaService] Model ${key}: ${percentage}% remaining (${q.remainingQuota || 'N/A'}/${q.totalQuota || 'N/A'}), reset: ${q.resetTime || 'N/A'}`)
 
                     if (q.resetTime) {
                         try {

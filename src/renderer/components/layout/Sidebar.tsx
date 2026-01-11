@@ -1,4 +1,4 @@
-﻿import { Chat, Folder, IpcValue } from '@/types'
+import { Chat, Folder, IpcValue } from '@/types'
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -7,7 +7,7 @@ import {
     Plus, Settings, ChevronLeft, ChevronRight,
     Trash2, Search, MessageSquare, Rocket, ChevronDown,
     LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
-    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin
+    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin, TrendingUp
 } from 'lucide-react'
 import { useState, useEffect, useRef, ChangeEvent, type ComponentType } from 'react'
 import { useTranslation } from '@/i18n'
@@ -41,9 +41,9 @@ const SettingsMenuItem = ({
     <button
         onClick={onClick}
         className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ml-2 border-l border-white/5 hover:border-primary/50",
+            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200",
             isActive
-                ? "text-primary bg-primary/5 border-primary"
+                ? "text-primary bg-primary/5"
                 : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
         )}
     >
@@ -273,12 +273,12 @@ export function Sidebar({
                                             exit={{ height: 0, opacity: 0 }}
                                             className="overflow-hidden"
                                         >
-                                            <div className="pr-2 py-1 space-y-0.5 ml-2 border-l border-dashed border-border/30">
-                                                {['general', 'accounts', 'models', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
+                                            <div className="ml-2 pl-2 border-l border-border/30 space-y-0.5">
+                                                {['general', 'accounts', 'models', 'usage-limits', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
                                                     <SettingsMenuItem
                                                         key={id}
                                                         id={id}
-                                                        icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : LayoutGrid}
+                                                        icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : id === 'usage-limits' ? TrendingUp : LayoutGrid}
                                                         label={t(`settings.${id}`)}
                                                         isActive={currentView === 'settings' && settingsCategory === id}
                                                         onClick={() => { const category = id as SettingsCategory; onOpenSettings(category); if (setSettingsCategory) setSettingsCategory(category) }}
@@ -311,7 +311,7 @@ export function Sidebar({
                                     placeholder={t('sidebar.searchChats')}
                                     value={searchQuery}
                                     onChange={handleSearch}
-                                    className="w-full bg-black/10 border border-white/5 focus:border-primary/20 focus:bg-black/20 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/30"
+                                    className="w-full bg-muted/20 border border-border/40 focus:border-primary/50 focus:bg-muted/30 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50"
                                 />
                             </div>
                         </div>
@@ -325,7 +325,7 @@ export function Sidebar({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setIsCreatingFolder(true)}
-                                    className="w-full h-7 text-[10px] font-medium text-muted-foreground/60 hover:text-primary hover:bg-primary/10 border border-white/5 justify-start px-2"
+                                    className="w-full h-7 text-[10px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2"
                                 >
                                     <FolderPlus className="w-3.5 h-3.5 mr-2" />
                                     {t('sidebar.newFolder') || 'New Folder'}
@@ -335,7 +335,7 @@ export function Sidebar({
                             {/* Folder Creation Input */}
                             {isCreatingFolder && (
                                 <div className="mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-md border border-primary/20">
+                                    <div className="flex items-center gap-1 bg-muted/20 p-1 rounded-md border border-primary/30">
                                         <input
                                             autoFocus
                                             value={newFolderName}
@@ -356,7 +356,7 @@ export function Sidebar({
 
                     {/* Chat Statistics Summary */}
                     {!isCollapsed && chats.length > 0 && (
-                        <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/40 border-b border-white/5 mb-2">
+                        <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/60 border-b border-border/30 mb-2">
                             <span>{chats.length} {t('sidebar.chatCount')}</span>
                             <span>•</span>
                             <span>{chats.reduce((acc, c) => acc + (c.messages?.length || 0), 0)} {t('sidebar.messageCount')}</span>
@@ -368,9 +368,9 @@ export function Sidebar({
                             <div className="space-y-4 pt-2">
                                 {[1, 2, 3].map(i => (
                                     <div key={i} className="flex flex-col gap-2 px-2 animate-pulse">
-                                        {!isCollapsed && <div className="h-3 w-16 bg-white/5 rounded" />}
-                                        <div className={cn("h-10 rounded-md bg-white/5 w-full", isCollapsed && "h-10 w-10 mx-auto")} />
-                                        {!isCollapsed && <div className="h-10 rounded-md bg-white/5 w-full" />}
+                                        {!isCollapsed && <div className="h-3 w-16 bg-muted/20 rounded" />}
+                                        <div className={cn("h-10 rounded-md bg-muted/20 w-full", isCollapsed && "h-10 w-10 mx-auto")} />
+                                        {!isCollapsed && <div className="h-10 rounded-md bg-muted/20 w-full" />}
                                     </div>
                                 ))}
                             </div>
@@ -397,7 +397,7 @@ export function Sidebar({
                                                         isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
                                                         currentView === 'chat' && currentChatId === chat.id
                                                             ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
-                                                            : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
+                                                            : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground border-l-2 border-transparent"
                                                     )}
                                                 >
                                                     <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
@@ -406,14 +406,14 @@ export function Sidebar({
                                                 {/* Unpin Action */}
                                                 {!isCollapsed && (
                                                     <div className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2">
-                                                        <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5">
+                                                        <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10">
                                                             <Pin className="w-3 h-3 fill-current" />
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
                                         ))}
-                                        <div className="h-px bg-white/5 mx-2 my-2" />
+                                        <div className="h-px bg-border/30 mx-2 my-2" />
                                     </div>
                                 )}
 
@@ -422,7 +422,7 @@ export function Sidebar({
                                     <div key={folder.id} className="space-y-0.5">
                                         <div
                                             className={cn(
-                                                "group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-white/5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
+                                                "group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/10 cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
                                                 expandedFolders.has(folder.id) && "text-foreground"
                                             )}
                                             onClick={() => toggleFolder(folder.id)}
@@ -459,7 +459,7 @@ export function Sidebar({
                                                         setEditingFolderId(folder.id)
                                                         setEditFolderName(folder.name)
                                                     }}
-                                                    className="p-1 hover:text-primary hover:bg-white/10 rounded"
+                                                    className="p-1 hover:text-primary hover:bg-muted/20 rounded"
                                                 >
                                                     <Edit2 className="w-3 h-3" />
                                                 </div>
@@ -468,7 +468,7 @@ export function Sidebar({
                                                         e.stopPropagation();
                                                         deleteFolder(folder.id)
                                                     }}
-                                                    className="p-1 hover:text-red-400 hover:bg-white/10 rounded"
+                                                    className="p-1 hover:text-destructive hover:bg-muted/20 rounded"
                                                 >
                                                     <Trash2 className="w-3 h-3" />
                                                 </div>
@@ -482,7 +482,7 @@ export function Sidebar({
                                                     initial={{ height: 0, opacity: 0 }}
                                                     animate={{ height: 'auto', opacity: 1 }}
                                                     exit={{ height: 0, opacity: 0 }}
-                                                    className="overflow-hidden ml-2 pl-2 border-l border-white/5 space-y-0.5"
+                                                    className="overflow-hidden ml-2 pl-2 border-l border-border/30 space-y-0.5"
                                                 >
                                                     {chats.filter(c => c.folderId === folder.id).map(chat => (
                                                         <div
@@ -498,7 +498,7 @@ export function Sidebar({
                                                                     "flex-1 flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 text-xs text-left min-w-0 relative",
                                                                     currentView === 'chat' && currentChatId === chat.id
                                                                         ? "bg-primary/10 text-primary"
-                                                                        : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground"
+                                                                        : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground"
                                                                 )}
                                                             >
                                                                 <MessageSquare className="w-3 h-3 shrink-0 opacity-70" />
@@ -515,11 +515,11 @@ export function Sidebar({
                                                                             e.stopPropagation()
                                                                             moveChatToFolder(chat.id, null)
                                                                         }}
-                                                                        className="p-1 hover:text-orange-400 rounded-md cursor-pointer hover:bg-white/5"
+                                                                        className="p-1 hover:text-orange-400 rounded-md cursor-pointer hover:bg-muted/10"
                                                                     >
                                                                         <FolderIcon className="w-2.5 h-2.5" />
                                                                     </div>
-                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-destructive rounded-md cursor-pointer hover:bg-muted/10">
                                                                         <Trash2 className="w-2.5 h-2.5" />
                                                                     </div>
                                                                 </div>
@@ -558,7 +558,7 @@ export function Sidebar({
                                                             isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
                                                             currentView === 'chat' && currentChatId === chat.id
                                                                 ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
-                                                                : "text-muted-foreground/80 hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
+                                                                : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground border-l-2 border-transparent"
                                                         )}
                                                         title={isCollapsed ? chat.title : undefined}
                                                     >
@@ -595,15 +595,15 @@ export function Sidebar({
                                                                     {activeFolders.length > 0 && (
                                                                         <div className="relative group/folder">
                                                                             <div
-                                                                                className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5"
+                                                                                className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10"
                                                                             >
                                                                                 <CornerUpRight className="w-3 h-3" />
                                                                             </div>
-                                                                            <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-white/5">
+                                                                            <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10">
                                                                                 <Pin className="w-3 h-3" />
                                                                             </div>
                                                                             {/* Simple Hover Dropdown for Folders */}
-                                                                            <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-[#1A1A1A] border border-white/10 rounded-md shadow-xl -mt-1">
+                                                                            <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
                                                                                 <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">Move to...</div>
                                                                                 {sortedFolders.map(f => (
                                                                                     <div
@@ -622,7 +622,7 @@ export function Sidebar({
                                                                         </div>
                                                                     )}
 
-                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-red-400 rounded-md cursor-pointer hover:bg-white/5">
+                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-destructive rounded-md cursor-pointer hover:bg-muted/10">
                                                                         <Trash2 className="w-3 h-3" />
                                                                     </div>
                                                                 </div>
@@ -640,10 +640,10 @@ export function Sidebar({
                 </div>
 
                 {/* Bottom Section */}
-                <div className="p-2 border-t border-white/5 bg-black/5 space-y-1">
+                <div className="p-2 border-t border-border/30 bg-muted/5 space-y-1">
                     {/* Active Project Indicator */}
                     {!isCollapsed && selectedProject && (
-                        <div className="px-3 py-2 bg-white/5 rounded-md border border-white/5 mb-1">
+                        <div className="px-3 py-2 bg-muted/20 rounded-md border border-border/40 mb-1">
                             <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">Project</div>
                             <div className="text-xs font-medium truncate flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -656,7 +656,7 @@ export function Sidebar({
                         variant="ghost"
                         size="icon"
                         onClick={toggleSidebar}
-                        className="w-full h-6 text-muted-foreground/30 hover:text-foreground hover:bg-white/5 transition-colors"
+                        className="w-full h-6 text-muted-foreground/50 hover:text-foreground hover:bg-muted/10 transition-colors"
                     >
                         {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                     </Button>

@@ -26,6 +26,7 @@ export type AppSettings = {
         fontSize: number
         fontFamily?: string
         highContrast?: boolean
+        reduceMotion?: boolean
         onboardingCompleted: boolean
         defaultModel?: string
         lastModel?: string
@@ -107,6 +108,9 @@ export type AppSettings = {
         height: number
         x: number
         y: number
+        fullscreen?: boolean
+        startOnStartup?: boolean
+        workAtBackground?: boolean // Minimize to tray instead of closing
     }
     modelSettings?: Record<string, {
         systemPrompt?: string
@@ -126,6 +130,39 @@ export type AppSettings = {
     mcpSecurityAllowedHosts?: string[]
     mcpReviewPolicy?: 'elevated' | 'trusted'
     mcpAutoExecuteSafe?: boolean
+    modelUsageLimits?: {
+        copilot?: {
+            hourly?: {
+                enabled: boolean
+                type: 'requests' | 'percentage'
+                value: number // requests count or percentage (0-100)
+            }
+            daily?: {
+                enabled: boolean
+                type: 'requests' | 'percentage'
+                value: number
+            }
+            weekly?: {
+                enabled: boolean
+                type: 'requests' | 'percentage'
+                value: number
+            }
+        }
+        antigravity?: Record<string, { // modelId -> limit config
+            enabled: boolean
+            percentage: number // percentage of model's remaining quota (0-100)
+        }>
+        codex?: {
+            daily?: {
+                enabled: boolean
+                percentage: number // percentage of daily remaining (0-100)
+            }
+            weekly?: {
+                enabled: boolean
+                percentage: number // percentage of weekly remaining (0-100)
+            }
+        }
+    }
     [key: string]: JsonValue | undefined
 }
 

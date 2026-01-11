@@ -1,278 +1,281 @@
 /**
- * File & Folder Icon Pack
- * Returns appropriate icons and colors based on file extension
+ * Unified File & Folder Icon Pack
+ * Provides VS Code-style icons for the file explorer
+ * Uses react-file-icon for files and Lucide for folders with custom colors
  */
+
+import { FileIcon as ReactFileIcon, defaultStyles, DefaultExtensionType } from 'react-file-icon';
 import {
-    File,
-    FileCode,
-    FileText,
-    FileJson,
-    FileImage,
-    FileVideo,
-    FileAudio,
-    FileArchive,
-    FileSpreadsheet,
     Folder,
     FolderOpen,
-    FolderGit2,
+    FolderGit,
+    FolderCog,
+    FolderCode,
+    FolderKanban,
+    FolderArchive,
+    FolderDot,
+    FolderInput,
+    FolderOutput,
+    FolderSearch,
+    FolderTree,
+    FolderHeart,
+    FolderLock,
+    FolderCheck,
+    FolderSync,
+    FolderKey,
+    FolderSymlink,
     Database,
-    Settings,
-    Terminal,
-    Package,
-    Lock,
-    Key,
     Globe,
-    Cpu,
-    BookOpen,
-    Braces,
+    TestTube2,
+    Blocks,
+    Layers,
+    Layout,
+    Palette,
+    Settings,
     type LucideIcon
-} from 'lucide-react'
+} from 'lucide-react';
 
-
-export interface FileIconInfo {
-    icon: LucideIcon
-    color: string
-    bgColor: string
+export interface IconProps {
+    size?: number;
+    className?: string;
 }
 
-// Extension to icon mapping
-const FILE_ICONS: Record<string, FileIconInfo> = {
-    // TypeScript/JavaScript
-    ts: { icon: FileCode, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    tsx: { icon: FileCode, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    js: { icon: FileCode, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    jsx: { icon: FileCode, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    mjs: { icon: FileCode, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    cjs: { icon: FileCode, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
+// Custom folder icon config
+interface FolderIconConfig {
+    icon: LucideIcon;
+    color: string;
+}
 
-    // Python
-    py: { icon: FileCode, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    pyw: { icon: FileCode, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    pyx: { icon: FileCode, color: 'text-green-400', bgColor: 'bg-green-500/10' },
+// Special folder name to icon mapping
+const SPECIAL_FOLDER_ICONS: Record<string, FolderIconConfig> = {
+    // Source code
+    'src': { icon: FolderCode, color: '#3B82F6' },
+    'source': { icon: FolderCode, color: '#3B82F6' },
+    'lib': { icon: FolderCode, color: '#6366F1' },
+    'libs': { icon: FolderCode, color: '#6366F1' },
 
-    // Go
-    go: { icon: FileCode, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
-
-    // Rust
-    rs: { icon: FileCode, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-
-    // C/C++
-    c: { icon: FileCode, color: 'text-blue-300', bgColor: 'bg-blue-400/10' },
-    cpp: { icon: FileCode, color: 'text-blue-300', bgColor: 'bg-blue-400/10' },
-    cc: { icon: FileCode, color: 'text-blue-300', bgColor: 'bg-blue-400/10' },
-    h: { icon: FileCode, color: 'text-purple-300', bgColor: 'bg-purple-400/10' },
-    hpp: { icon: FileCode, color: 'text-purple-300', bgColor: 'bg-purple-400/10' },
-
-    // Java/Kotlin
-    java: { icon: FileCode, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    kt: { icon: FileCode, color: 'text-violet-400', bgColor: 'bg-violet-500/10' },
-    kts: { icon: FileCode, color: 'text-violet-400', bgColor: 'bg-violet-500/10' },
-
-    // Ruby
-    rb: { icon: FileCode, color: 'text-red-300', bgColor: 'bg-red-400/10' },
-
-    // PHP
-    php: { icon: FileCode, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10' },
-
-    // Shell
-    sh: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-    bash: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-    zsh: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-    fish: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-    ps1: { icon: Terminal, color: 'text-blue-300', bgColor: 'bg-blue-400/10' },
-    bat: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-    cmd: { icon: Terminal, color: 'text-green-300', bgColor: 'bg-green-400/10' },
-
-    // Web
-    html: { icon: Globe, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    htm: { icon: Globe, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    css: { icon: Braces, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    scss: { icon: Braces, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    sass: { icon: Braces, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    less: { icon: Braces, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10' },
-    vue: { icon: FileCode, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    svelte: { icon: FileCode, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
-
-    // Data
-    json: { icon: FileJson, color: 'text-yellow-300', bgColor: 'bg-yellow-400/10' },
-    jsonc: { icon: FileJson, color: 'text-yellow-300', bgColor: 'bg-yellow-400/10' },
-    yaml: { icon: FileText, color: 'text-red-300', bgColor: 'bg-red-400/10' },
-    yml: { icon: FileText, color: 'text-red-300', bgColor: 'bg-red-400/10' },
-    toml: { icon: FileText, color: 'text-gray-300', bgColor: 'bg-gray-400/10' },
-    xml: { icon: FileCode, color: 'text-orange-300', bgColor: 'bg-orange-400/10' },
-    csv: { icon: FileSpreadsheet, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-
-    // Database
-    sql: { icon: Database, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    sqlite: { icon: Database, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    db: { icon: Database, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-
-    // Documentation
-    md: { icon: BookOpen, color: 'text-emerald-300', bgColor: 'bg-emerald-400/10' },
-    mdx: { icon: BookOpen, color: 'text-emerald-300', bgColor: 'bg-emerald-400/10' },
-    txt: { icon: FileText, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
-    rtf: { icon: FileText, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
-    pdf: { icon: FileText, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    doc: { icon: FileText, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    docx: { icon: FileText, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-
-    // Images
-    png: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    jpg: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    jpeg: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    gif: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    svg: { icon: FileImage, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    ico: { icon: FileImage, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    webp: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    bmp: { icon: FileImage, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-
-    // Video
-    mp4: { icon: FileVideo, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    webm: { icon: FileVideo, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    mov: { icon: FileVideo, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    avi: { icon: FileVideo, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    mkv: { icon: FileVideo, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-
-    // Audio
-    mp3: { icon: FileAudio, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    wav: { icon: FileAudio, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    ogg: { icon: FileAudio, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    flac: { icon: FileAudio, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    m4a: { icon: FileAudio, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-
-    // Archives
-    zip: { icon: FileArchive, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    rar: { icon: FileArchive, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    tar: { icon: FileArchive, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    gz: { icon: FileArchive, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    '7z': { icon: FileArchive, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
+    // Version control
+    '.git': { icon: FolderGit, color: '#F97316' },
+    '.github': { icon: FolderGit, color: '#6366F1' },
+    '.gitlab': { icon: FolderGit, color: '#F97316' },
 
     // Config
-    env: { icon: Key, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    lock: { icon: Lock, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    ini: { icon: Settings, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
-    cfg: { icon: Settings, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
-    conf: { icon: Settings, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
+    'config': { icon: FolderCog, color: '#8B5CF6' },
+    'configs': { icon: FolderCog, color: '#8B5CF6' },
+    '.config': { icon: FolderCog, color: '#8B5CF6' },
+    'settings': { icon: Settings, color: '#8B5CF6' },
 
-    // Binary/Compiled
-    exe: { icon: Cpu, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    dll: { icon: Cpu, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    so: { icon: Cpu, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    wasm: { icon: Cpu, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-}
+    // Components
+    'components': { icon: Blocks, color: '#22C55E' },
+    'component': { icon: Blocks, color: '#22C55E' },
+    'ui': { icon: Layout, color: '#22C55E' },
+    'widgets': { icon: Blocks, color: '#22C55E' },
 
-// Special file names
-const SPECIAL_FILES: Record<string, FileIconInfo> = {
-    'package.json': { icon: Package, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    'package-lock.json': { icon: Lock, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    'yarn.lock': { icon: Lock, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    'pnpm-lock.yaml': { icon: Lock, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    'tsconfig.json': { icon: Settings, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    'jsconfig.json': { icon: Settings, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    '.gitignore': { icon: FolderGit2, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    '.env': { icon: Key, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    '.env.local': { icon: Key, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    '.env.development': { icon: Key, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    '.env.production': { icon: Key, color: 'text-red-400', bgColor: 'bg-red-500/10' },
-    'Dockerfile': { icon: Package, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    'docker-compose.yml': { icon: Package, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    'docker-compose.yaml': { icon: Package, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    'README.md': { icon: BookOpen, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    'LICENSE': { icon: FileText, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    'Makefile': { icon: Terminal, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    '.prettierrc': { icon: Settings, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    '.eslintrc': { icon: Settings, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    'vite.config.ts': { icon: Settings, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    'tailwind.config.js': { icon: Settings, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
-    'next.config.js': { icon: Settings, color: 'text-white', bgColor: 'bg-zinc-500/10' },
-}
+    // Pages / Views
+    'pages': { icon: Layout, color: '#3B82F6' },
+    'views': { icon: Layout, color: '#3B82F6' },
+    'screens': { icon: Layout, color: '#3B82F6' },
+    'routes': { icon: FolderSymlink, color: '#3B82F6' },
 
-// Folder names to special icons
-const SPECIAL_FOLDERS: Record<string, FileIconInfo> = {
-    node_modules: { icon: Folder, color: 'text-green-400/50', bgColor: 'bg-green-500/5' },
-    '.git': { icon: FolderGit2, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    '.vscode': { icon: Folder, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    '.idea': { icon: Folder, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    src: { icon: Folder, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    dist: { icon: Folder, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    build: { icon: Folder, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    out: { icon: Folder, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
-    public: { icon: Folder, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    assets: { icon: Folder, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    components: { icon: Folder, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
-    pages: { icon: Folder, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    lib: { icon: Folder, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10' },
-    utils: { icon: Folder, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10' },
-    hooks: { icon: Folder, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    styles: { icon: Folder, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-    api: { icon: Folder, color: 'text-green-400', bgColor: 'bg-green-500/10' },
-    config: { icon: Folder, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' },
-    tests: { icon: Folder, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    __tests__: { icon: Folder, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    test: { icon: Folder, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-    spec: { icon: Folder, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
-}
+    // API / Services
+    'api': { icon: Globe, color: '#EC4899' },
+    'apis': { icon: Globe, color: '#EC4899' },
+    'services': { icon: Globe, color: '#EC4899' },
+    'graphql': { icon: Globe, color: '#E10098' },
 
-const DEFAULT_FILE: FileIconInfo = { icon: File, color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' }
-const DEFAULT_FOLDER: FileIconInfo = { icon: Folder, color: 'text-blue-400', bgColor: 'bg-blue-500/10' }
-const OPEN_FOLDER: FileIconInfo = { icon: FolderOpen, color: 'text-blue-400', bgColor: 'bg-blue-500/10' }
+    // Tests
+    'test': { icon: TestTube2, color: '#F59E0B' },
+    'tests': { icon: TestTube2, color: '#F59E0B' },
+    '__tests__': { icon: TestTube2, color: '#F59E0B' },
+    'spec': { icon: TestTube2, color: '#F59E0B' },
+    'specs': { icon: TestTube2, color: '#F59E0B' },
+    'e2e': { icon: TestTube2, color: '#F59E0B' },
+    'cypress': { icon: TestTube2, color: '#17202C' },
+    'playwright': { icon: TestTube2, color: '#2EAD33' },
+
+    // Build output
+    'dist': { icon: FolderOutput, color: '#6B7280' },
+    'build': { icon: FolderOutput, color: '#6B7280' },
+    'out': { icon: FolderOutput, color: '#6B7280' },
+    'output': { icon: FolderOutput, color: '#6B7280' },
+    '.next': { icon: FolderOutput, color: '#000000' },
+    '.nuxt': { icon: FolderOutput, color: '#00DC82' },
+
+    // Dependencies
+    'node_modules': { icon: FolderArchive, color: '#6B7280' },
+    'vendor': { icon: FolderArchive, color: '#6B7280' },
+    'packages': { icon: FolderArchive, color: '#6B7280' },
+
+    // Assets
+    'assets': { icon: FolderHeart, color: '#EF4444' },
+    'images': { icon: FolderHeart, color: '#EF4444' },
+    'img': { icon: FolderHeart, color: '#EF4444' },
+    'icons': { icon: FolderHeart, color: '#EF4444' },
+    'fonts': { icon: FolderHeart, color: '#8B5CF6' },
+    'media': { icon: FolderHeart, color: '#EF4444' },
+
+    // Styles
+    'styles': { icon: Palette, color: '#EC4899' },
+    'css': { icon: Palette, color: '#38BDF8' },
+    'scss': { icon: Palette, color: '#CF649A' },
+    'less': { icon: Palette, color: '#1D365D' },
+
+    // Public
+    'public': { icon: FolderTree, color: '#10B981' },
+    'static': { icon: FolderTree, color: '#10B981' },
+
+    // Types
+    'types': { icon: FolderDot, color: '#3178C6' },
+    '@types': { icon: FolderDot, color: '#3178C6' },
+    'typings': { icon: FolderDot, color: '#3178C6' },
+    'interfaces': { icon: FolderDot, color: '#3178C6' },
+
+    // Hooks / Utils
+    'hooks': { icon: FolderSync, color: '#61DAFB' },
+    'composables': { icon: FolderSync, color: '#42B883' },
+    'utils': { icon: FolderKanban, color: '#6366F1' },
+    'utilities': { icon: FolderKanban, color: '#6366F1' },
+    'helpers': { icon: FolderKanban, color: '#6366F1' },
+
+    // Data
+    'data': { icon: Database, color: '#0EA5E9' },
+    'database': { icon: Database, color: '#0EA5E9' },
+    'db': { icon: Database, color: '#0EA5E9' },
+    'models': { icon: Database, color: '#0EA5E9' },
+    'schema': { icon: Database, color: '#0EA5E9' },
+    'migrations': { icon: Database, color: '#F59E0B' },
+    'prisma': { icon: Database, color: '#2D3748' },
+
+    // Features / Modules 
+    'features': { icon: Layers, color: '#8B5CF6' },
+    'modules': { icon: Layers, color: '#8B5CF6' },
+    'domains': { icon: Layers, color: '#8B5CF6' },
+
+    // Docs
+    'docs': { icon: FolderSearch, color: '#10B981' },
+    'documentation': { icon: FolderSearch, color: '#10B981' },
+
+    // Security
+    '.ssh': { icon: FolderKey, color: '#EF4444' },
+    'keys': { icon: FolderKey, color: '#EF4444' },
+    'certs': { icon: FolderLock, color: '#EF4444' },
+    'secrets': { icon: FolderLock, color: '#EF4444' },
+
+    // Scripts
+    'scripts': { icon: FolderInput, color: '#22C55E' },
+    'bin': { icon: FolderInput, color: '#22C55E' },
+    'tools': { icon: FolderCog, color: '#6B7280' },
+
+    // Hidden
+    '.vscode': { icon: FolderCog, color: '#0078D4' },
+    '.idea': { icon: FolderCog, color: '#000000' },
+    '.husky': { icon: FolderDot, color: '#42B883' },
+    '.cache': { icon: FolderArchive, color: '#6B7280' },
+
+    // CI/CD
+    '.circleci': { icon: FolderSync, color: '#343434' },
+    '.jenkins': { icon: FolderSync, color: '#D24939' },
+    'workflows': { icon: FolderCheck, color: '#2088FF' },
+};
+
+// Extended file extension mapping for proper colors
+const EXTENSION_COLOR_MAP: Record<string, string> = {
+    'ts': '#3178C6', 'tsx': '#3178C6', 'js': '#F7DF1E', 'jsx': '#61DAFB',
+    'py': '#3776AB', 'ipynb': '#F37626', 'rs': '#DEA584', 'go': '#00ADD8',
+    'rb': '#CC342D', 'php': '#777BB4', 'java': '#ED8B00', 'kt': '#7F52FF',
+    'c': '#A8B9CC', 'h': '#A8B9CC', 'cpp': '#00599C', 'cs': '#512BD4',
+    'swift': '#F05138', 'dart': '#0175C2', 'html': '#E34F26', 'css': '#1572B6',
+    'scss': '#CF649A', 'sass': '#CF649A', 'vue': '#42B883', 'svelte': '#FF3E00',
+    'json': '#000000', 'yaml': '#CB171E', 'yml': '#CB171E', 'xml': '#0060AC',
+    'md': '#083FA1', 'sql': '#CC2927', 'sh': '#4EAA25',
+};
+
+// Type mappings for react-file-icon
+type FileIconType = 'acrobat' | 'audio' | 'binary' | 'code' | 'compressed' |
+    'document' | 'drive' | 'font' | 'image' | 'presentation' | 'settings' |
+    'spreadsheet' | 'vector' | 'video' | '3d';
+
+const EXTENSION_TYPE_MAP: Record<string, FileIconType> = {
+    'ts': 'code', 'tsx': 'code', 'js': 'code', 'jsx': 'code',
+    'py': 'code', 'rb': 'code', 'php': 'code', 'java': 'code',
+    'c': 'code', 'cpp': 'code', 'cs': 'code', 'go': 'code',
+    'rs': 'code', 'swift': 'code', 'kt': 'code', 'dart': 'code',
+    'html': 'code', 'css': 'code', 'scss': 'code', 'vue': 'code',
+    'svelte': 'code', 'sql': 'code', 'graphql': 'code', 'sh': 'code',
+    'pdf': 'acrobat', 'doc': 'document', 'docx': 'document', 'txt': 'document',
+    'md': 'document', 'xls': 'spreadsheet', 'xlsx': 'spreadsheet', 'ppt': 'presentation',
+    'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 'svg': 'vector',
+    'mp4': 'video', 'webm': 'video', 'mp3': 'audio', 'wav': 'audio',
+    'zip': 'compressed', 'tar': 'compressed', 'gz': 'compressed',
+    'woff': 'font', 'woff2': 'font', 'exe': 'binary', 'so': 'binary',
+    'json': 'settings', 'yaml': 'settings', 'yml': 'settings', 'ini': 'settings',
+};
 
 /**
- * Get icon info for a file based on its name
+ * Get display icon configuration for a folder name
  */
-export function getFileIcon(fileName: string): FileIconInfo {
-    const lowerName = fileName.toLowerCase()
+export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
+    const lowerName = folderName.toLowerCase();
+    const config = SPECIAL_FOLDER_ICONS[lowerName];
 
-    // Check special file names first
-    if (SPECIAL_FILES[lowerName]) {
-        return SPECIAL_FILES[lowerName]
+    if (config) {
+        return {
+            Icon: config.icon,
+            color: config.color
+        };
     }
 
-    // Check exact matches with common special files
-    for (const [pattern, info] of Object.entries(SPECIAL_FILES)) {
-        if (lowerName === pattern.toLowerCase()) {
-            return info
-        }
-    }
-
-    // Get extension
-    const lastDot = fileName.lastIndexOf('.')
-    if (lastDot > 0) {
-        const ext = fileName.slice(lastDot + 1).toLowerCase()
-        if (FILE_ICONS[ext]) {
-            return FILE_ICONS[ext]
-        }
-    }
-
-    return DEFAULT_FILE
+    return {
+        Icon: isOpen ? FolderOpen : Folder,
+        color: '#60A5FA'
+    };
 }
 
 /**
- * Get icon info for a folder based on its name
+ * FolderIcon Component
  */
-export function getFolderIcon(folderName: string, isOpen: boolean = false): FileIconInfo {
-    const lowerName = folderName.toLowerCase()
+export function FolderIcon({ folderName, isOpen = false, className = 'w-4 h-4', size = 16 }: { folderName: string; isOpen?: boolean; className?: string; size?: number }) {
+    const { Icon, color } = getFolderIconInfo(folderName, isOpen);
+    return <Icon className={className} size={size} style={{ color }} />;
+}
 
-    if (SPECIAL_FOLDERS[lowerName]) {
-        const info = SPECIAL_FOLDERS[lowerName]
-        return isOpen ? { ...info, icon: FolderOpen } : info
+/**
+ * FileIcon Component
+ */
+export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileName: string; className?: string; size?: number }) {
+    const lowerName = fileName.toLowerCase();
+    const ext = lowerName.split('.').pop() || '';
+
+    const color = EXTENSION_COLOR_MAP[ext] || '#6B7280';
+    const type = EXTENSION_TYPE_MAP[ext];
+    const defaultStyle = defaultStyles[ext as DefaultExtensionType];
+
+    return (
+        <div className={className} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: size, height: size }}>
+                <ReactFileIcon
+                    extension={ext}
+                    color={color}
+                    type={type}
+                    labelColor={color}
+                    glyphColor="rgba(255,255,255,0.8)"
+                    {...(defaultStyle || {})}
+                    // @ts-ignore
+                    width={size}
+                    // @ts-ignore
+                    height={size}
+                />
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Utility for components that need to render either file or folder icon
+ */
+export function renderIcon(name: string, isDirectory: boolean, isOpen: boolean = false, props: { className?: string; size?: number } = {}) {
+    if (isDirectory) {
+        return <FolderIcon folderName={name} isOpen={isOpen} className={props.className} size={props.size} />;
     }
-
-    return isOpen ? OPEN_FOLDER : DEFAULT_FOLDER
-}
-
-/**
- * Render a file icon component
- */
-export function FileIcon({ fileName, className = 'w-4 h-4' }: { fileName: string; className?: string }) {
-    const { icon: Icon, color } = getFileIcon(fileName)
-    return <Icon className={`${className} ${color}`} />
-}
-
-/**
- * Render a folder icon component
- */
-export function FolderIcon({ folderName, isOpen = false, className = 'w-4 h-4' }: { folderName: string; isOpen?: boolean; className?: string }) {
-    const { icon: Icon, color } = getFolderIcon(folderName, isOpen)
-    return <Icon className={`${className} ${color}`} />
+    return <FileIcon fileName={name} className={props.className} size={props.size} />;
 }

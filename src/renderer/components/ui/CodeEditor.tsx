@@ -3,6 +3,8 @@ import Editor, { OnMount, Monaco } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import { normalizeLanguage } from '@/utils/language-map';
+import { initTextMateSupport } from '@/utils/textmate-loader';
 
 export interface CodeEditorProps {
     value?: string;
@@ -15,6 +17,10 @@ export interface CodeEditorProps {
     fontSize?: number;
     initialLine?: number;
 }
+
+// Track if TextMate has been initialized globally
+let textMateInitialized = false;
+let textMateInitializing = false;
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
     value,
@@ -30,6 +36,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const decorationRef = useRef<string[]>([]);
     const monacoRef = useRef<Monaco | null>(null);
+
+    // Normalize the language to a Monaco-compatible ID
+    const normalizedLanguage = normalizeLanguage(language);
 
     const updateDecorations = (editor: monaco.editor.IStandaloneCodeEditor) => {
         if (!editor) return;
@@ -56,9 +65,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         decorationRef.current = editor.deltaDecorations(decorationRef.current, newDecorations);
     };
 
-    const handleEditorDidMount: OnMount = (editor, monaco) => {
+    const handleEditorDidMount: OnMount = async (editor, monaco) => {
         editorRef.current = editor;
         monacoRef.current = monaco;
+
+        // Initialize TextMate support (only once globally)
+        if (!textMateInitialized && !textMateInitializing) {
+            textMateInitializing = true;
+            try {
+                await initTextMateSupport(monaco);
+                textMateInitialized = true;
+                console.log('[CodeEditor] TextMate support initialized');
+            } catch (error) {
+                console.warn('[CodeEditor] TextMate initialization failed, using Monaco defaults:', error);
+            } finally {
+                textMateInitializing = false;
+            }
+        }
+
 
         // Initial decorations
         updateDecorations(editor);
@@ -85,7 +109,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         if (!monacoRef.current) return;
         const monaco = monacoRef.current;
 
-        const provider = monaco.languages.registerInlineCompletionsProvider(language, {
+        const provider = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
             provideInlineCompletions: async (model: monaco.editor.ITextModel, position: monaco.Position) => {
                 const textBefore = model.getValueInRange({
                     startLineNumber: 1,
@@ -123,7 +147,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         return () => {
             provider.dispose();
         };
-    }, [language]);
+    }, [normalizedLanguage]);
 
     React.useEffect(() => {
         if (editorRef.current && initialLine) {
@@ -143,8 +167,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <div className={`relative w-full h-full overflow-hidden ${className}`}>
             <Editor
                 height="100%"
-                defaultLanguage={language}
-                language={language}
+                defaultLanguage={normalizedLanguage}
+                language={normalizedLanguage}
                 value={value}
                 onChange={onChange}
                 theme={monacoTheme}

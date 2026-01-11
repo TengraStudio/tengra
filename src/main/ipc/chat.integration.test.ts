@@ -33,6 +33,8 @@ const mockLLMService = { chatOpenAI: vi.fn(), chatOpenAIStream: vi.fn() };
 const mockProxyService = { getProxyKey: vi.fn().mockReturnValue('dummy-key') };
 const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedValue([]) };
 
+const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
+
 describe('Chat IPC Integration', () => {
     beforeEach(() => {
         ipcMainHandlers.clear();
@@ -45,7 +47,8 @@ describe('Chat IPC Integration', () => {
             copilotService: mockCopilotService as any,
             llmService: mockLLMService as any,
             proxyService: mockProxyService as any,
-            codeIntelligenceService: mockCodeIntelligenceService as any
+            codeIntelligenceService: mockCodeIntelligenceService as any,
+            contextRetrievalService: mockContextRetrievalService as any
         });
     };
 

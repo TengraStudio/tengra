@@ -70,16 +70,37 @@ export interface ElectronAPI {
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
+    git: {
+        getBranch: (cwd: string) => Promise<{ success: boolean; branch?: string; error?: string }>
+        getStatus: (cwd: string) => Promise<{ success: boolean; isClean?: boolean; changes?: number; files?: Array<{ path: string; status: string }>; error?: string }>
+        getLastCommit: (cwd: string) => Promise<{ success: boolean; hash?: string; message?: string; author?: string; relativeTime?: string; date?: string; error?: string }>
+        getRecentCommits: (cwd: string, count?: number) => Promise<{ success: boolean; commits?: Array<{ hash: string; message: string; author: string; date: string }>; error?: string }>
+        getBranches: (cwd: string) => Promise<{ success: boolean; branches?: string[]; error?: string }>
+        isRepository: (cwd: string) => Promise<{ success: boolean; isRepository?: boolean }>
+        getFileDiff: (cwd: string, filePath: string, staged?: boolean) => Promise<{ original: string; modified: string; success: boolean; error?: string }>
+        getUnifiedDiff: (cwd: string, filePath: string, staged?: boolean) => Promise<{ diff: string; success: boolean; error?: string }>
+        stageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+        unstageFile: (cwd: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+        getDetailedStatus: (cwd: string) => Promise<{ success: boolean; staged?: Array<{ path: string; status: string }>; unstaged?: Array<{ path: string; status: string }>; error?: string }>
+        checkout: (cwd: string, branch: string) => Promise<{ success: boolean; error?: string }>
+        commit: (cwd: string, message: string) => Promise<{ success: boolean; error?: string }>
+        push: (cwd: string, remote?: string, branch?: string) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>
+        pull: (cwd: string) => Promise<{ success: boolean; error?: string; stdout?: string; stderr?: string }>
+        getRemotes: (cwd: string) => Promise<{ success: boolean; remotes?: Array<{ name: string; url: string; fetch: boolean; push: boolean }>; error?: string }>
+        getTrackingInfo: (cwd: string) => Promise<{ success: boolean; tracking?: string | null; ahead?: number; behind?: number }>
+        getCommitStats: (cwd: string, days?: number) => Promise<{ success: boolean; commitCounts?: Record<string, number>; error?: string }>
+        getDiffStats: (cwd: string) => Promise<{ success: boolean; staged?: { added: number; deleted: number; files: number }; unstaged?: { added: number; deleted: number; files: number }; total?: { added: number; deleted: number; files: number }; error?: string }>
+    }
 
 
     // Ollama chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>
     chat: (messages: Message[], model: string) => Promise<{ content: string; done: boolean }>
-    chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>) => Promise<{ content: string; toolCalls?: ToolCall[] }>
-    chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>) => Promise<{ success: boolean; queued?: boolean }>
+    chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>) => Promise<{ content: string; toolCalls?: ToolCall[]; reasoning?: string; images?: string[]; sources?: string[] }>
+    chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, chatId?: string, projectId?: string) => Promise<{ success: boolean; queued?: boolean }>
     abortChat: () => void
-    onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
-    removeStreamChunkListener: (callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
+    onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => () => void
+    removeStreamChunkListener: () => void
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>
@@ -146,6 +167,11 @@ export interface ElectronAPI {
             completionTokens: number
             tokenTimeline: { timestamp: number; promptTokens: number; completionTokens: number }[]
             activity: number[]
+        }>
+        getTimeStats: () => Promise<{
+            totalOnlineTime: number
+            totalCodingTime: number
+            projectCodingTime: Record<string, number>
         }>
         getProjects: () => Promise<Project[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
@@ -276,11 +302,13 @@ export interface ElectronAPI {
 
     project: {
         analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>
-        saveState: (rootPath: string, state: Record<string, IpcValue>) => Promise<boolean>
-        loadState: (rootPath: string) => Promise<Record<string, IpcValue>>
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>
         generateLogo: (projectPath: string, prompt: string, style: string) => Promise<string>
         analyzeDirectory: (dirPath: string) => Promise<{ hasPackageJson: boolean; pkg: Record<string, IpcValue>; readme: string | null; stats: { fileCount: number; totalSize: number } }>
+        applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>
+        getCompletion: (text: string) => Promise<string>
+        improveLogoPrompt: (prompt: string) => Promise<string>
+        uploadLogo: (projectPath: string) => Promise<string | null>
         watch: (rootPath: string) => Promise<boolean>
         unwatch: (rootPath: string) => Promise<boolean>
         onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => () => void
@@ -372,13 +400,19 @@ const api: ElectronAPI = {
     getQuota: () => ipcRenderer.invoke('proxy:getQuota'),
     getCopilotQuota: () => ipcRenderer.invoke('proxy:getCopilotQuota'),
     getCodexUsage: () => ipcRenderer.invoke('proxy:getCodexUsage'),
+    checkUsageLimit: (provider: string, model: string) => ipcRenderer.invoke('usage:checkLimit', provider, model),
+    getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => ipcRenderer.invoke('usage:getUsageCount', period, provider, model),
     importChatHistory: (provider: string) => ipcRenderer.invoke('history:import', provider),
     importChatHistoryJson: (jsonContent: string) => ipcRenderer.invoke('history:import-json', jsonContent),
 
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
-    chatOpenAI: (messages, model, tools, provider, options) => ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options),
-    chatStream: (messages, model, tools, provider, options) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options),
+    chatOpenAI: async (messages, model, tools, provider, options) => {
+        const res = await ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options)
+        if (res.success) return res.data
+        throw new Error(res.error?.message || 'Chat request failed')
+    },
+    chatStream: (messages, model, tools, provider, options, chatId, projectId) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options, chatId, projectId),
     abortChat: () => ipcRenderer.invoke('ollama:abort'),
     onStreamChunk: (callback) => {
         const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => callback(chunk)
@@ -448,6 +482,7 @@ const api: ElectronAPI = {
         getMessages: (chatId) => ipcRenderer.invoke('db:getMessages', chatId),
         getStats: () => ipcRenderer.invoke('db:getStats'),
         getDetailedStats: (period) => ipcRenderer.invoke('db:getDetailedStats', period),
+        getTimeStats: () => ipcRenderer.invoke('db:getTimeStats'),
         getProjects: () => ipcRenderer.invoke('db:getProjects'),
         createProject: (name, path, desc, mounts) => ipcRenderer.invoke('db:createProject', name, path, desc, mounts),
         updateProject: (id, updates) => ipcRenderer.invoke('db:updateProject', id, updates),
@@ -545,6 +580,27 @@ const api: ElectronAPI = {
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
     runCommand: (command, args, cwd) => ipcRenderer.invoke('shell:runCommand', command, args, cwd),
+    git: {
+        getBranch: (cwd) => ipcRenderer.invoke('git:getBranch', cwd),
+        getStatus: (cwd) => ipcRenderer.invoke('git:getStatus', cwd),
+        getLastCommit: (cwd) => ipcRenderer.invoke('git:getLastCommit', cwd),
+        getRecentCommits: (cwd, count) => ipcRenderer.invoke('git:getRecentCommits', cwd, count),
+        getBranches: (cwd) => ipcRenderer.invoke('git:getBranches', cwd),
+        isRepository: (cwd) => ipcRenderer.invoke('git:isRepository', cwd),
+        getFileDiff: (cwd: string, filePath: string, staged?: boolean) => ipcRenderer.invoke('git:getFileDiff', cwd, filePath, staged),
+        getUnifiedDiff: (cwd: string, filePath: string, staged?: boolean) => ipcRenderer.invoke('git:getUnifiedDiff', cwd, filePath, staged),
+        stageFile: (cwd: string, filePath: string) => ipcRenderer.invoke('git:stageFile', cwd, filePath),
+        unstageFile: (cwd: string, filePath: string) => ipcRenderer.invoke('git:unstageFile', cwd, filePath),
+        getDetailedStatus: (cwd: string) => ipcRenderer.invoke('git:getDetailedStatus', cwd),
+        checkout: (cwd: string, branch: string) => ipcRenderer.invoke('git:checkout', cwd, branch),
+        commit: (cwd: string, message: string) => ipcRenderer.invoke('git:commit', cwd, message),
+        push: (cwd: string, remote?: string, branch?: string) => ipcRenderer.invoke('git:push', cwd, remote, branch),
+        pull: (cwd: string) => ipcRenderer.invoke('git:pull', cwd),
+        getRemotes: (cwd: string) => ipcRenderer.invoke('git:getRemotes', cwd),
+        getTrackingInfo: (cwd: string) => ipcRenderer.invoke('git:getTrackingInfo', cwd),
+        getCommitStats: (cwd: string, days?: number) => ipcRenderer.invoke('git:getCommitStats', cwd, days),
+        getDiffStats: (cwd: string) => ipcRenderer.invoke('git:getDiffStats', cwd)
+    },
 
     readPdf: (path) => ipcRenderer.invoke('files:readPdf', path),
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
@@ -579,27 +635,67 @@ const api: ElectronAPI = {
     saveFile: (content, filename) => ipcRenderer.invoke('dialog:saveFile', { content, filename }),
 
     files: {
-        listDirectory: (path: string) => ipcRenderer.invoke('files:listDirectory', path),
-        readFile: (filePath: string) => ipcRenderer.invoke('files:readFile', filePath),
-        readImage: (filePath: string) => ipcRenderer.invoke('files:readImage', filePath),
-        writeFile: (filePath: string, content: string) => ipcRenderer.invoke('files:writeFile', filePath, content),
-        exists: (path: string) => ipcRenderer.invoke('files:exists', path)
+        listDirectory: (path: string) => ipcRenderer.invoke('files:listDirectory', path).then(r => r.data),
+        readFile: (filePath: string) => ipcRenderer.invoke('files:readFile', filePath).then(r => r.data),
+        readImage: (filePath: string) => ipcRenderer.invoke('files:readImage', filePath).then(r => r.data),
+        writeFile: (filePath: string, content: string) => ipcRenderer.invoke('files:writeFile', filePath, content).then(r => r.data),
+        exists: (path: string) => ipcRenderer.invoke('files:exists', path).then(r => r.data)
     },
 
     getSettings: () => ipcRenderer.invoke('settings:get'),
     saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
 
     project: {
-        analyze: (rootPath: string, projectId: string) => ipcRenderer.invoke('project:analyze', rootPath, projectId),
-        saveState: (rootPath: string, state: Record<string, IpcValue>) => ipcRenderer.invoke('project:save-state', rootPath, state),
-        loadState: (rootPath: string) => ipcRenderer.invoke('project:load-state', rootPath),
-        analyzeIdentity: (rootPath: string) => ipcRenderer.invoke('project:analyzeIdentity', rootPath),
-        generateLogo: (projectPath: string, prompt: string, style: string) => ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style),
-        analyzeDirectory: (dirPath: string) => ipcRenderer.invoke('project:analyzeDirectory', dirPath),
-        watch: (rootPath: string) => ipcRenderer.invoke('project:watch', rootPath),
-        unwatch: (rootPath: string) => ipcRenderer.invoke('project:unwatch', rootPath),
+        analyze: async (rootPath: string, projectId: string) => {
+            const res = await ipcRenderer.invoke('project:analyze', rootPath, projectId)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Analysis failed')
+        },
+        analyzeIdentity: async (rootPath: string) => {
+            const res = await ipcRenderer.invoke('project:analyzeIdentity', rootPath)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Identity analysis failed')
+        },
+        generateLogo: async (projectPath: string, prompt: string, style: string) => {
+            const res = await ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Logo generation failed')
+        },
+        analyzeDirectory: async (dirPath: string) => {
+            const res = await ipcRenderer.invoke('project:analyzeDirectory', dirPath)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Directory analysis failed')
+        },
+        applyLogo: async (projectPath: string, tempLogoPath: string) => {
+            const res = await ipcRenderer.invoke('project:applyLogo', projectPath, tempLogoPath)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Apply logo failed')
+        },
+        getCompletion: async (text: string) => {
+            const res = await ipcRenderer.invoke('project:getCompletion', text)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Completion failed')
+        },
+        improveLogoPrompt: async (prompt: string) => {
+            const res = await ipcRenderer.invoke('project:improveLogoPrompt', prompt)
+            if (res.success) return res.data
+            throw new Error(res.error?.message || 'Prompt improvement failed')
+        },
+        uploadLogo: async (projectPath: string) => {
+            const res = await ipcRenderer.invoke('project:uploadLogo', projectPath)
+            if (res.success) return res.data
+            return null
+        },
+        watch: async (rootPath: string) => {
+            const res = await ipcRenderer.invoke('project:watch', rootPath)
+            return res.success
+        },
+        unwatch: async (rootPath: string) => {
+            const res = await ipcRenderer.invoke('project:unwatch', rootPath)
+            return res.success
+        },
         onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => {
-            const listener = (_event: IpcRendererEvent, data: { event: string; path: string; rootPath: string }) => callback(data.event, data.path, data.rootPath)
+            const listener = (_event: IpcRendererEvent, data: { event: string, path: string, rootPath: string }) => callback(data.event, data.path, data.rootPath)
             ipcRenderer.on('project:file-change', listener)
             return () => ipcRenderer.removeListener('project:file-change', listener)
         }
@@ -668,7 +764,6 @@ const api: ElectronAPI = {
         reveal: (path) => ipcRenderer.invoke('gallery:reveal', path)
     },
 
-    // Generic event listener for IPC events
     on: (channel: string, callback: (...args: IpcValue[]) => void) => {
         const listener = (_event: IpcRendererEvent, ...args: IpcValue[]) => callback(...args)
         ipcRenderer.on(channel, listener)

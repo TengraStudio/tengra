@@ -9,9 +9,11 @@ import { IpcMainInvokeEvent } from 'electron'
 import { JsonObject, JsonValue } from '../../shared/types/common'
 
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
+import { ContextRetrievalService } from '../services/llm/context-retrieval.service'
 import { chatQueueManager } from '../services/chat-queue.manager'
 import { getErrorMessage } from '../../shared/utils/error.util'
 import { createIpcHandler } from '../utils/ipc-wrapper.util'
+import { sanitizeString, sanitizeObject } from '../../shared/utils/sanitize.util'
 
 export function registerChatIpc(options: {
     settingsService: SettingsService
@@ -19,8 +21,9 @@ export function registerChatIpc(options: {
     llmService: LLMService
     proxyService: ProxyService
     codeIntelligenceService: CodeIntelligenceService
+    contextRetrievalService: ContextRetrievalService
 }) {
-    const { settingsService, copilotService, llmService, proxyService, codeIntelligenceService } = options
+    const { settingsService, copilotService, llmService, proxyService, contextRetrievalService } = options
 
     const PROVIDER_INSTRUCTIONS: Record<string, string> = {
         'antigravity': "Ben, **Antigravity** tarafından **Orbit** platformu üzerinden sağlanan gelişmiş bir yapay zeka asistanıyım. Size en iyi şekilde yardımcı olmak için buradayım.",
@@ -61,40 +64,58 @@ export function registerChatIpc(options: {
      * OpenAI-compatible chat handler
      */
     ipcMain.handle('chat:openai', createIpcHandler('chat:openai', async (_event: IpcMainInvokeEvent, messages: Message[], model: string, tools: ToolDefinition[] | undefined, provider: string, projectId?: string) => {
+        // Sanitize inputs
+        const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false })
+        const sanitizedProvider = sanitizeString(provider, { maxLength: 50, allowNewlines: false })
+        const sanitizedProjectId = projectId ? sanitizeString(projectId, { maxLength: 100, allowNewlines: false }) : undefined
+
+        // Sanitize messages
+        const sanitizedMessages = messages.map(msg => {
+            if (typeof msg.content === 'string') {
+                return { ...msg, content: sanitizeString(msg.content, { maxLength: 1000000, allowNewlines: true }) }
+            } else if (Array.isArray(msg.content)) {
+                return {
+                    ...msg,
+                    content: msg.content.map(item => {
+                        if (item.type === 'text' && typeof item.text === 'string') {
+                            return { ...item, text: sanitizeString(item.text, { maxLength: 1000000, allowNewlines: true }) }
+                        }
+                        return item
+                    })
+                }
+            }
+            return msg
+        })
+
         let sources: string[] = [];
 
         // --- RAG: Context retrieval ---
-        if (projectId && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
+        // --- RAG: Context retrieval ---
+        if (sanitizedProjectId && sanitizedMessages.length > 0) {
+            const lastMessage = sanitizedMessages[sanitizedMessages.length - 1];
             if (lastMessage.role === 'user') {
                 try {
-                    console.log(`[RAG] Querying context for projectId: ${projectId}`);
+                    console.log(`[RAG] Querying context for projectId: ${sanitizedProjectId}`);
                     const query = typeof lastMessage.content === 'string'
                         ? lastMessage.content
                         : (Array.isArray(lastMessage.content) ? lastMessage.content.find(p => p.type === 'text')?.text || '' : '');
 
                     if (query) {
-                        const results = await codeIntelligenceService.queryIndexedSymbols(query);
-                        if (results && results.length > 0) {
-                            const contextLimit = 5;
-                            const contextString = results.slice(0, contextLimit).map(r =>
-                                `--- FILE: ${r.file} ---\n${r.text}\n\`\`\`\n${r.name || ''}\n\`\`\``
-                            ).join('\n\n');
+                        const { contextString, sources: ragSources } = await contextRetrievalService.retrieveContext(query, sanitizedProjectId);
 
+                        if (contextString) {
+                            sources = ragSources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false }));
                             const ragPrompt = `\n\nBu soruyu cevaplamana yardımcı olabilecek ilgili kod parçacıkları:\n\n${contextString}`;
 
-                            // Assign sources to the outer scoped variable
-                            sources = results.map(r => r.file);
-
                             // Inject into system prompt or as a new context message
-                            const systemIdx = messages.findIndex((m) => m.role === 'system');
+                            const systemIdx = sanitizedMessages.findIndex((m) => m.role === 'system');
                             if (systemIdx !== -1) {
-                                const currentContent = typeof messages[systemIdx].content === 'string' ? messages[systemIdx].content : '';
-                                messages[systemIdx].content = currentContent + ragPrompt;
+                                const currentContent = typeof sanitizedMessages[systemIdx].content === 'string' ? sanitizedMessages[systemIdx].content : '';
+                                sanitizedMessages[systemIdx].content = currentContent + ragPrompt;
                             } else {
-                                messages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
+                                sanitizedMessages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
                             }
-                            console.log(`[RAG] Injected ${results.length} context items.`);
+                            console.log(`[RAG] Injected context with ${ragSources.length} sources.`);
                         }
                     }
                 } catch (ragErr) {
@@ -103,17 +124,20 @@ export function registerChatIpc(options: {
             }
         }
 
-        messages = injectSystemPrompt(messages, provider, model);
+        const finalMessages = injectSystemPrompt(sanitizedMessages, sanitizedProvider, sanitizedModel);
 
         const settings = settingsService.getSettings()
 
-        console.log(`[Main] Chat Request: Model=${model}, Provider=${provider}`)
+        console.log(`[Main] Chat Request: Model=${sanitizedModel}, Provider=${sanitizedProvider}`)
+
+        // Sanitize tools if provided
+        const sanitizedTools = tools ? sanitizeObject(tools) : undefined
 
         // 1. Copilot Routing
-        if (provider === 'copilot') {
-            console.log(`[Main] Routing ${model} via CopilotService`)
+        if (sanitizedProvider === 'copilot') {
+            console.log(`[Main] Routing ${sanitizedModel} via CopilotService`)
             // CopilotService expects shared Message[]
-            const res = await copilotService.chat(messages, model, tools)
+            const res = await copilotService.chat(finalMessages, sanitizedModel, sanitizedTools)
             // Extract content safely to avoid Date type mismatch with JsonValue
             const contentVal = res ? (Array.isArray(res.content) ? res.content : res.content) as JsonValue : ''
             const content = parseAIResponseContent(contentVal)
@@ -124,8 +148,8 @@ export function registerChatIpc(options: {
         const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
         const proxyKey = proxyService.getProxyKey()
 
-        console.log(`[Main] Routing ${model} via Cliproxy/LLMService`)
-        const res = await llmService.chatOpenAI(messages, model, tools, proxyUrl, proxyKey);
+        console.log(`[Main] Routing ${sanitizedModel} via Cliproxy/LLMService`)
+        const res = await llmService.chatOpenAI(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey);
         const content = res.content || '';
         const reasoning = res.reasoning_content || '';
         const images = res.images || [];
@@ -134,12 +158,37 @@ export function registerChatIpc(options: {
     }))
 
     ipcMain.handle('chat:stream', async (event: IpcMainInvokeEvent, messages: Message[], model: string, tools: ToolDefinition[] | undefined, provider: string, _options: JsonObject | undefined, chatId: string, projectId?: string) => {
+        // Sanitize inputs
+        const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false })
+        const sanitizedProvider = sanitizeString(provider, { maxLength: 50, allowNewlines: false })
+        const sanitizedChatId = sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
+        const sanitizedProjectId = projectId ? sanitizeString(projectId, { maxLength: 100, allowNewlines: false }) : undefined
+
+        // Sanitize messages
+        const sanitizedMessages = messages.map(msg => {
+            if (typeof msg.content === 'string') {
+                return { ...msg, content: sanitizeString(msg.content, { maxLength: 1000000, allowNewlines: true }) }
+            } else if (Array.isArray(msg.content)) {
+                return {
+                    ...msg,
+                    content: msg.content.map(item => {
+                        if (item.type === 'text' && typeof item.text === 'string') {
+                            return { ...item, text: sanitizeString(item.text, { maxLength: 1000000, allowNewlines: true }) }
+                        }
+                        return item
+                    })
+                }
+            }
+            return msg
+        })
+
         const settings = settingsService.getSettings()
         chatQueueManager.setPolicy(settings.ollama?.orchestrationPolicy || 'auto')
 
         // --- RAG: Context retrieval ---
-        if (projectId && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
+        // --- RAG: Context retrieval ---
+        if (sanitizedProjectId && sanitizedMessages.length > 0) {
+            const lastMessage = sanitizedMessages[sanitizedMessages.length - 1];
             if (lastMessage.role === 'user') {
                 try {
                     const query = typeof lastMessage.content === 'string'
@@ -147,22 +196,20 @@ export function registerChatIpc(options: {
                         : (Array.isArray(lastMessage.content) ? lastMessage.content.find(p => p.type === 'text')?.text || '' : '');
 
                     if (query) {
-                        const results = await codeIntelligenceService.queryIndexedSymbols(query);
-                        if (results && results.length > 0) {
-                            const contextString = results.slice(0, 5).map(r =>
-                                `--- FILE: ${r.file} ---\n${r.text}\n\`\`\`\n${r.name || ''}\n\`\`\``
-                            ).join('\n\n');
+                        const { contextString, sources } = await contextRetrievalService.retrieveContext(query, sanitizedProjectId);
+
+                        if (contextString) {
                             const ragPrompt = `\n\nRetrieved Context:\n${contextString}`;
 
                             // Emit metadata to frontend
-                            const sources = results.map(r => r.file);
-                            event.sender.send('chat:stream-chunk', { chatId, type: 'metadata', sources });
-                            const systemIdx = messages.findIndex((m) => m.role === 'system');
+                            event.sender.send('chat:stream-chunk', { chatId: sanitizedChatId, type: 'metadata', sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false })) });
+
+                            const systemIdx = sanitizedMessages.findIndex((m) => m.role === 'system');
                             if (systemIdx !== -1) {
-                                const currentContent = typeof messages[systemIdx].content === 'string' ? messages[systemIdx].content : '';
-                                messages[systemIdx].content = currentContent + ragPrompt;
+                                const currentContent = typeof sanitizedMessages[systemIdx].content === 'string' ? sanitizedMessages[systemIdx].content : '';
+                                sanitizedMessages[systemIdx].content = currentContent + ragPrompt;
                             } else {
-                                messages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
+                                sanitizedMessages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
                             }
                         }
                     }
@@ -170,16 +217,19 @@ export function registerChatIpc(options: {
             }
         }
 
-        messages = injectSystemPrompt(messages, provider, model);
+        const finalMessages = injectSystemPrompt(sanitizedMessages, sanitizedProvider, sanitizedModel);
 
         const executeGeneration = async () => {
             try {
-                console.log(`[Main:ChatStream] Request: Model=${model}, Provider=${provider}, ChatID=${chatId}`);
+                console.log(`[Main:ChatStream] Request: Model=${sanitizedModel}, Provider=${sanitizedProvider}, ChatID=${sanitizedChatId}`);
+
+                // Sanitize tools if provided
+                const sanitizedTools = tools ? sanitizeObject(tools) : undefined
 
                 // 1. Copilot Routing
-                if (provider === 'copilot') {
+                if (sanitizedProvider === 'copilot') {
                     // CopilotService expects shared Message[]
-                    const body = await copilotService.streamChat(messages, model, tools);
+                    const body = await copilotService.streamChat(finalMessages, sanitizedModel, sanitizedTools);
                     if (!body) throw new Error('Failed to start Copilot stream');
                     const streamBody = body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
                     if ('getReader' in streamBody && typeof (streamBody as ReadableStream<Uint8Array>).getReader === 'function') {
@@ -204,7 +254,7 @@ export function registerChatIpc(options: {
                                             const content = delta.content || '';
                                             const reasoning = delta.reasoning_content || delta.reasoning || '';
                                             if (content || reasoning) {
-                                                event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                                                event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, content, reasoning });
                                             }
                                         }
                                     } catch (err) {
@@ -231,7 +281,7 @@ export function registerChatIpc(options: {
                                         const content = delta.content || '';
                                         const reasoning = delta.reasoning_content || delta.reasoning || '';
                                         if (content || reasoning) {
-                                            event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                                            event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, content, reasoning });
                                         }
                                     }
                                 } catch (err) {
@@ -247,25 +297,25 @@ export function registerChatIpc(options: {
                 let proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
                 let proxyKey = proxyService.getProxyKey()
 
-                if (provider === 'ollama') {
+                if (sanitizedProvider === 'ollama') {
                     const ollamaUrl = settings.ollama?.url || 'http://localhost:11434'
                     proxyUrl = `${ollamaUrl.replace(/\/$/, '')}/v1`
                     proxyKey = 'ollama'
                 }
 
                 // 3. LLMService (Cliproxy) for all others
-                for await (const chunk of llmService.chatOpenAIStream(messages, model, tools, proxyUrl, proxyKey)) {
-                    event.sender.send('ollama:streamChunk', { ...chunk, chatId });
+                for await (const chunk of llmService.chatOpenAIStream(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey)) {
+                    event.sender.send('ollama:streamChunk', { ...chunk, chatId: sanitizedChatId });
                 }
             } catch (error) {
                 const message = getErrorMessage(error as Error)
                 console.error('[Main:ChatStream] Error:', error);
-                event.sender.send('ollama:streamChunk', { chatId, type: 'error', content: message });
+                event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, type: 'error', content: message });
             }
         }
 
-        if (chatId) {
-            chatQueueManager.addTask(chatId, executeGeneration)
+        if (sanitizedChatId) {
+            chatQueueManager.addTask(sanitizedChatId, executeGeneration)
             return { success: true, queued: true }
         } else {
             executeGeneration()
@@ -274,16 +324,31 @@ export function registerChatIpc(options: {
     })
 
     // Legacy handler
-    ipcMain.handle('chat:copilot', async (_event: IpcMainInvokeEvent, messages: Message[], model: string) => {
-        try {
-            // CopilotService expects shared Message[]
-            const res = await copilotService.chat(messages, model)
-            // Extract content safely
-            const contentVal = res ? (Array.isArray(res.content) ? res.content : res.content) as JsonValue : ''
-            const content = parseAIResponseContent(contentVal)
-            return { content, role: 'assistant' }
-        } catch (error) {
-            return { error: getErrorMessage(error as Error) }
-        }
-    })
+    ipcMain.handle('chat:copilot', createIpcHandler('chat:copilot', async (_event: IpcMainInvokeEvent, messages: Message[], model: string) => {
+        // Sanitize inputs
+        const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false })
+        const sanitizedMessages = messages.map(msg => {
+            if (typeof msg.content === 'string') {
+                return { ...msg, content: sanitizeString(msg.content, { maxLength: 1000000, allowNewlines: true }) }
+            } else if (Array.isArray(msg.content)) {
+                return {
+                    ...msg,
+                    content: msg.content.map(item => {
+                        if (item.type === 'text' && typeof item.text === 'string') {
+                            return { ...item, text: sanitizeString(item.text, { maxLength: 1000000, allowNewlines: true }) }
+                        }
+                        return item
+                    })
+                }
+            }
+            return msg
+        })
+
+        // CopilotService expects shared Message[]
+        const res = await copilotService.chat(sanitizedMessages, sanitizedModel)
+        // Extract content safely
+        const contentVal = res ? (Array.isArray(res.content) ? res.content : res.content) as JsonValue : ''
+        const content = parseAIResponseContent(contentVal)
+        return { content, role: 'assistant' }
+    }))
 }

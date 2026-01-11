@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { generateId } from '@/lib/utils'
 import { chatStream } from '@/lib/chat-stream'
 import { getSystemPrompt } from '@/lib/identity'
@@ -92,7 +92,19 @@ export function useChatManager(options: UseChatManagerOptions) {
     useEffect(() => {
         const load = async () => {
             const allChats = await window.electron.db.getAllChats()
-            setChats(allChats as Chat[])
+            // Load messages for each chat
+            const chatsWithMessages = await Promise.all(
+                (allChats as Chat[]).map(async (chat) => {
+                    try {
+                        const messages = await window.electron.db.getMessages(chat.id)
+                        return { ...chat, messages: (messages || []) as Message[] }
+                    } catch (error) {
+                        console.error(`Failed to load messages for chat ${chat.id}:`, error)
+                        return { ...chat, messages: [] }
+                    }
+                })
+            )
+            setChats(chatsWithMessages)
             const allFolders = await window.electron.db.getFolders()
             setFolders(allFolders as Folder[])
             const allPrompts = await window.electron.db.getPrompts()
@@ -165,6 +177,30 @@ export function useChatManager(options: UseChatManagerOptions) {
 
             const streamStartTime = performance.now()
             let finalSources: string[] = []
+            let lastSaveTime = Date.now()
+            const SAVE_INTERVAL = 2000 // Save every 2 seconds
+            
+            // Create a temporary assistant message for streaming and save it immediately
+            const tempAssistantMsg: Message = {
+                id: assistantId, role: 'assistant', content: '', 
+                timestamp: new Date(), provider: currentProvider, model: activeModel
+            }
+            
+            // Save empty message immediately so it exists in the database
+            try {
+                await window.electron.db.addMessage({
+                    id: assistantId, chatId, role: 'assistant', content: '', 
+                    timestamp: Date.now(), provider: currentProvider, model: activeModel
+                })
+            } catch (error) {
+                console.error('[generateResponse] Failed to create initial message:', error)
+            }
+            
+            // Add temporary message to chat for display
+            setChats(prev => prev.map(c => 
+                c.id === chatId ? { ...c, messages: [...c.messages, tempAssistantMsg] } : c
+            ))
+            
             for await (const chunk of stream) {
                 if (chunk.type === 'metadata') {
                     finalSources = chunk.sources || []
@@ -184,6 +220,21 @@ export function useChatManager(options: UseChatManagerOptions) {
                         ...prev,
                         [chatId]: { ...prev[chatId], content: finalContent, speed }
                     }))
+                    
+                    // Periodically save streaming content
+                    const now = Date.now()
+                    if (now - lastSaveTime >= SAVE_INTERVAL && finalContent.length > 0) {
+                        lastSaveTime = now
+                        try {
+                            // Update the temporary message in database
+                            await window.electron.db.updateMessage(assistantId, {
+                                content: finalContent,
+                                reasoning: finalReasoning || undefined
+                            })
+                        } catch (error) {
+                            console.error('[generateResponse] Failed to save streaming content:', error)
+                        }
+                    }
                 } else if (chunk.type === 'reasoning') {
                     finalReasoning += chunk.content
                     setStreamingStates(prev => ({
@@ -203,21 +254,29 @@ export function useChatManager(options: UseChatManagerOptions) {
                 sources: finalSources
             }
 
+            // Update the message with final content (it was already created at the start)
+            await window.electron.db.updateMessage(assistantId, {
+                content: finalContent,
+                reasoning: finalReasoning || undefined,
+                responseTime,
+                sources: finalSources
+            })
+
             setChats(prev => prev.map(c => {
                 if (c.id === chatId) {
                     let title = c.title
                     const textContent = typeof finalContent === 'string' ? finalContent : ''
                     if (c.messages.length <= 1 && textContent) title = textContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
-                    return { ...c, title, messages: [...c.messages, assistantMsg], isGenerating: false }
+                    // Update the temporary message with final content
+                    return { 
+                        ...c, 
+                        title, 
+                        messages: c.messages.map(m => m.id === assistantId ? assistantMsg : m), 
+                        isGenerating: false 
+                    }
                 }
                 return c
             }))
-
-            await window.electron.db.addMessage({
-                id: assistantId, chatId, role: 'assistant', content: finalContent, timestamp: assistantTs,
-                provider: currentProvider, model: activeModel, responseTime,
-                sources: finalSources
-            })
         } catch (e) {
             console.error('[generateResponse] Error:', e)
             const errText = formatChatError(e as CatchError)

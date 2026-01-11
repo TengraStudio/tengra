@@ -141,6 +141,9 @@ export class AuthService {
                         const token = this.getToken(provider)
                         if (token) {
                             tokens[provider] = token
+                            console.log(`[AuthService] Loaded token for ${provider}, length: ${token.length}`)
+                        } else {
+                            console.warn(`[AuthService] Failed to get token for ${provider} (file: ${file})`)
                         }
                     } catch (e) {
                         console.warn(`[AuthService] Skipping ${file} during load:`, e)

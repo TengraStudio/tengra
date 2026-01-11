@@ -13,8 +13,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         orchestrationPolicy: 'auto'
     },
     embeddings: {
-        provider: 'none',
-        model: 'all-minilm' // fallback/legacy
+        provider: 'ollama',
+        model: 'all-minilm'
     },
     autoUpdate: {
         enabled: true,
@@ -104,32 +104,93 @@ export class SettingsService extends BaseService {
         this.settings = this.loadSettings()
     }
 
+    /**
+     * Load settings from the settings file.
+     * 
+     * @returns The loaded settings merged with defaults
+     */
     private loadSettings(): AppSettings {
         console.log(`[SettingsService] !!! loadSettings START !!! (authService=${!!this.authService})`);
         try {
             const exists = fs.existsSync(this.settingsPath);
-            let loaded: any = {};
+            let loaded: Partial<AppSettings> = {};
             if (exists) {
                 console.log(`[SettingsService] !!! Found settings file at ${this.settingsPath}`);
                 const data = fs.readFileSync(this.settingsPath, 'utf8')
 
                 try {
-                    loaded = JSON.parse(data);
+                    loaded = JSON.parse(data) as Partial<AppSettings>;
                 } catch (e) {
                     console.warn('[SettingsService] Initial JSON.parse FAILED, trying recovery...');
-                    const lastBrace = data.lastIndexOf('}');
-                    if (lastBrace !== -1) {
-                        try {
-                            loaded = JSON.parse(data.substring(0, lastBrace + 1));
-                            console.log('[SettingsService] JSON recovery SUCCESSFUL!');
-                        } catch (e2) {
-                            console.error('[SettingsService] JSON recovery FAILED:', getErrorMessage(e2));
+                    
+                    // Try to find a valid JSON object by progressively truncating from the end
+                    let recovered = false
+                    for (let i = data.length - 1; i > 100 && !recovered; i--) {
+                        const truncated = data.substring(0, i)
+                        // Try to find a complete object by looking for matching braces
+                        let braceCount = 0
+                        let lastValidBrace = -1
+                        for (let j = truncated.length - 1; j >= 0; j--) {
+                            if (truncated[j] === '}') braceCount++
+                            else if (truncated[j] === '{') {
+                                braceCount--
+                                if (braceCount === 0) {
+                                    lastValidBrace = j
+                                    break
+                                }
+                            }
+                        }
+                        
+                        if (lastValidBrace > 0) {
+                            try {
+                                const candidate = truncated.substring(0, lastValidBrace + 1)
+                                loaded = JSON.parse(candidate) as Partial<AppSettings>
+                                console.log('[SettingsService] JSON recovery SUCCESSFUL by truncation!');
+                                recovered = true
+                                
+                                // Backup corrupted file and save recovered version
+                                try {
+                                    const backupPath = this.settingsPath + '.corrupted.' + Date.now()
+                                    fs.writeFileSync(backupPath, data, 'utf8')
+                                    console.log(`[SettingsService] Backed up corrupted settings to: ${backupPath}`)
+                                    // Save recovered version
+                                    fs.writeFileSync(this.settingsPath, JSON.stringify(loaded, null, 2), 'utf8')
+                                    console.log('[SettingsService] Saved recovered settings');
+                                } catch (backupError) {
+                                    console.warn('[SettingsService] Failed to backup/recover settings file:', getErrorMessage(backupError as Error));
+                                }
+                            } catch (e2) {
+                                // Continue trying
+                            }
                         }
                     }
-                }
-
-                if (!loaded) {
-                    throw new Error('Could not parse settings.json even after recovery attempt');
+                    
+                    // If recovery failed, try simple truncation as last resort
+                    if (!recovered) {
+                        const lastBrace = data.lastIndexOf('}');
+                        if (lastBrace > 100) {
+                            try {
+                                loaded = JSON.parse(data.substring(0, lastBrace + 1)) as Partial<AppSettings>;
+                                console.log('[SettingsService] JSON recovery SUCCESSFUL by last brace!');
+                                recovered = true
+                            } catch (e2) {
+                                console.error('[SettingsService] JSON recovery FAILED:', getErrorMessage(e2));
+                            }
+                        }
+                    }
+                    
+                    if (!recovered) {
+                        console.error('[SettingsService] JSON recovery completely FAILED. Using defaults and backing up corrupted file.');
+                        try {
+                            const backupPath = this.settingsPath + '.corrupted.' + Date.now()
+                            fs.writeFileSync(backupPath, data, 'utf8')
+                            console.log(`[SettingsService] Backed up corrupted settings to: ${backupPath}`)
+                            loaded = {} // Use empty object, will merge with defaults
+                        } catch (backupError) {
+                            console.error('[SettingsService] Failed to backup corrupted file:', getErrorMessage(backupError as Error));
+                            loaded = {} // Use empty object anyway
+                        }
+                    }
                 }
 
                 if (loaded.userAvatar) delete loaded.userAvatar;
@@ -142,6 +203,13 @@ export class SettingsService extends BaseService {
             let authTokens: Record<string, string> = {}
             if (this.authService) {
                 authTokens = this.authService.getAllTokens()
+                console.log('[SettingsService] Loaded auth tokens. Keys:', Object.keys(authTokens))
+                if (authTokens['copilot_token']) {
+                    console.log('[SettingsService] Found copilot_token, length:', authTokens['copilot_token'].length)
+                }
+                if (authTokens['github_token']) {
+                    console.log('[SettingsService] Found github_token, length:', authTokens['github_token'].length)
+                }
             }
 
             // Helper for fuzzy token lookup
@@ -172,46 +240,72 @@ export class SettingsService extends BaseService {
                 ...DEFAULT_SETTINGS,
                 ...loaded,
                 ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
-                autoUpdate: { ...DEFAULT_SETTINGS.autoUpdate, ...(loaded.autoUpdate || {}) },
+                autoUpdate: loaded.autoUpdate 
+                    ? { ...DEFAULT_SETTINGS.autoUpdate, ...loaded.autoUpdate } 
+                    : DEFAULT_SETTINGS.autoUpdate,
                 general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
                 github: {
                     ...DEFAULT_SETTINGS.github,
                     ...(loaded.github || {}),
                     token: findToken('github') || loaded.github?.token || ''
                 },
-                openai: {
-                    ...DEFAULT_SETTINGS.openai,
-                    ...(loaded.openai || {}),
-                    apiKey: findToken('openai') || loaded.openai?.apiKey || ''
-                },
-                anthropic: {
-                    ...DEFAULT_SETTINGS.anthropic,
-                    ...(loaded.anthropic || {}),
-                    apiKey: findToken('anthropic') || loaded.anthropic?.apiKey || ''
-                },
-                antigravity: {
-                    ...DEFAULT_SETTINGS.antigravity,
-                    ...(loaded.antigravity || {}),
-                    token: findToken('antigravity') || loaded.antigravity?.token || ''
-                },
-                copilot: {
-                    ...DEFAULT_SETTINGS.copilot,
-                    ...(loaded.copilot || {}),
-                    token: findToken('copilot') || findToken('github') || loaded.copilot?.token || ''
-                },
-
-                groq: {
-                    ...DEFAULT_SETTINGS.groq,
-                    ...(loaded.groq || {}),
-                    apiKey: findToken('groq') || loaded.groq?.apiKey || ''
-                },
+                openai: loaded.openai 
+                    ? {
+                        ...DEFAULT_SETTINGS.openai!,
+                        ...loaded.openai,
+                        apiKey: findToken('openai') || loaded.openai.apiKey || '',
+                        model: loaded.openai.model || DEFAULT_SETTINGS.openai!.model
+                    }
+                    : DEFAULT_SETTINGS.openai!,
+                anthropic: loaded.anthropic
+                    ? {
+                        ...DEFAULT_SETTINGS.anthropic!,
+                        ...loaded.anthropic,
+                        apiKey: findToken('anthropic') || loaded.anthropic.apiKey || '',
+                        model: loaded.anthropic.model || DEFAULT_SETTINGS.anthropic!.model
+                    }
+                    : DEFAULT_SETTINGS.anthropic!,
+                antigravity: loaded.antigravity
+                    ? {
+                        ...DEFAULT_SETTINGS.antigravity!,
+                        ...loaded.antigravity,
+                        connected: loaded.antigravity.connected ?? DEFAULT_SETTINGS.antigravity!.connected,
+                        token: findToken('antigravity') || loaded.antigravity.token || ''
+                    }
+                    : DEFAULT_SETTINGS.antigravity!,
+                copilot: loaded.copilot
+                    ? {
+                        ...DEFAULT_SETTINGS.copilot!,
+                        ...loaded.copilot,
+                        connected: loaded.copilot.connected ?? DEFAULT_SETTINGS.copilot!.connected,
+                        token: findToken('copilot') || findToken('github') || loaded.copilot.token || ''
+                    }
+                    : DEFAULT_SETTINGS.copilot!,
+                groq: loaded.groq
+                    ? {
+                        ...DEFAULT_SETTINGS.groq!,
+                        ...loaded.groq,
+                        apiKey: findToken('groq') || loaded.groq.apiKey || '',
+                        model: loaded.groq.model || DEFAULT_SETTINGS.groq!.model
+                    }
+                    : DEFAULT_SETTINGS.groq!,
                 proxy: {
-                    ...DEFAULT_SETTINGS.proxy,
+                    ...DEFAULT_SETTINGS.proxy!,
                     ...(loaded.proxy || {}),
+                    enabled: loaded.proxy?.enabled ?? DEFAULT_SETTINGS.proxy!.enabled,
+                    url: loaded.proxy?.url || DEFAULT_SETTINGS.proxy!.url,
                     key: findToken('proxy') || loaded.proxy?.key || ''
                 },
-                window: { ...DEFAULT_SETTINGS.window, ...(loaded.window || {}) }
+                window: loaded.window
             };
+
+            // Migration: Force remove Antigravity/Gemini from embeddings
+            if ((res.embeddings?.provider as any) === 'antigravity' || (res.embeddings?.provider as any) === 'gemini') {
+                console.log('[SettingsService] Migrating deprecated embedding provider to Ollama');
+                res.embeddings.provider = 'ollama';
+                res.embeddings.model = 'all-minilm';
+            }
+
             return res;
         } catch (error) {
             console.error('[SettingsService] !!! loadSettings CRITICAL ERROR:', getErrorMessage(error as Error));
@@ -308,9 +402,32 @@ export class SettingsService extends BaseService {
                 }
             }
 
-            fs.writeFileSync(this.settingsPath, JSON.stringify(settingsToSave, null, 2))
+            // Use atomic write: write to temp file first, then rename
+            // This prevents corruption if the process crashes during write
+            const tempPath = this.settingsPath + '.tmp'
+            const jsonString = JSON.stringify(settingsToSave, null, 2)
+            
+            // Validate JSON before writing
+            try {
+                JSON.parse(jsonString) // Verify it's valid JSON
+            } catch (parseError) {
+                console.error('[SettingsService] Generated invalid JSON, aborting save:', getErrorMessage(parseError as Error))
+                throw new Error('Generated invalid JSON during save')
+            }
+            
+            fs.writeFileSync(tempPath, jsonString, 'utf8')
+            fs.renameSync(tempPath, this.settingsPath)
         } catch (error) {
-            console.error('Failed to save settings:', getErrorMessage(error as Error))
+            console.error('[SettingsService] Failed to save settings:', getErrorMessage(error as Error))
+            // Try to remove temp file if it exists
+            try {
+                const tempPath = this.settingsPath + '.tmp'
+                if (fs.existsSync(tempPath)) {
+                    fs.unlinkSync(tempPath)
+                }
+            } catch (cleanupError) {
+                // Ignore cleanup errors
+            }
         }
 
         return this.settings
