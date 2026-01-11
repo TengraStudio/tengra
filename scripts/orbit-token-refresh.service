@@ -1,0 +1,25 @@
+[Unit]
+Description=Orbit Token Refresh Service - Automatically refreshes authentication tokens
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/orbit
+ExecStart=/usr/bin/node /opt/orbit/scripts/token-refresh-service.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=orbit-token-refresh
+
+# Environment variables
+Environment="NODE_ENV=production"
+Environment="ORBIT_PROXY_PORT=8317"
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

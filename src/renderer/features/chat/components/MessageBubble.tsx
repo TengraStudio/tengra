@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, isValidElement, memo, useId } from 'react'
+import { useState, useEffect, useMemo, isValidElement, memo, useId } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -364,14 +364,15 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
         : displayContent
 
     // Detect various quota/rate limit errors
-    const is429Error = displayContent.includes('429') && (
-        displayContent.includes('usage_limit_reached') ||
-        displayContent.includes('usage limit') ||
+    const is429Error = displayContent.includes('429') || 
         displayContent.includes('RESOURCE_EXHAUSTED') ||
+        displayContent.includes('Rate limit or quota exceeded') ||
+        displayContent.includes('Quota or rate limit exceeded') ||
+        (displayContent.includes('usage_limit_reached') ||
+        displayContent.includes('usage limit') ||
         displayContent.includes('rate limit') ||
         displayContent.includes('Rate limit') ||
-        displayContent.includes('quota')
-    );
+        displayContent.includes('quota'));
 
     // Parse error details for quota card
     const parseQuotaError = () => {

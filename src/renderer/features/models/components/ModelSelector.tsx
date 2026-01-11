@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     useFloating,
@@ -35,6 +35,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
+    const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({})
 
     const {
         x,
@@ -105,16 +106,83 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         ]
     }), []);
 
-    const isModelDisabled = useCallback((modelId: string, provider: string) => {
-        if (!quotas && !codexUsage) return false;
-        const lowerModelId = modelId.toLowerCase();
+    // Check usage limits for all models
+    useEffect(() => {
+        if (!settings?.modelUsageLimits) return
+        
+        const checkLimits = async () => {
+            const checks: Record<string, { allowed: boolean; reason?: string }> = {}
+            
+            // Check limits for all models in groupedModels
+            if (groupedModels) {
+                for (const [provider, group] of Object.entries(groupedModels)) {
+                    for (const model of group.models) {
+                        const key = `${provider}:${model.id}`
+                        try {
+                            const result = await window.electron.checkUsageLimit(provider, model.id)
+                            checks[key] = result
+                        } catch (error) {
+                            checks[key] = { allowed: true } // Default to allowed on error
+                        }
+                    }
+                }
+            }
+            
+            setUsageLimitChecks(checks)
+        }
+        
+        checkLimits()
+    }, [settings?.modelUsageLimits, groupedModels])
 
-        // 1. Check Codex/OpenAI Quotas
+    const isModelDisabled = useCallback((modelId: string, provider: string) => {
+        if (!quotas && !codexUsage && !settings?.modelUsageLimits) return false;
+        const lowerModelId = modelId.toLowerCase();
+        
+        // Check usage limits first
+        const limitKey = `${provider}:${modelId}`
+        const limitCheck = usageLimitChecks[limitKey]
+        if (limitCheck && !limitCheck.allowed) {
+            return true
+        }
+
+        // 1. Check Codex/OpenAI Quotas and Usage Limits
         if (provider === 'codex' || provider === 'openai') {
-            const codex = codexUsage as { usage?: { weeklyUsedPercent?: number; dailyUsedPercent?: number }; data?: { usage?: { weeklyUsedPercent?: number; dailyUsedPercent?: number } } } | null;
+            const codex = codexUsage as { usage?: { weeklyUsedPercent?: number; dailyUsedPercent?: number; weeklyLimit?: number }; data?: { usage?: { weeklyUsedPercent?: number; dailyUsedPercent?: number; weeklyLimit?: number } } } | null;
             const usage = codex?.usage || codex?.data?.usage;
             if (usage) {
-                if ((usage.weeklyUsedPercent ?? 0) >= 100 || (usage.dailyUsedPercent ?? 0) >= 100) {
+                // Check user-defined usage limits from settings
+                const codexLimits = settings?.modelUsageLimits?.codex
+                
+                // Check weekly limit from settings
+                if (codexLimits?.weekly?.enabled && usage.weeklyLimit !== undefined && usage.weeklyLimit > 0) {
+                    const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0)
+                    const maxAllowedPercent = codexLimits.weekly.percentage
+                    if (weeklyRemainingPercent < maxAllowedPercent) {
+                        if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
+                            return true;
+                        }
+                    }
+                }
+                
+                // Check daily limit from settings
+                if (codexLimits?.daily?.enabled && usage.dailyLimit !== undefined && usage.dailyLimit > 0) {
+                    const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0)
+                    const maxAllowedPercent = codexLimits.daily.percentage
+                    if (dailyRemainingPercent < maxAllowedPercent) {
+                        if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
+                            return true;
+                        }
+                    }
+                }
+                
+                // If weekly limit is 0, disable all Codex models
+                if (usage.weeklyLimit === 0) {
+                    if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
+                        return true;
+                    }
+                }
+                // Otherwise check daily remaining percentage
+                else if ((usage.dailyUsedPercent ?? 0) >= 100) {
                     if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
                         return true;
                     }
@@ -122,31 +190,83 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             }
         }
 
-        // 2. Check Copilot Credits
+        // 2. Check Copilot Credits - check remaining number (0-5 means disabled)
         if (provider === 'copilot') {
             const copilotQuota = (quotas as { copilot?: { remaining: number; limit: number } })?.copilot ||
                 (quotas as { data?: { copilot?: { remaining: number; limit: number } } })?.data?.copilot;
-            if (copilotQuota && copilotQuota.remaining <= 0 && copilotQuota.limit > 0) {
-                return true;
+            if (copilotQuota) {
+                // Disable if remaining is 0-5
+                if (copilotQuota.remaining <= 5 && copilotQuota.limit > 0) {
+                    return true;
+                }
             }
         }
 
-        // 3. Antigravity Quota Handling
-        if (provider === 'antigravity' || lowerModelId.includes('gemini-') || lowerModelId.includes('claude')) {
-            const agQuota = (quotas as { antigravity?: Record<string, { exhausted?: boolean; remaining: number }> })?.antigravity ||
-                (quotas as { data?: { antigravity?: Record<string, { exhausted?: boolean; remaining: number }> } })?.data?.antigravity;
+        // 3. Antigravity Quota Handling - disable if percentage is 0-5% or below user-defined limit
+        if (provider === 'antigravity' ) {
+            // Check user-defined usage limits from settings
+            const antigravityLimits = settings?.modelUsageLimits?.antigravity
+            const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId]
+            
+            if (modelLimit?.enabled) {
+                // Check models array in quotas for percentage
+                if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
+                    const modelQuotaItem = quotas.models.find((m: any) => 
+                        m.id?.toLowerCase() === lowerModelId || 
+                        m.id?.toLowerCase() === modelId.toLowerCase()
+                    );
+                    if (modelQuotaItem) {
+                        // Get model's remaining quota percentage
+                        const modelRemainingPercent = (modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100);
+                        // Check if model's remaining quota is below the user-defined limit
+                        if (modelRemainingPercent < modelLimit.percentage) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            // Check models array in quotas for percentage
+            if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
+                const modelQuotaItem = quotas.models.find((m: any) => 
+                    m.id?.toLowerCase() === lowerModelId || 
+                    m.id?.toLowerCase() === modelId.toLowerCase()
+                );
+                if (modelQuotaItem) {
+                    // Check percentage - disable if 0-5%
+                    const percentage = modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100;
+                    if (percentage <= 5) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Fallback to old structure
+            const agQuota = (quotas as { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> })?.antigravity ||
+                (quotas as { data?: { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> } })?.data?.antigravity;
             if (agQuota) {
                 const modelQuota = agQuota[modelId] || agQuota[lowerModelId];
-                if (modelQuota && (modelQuota.exhausted || modelQuota.remaining <= 0)) {
-                    return true;
+                if (modelQuota) {
+                    // Check percentage if available, otherwise check exhausted/remaining
+                    if (modelQuota.percentage !== undefined && modelQuota.percentage <= 5) {
+                        return true;
+                    }
+                    if (modelQuota.exhausted || modelQuota.remaining <= 0) {
+                        return true;
+                    }
                 }
 
                 for (const [, groupModels] of Object.entries(ANTIGRAVITY_QUOTA_GROUPS)) {
                     if (groupModels.some(m => m.toLowerCase() === lowerModelId)) {
                         for (const groupModel of groupModels) {
                             const gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
-                            if (gQuota?.exhausted || gQuota?.remaining <= 0) {
-                                return true;
+                            if (gQuota) {
+                                if (gQuota.percentage !== undefined && gQuota.percentage <= 5) {
+                                    return true;
+                                }
+                                if (gQuota.exhausted || gQuota.remaining <= 0) {
+                                    return true;
+                                }
                             }
                         }
                         break;
@@ -156,7 +276,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         }
 
         return false;
-    }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS]);
+    }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS, settings, usageLimitChecks]);
 
     const categories = useMemo(() => {
         if (!groupedModels) return []

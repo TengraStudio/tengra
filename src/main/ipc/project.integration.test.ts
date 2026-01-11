@@ -50,14 +50,14 @@ describe('Project IPC Integration', () => {
     });
 
     it('should register project handlers', () => {
-        registerProjectIpc(mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any);
+        registerProjectIpc(() => null, mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any, {} as any, {} as any);
         expect(ipcMainHandlers.has('project:analyze')).toBe(true);
         expect(ipcMainHandlers.has('project:generateLogo')).toBe(true);
         expect(ipcMainHandlers.has('project:analyzeIdentity')).toBe(true);
     });
 
     it('should handle project:analyze successfully', async () => {
-        registerProjectIpc(mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any);
+        registerProjectIpc(() => null, mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any, {} as any, {} as any);
         const handler = ipcMainHandlers.get('project:analyze');
 
         const mockResult = { files: [], symbols: [] };
@@ -75,14 +75,15 @@ describe('Project IPC Integration', () => {
     });
 
     it('should handle project:generateLogo', async () => {
-        registerProjectIpc(mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any);
+        registerProjectIpc(() => null, mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any, {} as any, {} as any);
         const handler = ipcMainHandlers.get('project:generateLogo');
 
-        mockLogoService.generateLogo.mockResolvedValue('/path/to/logo.png');
+        const mockLogoServiceResolved = mockLogoService as any;
+        mockLogoServiceResolved.generateLogo.mockResolvedValue('/path/to/logo.png');
 
         const result = await handler?.({} as IpcMainInvokeEvent, '/root', 'prompt', 'style');
 
-        expect(mockLogoService.generateLogo).toHaveBeenCalledWith('/root', 'prompt', 'style');
+        expect(mockLogoServiceResolved.generateLogo).toHaveBeenCalledWith('/root', 'prompt', 'style');
         expect(result).toMatchObject({
             success: true,
             data: '/path/to/logo.png'
@@ -90,7 +91,7 @@ describe('Project IPC Integration', () => {
     });
 
     it('should handle errors in project operations', async () => {
-        registerProjectIpc(mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any);
+        registerProjectIpc(() => null, mockProjectService as any, mockLogoService as any, mockCodeIntelligenceService as any, {} as any, {} as any);
         const handler = ipcMainHandlers.get('project:analyze');
 
         mockProjectService.analyzeProject.mockRejectedValue(new Error('Analysis Failed'));

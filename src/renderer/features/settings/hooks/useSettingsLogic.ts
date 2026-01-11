@@ -1,9 +1,9 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AppSettings, QuotaResponse, CodexUsage, JsonValue } from '../../../../shared/types'
 import { CopilotQuota } from '@/types';
 
 type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
-type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean }
+type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }
 type AuthFile = { provider?: string; type?: string; name?: string }
 type PersonaDraft = { name: string; description: string; prompt: string }
 
@@ -18,7 +18,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     const [authMessage, setAuthMessage] = useState('')
     const [authBusy, setAuthBusy] = useState<string | null>(null)
     const [isOllamaRunning, setIsOllamaRunning] = useState(false)
-    const [authStatus, setAuthStatus] = useState<AuthStatusState>({ codex: false, claude: false, antigravity: false })
+    const [authStatus, setAuthStatus] = useState<AuthStatusState>({ codex: false, claude: false, antigravity: false, copilot: false })
 
     // Stats and Quota State
     const [statsLoading, setStatsLoading] = useState(false)
@@ -57,7 +57,8 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
             const newStatus = {
                 codex: hasProvider(['codex', 'openai']),
                 claude: hasProvider(['claude', 'anthropic']),
-                antigravity: hasProvider(['antigravity'])
+                antigravity: hasProvider(['antigravity']),
+                copilot: hasProvider(['copilot', 'copilot_token'])
             };
             console.log('[SettingsLogic] refreshAuthStatus: Computed status:', newStatus);
             setAuthStatus(newStatus)

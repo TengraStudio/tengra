@@ -5,6 +5,7 @@ import { StreamParser } from '../../utils/stream-parser.util';
 import { ApiError, NetworkError, AuthenticationError } from '../../utils/error.util';
 import { ChatMessage, ToolCall } from '../../types/llm.types';
 import { Message, ToolDefinition } from '../../../shared/types/chat';
+import { OpenAIChatCompletion, OpenAIContentPartImage } from '../../../shared/types/llm-provider-types';
 import { CircuitBreaker } from '../../core/circuit-breaker';
 import { HttpService } from '../http.service';
 import { ConfigService } from '../config.service';
@@ -28,6 +29,22 @@ export interface OpenAIModelDefinition {
     object: string;
     created: number;
     owned_by: string;
+}
+
+/**
+ * HuggingFace API model response structure.
+ */
+interface HuggingFaceApiModel {
+    modelId: string;
+    author?: string;
+    downloads?: number;
+    likes?: number;
+    tags?: string[];
+    lastModified?: string;
+    pipeline_tag?: string;
+    cardData?: {
+        short_description?: string;
+    };
 }
 
 /**
@@ -147,7 +164,7 @@ export class LLMService {
 
     // --- Chat Methods ---
 
-    async chatOpenAI(messages: Array<Message | ChatMessage>, model: string = 'gpt-4o', tools?: ToolDefinition[], baseUrlOverride?: string, apiKeyOverride?: string): Promise<OpenAIResponse> {
+    async chatOpenAI(messages: Array<Message | ChatMessage>, model: string = 'gpt-4o', tools?: ToolDefinition[], baseUrlOverride?: string, apiKeyOverride?: string, provider?: string): Promise<OpenAIResponse> {
         const effectiveBaseUrl = baseUrlOverride || this.openaiBaseUrl;
 
         // Key Rotation Logic
@@ -168,16 +185,28 @@ export class LLMService {
 
             let finalModel = model;
             if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
-                // ... (Proxy Routing Logic maintained) ...
-                if (finalModel.includes('gpt') || finalModel.startsWith('o1')) {
+                // Proxy Routing Logic: Prefix models based on provider and model type
+                const lowerModel = finalModel.toLowerCase();
+                const lowerProvider = (provider || '').toLowerCase();
+                
+                // IMPORTANT: For antigravity provider, ALL models (Gemini, Claude, etc.) 
+                // should be sent WITHOUT prefix. The proxy routes internally based on model name.
+                if (lowerProvider === 'antigravity') {
+                    // Don't prefix antigravity models - proxy handles routing internally
+                    // finalModel remains unchanged
+                } else if (lowerModel.includes('gpt') || finalModel.startsWith('o1')) {
                     finalModel = `openai/${finalModel}`;
-                } else if (finalModel.includes('claude')) {
+                } else if (lowerModel.includes('claude')) {
                     finalModel = `anthropic/${finalModel}`;
-
+                } else if (lowerModel.includes('gemini')) {
+                    // For other providers' Gemini models, don't prefix for now
+                    // May need gemini/ prefix in future if proxy requires it
+                    // finalModel = `gemini/${finalModel}`;
                 } else {
+                    // Default: prefix with openai for unknown model types
                     finalModel = `openai/${finalModel}`;
                 }
-                console.log(`[LLMService] Proxy Routing: Prefixed model ${model} -> ${finalModel}`);
+                console.log(`[LLMService] Proxy Routing: Model=${model}, Provider=${provider}, Prefixed=${finalModel}`);
             }
 
             const body: Record<string, unknown> = {
@@ -222,14 +251,19 @@ export class LLMService {
                 throw new ApiError(errorText || `HTTP ${response.status}`, 'openai', response.status, response.status >= 500 || response.status === 429);
             }
 
-            const json = await response.json() as any;
+            const json = await response.json() as OpenAIChatCompletion;
             if (json.choices && json.choices.length > 0) {
                 const choice = json.choices[0];
-                const rawImages = choice.message.images || [];
+                const message = choice.message;
+                // Handle images from message content if present
+                const contentParts = Array.isArray(message.content) ? message.content : [];
+                const rawImages = contentParts.filter((part): part is OpenAIContentPartImage => 
+                    typeof part === 'object' && part !== null && 'type' in part && part.type === 'image_url'
+                );
                 const savedImages: string[] = [];
 
                 if (rawImages.length > 0) {
-                    await Promise.all(rawImages.map(async (img: any) => {
+                    await Promise.all(rawImages.map(async (img: OpenAIContentPartImage) => {
                         const url = img.image_url?.url;
                         if (url) {
                             const localPath = await this.imagePersistence.saveImage(url);
@@ -238,12 +272,21 @@ export class LLMService {
                     }));
                 }
 
+                const messageContent = typeof message.content === 'string' 
+                    ? message.content 
+                    : contentParts
+                        .filter((part): part is { type: 'text'; text: string } => 
+                            typeof part === 'object' && part !== null && 'type' in part && part.type === 'text'
+                        )
+                        .map(part => part.text)
+                        .join('');
+
                 return {
-                    content: choice.message.content || '',
-                    role: choice.message.role || 'assistant',
-                    tool_calls: choice.message.tool_calls || [],
+                    content: messageContent || '',
+                    role: message.role || 'assistant',
+                    tool_calls: message.tool_calls || [],
                     completionTokens: json.usage?.completion_tokens,
-                    reasoning_content: choice.message.reasoning_content || choice.message.reasoning || '',
+                    reasoning_content: message.reasoning_content || message.reasoning || '',
                     images: savedImages
                 };
             }
@@ -255,7 +298,7 @@ export class LLMService {
         }
     }
 
-    async *chatOpenAIStream(messages: Array<Message | ChatMessage>, model: string = 'gpt-4o', tools?: ToolDefinition[], baseUrlOverride?: string, apiKeyOverride?: string): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
+    async *chatOpenAIStream(messages: Array<Message | ChatMessage>, model: string = 'gpt-4o', tools?: ToolDefinition[], baseUrlOverride?: string, apiKeyOverride?: string, provider?: string): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
         const effectiveBaseUrl = baseUrlOverride || this.openaiBaseUrl;
         const effectiveApiKey = apiKeyOverride || this.keyRotationService.getCurrentKey('openai') || this.openaiApiKey;
         const endpoint = `${effectiveBaseUrl}/chat/completions`;
@@ -269,19 +312,32 @@ export class LLMService {
 
         let finalModel = model;
         if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
-            // ... (Proxy Logic) ...
-            if (finalModel.includes('gpt') || finalModel.startsWith('o1')) {
+            // Proxy Routing Logic: Prefix models based on provider and model type
+            const lowerModel = finalModel.toLowerCase();
+            const lowerProvider = (provider || '').toLowerCase();
+            
+            // IMPORTANT: For antigravity provider, ALL models (Gemini, Claude, etc.) 
+            // should be sent WITHOUT prefix. The proxy routes internally based on model name.
+            if (lowerProvider === 'antigravity') {
+                // Don't prefix antigravity models - proxy handles routing internally
+                // finalModel remains unchanged
+            } else if (lowerModel.includes('gpt') || finalModel.startsWith('o1')) {
                 finalModel = `openai/${finalModel}`;
-            } else if (finalModel.includes('claude')) {
+            } else if (lowerModel.includes('claude')) {
                 finalModel = `anthropic/${finalModel}`;
-
+            } else if (lowerModel.includes('gemini')) {
+                // For other providers' Gemini models, don't prefix for now
+                // May need gemini/ prefix in future if proxy requires it
+                // finalModel = `gemini/${finalModel}`;
             } else {
+                // Default: prefix with openai for unknown model types
                 finalModel = `openai/${finalModel}`;
             }
+            console.log(`[LLMService] Proxy Routing: Model=${model}, Provider=${provider}, Prefixed=${finalModel}`);
         }
 
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, finalModel);
-
+       
         const requestBody: Record<string, unknown> = {
             model: finalModel,
             messages: normalizedMessages,
@@ -308,6 +364,29 @@ export class LLMService {
             const errorText = await response.text().catch(() => '')
             if (response.status === 401 || response.status === 403) {
                 this.keyRotationService.rotateKey('openai');
+            }
+            // Log detailed error for 429 to help debug quota vs rate limit issues
+            if (response.status === 429) {
+                console.error(`[LLMService] 429 Error for model ${finalModel}, provider ${provider}`);
+                console.error(`[LLMService] Error details:`, errorText);
+                
+                // Try to parse error for more details
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error?.message?.includes('quota')) {
+                        console.error(`[LLMService] WARNING: Quota API shows available quota, but API returned quota exhaustion.`);
+                        console.error(`[LLMService] This suggests the quota API may be stale or there's a shared quota pool that's exhausted.`);
+                        console.error(`[LLMService] The quota check API and request API may use different quota buckets.`);
+                    }
+                } catch {
+                    // Not JSON, ignore
+                }
+                
+                console.error(`[LLMService] Possible causes:`);
+                console.error(`[LLMService] 1. Rate limiting (requests per minute/hour) - separate from quota`);
+                console.error(`[LLMService] 2. Shared quota pool exhausted (even if individual model shows 100%)`);
+                console.error(`[LLMService] 3. Quota API is stale/cached and not reflecting actual quota`);
+                console.error(`[LLMService] 4. Different quota buckets between quota check API and request API`);
             }
             throw new ApiError(errorText || `HTTP ${response.status}`, 'openai-stream', response.status, response.status >= 500 || response.status === 429);
         }
@@ -417,11 +496,11 @@ export class LLMService {
         } else if (p.includes('groq')) {
             return this.chatGroq(messages, model);
         } else if (p.includes('antigravity')) {
-            return this.chatOpenAI(messages, model, tools, this.proxyUrl, this.proxyKey);
+            return this.chatOpenAI(messages, model, tools, this.proxyUrl, this.proxyKey, provider);
         } else if (p.includes('ollama')) {
-            return this.chatOpenAI(messages, model, tools, 'http://127.0.0.1:11434/v1', 'ollama');
+            return this.chatOpenAI(messages, model, tools, 'http://127.0.0.1:11434/v1', 'ollama', provider);
         } else {
-            return this.chatOpenAI(messages, model, tools);
+            return this.chatOpenAI(messages, model, tools, undefined, undefined, provider);
         }
     }
 
@@ -446,17 +525,17 @@ export class LLMService {
             const response = await this.httpService.fetch(`https://huggingface.co/api/models?${params.toString()}`, { retryCount: 2 });
 
             const total = parseInt(response.headers.get('x-total-count') || '0') || 0;
-            const data = await response.json() as any[];
+            const data = await response.json() as HuggingFaceApiModel[];
 
-            const models = data.map((m: any) => ({
+            const models: HFModel[] = data.map((m: HuggingFaceApiModel) => ({
                 id: m.modelId,
                 name: m.modelId.split('/')[1] || m.modelId,
-                author: m.author,
-                description: m.cardData?.short_description || `A ${m.pipeline_tag || 'LLM'} model by ${m.author}`,
+                author: m.author || 'unknown',
+                description: m.cardData?.short_description || `A ${m.pipeline_tag || 'LLM'} model by ${m.author || 'unknown'}`,
                 downloads: m.downloads || 0,
                 likes: m.likes || 0,
                 tags: m.tags || [],
-                lastModified: m.lastModified
+                lastModified: m.lastModified || ''
             }));
 
             const displayTotal = total > 0 ? total : (searchQuery.toLowerCase() === 'gguf' ? 156607 : models.length);

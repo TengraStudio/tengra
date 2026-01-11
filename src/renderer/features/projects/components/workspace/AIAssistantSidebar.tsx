@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, ArrowLeft } from 'lucide-react';
 import { MessageBubble } from '../../../chat/components/MessageBubble';
@@ -107,6 +107,8 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                         activityLog={activityLog}
                         clearLogs={clearLogs}
                         t={t}
+                        goal={agentChatMessage}
+                        setGoal={setAgentChatMessage}
                     />
                 ) : (
                     <div className="flex-1 flex flex-col min-h-0">
@@ -117,7 +119,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                         <Users className="w-4 h-4 text-primary" />
                                     </div>
                                     <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
-                                        {t('agents.welcomeMessage') || 'Merhaba! Ben AI asistanın. Kodunda sana nasıl yardımcı olabilirim?'}
+                                        {t('agents.welcomeMessage')}
                                     </div>
                                 </div>
                             ) : (
@@ -140,7 +142,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                 <input
                                     type="text"
                                     className="flex-1 bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/50"
-                                    placeholder="Bir ÅŸeyler yaz..."
+                                    placeholder={t('workspace.writeSomething')}
                                     value={agentChatMessage}
                                     onChange={(e) => setAgentChatMessage(e.target.value)}
                                 />

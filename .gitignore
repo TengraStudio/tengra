@@ -140,3 +140,7 @@ sidecar/temp_stt.wav
 sidecar/*.tmp
 sidecar/.python-version
 sidecar/install-pyenv-win.ps1
+docs/ADRs/001-unified-error-handling-ipc.md
+docs/ADRs/002-input-sanitization-strategy.md
+docs/ADRs/003-component-standardization.md
+I18N_MIGRATION_SUMMARY.md

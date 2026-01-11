@@ -19,8 +19,23 @@ export class AgentService {
     }
 
     async registerAgent(agent: AgentDefinition): Promise<string> {
-        const table = await this.lanceDb.getTable('agents')
         const id = agent.id || randomUUID()
+        const record = {
+            id: id,
+            name: agent.name,
+            system_prompt: agent.systemPrompt,
+            tools: agent.tools,
+            parent_model: agent.parentModel || 'gpt-4o'
+        }
+
+        let table
+        try {
+            table = await this.lanceDb.getTable('agents')
+        } catch {
+            // Table doesn't exist, create it with the first record
+            await this.lanceDb.createTable('agents', [record])
+            return id
+        }
 
         // Check if exists
         const existing = await table.query().where(`name = '${agent.name}'`).limit(1).toArray()
@@ -29,13 +44,7 @@ export class AgentService {
             await table.delete(`name = '${agent.name}'`)
         }
 
-        await table.add([{
-            id: id,
-            name: agent.name,
-            system_prompt: agent.systemPrompt,
-            tools: agent.tools,
-            parent_model: agent.parentModel || 'gpt-4o'
-        }])
+        await table.add([record])
 
         return id
     }
@@ -81,7 +90,7 @@ export class AgentService {
                 name: 'TechLead',
                 description: 'Senior Technical Architect',
                 systemPrompt: 'You are an expert Technical Lead. You always think about system architecture, scalability, and clean code patterns. You are strict about types and error handling.',
-                tools: [],
+                tools: ['code_search'],
                 parentModel: 'gpt-4o'
             },
             {

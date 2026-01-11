@@ -15,6 +15,9 @@ export interface CodeSymbolSearchResult {
     name: string;
     path: string;
     line: number;
+    kind: string;
+    signature: string;
+    docstring: string;
     score?: number;
 }
 
@@ -110,9 +113,10 @@ export interface SemanticFragment {
     sourceId: string
     tags: string[]
     importance: number
+    projectId?: string
     createdAt: number
     updatedAt: number
-    [key: string]: string | number | string[] | number[]
+    [key: string]: string | number | string[] | number[] | undefined
 }
 
 /**
@@ -209,7 +213,7 @@ export interface AgentProfile {
 export interface CouncilSession {
     id: string
     goal: string
-    status: 'planning' | 'executing' | 'completed' | 'failed'
+    status: 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'
     logs: CouncilLog[]
     agents: AgentProfile[]
     plan?: string
@@ -269,7 +273,7 @@ export class DatabaseService {
     private projectsPath: string // Legacy JSON path for migration
     private db: DatabaseType // SQLite database connection
 
-    constructor(private dataService: DataService, _lanceDbService: LanceDbService) {
+    constructor(private dataService: DataService, private lanceDbService: LanceDbService) {
         this.foldersPath = path.join(this.dataService.getPath('db'), 'folders.json')
         this.promptsPath = path.join(this.dataService.getPath('db'), 'prompts.json')
         this.councilPath = path.join(this.dataService.getPath('db'), 'council.json')
@@ -334,6 +338,27 @@ export class DatabaseService {
                             metadata TEXT DEFAULT '{}'
                         );
                         CREATE INDEX IF NOT EXISTS idx_chat_events_thread_id ON chat_events(thread_id);
+                    `);
+                }
+            },
+            {
+                id: 2,
+                name: 'Add Time Tracking',
+                up: () => {
+                    this.db.exec(`
+                        CREATE TABLE IF NOT EXISTS time_tracking (
+                            id TEXT PRIMARY KEY,
+                            type TEXT NOT NULL,
+                            project_id TEXT,
+                            start_time INTEGER NOT NULL,
+                            end_time INTEGER,
+                            duration_ms INTEGER DEFAULT 0,
+                            created_at INTEGER NOT NULL,
+                            updated_at INTEGER NOT NULL
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_time_tracking_type ON time_tracking(type);
+                        CREATE INDEX IF NOT EXISTS idx_time_tracking_project_id ON time_tracking(project_id);
+                        CREATE INDEX IF NOT EXISTS idx_time_tracking_start_time ON time_tracking(start_time);
                     `);
                 }
             },
@@ -691,6 +716,53 @@ export class DatabaseService {
      */
     async getDetailedStats(_period: string) { return { chatCount: 0, messageCount: 0, dbSize: 0, totalTokens: 0, promptTokens: 0, completionTokens: 0, tokenTimeline: [], activity: [] } }
 
+    /**
+     * Retrieves time tracking statistics.
+     */
+    async getTimeStats() {
+        try {
+            // Get total app online time
+            const appOnlineResult = this.db.prepare(`
+                SELECT COALESCE(SUM(duration_ms), 0) as total
+                FROM time_tracking
+                WHERE type = 'app_online'
+            `).get() as { total: number } | undefined
+            
+            // Get total coding time
+            const codingResult = this.db.prepare(`
+                SELECT COALESCE(SUM(duration_ms), 0) as total
+                FROM time_tracking
+                WHERE type = 'coding'
+            `).get() as { total: number } | undefined
+            
+            // Get per-project coding time
+            const projectResult = this.db.prepare(`
+                SELECT project_id, COALESCE(SUM(duration_ms), 0) as total
+                FROM time_tracking
+                WHERE type = 'project_coding' AND project_id IS NOT NULL
+                GROUP BY project_id
+            `).all() as Array<{ project_id: string; total: number }>
+            
+            const projectCodingTime: Record<string, number> = {}
+            for (const row of projectResult) {
+                projectCodingTime[row.project_id] = row.total
+            }
+            
+            return {
+                totalOnlineTime: appOnlineResult?.total || 0,
+                totalCodingTime: codingResult?.total || 0,
+                projectCodingTime
+            }
+        } catch (error) {
+            console.error('[DatabaseService] Failed to get time stats:', getErrorMessage(error as Error))
+            return {
+                totalOnlineTime: 0,
+                totalCodingTime: 0,
+                projectCodingTime: {}
+            }
+        }
+    }
+
     // --- Project Management ---
 
     /**
@@ -934,18 +1006,97 @@ export class DatabaseService {
         return null
     }
 
-    // --- Semantic Memory (Stubs) ---
-    async storeSemanticFragment(_fragment: SemanticFragment) { }
-    async searchSemanticFragments(_vector: number[], _limit: number): Promise<SemanticFragment[]> { return [] }
-    async searchSemanticFragmentsByText(_query: string, _limit: number): Promise<SemanticFragment[]> { return [] }
-    async deleteSemanticFragment(_id: string): Promise<boolean> { return true }
-    async getAllSemanticFragments(): Promise<SemanticFragment[]> { return [] }
+    // --- Semantic Memory (LanceDB) ---
 
-    // --- Episodic Memory (Stubs) ---
-    async storeEpisodicMemory(_memory: EpisodicMemory) { }
-    async searchEpisodicMemories(_vector: number[], _limit: number): Promise<EpisodicMemory[]> { return [] }
-    async searchEpisodicMemoriesByText(_query: string, _limit: number): Promise<EpisodicMemory[]> { return [] }
-    async getAllEpisodicMemories(): Promise<EpisodicMemory[]> { return [] }
+    async storeSemanticFragment(fragment: SemanticFragment) {
+        if (!fragment.embedding || fragment.embedding.length === 0) {
+            // console.warn('[Database] Skipping semantic fragment with empty embedding', fragment.id)
+            return
+        }
+        try {
+            try {
+                const table = await this.lanceDbService.getTable('semantic_fragments')
+                await table.add([fragment as unknown as Record<string, unknown>])
+            } catch {
+                await this.lanceDbService.createTable('semantic_fragments', [fragment as unknown as Record<string, unknown>])
+            }
+        } catch (e) {
+            console.error('[Database] Failed to store sem-fragment:', e)
+        }
+    }
+
+    async searchSemanticFragments(vector: number[], limit: number): Promise<SemanticFragment[]> {
+        try {
+            const table = await this.lanceDbService.getTable('semantic_fragments')
+            const results = await table.vectorSearch(vector)
+                .limit(limit)
+                .toArray()
+            return results as unknown as SemanticFragment[]
+        } catch {
+            return []
+        }
+    }
+
+    async searchSemanticFragmentsByText(_query: string, _limit: number): Promise<SemanticFragment[]> {
+        // Requires embedding generation, which DB service doesn't have direct access to (EmbeddingService has it).
+        // This method usually expects the caller to handle embedding, or we need to inject EmbeddingService here (circular dependency risk).
+        // For now, returning empty as this seems to be an upstream concern (the caller should use searchSemanticFragments with vector).
+        return []
+    }
+
+    async deleteSemanticFragment(id: string): Promise<boolean> {
+        try {
+            const table = await this.lanceDbService.getTable('semantic_fragments')
+            await table.delete(`id = '${id}'`)
+            return true
+        } catch { return false }
+    }
+
+    async getAllSemanticFragments(): Promise<SemanticFragment[]> {
+        try {
+            const table = await this.lanceDbService.getTable('semantic_fragments')
+            // This might be heavy, use with caution
+            return (await table.query().toArray()) as unknown as SemanticFragment[]
+        } catch { return [] }
+    }
+
+    // --- Episodic Memory (LanceDB) ---
+
+    async storeEpisodicMemory(memory: EpisodicMemory) {
+        try {
+            try {
+                const table = await this.lanceDbService.getTable('episodic_memories')
+                await table.add([memory as unknown as Record<string, unknown>])
+            } catch {
+                await this.lanceDbService.createTable('episodic_memories', [memory as unknown as Record<string, unknown>])
+            }
+        } catch (e) {
+            console.error('[Database] Failed to store episode:', e)
+        }
+    }
+
+    async searchEpisodicMemories(vector: number[], limit: number): Promise<EpisodicMemory[]> {
+        try {
+            const table = await this.lanceDbService.getTable('episodic_memories')
+            const results = await table.vectorSearch(vector)
+                .limit(limit)
+                .toArray()
+            return results as unknown as EpisodicMemory[]
+        } catch {
+            return []
+        }
+    }
+
+    async searchEpisodicMemoriesByText(_query: string, _limit: number): Promise<EpisodicMemory[]> {
+        return []
+    }
+
+    async getAllEpisodicMemories(): Promise<EpisodicMemory[]> {
+        try {
+            const table = await this.lanceDbService.getTable('episodic_memories')
+            return (await table.query().toArray()) as unknown as EpisodicMemory[]
+        } catch { return [] }
+    }
 
     // --- Entity Knowledge (Stubs) ---
     async storeEntityKnowledge(_knowledge: EntityKnowledge) { }
@@ -958,9 +1109,148 @@ export class DatabaseService {
     async storeMemory(_key: string, _value: string) { }
 
     // --- Code Intelligence (Stubs) ---
-    async searchCodeSymbols(_vector: number[]): Promise<CodeSymbolSearchResult[]> { return [] }
-    async clearCodeSymbols(_projectId: string) { }
-    async storeCodeSymbol(_symbol: CodeSymbolRecord) { }
+    // --- Code Intelligence (LanceDB) ---
+
+    /**
+     * Search code symbols using vector similarity.
+     * 
+     * @param vector - The embedding vector to search for
+     * @returns Array of code symbol search results sorted by similarity
+     */
+    async searchCodeSymbols(vector: number[]): Promise<CodeSymbolSearchResult[]> {
+        try {
+            const table = await this.lanceDbService.getTable('code_symbols')
+            // LanceDB 0.4.x+ syntax: vector search
+            const results = await table.vectorSearch(vector)
+                .limit(10)
+                .toArray()
+
+            interface LanceDBResult {
+                id?: string
+                name?: string
+                file_path?: string
+                line?: number
+                kind?: string
+                signature?: string
+                docstring?: string
+                _distance?: number
+            }
+
+            return results.map((r: LanceDBResult) => {
+                return {
+                    id: r.id ?? '',
+                    name: r.name ?? '',
+                    path: r.file_path ?? '',
+                    line: r.line ?? 0,
+                    kind: r.kind ?? '',
+                    signature: r.signature ?? '',
+                    docstring: r.docstring ?? '',
+                    score: r._distance !== undefined ? 1 - r._distance : undefined // Convert distance to similarity score approx
+                }
+            })
+        } catch (e) {
+            console.error('[Database] Vector search failed:', e)
+            return []
+        }
+    }
+
+    /**
+     * Find code symbols by name using fuzzy matching.
+     * 
+     * @param projectId - The project ID to search within
+     * @param name - The name or partial name to search for
+     * @returns Array of matching code symbol search results
+     */
+    async findCodeSymbolsByName(projectId: string, name: string): Promise<CodeSymbolSearchResult[]> {
+        try {
+            const table = await this.lanceDbService.getTable('code_symbols')
+            // Using SQL-like filter for fuzzy match
+            const results = await table.query()
+                .where(`project_path = '${projectId}' AND name LIKE '%${name}%'`)
+                .limit(50)
+                .toArray()
+
+            interface LanceDBQueryResult {
+                id?: string
+                name?: string
+                file_path?: string
+                line?: number
+                kind?: string
+                signature?: string
+                docstring?: string
+            }
+
+            return results.map((r: LanceDBQueryResult) => {
+                return {
+                    id: r.id ?? '',
+                    name: r.name ?? '',
+                    path: r.file_path ?? '',
+                    line: r.line ?? 0,
+                    kind: r.kind ?? '',
+                    signature: r.signature ?? '',
+                    docstring: r.docstring ?? '',
+                    score: 1
+                }
+            })
+        } catch {
+            return []
+        }
+    }
+
+    async clearCodeSymbols(projectId: string) {
+        try {
+            const table = await this.lanceDbService.getTable('code_symbols')
+            await table.delete(`project_path = '${projectId}'`)
+        } catch {
+            // Table might not exist yet, ignore
+        }
+    }
+
+    async clearSemanticFragments(projectId: string) {
+        try {
+            const table = await this.lanceDbService.getTable('semantic_fragments')
+            await table.delete(`projectId = '${projectId}'`)
+        } catch {
+            // Table might not exist yet, ignore
+        }
+    }
+
+    async deleteCodeSymbolsForFile(projectId: string, filePath: string) {
+        try {
+            const table = await this.lanceDbService.getTable('code_symbols')
+            // normalized paths might be needed? assuming exact match for now
+            await table.delete(`project_path = '${projectId}' AND file_path = '${filePath.replace(/\\/g, '/')}'`)
+        } catch {
+            // Ignore deletion errors or table not found
+        }
+    }
+
+    async deleteSemanticFragmentsForFile(projectId: string, filePath: string) {
+        try {
+            const table = await this.lanceDbService.getTable('semantic_fragments')
+            await table.delete(`projectId = '${projectId}' AND sourceId = '${filePath.replace(/\\/g, '/')}'`)
+        } catch {
+            // Ignore deletion errors or table not found
+        }
+    }
+
+    async storeCodeSymbol(symbol: CodeSymbolRecord) {
+        if ((!symbol.embedding || symbol.embedding.length === 0) && (!symbol.vector || symbol.vector.length === 0)) {
+            return
+        }
+        try {
+            // Try to get table and add
+            try {
+                const table = await this.lanceDbService.getTable('code_symbols')
+                await table.add([symbol as unknown as Record<string, unknown>])
+            } catch {
+                // Table might not exist, try creating it with this first record
+                await this.lanceDbService.createTable('code_symbols', [symbol as unknown as Record<string, unknown>])
+            }
+        } catch (e) {
+            console.error('[Database] Failed to store symbol:', e)
+        }
+    }
 
     // --- Council / Agents ---
 
@@ -1053,7 +1343,7 @@ export class DatabaseService {
      * @param plan - Optional plan string
      * @param solution - Optional solution outcome
      */
-    async updateCouncilStatus(sessionId: string, status: 'planning' | 'executing' | 'completed' | 'failed', plan?: string, solution?: string) {
+    async updateCouncilStatus(sessionId: string, status: 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed', plan?: string, solution?: string) {
         const session = this.councilSessions.find(s => s.id === sessionId)
         if (session) {
             session.status = status
@@ -1073,82 +1363,7 @@ export class DatabaseService {
         // Deprecated/Shim: Use createCouncilSession logic or update
     }
 
-    // --- Vector Store (Local Implementation) ---
-
-    /**
-     * In-memory storage for vector embeddings.
-     * @private
-     */
-    private vectorStore: { path: string; content: string; embedding: number[]; metadata: JsonObject }[] = []
-
-    /**
-     * Calculates Cosine Similarity between two vectors.
-     * 
-     * @param a - First vector
-     * @param b - Second vector
-     * @returns Similarity score (-1 to 1)
-     * @private
-     */
-    private cosineSimilarity(a: number[], b: number[]): number {
-        if (a.length !== b.length) return 0
-        let dotProduct = 0
-        let normA = 0
-        let normB = 0
-        for (let i = 0; i < a.length; i++) {
-            dotProduct += a[i] * b[i]
-            normA += a[i] * a[i]
-            normB += b[i] * b[i]
-        }
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
-    }
-
-    /**
-     * Removes vectors associated with a specific file path.
-     * @param path - File path identifier
-     */
-    async clearVectors(path: string) {
-        this.vectorStore = this.vectorStore.filter(v => v.path !== path)
-        // In a real app we would strictly persist this immediately or debounced
-    }
-
-    /**
-     * Adds a vector embedding to the in-memory store.
-     * 
-     * @param path - Source file path
-     * @param content - Text content
-     * @param vector - Embedding vector
-     * @param metadata - Arbitrary metadata
-     */
-    async storeVector(path: string, content: string, vector: number[], metadata: JsonObject) {
-        this.vectorStore.push({ path, content, embedding: vector, metadata })
-    }
-
-    /**
-     * Searches the vector store using cosine similarity.
-     * 
-     * @param vector - Query vector
-     * @param limit - Max results
-     * @returns Ranked list of matches with similarity score
-     */
-    async searchVectors(vector: number[], limit: number): Promise<VectorSearchResult[]> {
-        if (!this.vectorStore.length) return []
-
-        const scored = this.vectorStore.map(item => ({
-            ...item,
-            score: this.cosineSimilarity(vector, item.embedding)
-        }))
-
-        // Sort desc
-        scored.sort((a, b) => b.score - a.score)
-
-        return scored.slice(0, limit)
-    }
+    // --- Deprecated In-Memory Store Removed ---
 }
 
-interface VectorSearchResult {
-    path: string;
-    content: string;
-    embedding: number[];
-    metadata: JsonObject;
-    score: number;
-}
+// interface VectorSearchResult removed

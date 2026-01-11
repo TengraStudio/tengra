@@ -1,5 +1,4 @@
-
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 
 interface ModalProps {
     isOpen: boolean
@@ -11,6 +10,25 @@ interface ModalProps {
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
 }
 
+/**
+ * Get all focusable elements within a container.
+ */
+const getFocusableElements = (container: HTMLElement): HTMLElement[] => {
+    const focusableSelectors = [
+        'button:not([disabled])',
+        'a[href]',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(', ')
+    
+    return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors))
+}
+
+/**
+ * Modal component with focus management and accessibility support.
+ */
 export const Modal: React.FC<ModalProps> = ({
     isOpen,
     onClose,
@@ -20,6 +38,77 @@ export const Modal: React.FC<ModalProps> = ({
     preventClose = false,
     size = 'md'
 }) => {
+    const modalRef = useRef<HTMLDivElement>(null)
+    const previousActiveElementRef = useRef<HTMLElement | null>(null)
+
+    useEffect(() => {
+        if (!isOpen) return
+
+        // Save the previously focused element
+        previousActiveElementRef.current = document.activeElement as HTMLElement
+
+        // Focus the modal container initially
+        if (modalRef.current) {
+            const focusableElements = getFocusableElements(modalRef.current)
+            if (focusableElements.length > 0) {
+                // Focus the first focusable element
+                focusableElements[0].focus()
+            } else {
+                // If no focusable elements, focus the modal container
+                modalRef.current.focus()
+            }
+        }
+
+        // Handle Escape key to close modal
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !preventClose) {
+                onClose()
+            }
+        }
+
+        // Handle Tab key to trap focus
+        const handleTab = (e: KeyboardEvent) => {
+            if (!modalRef.current || e.key !== 'Tab') return
+
+            const focusableElements = getFocusableElements(modalRef.current)
+            if (focusableElements.length === 0) return
+
+            const firstElement = focusableElements[0]
+            const lastElement = focusableElements[focusableElements.length - 1]
+
+            if (e.shiftKey) {
+                // Shift + Tab
+                if (document.activeElement === firstElement) {
+                    e.preventDefault()
+                    lastElement.focus()
+                }
+            } else {
+                // Tab
+                if (document.activeElement === lastElement) {
+                    e.preventDefault()
+                    firstElement.focus()
+                }
+            }
+        }
+
+        // Lock body scroll when modal is open
+        document.body.style.overflow = 'hidden'
+
+        document.addEventListener('keydown', handleEscape)
+        document.addEventListener('keydown', handleTab)
+
+        return () => {
+            document.body.style.overflow = ''
+            document.removeEventListener('keydown', handleEscape)
+            document.removeEventListener('keydown', handleTab)
+
+            // Restore focus to the previously focused element
+            if (previousActiveElementRef.current) {
+                previousActiveElementRef.current.focus()
+            }
+        }
+    }, [isOpen, preventClose, onClose])
+
     if (!isOpen) return null
 
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -44,10 +133,17 @@ export const Modal: React.FC<ModalProps> = ({
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
             onClick={handleBackdropClick}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
         >
-            <div className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300 mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]}`}>
+            <div 
+                ref={modalRef}
+                tabIndex={-1}
+                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300 mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]}`}
+            >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
-                    <h3 className="font-black leading-none tracking-tight text-2xl text-white uppercase">{title}</h3>
+                    <h3 id="modal-title" className="font-black leading-none tracking-tight text-2xl text-white uppercase">{title}</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
                     {children}

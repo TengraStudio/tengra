@@ -11,4 +11,5 @@ export type SettingsCategory =
     | 'advanced'
     | 'about'
     | 'mcp-servers'
-    | 'mcp-marketplace';
+    | 'mcp-marketplace'
+    | 'usage-limits';

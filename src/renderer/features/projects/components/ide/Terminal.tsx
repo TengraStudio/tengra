@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { useTranslation } from '@/i18n'
@@ -42,10 +42,17 @@ const saveHistory = (history: string[], projectId?: string) => {
     }
 }
 
+// Global registry to track initialized terminals (prevents duplicate spawns)
+const initializedTerminals = new Set<string>()
+const initializingTerminals = new Set<string>()
+
 export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) => {
     const { t } = useTranslation()
     const terminalRef = useRef<HTMLDivElement>(null)
     const pidRef = useRef<string | null>(null)
+    const isInitializedRef = useRef(false)
+    const terminalInstanceRef = useRef<Terminal | null>(null)
+    const terminalIdRef = useRef<string | null>(null)
 
     // Command history state
     const historyRef = useRef<string[]>(loadHistory(projectId))
@@ -67,19 +74,68 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
     }, [projectId])
 
     useEffect(() => {
-        if (!terminalRef.current) return
+        // Prevent multiple initializations
+        if (isInitializedRef.current) {
+            console.log('[TerminalComponent] Already initialized, skipping')
+            return
+        }
+
+        if (!terminalRef.current) {
+            console.log('[TerminalComponent] No container ref, skipping')
+            return
+        }
+
+        console.log('[TerminalComponent] Initializing terminal')
+        isInitializedRef.current = true
+
+        // Generate a unique terminal ID for this mount
+        const terminalId = `term-${projectId || 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        terminalIdRef.current = terminalId
+
+        // Check if already initializing (shouldn't happen, but safety check)
+        if (initializingTerminals.has(terminalId) || initializedTerminals.has(terminalId)) {
+            console.warn(`[TerminalComponent] Terminal ${terminalId} already exists, generating new ID`)
+            terminalIdRef.current = `term-${projectId || 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        }
 
         const term = new Terminal({
             theme: {
-                background: '#1e1e1e',
-                foreground: '#cccccc',
-                cursor: '#ffffff'
+                background: '#0a0a0f',
+                foreground: '#e4e4e7',
+                cursor: '#60a5fa',
+                cursorAccent: '#0a0a0f',
+                selectionBackground: 'rgba(96, 165, 250, 0.2)',
+                selectionForeground: '#ffffff',
+                black: '#1a1a1f',
+                red: '#f87171',
+                green: '#34d399',
+                yellow: '#fbbf24',
+                blue: '#60a5fa',
+                magenta: '#f472b6',
+                cyan: '#22d3ee',
+                white: '#fafafa',
+                brightBlack: '#3f3f46',
+                brightRed: '#fca5a5',
+                brightGreen: '#6ee7b7',
+                brightYellow: '#fcd34d',
+                brightBlue: '#93c5fd',
+                brightMagenta: '#f9a8d4',
+                brightCyan: '#67e8f9',
+                brightWhite: '#ffffff'
             },
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-            fontSize: 14,
+            fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+            fontSize: 13,
+            lineHeight: 1.4,
+            letterSpacing: 0.2,
             cursorBlink: true,
-            convertEol: true
+            cursorStyle: 'block',
+            convertEol: true,
+            scrollback: 10000,
+            fontWeight: '400',
+            fontWeightBold: '600'
         })
+
+        terminalInstanceRef.current = term
 
         const fitAddon = new FitAddon()
         term.loadAddon(fitAddon)
@@ -98,30 +154,53 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
         // Initialize backend process
         const initTerminal = async () => {
+            const finalTerminalId = terminalIdRef.current!
+            
+            // Final check before creating
+            if (initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {
+                console.warn(`[TerminalComponent] Terminal ${finalTerminalId} already exists, skipping`)
+                return
+            }
+
+            initializingTerminals.add(finalTerminalId)
+
             try {
-                const terminalId = `term-${Date.now()}`
                 const result = await window.electron.terminal.create({
-                    id: terminalId,
+                    id: finalTerminalId,
                     cwd: cwd || process.cwd?.() || '.',
                     cols: term.cols,
                     rows: term.rows
                 })
 
                 if (!result.success) {
-                    throw new Error(result.error || t('projectDashboard.terminalFailedSession'))
+                    const errorMsg = result.error || t('projectDashboard.terminalFailedSession')
+                    term.write(`\r\n\x1b[31m[ERROR] ${errorMsg}\x1b[0m\r\n`)
+                    initializingTerminals.delete(finalTerminalId)
+                    throw new Error(errorMsg)
                 }
-                pidRef.current = terminalId
+                
+                pidRef.current = finalTerminalId
+                initializedTerminals.add(finalTerminalId)
+                initializingTerminals.delete(finalTerminalId)
 
                 // Setup listeners
                 const cleanupData = window.electron.terminal.onData(({ id, data }) => {
-                    if (pidRef.current && id === pidRef.current) {
-                        term.write(data)
+                    try {
+                        if (pidRef.current && id === pidRef.current && term) {
+                            term.write(data)
+                        }
+                    } catch (error) {
+                        console.error('[TerminalComponent] Error writing data:', error)
                     }
                 })
 
                 const cleanupExit = window.electron.terminal.onExit(({ id, code }) => {
-                    if (pidRef.current && id === pidRef.current) {
-                        term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`)
+                    try {
+                        if (pidRef.current && id === pidRef.current && term) {
+                            term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`)
+                        }
+                    } catch (error) {
+                        console.error('[TerminalComponent] Error handling exit:', error)
                     }
                 })
 
@@ -191,12 +270,18 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                     }
 
                     // Send to terminal
-                    window.electron.terminal.write(pidRef.current, data)
+                    if (pidRef.current) {
+                        window.electron.terminal.write(pidRef.current, data).catch(err => {
+                            console.error('[TerminalComponent] Write failed:', err)
+                        })
+                    }
                 })
 
                 term.onResize(({ cols, rows }) => {
                     if (pidRef.current) {
-                        window.electron.terminal.resize(pidRef.current, cols, rows)
+                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(err => {
+                            console.error('[TerminalComponent] Resize failed:', err)
+                        })
                     }
                 })
 
@@ -220,9 +305,19 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         window.addEventListener('resize', handleResize)
 
         return () => {
+            isInitializedRef.current = false
             window.removeEventListener('resize', handleResize)
-            if (pidRef.current) {
-                window.electron.terminal.kill(pidRef.current)
+            
+            const terminalId = pidRef.current || terminalIdRef.current
+            if (terminalId) {
+                // Remove from registry
+                initializedTerminals.delete(terminalId)
+                initializingTerminals.delete(terminalId)
+                
+                // Kill the terminal session
+                window.electron.terminal.kill(terminalId).catch(err => {
+                    console.error('[TerminalComponent] Failed to kill terminal on cleanup:', err)
+                })
             }
 
             // Call individual cleanups
@@ -232,16 +327,29 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                 if (typeof cleanups.exit === 'function') cleanups.exit()
             }
 
-            term.dispose()
+            try {
+                term.dispose()
+            } catch (err) {
+                console.error('[TerminalComponent] Error disposing terminal:', err)
+            }
+            terminalInstanceRef.current = null
         }
-    }, [cwd, addToHistory, t])
+    }, []) // Remove dependencies to prevent re-initialization on prop changes
 
     return (
-        <div
-            ref={terminalRef}
-            className="w-full h-full bg-[#1e1e1e] rounded-lg overflow-hidden border border-white/10"
-            style={{ minHeight: '300px' }}
-        />
+        <div className="w-full h-full relative group" style={{ minHeight: '300px' }}>
+            {/* Modern terminal container with gradient border effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-cyan-500/5 rounded-xl blur-xl opacity-50" />
+            <div
+                ref={terminalRef}
+                className="relative w-full h-full bg-[#0a0a0f] rounded-xl overflow-hidden border border-white/5 shadow-2xl backdrop-blur-sm"
+                style={{
+                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+                }}
+            />
+            {/* Subtle top gradient overlay */}
+            <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/5 to-transparent pointer-events-none rounded-t-xl" />
+        </div>
     )
 }
 

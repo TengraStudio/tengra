@@ -112,9 +112,9 @@ export class CopilotService {
     isConfigured(): boolean {
         // fast check
         if (this.githubToken || this.copilotSessionToken) return true;
-        // deep check via AuthService
+        // deep check via AuthService - ONLY use copilot_token, no fallback
         if (this.authService) {
-            return !!(this.authService.getToken('copilot_token') || this.authService.getToken('github_token') || this.authService.getToken('proxy-auth-token'));
+            return !!this.authService.getToken('copilot_token');
         }
         return false;
     }
@@ -129,19 +129,22 @@ export class CopilotService {
         this.tokenPromise = (async () => {
             try {
                 if (!this.githubToken) {
-                    // Try to recover from AuthService if available
+                    // Try to recover from AuthService if available - ONLY use copilot_token, no fallback
                     if (this.authService) {
-                        // First try the specific copilot token, then fallback to github token
-                        const stored = this.authService.getToken('copilot_token') || this.authService.getToken('github_token');
-                        if (stored) {
-                            console.log('[CopilotService] Recovered GitHub/Copilot token from AuthService');
-                            this.githubToken = stored;
+                        console.log('[CopilotService] No token set, attempting to recover copilot_token from AuthService...');
+                        const copilotToken = this.authService.getToken('copilot_token');
+                        console.log(`[CopilotService] copilot_token: ${copilotToken ? `found (length: ${copilotToken.length})` : 'NOT FOUND'}`);
+                        if (copilotToken) {
+                            console.log('[CopilotService] Recovered copilot_token from AuthService');
+                            this.githubToken = copilotToken;
                         }
                     }
 
                     if (!this.githubToken) {
-                        throw new Error('GitHub Authentication failed: No token found. Please login via Settings.');
+                        throw new Error('Copilot Authentication failed: No copilot_token found. Please login via Settings.');
                     }
+                } else {
+                    console.log(`[CopilotService] Using existing token, length: ${this.githubToken.length}`);
                 }
 
                 try {
@@ -192,7 +195,18 @@ export class CopilotService {
                             this.tokenExpiresAt = (data.expires_at || (Date.now() / 1000 + 1200)) * 1000;
                             return this.copilotSessionToken;
                         } else {
-                            console.error(`[CopilotService] v1 fallback failed: ${v1Response.status} ${await v1Response.text()}`);
+                            const v1ErrorText = await v1Response.text();
+                            console.error(`[CopilotService] v1 fallback failed: ${v1Response.status} ${v1ErrorText}`);
+                            
+                            // 404 on both endpoints usually means token is invalid/expired/revoked or doesn't have Copilot permissions
+                            if (v1Response.status === 404) {
+                                console.error(`[CopilotService] Token appears invalid (404 on both v2 and v1 endpoints). This usually means:`);
+                                console.error(`[CopilotService] 1. Token is expired/revoked`);
+                                console.error(`[CopilotService] 2. Token doesn't have Copilot permissions`);
+                                console.error(`[CopilotService] 3. User doesn't have Copilot access`);
+                                console.error(`[CopilotService] Please re-login to get a new token.`);
+                                // Don't clear token automatically - let user re-login manually
+                            }
                         }
                     }
 
@@ -206,6 +220,12 @@ export class CopilotService {
                         if (this.authService && 'deleteToken' in this.authService) {
                             (this.authService as any).deleteToken?.('github_token');
                         }
+                    } else if (response.status === 404) {
+                        console.error(`[CopilotService] Token not found (404). This usually means:`);
+                        console.error(`[CopilotService] 1. Token is expired/revoked`);
+                        console.error(`[CopilotService] 2. Token doesn't have Copilot permissions`);
+                        console.error(`[CopilotService] 3. User doesn't have Copilot access`);
+                        console.error(`[CopilotService] Please re-login to get a new token.`);
                     }
 
                     throw new Error(`Failed to get Copilot token: ${response.status} ${errorText}`);

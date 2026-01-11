@@ -12,6 +12,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
                     className
                 )}
                 ref={ref}
+                aria-label={props['aria-label'] || props.placeholder || 'Text input'}
                 {...props}
             />
         )

@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { ArrowLeft, Play, Terminal, Search, PanelRightClose, PanelRightOpen, Settings, Pencil, Activity, RefreshCw, GitBranch, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowLeft, Play, Terminal, Search, PanelRightClose, PanelRightOpen, Pencil, GitBranch, PanelLeftClose, PanelLeftOpen, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 import { useTranslation, Language } from '@/i18n';
@@ -12,11 +12,8 @@ interface WorkspaceToolbarProps {
     handleRunProject: () => void;
     showTerminal: boolean;
     toggleTerminal: () => void;
-    handleSearch: () => void;
     showAgentPanel: boolean;
     toggleAgentPanel: () => void;
-    toggleSettings: () => void;
-    onOpenGit?: () => void;
     language: Language;
     // New props for dashboard tabs
     dashboardTab?: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor';
@@ -42,11 +39,8 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     handleRunProject,
     showTerminal: _showTerminal,
     toggleTerminal: _toggleTerminal,
-    handleSearch,
     showAgentPanel,
     toggleAgentPanel,
-    toggleSettings,
-    onOpenGit,
     language,
     dashboardTab = 'overview',
     onDashboardTabChange,
@@ -120,7 +114,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                         className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'overview' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
                         title={t('projectDashboard.overview')}
                     >
-                        <Activity className="w-3.5 h-3.5" />
+                        <Info className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => onDashboardTabChange?.('terminal')}
@@ -137,7 +131,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                         className={cn("p-1.5 rounded-md transition-all", dashboardTab === 'search' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white")}
                         title={t('projectDashboard.search')}
                     >
-                        <RefreshCw className="w-3.5 h-3.5" />
+                        <Search className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => onDashboardTabChange?.('git')}
@@ -147,28 +141,9 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                         <GitBranch className="w-3.5 h-3.5" />
                     </button>
                 </div>
-                <div className="w-px h-4 bg-white/10 mx-2" />
-                <button onClick={handleSearch} className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors" title={t('workspace.search')}>
-                    <Search className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={toggleSettings}
-                    className="p-1.5 rounded-md hover:bg-white/5 text-muted-foreground hover:text-white transition-colors"
-                    title={t('settings.projectSettings')}
-                >
-                    <Settings className="w-4 h-4" />
-                </button>
             </div>
 
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => onOpenGit?.()}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-md border border-white/5 text-xs font-medium transition-colors group"
-                    title="Git Commit"
-                >
-                    <div className="w-2 h-2 rounded-full bg-orange-400 group-hover:animate-pulse" />
-                    <span className="text-muted-foreground group-hover:text-white">Git</span>
-                </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] font-medium text-emerald-400/80 uppercase tracking-wider">{t('workspace.online')}</span>

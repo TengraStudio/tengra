@@ -42,7 +42,30 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         appSettings: appSettings || undefined,
         autoReadEnabled: false, // Could be moved to settings/context
         handleSpeak: (id, text) => handleSpeak(text, id), // Adapter
-        formatChatError: (e: CatchError) => (e instanceof Error ? e.message : String(e || 'Unknown error')),
+        formatChatError: (e: CatchError) => {
+            if (e instanceof Error) {
+                const message = e.message;
+                // Handle 429 rate limit/quota errors
+                if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota')) {
+                    try {
+                        // Try to parse JSON error if present
+                        const jsonMatch = message.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            const errData = JSON.parse(jsonMatch[0]);
+                            const errorMsg = errData.error?.message || errData.message || message;
+                            if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
+                                return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
+                            }
+                        }
+                    } catch {
+                        // Not JSON, use default message
+                    }
+                    return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
+                }
+                return message;
+            }
+            return String(e || 'Unknown error');
+        },
         t,
         projectId: selectedProject?.id,
         activeWorkspacePath: selectedProject?.path

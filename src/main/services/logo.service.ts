@@ -75,6 +75,24 @@ ${context}`;
         };
     }
 
+    async improveLogoPrompt(prompt: string): Promise<string> {
+        const improvementPrompt = `You are a creative brand designer. Expand and improve the following logo description into a detailed, high-quality prompt for an AI image generator (like Flux or DALL-E). 
+        Focus on artistic style, lighting, composition, and professional aesthetics. Keep it to 2-3 sentences.
+        Original Idea: ${prompt}
+        Improved Prompt:`;
+
+        try {
+            const response = await this.llmService.chat([
+                { role: 'user', content: improvementPrompt }
+            ], 'llama3', [], 'ollama'); // Using llama3 on Ollama as a safe default
+
+            return response.content.trim();
+        } catch (error) {
+            console.error('[LogoService] Prompt improvement failed:', error);
+            return prompt; // Fallback to original
+        }
+    }
+
     async generateLogo(projectPath: string, prompt: string, style: string): Promise<string> {
         console.log(`[LogoService] Generating logo for ${projectPath} with prompt: "${prompt}" and style: "${style}"`);
 
@@ -89,7 +107,7 @@ ${context}`;
         try {
             const response = await this.llmService.chat([
                 { role: 'user', content: enhancedPrompt }
-            ], 'antigravity-flux-schnell', [], 'antigravity');
+            ], 'antigravity-gemini-3-pro-image', [], 'antigravity'); // Updated as per user request
 
             if (response.images && response.images.length > 0) {
                 const tempPath = response.images[0];

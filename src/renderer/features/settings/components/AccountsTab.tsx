@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { RefreshCw, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AppSettings } from '../../../../shared/types'
@@ -11,7 +11,7 @@ import ollamaLogo from '@/assets/ollama.svg'
 
 interface AccountsTabProps {
     settings: AppSettings | null
-    authStatus: { codex: boolean; claude: boolean; antigravity: boolean }
+    authStatus: { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }
     authBusy: string | null
     authMessage: string
     isOllamaRunning: boolean
@@ -34,7 +34,12 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
 }) => {
     if (!settings) return null
 
-    const isCopilotConnected = Boolean(settings.copilot?.connected || settings.copilot?.token)
+    // Check Copilot connection: either from settings OR from auth file
+    const isCopilotConnected = Boolean(
+        settings.copilot?.connected || 
+        settings.copilot?.token || 
+        authStatus.copilot
+    )
     const isGitHubConnected = Boolean(settings.github?.token)
     const isCodexConnected = authStatus.codex
     const isClaudeConnected = authStatus.claude
