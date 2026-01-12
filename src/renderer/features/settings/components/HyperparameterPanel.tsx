@@ -1,6 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion } from '@/lib/framer-motion-compat'
 import { Settings2, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface HyperparameterPanelProps {

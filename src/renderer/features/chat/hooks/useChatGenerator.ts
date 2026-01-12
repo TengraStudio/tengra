@@ -1,0 +1,179 @@
+import { useState } from 'react'
+import { generateId } from '@/lib/utils'
+import { chatStream } from '@/lib/chat-stream'
+import { getSystemPrompt } from '@/lib/identity'
+import { Chat, Message, AppSettings, ToolDefinition } from '@/types'
+import { CatchError } from '../../../../shared/types/common'
+import { formatMessageContent, getPresetOptions, processStreamChunk } from './utils.ts'
+
+interface UseChatGeneratorProps {
+    chats: Chat[]
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>
+    appSettings?: AppSettings
+    selectedModel: string
+    selectedProvider: string
+    language: string
+    activeWorkspacePath?: string
+    projectId?: string
+    t: (key: string) => string
+    handleSpeak: (id: string, content: string) => void
+    autoReadEnabled: boolean
+    formatChatError: (err: CatchError) => string
+}
+
+interface PrepareMessagesOptions {
+    chatId: string
+    chats: Chat[]
+    userMessage: Message
+    appSettings: AppSettings | undefined
+    selectedModel: string
+    selectedProvider: string
+    language: string
+    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null
+}
+
+const prepareMessages = (options: PrepareMessagesOptions) => {
+    const { chatId, chats, userMessage, appSettings, selectedModel, selectedProvider, language, selectedPersona } = options
+    const dbRefChat = chats.find(c => c.id === chatId)
+    const contextMessages = (dbRefChat?.messages ?? []).slice(-15)
+
+    const chatMessages = [...contextMessages, userMessage].map((msg: Message) => ({
+        ...msg,
+        content: formatMessageContent(msg)
+    }))
+
+    const modelSettings = appSettings?.modelSettings ?? {}
+    const modelConfig = modelSettings[selectedModel] ?? {}
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    const systemPrompt = modelConfig.systemPrompt || getSystemPrompt(language as 'tr' | 'en', selectedPersona?.prompt, selectedProvider, selectedModel)
+    const systemMessage: Message = { role: 'system', content: systemPrompt, id: generateId(), timestamp: new Date() }
+
+    const presetOptions = getPresetOptions(appSettings, modelConfig)
+
+    return { allMessages: [systemMessage, ...chatMessages], presetOptions }
+}
+
+export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPersona?: { id: string, name: string, description: string, prompt: string } | null }) => {
+    const {
+        chats, setChats, appSettings, selectedModel, selectedProvider, language,
+        selectedPersona, activeWorkspacePath, projectId, t, handleSpeak,
+        autoReadEnabled, formatChatError
+    } = props
+
+    const [streamingStates, setStreamingStates] = useState<Record<string, { content: string, reasoning: string, speed: number | null }>>({})
+
+    const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string) => {
+        setStreamingStates(prev => ({ ...prev, [chatId]: { content: '', reasoning: '', speed: null } }))
+        const assistantId = generateId()
+        const activeModel = retryModel ?? selectedModel
+
+        try {
+            const allTools: ToolDefinition[] = await window.electron.getToolDefinitions()
+            const tools = allTools.filter((tDefinition) => {
+                if (selectedProvider === 'opencode') { return true }
+                return tDefinition.function.name === 'generate_image' && selectedProvider === 'antigravity'
+            })
+
+            const { allMessages, presetOptions } = prepareMessages({
+                chatId, chats, userMessage, appSettings, selectedModel: activeModel,
+                selectedProvider, language, selectedPersona
+            })
+
+            const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath }
+            const stream = chatStream(allMessages, activeModel, tools, selectedProvider, fullOptions, chatId, projectId)
+            const streamStartTime = performance.now()
+
+            // Initial placeholders
+            const tempMsg: Message = { id: assistantId, role: 'assistant', content: '', timestamp: new Date(), provider: selectedProvider, model: activeModel }
+            setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, tempMsg] } : c))
+
+            // Should be awaited or voided
+            void window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() })
+
+            interface StreamResult { finalContent: string; finalReasoning: string; finalSources: string[] }
+
+            const processStream = async (
+                stream: AsyncGenerator<unknown, void, unknown>,
+                chatId: string,
+                assistantId: string,
+                setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, { content: string, reasoning: string, speed: number | null, sources?: string[] }>>>,
+                streamStartTime: number
+            ): Promise<StreamResult> => {
+                let finalContent = ''
+                let finalReasoning = ''
+                let finalSources: string[] = []
+                let lastSaveTime = Date.now()
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                for await (const chunk of stream as AsyncGenerator<any, void, unknown>) {
+                    const current = { content: finalContent, reasoning: finalReasoning, sources: finalSources }
+                    const result = processStreamChunk(chunk, current, streamStartTime)
+
+                    if (result.updated) {
+                        if (result.newSources) {
+                            finalSources = result.newSources
+                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], sources: finalSources } }))
+                        }
+                        if (result.newReasoning) {
+                            finalReasoning = result.newReasoning
+                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], reasoning: finalReasoning } }))
+                        }
+                        if (result.newContent !== undefined) {
+                            finalContent = result.newContent
+                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], content: finalContent, speed: result.speed ?? null } }))
+                            if (Date.now() - lastSaveTime >= 2000 && finalContent) {
+                                lastSaveTime = Date.now()
+                                void window.electron.db.updateMessage(assistantId, { content: finalContent, reasoning: finalReasoning || undefined })
+                            }
+                        }
+                    }
+                }
+                return { finalContent, finalReasoning, finalSources }
+            }
+
+            const { finalContent, finalReasoning, finalSources } = await processStream(stream, chatId, assistantId, setStreamingStates, streamStartTime)
+
+            const responseTime = Math.round(performance.now() - streamStartTime)
+            const completedMsg: Message = {
+                id: assistantId, role: 'assistant', content: finalContent, reasoning: finalReasoning || undefined,
+                timestamp: new Date(), provider: selectedProvider, model: activeModel, responseTime, sources: finalSources
+            }
+
+            await window.electron.db.updateMessage(assistantId, { content: finalContent, reasoning: finalReasoning || undefined, responseTime, sources: finalSources })
+
+            setChats(prev => prev.map(c => {
+                if (c.id !== chatId) { return c }
+                let title = c.title
+                if (c.messages.length <= 1 && finalContent) {
+                    title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
+                }
+                return { ...c, title, messages: c.messages.map(m => m.id === assistantId ? completedMsg : m), isGenerating: false }
+            }))
+
+            if (autoReadEnabled && finalContent) { handleSpeak(assistantId, finalContent) }
+
+        } catch (e) {
+            console.error('[generateResponse] Error:', e)
+            const errText = formatChatError(e as CatchError)
+            const errMsg: Message = { id: generateId(), role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date() }
+            setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, errMsg] } : c))
+        } finally {
+            setStreamingStates(prev => { const s = { ...prev }; delete s[chatId]; return s })
+        }
+    }
+
+    const stopGeneration = async () => {
+        try {
+            window.electron.abortChat()
+            setStreamingStates({})
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    return {
+        streamingStates,
+        generateResponse,
+        stopGeneration
+    }
+}

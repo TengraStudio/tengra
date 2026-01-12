@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lightbulb } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { useTranslation } from '@/i18n';
 
 interface TipOfTheDayProps {

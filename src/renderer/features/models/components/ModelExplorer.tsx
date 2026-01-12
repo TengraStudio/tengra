@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { Search, Loader2, X, Box, Download, Database, Server, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'

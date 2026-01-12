@@ -1,0 +1,77 @@
+import React from 'react'
+import { Plus, Search, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
+interface SidebarHeaderProps {
+    isCollapsed: boolean
+    toggleSidebar: () => void
+    onChangeView: (view: any) => void
+}
+
+export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggleSidebar, onChangeView }) => (
+    <div className={cn("p-4 flex items-center justify-between", isCollapsed && "flex-col gap-4 px-2")}>
+        {!isCollapsed && (
+            <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onChangeView('chat')}>
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                    <span className="text-white font-black text-xs">O</span>
+                </div>
+                <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">ORBIT</span>
+            </div>
+        )}
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 hover:bg-muted/10 text-muted-foreground hover:text-foreground transition-colors"
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+            {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+        </Button>
+    </div>
+)
+
+interface SidebarNewChatButtonProps {
+    isCollapsed: boolean
+    handleNewChat: () => void
+    t: (key: string) => string
+}
+
+export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({ isCollapsed, handleNewChat, t }) => (
+    <div className={cn("px-4 mb-4", isCollapsed && "px-2")}>
+        <Button
+            onClick={handleNewChat}
+            className={cn(
+                "w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold uppercase tracking-wider h-10 group overflow-hidden relative",
+                isCollapsed ? "p-0 rounded-xl" : "rounded-xl px-4"
+            )}
+            title={t('sidebar.newChat')}
+        >
+            <Plus className={cn("w-4 h-4 transition-transform group-hover:rotate-90", !isCollapsed && "mr-2")} />
+            {!isCollapsed && <span className="animate-in fade-in slide-in-from-left-2">{t('sidebar.newChat')}</span>}
+            {!isCollapsed && (
+                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skewed-highlight" />
+            )}
+        </Button>
+    </div>
+)
+
+interface SidebarFooterProps {
+    isCollapsed: boolean
+    onSearch?: () => void
+}
+
+export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSearch }) => {
+    if (isCollapsed) return null
+    return (
+        <div className="p-4 border-t border-border/20 bg-muted/5">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest px-1">
+                <span>V 1.2.0</span>
+                <div className="flex items-center gap-2">
+                    <Search className="w-3 h-3 hover:text-primary cursor-pointer transition-colors" onClick={onSearch} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                </div>
+            </div>
+        </div>
+    )
+}

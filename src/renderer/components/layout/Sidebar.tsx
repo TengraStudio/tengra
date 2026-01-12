@@ -7,15 +7,17 @@ import {
     Plus, Settings, ChevronLeft, ChevronRight,
     Trash2, Search, MessageSquare, Rocket, ChevronDown,
     LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
-    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin, TrendingUp
+    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin, TrendingUp,
+    Users, Plug, Container, Sparkles, Brain
 } from 'lucide-react'
-import { useState, useEffect, useRef, ChangeEvent, type ComponentType } from 'react'
+import React, { useState, useEffect, useRef, ChangeEvent, type ComponentType } from 'react'
 import { useTranslation } from '@/i18n'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
 import { useProject } from '@/context/ProjectContext'
 import { SettingsCategory } from '@/features/settings/types'
+import { SidebarSection, SidebarMenuItem, SidebarDivider, SidebarStatusIndicator } from './sidebar-components'
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -52,7 +54,7 @@ const SettingsMenuItem = ({
     </button>
 )
 
-export function Sidebar({
+export const Sidebar = React.memo(function Sidebar({
     onOpenSettings,
     isCollapsed,
     toggleSidebar,
@@ -192,19 +194,19 @@ export function Sidebar({
         <>
             <aside
                 className={cn(
-                    "flex flex-col h-full z-30 relative overflow-hidden transition-all duration-300 border-r border-border/40 bg-background/60 backdrop-blur-2xl shadow-xl",
-                    isCollapsed ? "w-[72px]" : "w-[280px]"
+                    "flex flex-col h-full w-full z-30 relative overflow-hidden transition-all duration-300 border-r border-border/40 bg-background/60 backdrop-blur-2xl shadow-xl"
                 )}
             >
                 {/* Top Navigation Section */}
                 <div className="flex flex-col gap-1 p-4 pb-2">
+                    {/* New Chat Button */}
                     <Button
                         onClick={() => {
                             onChangeView('chat')
                             createNewChat()
                         }}
                         className={cn(
-                            "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
+                            "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
                             !isCollapsed && "px-4 w-full"
                         )}
                     >
@@ -212,89 +214,219 @@ export function Sidebar({
                         {!isCollapsed && <span>{t('sidebar.newChat')}</span>}
                     </Button>
 
-                    <div className="space-y-1">
+                    {/* Workspace Section */}
+                    {!isCollapsed ? (
+                        <SidebarSection
+                            id="workspace"
+                            title={t('sidebar.workspace') || 'Workspace'}
+                            icon={<FolderIcon className="w-3.5 h-3.5" />}
+                            defaultExpanded={true}
+                            badge={chats.length + (selectedProject ? 1 : 0)}
+                        >
+                            <SidebarMenuItem
+                                id="chats"
+                                icon={<MessageSquare className="w-4 h-4" />}
+                                label={t('sidebar.chats') || 'Chats'}
+                                onClick={() => onChangeView('chat')}
+                                isActive={currentView === 'chat'}
+                                badge={chats.length}
+                            />
+                            <SidebarMenuItem
+                                id="projects"
+                                icon={<Rocket className="w-4 h-4" />}
+                                label={t('sidebar.projects')}
+                                onClick={() => onChangeView('projects')}
+                                isActive={currentView === 'projects'}
+                                status={selectedProject ? 'online' : undefined}
+                                statusLabel={selectedProject ? 'Active' : undefined}
+                            />
+                            <SidebarMenuItem
+                                id="council"
+                                icon={<Users className="w-4 h-4" />}
+                                label={t('sidebar.council') || 'Agent Council'}
+                                onClick={() => onChangeView('council')}
+                                isActive={currentView === 'council'}
+                                status="online"
+                                statusLabel="Ready"
+                            />
+                            <SidebarMenuItem
+                                id="prompts"
+                                icon={<Book className="w-4 h-4" />}
+                                label={t('sidebar.prompts')}
+                                onClick={() => setShowPrompts(true)}
+                                badge={prompts?.length}
+                            />
+                        </SidebarSection>
+                    ) : (
+                        <div className="space-y-1">
+                            <Button
+                                variant="ghost"
+                                onClick={() => onChangeView('chat')}
+                                className={cn("nav-item justify-center", currentView === 'chat' && "nav-item-active")}
+                                title={t('sidebar.chats') || 'Chats'}
+                            >
+                                <MessageSquare className="w-4 h-4 shrink-0" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => onChangeView('projects')}
+                                className={cn("nav-item justify-center", currentView === 'projects' && "nav-item-active")}
+                                title={t('sidebar.projects')}
+                            >
+                                <Rocket className="w-4 h-4 shrink-0" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => onChangeView('council')}
+                                className={cn("nav-item justify-center", currentView === 'council' && "nav-item-active")}
+                                title={t('sidebar.council') || 'Agent Council'}
+                            >
+                                <Users className="w-4 h-4 shrink-0" />
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Tools Section */}
+                    {!isCollapsed && (
+                        <SidebarSection
+                            id="tools"
+                            title={t('sidebar.tools') || 'Tools'}
+                            icon={<Plug className="w-3.5 h-3.5" />}
+                            defaultExpanded={false}
+                            badge={3}
+                        >
+                            <SidebarMenuItem
+                                id="mcp"
+                                icon={<Plug className="w-4 h-4" />}
+                                label="MCP Services"
+                                description="Model Context Protocol"
+                                onClick={() => onChangeView('mcp')}
+                                isActive={currentView === 'mcp'}
+                                status="online"
+                                statusLabel="3/3"
+                            />
+                            <SidebarMenuItem
+                                id="docker"
+                                icon={<Container className="w-4 h-4" />}
+                                label="Docker"
+                                description="Container management"
+                                onClick={() => { /* TODO: Add Docker view */ }}
+                                status="idle"
+                            />
+                            <SidebarMenuItem
+                                id="terminal"
+                                icon={<Terminal className="w-4 h-4" />}
+                                label="Terminal"
+                                description="Command line access"
+                                onClick={() => { /* TODO: Add Terminal */ }}
+                            />
+                        </SidebarSection>
+                    )}
+
+                    {/* AI Providers Section */}
+                    {!isCollapsed && (
+                        <SidebarSection
+                            id="ai-providers"
+                            title={t('sidebar.aiProviders') || 'AI Providers'}
+                            icon={<Sparkles className="w-3.5 h-3.5" />}
+                            defaultExpanded={false}
+                            badge={4}
+                        >
+                            <SidebarMenuItem
+                                id="ollama"
+                                icon={<Brain className="w-4 h-4" />}
+                                label="Ollama"
+                                description="Local models"
+                                onClick={() => onOpenSettings('models' as SettingsCategory)}
+                                status="online"
+                                statusLabel="Running"
+                            />
+                            <SidebarMenuItem
+                                id="openai"
+                                icon={<Sparkles className="w-4 h-4" />}
+                                label="OpenAI"
+                                description="GPT-4, GPT-4o"
+                                onClick={() => onOpenSettings('models' as SettingsCategory)}
+                                status="online"
+                            />
+                            <SidebarMenuItem
+                                id="anthropic"
+                                icon={<Brain className="w-4 h-4" />}
+                                label="Anthropic"
+                                description="Claude 3.5"
+                                onClick={() => onOpenSettings('models' as SettingsCategory)}
+                                status="online"
+                            />
+                            <SidebarMenuItem
+                                id="copilot"
+                                icon={<Cpu className="w-4 h-4" />}
+                                label="GitHub Copilot"
+                                description="Code completion"
+                                onClick={() => onOpenSettings('accounts' as SettingsCategory)}
+                                status="online"
+                                statusLabel="Active"
+                            />
+                        </SidebarSection>
+                    )}
+
+                    {/* Settings Section - KEEPING EXACTLY AS IS */}
+                    {isCollapsed ? (
                         <Button
                             variant="ghost"
-                            onClick={() => onChangeView('projects')}
+                            onClick={() => onOpenSettings()}
                             className={cn(
-                                "nav-item",
-                                currentView === 'projects' && "nav-item-active"
+                                "nav-item justify-center",
+                                currentView === 'settings' && "nav-item-active"
                             )}
+                            title={t('sidebar.settings')}
                         >
-                            <Rocket className="w-4 h-4 shrink-0" />
-                            {!isCollapsed && <span>{t('sidebar.projects')}</span>}
+                            <Settings className="w-4 h-4 shrink-0" />
                         </Button>
-
-                        {!isCollapsed && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowPrompts(true)}
-                                className={cn("nav-item", "w-full justify-start text-xs text-muted-foreground hover:text-foreground h-8 px-2", showPrompts && "nav-item-active")}
-                            >
-                                <Book className="w-4 h-4 mr-2 opacity-60" />
-                                {!isCollapsed && <span>{t('sidebar.prompts')}</span>}
-                            </Button>
-                        )}
-
-                        {/* Integrated Settings Menu */}
-                        {isCollapsed ? (
-                            <Button
-                                variant="ghost"
-                                onClick={() => onOpenSettings()}
+                    ) : (
+                        <div className="flex flex-col">
+                            <button
+                                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                                 className={cn(
-                                    "nav-item",
-                                    currentView === 'council' && "nav-item-active"
+                                    "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full group",
+                                    currentView === 'settings' ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
                                 )}
                             >
-                                <UserCircle className="w-4 h-4 shrink-0" />
-                            </Button>
-                        ) : (
-                            <div className="flex flex-col">
-                                <button
-                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                                    className={cn(
-                                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full group",
-                                        currentView === 'settings' ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-                                        <span>{t('sidebar.settings')}</span>
-                                    </div>
-                                    <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isSettingsOpen && "rotate-180")} />
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                                    <span>{t('sidebar.settings')}</span>
+                                </div>
+                                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isSettingsOpen && "rotate-180")} />
+                            </button>
 
-                                <AnimatePresence>
-                                    {isSettingsOpen && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="ml-2 pl-2 border-l border-border/30 space-y-0.5">
-                                                {['general', 'accounts', 'models', 'usage-limits', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
-                                                    <SettingsMenuItem
-                                                        key={id}
-                                                        id={id}
-                                                        icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : id === 'usage-limits' ? TrendingUp : LayoutGrid}
-                                                        label={t(`settings.${id}`)}
-                                                        isActive={currentView === 'settings' && settingsCategory === id}
-                                                        onClick={() => { const category = id as SettingsCategory; onOpenSettings(category); if (setSettingsCategory) setSettingsCategory(category) }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        )}
-                    </div>
+                            <AnimatePresence>
+                                {isSettingsOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="ml-2 pl-2 border-l border-border/30 space-y-0.5">
+                                            {['general', 'accounts', 'models', 'usage-limits', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
+                                                <SettingsMenuItem
+                                                    key={id}
+                                                    id={id}
+                                                    icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : id === 'usage-limits' ? TrendingUp : LayoutGrid}
+                                                    label={t(`settings.${id}`)}
+                                                    isActive={currentView === 'settings' && settingsCategory === id}
+                                                    onClick={() => { const category = id as SettingsCategory; onOpenSettings(category); if (setSettingsCategory) setSettingsCategory(category) }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </div>
 
                 {/* Separator */}
-                <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mx-4 my-2" />
+                <SidebarDivider />
 
                 {/* Chat List Section */}
                 <div className="flex-1 flex flex-col min-h-0">
@@ -303,6 +435,9 @@ export function Sidebar({
                             <div className="flex items-center gap-2 mb-2 px-1">
                                 <History className="w-3.5 h-3.5 text-muted-foreground/60" />
                                 <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">{t('sidebar.history')}</span>
+                                {chats.length > 0 && (
+                                    <span className="ml-auto text-[10px] text-muted-foreground/40">{chats.length}</span>
+                                )}
                             </div>
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
@@ -363,14 +498,14 @@ export function Sidebar({
                         </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto px-3 space-y-6 custom-scrollbar py-2">
+                    <div className="flex-1 overflow-y-auto px-3 space-y-4 custom-scrollbar py-2 sidebar-scroll">
                         {isLoading ? (
                             <div className="space-y-4 pt-2">
                                 {[1, 2, 3].map(i => (
                                     <div key={i} className="flex flex-col gap-2 px-2 animate-pulse">
-                                        {!isCollapsed && <div className="h-3 w-16 bg-muted/20 rounded" />}
-                                        <div className={cn("h-10 rounded-md bg-muted/20 w-full", isCollapsed && "h-10 w-10 mx-auto")} />
-                                        {!isCollapsed && <div className="h-10 rounded-md bg-muted/20 w-full" />}
+                                        {!isCollapsed && <div className="h-3 w-16 bg-muted/20 rounded sidebar-skeleton" />}
+                                        <div className={cn("h-10 rounded-md bg-muted/20 w-full sidebar-skeleton", isCollapsed && "h-10 w-10 mx-auto")} />
+                                        {!isCollapsed && <div className="h-10 rounded-md bg-muted/20 w-full sidebar-skeleton" />}
                                     </div>
                                 ))}
                             </div>
@@ -383,10 +518,11 @@ export function Sidebar({
                                             <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center gap-2">
                                                 <Pin className="w-3 h-3" />
                                                 <span>{t('sidebar.pinned') || 'Pinned'}</span>
+                                                <span className="ml-auto text-muted-foreground/20">{pinnedChats.length}</span>
                                             </div>
                                         )}
                                         {pinnedChats.map(chat => (
-                                            <div key={chat.id} className="relative group">
+                                            <div key={chat.id} className="relative group chat-item">
                                                 <button
                                                     onClick={() => {
                                                         onChangeView('chat')
@@ -405,7 +541,7 @@ export function Sidebar({
                                                 </button>
                                                 {/* Unpin Action */}
                                                 {!isCollapsed && (
-                                                    <div className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2">
+                                                    <div className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 transition-opacity">
                                                         <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10">
                                                             <Pin className="w-3 h-3 fill-current" />
                                                         </div>
@@ -413,7 +549,7 @@ export function Sidebar({
                                                 )}
                                             </div>
                                         ))}
-                                        <div className="h-px bg-border/30 mx-2 my-2" />
+                                        <SidebarDivider spacing="sm" />
                                     </div>
                                 )}
 
@@ -450,6 +586,10 @@ export function Sidebar({
                                                 ) : (
                                                     <span className="text-xs font-medium truncate select-none">{folder.name}</span>
                                                 )}
+                                                
+                                                <span className="text-[10px] text-muted-foreground/40">
+                                                    {chats.filter(c => c.folderId === folder.id).length}
+                                                </span>
                                             </div>
 
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -487,7 +627,7 @@ export function Sidebar({
                                                     {chats.filter(c => c.folderId === folder.id).map(chat => (
                                                         <div
                                                             key={chat.id}
-                                                            className="group flex items-center gap-1"
+                                                            className="group flex items-center gap-1 chat-item"
                                                         >
                                                             <button
                                                                 onClick={() => {
@@ -543,11 +683,12 @@ export function Sidebar({
                                         <div key={category} className="space-y-1 mt-2">
                                             {!isCollapsed && (
                                                 <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center justify-between group/cat">
-                                                    {category}
+                                                    <span>{category}</span>
+                                                    <span className="text-muted-foreground/20">{categoryChats.length}</span>
                                                 </div>
                                             )}
                                             {categoryChats.map(chat => (
-                                                <div key={chat.id} className="relative group">
+                                                <div key={chat.id} className="relative group chat-item">
                                                     <button
                                                         onClick={() => {
                                                             onChangeView('chat')
@@ -646,7 +787,7 @@ export function Sidebar({
                         <div className="px-3 py-2 bg-muted/20 rounded-md border border-border/40 mb-1">
                             <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">Project</div>
                             <div className="text-xs font-medium truncate flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <SidebarStatusIndicator status="online" size="sm" />
                                 {selectedProject.title}
                             </div>
                         </div>
@@ -673,6 +814,4 @@ export function Sidebar({
             />
         </>
     )
-}
-
-
+})

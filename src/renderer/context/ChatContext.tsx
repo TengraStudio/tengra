@@ -1,10 +1,12 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useEffect } from 'react'
+import React from 'react'
 import { useChatManager } from '../features/chat/hooks/useChatManager'
 import { useAuth } from './AuthContext'
 import { useModel } from './ModelContext'
 import { useTextToSpeech } from '../features/chat/hooks/useTextToSpeech'
 import { useTranslation } from '../i18n'
 import { useProjectManager } from '../features/projects/hooks/useProjectManager'
+import { useChatHistory } from '../features/chat/hooks/useChatHistory'
 import { Project } from '@/types'
 import { CatchError } from '../../shared/types/common'
 
@@ -19,6 +21,11 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     selectedProject: Project | null
     setSelectedProject: (p: Project | null) => void
     loadProjects: () => Promise<void>
+    // Undo/Redo
+    canUndo: boolean
+    canRedo: boolean
+    undo: () => void
+    redo: () => void
 }
 
 const ChatContext = createContext<ChatContextType | null>(null)
@@ -34,6 +41,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } = useProjectManager()
 
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech()
+
+    // Chat History Manager for undo/redo
+    const historyManager = useChatHistory()
 
     const chatManager = useChatManager({
         selectedModel,
@@ -71,6 +81,55 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         activeWorkspacePath: selectedProject?.path
     })
 
+    // Track if we're currently restoring from history to avoid saving during undo/redo
+    const isRestoringRef = React.useRef(false)
+
+    // Save state to history when chats or currentChatId changes (but not during undo/redo)
+    useEffect(() => {
+        if (isRestoringRef.current) {
+            isRestoringRef.current = false
+            return
+        }
+        if (chatManager.chats && chatManager.chats.length >= 0) {
+            historyManager.saveState(chatManager.chats, chatManager.currentChatId)
+        }
+    }, [chatManager.chats, chatManager.currentChatId])
+
+    // Handle undo/redo keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const activeTag = document.activeElement?.tagName.toLowerCase()
+            // Don't trigger undo/redo in input fields
+            if (activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable) {
+                return
+            }
+
+            // Ctrl+Z or Cmd+Z for undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault()
+                isRestoringRef.current = true
+                const state = historyManager.undo()
+                if (state) {
+                    chatManager.setChats(state.chats)
+                    chatManager.setCurrentChatId(state.currentChatId)
+                }
+            }
+            // Ctrl+Shift+Z or Cmd+Shift+Z for redo (or Ctrl+Y)
+            if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+                e.preventDefault()
+                isRestoringRef.current = true
+                const state = historyManager.redo()
+                if (state) {
+                    chatManager.setChats(state.chats)
+                    chatManager.setCurrentChatId(state.currentChatId)
+                }
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [historyManager, chatManager])
+
     const value = {
         ...chatManager,
         handleSpeak,
@@ -80,7 +139,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         projects,
         selectedProject,
         setSelectedProject,
-        loadProjects
+        loadProjects,
+        canUndo: historyManager.canUndo,
+        canRedo: historyManager.canRedo,
+        undo: () => {
+            isRestoringRef.current = true
+            const state = historyManager.undo()
+            if (state) {
+                chatManager.setChats(state.chats)
+                chatManager.setCurrentChatId(state.currentChatId)
+            }
+        },
+        redo: () => {
+            isRestoringRef.current = true
+            const state = historyManager.redo()
+            if (state) {
+                chatManager.setChats(state.chats)
+                chatManager.setCurrentChatId(state.currentChatId)
+            }
+        }
     }
 
     return (

@@ -1,6 +1,6 @@
-﻿import React, { useState, memo } from 'react'
+import React, { useState, memo } from 'react'
 import { useTranslation } from '@/i18n'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { Plus, Calendar, Search, Terminal, ArrowRight, Monitor, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'

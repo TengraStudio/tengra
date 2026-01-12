@@ -64,6 +64,17 @@ export function registerChatIpc(options: {
      * OpenAI-compatible chat handler
      */
     ipcMain.handle('chat:openai', createIpcHandler('chat:openai', async (_event: IpcMainInvokeEvent, messages: Message[], model: string, tools: ToolDefinition[] | undefined, provider: string, projectId?: string) => {
+        // Validate inputs
+        if (!Array.isArray(messages) || messages.length === 0) {
+            throw new Error('Messages must be a non-empty array');
+        }
+        if (!model || typeof model !== 'string') {
+            throw new Error('Model must be a non-empty string');
+        }
+        if (!provider || typeof provider !== 'string') {
+            throw new Error('Provider must be a non-empty string');
+        }
+
         // Sanitize inputs
         const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false })
         const sanitizedProvider = sanitizeString(provider, { maxLength: 50, allowNewlines: false })
@@ -130,8 +141,15 @@ export function registerChatIpc(options: {
 
         console.log(`[Main] Chat Request: Model=${sanitizedModel}, Provider=${sanitizedProvider}`)
 
-        // Sanitize tools if provided
-        const sanitizedTools = tools ? sanitizeObject(tools) : undefined
+        // Sanitize tools if provided (tools is an array, not an object)
+        const sanitizedTools: ToolDefinition[] | undefined = tools ? tools.map(tool => ({
+            type: tool.type,
+            function: {
+                name: tool.function.name,
+                description: tool.function.description,
+                parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters as Record<string, unknown>) as JsonObject : undefined
+            }
+        })) : undefined
 
         // 1. Copilot Routing
         if (sanitizedProvider === 'copilot') {
@@ -157,169 +175,280 @@ export function registerChatIpc(options: {
         return { content, reasoning, images, role: 'assistant', sources };
     }))
 
-    ipcMain.handle('chat:stream', async (event: IpcMainInvokeEvent, messages: Message[], model: string, tools: ToolDefinition[] | undefined, provider: string, _options: JsonObject | undefined, chatId: string, projectId?: string) => {
-        // Sanitize inputs
-        const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false })
-        const sanitizedProvider = sanitizeString(provider, { maxLength: 50, allowNewlines: false })
-        const sanitizedChatId = sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
-        const sanitizedProjectId = projectId ? sanitizeString(projectId, { maxLength: 100, allowNewlines: false }) : undefined
+    /**
+     * Sanitizes and validates stream input parameters
+     */
+    function sanitizeStreamInputs(
+        messages: Message[],
+        model: string,
+        provider: string,
+        chatId: string,
+        projectId?: string
+    ): { sanitizedModel: string; sanitizedProvider: string; sanitizedChatId: string; sanitizedProjectId?: string; sanitizedMessages: Message[] } {
+        if (!Array.isArray(messages) || messages.length === 0) {
+            throw new Error('Messages must be a non-empty array');
+        }
+        if (!model || typeof model !== 'string') {
+            throw new Error('Model must be a non-empty string');
+        }
+        if (!provider || typeof provider !== 'string') {
+            throw new Error('Provider must be a non-empty string');
+        }
+        if (!chatId || typeof chatId !== 'string') {
+            throw new Error('ChatId must be a non-empty string');
+        }
 
-        // Sanitize messages
+        const sanitizedModel = sanitizeString(model, { maxLength: 200, allowNewlines: false });
+        const sanitizedProvider = sanitizeString(provider, { maxLength: 50, allowNewlines: false });
+        const sanitizedChatId = sanitizeString(chatId, { maxLength: 100, allowNewlines: false });
+        const sanitizedProjectId = projectId ? sanitizeString(projectId, { maxLength: 100, allowNewlines: false }) : undefined;
+
         const sanitizedMessages = messages.map(msg => {
             if (typeof msg.content === 'string') {
-                return { ...msg, content: sanitizeString(msg.content, { maxLength: 1000000, allowNewlines: true }) }
+                return { ...msg, content: sanitizeString(msg.content, { maxLength: 1000000, allowNewlines: true }) };
             } else if (Array.isArray(msg.content)) {
                 return {
                     ...msg,
                     content: msg.content.map(item => {
                         if (item.type === 'text' && typeof item.text === 'string') {
-                            return { ...item, text: sanitizeString(item.text, { maxLength: 1000000, allowNewlines: true }) }
+                            return { ...item, text: sanitizeString(item.text, { maxLength: 1000000, allowNewlines: true }) };
                         }
-                        return item
+                        return item;
                     })
-                }
+                };
             }
-            return msg
-        })
+            return msg;
+        });
 
-        const settings = settingsService.getSettings()
-        chatQueueManager.setPolicy(settings.ollama?.orchestrationPolicy || 'auto')
+        return { sanitizedModel, sanitizedProvider, sanitizedChatId, sanitizedProjectId, sanitizedMessages };
+    }
 
-        // --- RAG: Context retrieval ---
-        // --- RAG: Context retrieval ---
-        if (sanitizedProjectId && sanitizedMessages.length > 0) {
-            const lastMessage = sanitizedMessages[sanitizedMessages.length - 1];
-            if (lastMessage.role === 'user') {
-                try {
-                    const query = typeof lastMessage.content === 'string'
-                        ? lastMessage.content
-                        : (Array.isArray(lastMessage.content) ? lastMessage.content.find(p => p.type === 'text')?.text || '' : '');
-
-                    if (query) {
-                        const { contextString, sources } = await contextRetrievalService.retrieveContext(query, sanitizedProjectId);
-
-                        if (contextString) {
-                            const ragPrompt = `\n\nRetrieved Context:\n${contextString}`;
-
-                            // Emit metadata to frontend
-                            event.sender.send('chat:stream-chunk', { chatId: sanitizedChatId, type: 'metadata', sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false })) });
-
-                            const systemIdx = sanitizedMessages.findIndex((m) => m.role === 'system');
-                            if (systemIdx !== -1) {
-                                const currentContent = typeof sanitizedMessages[systemIdx].content === 'string' ? sanitizedMessages[systemIdx].content : '';
-                                sanitizedMessages[systemIdx].content = currentContent + ragPrompt;
-                            } else {
-                                sanitizedMessages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
-                            }
-                        }
-                    }
-                } catch (ragErr) { console.error('[RAG] Retrieval failed:', ragErr); }
-            }
+    /**
+     * Injects RAG context into messages for streaming
+     */
+    async function injectRAGContextForStream(
+        messages: Message[],
+        projectId: string | undefined,
+        chatId: string,
+        event: IpcMainInvokeEvent
+    ): Promise<Message[]> {
+        if (!projectId || messages.length === 0) {
+            return messages;
         }
 
-        const finalMessages = injectSystemPrompt(sanitizedMessages, sanitizedProvider, sanitizedModel);
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.role !== 'user') {
+            return messages;
+        }
 
-        const executeGeneration = async () => {
+        try {
+            const query = typeof lastMessage.content === 'string'
+                ? lastMessage.content
+                : (Array.isArray(lastMessage.content) ? lastMessage.content.find(p => p.type === 'text')?.text || '' : '');
+
+            if (!query) {
+                return messages;
+            }
+
+            const { contextString, sources } = await contextRetrievalService.retrieveContext(query, projectId);
+
+            if (!contextString) {
+                return messages;
+            }
+
+            const ragPrompt = `\n\nRetrieved Context:\n${contextString}`;
+
+            // Emit metadata to frontend
+            event.sender.send('chat:stream-chunk', {
+                chatId,
+                type: 'metadata',
+                sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false }))
+            });
+
+            const systemIdx = messages.findIndex((m) => m.role === 'system');
+            if (systemIdx !== -1) {
+                const currentContent = typeof messages[systemIdx].content === 'string' ? messages[systemIdx].content : '';
+                messages[systemIdx].content = currentContent + ragPrompt;
+            } else {
+                messages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
+            }
+        } catch (ragErr) {
+            console.error('[RAG] Retrieval failed:', ragErr);
+        }
+
+        return messages;
+    }
+
+    /**
+     * Handles Copilot streaming response
+     */
+    async function handleCopilotStream(
+        streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>,
+        chatId: string,
+        event: IpcMainInvokeEvent
+    ): Promise<void> {
+        const MAX_STREAM_ITERATIONS = 10000;
+
+        if ('getReader' in streamBody && typeof (streamBody as ReadableStream<Uint8Array>).getReader === 'function') {
+            const reader = (streamBody as ReadableStream<Uint8Array>).getReader();
+            const decoder = new TextDecoder();
+            let iterations = 0;
+
+            try {
+                while (iterations < MAX_STREAM_ITERATIONS) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    iterations++;
+
+                    const decoded = decoder.decode(value, { stream: true });
+                    const lines = decoded.split('\n');
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed || !trimmed.startsWith('data:')) continue;
+
+                        const data = trimmed.slice(5).trim();
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data) as JsonObject;
+                            const choices = Array.isArray(json['choices']) ? json['choices'] as JsonObject[] : [];
+                            const delta = choices[0]?.['delta'] as JsonObject | undefined;
+
+                            if (delta) {
+                                const content = delta.content || '';
+                                const reasoning = delta.reasoning_content || delta.reasoning || '';
+                                if (content || reasoning) {
+                                    event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                                }
+                            }
+                        } catch (err) {
+                            console.error('[CopilotStream] Parse error:', err);
+                        }
+                    }
+                }
+
+                if (iterations >= MAX_STREAM_ITERATIONS) {
+                    throw new Error('Stream processing exceeded maximum iterations');
+                }
+            } finally {
+                reader.releaseLock();
+            }
+        } else {
+            // Handle AsyncIterable
+            for await (const chunk of streamBody as AsyncIterable<Uint8Array>) {
+                const decoded = chunk.toString();
+                const lines = decoded.split('\n');
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith('data:')) continue;
+
+                    const data = trimmed.slice(5).trim();
+                    if (data === '[DONE]') continue;
+
+                    try {
+                        const json = JSON.parse(data) as JsonObject;
+                        const choices = Array.isArray(json.choices) ? json.choices as JsonObject[] : [];
+                        const delta = choices[0]?.delta as JsonObject | undefined;
+
+                        if (delta) {
+                            const content = delta.content || '';
+                            const reasoning = delta.reasoning_content || delta.reasoning || '';
+                            if (content || reasoning) {
+                                event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('[CopilotStream] Buffer Parse error:', err);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles proxy/ollama streaming response
+     */
+    async function handleProxyStream(
+        messages: Message[],
+        model: string,
+        tools: ToolDefinition[] | undefined,
+        provider: string,
+        chatId: string,
+        event: IpcMainInvokeEvent
+    ): Promise<void> {
+        const settings = settingsService.getSettings();
+        let proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1';
+        let proxyKey = proxyService.getProxyKey();
+
+        if (provider === 'ollama') {
+            const ollamaUrl = settings.ollama?.url || 'http://localhost:11434';
+            proxyUrl = `${ollamaUrl.replace(/\/$/, '')}/v1`;
+            proxyKey = 'ollama';
+        }
+
+        const sanitizedTools: ToolDefinition[] | undefined = tools ? tools.map(tool => ({
+            type: tool.type,
+            function: {
+                name: tool.function.name,
+                description: tool.function.description,
+                parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters as Record<string, unknown>) as JsonObject : undefined
+            }
+        })) : undefined;
+
+        for await (const chunk of llmService.chatOpenAIStream(messages, model, sanitizedTools, proxyUrl, proxyKey)) {
+            event.sender.send('ollama:streamChunk', { ...chunk, chatId });
+        }
+    }
+
+    ipcMain.handle('chat:stream', async (event: IpcMainInvokeEvent, messages: Message[], model: string, tools: ToolDefinition[] | undefined, provider: string, _options: JsonObject | undefined, chatId: string, projectId?: string) => {
+        const { sanitizedModel, sanitizedProvider, sanitizedChatId, sanitizedProjectId, sanitizedMessages } = sanitizeStreamInputs(messages, model, provider, chatId, projectId);
+
+        const settings = settingsService.getSettings();
+        chatQueueManager.setPolicy(settings.ollama?.orchestrationPolicy || 'auto');
+
+        let finalMessages = await injectRAGContextForStream(sanitizedMessages, sanitizedProjectId, sanitizedChatId, event);
+        finalMessages = injectSystemPrompt(finalMessages, sanitizedProvider, sanitizedModel);
+
+        const executeGeneration = async (): Promise<void> => {
             try {
                 console.log(`[Main:ChatStream] Request: Model=${sanitizedModel}, Provider=${sanitizedProvider}, ChatID=${sanitizedChatId}`);
 
-                // Sanitize tools if provided
-                const sanitizedTools = tools ? sanitizeObject(tools) : undefined
-
-                // 1. Copilot Routing
                 if (sanitizedProvider === 'copilot') {
-                    // CopilotService expects shared Message[]
+                    const sanitizedTools: ToolDefinition[] | undefined = tools ? tools.map(tool => ({
+                        type: tool.type,
+                        function: {
+                            name: tool.function.name,
+                            description: tool.function.description,
+                            parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters as Record<string, unknown>) as JsonObject : undefined
+                        }
+                    })) : undefined;
                     const body = await copilotService.streamChat(finalMessages, sanitizedModel, sanitizedTools);
                     if (!body) throw new Error('Failed to start Copilot stream');
-                    const streamBody = body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
-                    if ('getReader' in streamBody && typeof (streamBody as ReadableStream<Uint8Array>).getReader === 'function') {
-                        const reader = (streamBody as ReadableStream<Uint8Array>).getReader();
-                        const decoder = new TextDecoder();
-                        try {
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) break;
-                                const decoded = decoder.decode(value, { stream: true });
-                                const lines = decoded.split('\n');
-                                for (const line of lines) {
-                                    const trimmed = line.trim();
-                                    if (!trimmed || !trimmed.startsWith('data:')) continue;
-                                    const data = trimmed.slice(5).trim();
-                                    if (data === '[DONE]') continue;
-                                    try {
-                                        const json = JSON.parse(data) as JsonObject;
-                                        const choices = Array.isArray(json['choices']) ? json['choices'] as JsonObject[] : [];
-                                        const delta = choices[0]?.['delta'] as JsonObject | undefined;
-                                        if (delta) {
-                                            const content = delta.content || '';
-                                            const reasoning = delta.reasoning_content || delta.reasoning || '';
-                                            if (content || reasoning) {
-                                                event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, content, reasoning });
-                                            }
-                                        }
-                                    } catch (err) {
-                                        console.error('[CopilotStream] Parse error:', err);
-                                    }
-                                }
-                            }
-                        } finally { reader.releaseLock(); }
-                    } else {
-                        // Assume AsyncIterable if getReader is not present
-                        for await (const chunk of streamBody as AsyncIterable<Uint8Array>) {
-                            const decoded = chunk.toString();
-                            const lines = decoded.split('\n');
-                            for (const line of lines) {
-                                const trimmed = line.trim();
-                                if (!trimmed || !trimmed.startsWith('data:')) continue;
-                                const data = trimmed.slice(5).trim();
-                                if (data === '[DONE]') continue;
-                                try {
-                                    const json = JSON.parse(data);
-                                    const choices = Array.isArray(json.choices) ? json.choices : [];
-                                    const delta = choices[0]?.delta;
-                                    if (delta) {
-                                        const content = delta.content || '';
-                                        const reasoning = delta.reasoning_content || delta.reasoning || '';
-                                        if (content || reasoning) {
-                                            event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, content, reasoning });
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.error('[CopilotStream] Buffer Parse error:', err);
-                                }
-                            }
-                        }
-                    }
+                    await handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitizedChatId, event);
                     return;
                 }
 
-                // 2. Ollama & Cliproxy Routing
-                let proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
-                let proxyKey = proxyService.getProxyKey()
-
-                if (sanitizedProvider === 'ollama') {
-                    const ollamaUrl = settings.ollama?.url || 'http://localhost:11434'
-                    proxyUrl = `${ollamaUrl.replace(/\/$/, '')}/v1`
-                    proxyKey = 'ollama'
-                }
-
-                // 3. LLMService (Cliproxy) for all others
-                for await (const chunk of llmService.chatOpenAIStream(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey)) {
-                    event.sender.send('ollama:streamChunk', { ...chunk, chatId: sanitizedChatId });
-                }
+                await handleProxyStream(finalMessages, sanitizedModel, tools, sanitizedProvider, sanitizedChatId, event);
             } catch (error) {
-                const message = getErrorMessage(error as Error)
+                const message = getErrorMessage(error as Error);
                 console.error('[Main:ChatStream] Error:', error);
                 event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, type: 'error', content: message });
             }
-        }
+        };
 
         if (sanitizedChatId) {
-            chatQueueManager.addTask(sanitizedChatId, executeGeneration)
-            return { success: true, queued: true }
+            // Use enhanced multi-LLM orchestrator
+            chatQueueManager.addTask(sanitizedChatId, executeGeneration, {
+                provider: sanitizedProvider,
+                model: sanitizedModel,
+                priority: 5 // Default priority
+            });
+            return { success: true, queued: true };
         } else {
-            executeGeneration()
-            return { success: true }
+            executeGeneration();
+            return { success: true };
         }
     })
 

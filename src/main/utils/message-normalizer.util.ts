@@ -135,5 +135,32 @@ export class MessageNormalizer {
         }) as AnthropicMessage[];
     }
 
+    /**
+     * Adapts messages for OpenCode's /responses API format.
+     */
+    static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): any[] {
+        if (!Array.isArray(messages)) return [];
+        return messages.map(msg => {
+            const contentParts: any[] = [];
+            const text = typeof msg.content === 'string' ? msg.content : '';
 
+            if (text) {
+                contentParts.push({ type: 'input_text', text });
+            } else if (Array.isArray(msg.content)) {
+                for (const part of msg.content) {
+                    if (part.type === 'text' && part.text) {
+                        contentParts.push({ type: 'input_text', text: part.text });
+                    }
+                    if (part.type === 'image_url' && part.image_url?.url) {
+                        contentParts.push({ type: 'input_image', image_url: { url: part.image_url.url } });
+                    }
+                }
+            }
+
+            return {
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: contentParts
+            };
+        });
+    }
 }

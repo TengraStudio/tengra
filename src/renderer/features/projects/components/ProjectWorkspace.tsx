@@ -110,7 +110,19 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     useEffect(() => {
         if (!councilSession?.id) return
 
-        const ws = new WebSocket('ws://localhost:3001')
+        // Get WebSocket URL from environment or use default
+        // In production, this should use wss:// for secure connections
+        // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
+        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) || 'ws://localhost:3001'
+        
+        // Validate WebSocket URL
+        if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+            console.error('[ProjectWorkspace] Invalid WebSocket URL:', wsUrl)
+            notify('error', 'Invalid WebSocket configuration')
+            return
+        }
+
+        const ws = new WebSocket(wsUrl)
 
         ws.onopen = () => {
             ws.send(JSON.stringify({ type: 'join', sessionId: councilSession.id }))
@@ -134,8 +146,21 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             }
         }
 
-        return () => ws.close()
-    }, [councilSession])
+        ws.onerror = (error) => {
+            console.error('[ProjectWorkspace] WebSocket error:', error)
+            notify('error', 'WebSocket connection error')
+        }
+
+        ws.onclose = () => {
+            console.log('[ProjectWorkspace] WebSocket connection closed')
+        }
+
+        return () => {
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close()
+            }
+        }
+    }, [councilSession, notify])
 
     const [agentChatMessage, setAgentChatMessage] = useState('')
 

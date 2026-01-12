@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useEffect, useState } from 'react'
+import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 export interface SlashCommand {

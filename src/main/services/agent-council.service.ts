@@ -87,8 +87,10 @@ export class AgentCouncilService {
      * @private
      */
     private async runLoop(sessionId: string) {
-        let safetyLimit = 20
-        while (this.activeLoops.has(sessionId) && safetyLimit > 0) {
+        const MAX_SESSION_ITERATIONS = 20;
+        let safetyLimit = MAX_SESSION_ITERATIONS
+        let iterations = 0;
+        while (this.activeLoops.has(sessionId) && safetyLimit > 0 && iterations < MAX_SESSION_ITERATIONS) {
             const session = await this.db.getCouncilSession(sessionId)
             if (!session) break
 
@@ -108,13 +110,14 @@ export class AgentCouncilService {
             }
 
             safetyLimit--
+            iterations++
 
             // Artificial delay for reasonable pacing
             await new Promise(r => setTimeout(r, 2000))
         }
 
-        if (safetyLimit === 0) {
-            await this.db.addCouncilLog(sessionId, 'system', 'Loop safety limit reached (20 steps). Pausing.', 'error')
+        if (safetyLimit === 0 || iterations >= MAX_SESSION_ITERATIONS) {
+            await this.db.addCouncilLog(sessionId, 'system', `Loop safety limit reached (${MAX_SESSION_ITERATIONS} steps). Pausing.`, 'error')
             this.activeLoops.delete(sessionId)
         }
     }

@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { Globe, Copy, X, Sparkles } from 'lucide-react'
 import { useTranslation } from '@/i18n'
 
@@ -81,7 +81,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                         zIndex: 1000
                     }}
                     className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
-                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                 >
                     <button
                         onClick={() => { onExplain(selectedText); setIsVisible(false) }}

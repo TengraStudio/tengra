@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(50)
 import {
-    Chat, Message, Folder, Project, AgentDefinition,
+    Chat, Message, Folder, Project, AgentDefinition, Prompt,
     SSHConnection, SSHFile, SSHConfig, ToolCall, ToolDefinition, ToolResult,
     MCPServerConfig,
     TodoItem, FileEntry, ProcessInfo,
@@ -67,6 +67,8 @@ export interface ElectronAPI {
     getQuota: () => Promise<QuotaResponse | null>
     getCopilotQuota: () => Promise<CopilotQuota>
     getCodexUsage: () => Promise<Partial<QuotaResponse>>
+    checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
+    getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
@@ -184,6 +186,49 @@ export interface ElectronAPI {
         getFolders: () => Promise<Folder[]>
     }
 
+    collaboration: {
+        run: (request: {
+            messages: Message[]
+            models: Array<{ provider: string; model: string }>
+            strategy: 'consensus' | 'vote' | 'best-of-n' | 'chain-of-thought'
+            options?: { temperature?: number; maxTokens?: number }
+        }) => Promise<{
+            responses: Array<{
+                provider: string
+                model: string
+                content: string
+                latency: number
+                tokens?: number
+            }>
+            consensus?: string
+            votes?: Record<string, number>
+            bestResponse?: {
+                provider: string
+                model: string
+                content: string
+            }
+        }>
+        getProviderStats: (provider?: string) => Promise<Record<string, {
+            activeTasks: number
+            queuedTasks: number
+            totalCompleted: number
+            totalErrors: number
+            averageLatency: number
+        }> | {
+            activeTasks: number
+            queuedTasks: number
+            totalCompleted: number
+            totalErrors: number
+            averageLatency: number
+        } | null>
+        getActiveTaskCount: (provider: string) => Promise<number>
+        setProviderConfig: (provider: string, config: {
+            maxConcurrent: number
+            priority: number
+            rateLimitPerMinute: number
+        }) => Promise<{ success: boolean }>
+    }
+
     council: {
         createSession: (goal: string) => Promise<CouncilSession>
         getSessions: () => Promise<CouncilSession[]>
@@ -192,6 +237,10 @@ export interface ElectronAPI {
         runStep: (sessionId: string) => void
         startLoop: (sessionId: string) => void
         stopLoop: (sessionId: string) => void
+    }
+
+    audit: {
+        getLogs: (startDate?: string, endDate?: string, category?: string) => Promise<Array<{ timestamp: number; action: string; category: string; details?: Record<string, IpcValue>; success: boolean; error?: string }>>
     }
 
     agent: {
@@ -491,11 +540,29 @@ const api: ElectronAPI = {
         getFolders: () => ipcRenderer.invoke('db:getFolders'),
         createFolder: (name: string, color?: string) => ipcRenderer.invoke('db:createFolder', name, color),
         deleteFolder: (id: string) => ipcRenderer.invoke('db:deleteFolder', id),
-        updateFolder: (id, updates) => ipcRenderer.invoke('db:updateFolder', id, updates),
+        updateFolder: (id: string, updates: Partial<Folder>) => ipcRenderer.invoke('db:updateFolder', id, updates),
         getPrompts: () => ipcRenderer.invoke('db:getPrompts'),
         createPrompt: (title: string, content: string, tags?: string[]) => ipcRenderer.invoke('db:createPrompt', title, content, tags),
-        updatePrompt: (id, updates) => ipcRenderer.invoke('db:updatePrompt', id, updates),
+        updatePrompt: (id: string, updates: Partial<Prompt>) => ipcRenderer.invoke('db:updatePrompt', id, updates),
         deletePrompt: (id: string) => ipcRenderer.invoke('db:deletePrompt', id)
+    },
+    audit: {
+        getLogs: (startDate?: string, endDate?: string, category?: string) => ipcRenderer.invoke('audit:getLogs', startDate, endDate, category),
+    },
+    collaboration: {
+        run: (request: {
+            messages: any[]
+            models: Array<{ provider: string; model: string }>
+            strategy: 'consensus' | 'vote' | 'best-of-n' | 'chain-of-thought'
+            options?: { temperature?: number; maxTokens?: number }
+        }) => ipcRenderer.invoke('collaboration:run', request),
+        getProviderStats: (provider?: string) => ipcRenderer.invoke('collaboration:getProviderStats', provider),
+        getActiveTaskCount: (provider: string) => ipcRenderer.invoke('collaboration:getActiveTaskCount', provider),
+        setProviderConfig: (provider: string, config: {
+            maxConcurrent: number
+            priority: number
+            rateLimitPerMinute: number
+        }) => ipcRenderer.invoke('collaboration:setProviderConfig', provider, config)
     },
 
     council: {

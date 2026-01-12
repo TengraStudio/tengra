@@ -1,70 +1,115 @@
-import { cn } from "@/lib/utils"
+import React from 'react'
+import { cn } from '@/lib/utils'
 
-/**
- * Base skeleton component for loading placeholders.
- */
-function Skeleton({
-    className,
-    ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-    return (
-        <div
-            className={cn("animate-pulse rounded-md bg-muted/40", className)}
-            {...props}
-        />
-    )
+interface SkeletonProps {
+    className?: string
+    variant?: 'text' | 'circular' | 'rectangular' | 'rounded'
+    width?: string | number
+    height?: string | number
+    animate?: boolean
 }
 
 /**
- * Skeleton component for text lines.
+ * Skeleton Component
+ * 
+ * A placeholder loading component with shimmer animation.
+ * 
+ * @example
+ * ```tsx
+ * <Skeleton variant="text" width={200} />
+ * <Skeleton variant="circular" width={40} height={40} />
+ * <Skeleton variant="rounded" width="100%" height={120} />
+ * ```
  */
-export const SkeletonText: React.FC<{ lines?: number; className?: string }> = ({ lines = 3, className }) => (
-    <div className={cn('space-y-2', className)}>
-        {Array.from({ length: lines }).map((_, i) => (
-            <Skeleton
-                key={i}
-                className="h-4"
-                style={{ width: i === lines - 1 ? '75%' : '100%' }}
-                aria-hidden="true"
-            />
-        ))}
-    </div>
-)
+export const Skeleton: React.FC<SkeletonProps> = React.memo(({
+    className,
+    variant = 'text',
+    width,
+    height,
+    animate = true
+}) => {
+    const variantClasses = {
+        text: 'h-4 rounded',
+        circular: 'rounded-full',
+        rectangular: 'rounded-none',
+        rounded: 'rounded-lg'
+    }
+
+    const style: React.CSSProperties = {
+        width: width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : undefined,
+        height: height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : undefined
+    }
+
+    return (
+        <div
+            className={cn(
+                'bg-muted',
+                animate && 'skeleton',
+                variantClasses[variant],
+                className
+            )}
+            style={style}
+            aria-hidden="true"
+        />
+    )
+})
+
+Skeleton.displayName = 'Skeleton'
 
 /**
- * Skeleton component for cards.
+ * SkeletonText Component
+ * 
+ * Multiple lines of skeleton text for paragraph placeholders.
  */
-export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) => (
-    <div className={cn('rounded-lg border bg-card p-6 space-y-4', className)} aria-label="Loading content">
-        <Skeleton className="h-6 w-3/4" />
-        <SkeletonText lines={3} />
-    </div>
-)
-
-/**
- * Skeleton component for list items.
- */
-export const SkeletonListItem: React.FC<{ className?: string }> = ({ className }) => (
-    <div className={cn('flex items-center gap-4 p-4', className)} aria-label="Loading item">
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-3 w-2/3" />
+export const SkeletonText: React.FC<{
+    lines?: number
+    className?: string
+    lastLineWidth?: string
+}> = React.memo(({ lines = 3, className, lastLineWidth = '60%' }) => {
+    return (
+        <div className={cn('space-y-2', className)}>
+            {Array.from({ length: lines }).map((_, i) => (
+                <Skeleton
+                    key={i}
+                    variant="text"
+                    width={i === lines - 1 ? lastLineWidth : '100%'}
+                />
+            ))}
         </div>
-    </div>
-)
+    )
+})
+
+SkeletonText.displayName = 'SkeletonText'
 
 /**
- * Skeleton component for table rows.
+ * SkeletonCard Component
+ * 
+ * A card-shaped skeleton placeholder.
  */
-export const SkeletonTableRow: React.FC<{ columns?: number; className?: string }> = ({ columns = 4, className }) => (
-    <tr className={className} aria-label="Loading table row">
-        {Array.from({ length: columns }).map((_, i) => (
-            <td key={i} className="p-4">
-                <Skeleton className="h-4 w-full" />
-            </td>
-        ))}
-    </tr>
-)
+export const SkeletonCard: React.FC<{
+    className?: string
+    showImage?: boolean
+    showTitle?: boolean
+    showDescription?: boolean
+}> = React.memo(({ 
+    className, 
+    showImage = true, 
+    showTitle = true, 
+    showDescription = true 
+}) => {
+    return (
+        <div className={cn('p-4 space-y-4 border border-border rounded-xl', className)}>
+            {showImage && (
+                <Skeleton variant="rounded" width="100%" height={120} />
+            )}
+            {showTitle && (
+                <Skeleton variant="text" width="70%" height={20} />
+            )}
+            {showDescription && (
+                <SkeletonText lines={2} />
+            )}
+        </div>
+    )
+})
 
-export { Skeleton }
+SkeletonCard.displayName = 'SkeletonCard'

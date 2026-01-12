@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import {
     X,
     ChevronRight,

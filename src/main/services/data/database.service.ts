@@ -1,13 +1,21 @@
 import { DataService } from './data.service'
 import { LanceDbService } from './lancedb.service'
-import Database from 'better-sqlite3'
-import type { Database as DatabaseType } from 'better-sqlite3'
+import { MigrationManager } from './migration-manager'
+// import initSqlJs, { Database as SqlJsDatabase } from 'sql.js' // Removed static import
+import { SqlJsAdapter, CompatibleDatabase } from './sqljs-adapter'
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { WorkspaceMount } from '../../../shared/types/workspace'
 import { JsonObject, JsonValue } from '../../../shared/types/common'
 import { getErrorMessage } from '../../../shared/utils/error.util'
+
+// Define types locally since we removed the static import
+// We can use 'any' for the imported module to avoid complex type gymnastics with dynamic imports
+// or just rely on the adapter to handle the types.
+type SqlJsDatabase = any;
+
+// ... code ...
 
 // Code intelligence types for stub methods
 export interface CodeSymbolSearchResult {
@@ -271,50 +279,138 @@ export class DatabaseService {
     private councilPath: string
     private councilSessions: CouncilSession[] = []
     private projectsPath: string // Legacy JSON path for migration
-    private db: DatabaseType // SQLite database connection
+    private db: CompatibleDatabase | null = null // SQL.js database connection (wrapped)
+    private dbPath: string
+    private sqlJsModule: any = null
+    private initPromise: Promise<void> | null = null
 
     constructor(private dataService: DataService, private lanceDbService: LanceDbService) {
         this.foldersPath = path.join(this.dataService.getPath('db'), 'folders.json')
         this.promptsPath = path.join(this.dataService.getPath('db'), 'prompts.json')
         this.councilPath = path.join(this.dataService.getPath('db'), 'council.json')
         this.projectsPath = path.join(this.dataService.getPath('db'), 'projects.json')
+        this.dbPath = path.join(this.dataService.getPath('db'), 'orbit.db')
 
-        // Initialize SQLite database
-        const dbPath = path.join(this.dataService.getPath('db'), 'orbit.db')
-        this.db = new Database(dbPath)
-
-        // Task 13: SQLite Optimizations ("Connection Pooling" context)
-        this.db.pragma('journal_mode = WAL') // Better concurrency
-        this.db.pragma('synchronous = NORMAL') // Faster writes, still safe in WAL
-        this.db.pragma('busy_timeout = 5000') // Wait up to 5s if locked
-        this.db.pragma('cache_size = -4000') // Use ~4MB cache
-
-        this.runMigrations()
+        // Initialize SQL.js database asynchronously
+        this.initPromise = this.initDatabase()
     }
 
-    getDatabase(): DatabaseType {
-        return this.db;
+    private async initDatabase(): Promise<void> {
+        try {
+            // Load SQL.js dynamically to prevent load-time crash
+            let initSqlJs;
+            try {
+                // @ts-ignore
+                initSqlJs = (await import('sql.js')).default;
+            } catch (e) {
+                console.warn('[DatabaseService] Failed to dynamic import sql.js, trying require');
+                // @ts-ignore
+                initSqlJs = require('sql.js');
+            }
+
+            this.sqlJsModule = await initSqlJs({
+                locateFile: (_file: string) => {
+                    // SQL.js WASM file location - try multiple paths
+                    const possiblePaths = [
+                        path.join(__dirname, '../../../../node_modules/sql.js/dist/sql-wasm.wasm'),
+                        path.join(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm'),
+                        require.resolve('sql.js/dist/sql-wasm.wasm')
+                    ]
+
+                    for (const wasmPath of possiblePaths) {
+                        if (fs.existsSync(wasmPath)) {
+                            return wasmPath
+                        }
+                    }
+
+                    // Fallback: return relative path
+                    return 'node_modules/sql.js/dist/sql-wasm.wasm'
+                }
+            })
+
+            // Load existing database or create new one
+            let sqlJsDb: SqlJsDatabase
+            if (fs.existsSync(this.dbPath)) {
+                const buffer = fs.readFileSync(this.dbPath)
+                sqlJsDb = new this.sqlJsModule.Database(buffer)
+            } else {
+                sqlJsDb = new this.sqlJsModule.Database()
+            }
+
+            // Wrap with compatibility adapter
+            this.db = new SqlJsAdapter(sqlJsDb)
+
+            // Configure SQL.js (similar to better-sqlite3 pragmas)
+            // Note: Some pragmas may not be fully supported in sql.js
+            try {
+                this.db.pragma('PRAGMA journal_mode = WAL')
+            } catch (e) { /* Ignore if not supported */ }
+
+            try {
+                this.db.pragma('PRAGMA synchronous = NORMAL')
+            } catch (e) { /* Ignore if not supported */ }
+
+            await this.runMigrations()
+
+            // Auto-save database periodically
+            setInterval(() => this.saveDatabase(), 30000) // Save every 30 seconds
+
+            // Save on process exit
+            process.on('exit', () => this.saveDatabase())
+            process.on('SIGINT', () => { this.saveDatabase(); process.exit(0) })
+            process.on('SIGTERM', () => { this.saveDatabase(); process.exit(0) })
+        } catch (error) {
+            console.error('[DatabaseService] Failed to initialize SQL.js:', error)
+            // Fallback: continue without database, using JSON files only
+            this.db = null
+        }
+    }
+
+    private saveDatabase() {
+        if (this.db && this.sqlJsModule) {
+            try {
+                const adapter = this.db as SqlJsAdapter
+                const sqlJsDb = adapter.getDatabase()
+                const data = sqlJsDb.export()
+                const buffer = Buffer.from(data)
+                fs.writeFileSync(this.dbPath, buffer)
+            } catch (error) {
+                console.error('[DatabaseService] Failed to save database:', error)
+            }
+        }
+    }
+
+    private async ensureDb(): Promise<CompatibleDatabase> {
+        if (this.initPromise) {
+            await this.initPromise
+        }
+        if (!this.db) {
+            throw new Error('Database not initialized. SQL.js failed to load.')
+        }
+        return this.db
+    }
+
+    getDatabase(): CompatibleDatabase {
+        if (!this.db) {
+            throw new Error('Database not initialized. Call initialize() first.')
+        }
+        return this.db
     }
 
     /**
-     * Runs database migrations (Task 12).
+     * Runs database migrations using MigrationManager.
      */
-    private runMigrations() {
-        // Ensure migrations table exists
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS migrations (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                run_at INTEGER NOT NULL
-            )
-        `);
+    private async runMigrations() {
+        const db = await this.ensureDb()
+        const manager = new MigrationManager(db)
 
-        const migrations = [
+        // Register all migrations
+        manager.registerAll([
             {
                 id: 1,
                 name: 'Initial Schema',
-                up: () => {
-                    this.db.exec(`
+                up: (db: CompatibleDatabase): void => {
+                    db.exec(`
                         CREATE TABLE IF NOT EXISTS projects (
                             id TEXT PRIMARY KEY,
                             title TEXT NOT NULL,
@@ -338,14 +434,18 @@ export class DatabaseService {
                             metadata TEXT DEFAULT '{}'
                         );
                         CREATE INDEX IF NOT EXISTS idx_chat_events_thread_id ON chat_events(thread_id);
-                    `);
+                    `)
+                },
+                down: (db: CompatibleDatabase): void => {
+                    db.exec('DROP TABLE IF EXISTS chat_events')
+                    db.exec('DROP TABLE IF EXISTS projects')
                 }
             },
             {
                 id: 2,
                 name: 'Add Time Tracking',
-                up: () => {
-                    this.db.exec(`
+                up: (db: CompatibleDatabase): void => {
+                    db.exec(`
                         CREATE TABLE IF NOT EXISTS time_tracking (
                             id TEXT PRIMARY KEY,
                             type TEXT NOT NULL,
@@ -359,29 +459,25 @@ export class DatabaseService {
                         CREATE INDEX IF NOT EXISTS idx_time_tracking_type ON time_tracking(type);
                         CREATE INDEX IF NOT EXISTS idx_time_tracking_project_id ON time_tracking(project_id);
                         CREATE INDEX IF NOT EXISTS idx_time_tracking_start_time ON time_tracking(start_time);
-                    `);
-                }
-            },
-            // Future migrations can be added here
-        ];
-
-        const getAppliedMigrations = this.db.prepare('SELECT id FROM migrations').pluck();
-        const appliedIds = new Set(getAppliedMigrations.all() as number[]);
-
-        for (const migration of migrations) {
-            if (!appliedIds.has(migration.id)) {
-                console.log(`[Database] Running migration ${migration.id}: ${migration.name}`);
-                try {
-                    this.db.transaction(() => {
-                        migration.up();
-                        this.db.prepare('INSERT INTO migrations (id, name, run_at) VALUES (?, ?, ?)').run(migration.id, migration.name, Date.now());
-                    })();
-                } catch (error) {
-                    console.error(`[Database] Migration ${migration.id} failed:`, error);
-                    throw error; // Stop startup if migration fails
+                    `)
+                },
+                down: (db: CompatibleDatabase): void => {
+                    db.exec('DROP TABLE IF EXISTS time_tracking')
                 }
             }
-        }
+        ])
+
+        // Run pending migrations
+        manager.migrate()
+    }
+
+    /**
+     * Get migration status
+     */
+    async getMigrationStatus() {
+        const db = await this.ensureDb()
+        const manager = new MigrationManager(db)
+        return manager.getStatus()
     }
 
     /**
@@ -391,10 +487,27 @@ export class DatabaseService {
      * Should be called at application startup.
      */
     async initialize() {
-        await this.loadFolders()
-        await this.loadPrompts()
-        await this.loadCouncilSessions()
-        await this.migrateProjectsFromJson() // One-time migration
+        // Create a timeout promise that rejects after 1 second
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Database initialization timed out after 1000ms - Proceeding without DB')), 1000);
+        });
+
+        try {
+            // Race the real initialization against the timeout
+            await Promise.race([
+                (async () => {
+                    await this.loadFolders()
+                    await this.loadPrompts()
+                    await this.loadCouncilSessions()
+                    await this.migrateProjectsFromJson() // One-time migration
+                })(),
+                timeoutPromise
+            ]);
+        } catch (error) {
+            console.error('[DatabaseService] Initialization failed or timed out:', error);
+            // We swallow the error here to allow the app to continue startup without a working DB
+            // The UI should handle missing data gracefully (or show an empty state)
+        }
     }
 
     /**
@@ -404,8 +517,15 @@ export class DatabaseService {
      */
     private async migrateProjectsFromJson() {
         try {
+            let db: CompatibleDatabase
+            try {
+                db = await this.ensureDb()
+            } catch (e) {
+                console.warn('[DatabaseService] Skipping project migration: Database not available', e)
+                return
+            }
             // Check if migration is needed
-            const count = this.db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number }
+            const count = db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number }
             if (count.count > 0) return // Already migrated
 
             // Check if legacy JSON file exists
@@ -417,13 +537,13 @@ export class DatabaseService {
             if (!Array.isArray(legacyProjects) || legacyProjects.length === 0) return
 
             // Prepare insert statement
-            const insert = this.db.prepare(`
+            const insert = db.prepare(`
                 INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config, status, logo, metadata, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `)
 
             // Migrate each project
-            const transaction = this.db.transaction((projects: JsonObject[]) => {
+            const transaction = db.transaction((projects: JsonObject[]) => {
                 for (const p of projects) {
                     const id = (p.id as string) || uuidv4()
                     const title = (p.title as string) || (p.name as string) || 'Untitled'
@@ -721,33 +841,34 @@ export class DatabaseService {
      */
     async getTimeStats() {
         try {
+            const db = await this.ensureDb()
             // Get total app online time
-            const appOnlineResult = this.db.prepare(`
+            const appOnlineResult = db.prepare(`
                 SELECT COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'app_online'
             `).get() as { total: number } | undefined
-            
+
             // Get total coding time
-            const codingResult = this.db.prepare(`
+            const codingResult = db.prepare(`
                 SELECT COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'coding'
             `).get() as { total: number } | undefined
-            
+
             // Get per-project coding time
-            const projectResult = this.db.prepare(`
+            const projectResult = db.prepare(`
                 SELECT project_id, COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'project_coding' AND project_id IS NOT NULL
                 GROUP BY project_id
             `).all() as Array<{ project_id: string; total: number }>
-            
+
             const projectCodingTime: Record<string, number> = {}
             for (const row of projectResult) {
                 projectCodingTime[row.project_id] = row.total
             }
-            
+
             return {
                 totalOnlineTime: appOnlineResult?.total || 0,
                 totalCodingTime: codingResult?.total || 0,
@@ -769,7 +890,8 @@ export class DatabaseService {
      * Retrieves all registered projects from SQLite.
      */
     async getProjects(): Promise<Project[]> {
-        const rows = this.db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all() as JsonObject[]
+        const db = await this.ensureDb()
+        const rows = db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all() as JsonObject[]
         return rows.map(row => this.mapRowToProject(row))
     }
 
@@ -777,7 +899,8 @@ export class DatabaseService {
      * Retrieves a single project by ID.
      */
     async getProject(id: string): Promise<Project | undefined> {
-        const row = this.db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as JsonObject | undefined
+        const db = await this.ensureDb()
+        const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as JsonObject | undefined
         return row ? this.mapRowToProject(row) : undefined
     }
 
@@ -807,7 +930,8 @@ export class DatabaseService {
             consensusThreshold: 0.7
         }
 
-        this.db.prepare(`
+        const db = await this.ensureDb()
+        db.prepare(`
             INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config, status, logo, metadata, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
@@ -853,7 +977,8 @@ export class DatabaseService {
         const now = Date.now()
         const merged = { ...existing, ...updates, updatedAt: now }
 
-        this.db.prepare(`
+        const db = await this.ensureDb()
+        db.prepare(`
             UPDATE projects SET
                 title = ?,
                 description = ?,
@@ -887,7 +1012,8 @@ export class DatabaseService {
      * Deletes a project by ID.
      */
     async deleteProject(id: string): Promise<void> {
-        this.db.prepare('DELETE FROM projects WHERE id = ?').run(id)
+        const db = await this.ensureDb()
+        db.prepare('DELETE FROM projects WHERE id = ?').run(id)
     }
 
     /**
@@ -895,7 +1021,8 @@ export class DatabaseService {
      */
     async archiveProject(id: string, isArchived: boolean): Promise<void> {
         const now = Date.now()
-        this.db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?')
+        const db = await this.ensureDb()
+        db.prepare('UPDATE projects SET status = ?, updated_at = ? WHERE id = ?')
             .run(isArchived ? 'archived' : 'active', now, id)
     }
 

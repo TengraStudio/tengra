@@ -1,3 +1,8 @@
+/* ================================================
+   SIDEBAR STYLES - Orbit IDE
+   ================================================ */
+
+/* === Base Sidebar === */
 .sidebar {
     @apply w-64 h-full border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col shrink-0 relative transition-all duration-300;
 }
@@ -6,14 +11,16 @@
     @apply w-20;
 }
 
+/* === Navigation Items === */
 .nav-item {
-    @apply flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 w-full justify-start;
 }
 
 .nav-item-active {
     @apply text-foreground bg-primary/10 text-primary font-bold;
 }
 
+/* === Sidebar Brand === */
 .sidebar-brand {
     @apply flex items-center gap-3 px-6 py-8 mb-4;
 }
@@ -24,4 +31,390 @@
 
 .sidebar-brand-name {
     @apply text-xl font-black tracking-tighter text-white uppercase;
+}
+
+/* === Section Headers === */
+.sidebar-section-header {
+    @apply flex items-center justify-between;
+    @apply text-[11px] font-semibold uppercase tracking-wider;
+    @apply text-muted-foreground/60 hover:text-muted-foreground;
+    @apply hover:bg-white/[0.02] active:bg-white/[0.04];
+    @apply transition-all duration-150;
+    @apply cursor-pointer select-none;
+}
+
+.sidebar-section-header:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+/* === Menu Items === */
+.sidebar-menu-item {
+    @apply flex items-center gap-3;
+    @apply text-sm font-medium;
+    @apply text-muted-foreground/80 hover:text-foreground;
+    @apply hover:bg-white/[0.03] active:bg-white/[0.05];
+    @apply transition-all duration-150;
+    @apply cursor-pointer select-none;
+    @apply relative;
+}
+
+.sidebar-menu-item:focus-visible {
+    @apply outline-none ring-2 ring-primary/50;
+}
+
+.sidebar-menu-item.active {
+    @apply bg-primary/10 text-primary;
+}
+
+.sidebar-menu-item.active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 -translate-y-1/2;
+    @apply w-[3px] h-5 bg-primary rounded-r-full;
+}
+
+/* === Status Indicators === */
+.status-indicator {
+    @apply rounded-full;
+    @apply transition-all duration-300;
+}
+
+.status-indicator--online {
+    @apply bg-emerald-500;
+    box-shadow: 0 0 8px theme('colors.emerald.500 / 50%');
+}
+
+.status-indicator--warning {
+    @apply bg-amber-500;
+    box-shadow: 0 0 8px theme('colors.amber.500 / 50%');
+    animation: status-pulse 2s ease-in-out infinite;
+}
+
+.status-indicator--error {
+    @apply bg-red-500;
+    box-shadow: 0 0 8px theme('colors.red.500 / 50%');
+    animation: status-pulse 1s ease-in-out infinite;
+}
+
+.status-indicator--offline {
+    @apply bg-gray-400;
+}
+
+.status-indicator--loading {
+    @apply bg-blue-500;
+    animation: status-loading 1s linear infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes status-loading {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* === Badges === */
+.sidebar-badge {
+    @apply inline-flex items-center justify-center;
+    @apply px-1.5 py-0.5 min-w-[18px] h-[18px];
+    @apply rounded-full text-[10px] font-bold;
+    @apply transition-all duration-200;
+}
+
+.sidebar-badge--default { @apply bg-muted text-muted-foreground; }
+.sidebar-badge--primary { @apply bg-primary text-primary-foreground; }
+.sidebar-badge--success { @apply bg-emerald-500 text-white; }
+.sidebar-badge--warning { @apply bg-amber-500 text-white; }
+.sidebar-badge--error { @apply bg-red-500 text-white; }
+
+/* Badge animation on update */
+@keyframes badge-pop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.sidebar-badge-enter {
+    animation: badge-pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* === Dividers === */
+.sidebar-divider {
+    @apply h-px mx-4 my-2;
+    background: linear-gradient(
+        to right,
+        transparent,
+        theme('colors.border / 40%'),
+        transparent
+    );
+}
+
+.sidebar-divider--labeled {
+    @apply flex items-center gap-3 px-4;
+}
+
+.sidebar-divider--labeled::before,
+.sidebar-divider--labeled::after {
+    content: '';
+    @apply flex-1 h-px;
+    background: linear-gradient(
+        to right,
+        theme('colors.border / 40%'),
+        transparent
+    );
+}
+
+.sidebar-divider--labeled::after {
+    background: linear-gradient(
+        to left,
+        theme('colors.border / 40%'),
+        transparent
+    );
+}
+
+.sidebar-divider__label {
+    @apply text-[9px] font-bold uppercase tracking-widest;
+    @apply text-muted-foreground/40;
+}
+
+/* === Flyout Menus (Collapsed State) === */
+.sidebar-flyout {
+    @apply absolute left-full top-0 ml-2 z-50;
+    @apply min-w-[220px] max-w-[280px];
+    @apply bg-popover/95 backdrop-blur-xl;
+    @apply border border-border/50 rounded-xl;
+    @apply shadow-2xl shadow-black/20;
+    @apply overflow-hidden;
+}
+
+@keyframes flyout-enter {
+    from {
+        opacity: 0;
+        transform: translateX(-8px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.sidebar-flyout-enter {
+    animation: flyout-enter 0.15s ease-out;
+}
+
+.sidebar-flyout-exit {
+    animation: flyout-enter 0.1s ease-in reverse;
+}
+
+/* === Submenu Animation === */
+@keyframes submenu-expand {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-submenu-enter {
+    animation: submenu-expand 0.25s ease-out forwards;
+}
+
+.sidebar-submenu-exit {
+    animation: submenu-expand 0.2s ease-in reverse forwards;
+}
+
+/* === Scrollbar === */
+.sidebar-scroll {
+    @apply overflow-y-auto overflow-x-hidden;
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.border / 30%') transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    @apply w-1.5;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    @apply rounded-full;
+    @apply bg-border/30 hover:bg-border/50;
+    @apply transition-colors;
+}
+
+/* === Chat Item Hover Effects === */
+.chat-item {
+    @apply relative overflow-hidden;
+}
+
+.chat-item::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-200;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.05), transparent);
+}
+
+.chat-item:hover::after {
+    @apply opacity-100;
+}
+
+/* === User Profile Section === */
+.sidebar-user-profile {
+    @apply border-t border-border/20;
+    @apply p-2;
+}
+
+.sidebar-user-profile__trigger {
+    @apply w-full flex items-center gap-3;
+    @apply p-2 rounded-lg;
+    @apply hover:bg-white/[0.03];
+    @apply transition-all duration-150;
+}
+
+.sidebar-user-profile__avatar {
+    @apply relative shrink-0;
+}
+
+.sidebar-user-profile__avatar-image {
+    @apply w-9 h-9 rounded-full object-cover;
+    @apply ring-2 ring-border/20;
+}
+
+.sidebar-user-profile__avatar-fallback {
+    @apply w-9 h-9 rounded-full;
+    @apply bg-primary/20 text-primary;
+    @apply flex items-center justify-center;
+    @apply text-sm font-bold;
+}
+
+/* === Loading Skeletons === */
+.sidebar-skeleton {
+    @apply animate-pulse bg-muted/20 rounded;
+}
+
+.sidebar-skeleton--text {
+    @apply h-4 w-3/4;
+}
+
+.sidebar-skeleton--icon {
+    @apply h-5 w-5 rounded;
+}
+
+.sidebar-skeleton--avatar {
+    @apply h-9 w-9 rounded-full;
+}
+
+/* === Hover Slide Effect === */
+.sidebar-menu-item:hover:not(:disabled) {
+    transform: translateX(3px);
+}
+
+.sidebar-menu-item:active:not(:disabled) {
+    transform: translateX(1px) scale(0.99);
+}
+
+/* === Tree Connector Lines === */
+.tree-line {
+    @apply absolute left-4 top-0 bottom-0 w-px;
+    @apply bg-border/30;
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 768px) {
+    .sidebar-mobile {
+        @apply fixed inset-y-0 left-0 z-50;
+        @apply -translate-x-full;
+        @apply transition-transform duration-300;
+    }
+
+    .sidebar-mobile.open {
+        @apply translate-x-0;
+    }
+
+    .sidebar-overlay {
+        @apply fixed inset-0 bg-black/50 z-40;
+        @apply opacity-0 pointer-events-none;
+        @apply transition-opacity duration-300;
+    }
+
+    .sidebar-overlay.visible {
+        @apply opacity-100 pointer-events-auto;
+    }
+}
+
+/* === High Contrast Mode === */
+@media (prefers-contrast: high) {
+    .sidebar {
+        @apply border-r-2 border-foreground;
+    }
+
+    .sidebar-menu-item.active::before {
+        @apply w-1 bg-foreground;
+    }
+
+    .status-indicator {
+        @apply ring-2 ring-foreground;
+    }
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar-menu-item,
+    .sidebar-section-header,
+    .sidebar-flyout,
+    .sidebar-submenu,
+    .status-indicator {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* === Focus Visible States === */
+.sidebar-focusable:focus-visible {
+    @apply outline-none;
+    @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+/* === Workspace Section === */
+.workspace-section {
+    @apply px-2 py-1;
+}
+
+.workspace-section-title {
+    @apply text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest;
+    @apply px-2 mb-1;
+}
+
+/* === Tools Section === */
+.tools-item {
+    @apply flex items-center gap-2 px-2 py-1.5 rounded-md;
+    @apply text-xs text-muted-foreground hover:text-foreground hover:bg-muted/10;
+    @apply transition-all duration-150 cursor-pointer;
+}
+
+.tools-item-icon {
+    @apply w-4 h-4 opacity-60;
+}
+
+.tools-item-label {
+    @apply flex-1 truncate;
+}
+
+.tools-item-status {
+    @apply flex items-center gap-1;
 }

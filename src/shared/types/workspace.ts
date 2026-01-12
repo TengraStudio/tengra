@@ -49,6 +49,10 @@ export interface ActivityEntry {
     timestamp: Date
     title: string
     detail?: string
+    // Extended properties for council logs
+    type?: 'info' | 'error' | 'success' | 'plan' | 'action'
+    agentId?: string
+    message: string
 }
 export interface MountForm {
     type: 'local' | 'ssh'

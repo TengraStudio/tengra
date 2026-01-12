@@ -58,10 +58,16 @@ export async function* chatStream(
         });
 
     try {
-        while (true) {
-            while (queue.length > 0) {
+        const MAX_OUTER_ITERATIONS = 100000;
+        const MAX_QUEUE_ITERATIONS = 1000;
+        let outerIterations = 0;
+        
+        while (outerIterations < MAX_OUTER_ITERATIONS) {
+            let queueIterations = 0;
+            while (queue.length > 0 && queueIterations < MAX_QUEUE_ITERATIONS) {
                 const chunk = queue.shift();
                 if (!chunk) continue;
+                queueIterations++;
 
                 // Inspect chunk structure and normalize keys
                 if (chunk.content) yield { type: 'content', content: chunk.content };
@@ -85,6 +91,11 @@ export async function* chatStream(
 
             // Wait for next chunk or completion
             await new Promise<void | null>(resolve => currentResolver = resolve);
+            outerIterations++;
+        }
+        
+        if (outerIterations >= MAX_OUTER_ITERATIONS) {
+            throw new Error('Chat stream processing exceeded maximum iterations');
         }
     } finally {
         // Clean up listener

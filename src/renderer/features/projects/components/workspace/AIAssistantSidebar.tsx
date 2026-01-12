@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from '@/lib/framer-motion-compat';
 import { Users, ArrowLeft } from 'lucide-react';
 import { MessageBubble } from '../../../chat/components/MessageBubble';
 import { ModelSelector } from '../../../models/components/ModelSelector';

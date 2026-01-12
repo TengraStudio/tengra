@@ -3,7 +3,7 @@ import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { TerminalTab } from '@/types'
 import {
     Terminal, X, Plus, ChevronDown,

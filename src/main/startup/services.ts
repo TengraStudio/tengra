@@ -49,6 +49,7 @@ import { WebService } from '../services/web.service'
 import { TokenRefreshService } from '../services/token-refresh.service'
 import { MemoryService } from '../services/memory.service'
 import { UsageTrackingService } from '../services/usage-tracking.service'
+import { AuditLogService } from '../services/audit-log.service'
 import { PageSpeedService } from '../services/pagespeed.service'
 import { RuleService } from '../services/rule.service'
 import { AgentService } from '../services/agent.service'
@@ -58,6 +59,11 @@ import { getHealthCheckService, HealthCheckService } from '../services/health-ch
 import { DataService } from '../services/data/data.service'
 import { AuthService } from '../services/auth.service'
 import { ChatEventService } from '../services/data/chat-event.service'
+import { PromptTemplatesService } from '../services/prompt-templates.service'
+import { ModelCollaborationService } from '../services/model-collaboration.service'
+import { PerformanceService } from '../services/performance.service'
+import { MultiModelComparisonService } from '../services/llm/multi-model-comparison.service'
+import { MultiLLMOrchestrator } from '../services/multi-llm-orchestrator.service'
 import { Logger } from '../utils/logger'
 
 // Export the container instance so it can be accessed if needed
@@ -88,7 +94,7 @@ export interface Services {
     dockerService: DockerService;
     screenshotService: ScreenshotService;
     agentCouncilService: AgentCouncilService;
-    ollamaHealthService: any;
+    ollamaHealthService: ReturnType<typeof getOllamaHealthService>;
     llamaService: LlamaService;
     huggingFaceService: HuggingFaceService;
     projectService: ProjectService;
@@ -96,6 +102,7 @@ export interface Services {
     processService: ProcessService;
     codeIntelligenceService: CodeIntelligenceService;
     contextRetrievalService: ContextRetrievalService;
+    modelCollaborationService: ModelCollaborationService;
     jobSchedulerService: JobSchedulerService;
     webService: WebService;
     memoryService: MemoryService;
@@ -118,13 +125,21 @@ export interface Services {
     utilityService: UtilityService;
     tokenRefreshService: TokenRefreshService;
     usageTrackingService: UsageTrackingService;
+    auditLogService: AuditLogService;
+    promptTemplatesService: PromptTemplatesService;
+    performanceService: PerformanceService;
+    multiModelComparisonService: MultiModelComparisonService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>) {
     // 1. Data Service (Critical Intialization)
     container.register('dataService', () => new DataService());
     const dataService = container.resolve<DataService>('dataService');
-    await dataService.migrate();
+    try {
+        await dataService.migrate();
+    } catch (error) {
+        console.error('Failed to migrate data service:', error);
+    }
 
     // Initialize Logger
     Logger.init(dataService.getPath('logs'));
@@ -226,7 +241,13 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('configService', (ss) => new ConfigService(ss as SettingsService), ['settingsService']);
     container.register('keyRotationService', (ss) => new KeyRotationService(ss as SettingsService), ['settingsService']);
     container.register('rateLimitService', () => new RateLimitService());
-    container.register('usageTrackingService', () => new UsageTrackingService());
+    container.register('usageTrackingService', () => new UsageTrackingService())
+    container.register('auditLogService', () => new AuditLogService());
+    container.register('promptTemplatesService', (ds) => new PromptTemplatesService(ds as DataService), ['dataService']);
+    container.register('modelCollaborationService', (ls) => new ModelCollaborationService(ls as LLMService), ['llmService']);
+    container.register('performanceService', () => new PerformanceService());
+    container.register('multiLLMOrchestrator', () => new MultiLLMOrchestrator());
+    container.register('multiModelComparisonService', (ls, mo) => new MultiModelComparisonService(ls as LLMService, mo as MultiLLMOrchestrator), ['llmService', 'multiLLMOrchestrator']);
 
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
     container.register('contextRetrievalService', (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
@@ -246,18 +267,35 @@ export async function createServices(allowedFileRoots: Set<string>) {
     ), ['llmService', 'databaseService', 'fileSystemService', 'processService', 'codeIntelligenceService', 'webService', 'collaborationService', 'embeddingService']);
 
     // 4. Initialize Container (calls init on all LifecycleAware singletons)
-    await container.init();
+    try {
+        await container.init();
+    } catch (e) {
+        console.error('[Startup] Container initialization failed partially:', e);
+    }
 
     // 5. Post-Init Setup
     const agentService = container.resolve<AgentService>('agentService');
-    await agentService.init();
+    try {
+        await agentService.init();
+    } catch (error) {
+        console.error('Failed to initialize AgentService:', error);
+    }
 
     // Start Ollama health monitoring
     const settingsService = container.resolve<SettingsService>('settingsService');
-    const ollamaHealthService = getOllamaHealthService(
-        settingsService.getSettings()?.ollama?.url || 'http://127.0.0.1:11434'
-    );
-    ollamaHealthService.start();
+    let ollamaHealthService;
+    try {
+        ollamaHealthService = getOllamaHealthService(
+            settingsService.getSettings()?.ollama?.url || 'http://127.0.0.1:11434'
+        );
+        ollamaHealthService.start();
+    } catch (e) {
+        console.error('[Startup] Failed to start Ollama health service:', e);
+        // Fallback dummy if creation failed
+        if (!ollamaHealthService) {
+            ollamaHealthService = { start: () => { }, stop: () => { }, checkHealth: async () => ({ online: false }) } as any;
+        }
+    }
 
     // Health Check Service Setup
     const healthCheckService = getHealthCheckService();
@@ -316,7 +354,12 @@ export async function createServices(allowedFileRoots: Set<string>) {
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
         tokenRefreshService: container.resolve<TokenRefreshService>('tokenRefreshService'),
-        usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService')
+        usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService'),
+        auditLogService: container.resolve<AuditLogService>('auditLogService'),
+        promptTemplatesService: container.resolve<PromptTemplatesService>('promptTemplatesService'),
+        modelCollaborationService: container.resolve<ModelCollaborationService>('modelCollaborationService'),
+        performanceService: container.resolve<PerformanceService>('performanceService'),
+        multiModelComparisonService: container.resolve<MultiModelComparisonService>('multiModelComparisonService')
     };
 
     healthCheckService.registerCriticalChecks({

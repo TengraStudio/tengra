@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react'
 import type { IpcRendererEvent } from 'electron'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { X, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react'
 
 interface UpdateStatus {

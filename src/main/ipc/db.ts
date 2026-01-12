@@ -1,19 +1,54 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { DatabaseService } from '../services/data/database.service'
 import { EmbeddingService } from '../services/llm/embedding.service'
+import { AuditLogService } from '../services/audit-log.service'
 import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { Chat, Message, Folder, Prompt } from '../../shared/types/chat'
+import { Project } from '../../shared/types/project'
+import { WorkspaceMount } from '../../shared/types/workspace'
+import { JsonObject } from '../../shared/types/common'
 
-export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService) {
-    ipcMain.handle('db:createChat', createSafeIpcHandler('db:createChat', async (_event: IpcMainInvokeEvent, chat: any) => {
-        return await databaseService.createChat(chat)
+export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
+    ipcMain.handle('db:createChat', createSafeIpcHandler('db:createChat', async (_event: IpcMainInvokeEvent, chat: Partial<Chat> & { title: string; model: string }) => {
+        // Convert Chat to database format (Date -> number, remove messages array)
+        // Create a plain object without the complex Message[] type
+        const { messages: _messages, ...chatWithoutMessages } = chat
+        const dbChat = {
+            ...chatWithoutMessages,
+            createdAt: chat.createdAt instanceof Date ? chat.createdAt.getTime() : Date.now(),
+            updatedAt: chat.updatedAt instanceof Date ? chat.updatedAt.getTime() : Date.now()
+        } as JsonObject
+        return await databaseService.createChat(dbChat)
     }, { success: false }))
     
-    ipcMain.handle('db:updateChat', createSafeIpcHandler('db:updateChat', async (_event: IpcMainInvokeEvent, id: string, updates: any) => {
-        return await databaseService.updateChat(id, updates)
+    ipcMain.handle('db:updateChat', createSafeIpcHandler('db:updateChat', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Chat>) => {
+        return await databaseService.updateChat(id, updates as JsonObject)
     }, { success: false }))
     
     ipcMain.handle('db:deleteChat', createSafeIpcHandler('db:deleteChat', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.deleteChat(id)
+        try {
+            const result = await databaseService.deleteChat(id)
+            if (auditLogService && result.success) {
+                await auditLogService.log({
+                    action: 'deleteChat',
+                    category: 'data',
+                    details: { chatId: id },
+                    success: true
+                })
+            }
+            return result
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteChat',
+                    category: 'data',
+                    details: { chatId: id },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }, { success: false }))
     
     ipcMain.handle('db:duplicateChat', createSafeIpcHandler('db:duplicateChat', async (_event: IpcMainInvokeEvent, id: string) => {
@@ -35,21 +70,42 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
     ipcMain.handle('db:searchChats', createSafeIpcHandler('db:searchChats', async (_event: IpcMainInvokeEvent, query: string) => {
         return await databaseService.searchChats(query)
     }, []))
-    ipcMain.handle('db:addMessage', createSafeIpcHandler('db:addMessage', async (_event: IpcMainInvokeEvent, message: any) => {
+    ipcMain.handle('db:addMessage', createSafeIpcHandler('db:addMessage', async (_event: IpcMainInvokeEvent, message: Message & { vector?: number[] }) => {
         if (embeddingService) {
             try {
                 // Generate embedding for "context search" later
                 // Only for user/assistant messages with meaningful content
                 if (message.content && (message.role === 'user' || message.role === 'assistant')) {
-                    const vector = await embeddingService.generateEmbedding(message.content)
-                    message.vector = vector
+                    // Handle both string and array content types
+                    const contentStr = typeof message.content === 'string' 
+                        ? message.content 
+                        : Array.isArray(message.content)
+                          ? message.content.filter(p => p.type === 'text').map(p => p.text || '').join(' ')
+                          : ''
+                    if (contentStr) {
+                        const vector = await embeddingService.generateEmbedding(contentStr)
+                        message.vector = vector
+                    }
                 }
             } catch (error) {
                 // Log but don't fail the message addition if embedding fails
                 console.error('[DB IPC] Failed to generate embedding for message:', error)
             }
         }
-        return await databaseService.addMessage(message)
+        // Convert Message to database format - serialize complex types
+        const dbMessage = {
+            id: message.id,
+            chatId: message.chatId,
+            role: message.role,
+            content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+            timestamp: message.timestamp instanceof Date ? message.timestamp.getTime() : Date.now(),
+            images: message.images,
+            reasoning: message.reasoning,
+            toolCalls: message.toolCalls ? JSON.stringify(message.toolCalls) : undefined,
+            toolResults: message.toolResults ? JSON.stringify(message.toolResults) : undefined,
+            vector: message.vector
+        } as JsonObject
+        return await databaseService.addMessage(dbMessage)
     }, { success: false }))
     
     ipcMain.handle('db:getMessages', createSafeIpcHandler('db:getMessages', async (_event: IpcMainInvokeEvent, chatId: string) => {
@@ -68,16 +124,46 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
         return await databaseService.getProjects()
     }, []))
     
-    ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mounts: any) => {
-        return await databaseService.createProject(name, path, desc, mounts)
+    ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mounts: WorkspaceMount[]) => {
+        return await databaseService.createProject(name, path, desc, JSON.stringify(mounts), undefined)
     }))
     
-    ipcMain.handle('db:updateProject', createSafeIpcHandler('db:updateProject', async (_event: IpcMainInvokeEvent, id: string, updates: any) => {
-        return await databaseService.updateProject(id, updates)
+    ipcMain.handle('db:updateProject', createSafeIpcHandler('db:updateProject', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Project>) => {
+        // Convert Date to number for database
+        const dbUpdates: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(updates)) {
+            if (value instanceof Date) {
+                dbUpdates[key] = value.getTime()
+            } else {
+                dbUpdates[key] = value
+            }
+        }
+        return await databaseService.updateProject(id, dbUpdates as JsonObject)
     }, undefined))
     
     ipcMain.handle('db:deleteProject', createIpcHandler('db:deleteProject', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.deleteProject(id)
+        try {
+            await databaseService.deleteProject(id)
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteProject',
+                    category: 'data',
+                    details: { projectId: id },
+                    success: true
+                })
+            }
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteProject',
+                    category: 'data',
+                    details: { projectId: id },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }))
     
     ipcMain.handle('db:archiveProject', createIpcHandler('db:archiveProject', async (_event: IpcMainInvokeEvent, id: string, isArchived: boolean) => {
@@ -85,19 +171,85 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
     }))
     
     ipcMain.handle('db:deleteMessage', createSafeIpcHandler('db:deleteMessage', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.deleteMessage(id)
+        try {
+            const result = await databaseService.deleteMessage(id)
+            if (auditLogService && result.success) {
+                await auditLogService.log({
+                    action: 'deleteMessage',
+                    category: 'data',
+                    details: { messageId: id },
+                    success: true
+                })
+            }
+            return result
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteMessage',
+                    category: 'data',
+                    details: { messageId: id },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }, { success: false }))
     
     ipcMain.handle('db:deleteMessages', createSafeIpcHandler('db:deleteMessages', async (_event: IpcMainInvokeEvent, chatId: string) => {
-        return await databaseService.deleteMessages(chatId)
+        try {
+            const result = await databaseService.deleteMessages(chatId)
+            if (auditLogService && result.success) {
+                await auditLogService.log({
+                    action: 'deleteMessages',
+                    category: 'data',
+                    details: { chatId },
+                    success: true
+                })
+            }
+            return result
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteMessages',
+                    category: 'data',
+                    details: { chatId },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }, { success: false }))
     
-    ipcMain.handle('db:updateMessage', createSafeIpcHandler('db:updateMessage', async (_event: IpcMainInvokeEvent, id: string, updates: any) => {
-        return await databaseService.updateMessage(id, updates)
+    ipcMain.handle('db:updateMessage', createSafeIpcHandler('db:updateMessage', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Message>) => {
+        return await databaseService.updateMessage(id, updates as JsonObject)
     }, { success: false }))
     
     ipcMain.handle('db:deleteAllChats', createSafeIpcHandler('db:deleteAllChats', async () => {
-        return await databaseService.deleteAllChats()
+        try {
+            const result = await databaseService.deleteAllChats()
+            if (auditLogService && result.success) {
+                await auditLogService.log({
+                    action: 'deleteAllChats',
+                    category: 'data',
+                    details: {},
+                    success: true
+                })
+            }
+            return result
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'deleteAllChats',
+                    category: 'data',
+                    details: {},
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }, { success: false }))
     
     ipcMain.handle('db:deleteChatsByTitle', createSafeIpcHandler('db:deleteChatsByTitle', async (_event: IpcMainInvokeEvent, title: string) => {
@@ -109,12 +261,22 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
         return await databaseService.createFolder(name, color)
     }, null))
     
-    ipcMain.handle('db:deleteFolder', createSafeIpcHandler('db:deleteFolder', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.deleteFolder(id)
-    }, { success: false }))
+    ipcMain.handle('db:deleteFolder', createIpcHandler('db:deleteFolder', async (_event: IpcMainInvokeEvent, id: string) => {
+        await databaseService.deleteFolder(id)
+        return { success: true }
+    }))
     
-    ipcMain.handle('db:updateFolder', createSafeIpcHandler('db:updateFolder', async (_event: IpcMainInvokeEvent, id: string, updates: any) => {
-        return await databaseService.updateFolder(id, updates)
+    ipcMain.handle('db:updateFolder', createSafeIpcHandler('db:updateFolder', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Folder>) => {
+        // Convert Date to number for database
+        const dbUpdates: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(updates)) {
+            if (value instanceof Date) {
+                dbUpdates[key] = value.getTime()
+            } else {
+                dbUpdates[key] = value
+            }
+        }
+        return await databaseService.updateFolder(id, dbUpdates as JsonObject)
     }, null))
     
     ipcMain.handle('db:getFolders', createSafeIpcHandler('db:getFolders', async () => {
@@ -127,10 +289,11 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
     }, null))
     
     ipcMain.handle('db:deletePrompt', createSafeIpcHandler('db:deletePrompt', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.deletePrompt(id)
+        await databaseService.deletePrompt(id)
+        return { success: true }
     }, { success: false }))
     
-    ipcMain.handle('db:updatePrompt', createSafeIpcHandler('db:updatePrompt', async (_event: IpcMainInvokeEvent, id: string, updates: any) => {
+    ipcMain.handle('db:updatePrompt', createSafeIpcHandler('db:updatePrompt', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Prompt>) => {
         return await databaseService.updatePrompt(id, updates)
     }, null))
     

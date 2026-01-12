@@ -17,7 +17,10 @@ export function registerCouncilIpc(agentCouncil: AgentCouncilService, _db: Datab
     }, null))
 
     ipcMain.handle('council:log', createSafeIpcHandler('council:log', async (_event: IpcMainInvokeEvent, sessionId: string, agentId: string, message: string, type: string) => {
-        return await agentCouncil.addLog(sessionId, agentId, message, type)
+        const logType = (type === 'error' || type === 'info' || type === 'success' || type === 'plan' || type === 'action') 
+            ? type 
+            : 'info'
+        return await agentCouncil.addLog(sessionId, agentId, message, logType)
     }, null))
 
     ipcMain.on('council:run-step', (_, sessionId) => {

@@ -199,8 +199,8 @@ export class HealthCheckService extends EventEmitter {
      * @param components Dependencies needed for checks
      */
     registerCriticalChecks(components: {
-        databaseService: any;
-        networkService: any;
+        databaseService: { getDatabase: () => { prepare: (sql: string) => { get: () => unknown } } };
+        networkService: unknown;
     }) {
         const { databaseService } = components;
 

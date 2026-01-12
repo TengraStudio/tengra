@@ -41,6 +41,7 @@ export interface ToolResult {
 
 export interface Message {
     id: string
+    chatId?: string // Reference to parent chat
     role: 'user' | 'assistant' | 'system'
     content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
     timestamp: Date

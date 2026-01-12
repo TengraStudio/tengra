@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { DataService } from './data/data.service'
 import { SecurityService } from './security.service'
+import { getErrorMessage } from '../../shared/utils/error.util'
 
 export class AuthService {
     private authDir: string
@@ -14,23 +15,47 @@ export class AuthService {
     }
 
     saveToken(provider: string, token: string): void {
-        console.log(`[AuthService] Saving token for ${provider} (len=${token.length})`)
-        const encrypted = this.securityService.encryptSync(token)
-        const filePath = path.join(this.authDir, `${provider}.json`)
+        if (!provider || !token) {
+            console.error('[AuthService] Provider and token are required for saving');
+            return;
+        }
+
+        const encrypted = this.securityService.encryptSync(token);
+        if (!encrypted) {
+            console.error(`[AuthService] Encryption failed for provider: ${provider}`);
+            return;
+        }
+
+        const filePath = path.join(this.authDir, `${provider}.json`);
         const data = {
             provider,
             token: encrypted,
             updatedAt: Date.now()
-        }
+        };
+
         try {
-            fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
-            console.log(`[AuthService] Wrote ${filePath}`)
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
         } catch (e) {
-            console.error(`[AuthService] Failed to write ${filePath}:`, e)
+            console.error(`[AuthService] Failed to write ${filePath}:`, getErrorMessage(e));
         }
     }
 
     getToken(provider: string): string | undefined {
+        if (!provider) return undefined;
+
+        const filePath = this.resolveFilePath(provider);
+        if (!filePath) return undefined;
+
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            return this.processTokenContent(content, filePath);
+        } catch (error) {
+            console.error(`[AuthService] Failed to read token from ${filePath}:`, getErrorMessage(error));
+        }
+        return undefined;
+    }
+
+    private resolveFilePath(provider: string): string | undefined {
         const baseName = provider.replace(/\.(json|enc)$/, '');
         const possiblePaths = [
             path.join(this.authDir, `${baseName}.json`),
@@ -38,121 +63,101 @@ export class AuthService {
             path.join(this.authDir, baseName)
         ];
 
-        let filePath = '';
         for (const p of possiblePaths) {
-            if (fs.existsSync(p)) {
-                filePath = p;
-                break;
+            if (fs.existsSync(p)) return p;
+        }
+        return undefined;
+    }
+
+    private processTokenContent(content: string, filePath: string): string | undefined {
+        // 1. Try to extract payload from JSON if applicable
+        const payload = this.extractEncryptedPayload(content);
+
+        // 2. Try to decrypt
+        let decrypted = this.securityService.decryptSync(payload);
+
+        // 3. Fallback: If decryption failed, check if it's already plain text (legacy)
+        if (decrypted === null) {
+            if (!payload.trim().startsWith('{')) {
+                return payload.trim();
             }
+            console.warn(`[AuthService] Could not decrypt or extract plain token from ${path.basename(filePath)}`);
+            return undefined;
         }
 
-        if (!filePath) return undefined;
+        // 4. If decrypted content is JSON, extract final token (legacy nested format)
+        if (decrypted.trim().startsWith('{')) {
+            return this.extractTokenFromPlainJSON(decrypted);
+        }
+
+        return decrypted.trim();
+    }
+
+    private extractEncryptedPayload(content: string): string {
+        const trimmed = content.trim();
+        if (!trimmed.startsWith('{')) return trimmed;
 
         try {
-            const content = fs.readFileSync(filePath, 'utf-8');
-            let toDecrypt = content;
+            const data = JSON.parse(trimmed) as Record<string, unknown>;
+            const candidates = ['token', 'encryptedPayload', 'ciphertext', 'data', 'access_token', 'accessToken'];
 
-            // Try to see if it's a JSON wrapper first
-            try {
-                const data = JSON.parse(content);
-
-                const extractString = (obj: Record<string, unknown>): string | null => {
-                    if (!obj) return null;
-                    const candidates = ['token', 'encryptedPayload', 'ciphertext', 'data', 'access_token', 'accessToken'];
-                    for (const c of candidates) {
-                        if (typeof obj[c] === 'string' && obj[c]) return obj[c] as string;
-                        if (typeof obj[c] === 'object' && obj[c] !== null) {
-                            const nested = extractString(obj[c] as Record<string, unknown>);
-                            if (nested) return nested;
-                        }
+            for (const key of candidates) {
+                const val = data[key];
+                if (typeof val === 'string' && val) return val;
+                // Shallow search for nested objects (limit depth for NASA Rule 4)
+                if (typeof val === 'object' && val !== null) {
+                    const nested = val as Record<string, unknown>;
+                    for (const subKey of candidates) {
+                        const subVal = nested[subKey];
+                        if (typeof subVal === 'string' && subVal) return subVal;
                     }
-                    return null;
-                };
-
-                const payload = extractString(data);
-                if (payload) {
-                    toDecrypt = payload;
                 }
-            } catch { /* Not JSON at the top level, treat as raw content */ }
-
-            // If it was a JSON wrapper, toDecrypt might still be JSON (wrapping the encrypted payload)
-            if (toDecrypt.trim().startsWith('{')) {
-                try {
-                    const parsed = JSON.parse(toDecrypt);
-                    const nestedPayload = (parsed.encryptedPayload || parsed.ciphertext || parsed.token || parsed.data) as string;
-                    if (typeof nestedPayload === 'string') {
-                        toDecrypt = nestedPayload;
-                    }
-                } catch { /* Not JSON or no payload field */ }
             }
+        } catch { /* Fail silently, return original */ }
+        return trimmed;
+    }
 
-            let decrypted = toDecrypt.trim().startsWith('{') ? null : this.securityService.decryptSync(toDecrypt);
-
-            // Fallback 1: Try decrypting the raw file content if it doesn't look like JSON
-            if (decrypted === null && toDecrypt !== content && !content.trim().startsWith('{')) {
-                decrypted = this.securityService.decryptSync(content);
-            }
-
-            // Fallback 2: If still no decryption, maybe it's already plain text?
-            if (decrypted === null) {
-                const potentialToken = (toDecrypt || content).trim();
-                // If it's not JSON (after possible extraction), it's probably the token itself
-                if (potentialToken && !potentialToken.startsWith('{')) {
-                    return potentialToken;
-                }
-                console.warn(`[AuthService] Could not decrypt or extract plain token from ${path.basename(filePath)}`);
-                return undefined;
-            }
-
-            // If we got here, we have a decrypted string. It might be a JSON object containing the real token.
-            if (decrypted.trim().startsWith('{')) {
-                try {
-                    const parsed = JSON.parse(decrypted);
-                    const token = parsed.access_token || parsed.token?.access_token || parsed.token || parsed.apiKey || parsed.accessToken;
-                    if (typeof token === 'string' && token) return token.trim();
-                } catch { /* Not JSON or no token field */ }
-            }
-
-            return decrypted.trim();
-        } catch (error) {
-            console.error(`[AuthService] Failed to read token from ${filePath}:`, error)
-        }
-        return undefined
+    private extractTokenFromPlainJSON(jsonStr: string): string {
+        try {
+            const parsed = JSON.parse(jsonStr) as Record<string, any>;
+            const token = parsed.access_token || parsed.token?.access_token || parsed.token || parsed.apiKey || parsed.accessToken;
+            if (typeof token === 'string' && token) return token.trim();
+        } catch { /* Fail silently */ }
+        return jsonStr.trim();
     }
 
     deleteToken(provider: string): void {
-        const filePath = path.join(this.authDir, `${provider}.json`)
+        if (!provider) return;
+        const filePath = path.join(this.authDir, `${provider}.json`);
         if (fs.existsSync(filePath)) {
-            console.warn(`[AuthService] Deleting token file for provider: ${provider}`);
-            fs.unlinkSync(filePath)
+            try {
+                fs.unlinkSync(filePath);
+            } catch (e) {
+                console.error(`[AuthService] Failed to delete token for ${provider}:`, getErrorMessage(e));
+            }
         }
     }
 
     getAllTokens(): Record<string, string> {
-        const tokens: Record<string, string> = {}
-        try {
-            if (!fs.existsSync(this.authDir)) return tokens
+        const tokens: Record<string, string> = {};
+        if (!fs.existsSync(this.authDir)) return tokens;
 
-            const files = fs.readdirSync(this.authDir)
+        try {
+            const files = fs.readdirSync(this.authDir);
             for (const file of files) {
+                // Limit loop to avoid indefinite execution (NASA Rule 2)
+                if (Object.keys(tokens).length > 100) break;
+
                 if (file.endsWith('.json') || file.endsWith('.enc')) {
-                    try {
-                        const provider = file.replace(/\.(json|enc)$/, '')
-                        const token = this.getToken(provider)
-                        if (token) {
-                            tokens[provider] = token
-                            console.log(`[AuthService] Loaded token for ${provider}, length: ${token.length}`)
-                        } else {
-                            console.warn(`[AuthService] Failed to get token for ${provider} (file: ${file})`)
-                        }
-                    } catch (e) {
-                        console.warn(`[AuthService] Skipping ${file} during load:`, e)
-                    }
+                    const provider = file.replace(/\.(json|enc)$/, '');
+                    const token = this.getToken(provider);
+                    if (token) tokens[provider] = token;
                 }
             }
         } catch (error) {
-            console.error('[AuthService] Failed to load all tokens:', error)
+            console.error('[AuthService] Failed to load all tokens:', getErrorMessage(error));
         }
-        return tokens
+        return tokens;
     }
+
 }

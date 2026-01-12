@@ -56,3 +56,22 @@ export interface SystemInfo {
     shell?: string
     [key: string]: string | number | undefined
 }
+
+export interface MetricData {
+    name: string
+    value: number
+    unit: 'ms' | 'count' | 'bytes' | 'percent'
+    timestamp: number
+    tags?: Record<string, string>
+}
+
+export interface ProviderMetrics {
+    requestCount: number
+    successCount: number
+    errorCount: number
+    totalLatencyMs: number
+    avgLatencyMs: number
+    minLatencyMs: number
+    maxLatencyMs: number
+    lastRequestAt?: number
+}
