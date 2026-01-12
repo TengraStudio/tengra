@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Activity, HardDrive, Cpu, Clock } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion } from '@/lib/framer-motion-compat'
 import { useTranslation } from '@/i18n'
 
 interface SystemStats {

@@ -113,6 +113,8 @@ export const webElectronMock: ElectronAPI = {
         copilot_plan: 'business'
     } as CopilotQuota),
     getCodexUsage: async () => ({}),
+    checkUsageLimit: async (_provider: string, _model: string) => ({ allowed: true }),
+    getUsageCount: async (_period: 'hourly' | 'daily' | 'weekly', _provider?: string, _model?: string) => 0,
     importChatHistory: async (_provider: string) => ({ success: true }),
     importChatHistoryJson: async (_jsonContent: string) => ({ success: true }),
 
@@ -379,6 +381,20 @@ export const webElectronMock: ElectronAPI = {
         checkForUpdates: async () => { },
         downloadUpdate: async () => { },
         installUpdate: async () => { }
+    },
+
+    collaboration: {
+        run: async (_request: { messages: Message[]; models: Array<{ provider: string; model: string }>; strategy?: string }) => ({
+            response: 'Mock collaboration response',
+            modelContributions: []
+        }),
+        getProviderStats: async () => [],
+        getActiveTaskCount: async () => 0,
+        setProviderConfig: async (_provider: string, _config: { concurrencyLimit?: number; rateLimit?: number }) => { }
+    },
+
+    audit: {
+        getLogs: async (_startDate?: string, _endDate?: string, _category?: string) => []
     },
 
     ipcRenderer: {

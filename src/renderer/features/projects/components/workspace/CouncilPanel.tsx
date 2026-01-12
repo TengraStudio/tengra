@@ -136,7 +136,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                             {t('agents.waitingActivity')}
                         </div>
                     ) : (
-                        activityLog.map((log: any) => (
+                        activityLog.map((log: ActivityEntry) => (
                             <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className={cn(
                                     "shrink-0 w-1.5 h-1.5 mt-1.5 rounded-full",

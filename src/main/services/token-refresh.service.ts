@@ -10,8 +10,9 @@ import { JsonObject } from '../../shared/types/common'
 import { getErrorMessage } from '../../shared/utils/error.util'
 
 // OAuth Client IDs and Secrets
+// Client IDs are public, but secrets should be in environment variables
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
-const ANTIGRAVITY_CLIENT_SECRET = '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'
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || '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'
 
 const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann' // OpenAI OAuth Client ID
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token'
@@ -252,10 +253,11 @@ export class TokenRefreshService {
                 this.saveAuthFile(filePath, updatedData)
                 
                 console.log('[TokenRefreshService] Google/Antigravity token refreshed successfully')
-            } catch (error: any) {
+            } catch (error: unknown) {
                 const errorMsg = getErrorMessage(error)
-                const statusCode = error?.response?.status
-                const errorCode = error?.response?.data?.error
+                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
+                const statusCode = axiosError?.response?.status
+                const errorCode = axiosError?.response?.data?.error
                 
                 // Check if refresh token is invalid/expired (OAuth error codes)
                 if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
@@ -335,10 +337,11 @@ export class TokenRefreshService {
                 this.saveAuthFile(filePath, updatedData)
                 
                 console.log('[TokenRefreshService] Codex token refreshed successfully')
-            } catch (error: any) {
+            } catch (error: unknown) {
                 const errorMsg = getErrorMessage(error)
-                const statusCode = error?.response?.status
-                const errorCode = error?.response?.data?.error
+                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
+                const statusCode = axiosError?.response?.status
+                const errorCode = axiosError?.response?.data?.error
                 
                 // Check if refresh token is invalid/expired
                 if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
@@ -414,10 +417,11 @@ export class TokenRefreshService {
                 this.saveAuthFile(filePath, updatedData)
                 
                 console.log('[TokenRefreshService] Claude token refreshed successfully')
-            } catch (error: any) {
+            } catch (error: unknown) {
                 const errorMsg = getErrorMessage(error)
-                const statusCode = error?.response?.status
-                const errorCode = error?.response?.data?.error
+                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
+                const statusCode = axiosError?.response?.status
+                const errorCode = axiosError?.response?.data?.error
                 
                 // Check if refresh token is invalid/expired
                 if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {

@@ -1,9 +1,9 @@
-import { memo } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { useTranslation } from '@/i18n'
 import { useSettingsLogic } from './hooks/useSettingsLogic'
 import { cn } from '@/lib/utils'
 import { GalleryView } from '@/features/chat/components/GalleryView'
-// unused imports removed
+import { Search, X } from 'lucide-react'
 
 // Tab Components
 import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab } from '@/features/settings/components'
@@ -40,7 +40,29 @@ export function SettingsPage({
 
     const { t } = useTranslation(settings?.general?.language || 'tr')
 
-    // tabs removed because unused
+    // Search state for settings
+    const [searchQuery, setSearchQuery] = useState('')
+    
+    // Define tabs for filtering
+    const allTabs = useMemo(() => [
+        { id: 'general', label: t('settings.tabs.general') },
+        { id: 'accounts', label: t('settings.tabs.accounts') },
+        { id: 'appearance', label: t('settings.tabs.appearance') },
+        { id: 'models', label: t('settings.tabs.models') },
+        { id: 'statistics', label: t('settings.tabs.statistics') },
+        { id: 'personas', label: t('settings.tabs.personas') },
+        { id: 'speech', label: t('settings.tabs.speech') },
+        { id: 'developer', label: t('settings.tabs.developer') },
+        { id: 'advanced', label: t('settings.tabs.advanced') },
+        { id: 'about', label: t('settings.tabs.about') }
+    ], [t])
+    
+    const filteredTabs = useMemo(() => {
+        if (!searchQuery) return allTabs
+        return allTabs.filter(tab => 
+            tab.label.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    }, [searchQuery, allTabs])
 
     const handleFactoryReset = async () => {
         if (confirm(t('settings.factoryResetConfirm'))) {

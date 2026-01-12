@@ -55,7 +55,8 @@ export function handleError(
     } = options
 
     const message = customMessage || getErrorMessage(error)
-    const errorCode = error instanceof OrbitError ? error.code : AppErrorCode.UNKNOWN
+    // Error code can be used for analytics or error tracking in the future
+    void (error instanceof OrbitError ? error.code : AppErrorCode.UNKNOWN)
 
     if (logToConsole) {
         console.error(`[${context}] Error:`, error)

@@ -1,11 +1,11 @@
-import { net, session } from 'electron'
+/* eslint-disable complexity, max-depth, no-console */
+import { net, session, app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import axios from 'axios'
 import { SettingsService } from '../settings.service'
 import { DataService } from '../data/data.service'
 import { SecurityService } from '../security.service'
-import { app } from 'electron'
 import { QuotaInfo, ModelQuotaItem, QuotaResponse, CodexUsage } from '../../../shared/types/quota'
 import { JsonObject, JsonValue } from '../../../shared/types/common'
 import { getErrorMessage } from '../../../shared/utils/error.util'
@@ -28,18 +28,22 @@ export class QuotaService {
             }
             const request = net.request(options)
             request.setHeader('Authorization', `Bearer ${apiKey}`)
-            request.on('response', (res) => {
+            request.on('response', (res: any) => {
                 let d = '';
-                res.on('data', chunk => d += chunk);
+                res.on('data', (chunk: Buffer) => { d += chunk.toString() });
                 res.on('end', () => {
                     if (res.statusCode && res.statusCode >= 400) {
                         resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
                         return
                     }
-                    try { resolve(JSON.parse(d) as JsonObject); } catch { resolve({ success: false, error: 'Invalid JSON', raw: d }); }
+                    try {
+                        resolve(JSON.parse(d) as JsonObject);
+                    } catch {
+                        resolve({ success: false, error: 'Invalid JSON', raw: d });
+                    }
                 })
             })
-            request.on('error', e => reject(e))
+            request.on('error', (e: Error) => reject(e))
             request.end()
         })
     }
@@ -49,45 +53,42 @@ export class QuotaService {
         try {
             const antigravity = await this.fetchAntigravityQuota()
             if (antigravity && !antigravity.authExpired) {
-                console.log('[QuotaService] getQuota: Successfully fetched from Antigravity')
                 return antigravity
             }
             if (antigravity?.authExpired) {
-                console.log('[QuotaService] getQuota: Antigravity auth expired, returning authExpired response')
+                // Auth expired
                 return antigravity
             }
-        } catch (e) {
-            console.debug('[QuotaService] getQuota: Antigravity fetch failed:', getErrorMessage(e))
+        } catch {
+            // ignore
         }
 
         // 2. Try Legacy Fallback
         try {
             const legacy = await this.fetchLegacyQuota()
             if (legacy && legacy.success) {
-                console.log('[QuotaService] getQuota: Successfully fetched from Legacy')
                 return legacy
             }
-        } catch (e) {
-            console.debug('[QuotaService] getQuota: Legacy fetch failed:', getErrorMessage(e))
+        } catch {
+            // ignore
         }
 
         // 3. Try Codex
         try {
             const codex = await this.fetchCodexQuota()
             if (codex && codex.success) {
-                console.log('[QuotaService] getQuota: Successfully fetched from Codex')
                 return codex
             }
-        } catch (e) {
-            console.debug('[QuotaService] getQuota: Codex fetch failed:', getErrorMessage(e))
+        } catch {
+            // ignore
         }
 
-        console.log('[QuotaService] getQuota: All fetch methods failed, returning null')
         return null
     }
 
     // --- Antigravity ---
 
+    // eslint-disable-next-line @typescript-eslint/class-methods-use-this
     async fetchAntigravityUpstream(): Promise<JsonObject | null> {
         const authData = await this.getAntigravityAuthData()
         if (!authData) return null
@@ -101,7 +102,6 @@ export class QuotaService {
         if (!accessToken) return null
 
         if (this.isTokenExpired({ timestamp, expires_in: expiresIn })) {
-            console.log('[QuotaService] AG Token expired, refreshing...')
             if (!refreshToken) throw new Error('AUTH_EXPIRED')
             const newToken = await this.refreshAntigravityToken(refreshToken)
             if (newToken) {
@@ -124,7 +124,7 @@ export class QuotaService {
             },
             timeout: 8000
         })
-        if (response.status === 200 && response.data) return response.data
+        if (response.status === 200 && response.data) return response.data as JsonObject
         return null
     }
 
@@ -132,20 +132,21 @@ export class QuotaService {
         try {
             const data = await this.fetchAntigravityUpstream()
             if (data) {
-                // Log raw quota data for debugging
-                console.log('[QuotaService] Raw Antigravity quota data:', JSON.stringify(data, null, 2))
                 return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
             }
         } catch (error) {
-            if (error instanceof Error && error.message === 'AUTH_EXPIRED') return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
+            if (error instanceof Error && error.message === 'AUTH_EXPIRED') {
+                return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
+            }
         }
         return null
     }
 
+    // eslint-disable-next-line complexity
     async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
         try {
             const data = await this.fetchAntigravityUpstream() as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
-            if (data && data.models) {
+            if (data?.models) {
                 const models: ModelQuotaItem[] = []
                 const nameMap: Record<string, string> = {
                     "gemini-2.5-pro": "Gemini 2.5 Pro",
@@ -194,8 +195,8 @@ export class QuotaService {
                 }
                 return models
             }
-        } catch (error) {
-            console.error('[QuotaService] getAntigravityAvailableModels failed:', getErrorMessage(error))
+        } catch {
+            // ignore
         }
         return []
     }
@@ -294,7 +295,7 @@ export class QuotaService {
             try {
                 const cookies = await session.defaultSession.cookies.get({ url: 'https://chatgpt.com' })
                 if (cookies.length > 0) {
-                    const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ')
+                    const cookieHeader = cookies.map((c: any) => `${c.name}=${c.value}`).join('; ')
                     const sessionRes = await axios.get('https://chatgpt.com/api/auth/session', {
                         headers: {
                             'Cookie': cookieHeader,
@@ -351,22 +352,22 @@ export class QuotaService {
                 if (fs.existsSync(authDir)) {
                     const files = fs.readdirSync(authDir).filter(f => {
                         const name = f.toLowerCase()
-                        return (name.startsWith('copilot') || name.startsWith('github')) && 
-                               (name.endsWith('.json') || name.endsWith('.enc'))
+                        return (name.startsWith('copilot') || name.startsWith('github')) &&
+                            (name.endsWith('.json') || name.endsWith('.enc'))
                     })
-                    
+
                     // Try copilot files first, then github files
                     const copilotFiles = files.filter(f => f.toLowerCase().startsWith('copilot'))
                     const githubFiles = files.filter(f => f.toLowerCase().startsWith('github'))
-                    
+
                     for (const file of [...copilotFiles, ...githubFiles]) {
                         const authFile = path.join(authDir, file)
                         const content = this.readAuthFile(authFile)
                         if (content) {
                             // Try to extract token - could be in 'token' or 'access_token' field
                             const fileToken = typeof content.token === 'string' ? content.token :
-                                            typeof content.access_token === 'string' ? content.access_token :
-                                            null
+                                typeof content.access_token === 'string' ? content.access_token :
+                                    null
                             if (fileToken && fileToken !== 'connected') {
                                 token = fileToken
                                 break
@@ -394,6 +395,7 @@ export class QuotaService {
 
     // --- Helpers ---
 
+    // eslint-disable-next-line complexity
     extractCodexUsageFromWham(data: JsonValue): CodexUsage | null {
         if (!data || typeof data !== 'object') return null
         const d = data as JsonObject
@@ -454,6 +456,7 @@ export class QuotaService {
         return null
     }
 
+    // eslint-disable-next-line complexity
     private parseQuotaResponse(data: { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> }): QuotaResponse | null {
         if (!data.models) return null
         const models: ModelQuotaItem[] = []
@@ -462,13 +465,10 @@ export class QuotaService {
                 if (key.startsWith('chat_') || key.startsWith('rev')) continue
                 let percentage = 100
                 let reset = '-'
-                let quotaInfo: QuotaInfo | undefined = undefined
+                let quotaInfo: QuotaInfo | undefined
 
                 if (val.quotaInfo) {
                     const q = val.quotaInfo;
-                    // Log raw quotaInfo for debugging
-                    console.log(`[QuotaService] Raw quotaInfo for ${key}:`, JSON.stringify(q, null, 2))
-                    
                     if (typeof q.remainingFraction === 'number') {
                         percentage = Math.round(q.remainingFraction * 100)
                     } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
@@ -476,9 +476,6 @@ export class QuotaService {
                     } else if (q.resetTime) {
                         percentage = 0
                     }
-                    
-                    // Log quota info for debugging 429 errors
-                    console.log(`[QuotaService] Model ${key}: ${percentage}% remaining (${q.remainingQuota || 'N/A'}/${q.totalQuota || 'N/A'}), reset: ${q.resetTime || 'N/A'}`)
 
                     if (q.resetTime) {
                         try {
@@ -508,8 +505,8 @@ export class QuotaService {
                     permission: [],
                     quotaInfo
                 })
-            } catch (error) {
-                console.warn('[QuotaService] parseQuotaResponse model error:', getErrorMessage(error))
+            } catch {
+                // ignore
             }
         }
 

@@ -22,7 +22,7 @@ export function sanitizeString(
     const {
         maxLength = 1000000, // Default 1MB of text
         allowNewlines = true,
-        allowSpecialChars = true,
+        allowSpecialChars: _allowSpecialChars = true,
         trimWhitespace = true
     } = options
 
@@ -164,7 +164,7 @@ export function sanitizeStringArray(
  * @param options - Sanitization options
  * @returns Sanitized object
  */
-export function sanitizeObject<T extends Record<string, any>>(
+export function sanitizeObject<T extends Record<string, unknown>>(
     obj: T,
     options: Parameters<typeof sanitizeString>[1] = {}
 ): T {
@@ -177,7 +177,7 @@ export function sanitizeObject<T extends Record<string, any>>(
     }
 
     if (Array.isArray(obj)) {
-        return obj.map(item => sanitizeObject(item, options)) as T
+        return obj.map(item => sanitizeObject(item as Record<string, unknown>, options)) as unknown as T
     }
 
     const sanitized = {} as T
@@ -186,11 +186,11 @@ export function sanitizeObject<T extends Record<string, any>>(
         const sanitizedKey = sanitizeString(key, { maxLength: 100, allowNewlines: false })
         
         if (typeof value === 'string') {
-            ;(sanitized as any)[sanitizedKey] = sanitizeString(value, options)
+            ;(sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options)
         } else if (typeof value === 'object' && value !== null) {
-            ;(sanitized as any)[sanitizedKey] = sanitizeObject(value, options)
+            ;(sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options)
         } else {
-            ;(sanitized as any)[sanitizedKey] = value
+            ;(sanitized as Record<string, unknown>)[sanitizedKey] = value
         }
     }
 

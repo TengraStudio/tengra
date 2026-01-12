@@ -11,18 +11,38 @@ export class SecurityService extends BaseService implements ISecurityService {
         super('SecurityService');
     }
 
+    /**
+     * NASA Rule 8: Validate all input parameters.
+     * Uses CSPRNG for cryptographic security.
+     */
     generatePassword(length: number = 16, numbers: boolean = true, symbols: boolean = true): ServiceResponse<{ password: string }> {
+        if (length < 1 || length > 1024) {
+            return { success: false, error: 'Invalid password length (must be 1-1024)' };
+        }
+
         const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             (numbers ? "0123456789" : "") +
             (symbols ? "!@#$%^&*()_+~`|}{[]:;?><,./-=" : "");
+
+        const charsetLength = charset.length;
         let retVal = "";
-        for (let i = 0, n = charset.length; i < length; ++i) {
-            retVal += charset.charAt(Math.floor(Math.random() * n));
+
+        try {
+            const randomBytes = crypto.randomBytes(length);
+            for (let i = 0; i < length; ++i) {
+                retVal += charset.charAt(randomBytes[i] % charsetLength);
+            }
+            return { success: true, result: { password: retVal } };
+        } catch (e) {
+            return { success: false, error: `Failed to generate random bytes: ${getErrorMessage(e)}` };
         }
-        return { success: true, result: { password: retVal } };
     }
 
     checkPasswordStrength(password: string): ServiceResponse<{ score: number; label: string }> {
+        if (!password) {
+            return { success: true, result: { score: 0, label: "Very Weak" } };
+        }
+
         let score = 0;
         if (password.length > 8) score++;
         if (password.length > 12) score++;
@@ -35,6 +55,9 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     generateHash(text: string, algorithm: 'md5' | 'sha256' | 'sha512' = 'sha256'): ServiceResponse<{ hash: string }> {
+        if (!text) {
+            return { success: false, error: 'Input text is required for hashing' };
+        }
         try {
             const hash = crypto.createHash(algorithm).update(text).digest('hex');
             return { success: true, result: { hash } };
@@ -44,6 +67,9 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     async stripMetadata(path: string, outputPath: string): Promise<ServiceResponse> {
+        if (!path || !outputPath) {
+            return { success: false, error: 'Source and output paths are required' };
+        }
         try {
             await fs.copyFile(path, outputPath);
             return { success: true, message: `Created copy at ${outputPath}. Note: dependency-free stripping is limited.` };
@@ -52,19 +78,17 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
     }
 
-
     encryptSync(text: string): string {
+        if (!text) return '';
         try {
             if (safeStorage && safeStorage.isEncryptionAvailable()) {
                 const buffer = safeStorage.encryptString(text);
-                const result = buffer.toString('base64');
-                return result;
-            } else {
-                console.error('[SecurityService] safeStorage.isEncryptionAvailable() returned FALSE.');
-                return '';
+                return buffer.toString('base64');
             }
+            console.error('[SecurityService] Encryption not available');
+            return '';
         } catch (error) {
-            console.error('[SecurityService] safeStorage encrypt CRITICAL FAIL:', getErrorMessage(error));
+            console.error('[SecurityService] Encryption failed:', getErrorMessage(error));
             return '';
         }
     }
@@ -72,22 +96,17 @@ export class SecurityService extends BaseService implements ISecurityService {
     decryptSync(encryptedText: string): string | null {
         if (!encryptedText) return null;
 
-        if (safeStorage && safeStorage.isEncryptionAvailable()) {
-            try {
-                // Try standard base64 decode first
+        try {
+            if (safeStorage && safeStorage.isEncryptionAvailable()) {
                 const buffer = Buffer.from(encryptedText, 'base64');
-                const decrypted = safeStorage.decryptString(buffer);
-                return decrypted;
-            } catch (error) {
-                console.warn('[SecurityService] Standard decryption failed:', getErrorMessage(error));
-
-                // If it was legacy JSON wrapper (from my previous attempt), try to unwrap it purely for migration sake?
-                // Or just fail. User wants *only* SSS. If checking for SSS success is the goal, we fail on error.
-                return null;
+                return safeStorage.decryptString(buffer);
             }
-        } else {
-            console.error('[SecurityService] Cannot decrypt: safeStorage unavailable.');
+            console.error('[SecurityService] Decryption not available');
+            return null;
+        } catch (error) {
+            console.warn('[SecurityService] Decryption failed:', getErrorMessage(error));
             return null;
         }
     }
+
 }

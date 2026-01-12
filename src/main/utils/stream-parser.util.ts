@@ -37,12 +37,18 @@ export class StreamParser {
             if ('getReader' in body && typeof body.getReader === 'function') {
                 // Web Standard ReadableStream
                 const reader = body.getReader();
+                const MAX_STREAM_ITERATIONS = 10000;
+                let iterations = 0;
                 try {
-                    while (true) {
+                    while (iterations < MAX_STREAM_ITERATIONS) {
                         const { done, value } = await reader.read();
                         if (done) break;
                         buffer += decoder.decode(value, { stream: true });
                         yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
+                        iterations++;
+                    }
+                    if (iterations >= MAX_STREAM_ITERATIONS) {
+                        throw new Error('Stream parsing exceeded maximum iterations');
                     }
                 } finally {
                     reader.releaseLock();
@@ -74,13 +80,49 @@ export class StreamParser {
 
             // Handle nested data: prefix issue
             let jsonData = data;
-            while (jsonData.startsWith('data:')) {
+            const MAX_DATA_PREFIX_ITERATIONS = 100;
+            let prefixIterations = 0;
+            while (jsonData.startsWith('data:') && prefixIterations < MAX_DATA_PREFIX_ITERATIONS) {
                 jsonData = jsonData.slice(5).trim();
+                prefixIterations++;
             }
             if (jsonData === '[DONE]') continue;
 
             try {
-                const json = JSON.parse(jsonData) as OpenAIStreamPayload;
+                const json = JSON.parse(jsonData) as OpenAIStreamPayload & { type?: string; delta?: string; message?: string };
+
+                // 1. OPENCODE /responses format
+                if (json.type === 'response.output_text.delta' && json.delta) {
+                    yield { content: json.delta };
+                    continue;
+                }
+
+                if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
+                    yield { reasoning: json.delta };
+                    continue;
+                }
+
+                if (json.type === 'response.function_call_arguments.delta' && json.delta) {
+                    yield {
+                        type: 'tool_calls',
+                        tool_calls: [{
+                            id: 'opencode-tc-' + (json as any).response_id || 'unknown',
+                            type: 'function',
+                            function: {
+                                name: (json as any).name || 'unknown',
+                                arguments: json.delta
+                            }
+                        }]
+                    };
+                    continue;
+                }
+
+                if (json.type === 'error' && json.message) {
+                    console.error('[StreamParser] API Error Chunk:', json.message);
+                    throw new Error(json.message);
+                }
+
+                // 2. STANDARD OpenAI format
                 const delta = json.choices?.[0]?.delta;
                 if (!delta) continue;
 

@@ -1,5 +1,5 @@
 // MemoryService - Refactored for Async DatabaseService
-import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge, ChatMessage as DbChatMessage } from './data/database.service'
+import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge } from './data/database.service'
 import { EmbeddingService } from './llm/embedding.service'
 import { LLMService } from './llm/llm.service'
 import { ChatMessage } from '../types/llm.types'
@@ -13,6 +13,13 @@ interface PersonalitySettings {
 
 interface OllamaTagsResponse {
     models: { name: string }[];
+}
+
+export interface SummarizationResult {
+    summary: string;
+    title: string;
+    topics: string[];
+    pendingTasks: string[];
 }
 
 // Preferred models in order of priority (smallest first for speed)
@@ -72,73 +79,79 @@ export class MemoryService {
     }
 
     // Episodic Memory (Conversation History)
-    async summarizeSession(chatId: string, provider?: string, model?: string): Promise<EpisodicMemory | null> {
-        const messages = await this.db.getChatMessages(chatId)
-        return await this.summarizeAndStoreSession(chatId, messages, provider, model)
-    }
-
-    async summarizeAndStoreSession(chatId: string, messages: DbChatMessage[], provider?: string, model: string = 'gpt-4o-mini'): Promise<EpisodicMemory | null> {
-        if (messages.length < 5) return null;
+    async summarizeChat(chatId: string, provider?: string, model?: string): Promise<SummarizationResult> {
+        const messages = await this.db.getChatMessages(chatId);
+        if (messages.length === 0) return { summary: '', title: 'Empty Chat', topics: [], pendingTasks: [] };
 
         const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+        const prompt = `Analyze the following chat transcript and provide:
+1. A concise summary (max 3 sentences).
+2. A short, descriptive title.
+3. Key topics discussed (comma-separated).
+4. Any unresolved tasks or questions.
 
-        const prompt = `Summarize the following chat session into a concise episodic memory (max 3 sentences).
-Focus on what was achieved, what problems were solved, and any key decisions made.
-Do not mention "User asked" or "Assistant answered" repeatedly. just state the events.
+Format the output as JSON:
+{
+  "summary": "...",
+  "title": "...",
+  "topics": ["...", "..."],
+  "pendingTasks": ["...", "..."]
+}
 
-Chat Transcript:
+Transcript:
 ${transcript}`;
 
         try {
             const res = await this.callLLM(
-                [{ role: 'system', content: 'You are an Episodic Memory Agent.' }, { role: 'user', content: prompt }],
-                model,
+                [{ role: 'system', content: 'You are an expert at analyzing and summarizing conversations.' }, { role: 'user', content: prompt }],
+                model || 'gpt-4o-mini',
                 provider
             );
 
-            const summary = res.content.trim();
-            console.log('[Active Memory] Session Summary:', summary);
-
-            const embedding = await this.embedding.generateEmbedding(summary);
-
-            const id = Math.random().toString(36).substring(2, 15);
-            const now = Date.now();
-
-            const memory: EpisodicMemory = {
-                id,
-                title: `Session ${new Date(now).toLocaleDateString()} - ${summary.substring(0, 30)}...`,
-                summary,
-                embedding,
-                startDate: messages[0].timestamp || now,
-                endDate: messages[messages.length - 1].timestamp || now,
-                chatId,
-                participants: ['user', 'assistant'],
-                createdAt: now
-            };
-
-            await this.db.storeEpisodicMemory(memory);
-            return memory;
-
+            const data = JSON.parse(res.content.replace(/```json|```/g, '').trim());
+            return data;
         } catch (error) {
-            console.error('[Active Memory] Summarization failed:', error);
-            const simpleSummary = `Chat Session (${messages.length} messages) at ${new Date().toLocaleString()}`;
-            const embedding = await this.embedding.generateEmbedding(simpleSummary);
-            const id = Math.random().toString(36).substring(2, 15);
-            const now = Date.now();
-            const memory: EpisodicMemory = {
-                id,
-                title: simpleSummary,
-                summary: simpleSummary,
-                embedding,
-                startDate: messages[0]?.timestamp || now,
-                endDate: messages[messages.length - 1]?.timestamp || now,
-                chatId,
-                participants: ['user', 'assistant'],
-                createdAt: now
+            console.warn('[MemoryService] Advanced summarization failed, falling back to basic:', error);
+            return {
+                summary: `Conversation with ${messages.length} messages.`,
+                title: `Chat Session ${new Date().toLocaleDateString()}`,
+                topics: [],
+                pendingTasks: []
             };
-            await this.db.storeEpisodicMemory(memory);
-            return memory;
         }
+    }
+
+    async summarizeSession(chatId: string, provider?: string, model?: string): Promise<EpisodicMemory | null> {
+        const messages = await this.db.getChatMessages(chatId);
+        if (messages.length < 5) return null;
+
+        const analysis = await this.summarizeChat(chatId, provider, model);
+
+        const embedding = await this.embedding.generateEmbedding(analysis.summary);
+        const id = Math.random().toString(36).substring(2, 15);
+        const now = Date.now();
+
+        const memory: EpisodicMemory = {
+            id,
+            title: analysis.title,
+            summary: analysis.summary,
+            embedding,
+            startDate: messages[0].timestamp || now,
+            endDate: messages[messages.length - 1].timestamp || now,
+            chatId,
+            participants: ['user', 'assistant'],
+            createdAt: now
+        };
+
+        // Store topics as semantic fragments for better retrieval if needed
+        if (analysis.topics && Array.isArray(analysis.topics)) {
+            for (const topic of analysis.topics) {
+                await this.rememberFact(`In chat "${analysis.title}", we discussed: ${topic}`, 'system', chatId, ['topic', ...analysis.topics]);
+            }
+        }
+
+        await this.db.storeEpisodicMemory(memory);
+        return memory;
     }
 
     async recallEpisodes(query: string, limit: number = 3): Promise<EpisodicMemory[]> {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { CheckSquare, Square, RefreshCw, AlertCircle, Plus, FileText, ChevronDown, ChevronRight } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 interface ProjectTodoTabProps {

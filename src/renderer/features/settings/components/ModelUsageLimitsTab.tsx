@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { AppSettings } from '../../../../shared/types/settings'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { Settings, Clock, Calendar, TrendingUp, Percent, Hash } from 'lucide-react'
@@ -19,7 +19,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     handleSave,
     groupedModels,
     copilotQuota,
-    t
+    t: _t
 }) => {
     if (!settings) return null
 
@@ -202,16 +202,17 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
 
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                     {antigravityModels.map((model) => {
-                        const modelLimit = antigravityLimits[model.id] || { enabled: false, percentage: 50 }
+                        const modelId = model.id || ''
+                        const modelLimit = antigravityLimits?.[modelId] || { enabled: false, percentage: 50 }
                         return (
-                            <div key={model.id} className="p-3 bg-muted/10 rounded-lg border border-border/50">
+                            <div key={modelId} className="p-3 bg-muted/10 rounded-lg border border-border/50">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium">{model.name || model.id}</span>
+                                    <span className="text-sm font-medium">{model.name || modelId}</span>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={modelLimit.enabled}
-                                            onChange={(e) => updateAntigravityLimit(model.id, e.target.checked, modelLimit.percentage)}
+                                            onChange={(e) => modelId && updateAntigravityLimit(modelId, e.target.checked, modelLimit.percentage)}
                                             className="w-4 h-4 rounded border-border"
                                         />
                                         <span className="text-xs text-muted-foreground">Enable</span>
@@ -227,7 +228,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                                             min={0}
                                             max={100}
                                             value={modelLimit.percentage}
-                                            onChange={(e) => updateAntigravityLimit(model.id, true, parseInt(e.target.value) || 0)}
+                                            onChange={(e) => modelId && updateAntigravityLimit(modelId, true, parseInt(e.target.value) || 0)}
                                             className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-sm"
                                             placeholder="50"
                                         />

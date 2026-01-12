@@ -18,6 +18,7 @@ export interface Project {
     status: 'active' | 'archived' | 'draft';
     logo?: string;
     metadata?: JsonObject;
+    type?: string;
 }
 
 export interface CouncilMessage extends Message {

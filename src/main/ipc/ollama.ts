@@ -42,121 +42,81 @@ export function registerOllamaIpc(options: {
 }) {
     const { localAIService, ollamaService, ollamaHealthService, copilotService, proxyService, llamaService } = options
 
-
     ipcMain.handle('ollama:tags', async () => localAIService.getOllamaModels())
 
-    ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
-        let copilotModels: ModelDefinition[] = []
-        let codexModels: ModelDefinition[] = []
-        let localModels: ModelDefinition[] = []
-        let antigravityModels: ModelDefinition[] = []
-        let llamaModels: ModelDefinition[] = []
-
-        // 1. LOCAL MODELS (Ollama)
+    const fetchLocalModels = async (service: LocalAIService): Promise<ModelDefinition[]> => {
         try {
-            const modelsArray = await localAIService.getOllamaModels()
-            localModels = modelsArray.map((m) => {
-                const name = m?.name
-                if (!name) return null
-                return {
-                    ...m,
-                    id: name,
-                    provider: 'ollama',
-                    name,
-                    digest: m.digest,
-                    size: m.size,
-                    modified_at: m.modified_at
-                } as ModelDefinition
-            }).filter((m): m is ModelDefinition => m !== null)
-        } catch (err) {
-            console.error('Failed to fetch local models', getErrorMessage(err as Error))
-        }
+            const models = await service.getOllamaModels()
+            return models.map((m) => m.name ? { ...m, id: m.name, provider: 'ollama' } as ModelDefinition : null)
+                .filter((m): m is ModelDefinition => m !== null)
+        } catch { return [] }
+    }
 
-        // 2. COPILOT MODELS
-        if (copilotService && copilotService.isConfigured()) {
-            try {
-                const res = await copilotService.getModels()
-                const data = Array.isArray(res) ? res : (res?.data || [])
-                copilotModels = data.map((m) => {
-                    const id = m?.id
-                    if (!id) return null
-                    const name = m.name || id
-                    return { ...m, id, provider: 'copilot', name }
-                }).filter((m): m is ModelDefinition => m !== null)
-            } catch (err) {
-                console.error('Failed to fetch copilot models', getErrorMessage(err as Error))
+    const fetchCopilotModels = async (service?: CopilotService): Promise<ModelDefinition[]> => {
+        if (!service?.isConfigured()) { return [] }
+        try {
+            const res = await service.getModels()
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-condition
+            const data: any[] = Array.isArray(res) ? res : (res.data || [])
+            return data.map((m) => m.id ? { ...m, provider: 'copilot' } as ModelDefinition : null)
+                .filter((m): m is ModelDefinition => m !== null)
+        } catch { return [] }
+    }
+
+    const fetchAntigravityInfo = async (service?: ProxyService): Promise<{ codex: ModelDefinition[], antigravity: ModelDefinition[] }> => {
+        const result = { codex: [] as ModelDefinition[], antigravity: [] as ModelDefinition[] }
+        if (!service) { return result }
+        try {
+            const usage = await service.getCodexUsage() as { usageSource?: string } | null
+            if (usage?.usageSource === 'chatgpt') {
+                result.codex = [
+                    { id: 'gpt-5-codex', name: 'GPT-5 Codex', provider: 'codex' },
+                    { id: 'gpt-5-codex-mini', name: 'GPT-5 Codex Mini', provider: 'codex' },
+                    { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'codex' }
+                ]
             }
-        }
+            const ag = await service.getAntigravityAvailableModels()
+            result.antigravity = ag.map(m => ({ ...m, provider: 'antigravity' } as ModelDefinition))
+        } catch { /* empty */ }
+        return result
+    }
 
-        // 3. CODEX MODELS
-        if (proxyService) {
-            try {
-                const usage = await proxyService.getCodexUsage() as { usageSource?: string }
-                if (usage && usage.usageSource === 'chatgpt') {
-                    codexModels = [
-                        { id: 'gpt-5-codex', name: 'GPT-5 Codex', provider: 'codex' },
-                        { id: 'gpt-5-codex-mini', name: 'GPT-5 Codex Mini', provider: 'codex' },
-                        { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'codex' },
-                        { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'codex' },
-                        { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'codex' },
-                        { id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', provider: 'codex' },
-                    ];
-                }
-            } catch (err) {
-                console.warn('Failed to check Codex usage', err)
-            }
-        }
+    const fetchLlamaModels = async (service?: LlamaService): Promise<ModelDefinition[]> => {
+        if (!service) { return [] }
+        try {
+            const lm = await service.getModels()
+            return lm.map(m => m.name ? { ...m, provider: 'llama-cpp' } as ModelDefinition : null)
+                .filter((m): m is ModelDefinition => m !== null)
+        } catch { return [] }
+    }
 
+    const getAllModels = async (
+        localAIService: LocalAIService,
+        copilotService: CopilotService | undefined,
+        proxyService: ProxyService | undefined,
+        llamaService: LlamaService | undefined
+    ): Promise<ModelDefinition[]> => {
+        const [local, copilot, agInfo, llama] = await Promise.all([
+            fetchLocalModels(localAIService),
+            fetchCopilotModels(copilotService),
+            fetchAntigravityInfo(proxyService),
+            fetchLlamaModels(llamaService)
+        ])
 
+        const openCodeModels: ModelDefinition[] = [
+            { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'opencode' },
+            { id: 'grok-code', name: 'Grok Code Fast 1', provider: 'opencode' },
+            { id: 'glm-4.7-free', name: 'GLM 4.7', provider: 'opencode' },
+            { id: 'minimax-m2.1-free', name: 'MiniMax M2.1', provider: 'opencode' },
+            { id: 'big-pickle', name: 'Big Pickle', provider: 'opencode' },
+        ]
 
-        // 4. ANTIGRAVITY MODELS (via ProxyService)
-        if (proxyService) {
-            try {
-                const ag = await proxyService.getAntigravityAvailableModels()
+        return [...local, ...copilot, ...agInfo.codex, ...agInfo.antigravity, ...llama, ...openCodeModels]
+    }
 
-                // Track existing IDs to prevent duplicates/collisions
-                const existingIds = new Set([
-                    ...localModels.map(m => m.id),
-                    ...copilotModels.map(m => m.id),
-                    ...codexModels.map(m => m.id),
-                    ...codexModels.map(m => m.id)
-                ])
-
-                antigravityModels = (ag || []).map((m) => {
-                    if (!m || typeof m !== 'object') return null
-                    let id = m.id
-                    let name = m.name || m.id
-
-                    // If ID collides (e.g. gemini-1.5-pro exists in Gemini AND Antigravity), rename the Antigravity one
-                    if (existingIds.has(id)) {
-                        id = `${id}-antigravity`
-                        name = `${name} (Antigravity)`
-                    }
-
-                    return { ...m, id, name, provider: 'antigravity' } as ModelDefinition
-                }).filter((m): m is ModelDefinition => m !== null)
-            } catch (err) {
-                console.error('Failed to fetch Antigravity models', getErrorMessage(err as Error))
-            }
-        }
-
-        // 5. LLAMA.CPP MODELS
-        if (llamaService) {
-            try {
-                const lm = await llamaService.getModels()
-                llamaModels = (lm || []).map((m) => {
-                    const name = m?.name
-                    if (!name) return null
-                    const path = (m as { path?: string }).path || ''
-                    const id = (m as { id?: string }).id || ''
-                    return { ...m, id: path || id || 'llama-cpp-unknown', name, provider: 'llama-cpp' } as ModelDefinition
-                }).filter((m): m is ModelDefinition => m !== null)
-            } catch (err) {
-                console.error('Failed to fetch Llama models', getErrorMessage(err as Error))
-            }
-        }
-
-        return [...localModels, ...copilotModels, ...codexModels, ...antigravityModels, ...llamaModels];
+    // ... inside registerOllamaIpc
+    ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
+        return getAllModels(localAIService, copilotService, proxyService, llamaService)
     })
 
     // Use health service for isRunning check
@@ -204,10 +164,10 @@ export function registerOllamaIpc(options: {
     ipcMain.handle('ollama:chatStream', async (event, messages, model) => {
         try {
             const res = await localAIService.ollamaChat(model, messages)
-            if (res.message?.content) {
+            if (res.message.content) {
                 event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' })
             }
-            return { content: res.message?.content || '', role: 'assistant' }
+            return { content: res.message.content || '', role: 'assistant' }
         } catch (err) {
             const message = getErrorMessage(err as Error)
             console.error('[Main:Ollama] Chat Error:', message)

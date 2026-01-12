@@ -54,3 +54,14 @@ export interface ChatOptions {
     stream?: boolean;
     tools?: ToolDefinition[];
 }
+/**
+ * Standardized response format for OpenAI-compatible chat completions.
+ */
+export interface OpenAIResponse {
+    content: string;
+    role: string;
+    tool_calls?: ToolCall[];
+    completionTokens?: number;
+    reasoning_content?: string;
+    images?: string[];
+}

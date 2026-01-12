@@ -417,6 +417,21 @@ export interface ElectronAPI {
         installUpdate: () => Promise<void>
     }
 
+    collaboration: {
+        run: (request: {
+            messages: Message[]
+            models: Array<{ provider: string; model: string }>
+            strategy?: 'consensus' | 'voting' | 'best-of-n' | 'chain-of-thought'
+        }) => Promise<{ response: string; modelContributions: Array<{ model: string; response: string }> }>
+        getProviderStats: () => Promise<Array<{ provider: string; requestCount: number; avgLatency: number }>>
+        getActiveTaskCount: () => Promise<number>
+        setProviderConfig: (provider: string, config: { concurrencyLimit?: number; rateLimit?: number }) => Promise<void>
+    }
+
+    audit: {
+        getLogs: (startDate?: string, endDate?: string, category?: string) => Promise<Array<{ timestamp: number; action: string; category: string; details?: Record<string, IpcValue>; success: boolean; error?: string }>>
+    }
+
     // Explicit ipcRenderer exposure for flexible components
     ipcRenderer: {
         on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => () => void

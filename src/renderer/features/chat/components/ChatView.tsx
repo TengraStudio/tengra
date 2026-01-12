@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat';
 import { ChevronDown } from 'lucide-react';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
@@ -23,7 +23,7 @@ interface ChatViewProps {
     setShowFileMenu: (show: boolean) => void;
 }
 
-export const ChatView: React.FC<ChatViewProps> = ({
+export const ChatView: React.FC<ChatViewProps> = React.memo(({
     templates,
     showScrollButton,
     setShowScrollButton,
@@ -115,4 +115,4 @@ export const ChatView: React.FC<ChatViewProps> = ({
             />
         </motion.div>
     );
-};
+});

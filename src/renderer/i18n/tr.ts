@@ -13,7 +13,8 @@ export const tr = {
         success: 'Başarılı',
         active: 'AKTİF',
         draft: 'Taslak',
-        retry: 'Tekrar Dene'
+        retry: 'Tekrar Dene',
+        getStarted: 'Başla'
     },
     modelSelector: {
         searchModels: 'Model Ara...',

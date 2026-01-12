@@ -1,5 +1,5 @@
-﻿import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect } from 'react'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { Mic, X, Volume2, Loader2, StopCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'

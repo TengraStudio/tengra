@@ -22,7 +22,13 @@ export class LanceDbService {
 
     async connect(): Promise<lancedb.Connection> {
         if (!this.db) {
-            this.db = await lancedb.connect(this.dbPath)
+            try {
+                this.db = await lancedb.connect(this.dbPath)
+            } catch (error) {
+                console.error('[LanceDbService] Failed to connect to LanceDB:', error)
+                // Return a mock connection or throw handled error
+                throw new Error('LanceDB connection failed')
+            }
         }
         return this.db
     }

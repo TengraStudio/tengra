@@ -29,3 +29,11 @@ export interface INetworkService {
     getNetworkInterfaces(): Promise<ServiceResponse<JsonObject>>;
     getPublicIP(): Promise<ServiceResponse<{ ip: string }>>;
 }
+export interface IPerformanceService {
+    getMemoryStats(): ServiceResponse<{
+        main: NodeJS.MemoryUsage;
+        timestamp: number;
+    }>;
+    detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>>;
+    triggerGC(): ServiceResponse<{ success: boolean }>;
+}

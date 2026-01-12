@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { Bot, Terminal, Sparkles, Clock } from 'lucide-react'
 import { AgentLog, AgentMessage } from '../../../shared/types/agent'
@@ -35,7 +35,18 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
     useEffect(() => {
         if (!sessionId) return
 
-        const socket = new WebSocket('ws://localhost:3001')
+        // Get WebSocket URL from environment or use default
+        // In production, this should use wss:// for secure connections
+        // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
+        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) || 'ws://localhost:3001'
+        
+        // Validate WebSocket URL
+        if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+            console.error('[AgentChatRoom] Invalid WebSocket URL:', wsUrl)
+            return
+        }
+
+        const socket = new WebSocket(wsUrl)
 
         socket.onopen = () => {
             // Join room
@@ -51,7 +62,21 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                     return [...prev, msg]
                 })
             } catch (e) {
-                console.error('WS Parse error', e)
+                console.error('[AgentChatRoom] WS Parse error', e)
+            }
+        }
+
+        socket.onerror = (error) => {
+            console.error('[AgentChatRoom] WebSocket error:', error)
+        }
+
+        socket.onclose = () => {
+            console.log('[AgentChatRoom] WebSocket connection closed')
+        }
+
+        return () => {
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                socket.close()
             }
         }
     }, [sessionId])

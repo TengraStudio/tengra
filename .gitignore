@@ -144,3 +144,6 @@ docs/ADRs/001-unified-error-handling-ipc.md
 docs/ADRs/002-input-sanitization-strategy.md
 docs/ADRs/003-component-standardization.md
 I18N_MIGRATION_SUMMARY.md
+docs/ADRs/006-component-standardization.md
+docs/ADRs/004-debounced-search-pattern.md
+docs/ADRs/005-accessibility-improvements.md

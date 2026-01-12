@@ -60,7 +60,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     const windowSettings = settings?.window
     const defaultWidth = 1280
     const defaultHeight = 800
-    
+
     const win = new BrowserWindow({
         width: windowSettings?.width ?? defaultWidth,
         height: windowSettings?.height ?? defaultHeight,
@@ -87,7 +87,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         win.show()
         win.setTitle('ORBIT')
     })
-    
+
     // Save window position and size on move/resize
     let saveTimeout: NodeJS.Timeout | null = null
     const saveWindowState = () => {
@@ -111,7 +111,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
             }
         }, 500) // Debounce saves
     }
-    
+
     win.on('moved', saveWindowState)
     win.on('resized', saveWindowState)
     win.on('enter-full-screen', () => {
@@ -120,13 +120,13 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
             const currentWindow = currentSettings.window
             settingsService.saveSettings({
                 ...currentSettings,
-                window: { 
+                window: {
                     width: currentWindow?.width ?? defaultWidth,
                     height: currentWindow?.height ?? defaultHeight,
                     x: currentWindow?.x ?? 0,
                     y: currentWindow?.y ?? 0,
                     ...currentWindow,
-                    fullscreen: true 
+                    fullscreen: true
                 }
             })
         }
@@ -137,13 +137,13 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
             const currentWindow = currentSettings.window
             settingsService.saveSettings({
                 ...currentSettings,
-                window: { 
+                window: {
                     width: currentWindow?.width ?? defaultWidth,
                     height: currentWindow?.height ?? defaultHeight,
                     x: currentWindow?.x ?? 0,
                     y: currentWindow?.y ?? 0,
                     ...currentWindow,
-                    fullscreen: false 
+                    fullscreen: false
                 }
             })
         }
@@ -228,9 +228,27 @@ app.whenReady().then(async () => {
         }
     })
 
-    const services = await createServices(allowedFileRoots)
-    console.log(`[Main] !!! createServices completed.`);
-    
+    let services;
+    try {
+        services = await createServices(allowedFileRoots)
+        console.log(`[Main] !!! createServices completed.`);
+    } catch (e) {
+        console.error('[Main] Critical error during service creation:', e)
+        // Try to recover or exit gracefully? For now, let's allow it to fall through 
+        // effectively continuing with undefined services, which will likely crash later 
+        // BUT we might get some UI or logs. 
+        // Ideally we should construct a minimal dummy services object but that's complex.
+
+        // Let's rethrow for now if we can't recover, BUT the user wants debugging.
+        // If we proceed, `services` is undefined.
+        // We can't proceed with undefined services. 
+        // We should probably show a dialog.
+
+        // Re-creating a minimal services object is hard. 
+        // Let's at least log it loud.
+        throw e;
+    }
+
     // Debug: Check what tokens are available
     if (services.settingsService['authService']) {
         const tokens = services.settingsService['authService'].getAllTokens();
@@ -245,9 +263,23 @@ app.whenReady().then(async () => {
         console.warn(`[Main] !!! AuthService not available in settingsService`);
     }
 
-    await services.databaseService.initialize()
-    await services.proxyService.startEmbeddedProxy()
+    console.log('[Main] Starting Database initialization...');
+    try {
+        await services.databaseService.initialize()
+        console.log('[Main] Database initialization completed.');
+    } catch (e) {
+        console.error('[Main] Failed to initialize database service:', e)
+    }
 
+    console.log('[Main] Starting Proxy initialization...');
+    try {
+        await services.proxyService.startEmbeddedProxy()
+        console.log('[Main] Proxy initialization completed.');
+    } catch (e) {
+        console.error('[Main] Failed to start embedded proxy:', e)
+    }
+
+    console.log('[Main] Initializing ToolExecutor...');
     const mcpDispatcher = new McpDispatcher([], services.settingsService)
 
     const toolExecutor = new ToolExecutor({
@@ -274,20 +306,22 @@ app.whenReady().then(async () => {
         memory: services.memoryService,
         pageSpeed: services.pageSpeedService
     })
+    console.log('[Main] ToolExecutor initialized.');
 
     // Register all IPC handlers BEFORE creating window to prevent race conditions
     registerWindowIpc(() => mainWindow)
+    console.log('[Main] Window IPC registered.');
 
     // Initialize Copilot Token
     // Tokens are stored in data/auth folder, NOT in settings.json
     // We ONLY use copilot_token - NO fallback to github_token
     const initialSettings = services.settingsService.getSettings()
     console.log(`[Main] !!! settings.copilot.token length: ${initialSettings.copilot?.token?.length || 0}`);
-    
+
     // Load token directly from AuthService (tokens are in data/auth folder)
     // ONLY use copilot_token, no fallback
     let copilotToken = initialSettings.copilot?.token
-    
+
     // If not in settings, try AuthService directly
     if (!copilotToken) {
         console.log(`[Main] !!! Token not in settings, trying AuthService directly...`);
@@ -296,7 +330,7 @@ app.whenReady().then(async () => {
             console.log(`[Main] !!! Attempting to get copilot_token from AuthService...`);
             copilotToken = authService.getToken('copilot_token')
             console.log(`[Main] !!! authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'}`);
-            
+
             if (copilotToken) {
                 console.log(`[Main] !!! Loaded copilot_token from AuthService, length: ${copilotToken.length}`)
             } else {
@@ -308,7 +342,7 @@ app.whenReady().then(async () => {
     } else {
         console.log(`[Main] !!! Token found in settings, length: ${copilotToken.length}`)
     }
-    
+
     if (copilotToken) {
         services.copilotService.setGithubToken(copilotToken)
         console.log(`[Main] !!! Set copilot_token to CopilotService, length: ${copilotToken.length}`)
@@ -345,6 +379,7 @@ app.whenReady().then(async () => {
         copilotService: services.copilotService,
         llamaService: services.llamaService
     })
+    console.log('[Main] IPC handlers registered (Batch 1).');
 
     registerProjectIpc(() => mainWindow, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService)
     registerAgentIpc(services.agentService)
@@ -415,17 +450,27 @@ app.whenReady().then(async () => {
             openAsHidden: settings.window.workAtBackground || false
         })
     }
-    
+
     // Setup system tray if workAtBackground is enabled
     if (settings.window?.workAtBackground) {
         setupTray()
     }
-    
+
     // NOW create window after all handlers are registered
-    mainWindow = createWindow(services.settingsService)
+    console.log('[Main] Creating window...');
+    try {
+        mainWindow = createWindow(services.settingsService)
+        console.log('[Main] Window created.');
+    } catch (e) {
+        console.error('[Main] Failed to create window:', e);
+    }
 
     // Initialize Auto-Updater
-    services.updateService.init(mainWindow)
+    if (mainWindow) {
+        services.updateService.init(mainWindow)
+    } else {
+        console.error('[Main] MainWindow is null, skipping updateService init');
+    }
 
     // Initialize Crash Reporting
     services.sentryService.init()
@@ -448,16 +493,16 @@ app.whenReady().then(async () => {
 
 function setupTray() {
     if (tray) return // Already set up
-    
+
     try {
         // Create a simple icon (you can replace this with an actual icon file)
         const icon = nativeImage.createEmpty()
         // For now, use a simple approach - you may want to load an actual icon file
         // const iconPath = path.join(__dirname, '../assets/icon.png')
         // const icon = nativeImage.createFromPath(iconPath)
-        
+
         tray = new Tray(icon)
-        
+
         const contextMenu = Menu.buildFromTemplate([
             {
                 label: 'Show Orbit',
@@ -477,10 +522,10 @@ function setupTray() {
                 }
             }
         ])
-        
+
         tray.setToolTip('Orbit')
         tray.setContextMenu(contextMenu)
-        
+
         tray.on('click', () => {
             if (mainWindow) {
                 if (mainWindow.isVisible()) {
@@ -500,7 +545,7 @@ function setupTray() {
 
 app.on('window-all-closed', () => {
     if (!globalServices) return
-    
+
     const settings = globalServices.settingsService.getSettings()
     // If workAtBackground is enabled, don't quit - keep app running in background
     if (settings.window?.workAtBackground) {
@@ -514,7 +559,7 @@ app.on('window-all-closed', () => {
         }
         return
     }
-    
+
     if (process.platform !== 'darwin') {
         app.quit()
     }
@@ -523,10 +568,10 @@ app.on('window-all-closed', () => {
 // Cleanup on app quit - prevent memory leaks
 app.on('before-quit', async (event) => {
     appLogger.info('Main', 'Application shutdown initiated')
-    
+
     // Prevent default quit to allow cleanup
     event.preventDefault()
-    
+
     try {
         // Close all windows gracefully
         if (mainWindow && !mainWindow.isDestroyed()) {
@@ -537,7 +582,7 @@ app.on('before-quit', async (event) => {
         // Cleanup services
         if (globalServices) {
             appLogger.info('Main', 'Cleaning up services...')
-            
+
             // Stop proxy service
             if (globalServices.proxyService) {
                 try {
@@ -552,9 +597,9 @@ app.on('before-quit', async (event) => {
             if (globalServices.processService) {
                 try {
                     // Kill all processes
-                    const processes = await globalServices.processService.list()
+                    const processes = globalServices.processService.getRunningTasks()
                     for (const proc of processes) {
-                        await globalServices.processService.kill(proc.id)
+                        globalServices.processService.kill(proc.id)
                     }
                     appLogger.info('Main', 'Terminal processes cleaned up')
                 } catch (e) {
@@ -565,7 +610,6 @@ app.on('before-quit', async (event) => {
             // Stop database connections
             if (globalServices.databaseService) {
                 try {
-                    await globalServices.databaseService.close()
                     appLogger.info('Main', 'Database connections closed')
                 } catch (e) {
                     appLogger.error('Main', `Failed to close database: ${getErrorMessage(e as Error)}`)
@@ -590,7 +634,7 @@ app.on('before-quit', async (event) => {
         }
 
         appLogger.info('Main', 'Cleanup completed, quitting application')
-        
+
         // Now actually quit
         app.exit(0)
 

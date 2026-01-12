@@ -12,17 +12,7 @@ import { ConfigService } from '../config.service';
 import { KeyRotationService } from '../security/key-rotation.service';
 import { RateLimitService } from '../security/rate-limit.service';
 
-/**
- * Standardized response format for OpenAI-compatible chat completions.
- */
-export interface OpenAIResponse {
-    content: string;
-    role: string;
-    tool_calls?: ToolCall[];
-    completionTokens?: number;
-    reasoning_content?: string;
-    images?: string[];
-}
+import { OpenAIResponse } from '../../types/llm.types';
 
 export interface OpenAIModelDefinition {
     id: string;
@@ -155,7 +145,6 @@ export class LLMService {
             try {
                 this.dispatcher.destroy();
                 this.dispatcher = null;
-                console.log('[LLMService] Dispatcher destroyed');
             } catch (e) {
                 console.error('[LLMService] Error destroying dispatcher:', e);
             }
@@ -181,14 +170,13 @@ export class LLMService {
 
         try {
             const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
-            console.log(`[LLMService:openaiChat] Effective Base URL: ${effectiveBaseUrl}`);
 
             let finalModel = model;
             if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
                 // Proxy Routing Logic: Prefix models based on provider and model type
                 const lowerModel = finalModel.toLowerCase();
                 const lowerProvider = (provider || '').toLowerCase();
-                
+
                 // IMPORTANT: For antigravity provider, ALL models (Gemini, Claude, etc.) 
                 // should be sent WITHOUT prefix. The proxy routes internally based on model name.
                 if (lowerProvider === 'antigravity') {
@@ -206,7 +194,6 @@ export class LLMService {
                     // Default: prefix with openai for unknown model types
                     finalModel = `openai/${finalModel}`;
                 }
-                console.log(`[LLMService] Proxy Routing: Model=${model}, Provider=${provider}, Prefixed=${finalModel}`);
             }
 
             const body: Record<string, unknown> = {
@@ -257,7 +244,7 @@ export class LLMService {
                 const message = choice.message;
                 // Handle images from message content if present
                 const contentParts = Array.isArray(message.content) ? message.content : [];
-                const rawImages = contentParts.filter((part): part is OpenAIContentPartImage => 
+                const rawImages = contentParts.filter((part): part is OpenAIContentPartImage =>
                     typeof part === 'object' && part !== null && 'type' in part && part.type === 'image_url'
                 );
                 const savedImages: string[] = [];
@@ -272,10 +259,10 @@ export class LLMService {
                     }));
                 }
 
-                const messageContent = typeof message.content === 'string' 
-                    ? message.content 
+                const messageContent = typeof message.content === 'string'
+                    ? message.content
                     : contentParts
-                        .filter((part): part is { type: 'text'; text: string } => 
+                        .filter((part): part is { type: 'text'; text: string } =>
                             typeof part === 'object' && part !== null && 'type' in part && part.type === 'text'
                         )
                         .map(part => part.text)
@@ -315,7 +302,7 @@ export class LLMService {
             // Proxy Routing Logic: Prefix models based on provider and model type
             const lowerModel = finalModel.toLowerCase();
             const lowerProvider = (provider || '').toLowerCase();
-            
+
             // IMPORTANT: For antigravity provider, ALL models (Gemini, Claude, etc.) 
             // should be sent WITHOUT prefix. The proxy routes internally based on model name.
             if (lowerProvider === 'antigravity') {
@@ -333,11 +320,10 @@ export class LLMService {
                 // Default: prefix with openai for unknown model types
                 finalModel = `openai/${finalModel}`;
             }
-            console.log(`[LLMService] Proxy Routing: Model=${model}, Provider=${provider}, Prefixed=${finalModel}`);
         }
 
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, finalModel);
-       
+
         const requestBody: Record<string, unknown> = {
             model: finalModel,
             messages: normalizedMessages,
@@ -369,7 +355,7 @@ export class LLMService {
             if (response.status === 429) {
                 console.error(`[LLMService] 429 Error for model ${finalModel}, provider ${provider}`);
                 console.error(`[LLMService] Error details:`, errorText);
-                
+
                 // Try to parse error for more details
                 try {
                     const errorJson = JSON.parse(errorText);
@@ -381,7 +367,7 @@ export class LLMService {
                 } catch {
                     // Not JSON, ignore
                 }
-                
+
                 console.error(`[LLMService] Possible causes:`);
                 console.error(`[LLMService] 1. Rate limiting (requests per minute/hour) - separate from quota`);
                 console.error(`[LLMService] 2. Shared quota pool exhausted (even if individual model shows 100%)`);
@@ -411,6 +397,124 @@ export class LLMService {
         } catch (e) {
             console.error('[LLMService] Stream Loop Error:', e);
             throw e;
+        }
+    }
+
+    async chatOpenCode(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
+        return this.chatOpenCodeRequest(messages, model, tools) as Promise<OpenAIResponse>;
+    }
+
+    private async chatOpenCodeRequest(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
+        const apiKey = 'public';
+        const baseUrl = 'https://opencode.ai/zen/v1';
+
+        if (model === 'gpt-5-nano') {
+            const endpoint = `${baseUrl}/responses`;
+            const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
+            const body = { model, input: normalized, stream: false };
+
+            const response = await this.breakers.openai.execute(() =>
+                this.httpService.fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify(body),
+                    retryCount: 2
+                })
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new ApiError(errorText || `HTTP ${response.status}`, 'opencode', response.status);
+            }
+
+            type OpenCodeContentPart =
+                | { type: 'output_text'; text?: string }
+                | { type: 'reasoning'; text?: string }
+                | { type: 'summary_text'; text?: string }
+                | { type: 'function_call'; function_call?: { id?: string; name: string; arguments: string | object } };
+
+            type OpenCodeOutput = { type: 'message'; content: OpenCodeContentPart[]; text?: string };
+            type OpenCodeResponse = { output: OpenCodeOutput[] | OpenCodeOutput };
+
+            const json = await response.json() as OpenCodeResponse;
+            const outputArray = Array.isArray(json.output) ? json.output : [json.output];
+            const output = outputArray.find((o) => o?.type === 'message');
+
+            if (output?.type === 'message') {
+                let content = '';
+                let reasoning = '';
+                const tool_calls: ToolCall[] = [];
+
+                if (Array.isArray(output.content)) {
+                    for (const part of output.content) {
+                        if (part.type === 'output_text') content += part.text || '';
+                        if (part.type === 'reasoning' || part.type === 'summary_text') reasoning += part.text || '';
+                        if (part.type === 'function_call' && part.function_call) {
+                            tool_calls.push({
+                                id: part.function_call.id || `call_${Math.random().toString(36).substring(2, 11)}`,
+                                type: 'function',
+                                function: {
+                                    name: part.function_call.name,
+                                    arguments: typeof part.function_call.arguments === 'string'
+                                        ? part.function_call.arguments
+                                        : JSON.stringify(part.function_call.arguments)
+                                }
+                            });
+                        }
+                    }
+                }
+
+                return {
+                    content: content || (output.text || ''),
+                    role: 'assistant',
+                    reasoning_content: reasoning || undefined,
+                    tool_calls: tool_calls.length > 0 ? tool_calls : undefined
+                };
+            }
+            throw new ApiError('Unexpected response format from OpenCode', 'opencode', 200);
+        } else {
+            return this.chatOpenAI(messages, model, tools, baseUrl, apiKey, 'opencode');
+        }
+    }
+
+    async *chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
+        const apiKey = 'public';
+        const baseUrl = 'https://opencode.ai/zen/v1';
+
+        if (model === 'gpt-5-nano') {
+            const endpoint = `${baseUrl}/responses`;
+            const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
+            const body = { model, input: normalized, stream: true };
+
+            const response = await this.httpService.fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                body: JSON.stringify(body),
+                retryCount: 2,
+                timeoutMs: 60000
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new ApiError(errorText || `HTTP ${response.status}`, 'opencode-stream', response.status);
+            }
+
+            try {
+                for await (const chunk of StreamParser.parseChatStream(response)) {
+                    yield {
+                        content: chunk.content,
+                        reasoning: chunk.reasoning,
+                        type: chunk.type,
+                        tool_calls: chunk.tool_calls,
+                        images: chunk.images?.map(img => typeof img === 'string' ? img : img.image_url.url)
+                    };
+                }
+            } catch (e) {
+                console.error('[LLMService:OpenCode] Stream Loop Error:', e);
+                throw e;
+            }
+        } else {
+            yield* this.chatOpenAIStream(messages, model, tools, baseUrl, apiKey, 'opencode');
         }
     }
 

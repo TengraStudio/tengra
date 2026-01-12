@@ -13,7 +13,8 @@ export const en = {
         success: 'Success',
         active: 'ACTIVE',
         draft: 'Draft',
-        retry: 'Retry'
+        retry: 'Retry',
+        getStarted: 'Get Started'
     },
     modelSelector: {
         searchModels: 'Search Models...',

@@ -21,8 +21,9 @@ const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const COPILOT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 // OAuth Client IDs and Secrets
+// Client IDs are public, but secrets should be in environment variables
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
-const ANTIGRAVITY_CLIENT_SECRET = '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';
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || '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';
 
 const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token';

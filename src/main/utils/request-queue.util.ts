@@ -104,18 +104,42 @@ export class RequestQueue {
      * Process queued requests
      */
     private async processQueue() {
-        while (this.running < this.options.maxConcurrent && this.queue.length > 0) {
+        if (this.options.maxConcurrent <= 0) {
+            throw new Error('maxConcurrent must be greater than 0');
+        }
+
+        const MAX_QUEUE_ITERATIONS = 10000;
+        let iterations = 0;
+        
+        while (this.running < this.options.maxConcurrent && this.queue.length > 0 && iterations < MAX_QUEUE_ITERATIONS) {
             const request = this.queue.shift()
             if (!request) break
 
             this.running++
+            iterations++
 
-            // Execute with timeout
+            // Execute with timeout and handle return value
             this.executeRequest(request)
+                .then((result) => {
+                    // Return value is already handled in executeRequest via resolve/reject
+                    // But we can log if needed
+                    return result;
+                })
+                .catch((error) => {
+                    // Error is already handled in executeRequest via reject
+                    console.error('[RequestQueue] Request execution error:', error);
+                })
                 .finally(() => {
                     this.running--
-                    this.processQueue()
+                    // Only continue processing if we haven't hit the iteration limit
+                    if (iterations < MAX_QUEUE_ITERATIONS) {
+                        this.processQueue()
+                    }
                 })
+        }
+        
+        if (iterations >= MAX_QUEUE_ITERATIONS) {
+            console.error('[RequestQueue] Queue processing exceeded maximum iterations');
         }
     }
 

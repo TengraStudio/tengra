@@ -108,13 +108,17 @@ export function Tooltip({
         }
     }, [])
 
+    // Clone element and add event handlers - use type assertion for ref handling
+    const childProps = children.props as { ref?: React.Ref<HTMLElement> }
     const trigger = React.cloneElement(children, {
         ref: (node: HTMLElement | null) => {
             triggerRef.current = node
-            if (typeof children.ref === 'function') {
-                children.ref(node)
-            } else if (children.ref) {
-                (children.ref as React.MutableRefObject<HTMLElement | null>).current = node
+            // Forward ref to original element if it exists
+            const originalRef = childProps.ref
+            if (typeof originalRef === 'function') {
+                originalRef(node)
+            } else if (originalRef && typeof originalRef === 'object') {
+                (originalRef as React.MutableRefObject<HTMLElement | null>).current = node
             }
         },
         onMouseEnter: showTooltip,

@@ -28,13 +28,16 @@ jobs:
 
     - name: Run Linter
       run: npm run lint
-      continue-on-error: true # Don't fail build on lint errors for now
 
+    - name: Security Audit (npm audit)
+      run: npm audit --audit-level=high
 
+    - name: Node.js Security Scan (njsscan)
+      uses: ajinabraham/njsscan-action@v0.0.3
+      with:
+        args: '.'
 
     - name: Run Tests
-      # We need a headless environment for Electron tests if they run in renderer
-      # For now, we assume simple unit tests or use xvfb-run if needed
       run: npm test
 
     - name: Build Application

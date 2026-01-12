@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { Send, Square, Paperclip, X, Image as ImageIcon, FileText, FileCode, File as FileIcon, Mic, MicOff } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { Attachment } from '@/types'
 import { cn } from '@/lib/utils'
 import { ModelSelector } from '@/features/models/components/ModelSelector'
@@ -16,7 +16,7 @@ interface ChatInputProps {
     setShowFileMenu?: (show: boolean) => void
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
+export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     fileInputRef: externalFileInputRef,
     textareaRef: externalTextareaRef,
     showFileMenu: _showFileMenu,
@@ -330,4 +330,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </div>
         </div >
     )
-}
+}, (prevProps, nextProps) => {
+    // Memoization comparison - only re-render if props actually change
+    return (
+        prevProps.fileInputRef === nextProps.fileInputRef &&
+        prevProps.textareaRef === nextProps.textareaRef &&
+        prevProps.showFileMenu === nextProps.showFileMenu &&
+        prevProps.setShowFileMenu === nextProps.setShowFileMenu
+    );
+})

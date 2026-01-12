@@ -89,7 +89,7 @@ export class UsageTrackingService {
         return records.length
     }
 
-    checkLimit(settings: AppSettings, provider: string, model: string, currentQuota?: { remaining: number; limit: number }): { allowed: boolean; reason?: string } {
+    checkLimit(settings: AppSettings, provider: string, _model: string, currentQuota?: { remaining: number; limit: number }): { allowed: boolean; reason?: string } {
         const limits = settings.modelUsageLimits
         if (!limits) return { allowed: true }
 

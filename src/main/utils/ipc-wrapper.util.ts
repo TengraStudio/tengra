@@ -22,7 +22,7 @@ export interface IpcHandlerOptions {
     /**
      * Custom error handler. If provided, this will be called instead of the default error handling.
      */
-    onError?: (error: Error, handlerName: string) => any;
+    onError?: (error: Error, handlerName: string) => unknown;
 }
 
 /**
@@ -54,7 +54,8 @@ export const createIpcHandler = <T = JsonValue>(
 
             // If custom error handler is provided, use it
             if (onError) {
-                return onError(errorObj, handlerName);
+                const errorResult = onError(errorObj, handlerName);
+                return errorResult as T | IpcResponse<T>;
             }
 
             // Default error handling

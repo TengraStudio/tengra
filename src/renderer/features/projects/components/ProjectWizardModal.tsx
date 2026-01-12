@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/modal'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRight, ChevronLeft, Check, Loader2, Server } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation, Language } from '@/i18n'

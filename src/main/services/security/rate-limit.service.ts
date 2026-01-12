@@ -28,30 +28,37 @@ export class RateLimitService extends BaseService {
 
     /**
      * Waits for a token to be available.
-     * Throws an error if the wait time would be excessive (optional design), 
-     * but here we just wait.
+     * Throws an error if the wait time would be excessive.
      */
     async waitForToken(provider: string): Promise<void> {
+        if (!provider || typeof provider !== 'string') {
+            throw new Error('Provider must be a non-empty string');
+        }
+
         const bucket = this.buckets.get(provider);
         if (!bucket) return; // No limit set
 
-        await this.refillBucket(provider);
+        const MAX_WAIT_ITERATIONS = 100; // Prevent infinite loops
+        let iterations = 0;
 
-        if (bucket.tokens >= 1) {
-            bucket.tokens -= 1;
-            return;
+        while (iterations < MAX_WAIT_ITERATIONS) {
+            await this.refillBucket(provider);
+
+            if (bucket.tokens >= 1) {
+                bucket.tokens -= 1;
+                return;
+            }
+
+            const msPerToken = 60000 / bucket.config.requestsPerMinute;
+            const waitTime = msPerToken;
+
+            appLogger.debug('RateLimit', `Rate limit hit for ${provider}. Waiting ${waitTime.toFixed(0)}ms.`);
+
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            iterations++;
         }
 
-        // Calculate wait time
-        const msPerToken = 60000 / bucket.config.requestsPerMinute;
-        const waitTime = msPerToken;
-
-        appLogger.debug('RateLimit', `Rate limit hit for ${provider}. Waiting ${waitTime.toFixed(0)}ms.`);
-
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-
-        // Recursive call to try again after waiting (and refilling)
-        return this.waitForToken(provider);
+        throw new Error(`Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`);
     }
 
     private async refillBucket(provider: string) {

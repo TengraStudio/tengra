@@ -67,15 +67,24 @@ export class ChatEventService extends BaseService {
                 ORDER BY timestamp ASC
             `);
 
-            const rows = stmt.all(threadId) as any[];
+            interface ChatEventRow {
+                id: string;
+                thread_id: string;
+                type: string;
+                payload: string;
+                timestamp: number;
+                metadata: string;
+            }
+
+            const rows = stmt.all(threadId) as ChatEventRow[];
 
             return rows.map(row => ({
                 id: row.id,
                 threadId: row.thread_id,
                 type: row.type as ChatEventType,
-                payload: JSON.parse(row.payload),
+                payload: JSON.parse(row.payload) as JsonValue,
                 timestamp: row.timestamp,
-                metadata: JSON.parse(row.metadata)
+                metadata: JSON.parse(row.metadata) as JsonValue
             }));
         } catch (error) {
             this.logError(`Failed to get events for thread ${threadId}`, error);
@@ -87,9 +96,9 @@ export class ChatEventService extends BaseService {
      * Rebuilds the current state of a chat thread by replaying all events.
      * This is a basic implementation that can be expanded based on state requirements.
      */
-    rebuildThreadState(threadId: string): { messages: any[] } {
+    rebuildThreadState(threadId: string): { messages: Array<{ id?: string; content?: string; timestamp: number; [key: string]: JsonValue | undefined }> } {
         const events = this.getEvents(threadId);
-        const state = { messages: [] as any[] };
+        const state: { messages: Array<{ id?: string; content?: string; timestamp: number; [key: string]: JsonValue | undefined }> } = { messages: [] };
 
         for (const event of events) {
             switch (event.type) {

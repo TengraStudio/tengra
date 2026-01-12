@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import {
     useFloating,
     autoUpdate,
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AppSettings, QuotaResponse, CodexUsage } from '@/types'
 import type { GroupedModels } from '../utils/model-fetcher'
-import { useDebouncedValue } from '@/hooks/useDebounce'
+import { useDebounce } from '@/hooks/useDebounce'
 
 import { useTranslation, Language } from '@/i18n'
 
@@ -34,7 +34,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     const { t } = useTranslation(language)
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
-    const debouncedSearchQuery = useDebouncedValue(searchQuery, 300)
+    const debouncedSearchQuery = useDebounce(searchQuery, 300)
     const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({})
 
     const {
@@ -117,9 +117,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             if (groupedModels) {
                 for (const [provider, group] of Object.entries(groupedModels)) {
                     for (const model of group.models) {
-                        const key = `${provider}:${model.id}`
+                        const modelId = model.id || ''
+                        if (!modelId) continue
+                        const key = `${provider}:${modelId}`
                         try {
-                            const result = await window.electron.checkUsageLimit(provider, model.id)
+                            const result = await window.electron.checkUsageLimit(provider, modelId)
                             checks[key] = result
                         } catch (error) {
                             checks[key] = { allowed: true } // Default to allowed on error
@@ -165,7 +167,8 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 }
                 
                 // Check daily limit from settings
-                if (codexLimits?.daily?.enabled && usage.dailyLimit !== undefined && usage.dailyLimit > 0) {
+                const usageExt = usage as { dailyLimit?: number }
+                if (codexLimits?.daily?.enabled && usageExt.dailyLimit !== undefined && usageExt.dailyLimit > 0) {
                     const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0)
                     const maxAllowedPercent = codexLimits.daily.percentage
                     if (dailyRemainingPercent < maxAllowedPercent) {
@@ -459,7 +462,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     <FloatingPortal>
                         <motion.div
                             ref={setFloatingNode}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                             initial={{ opacity: 0, y: dropUp ? 5 : -5, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: dropUp ? 5 : -5, scale: 0.95 }}
@@ -480,7 +483,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                                         placeholder={t('modelSelector.searchModels')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                                         className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-zinc-600 outline-none text-zinc-300"
                                         autoFocus
                                     />

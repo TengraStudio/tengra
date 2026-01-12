@@ -12,7 +12,7 @@ export interface ServiceMetadata {
  * Dynamic Service Registry for decoupling service lookups and enabling plugin architectures.
  */
 export class ServiceRegistry extends EventEmitter {
-    private services: Map<string, any> = new Map();
+    private services: Map<string, unknown> = new Map();
     private metadata: Map<string, ServiceMetadata> = new Map();
 
     private static instance: ServiceRegistry;
@@ -34,7 +34,7 @@ export class ServiceRegistry extends EventEmitter {
      * @param instance The service instance
      * @param metadata Optional metadata
      */
-    register(id: string, instance: any, metadata?: Partial<ServiceMetadata>) {
+    register<T = unknown>(id: string, instance: T, metadata?: Partial<ServiceMetadata>) {
         if (this.services.has(id)) {
             appLogger.warn('ServiceRegistry', `Overwriting existing service: ${id}`);
         }
@@ -72,11 +72,14 @@ export class ServiceRegistry extends EventEmitter {
     /**
      * Finds services matching a predicate on their metadata.
      */
-    find(predicate: (meta: ServiceMetadata) => boolean): any[] {
-        const results: any[] = [];
+    find<T = unknown>(predicate: (meta: ServiceMetadata) => boolean): T[] {
+        const results: T[] = [];
         for (const [id, meta] of this.metadata) {
             if (predicate(meta)) {
-                results.push(this.services.get(id));
+                const service = this.services.get(id);
+                if (service !== undefined) {
+                    results.push(service as T);
+                }
             }
         }
         return results;
@@ -85,7 +88,7 @@ export class ServiceRegistry extends EventEmitter {
     /**
      * Finds services by tag.
      */
-    findByTag(tag: string): any[] {
-        return this.find(meta => meta.tags.includes(tag));
+    findByTag<T = unknown>(tag: string): T[] {
+        return this.find<T>(meta => meta.tags.includes(tag));
     }
 }

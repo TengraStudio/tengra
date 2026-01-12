@@ -1,15 +1,18 @@
-import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChatView } from '@/features/chat/components/ChatView'
-import { ProjectsPage } from '@/features/projects/ProjectsPage'
-import { AgentDashboard } from '@/features/agent/AgentDashboard'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { DockerDashboard } from '@/features/mcp/DockerDashboard'
+import React, { Suspense, lazy } from 'react'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { useAuth } from '@/context/AuthContext'
 import { useModel } from '@/context/ModelContext'
 import { useChat } from '@/context/ChatContext'
 import { useProject } from '@/context/ProjectContext'
 import { ChatTemplate } from '../features/chat/types'
+import { LoadingState } from '@/components/ui/LoadingState'
+
+// Lazy load feature modules for better performance
+const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })))
+const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
+const AgentDashboard = lazy(() => import('@/features/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })))
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })))
 
 interface ViewManagerProps {
     currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp'
@@ -73,71 +76,80 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     return (
         <AnimatePresence mode="wait">
             {currentView === 'chat' && (
-                <ChatView
-                    templates={templates}
-                    messagesEndRef={messagesEndRef}
-                    fileInputRef={fileInputRef}
-                    textareaRef={textareaRef}
-                    onScrollToBottom={onScrollToBottom}
-                    showScrollButton={showScrollButton}
-                    setShowScrollButton={setShowScrollButton}
-                    showFileMenu={showFileMenu}
-                    setShowFileMenu={setShowFileMenu}
-                />
+                <Suspense fallback={<LoadingState size="md" />}>
+                    <ChatView
+                        templates={templates}
+                        messagesEndRef={messagesEndRef}
+                        fileInputRef={fileInputRef}
+                        textareaRef={textareaRef}
+                        onScrollToBottom={onScrollToBottom}
+                        showScrollButton={showScrollButton}
+                        setShowScrollButton={setShowScrollButton}
+                        showFileMenu={showFileMenu}
+                        setShowFileMenu={setShowFileMenu}
+                    />
+                </Suspense>
             )}
             {currentView === 'projects' && (
                 <motion.div key="projects" className="h-full overflow-hidden">
-                    <ProjectsPage
-                        projects={projects || []}
-                        onRefresh={loadProjects}
-                        selectedProject={selectedProject}
-                        onSelectProject={setSelectedProject}
-                        language={language || 'en'}
-                        tabs={terminalTabs}
-                        activeTabId={activeTerminalId}
-                        setTabs={setTerminalTabs}
-                        setActiveTabId={setActiveTerminalId}
-                        selectedProvider={selectedProvider}
-                        selectedModel={selectedModel}
-                        onSelectModel={(p, m) => {
-                            setSelectedProvider(p)
-                            setSelectedModel(m)
-                            persistLastSelection(p, m)
-                        }}
-                        groupedModels={groupedModels || undefined}
-                        quotas={quotas}
-                        codexUsage={codexUsage}
-                        settings={appSettings || undefined}
-                        sendMessage={(text) => {
-                            setInput(text || '')
-                            sendMessage()
-                        }}
-                        messages={displayMessages}
-                        isLoading={isLoading}
-                    />
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <ProjectsPage
+                            projects={projects || []}
+                            onRefresh={loadProjects}
+                            selectedProject={selectedProject}
+                            onSelectProject={setSelectedProject}
+                            language={language || 'en'}
+                            tabs={terminalTabs}
+                            activeTabId={activeTerminalId}
+                            setTabs={setTerminalTabs}
+                            setActiveTabId={setActiveTerminalId}
+                            selectedProvider={selectedProvider}
+                            selectedModel={selectedModel}
+                            onSelectModel={(p, m) => {
+                                setSelectedProvider(p)
+                                setSelectedModel(m)
+                                persistLastSelection(p, m)
+                            }}
+                            groupedModels={groupedModels || undefined}
+                            quotas={quotas}
+                            codexUsage={codexUsage}
+                            settings={appSettings || undefined}
+                            sendMessage={(text) => {
+                                setInput(text || '')
+                                sendMessage()
+                            }}
+                            messages={displayMessages}
+                            isLoading={isLoading}
+                        />
+                    </Suspense>
                 </motion.div>
             )}
             {currentView === 'council' && (
                 <motion.div key="council" className="h-full overflow-hidden">
-                    <AgentDashboard
-                    />
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <AgentDashboard />
+                    </Suspense>
                 </motion.div>
             )}
             {currentView === 'settings' && (
                 <motion.div key="settings" className="h-full overflow-hidden">
-                    <SettingsPage
-                        installedModels={installedModels}
-                        proxyModels={proxyModels}
-                        onRefreshModels={loadModels}
-                        activeTab={settingsCategory}
-                        groupedModels={groupedModels}
-                    />
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <SettingsPage
+                            installedModels={installedModels}
+                            proxyModels={proxyModels}
+                            onRefreshModels={loadModels}
+                            activeTab={settingsCategory}
+                            groupedModels={groupedModels}
+                        />
+                    </Suspense>
                 </motion.div>
             )}
             {currentView === 'mcp' && (
                 <motion.div key="mcp" className="h-full overflow-hidden">
                     <div className="flex-1 p-6 overflow-y-auto">
-                        <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language || 'en'} />
+                        <Suspense fallback={<LoadingState size="md" />}>
+                            <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language || 'en'} />
+                        </Suspense>
                     </div>
                 </motion.div>
             )}

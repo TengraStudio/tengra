@@ -1,7 +1,10 @@
 import './web-bridge'
 import { installRendererLogger } from './logging'
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+
+
 import App from './App'
 import { AppProviders } from './context/AppProviders'
 import './index.css'

@@ -8,6 +8,7 @@ interface ModalProps {
     footer?: React.ReactNode
     preventClose?: boolean
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
+    className?: string
 }
 
 /**
@@ -22,7 +23,7 @@ const getFocusableElements = (container: HTMLElement): HTMLElement[] => {
         'textarea:not([disabled])',
         '[tabindex]:not([tabindex="-1"])'
     ].join(', ')
-    
+
     return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors))
 }
 
@@ -36,13 +37,16 @@ export const Modal: React.FC<ModalProps> = ({
     children,
     footer,
     preventClose = false,
-    size = 'md'
+    size = 'md',
+    className = ''
 }) => {
     const modalRef = useRef<HTMLDivElement>(null)
     const previousActiveElementRef = useRef<HTMLElement | null>(null)
 
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {
+            return
+        }
 
         // Save the previously focused element
         previousActiveElementRef.current = document.activeElement as HTMLElement
@@ -71,10 +75,15 @@ export const Modal: React.FC<ModalProps> = ({
             if (!modalRef.current || e.key !== 'Tab') return
 
             const focusableElements = getFocusableElements(modalRef.current)
-            if (focusableElements.length === 0) return
+            if (focusableElements.length === 0) {
+                return
+            }
 
             const firstElement = focusableElements[0]
             const lastElement = focusableElements[focusableElements.length - 1]
+            if (!firstElement || !lastElement) {
+                return
+            }
 
             if (e.shiftKey) {
                 // Shift + Tab
@@ -109,8 +118,6 @@ export const Modal: React.FC<ModalProps> = ({
         }
     }, [isOpen, preventClose, onClose])
 
-    if (!isOpen) return null
-
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (!preventClose && e.target === e.currentTarget) {
             onClose()
@@ -129,6 +136,8 @@ export const Modal: React.FC<ModalProps> = ({
         full: 'sm:max-w-[95vw]'
     }
 
+    if (!isOpen) return null
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
@@ -137,10 +146,10 @@ export const Modal: React.FC<ModalProps> = ({
             aria-modal="true"
             aria-labelledby="modal-title"
         >
-            <div 
+            <div
                 ref={modalRef}
                 tabIndex={-1}
-                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300 mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]}`}
+                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300 mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]} ${className}`}
             >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
                     <h3 id="modal-title" className="font-black leading-none tracking-tight text-2xl text-white uppercase">{title}</h3>
@@ -157,4 +166,3 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
     )
 }
-

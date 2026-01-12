@@ -8,7 +8,7 @@ import {
     shift,
     FloatingPortal,
 } from '@floating-ui/react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 interface SelectOption {
@@ -108,7 +108,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                                 width: width || 'auto'
                             }}
                             className="bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                         >
                             <div className="max-h-[300px] overflow-y-auto custom-scrollbar py-1">
                                 {options.map(opt => (
