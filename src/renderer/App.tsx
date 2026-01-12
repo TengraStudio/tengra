@@ -8,6 +8,7 @@ import { AudioChatOverlay } from './features/chat/components/AudioChatOverlay'
 import { AppHeader } from './components/layout/AppHeader'
 import { Modal } from './components/ui/modal'
 import { UpdateNotification } from './components/layout/UpdateNotification'
+import { LayoutManager } from './components/layout/LayoutManager'
 
 import { useVoiceInput } from './features/chat/hooks/useVoiceInput'
 import { useTextToSpeech } from './features/chat/hooks/useTextToSpeech'
@@ -91,149 +92,10 @@ export default function App() {
     ]
 
     return (
-        <div className="app-container">
+        <div className="app-container h-screen w-full overflow-hidden">
             <div className="app-drag-region" />
-            {/* Hide main sidebar when project workspace is open */}
-            {!(appState.currentView === 'projects' && selectedProject) && (
-                <Sidebar
-                    currentView={appState.currentView}
-                    onChangeView={appState.setCurrentView}
-                    isCollapsed={appState.isSidebarCollapsed}
-                    toggleSidebar={() => appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed)}
-                    onOpenSettings={(cat?: SettingsCategory) => {
-                        appState.setCurrentView('settings')
-                        if (cat) setSettingsCategory(cat)
-                    }}
-                    onSearch={() => {}}
-                />
-            )}
 
-            <div className="main-layout">
-                <div className="relative z-10 flex-none">
-                    <AppHeader
-                        currentView={appState.currentView}
-                    />
-                </div>
-
-                <div
-                    className="content-area"
-                    onDragOver={(e) => { e.preventDefault(); appState.setIsDragging(true) }}
-                    onDragLeave={() => appState.setIsDragging(false)}
-                    onDrop={(e) => {
-                        e.preventDefault()
-                        appState.setIsDragging(false)
-                        Array.from(e.dataTransfer.files).forEach(processFile)
-                    }}
-                >
-                    <AnimatePresence>
-                        {appState.isDragging && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center border-4 border-dashed border-primary/30 m-6 rounded-[32px] overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-primary/5 animate-pulse" />
-                                <div className="relative text-center space-y-4">
-                                    <div className="text-6xl mb-4">🏮</div>
-                                    <div className="text-2xl font-black tracking-tight text-foreground uppercase font-sans">
-                                        {t('dragDrop.title')}
-                                    </div>
-                                    <div className="text-muted-foreground/60 text-sm font-medium">
-                                        {t('dragDrop.description')}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    <main className="flex-1 flex flex-col overflow-hidden relative h-full">
-                        <ViewManager
-                            currentView={appState.currentView}
-                            templates={CHAT_TEMPLATES}
-                            messagesEndRef={appState.messagesEndRef}
-                            fileInputRef={appState.fileInputRef}
-                            textareaRef={appState.textareaRef}
-                            onScrollToBottom={() => appState.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            showScrollButton={appState.showScrollButton}
-                            setShowScrollButton={appState.setShowScrollButton}
-                            showFileMenu={appState.showFileMenu}
-                            setShowFileMenu={appState.setShowFileMenu}
-                        />
-                    </main>
-                </div>
-
-                <AnimatePresence>
-                    {appState.showSSHManager && (
-                        <SSHManager
-                            isOpen={appState.showSSHManager}
-                            onClose={() => appState.setShowSSHManager(false)}
-                            language={language || 'en'}
-                        />
-                    )}
-                </AnimatePresence>
-
-                <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
-                    {appState.toasts.map(toast => (
-                        <div
-                            key={toast.id}
-                            className={cn(
-                                'px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center gap-3 min-w-[240px]',
-                                toast.type === 'success'
-                                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                                    : toast.type === 'error'
-                                      ? 'bg-red-500/20 border-red-500/30 text-red-400'
-                                      : 'bg-zinc-800/80 border-white/10 text-white'
-                            )}
-                        >
-                            <span className="text-lg">
-                                {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
-                            </span>
-                            <div className="text-sm font-medium">{toast.message}</div>
-                            <button
-                                onClick={() => appState.removeToast(toast.id)}
-                                className="ml-auto opacity-50"
-                            >
-                                ×
-                            </button>
-                        </div>
-                    ))}
-                </div>
-
-                <CommandPalette
-                    isOpen={appState.showCommandPalette}
-                    onClose={() => appState.setShowCommandPalette(false)}
-                    chats={chats}
-                    onSelectChat={setCurrentChatId}
-                    onNewChat={createNewChat}
-                    projects={projects}
-                    onSelectProject={(id: string) => {
-                        const p = projects.find(pro => pro.id === id)
-                        if (p) {
-                            setSelectedProject(p)
-                            appState.setCurrentView('projects')
-                        }
-                    }}
-                    onOpenSettings={(cat?: SettingsCategory) => {
-                        appState.setCurrentView('settings')
-                        if (cat) setSettingsCategory(cat)
-                    }}
-                    onOpenSSHManager={() => appState.setShowSSHManager(true)}
-                    onRefreshModels={loadModels}
-                    models={models}
-                    onSelectModel={(m) => setSelectedModel(m)}
-                    selectedModel={selectedModel}
-                    onClearChat={async () => {
-                        if (currentChatId) {
-                            await window.electron.db.deleteMessages(currentChatId)
-                            const updatedChats = await window.electron.db.getAllChats()
-                            setChats(updatedChats as Chat[])
-                        }
-                    }}
-                    t={t}
-                />
-            </div>
-
+            {/* Context Modals (kept outside layout) */}
             <Modal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
@@ -293,6 +155,152 @@ export default function App() {
                 language={language || 'en'}
             />
             <UpdateNotification />
+
+            <AnimatePresence>
+                {appState.showSSHManager && (
+                    <SSHManager
+                        isOpen={appState.showSSHManager}
+                        onClose={() => appState.setShowSSHManager(false)}
+                        language={language || 'en'}
+                    />
+                )}
+            </AnimatePresence>
+
+            <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+                {appState.toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={cn(
+                            'px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center justify-center gap-3 min-w-[240px]',
+                            toast.type === 'success'
+                                ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                                : toast.type === 'error'
+                                    ? 'bg-red-500/20 border-red-500/30 text-red-400'
+                                    : 'bg-zinc-800/80 border-white/10 text-white'
+                        )}
+                    >
+                        <span className="text-lg">
+                            {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
+                        </span>
+                        <div className="text-sm font-medium">{toast.message}</div>
+                        <button
+                            onClick={() => appState.removeToast(toast.id)}
+                            className="ml-auto opacity-50"
+                        >
+                            ×
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <CommandPalette
+                isOpen={appState.showCommandPalette}
+                onClose={() => appState.setShowCommandPalette(false)}
+                chats={chats}
+                onSelectChat={setCurrentChatId}
+                onNewChat={createNewChat}
+                projects={projects}
+                onSelectProject={(id: string) => {
+                    const p = projects.find(pro => pro.id === id)
+                    if (p) {
+                        setSelectedProject(p)
+                        appState.setCurrentView('projects')
+                    }
+                }}
+                onOpenSettings={(cat?: SettingsCategory) => {
+                    appState.setCurrentView('settings')
+                    if (cat) setSettingsCategory(cat)
+                }}
+                onOpenSSHManager={() => appState.setShowSSHManager(true)}
+                onRefreshModels={loadModels}
+                models={models}
+                onSelectModel={(m) => setSelectedModel(m)}
+                selectedModel={selectedModel}
+                onClearChat={async () => {
+                    if (currentChatId) {
+                        await window.electron.db.deleteMessages(currentChatId)
+                        const updatedChats = await window.electron.db.getAllChats()
+                        setChats(updatedChats as Chat[])
+                    }
+                }}
+                t={t}
+            />
+
+            {/* Use LayoutManager to handle sidebar and main content sizing */}
+            <LayoutManager
+                isSidebarCollapsed={appState.isSidebarCollapsed}
+                setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
+                sidebarContent={
+                    !(appState.currentView === 'projects' && selectedProject) ? (
+                        <Sidebar
+                            currentView={appState.currentView}
+                            onChangeView={appState.setCurrentView}
+                            isCollapsed={appState.isSidebarCollapsed}
+                            toggleSidebar={() => appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed)}
+                            onOpenSettings={(cat?: SettingsCategory) => {
+                                appState.setCurrentView('settings')
+                                if (cat) setSettingsCategory(cat)
+                            }}
+                            onSearch={() => { }}
+                        />
+                    ) : null
+                }
+                mainContent={
+                    <div className="flex flex-col h-full w-full relative">
+                        <div className="relative z-10 flex-none">
+                            <AppHeader currentView={appState.currentView} />
+                        </div>
+
+                        <div
+                            className="content-area flex-1 relative overflow-hidden"
+                            onDragOver={(e) => { e.preventDefault(); appState.setIsDragging(true) }}
+                            onDragLeave={() => appState.setIsDragging(false)}
+                            onDrop={(e) => {
+                                e.preventDefault()
+                                appState.setIsDragging(false)
+                                Array.from(e.dataTransfer.files).forEach(processFile)
+                            }}
+                        >
+                            <AnimatePresence>
+                                {appState.isDragging && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="absolute inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center border-4 border-dashed border-primary/30 m-6 rounded-[32px] overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-primary/5 animate-pulse" />
+                                        <div className="relative text-center space-y-4">
+                                            <div className="text-6xl mb-4">🏮</div>
+                                            <div className="text-2xl font-black tracking-tight text-foreground uppercase font-sans">
+                                                {t('dragDrop.title')}
+                                            </div>
+                                            <div className="text-muted-foreground/60 text-sm font-medium">
+                                                {t('dragDrop.description')}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <main className="flex-1 flex flex-col overflow-hidden relative h-full">
+                                <ViewManager
+                                    currentView={appState.currentView}
+                                    templates={CHAT_TEMPLATES}
+                                    messagesEndRef={appState.messagesEndRef}
+                                    fileInputRef={appState.fileInputRef}
+                                    textareaRef={appState.textareaRef}
+                                    onScrollToBottom={() => appState.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                                    showScrollButton={appState.showScrollButton}
+                                    setShowScrollButton={appState.setShowScrollButton}
+                                    showFileMenu={appState.showFileMenu}
+                                    setShowFileMenu={appState.setShowFileMenu}
+                                />
+                            </main>
+                        </div>
+                    </div>
+                }
+            />
         </div>
     )
 }
