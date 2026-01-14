@@ -83,7 +83,7 @@ export function HyperparameterPanel({
             </button>
 
             <motion.div
-                initial={false}
+                initial={undefined}
                 animate={{ height: isExpanded ? 'auto' : 0, opacity: isExpanded ? 1 : 0 }}
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"

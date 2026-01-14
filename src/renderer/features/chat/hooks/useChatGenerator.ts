@@ -80,6 +80,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             })
 
             const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath }
+            console.log(`[useChatGenerator] Starting stream for chatId: ${chatId}`);
             const stream = chatStream(allMessages, activeModel, tools, selectedProvider, fullOptions, chatId, projectId)
             const streamStartTime = performance.now()
 
@@ -103,9 +104,12 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                 let finalReasoning = ''
                 let finalSources: string[] = []
                 let lastSaveTime = Date.now()
+                let lastDbSaveTime = Date.now()
 
+                console.log(`[useChatGenerator:processStream] Beginning iteration for chatId: ${chatId}`);
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 for await (const chunk of stream as AsyncGenerator<any, void, unknown>) {
+                    console.debug(`[useChatGenerator:processStream] Processing chunk for ${chatId}:`, chunk);
                     const current = { content: finalContent, reasoning: finalReasoning, sources: finalSources }
                     const result = processStreamChunk(chunk, current, streamStartTime)
 
@@ -121,8 +125,19 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                         if (result.newContent !== undefined) {
                             finalContent = result.newContent
                             setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], content: finalContent, speed: result.speed ?? null } }))
-                            if (Date.now() - lastSaveTime >= 2000 && finalContent) {
-                                lastSaveTime = Date.now()
+
+                            // Update the main chats state so all UI components see the live progress
+                            const now = Date.now()
+                            if (now - lastSaveTime >= 100) { // Throttle updates to ~10fps for performance
+                                lastSaveTime = now
+                                setChats(prev => prev.map(c => c.id === chatId ? {
+                                    ...c,
+                                    messages: c.messages.map(m => m.id === assistantId ? { ...m, content: finalContent, reasoning: finalReasoning || undefined } : m)
+                                } : c))
+                            }
+
+                            if (now - lastDbSaveTime >= 2000 && finalContent) {
+                                lastDbSaveTime = now
                                 void window.electron.db.updateMessage(assistantId, { content: finalContent, reasoning: finalReasoning || undefined })
                             }
                         }
@@ -155,8 +170,16 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
         } catch (e) {
             console.error('[generateResponse] Error:', e)
             const errText = formatChatError(e as CatchError)
-            const errMsg: Message = { id: generateId(), role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date() }
-            setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, errMsg] } : c))
+            const errMsg: Message = { id: assistantId, role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date(), provider: selectedProvider, model: activeModel }
+            setChats(prev => prev.map(c => {
+                if (c.id !== chatId) return c
+                return {
+                    ...c,
+                    messages: c.messages.map(m => m.id === assistantId ? errMsg : m),
+                    isGenerating: false
+                }
+            }))
+            void window.electron.db.updateMessage(assistantId, { content: errMsg.content })
         } finally {
             setStreamingStates(prev => { const s = { ...prev }; delete s[chatId]; return s })
         }

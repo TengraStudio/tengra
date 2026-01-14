@@ -37,7 +37,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     // Context Consumption
     const {
         displayMessages, searchTerm, setSearchTerm, setInput,
-        streamingContent, streamingReasoning, streamingSpeed, isLoading,
+        streamingReasoning, streamingSpeed, isLoading,
         speakingMessageId, handleSpeak, handleStopSpeak
     } = useChat();
 
@@ -78,7 +78,6 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 ) : (
                     <MessageList
                         messages={displayMessages}
-                        streamingContent={streamingContent}
                         streamingReasoning={streamingReasoning}
                         streamingSpeed={streamingSpeed}
                         isLoading={isLoading}

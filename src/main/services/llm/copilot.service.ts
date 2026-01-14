@@ -86,14 +86,107 @@ export class CopilotService {
     private vsCodeVersion: string = FALLBACK_VSCODE_VERSION;
     private accountType: 'individual' | 'business' | 'enterprise' = 'individual';
     private tokenPromise: Promise<string> | null = null;
+    private rateLimitInterval: NodeJS.Timeout | null = null;
+    private hasNotifiedExhaustion: boolean = false;
+    private remainingCalls: number = 5000; // Default to assumed available
 
-    constructor(private authService?: { getToken: (p: string) => string | undefined }) {
-        this.fetchVsCodeVersion();
+    // Rate limiting and caching
+    protected modelsCache: { data: JsonValue[] } | null = null;
+    protected modelsCacheExpiry: number = 0;
+    public static readonly MODELS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    private lastApiCall: number = 0;
+    private static readonly MIN_API_INTERVAL = 1000; // 1 second between API calls
+
+    constructor(
+        private authService?: { getToken: (p: string) => string | undefined },
+        private notificationService?: { showNotification: (t: string, b: string, silent?: boolean) => void }
+    ) {
+        // Delay VSCode version fetch to avoid startup rate limiting
+        setTimeout(() => this.fetchVsCodeVersion(), 5000);
+        // Start monitoring after initial delay
+        setTimeout(() => this.startRateLimitMonitoring(), 10000);
+    }
+
+    public async checkRateLimit(silent: boolean = false): Promise<void> {
+        try {
+            if (!silent) console.log('[CopilotService] Checking GitHub API rate limits...');
+            // Ensure we have the basic token (this.githubToken)
+            if (!this.githubToken && this.authService) {
+                this.githubToken = this.authService.getToken('copilot_token') || null;
+            }
+
+            if (!this.githubToken) {
+                console.warn('[CopilotService] Cannot check rate limit: No github_token available.');
+                return;
+            }
+
+            const response = await fetch('https://api.github.com/rate_limit', {
+                headers: {
+                    'Authorization': `token ${this.githubToken}`,
+                    'Accept': 'application/json',
+                    'User-Agent': USER_AGENT
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const core = (data as any).resources?.core;
+                this.remainingCalls = core?.remaining ?? 0;
+
+                if (!silent) {
+                    console.log('--- GitHub API Rate Limits (Copilot Token) ---');
+                    console.log(`Limit: ${core?.limit}`);
+                    console.log(`Remaining: ${core?.remaining}`);
+                    console.log(`Reset: ${new Date((core?.reset || 0) * 1000).toLocaleString()}`);
+                    console.log('----------------------------------------------');
+                }
+
+                if (core?.remaining === 0) {
+                    if (!this.hasNotifiedExhaustion) {
+                        this.hasNotifiedExhaustion = true;
+                        this.notificationService?.showNotification(
+                            'Copilot Rate Limit Exhausted',
+                            `You have 0 requests remaining. Resets at ${new Date((core?.reset || 0) * 1000).toLocaleTimeString()}`,
+                            false
+                        );
+                    }
+                } else {
+                    // Reset flag if we have quota again
+                    this.hasNotifiedExhaustion = false;
+                }
+            } else {
+                console.warn(`[CopilotService] Rate limit check failed: ${response.status} ${response.statusText}`);
+                console.warn('Headers:', Object.fromEntries(response.headers.entries()));
+            }
+        } catch (error) {
+            console.error('[CopilotService] Failed to check rate limit:', getErrorMessage(error as Error));
+        }
     }
 
     setGithubToken(token: string) {
         this.githubToken = token;
         this.copilotSessionToken = null;
+        // Clear caches when token changes
+        this.modelsCache = null;
+        this.modelsCacheExpiry = 0;
+        this.hasNotifiedExhaustion = false; // Reset notification flag on new token
+    }
+
+    private startRateLimitMonitoring() {
+        if (this.rateLimitInterval) clearInterval(this.rateLimitInterval);
+        this.checkRateLimit(true).catch(e => console.error('[CopilotService] Initial rate limit check failed', e));
+        // Check every 5 minutes
+        this.rateLimitInterval = setInterval(() => this.checkRateLimit(true), 5 * 60 * 1000);
+    }
+
+    // Rate limiting helper
+    protected async waitForRateLimit(): Promise<void> {
+        const now = Date.now();
+        const timeSinceLastCall = now - this.lastApiCall;
+        if (timeSinceLastCall < CopilotService.MIN_API_INTERVAL) {
+            await new Promise(resolve => setTimeout(resolve, CopilotService.MIN_API_INTERVAL - timeSinceLastCall));
+        }
+        this.lastApiCall = Date.now();
     }
 
     private async fetchVsCodeVersion() {
@@ -128,6 +221,7 @@ export class CopilotService {
 
         this.tokenPromise = (async () => {
             try {
+                await this.waitForRateLimit();
                 if (!this.githubToken) {
                     // Try to recover from AuthService if available - ONLY use copilot_token, no fallback
                     if (this.authService) {
@@ -197,7 +291,7 @@ export class CopilotService {
                         } else {
                             const v1ErrorText = await v1Response.text();
                             console.error(`[CopilotService] v1 fallback failed: ${v1Response.status} ${v1ErrorText}`);
-                            
+
                             // 404 on both endpoints usually means token is invalid/expired/revoked or doesn't have Copilot permissions
                             if (v1Response.status === 404) {
                                 console.error(`[CopilotService] Token appears invalid (404 on both v2 and v1 endpoints). This usually means:`);
@@ -442,6 +536,16 @@ export class CopilotService {
 
     async chat(messages: Message[], model: string = 'gpt-4o', tools?: ToolDefinition[]): Promise<Message | null> {
         try {
+            await this.checkRateLimit(true);
+            if (this.remainingCalls <= 0) {
+                this.notificationService?.showNotification(
+                    'Copilot Request Blocked',
+                    'GitHub API rate limit is exhausted. Please wait for reset.',
+                    false
+                );
+                throw new Error('GitHub API rate limit exhausted');
+            }
+
             const token = await this.ensureCopilotToken();
             const hasImages = messages.some(m => {
                 if (Array.isArray(m.content)) {
@@ -518,6 +622,16 @@ export class CopilotService {
 
     async streamChat(messages: Message[], model: string, tools?: ToolDefinition[]): Promise<ReadableStream<Uint8Array> | null> {
         try {
+            await this.checkRateLimit(true);
+            if (this.remainingCalls <= 0) {
+                this.notificationService?.showNotification(
+                    'Copilot Request Blocked',
+                    'GitHub API rate limit is exhausted. Please wait for reset.',
+                    false
+                );
+                throw new Error('GitHub API rate limit exhausted');
+            }
+
             const token = await this.ensureCopilotToken();
             const hasImages = messages.some(m => {
                 if (Array.isArray(m.content)) {
@@ -578,14 +692,32 @@ export class CopilotService {
     async getModels(): Promise<{ data: JsonValue[] }> {
         if (!this.isConfigured()) return { data: [] };
 
+        // Return cached models if still valid
+        if (this.modelsCache && Date.now() < this.modelsCacheExpiry) {
+            return this.modelsCache;
+        }
+
         try {
+            await this.waitForRateLimit();
             const token = await this.ensureCopilotToken();
             const response = await fetch(`${this.getBaseUrl()}/models`, { headers: this.getHeaders(token) });
-            if (!response.ok) return { data: [] };
-            return await response.json() as { data: JsonValue[] };
+            if (!response.ok) {
+                // On rate limit, return cached data if available, otherwise empty
+                if (response.status === 403 || response.status === 429) {
+                    console.warn('[CopilotService] Rate limited, using cached models or empty');
+                    return this.modelsCache || { data: [] };
+                }
+                return { data: [] };
+            }
+            const models = await response.json() as { data: JsonValue[] };
+            // Cache the result
+            this.modelsCache = models;
+            this.modelsCacheExpiry = Date.now() + CopilotService.MODELS_CACHE_TTL;
+            return models;
         } catch (error) {
             console.error('[CopilotService] Failed to get models:', getErrorMessage(error as Error));
-            return { data: [] };
+            // Return cached data on error if available
+            return this.modelsCache || { data: [] };
         }
     }
 

@@ -1,17 +1,10 @@
 .app-container {
-    @apply flex h-screen w-full bg-background text-foreground overflow-hidden selection:bg-primary/30 selection:text-white transition-all duration-300;
+    @apply relative h-screen w-full bg-background text-foreground overflow-hidden selection:bg-primary/30 selection:text-white transition-all duration-300;
 }
 
 /* Layout handled by LayoutManager.tsx */
 .app-drag-region {
     -webkit-app-region: drag;
-    height: 32px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    pointer-events: none;
 }
 
 .no-drag {

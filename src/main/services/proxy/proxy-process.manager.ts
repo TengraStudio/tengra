@@ -8,8 +8,7 @@ import { SettingsService } from '../settings.service'
 import { SecurityService } from '../security.service'
 import { DataService } from '../data/data.service'
 import { app } from 'electron'
-import { JsonObject } from '../../../shared/types/common'
-import { AppSettings } from '../../../shared/types'
+import { JsonObject } from '../../../shared/types/common' 
 
 export interface ProxyEmbedStatus {
     running: boolean
@@ -51,12 +50,10 @@ export class ProxyProcessManager {
         // Secure Storage: Setup temp dir and decrypt files
         await this.prepareTempAuthDir()
 
-        // Generate config dynamically
-        await this.generateConfig(this.currentPort, this.tempAuthDir || undefined)
+        // Generate YAML config for the proxy binary (separate from settings.json!)
+        const proxyConfigPath = await this.generateProxyConfigFile(this.currentPort, this.tempAuthDir || undefined)
 
-        const settingsPath = this.settingsService.getSettingsPath()
-
-        this.child = spawn(binaryPath, ['-config', settingsPath], {
+        this.child = spawn(binaryPath, ['-config', proxyConfigPath], {
             cwd: path.dirname(binaryPath),
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true
@@ -80,6 +77,9 @@ export class ProxyProcessManager {
             this.child = null
         }
 
+        // Before cleanup, sync any new auth files from temp to real auth dir
+        await this.syncAuthFilesFromTemp()
+
         // Cleanup temp dir
         if (this.tempAuthDir) {
             try {
@@ -91,6 +91,80 @@ export class ProxyProcessManager {
         }
 
         return this.getStatus()
+    }
+
+    /**
+     * Sync auth files from temp directory to the real auth directory.
+     * This ensures OAuth tokens saved by the proxy are persisted and encrypted correctly.
+     */
+    async syncAuthFilesFromTemp(force: boolean = false): Promise<void> {
+        if (!this.tempAuthDir || !fs.existsSync(this.tempAuthDir)) return
+
+        const realAuthDir = this.getAuthWorkDir()
+        console.log('[ProxyProcessManager] Syncing auth files from temp to:', realAuthDir)
+
+        try {
+            const tempFiles = fs.readdirSync(this.tempAuthDir)
+
+            for (const file of tempFiles) {
+                if (!file.endsWith('.json')) continue
+
+                const tempPath = path.join(this.tempAuthDir, file)
+                const realPath = path.join(realAuthDir, file)
+
+                try {
+                    const tempStat = fs.statSync(tempPath)
+
+                    // Check if the temp file is newer than the existing one
+                    let shouldSync = true
+                    if (!force && fs.existsSync(realPath)) {
+                        const realStat = fs.statSync(realPath)
+                        // Only sync if temp file is newer
+                        shouldSync = tempStat.mtime > realStat.mtime
+                    }
+
+                    if (shouldSync) {
+                        // Read the temp file (it's in plain format from proxy)
+                        const content = fs.readFileSync(tempPath, 'utf8')
+                        const data = JSON.parse(content) as JsonObject
+
+                        // Encrypt and save to real auth dir using same format as AuthService
+                        if (this.securityService) {
+                            const encrypted = this.securityService.encryptSync(JSON.stringify(data))
+                            const wrapper = {
+                                provider: file.replace('.json', ''),
+                                token: encrypted,
+                                updatedAt: Date.now()
+                            }
+                            fs.writeFileSync(realPath, JSON.stringify(wrapper, null, 2), 'utf8')
+                            console.log(`[ProxyProcessManager] Synced and encrypted auth file: ${file}`)
+                        } else {
+                            // Fallback: copy as-is
+                            fs.copyFileSync(tempPath, realPath)
+                            console.log(`[ProxyProcessManager] Synced auth file (no encryption): ${file}`)
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[ProxyProcessManager] Failed to sync auth file ${file}:`, e)
+                }
+            }
+        } catch (e) {
+            console.error('[ProxyProcessManager] Failed to sync auth files:', e)
+        }
+    }
+
+    /**
+     * Manually trigger auth file sync (e.g., after OAuth callback)
+     */
+    async forceSyncAuthFiles(): Promise<void> {
+        return this.syncAuthFilesFromTemp()
+    }
+
+    /**
+     * Get the current temp auth directory path
+     */
+    getTempAuthDir(): string | null {
+        return this.tempAuthDir
     }
 
     getStatus(): ProxyEmbedStatus {
@@ -126,6 +200,15 @@ export class ProxyProcessManager {
             if (level === 'error') appLogger.error('Proxy', line.trim())
             else if (level === 'warning') appLogger.warn('Proxy', line.trim())
             else appLogger.info('Proxy', line.trim())
+
+            // Auto-sync triggering
+            if (line.includes('auth file changed')) {
+                console.log('[ProxyProcessManager] Detected auth file change, triggering sync in 500ms...')
+                // Run in background to not block logging loop, with a small delay to ensure disk flush
+                setTimeout(() => {
+                    this.syncAuthFilesFromTemp(true).catch(e => console.error('[ProxyProcessManager] Auto-sync failed:', e))
+                }, 500)
+            }
         }
         return remainder
     }
@@ -211,34 +294,58 @@ export class ProxyProcessManager {
         }
     }
 
-    async generateConfig(port: number, overrideAuthDir?: string) {
+    /**
+     * Generate a YAML config file for the cliproxy binary.
+     * This is SEPARATE from settings.json to avoid corruption.
+     */
+    async generateProxyConfigFile(port: number, overrideAuthDir?: string): Promise<string> {
         const settings = this.settingsService.getSettings()
         const finalAuthDir = overrideAuthDir || this.getAuthWorkDir()
         const authDir = finalAuthDir.replace(/\\/g, '/')
 
-        // We access proxy key via settings, assuming it's already set by ProxyService or we might need to expose a helper
-        // ProxyService ensures keys exist in constructor. We can assume they are there or delegate key generation?
-        // For now, let's assume they exist or read from settings safely.
         let proxyKey = settings.proxy?.key
         if (!proxyKey) {
-            // Should not happen if ProxyService is initialized, but safe fallback
             console.warn('[ProxyProcessManager] Proxy Key missing in settings, process might not auth correctly.')
             proxyKey = ''
         }
 
+        // Build YAML config for the proxy binary
+        const yamlConfig = `host: "127.0.0.1"
+port: ${port}
+auth-dir: "${authDir}"
+api-keys:
+  - "${proxyKey}"
+remote-management:
+  secret-key: "${proxyKey}"
+debug: true
+logging-to-file: false
+`
+
+        // Write to proxy-config.yaml (not settings.json!)
+        const configDir = this.dataService.getPath('config')
+        const configPath = path.join(configDir, 'proxy-config.yaml')
+
+        fs.writeFileSync(configPath, yamlConfig, 'utf8')
+        console.log('[ProxyProcessManager] Generated proxy config at:', configPath)
+
+        // Update settings with just the basic proxy info (no YAML-specific fields)
         this.settingsService.saveSettings({
             proxy: {
-                ...(settings.proxy || {}),
-                host: "127.0.0.1",
-                port: port,
-                "auth-dir": authDir,
-                "api-keys": [proxyKey],
-                "remote-management": {
-                    "secret-key": proxyKey
-                },
-                debug: true,
-                "logging-to-file": false
+                enabled: settings.proxy?.enabled ?? false,
+                url: settings.proxy?.url || `http://127.0.0.1:${port}/v1`,
+                key: proxyKey,
+                authStoreKey: settings.proxy?.authStoreKey
             }
-        } as Partial<AppSettings>)
+        })
+
+        return configPath
+    }
+
+    /**
+     * @deprecated Use generateProxyConfigFile instead
+     */
+    async generateConfig(port: number, overrideAuthDir?: string) {
+        // Kept for backwards compatibility - just calls the new method
+        await this.generateProxyConfigFile(port, overrideAuthDir)
     }
 }

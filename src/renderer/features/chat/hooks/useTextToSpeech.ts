@@ -62,7 +62,7 @@ export function useTextToSpeech(options: TTSOptions = {}): TextToSpeechReturn {
         }
 
         window.speechSynthesis.speak(utterance)
-    }, [isSupported, options])
+    }, [isSupported, options.voice, options.rate, options.pitch, options.volume, options.onEnd])
 
     return {
         speak,

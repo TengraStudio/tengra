@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm ls:*)",
+      "Bash(node:*)",
+      "Bash(powershell -Command \"& ''c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\node_modules\\\\electron\\\\dist\\\\electron.exe'' --version\")",
+      "Bash(powershell -Command:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx electron:*)",
+      "Bash(node_modules.electrondistelectron.exe .)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" .)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" test-electron.js)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" test-electron2.js)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" --no-sandbox test-electron2.js)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" test-electron3.js)",
+      "Bash(\"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\node_modules\\\\electron\\\\dist\\\\electron.exe\" -e \"const { app } = require\\(''electron''\\); console.log\\(''app:'', Boolean\\(app\\)\\);\")",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" --inspect -e \"console.log\\(process.type\\);\")",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" . --debug-brk)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" -e \"const e = require\\(''electron''\\); console.log\\(typeof e, e && e.app ? ''has app'' : ''no app''\\);\")",
+      "Bash(set ELECTRON_RUN_AS_NODE=:*)",
+      "Bash(set:*)",
+      "Bash(dir)",
+      "Bash(dir /b)",
+      "Bash(\"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\node_modules\\\\electron\\\\dist\\\\electron.exe\" \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\dist\\\\main\\\\main.js\")",
+      "Bash(npm install:*)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" electron-start.js)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" electron-bootstrap.js)",
+      "Bash(\"node_modules\\\\electron\\\\dist\\\\electron.exe\" --help)",
+      "Bash(echo:*)",
+      "Bash(findstr:*)",
+      "Bash(unset:*)",
+      "Read(//c/Users/agnes/AppData/Roaming/Orbit/runtime/logs/**)"
+    ]
+  }
+}

@@ -378,7 +378,6 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
                             return (
                                 <motion.div
-                                    layoutId={key}
                                     key={key}
                                     onClick={() => handleModelSelect(m)}
                                     className={cn(

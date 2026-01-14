@@ -25,7 +25,7 @@ export class ChatEventService extends BaseService {
         super('ChatEventService');
     }
 
-    appendEvent(threadId: string, type: ChatEventType, payload: JsonValue, metadata: JsonValue = {}): ChatEvent {
+    async appendEvent(threadId: string, type: ChatEventType, payload: JsonValue, metadata: JsonValue = {}): Promise<ChatEvent> {
         const event: ChatEvent = {
             id: uuidv4(),
             threadId,
@@ -42,7 +42,7 @@ export class ChatEventService extends BaseService {
                 VALUES (?, ?, ?, ?, ?, ?)
             `);
 
-            stmt.run(
+            await stmt.run(
                 event.id,
                 event.threadId,
                 event.type,
@@ -58,7 +58,7 @@ export class ChatEventService extends BaseService {
         }
     }
 
-    getEvents(threadId: string): ChatEvent[] {
+    async getEvents(threadId: string): Promise<ChatEvent[]> {
         try {
             const db = this.databaseService.getDatabase();
             const stmt = db.prepare(`
@@ -76,7 +76,7 @@ export class ChatEventService extends BaseService {
                 metadata: string;
             }
 
-            const rows = stmt.all(threadId) as ChatEventRow[];
+            const rows = await stmt.all(threadId) as ChatEventRow[];
 
             return rows.map(row => ({
                 id: row.id,
@@ -96,9 +96,9 @@ export class ChatEventService extends BaseService {
      * Rebuilds the current state of a chat thread by replaying all events.
      * This is a basic implementation that can be expanded based on state requirements.
      */
-    rebuildThreadState(threadId: string): { messages: Array<{ id?: string; content?: string; timestamp: number; [key: string]: JsonValue | undefined }> } {
-        const events = this.getEvents(threadId);
-        const state: { messages: Array<{ id?: string; content?: string; timestamp: number; [key: string]: JsonValue | undefined }> } = { messages: [] };
+    async rebuildThreadState(threadId: string): Promise<{ messages: Array<{ id?: string; content?: string; timestamp: number;[key: string]: JsonValue | undefined }> }> {
+        const events = await this.getEvents(threadId);
+        const state: { messages: Array<{ id?: string; content?: string; timestamp: number;[key: string]: JsonValue | undefined }> } = { messages: [] };
 
         for (const event of events) {
             switch (event.type) {

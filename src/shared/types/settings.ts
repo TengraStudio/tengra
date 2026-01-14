@@ -163,6 +163,11 @@ export type AppSettings = {
             }
         }
     }
+    ai?: {
+        modelUpdateInterval?: number // ms, default 1 hour
+        tokenRefreshInterval?: number // ms, default 5 minutes
+        copilotRefreshInterval?: number // ms, default 15 minutes
+    }
     [key: string]: JsonValue | undefined
 }
 

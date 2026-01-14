@@ -85,6 +85,8 @@ import { BaseService } from './base.service'
 export class SettingsService extends BaseService {
     private settingsPath: string
     private settings: AppSettings
+    private saveInProgress: boolean = false
+    private pendingSave: Partial<AppSettings> | null = null
 
     constructor(
         dataService?: DataService,
@@ -106,89 +108,58 @@ export class SettingsService extends BaseService {
 
     /**
      * Load settings from the settings file.
-     * 
+     *
      * @returns The loaded settings merged with defaults
      */
     private loadSettings(): AppSettings {
-        console.log(`[SettingsService] !!! loadSettings START !!! (authService=${!!this.authService})`);
+        console.log(`[SettingsService] loadSettings (authService=${!!this.authService})`);
         try {
             const exists = fs.existsSync(this.settingsPath);
             let loaded: Partial<AppSettings> = {};
             if (exists) {
-                console.log(`[SettingsService] !!! Found settings file at ${this.settingsPath}`);
-                const data = fs.readFileSync(this.settingsPath, 'utf8')
+                console.log(`[SettingsService] Found settings file at ${this.settingsPath}`);
+                let data = fs.readFileSync(this.settingsPath, 'utf8')
 
-                try {
-                    loaded = JSON.parse(data) as Partial<AppSettings>;
-                } catch (e) {
-                    console.warn('[SettingsService] Initial JSON.parse FAILED, trying recovery...');
-                    
-                    // Try to find a valid JSON object by progressively truncating from the end
-                    let recovered = false
-                    for (let i = data.length - 1; i > 100 && !recovered; i--) {
-                        const truncated = data.substring(0, i)
-                        // Try to find a complete object by looking for matching braces
-                        let braceCount = 0
-                        let lastValidBrace = -1
-                        for (let j = truncated.length - 1; j >= 0; j--) {
-                            if (truncated[j] === '}') braceCount++
-                            else if (truncated[j] === '{') {
-                                braceCount--
-                                if (braceCount === 0) {
-                                    lastValidBrace = j
-                                    break
-                                }
-                            }
-                        }
-                        
-                        if (lastValidBrace > 0) {
-                            try {
-                                const candidate = truncated.substring(0, lastValidBrace + 1)
-                                loaded = JSON.parse(candidate) as Partial<AppSettings>
-                                console.log('[SettingsService] JSON recovery SUCCESSFUL by truncation!');
-                                recovered = true
-                                
-                                // Backup corrupted file and save recovered version
+                // Check for empty or whitespace-only file
+                if (!data || !data.trim()) {
+                    console.warn('[SettingsService] Settings file is empty, using defaults');
+                    loaded = {}
+                } else {
+                    try {
+                        loaded = JSON.parse(data) as Partial<AppSettings>;
+                    } catch (parseError) {
+                        console.warn('[SettingsService] JSON.parse failed, attempting recovery...');
+
+                        // Smart recovery: find where valid JSON ends
+                        // This handles cases where garbage was appended or write was interrupted
+                        const recovered = this.attemptJsonRecovery(data)
+
+                        if (recovered) {
+                            loaded = recovered.data
+                            console.log('[SettingsService] JSON recovery successful');
+
+                            // Only backup and rewrite if we actually had to truncate something
+                            if (recovered.wasModified) {
                                 try {
-                                    const backupPath = this.settingsPath + '.corrupted.' + Date.now()
+                                    const backupPath = this.settingsPath + '.recovered.' + Date.now()
                                     fs.writeFileSync(backupPath, data, 'utf8')
-                                    console.log(`[SettingsService] Backed up corrupted settings to: ${backupPath}`)
-                                    // Save recovered version
+                                    console.log(`[SettingsService] Backed up original to: ${backupPath}`)
                                     fs.writeFileSync(this.settingsPath, JSON.stringify(loaded, null, 2), 'utf8')
-                                    console.log('[SettingsService] Saved recovered settings');
                                 } catch (backupError) {
-                                    console.warn('[SettingsService] Failed to backup/recover settings file:', getErrorMessage(backupError as Error));
+                                    console.warn('[SettingsService] Failed to backup:', getErrorMessage(backupError as Error));
                                 }
-                            } catch (e2) {
-                                // Continue trying
                             }
-                        }
-                    }
-                    
-                    // If recovery failed, try simple truncation as last resort
-                    if (!recovered) {
-                        const lastBrace = data.lastIndexOf('}');
-                        if (lastBrace > 100) {
+                        } else {
+                            // True corruption - backup and use defaults
+                            console.error('[SettingsService] JSON recovery failed, using defaults');
                             try {
-                                loaded = JSON.parse(data.substring(0, lastBrace + 1)) as Partial<AppSettings>;
-                                console.log('[SettingsService] JSON recovery SUCCESSFUL by last brace!');
-                                recovered = true
-                            } catch (e2) {
-                                console.error('[SettingsService] JSON recovery FAILED:', getErrorMessage(e2));
+                                const backupPath = this.settingsPath + '.corrupted.' + Date.now()
+                                fs.writeFileSync(backupPath, data, 'utf8')
+                                console.log(`[SettingsService] Backed up corrupted file to: ${backupPath}`)
+                            } catch (e) {
+                                // Ignore backup failures
                             }
-                        }
-                    }
-                    
-                    if (!recovered) {
-                        console.error('[SettingsService] JSON recovery completely FAILED. Using defaults and backing up corrupted file.');
-                        try {
-                            const backupPath = this.settingsPath + '.corrupted.' + Date.now()
-                            fs.writeFileSync(backupPath, data, 'utf8')
-                            console.log(`[SettingsService] Backed up corrupted settings to: ${backupPath}`)
-                            loaded = {} // Use empty object, will merge with defaults
-                        } catch (backupError) {
-                            console.error('[SettingsService] Failed to backup corrupted file:', getErrorMessage(backupError as Error));
-                            loaded = {} // Use empty object anyway
+                            loaded = {}
                         }
                     }
                 }
@@ -196,7 +167,7 @@ export class SettingsService extends BaseService {
                 if (loaded.userAvatar) delete loaded.userAvatar;
                 if (loaded.aiAvatar) delete loaded.aiAvatar;
             } else {
-                console.log(`[SettingsService] !!! settings.json NOT FOUND at ${this.settingsPath}`);
+                console.log(`[SettingsService] settings.json NOT FOUND at ${this.settingsPath}`);
             }
 
             // Merge tokens from AuthService (always do this if authService is available)
@@ -240,8 +211,8 @@ export class SettingsService extends BaseService {
                 ...DEFAULT_SETTINGS,
                 ...loaded,
                 ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama || {}) },
-                autoUpdate: loaded.autoUpdate 
-                    ? { ...DEFAULT_SETTINGS.autoUpdate, ...loaded.autoUpdate } 
+                autoUpdate: loaded.autoUpdate
+                    ? { ...DEFAULT_SETTINGS.autoUpdate, ...loaded.autoUpdate }
                     : DEFAULT_SETTINGS.autoUpdate,
                 general: { ...DEFAULT_SETTINGS.general, ...(loaded.general || {}) },
                 github: {
@@ -249,7 +220,7 @@ export class SettingsService extends BaseService {
                     ...(loaded.github || {}),
                     token: findToken('github') || loaded.github?.token || ''
                 },
-                openai: loaded.openai 
+                openai: loaded.openai
                     ? {
                         ...DEFAULT_SETTINGS.openai!,
                         ...loaded.openai,
@@ -313,6 +284,70 @@ export class SettingsService extends BaseService {
         }
     }
 
+    /**
+     * Attempt to recover valid JSON from potentially corrupted data.
+     * Returns null if recovery is not possible.
+     */
+    private attemptJsonRecovery(data: string): { data: Partial<AppSettings>; wasModified: boolean } | null {
+        // Strategy: Find where the root JSON object ends by tracking brace depth
+        // This handles: trailing garbage, incomplete writes, BOM issues
+
+        // Remove BOM if present
+        let cleanData = data.replace(/^\uFEFF/, '')
+
+        // Find the start of JSON object
+        const startIndex = cleanData.indexOf('{')
+        if (startIndex < 0) return null
+
+        // Parse character by character to find valid JSON end
+        let depth = 0
+        let inString = false
+        let escapeNext = false
+        let endIndex = -1
+
+        for (let i = startIndex; i < cleanData.length; i++) {
+            const char = cleanData[i]
+
+            if (escapeNext) {
+                escapeNext = false
+                continue
+            }
+
+            if (char === '\\' && inString) {
+                escapeNext = true
+                continue
+            }
+
+            if (char === '"' && !escapeNext) {
+                inString = !inString
+                continue
+            }
+
+            if (inString) continue
+
+            if (char === '{') depth++
+            else if (char === '}') {
+                depth--
+                if (depth === 0) {
+                    endIndex = i
+                    break
+                }
+            }
+        }
+
+        if (endIndex < 0) return null
+
+        const jsonCandidate = cleanData.substring(startIndex, endIndex + 1)
+        const wasModified = endIndex < cleanData.length - 1 || startIndex > 0
+
+        try {
+            const parsed = JSON.parse(jsonCandidate) as Partial<AppSettings>
+            return { data: parsed, wasModified }
+        } catch {
+            return null
+        }
+    }
+
     getSettings(): AppSettings {
         return this.settings
     }
@@ -322,12 +357,23 @@ export class SettingsService extends BaseService {
     }
 
     saveSettings(newSettings: Partial<AppSettings>): AppSettings {
+        // Handle concurrent save attempts by queuing
+        if (this.saveInProgress) {
+            // Merge with pending save or create new pending
+            this.pendingSave = this.pendingSave
+                ? { ...this.pendingSave, ...newSettings }
+                : newSettings
+            console.log('[SettingsService] Save in progress, queuing update')
+            return this.settings
+        }
+
+        this.saveInProgress = true
         const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>) => {
             if (!source) return target;
             const res = { ...target };
             for (const key of Object.keys(source)) {
                 if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                    res[key] = { ...(target[key] || {}), ...source[key] };
+                    res[key] = { ...((target[key] as any) || {}), ...source[key] };
                 } else {
                     res[key] = source[key];
                 }
@@ -406,7 +452,7 @@ export class SettingsService extends BaseService {
             // This prevents corruption if the process crashes during write
             const tempPath = this.settingsPath + '.tmp'
             const jsonString = JSON.stringify(settingsToSave, null, 2)
-            
+
             // Validate JSON before writing
             try {
                 JSON.parse(jsonString) // Verify it's valid JSON
@@ -414,7 +460,7 @@ export class SettingsService extends BaseService {
                 console.error('[SettingsService] Generated invalid JSON, aborting save:', getErrorMessage(parseError as Error))
                 throw new Error('Generated invalid JSON during save')
             }
-            
+
             fs.writeFileSync(tempPath, jsonString, 'utf8')
             fs.renameSync(tempPath, this.settingsPath)
         } catch (error) {
@@ -428,8 +474,29 @@ export class SettingsService extends BaseService {
             } catch (cleanupError) {
                 // Ignore cleanup errors
             }
+        } finally {
+            this.saveInProgress = false
+
+            // Process any pending saves that accumulated while we were saving
+            if (this.pendingSave) {
+                const pending = this.pendingSave
+                this.pendingSave = null
+                // Use setImmediate to avoid stack overflow with rapid saves
+                setImmediate(() => {
+                    this.saveSettings(pending)
+                })
+            }
         }
 
+        return this.settings
+    }
+
+    /**
+     * Force reload settings from disk.
+     * Useful after external modifications or suspected corruption.
+     */
+    reloadSettings(): AppSettings {
+        this.settings = this.loadSettings()
         return this.settings
     }
 }

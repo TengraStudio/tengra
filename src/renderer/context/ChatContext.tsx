@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect } from 'react'
+import { createContext, useContext, ReactNode, useEffect, useMemo } from 'react'
 import React from 'react'
 import { useChatManager } from '../features/chat/hooks/useChatManager'
 import { useAuth } from './AuthContext'
@@ -130,7 +130,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [historyManager, chatManager])
 
-    const value = {
+    const value = useMemo(() => ({
         ...chatManager,
         handleSpeak,
         handleStopSpeak,
@@ -158,7 +158,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 chatManager.setCurrentChatId(state.currentChatId)
             }
         }
-    }
+    }), [
+        chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
+        projects, selectedProject, setSelectedProject, loadProjects,
+        historyManager.canUndo, historyManager.canRedo, historyManager.undo, historyManager.redo
+    ])
 
     return (
         <ChatContext.Provider value={value}>

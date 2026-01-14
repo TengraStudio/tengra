@@ -19,7 +19,7 @@ export interface SidebarBadgeProps {
     className?: string
 }
 
-export const SidebarBadge: React.FC<SidebarBadgeProps> = ({
+export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
     value,
     max = 99,
     variant = 'default',
@@ -41,8 +41,8 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = ({
         md: dot ? 'w-2.5 h-2.5' : 'min-w-[22px] h-[22px] px-2 text-xs'
     }
 
-    const displayValue = typeof value === 'number' && value > max 
-        ? `${max}+` 
+    const displayValue = typeof value === 'number' && value > max
+        ? `${max}+`
         : value
 
     if (dot) {
@@ -60,7 +60,7 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = ({
         <AnimatePresence mode="wait">
             <motion.span
                 key={String(value)}
-                initial={animate ? { scale: 0.5, opacity: 0 } : false}
+                initial={animate ? { scale: 0.5, opacity: 0 } : undefined}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={animate ? { scale: 0.5, opacity: 0 } : undefined}
                 className={cn(
@@ -74,6 +74,6 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = ({
             </motion.span>
         </AnimatePresence>
     )
-}
+})
 
 SidebarBadge.displayName = 'SidebarBadge'

@@ -135,17 +135,31 @@ export class ProcessService extends EventEmitter {
         }))
     }
 
-    resize(id: string, cols: number, rows: number) {
+    resize(id: string, cols: number, rows: number): boolean {
         const task = this.processes.get(id)
-        if (task) {
+        if (!task) return false
+        try {
             task.ptyProcess.resize(cols, rows)
+            return true
+        } catch (e) {
+            console.error(`[ProcessService] Resize failed for task ${id}:`, e)
+            return false
         }
     }
 
-    write(id: string, data: string) {
+    write(id: string, data: string): boolean {
         const task = this.processes.get(id)
-        if (task) {
+        if (!task) return false
+        try {
             task.ptyProcess.write(data)
+            return true
+        } catch (e) {
+            // Broken pipe errors are common when process has exited
+            const errorMsg = getErrorMessage(e as Error)
+            if (!errorMsg.includes('EPIPE') && !errorMsg.includes('broken pipe')) {
+                console.error(`[ProcessService] Write failed for task ${id}:`, e)
+            }
+            return false
         }
     }
 

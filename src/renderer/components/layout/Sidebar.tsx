@@ -1,23 +1,18 @@
-import { Chat, Folder, IpcValue } from '@/types'
+import { Chat, Folder } from '@/types'
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import './Sidebar.css'
 import {
-    Plus, Settings, ChevronLeft, ChevronRight,
-    Trash2, Search, MessageSquare, Rocket, ChevronDown,
-    LayoutGrid, Mic, Terminal, Database, Image, UserCircle, History, Info, Activity, Cpu,
-    FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin, TrendingUp,
-    Users, Plug, Container, Sparkles, Brain
+    Plus, Settings, ChevronLeft, ChevronRight, Trash2, Search, MessageSquare,
+    Rocket, FolderPlus, FolderOpen, Folder as FolderIcon,
+    Edit2, Pin, Users, Sparkles, User, Palette, BarChart, Image, Mic, Code, Shield, Server
 } from 'lucide-react'
-import React, { useState, useEffect, useRef, ChangeEvent, type ComponentType, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useTranslation } from '@/i18n'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
 import { useProject } from '@/context/ProjectContext'
 import { SettingsCategory } from '@/features/settings/types'
-import { SidebarSection, SidebarMenuItem, SidebarDivider, SidebarStatusIndicator } from './sidebar-components'
+import { SidebarItem } from './sidebar/SidebarItem'
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -28,32 +23,6 @@ interface SidebarProps {
     onSearch: (query: string) => void
 }
 
-const SettingsMenuItem = ({
-    icon: Icon,
-    label,
-    isActive,
-    onClick
-}: {
-    id: string,
-    icon: ComponentType<{ className?: string }>,
-    label: string,
-    isActive: boolean,
-    onClick: () => void
-}) => (
-    <button
-        onClick={onClick}
-        className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200",
-            isActive
-                ? "text-primary bg-primary/5"
-                : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
-        )}
-    >
-        <Icon className="w-3.5 h-3.5 opacity-70" />
-        <span>{label}</span>
-    </button>
-)
-
 export const Sidebar = React.memo(function Sidebar({
     onOpenSettings,
     isCollapsed,
@@ -62,774 +31,432 @@ export const Sidebar = React.memo(function Sidebar({
     onChangeView,
     onSearch
 }: SidebarProps) {
-    // Context Consumption
     const {
         chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
-        folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
-        prompts, createPrompt, updatePrompt, deletePrompt,
-        isLoading, togglePin
+        folders, createFolder, deleteFolder,
+        prompts, createPrompt, updatePrompt, deletePrompt, togglePin
     } = useChat()
 
-    const { language, settingsCategory, setSettingsCategory } = useAuth()
+    const { language } = useAuth()
     const { selectedProject } = useProject()
-
     const { t } = useTranslation(language || 'en')
 
-    // Internal State
-    const [editingChatId, setEditingChatId] = useState<string | null>(null)
-    const [editTitle, setEditTitle] = useState('')
-    const editInputRef = useRef<HTMLInputElement>(null)
     const [searchQuery, setSearchQuery] = useState('')
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
-    const [isCreatingFolder, setIsCreatingFolder] = useState(false)
-    const [newFolderName, setNewFolderName] = useState('')
-    const [editingFolderId, setEditingFolderId] = useState<string | null>(null)
-    const [editFolderName, setEditFolderName] = useState('')
     const [showPrompts, setShowPrompts] = useState(false)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [editValue, setEditValue] = useState('')
+    const editRef = useRef<HTMLInputElement>(null)
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false)
 
-    // Track if initial folder expansion has been applied
-    const initialExpansionDoneRef = useRef(false)
-
-    // Ensure folders are available - memoized to prevent unnecessary recalculations
     const activeFolders = useMemo(() => folders || [], [folders])
-    const sortedFolders = useMemo(() => [...activeFolders].sort((a, b) => a.name.localeCompare(b.name)), [activeFolders])
 
-    // Initial folder expansion effect - runs only once when conditions are met
+    const filteredChats = useMemo(() => {
+        if (!searchQuery) return chats
+        const q = searchQuery.toLowerCase()
+        return chats.filter(c => c.title?.toLowerCase().includes(q))
+    }, [chats, searchQuery])
+
+    const pinnedChats = useMemo(() => filteredChats.filter(c => c.isPinned), [filteredChats])
+    const recentChats = useMemo(() => filteredChats.filter(c => !c.isPinned && !c.folderId).slice(0, 20), [filteredChats])
+
     useEffect(() => {
-        // Skip if already done or no folders
-        if (initialExpansionDoneRef.current || activeFolders.length === 0) {
-            return
+        if (editingId && editRef.current) {
+            editRef.current.focus()
+            editRef.current.select()
         }
+    }, [editingId])
 
-        // Only expand if folders are empty (initial load)
-        if (expandedFolders.size > 0) {
-            initialExpansionDoneRef.current = true
-            return
-        }
+    const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value)
+        onSearch(e.target.value)
+    }, [onSearch])
 
-        // Find current chat's folder and expand it
-        if (currentChatId && chats) {
-            const chat = chats.find(c => c.id === currentChatId)
-            if (chat?.folderId) {
-                initialExpansionDoneRef.current = true
-                setExpandedFolders(new Set([chat.folderId]))
-            }
-        }
-    }, [activeFolders.length, currentChatId, chats, expandedFolders.size])
-
-    const toggleFolder = useCallback((folderId: string) => {
-        setExpandedFolders(prev => {
-            const newExpanded = new Set(prev)
-            if (newExpanded.has(folderId)) newExpanded.delete(folderId)
-            else newExpanded.add(folderId)
-            return newExpanded
-        })
+    const startEdit = useCallback((id: string, title: string) => {
+        setEditingId(id)
+        setEditValue(title)
     }, [])
 
-    const handleCreateFolder = () => {
-        if (newFolderName.trim()) {
-            createFolder(newFolderName.trim())
-            setNewFolderName('')
-            setIsCreatingFolder(false)
+    const saveEdit = useCallback(() => {
+        if (editingId && editValue.trim()) {
+            updateChat(editingId, { title: editValue.trim() })
         }
-    }
+        setEditingId(null)
+    }, [editingId, editValue, updateChat])
 
-    const handleRenameFolder = () => {
-        if (editingFolderId && editFolderName.trim()) {
-            updateFolder(editingFolderId, { name: editFolderName.trim() })
-            setEditingFolderId(null)
-        }
-    }
+    // NavButton replaced by SidebarItem
 
-    useEffect(() => {
-        if (editingChatId && editInputRef.current) {
-            editInputRef.current.focus()
-            editInputRef.current.select()
-        }
-    }, [editingChatId])
+    const ChatItem = React.memo(({
+        chat,
+        isActive,
+        isCollapsed,
+        isEditing,
+        editValue,
+        setEditValue,
+        saveEdit,
+        startEdit,
+        togglePin,
+        deleteChat,
+        onSelect,
+        editRef,
+        cancelEdit
+    }: {
+        chat: Chat;
+        isActive: boolean;
+        isCollapsed: boolean;
+        isEditing: boolean;
+        editValue: string;
+        setEditValue: (val: string) => void;
+        saveEdit: () => void;
+        startEdit: (id: string, title: string) => void;
+        togglePin: (id: string, pinned: boolean) => void;
+        deleteChat: (id: string) => void;
+        onSelect: (id: string) => void;
+        editRef: React.RefObject<HTMLInputElement>;
+        cancelEdit: () => void;
+    }) => {
+        return (
+            <div className="group relative">
+                <SidebarItem
+                    icon={MessageSquare}
+                    label={chat.title || 'New Chat'}
+                    active={isActive}
+                    onClick={() => onSelect(chat.id)}
+                    className="py-1.5"
+                    isCollapsed={isCollapsed}
+                    actions={!isEditing && (
+                        <>
+                            <button onClick={e => { e.stopPropagation(); startEdit(chat.id, chat.title || '') }} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
+                                <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground">
+                                <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground">
+                                <Trash2 className="w-3 h-3" />
+                            </button>
+                        </>
+                    )}
+                >
+                    {isEditing && (
+                        <input
+                            ref={editRef}
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit() }}
+                            onClick={e => e.stopPropagation()}
+                            className="absolute inset-0 bg-background border border-primary rounded-md px-2 text-xs outline-none z-10"
+                        />
+                    )}
+                    {chat.isPinned && !isCollapsed && !isEditing && <Pin className="ml-auto w-3 h-3 opacity-40 fill-current shrink-0" />}
+                </SidebarItem>
+            </div>
+        )
+    })
 
-    const handleSaveEdit = () => {
-        if (editingChatId) {
-            updateChat(editingChatId, { title: editTitle })
-        }
-        setEditingChatId(null)
-    }
+    ChatItem.displayName = 'ChatItem'
 
-    const groupChatsByDate = useCallback((chatsToGroup: Chat[]) => {
-        const todayLabel = t('dateGroups.today')
-        const yesterdayLabel = t('dateGroups.yesterday')
-        const lastWeekLabel = t('dateGroups.lastWeek')
-        const olderLabel = t('dateGroups.older')
+    const FolderSection = React.memo(({
+        folder,
+        isExpanded,
+        folderChats,
+        isCollapsed,
+        toggleFolder,
+        deleteFolder,
+        renderChatItem
+    }: {
+        folder: Folder;
+        isExpanded: boolean;
+        folderChats: Chat[];
+        isCollapsed: boolean;
+        toggleFolder: (id: string) => void;
+        deleteFolder: (id: string) => void;
+        renderChatItem: (chat: Chat) => React.ReactNode;
+    }) => {
+        return (
+            <div>
+                <SidebarItem
+                    icon={isExpanded ? FolderOpen : FolderIcon}
+                    label={folder.name}
+                    onClick={() => toggleFolder(folder.id)}
+                    badge={folderChats.length}
+                    className="py-1.5 font-medium"
+                    isCollapsed={isCollapsed}
+                    actions={(
+                        <button
+                            onClick={e => { e.stopPropagation(); deleteFolder(folder.id) }}
+                            className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground"
+                        >
+                            <Trash2 className="w-3 h-3" />
+                        </button>
+                    )}
+                />
 
-        const groups: Record<string, Chat[]> = {
-            [todayLabel]: [],
-            [yesterdayLabel]: [],
-            [lastWeekLabel]: [],
-            [olderLabel]: []
-        }
+                {isExpanded && (
+                    <div className="ml-3 pl-2 border-l border-border/30 space-y-0.5 mt-0.5">
+                        {folderChats.map(chat => renderChatItem(chat))}
+                        {folderChats.length === 0 && (
+                            <p className="text-[10px] text-muted-foreground/50 py-1 px-2 italic">Empty folder</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        )
+    })
 
-        const now = new Date()
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-        const yesterday = today - 86400000
-
-        chatsToGroup.forEach(chat => {
-            const date = new Date(chat.createdAt).getTime()
-            if (date >= today) groups[todayLabel].push(chat)
-            else if (date >= yesterday) groups[yesterdayLabel].push(chat)
-            else if (date >= today - 7 * 86400000) groups[lastWeekLabel].push(chat)
-            else groups[olderLabel].push(chat)
-        })
-
-        return groups
-    }, [t])
-
-    // Separate chats into Pinned, Foldered and Unfoldered - memoized for performance
-    const pinnedChats = useMemo(() => chats.filter(c => c.isPinned), [chats])
-    const unfolderedChats = useMemo(() => chats.filter(c => !c.folderId && !c.isPinned), [chats])
-    const dateGroups = useMemo(() => groupChatsByDate(unfolderedChats), [groupChatsByDate, unfolderedChats])
-
-    const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        setSearchQuery(value)
-        onSearch(value)
-    }
-
-    // --- Background Generation Sync ---
-    const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
-
-    useEffect(() => {
-        const removeStatusListener = window.electron.on('chat:generation-status', (_event, ...args: IpcValue[]) => {
-            const payload = args[0]
-            const data = payload && typeof payload === 'object' ? payload as { chatId?: string; isGenerating?: boolean } : {}
-            if (!data.chatId) return
-            setLocalGeneratingMap(prev => ({ ...prev, [data.chatId as string]: !!data.isGenerating }))
-        })
-        return () => { removeStatusListener() }
-    }, [])
-
-    const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating
+    FolderSection.displayName = 'FolderSection'
 
     return (
         <>
-            <aside
-                className={cn(
-                    "flex flex-col h-full w-full z-30 relative overflow-hidden transition-all duration-300 border-r border-border/40 bg-background/60 backdrop-blur-2xl shadow-xl"
-                )}
-            >
-                {/* Top Navigation Section */}
-                <div className="flex flex-col gap-1 p-4 pb-2">
-                    {/* New Chat Button */}
-                    <Button
-                        onClick={() => {
-                            onChangeView('chat')
-                            createNewChat()
-                        }}
+            <aside className={cn(
+                "flex flex-col h-full transition-all duration-300 ease-in-out",
+                "bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+                isCollapsed ? "w-[70px]" : "w-full"
+            )}>
+                {/* Header */}
+                <div className="p-3 space-y-2">
+                    <button
+                        onClick={() => { onChangeView('chat'); createNewChat() }}
                         className={cn(
-                            "justify-start gap-3 h-11 font-bold shadow-lg transition-all duration-300 mb-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
-                            !isCollapsed && "px-4 w-full"
+                            "w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors",
+                            isCollapsed && "px-0"
                         )}
                     >
-                        <Plus className={cn("shrink-0", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
+                        <Plus className="w-4 h-4" />
                         {!isCollapsed && <span>{t('sidebar.newChat')}</span>}
-                    </Button>
+                    </button>
+                </div>
 
-                    {/* Workspace Section */}
-                    {!isCollapsed ? (
-                        <SidebarSection
-                            id="workspace"
-                            title={t('sidebar.workspace') || 'Workspace'}
-                            icon={<FolderIcon className="w-3.5 h-3.5" />}
-                            defaultExpanded={true}
-                            badge={chats.length + (selectedProject ? 1 : 0)}
-                        >
-                            <SidebarMenuItem
-                                id="chats"
-                                icon={<MessageSquare className="w-4 h-4" />}
-                                label={t('sidebar.chats') || 'Chats'}
-                                onClick={() => onChangeView('chat')}
-                                isActive={currentView === 'chat'}
-                                badge={chats.length}
+                {/* Navigation */}
+                <div className="px-3 space-y-1">
+                    <SidebarItem
+                        icon={MessageSquare}
+                        label={t('sidebar.chats')}
+                        active={currentView === 'chat'}
+                        onClick={() => onChangeView('chat')}
+                        badge={chats.length > 0 ? chats.length : undefined}
+                        isCollapsed={isCollapsed}
+                    />
+                    <SidebarItem
+                        icon={Rocket}
+                        label={t('sidebar.projects')}
+                        active={currentView === 'projects'}
+                        onClick={() => onChangeView('projects')}
+                        isCollapsed={isCollapsed}
+                    />
+                    <SidebarItem
+                        icon={Users}
+                        label={t('sidebar.council')}
+                        active={currentView === 'council'}
+                        onClick={() => onChangeView('council')}
+                        isCollapsed={isCollapsed}
+                    />
+                </div>
+
+                <div className="mx-3 my-2 h-px bg-border/30" />
+
+                {/* Search */}
+                {!isCollapsed && (
+                    <div className="px-3 pb-2">
+                        <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                            <input
+                                type="text"
+                                placeholder={t('sidebar.searchChats')}
+                                value={searchQuery}
+                                onChange={handleSearch}
+                                className="w-full bg-muted/30 border border-border/30 rounded-md pl-7 pr-2 py-1.5 text-xs outline-none focus:border-primary/50 transition-colors"
                             />
-                            <SidebarMenuItem
-                                id="projects"
-                                icon={<Rocket className="w-4 h-4" />}
-                                label={t('sidebar.projects')}
-                                onClick={() => onChangeView('projects')}
-                                isActive={currentView === 'projects'}
-                                status={selectedProject ? 'online' : undefined}
-                                statusLabel={selectedProject ? 'Active' : undefined}
-                            />
-                            <SidebarMenuItem
-                                id="council"
-                                icon={<Users className="w-4 h-4" />}
-                                label={t('sidebar.council')}
-                                onClick={() => onChangeView('council')}
-                                isActive={currentView === 'council'}
-                                status="online"
-                                statusLabel={t('sidebar.councilReady')}
-                            />
-                            <SidebarMenuItem
-                                id="prompts"
-                                icon={<Book className="w-4 h-4" />}
-                                label={t('sidebar.prompts')}
-                                onClick={() => setShowPrompts(true)}
-                                badge={prompts?.length}
-                            />
-                        </SidebarSection>
-                    ) : (
-                        <div className="space-y-1">
-                            <Button
-                                variant="ghost"
-                                onClick={() => onChangeView('chat')}
-                                className={cn("nav-item justify-center", currentView === 'chat' && "nav-item-active")}
-                                title={t('sidebar.chats') || 'Chats'}
-                            >
-                                <MessageSquare className="w-4 h-4 shrink-0" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => onChangeView('projects')}
-                                className={cn("nav-item justify-center", currentView === 'projects' && "nav-item-active")}
-                                title={t('sidebar.projects')}
-                            >
-                                <Rocket className="w-4 h-4 shrink-0" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => onChangeView('council')}
-                                className={cn("nav-item justify-center", currentView === 'council' && "nav-item-active")}
-                                title={t('sidebar.council') || 'Agent Council'}
-                            >
-                                <Users className="w-4 h-4 shrink-0" />
-                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Chat List */}
+                <div className="flex-1 overflow-y-auto px-2 space-y-3 scrollbar-thin scrollbar-thumb-border/30">
+                    {/* Pinned */}
+                    {pinnedChats.length > 0 && !isCollapsed && (
+                        <div>
+                            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider flex items-center gap-1">
+                                <Pin className="w-3 h-3" /> Pinned
+                            </p>
+                            <div className="space-y-0.5">
+                                {pinnedChats.map(chat => (
+                                    <ChatItem
+                                        key={chat.id}
+                                        chat={chat}
+                                        isActive={currentView === 'chat' && currentChatId === chat.id}
+                                        isCollapsed={isCollapsed}
+                                        isEditing={editingId === chat.id}
+                                        editValue={editValue}
+                                        setEditValue={setEditValue}
+                                        saveEdit={saveEdit}
+                                        startEdit={startEdit}
+                                        togglePin={togglePin}
+                                        deleteChat={deleteChat}
+                                        onSelect={(id) => { onChangeView('chat'); setCurrentChatId(id) }}
+                                        editRef={editRef}
+                                        cancelEdit={() => setEditingId(null)}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    {/* Tools Section */}
-                    {!isCollapsed && (
-                        <SidebarSection
-                            id="tools"
-                            title={t('sidebar.tools') || 'Tools'}
-                            icon={<Plug className="w-3.5 h-3.5" />}
-                            defaultExpanded={false}
-                            badge={3}
-                        >
-                            <SidebarMenuItem
-                                id="mcp"
-                                icon={<Plug className="w-4 h-4" />}
-                                label={t('sidebar.mcpServices')}
-                                description={t('sidebar.mcpDescription')}
-                                onClick={() => onChangeView('mcp')}
-                                isActive={currentView === 'mcp'}
-                                status="online"
-                                statusLabel="3/3"
-                            />
-                            <SidebarMenuItem
-                                id="docker"
-                                icon={<Container className="w-4 h-4" />}
-                                label={t('sidebar.docker')}
-                                description={t('sidebar.dockerDescription')}
-                                onClick={() => { /* TODO: Add Docker view */ }}
-                                status="idle"
-                            />
-                            <SidebarMenuItem
-                                id="terminal"
-                                icon={<Terminal className="w-4 h-4" />}
-                                label={t('sidebar.terminal')}
-                                description={t('sidebar.terminalDescription')}
-                                onClick={() => { /* TODO: Add Terminal */ }}
-                            />
-                        </SidebarSection>
+                    {/* Folders */}
+                    {activeFolders.length > 0 && !isCollapsed && (
+                        <div>
+                            <div className="flex items-center justify-between px-2 py-1">
+                                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Folders</p>
+                                <button
+                                    onClick={() => createFolder('New Folder')}
+                                    className="p-0.5 text-muted-foreground/50 hover:text-foreground"
+                                >
+                                    <FolderPlus className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                            <div className="space-y-0.5">
+                                {activeFolders.map(folder => (
+                                    <FolderSection
+                                        key={folder.id}
+                                        folder={folder}
+                                        isExpanded={expandedFolders.has(folder.id)}
+                                        folderChats={filteredChats.filter(c => c.folderId === folder.id)}
+                                        isCollapsed={isCollapsed}
+                                        toggleFolder={(id) => setExpandedFolders(prev => {
+                                            const next = new Set(prev)
+                                            if (next.has(id)) next.delete(id)
+                                            else next.add(id)
+                                            return next
+                                        })}
+                                        deleteFolder={deleteFolder}
+                                        renderChatItem={(chat) => (
+                                            <ChatItem
+                                                key={chat.id}
+                                                chat={chat}
+                                                isActive={currentView === 'chat' && currentChatId === chat.id}
+                                                isCollapsed={isCollapsed}
+                                                isEditing={editingId === chat.id}
+                                                editValue={editValue}
+                                                setEditValue={setEditValue}
+                                                saveEdit={saveEdit}
+                                                startEdit={startEdit}
+                                                togglePin={togglePin}
+                                                deleteChat={deleteChat}
+                                                onSelect={(id) => { onChangeView('chat'); setCurrentChatId(id) }}
+                                                editRef={editRef}
+                                                cancelEdit={() => setEditingId(null)}
+                                            />
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     )}
 
-                    {/* AI Providers Section */}
-                    {!isCollapsed && (
-                        <SidebarSection
-                            id="ai-providers"
-                            title={t('sidebar.aiProviders') || 'AI Providers'}
-                            icon={<Sparkles className="w-3.5 h-3.5" />}
-                            defaultExpanded={false}
-                            badge={4}
-                        >
-                            <SidebarMenuItem
-                                id="ollama"
-                                icon={<Brain className="w-4 h-4" />}
-                                label={t('sidebar.ollama')}
-                                description={t('sidebar.ollamaDescription')}
-                                onClick={() => onOpenSettings('models' as SettingsCategory)}
-                                status="online"
-                                statusLabel={t('sidebar.ollamaRunning')}
-                            />
-                            <SidebarMenuItem
-                                id="openai"
-                                icon={<Sparkles className="w-4 h-4" />}
-                                label={t('sidebar.openai')}
-                                description={t('sidebar.openaiDescription')}
-                                onClick={() => onOpenSettings('models' as SettingsCategory)}
-                                status="online"
-                            />
-                            <SidebarMenuItem
-                                id="anthropic"
-                                icon={<Brain className="w-4 h-4" />}
-                                label={t('sidebar.anthropic')}
-                                description={t('sidebar.anthropicDescription')}
-                                onClick={() => onOpenSettings('models' as SettingsCategory)}
-                                status="online"
-                            />
-                            <SidebarMenuItem
-                                id="copilot"
-                                icon={<Cpu className="w-4 h-4" />}
-                                label={t('sidebar.copilot')}
-                                description={t('sidebar.copilotDescription')}
-                                onClick={() => onOpenSettings('accounts' as SettingsCategory)}
-                                status="online"
-                                statusLabel={t('sidebar.copilotActive')}
-                            />
-                        </SidebarSection>
+                    {/* Recent */}
+                    {recentChats.length > 0 && !isCollapsed && (
+                        <div>
+                            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Recent</p>
+                            <div className="space-y-0.5">
+                                {recentChats.map(chat => (
+                                    <ChatItem
+                                        key={chat.id}
+                                        chat={chat}
+                                        isActive={currentView === 'chat' && currentChatId === chat.id}
+                                        isCollapsed={isCollapsed}
+                                        isEditing={editingId === chat.id}
+                                        editValue={editValue}
+                                        setEditValue={setEditValue}
+                                        saveEdit={saveEdit}
+                                        startEdit={startEdit}
+                                        togglePin={togglePin}
+                                        deleteChat={deleteChat}
+                                        onSelect={(id) => { onChangeView('chat'); setCurrentChatId(id) }}
+                                        editRef={editRef}
+                                        cancelEdit={() => setEditingId(null)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     )}
 
-                    {/* Settings Section - KEEPING EXACTLY AS IS */}
-                    {isCollapsed ? (
-                        <Button
-                            variant="ghost"
-                            onClick={() => onOpenSettings()}
-                            className={cn(
-                                "nav-item justify-center",
-                                currentView === 'settings' && "nav-item-active"
-                            )}
-                            title={t('sidebar.settings')}
-                        >
-                            <Settings className="w-4 h-4 shrink-0" />
-                        </Button>
-                    ) : (
-                        <div className="flex flex-col">
-                            <button
-                                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                                className={cn(
-                                    "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full group",
-                                    currentView === 'settings' ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/10"
-                                )}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Settings className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-                                    <span>{t('sidebar.settings')}</span>
-                                </div>
-                                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", isSettingsOpen && "rotate-180")} />
-                            </button>
-
-                            <AnimatePresence>
-                                {isSettingsOpen && (
-                                    <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden"
-                                    >
-                                        <div className="ml-2 pl-2 border-l border-border/30 space-y-0.5">
-                                            {['general', 'accounts', 'models', 'usage-limits', 'appearance', 'speech', 'advanced', 'developer', 'statistics', 'gallery', 'about'].map(id => (
-                                                <SettingsMenuItem
-                                                    key={id}
-                                                    id={id}
-                                                    icon={id === 'models' ? Database : id === 'appearance' ? Image : id === 'speech' ? Mic : id === 'statistics' ? Activity : id === 'about' ? Info : id === 'developer' ? Terminal : id === 'advanced' ? Cpu : id === 'accounts' ? UserCircle : id === 'usage-limits' ? TrendingUp : LayoutGrid}
-                                                    label={t(`settings.${id}`)}
-                                                    isActive={currentView === 'settings' && settingsCategory === id}
-                                                    onClick={() => { const category = id as SettingsCategory; onOpenSettings(category); if (setSettingsCategory) setSettingsCategory(category) }}
-                                                />
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                    {chats.length === 0 && !isCollapsed && (
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/50">
+                            <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
+                            <p className="text-xs">{t('sidebar.noChats')}</p>
                         </div>
                     )}
                 </div>
 
-                {/* Separator */}
-                <SidebarDivider />
-
-                {/* Chat List Section */}
-                <div className="flex-1 flex flex-col min-h-0">
-                    {!isCollapsed && (
-                        <div className="px-4 py-2">
-                            <div className="flex items-center gap-2 mb-2 px-1">
-                                <History className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">{t('sidebar.history')}</span>
-                                {chats.length > 0 && (
-                                    <span className="ml-auto text-[10px] text-muted-foreground/40">{chats.length}</span>
-                                )}
-                            </div>
-                            <div className="relative group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                                <input
-                                    type="text"
-                                    placeholder={t('sidebar.searchChats')}
-                                    value={searchQuery}
-                                    onChange={handleSearch}
-                                    className="w-full bg-muted/20 border border-border/40 focus:border-primary/50 focus:bg-muted/30 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50"
-                                />
-                            </div>
+                {/* Footer */}
+                <div className="p-2 border-t border-border/30 space-y-1">
+                    {selectedProject && !isCollapsed && (
+                        <div className="px-2 py-1.5 bg-muted/30 rounded-md mb-1">
+                            <p className="text-[10px] text-muted-foreground/50 uppercase">Project</p>
+                            <p className="text-xs font-medium truncate">{selectedProject.title}</p>
                         </div>
                     )}
 
-                    {/* New Folder Button */}
-                    {!isCollapsed && (
-                        <div className="px-4 pb-2">
-                            <div className="flex gap-2 mb-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsCreatingFolder(true)}
-                                    className="w-full h-7 text-[10px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2"
-                                >
-                                    <FolderPlus className="w-3.5 h-3.5 mr-2" />
-                                    {t('sidebar.newFolder') || 'New Folder'}
-                                </Button>
-                            </div>
+                    {/* Settings Dropdown */}
+                    <div className="relative">
+                        <SidebarItem
+                            icon={Settings}
+                            label={t('sidebar.settings')}
+                            active={currentView === 'settings' || showSettingsMenu}
+                            onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                            isCollapsed={isCollapsed}
+                        />
 
-                            {/* Folder Creation Input */}
-                            {isCreatingFolder && (
-                                <div className="mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <div className="flex items-center gap-1 bg-muted/20 p-1 rounded-md border border-primary/30">
-                                        <input
-                                            autoFocus
-                                            value={newFolderName}
-                                            onChange={(e) => setNewFolderName(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') handleCreateFolder()
-                                                if (e.key === 'Escape') setIsCreatingFolder(false)
-                                            }}
-                                            onBlur={() => { if (!newFolderName) setIsCreatingFolder(false) }}
-                                            placeholder={t('sidebar.newFolderPlaceholder')}
-                                            className="w-full bg-transparent text-xs outline-none px-1 py-0.5"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Chat Statistics Summary */}
-                    {!isCollapsed && chats.length > 0 && (
-                        <div className="px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground/60 border-b border-border/30 mb-2">
-                            <span>{chats.length} {t('sidebar.chatCount')}</span>
-                            <span>•</span>
-                            <span>{chats.reduce((acc, c) => acc + (c.messages?.length || 0), 0)} {t('sidebar.messageCount')}</span>
-                        </div>
-                    )}
-
-                    <div className="flex-1 overflow-y-auto px-3 space-y-4 custom-scrollbar py-2 sidebar-scroll">
-                        {isLoading ? (
-                            <div className="space-y-4 pt-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="flex flex-col gap-2 px-2 animate-pulse">
-                                        {!isCollapsed && <div className="h-3 w-16 bg-muted/20 rounded sidebar-skeleton" />}
-                                        <div className={cn("h-10 rounded-md bg-muted/20 w-full sidebar-skeleton", isCollapsed && "h-10 w-10 mx-auto")} />
-                                        {!isCollapsed && <div className="h-10 rounded-md bg-muted/20 w-full sidebar-skeleton" />}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
+                        {showSettingsMenu && (
                             <>
-                                {/* Pinned Chats Section */}
-                                {pinnedChats.length > 0 && (
-                                    <div className="mb-4 space-y-1">
-                                        {!isCollapsed && (
-                                            <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center gap-2">
-                                                <Pin className="w-3 h-3" />
-                                                <span>{t('sidebar.pinned') || 'Pinned'}</span>
-                                                <span className="ml-auto text-muted-foreground/20">{pinnedChats.length}</span>
-                                            </div>
-                                        )}
-                                        {pinnedChats.map(chat => (
-                                            <div key={chat.id} className="relative group chat-item">
-                                                <button
-                                                    onClick={() => {
-                                                        onChangeView('chat')
-                                                        setCurrentChatId(chat.id)
-                                                    }}
-                                                    className={cn(
-                                                        "w-full flex items-center gap-3 rounded-md transition-all duration-200",
-                                                        isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
-                                                        currentView === 'chat' && currentChatId === chat.id
-                                                            ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
-                                                            : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground border-l-2 border-transparent"
-                                                    )}
-                                                >
-                                                    <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
-                                                    {!isCollapsed && <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>}
-                                                </button>
-                                                {/* Unpin Action */}
-                                                {!isCollapsed && (
-                                                    <div className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 transition-opacity">
-                                                        <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10">
-                                                            <Pin className="w-3 h-3 fill-current" />
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        <SidebarDivider spacing="sm" />
-                                    </div>
-                                )}
-
-                                {/* Folders Section */}
-                                {!isCollapsed && sortedFolders.map((folder: Folder) => (
-                                    <div key={folder.id} className="space-y-0.5">
-                                        <div
-                                            className={cn(
-                                                "group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/10 cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
-                                                expandedFolders.has(folder.id) && "text-foreground"
-                                            )}
-                                            onClick={() => toggleFolder(folder.id)}
+                                <div className="fixed inset-0 z-40" onClick={() => setShowSettingsMenu(false)} />
+                                <div className={cn(
+                                    "absolute bottom-full left-0 w-48 mb-2 p-1",
+                                    "bg-popover/80 backdrop-blur-xl border border-border/50",
+                                    "rounded-lg shadow-xl z-50 overflow-hidden",
+                                    "flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200"
+                                )}>
+                                    {[
+                                        { id: 'general', label: t('settings.general') || 'General', icon: Settings },
+                                        { id: 'accounts', label: t('settings.accounts') || 'Accounts', icon: User },
+                                        { id: 'appearance', label: t('settings.appearance') || 'Appearance', icon: Palette },
+                                        { id: 'models', label: t('settings.models') || 'Models', icon: Sparkles },
+                                        { id: 'prompts', label: t('settings.prompts') || 'Prompts', icon: MessageSquare },
+                                        { id: 'personas', label: t('settings.personas') || 'Personas', icon: Users },
+                                        { id: 'speech', label: t('settings.speech') || 'Speech', icon: Mic },
+                                        { id: 'statistics', label: t('settings.statistics') || 'Statistics', icon: BarChart },
+                                        { id: 'gallery', label: t('settings.gallery') || 'Gallery', icon: Image },
+                                        { id: 'mcp-servers', label: 'MCP', icon: Server }, // Merged view for Servers & Marketplace
+                                        { id: 'developer', label: t('settings.developer') || 'Developer', icon: Code },
+                                        { id: 'advanced', label: t('settings.advanced') || 'Advanced', icon: Shield },
+                                        { id: 'about', label: t('settings.about') || 'About', icon: Rocket }
+                                    ].map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => {
+                                                onOpenSettings(item.id as SettingsCategory)
+                                                setShowSettingsMenu(false)
+                                            }}
+                                            className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors text-left"
                                         >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                {expandedFolders.has(folder.id) ? (
-                                                    <FolderOpen className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                                                ) : (
-                                                    <FolderIcon className="w-3.5 h-3.5 shrink-0" />
-                                                )}
-
-                                                {editingFolderId === folder.id ? (
-                                                    <input
-                                                        autoFocus
-                                                        value={editFolderName}
-                                                        onChange={e => setEditFolderName(e.target.value)}
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter') handleRenameFolder()
-                                                            if (e.key === 'Escape') setEditingFolderId(null)
-                                                        }}
-                                                        onClick={e => e.stopPropagation()}
-                                                        onBlur={handleRenameFolder}
-                                                        className="bg-transparent border-none outline-none text-xs font-medium min-w-0 flex-1"
-                                                    />
-                                                ) : (
-                                                    <span className="text-xs font-medium truncate select-none">{folder.name}</span>
-                                                )}
-
-                                                <span className="text-[10px] text-muted-foreground/40">
-                                                    {chats.filter(c => c.folderId === folder.id).length}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setEditingFolderId(folder.id)
-                                                        setEditFolderName(folder.name)
-                                                    }}
-                                                    className="p-1 hover:text-primary hover:bg-muted/20 rounded"
-                                                >
-                                                    <Edit2 className="w-3 h-3" />
-                                                </div>
-                                                <div
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        deleteFolder(folder.id)
-                                                    }}
-                                                    className="p-1 hover:text-destructive hover:bg-muted/20 rounded"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Folder Chats */}
-                                        <AnimatePresence initial={false}>
-                                            {expandedFolders.has(folder.id) && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    className="overflow-hidden ml-2 pl-2 border-l border-border/30 space-y-0.5"
-                                                >
-                                                    {chats.filter(c => c.folderId === folder.id).map(chat => (
-                                                        <div
-                                                            key={chat.id}
-                                                            className="group flex items-center gap-1 chat-item"
-                                                        >
-                                                            <button
-                                                                onClick={() => {
-                                                                    onChangeView('chat')
-                                                                    setCurrentChatId(chat.id)
-                                                                }}
-                                                                className={cn(
-                                                                    "flex-1 flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 text-xs text-left min-w-0 relative",
-                                                                    currentView === 'chat' && currentChatId === chat.id
-                                                                        ? "bg-primary/10 text-primary"
-                                                                        : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground"
-                                                                )}
-                                                            >
-                                                                <MessageSquare className="w-3 h-3 shrink-0 opacity-70" />
-                                                                <span className="truncate flex-1">{chat.title || t('sidebar.newChat')}</span>
-
-                                                                {/* Chat Actions */}
-                                                                <div className={cn(
-                                                                    "opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-1 bg-gradient-to-l from-background to-transparent pl-2",
-                                                                    editingChatId === chat.id && "hidden"
-                                                                )}>
-                                                                    <div
-                                                                        title={t('sidebar.removeFromFolder') || 'Remove from folder'}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation()
-                                                                            moveChatToFolder(chat.id, null)
-                                                                        }}
-                                                                        className="p-1 hover:text-orange-400 rounded-md cursor-pointer hover:bg-muted/10"
-                                                                    >
-                                                                        <FolderIcon className="w-2.5 h-2.5" />
-                                                                    </div>
-                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-destructive rounded-md cursor-pointer hover:bg-muted/10">
-                                                                        <Trash2 className="w-2.5 h-2.5" />
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                    {chats.filter(c => c.folderId === folder.id).length === 0 && (
-                                                        <div className="px-3 py-2 text-[10px] text-muted-foreground/40 italic">
-                                                            {t('sidebar.emptyFolder') || 'Empty'}
-                                                        </div>
-                                                    )}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                ))}
-
-                                {/* Unfoldered Groups */}
-                                {Object.entries(dateGroups).map(([category, categoryChats]) => (
-                                    categoryChats.length > 0 && (
-                                        <div key={category} className="space-y-1 mt-2">
-                                            {!isCollapsed && (
-                                                <div className="px-2 text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest flex items-center justify-between group/cat">
-                                                    <span>{category}</span>
-                                                    <span className="text-muted-foreground/20">{categoryChats.length}</span>
-                                                </div>
-                                            )}
-                                            {categoryChats.map(chat => (
-                                                <div key={chat.id} className="relative group chat-item">
-                                                    <button
-                                                        onClick={() => {
-                                                            onChangeView('chat')
-                                                            setCurrentChatId(chat.id)
-                                                        }}
-                                                        className={cn(
-                                                            "w-full flex items-center gap-3 rounded-md transition-all duration-200",
-                                                            isCollapsed ? "justify-center p-2.5" : "text-left px-3 py-2.5",
-                                                            currentView === 'chat' && currentChatId === chat.id
-                                                                ? "bg-gradient-to-r from-primary/10 to-transparent text-primary border-l-2 border-primary"
-                                                                : "text-muted-foreground/80 hover:bg-muted/10 hover:text-foreground border-l-2 border-transparent"
-                                                        )}
-                                                        title={isCollapsed ? chat.title : undefined}
-                                                    >
-                                                        <div className="relative">
-                                                            <MessageSquare className={cn("w-4 h-4 shrink-0 transition-colors", currentView === 'chat' && currentChatId === chat.id ? "text-primary" : "opacity-50 group-hover:opacity-100")} />
-                                                            {isChatGenerating(chat) && (
-                                                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
-                                                            )}
-                                                        </div>
-                                                        {!isCollapsed && (
-                                                            <>
-                                                                {editingChatId === chat.id ? (
-                                                                    <input
-                                                                        ref={editInputRef}
-                                                                        value={editTitle}
-                                                                        onChange={e => setEditTitle(e.target.value)}
-                                                                        onBlur={handleSaveEdit}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === 'Enter') handleSaveEdit()
-                                                                            if (e.key === 'Escape') setEditingChatId(null)
-                                                                        }}
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                        className="flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0"
-                                                                    />
-                                                                ) : (
-                                                                    <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
-                                                                )}
-
-                                                                <div className={cn(
-                                                                    "opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-2 bg-gradient-to-l from-background to-transparent pl-2",
-                                                                    editingChatId === chat.id && "hidden"
-                                                                )}>
-                                                                    {/* Move to Folder - Quick Action */}
-                                                                    {activeFolders.length > 0 && (
-                                                                        <div className="relative group/folder">
-                                                                            <div
-                                                                                className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10"
-                                                                            >
-                                                                                <CornerUpRight className="w-3 h-3" />
-                                                                            </div>
-                                                                            <div onClick={(e) => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }} className="p-1 hover:text-primary rounded-md cursor-pointer hover:bg-muted/10">
-                                                                                <Pin className="w-3 h-3" />
-                                                                            </div>
-                                                                            {/* Simple Hover Dropdown for Folders */}
-                                                                            <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
-                                                                                <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">{t('sidebar.moveTo')}</div>
-                                                                                {sortedFolders.map(f => (
-                                                                                    <div
-                                                                                        key={f.id}
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation()
-                                                                                            moveChatToFolder(chat.id, f.id)
-                                                                                        }}
-                                                                                        className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2"
-                                                                                    >
-                                                                                        <FolderIcon className="w-3 h-3 opacity-50" />
-                                                                                        {f.name}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    <div onClick={(e) => { e.stopPropagation(); deleteChat(chat.id) }} className="p-1 hover:text-destructive rounded-md cursor-pointer hover:bg-muted/10">
-                                                                        <Trash2 className="w-3 h-3" />
-                                                                    </div>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )
-                                ))}
-
-                                {chats.length === 0 && sortedFolders.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center pt-12 opacity-40">
-                                        <MessageSquare className="w-8 h-8 mb-2 text-muted-foreground" />
-                                        <p className="text-xs font-medium text-muted-foreground">{t('sidebar.noChats') || 'No Chats'}</p>
-                                    </div>
-                                )}
+                                            <item.icon className="w-3.5 h-3.5" />
+                                            <span>{item.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </>
                         )}
                     </div>
-                </div>
 
-                {/* Bottom Section */}
-                <div className="p-2 border-t border-border/30 bg-muted/5 space-y-1">
-                    {/* Active Project Indicator */}
-                    {!isCollapsed && selectedProject && (
-                        <div className="px-3 py-2 bg-muted/20 rounded-md border border-border/40 mb-1">
-                            <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">{t('sidebar.project')}</div>
-                            <div className="text-xs font-medium truncate flex items-center gap-2">
-                                <SidebarStatusIndicator status="online" size="sm" />
-                                {selectedProject.title}
-                            </div>
-                        </div>
-                    )}
-
-                    <Button
-                        variant="ghost"
-                        size="icon"
+                    <button
                         onClick={toggleSidebar}
-                        className="w-full h-6 text-muted-foreground/50 hover:text-foreground hover:bg-muted/10 transition-colors"
+                        className="w-full flex items-center justify-center p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 rounded-md transition-colors"
                     >
                         {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                    </Button>
+                    </button>
                 </div>
-            </aside >
+            </aside>
 
             <PromptManagerModal
                 isOpen={showPrompts}

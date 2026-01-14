@@ -105,6 +105,11 @@ export const webElectronMock: ElectronAPI = {
         remaining: 100,
         reset: new Date().toISOString()
     } as QuotaResponse),
+    getClaudeQuota: async () => ({
+        success: true,
+        fiveHour: { utilization: 0, resetsAt: new Date().toISOString() },
+        sevenDay: { utilization: 0, resetsAt: new Date().toISOString() }
+    }),
     getCopilotQuota: async () => ({
         remaining: 100,
         limit: 100,
@@ -123,7 +128,7 @@ export const webElectronMock: ElectronAPI = {
     chatOpenAI: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _projectId?: string) => ({}),
     chatStream: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _chatId?: string, _projectId?: string) => { },
     abortChat: () => { },
-    onStreamChunk: (_callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
+    onStreamChunk: (_callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => () => { },
     removeStreamChunkListener: (_callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
 
     isOllamaRunning: async () => true,
@@ -299,8 +304,8 @@ export const webElectronMock: ElectronAPI = {
         getRemotes: async (_cwd: string) => ({ success: true, remotes: [] }),
         getTrackingInfo: async (_cwd: string) => ({ success: true, tracking: null, ahead: 0, behind: 0 }),
         getCommitStats: async (_cwd: string, _days?: number) => ({ success: true, commitCounts: {} }),
-        getDiffStats: async (_cwd: string) => ({ 
-            success: true, 
+        getDiffStats: async (_cwd: string) => ({
+            success: true,
             staged: { added: 0, deleted: 0, files: 0 },
             unstaged: { added: 0, deleted: 0, files: 0 },
             total: { added: 0, deleted: 0, files: 0 }

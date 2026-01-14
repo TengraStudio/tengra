@@ -76,19 +76,21 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     return (
         <AnimatePresence mode="wait">
             {currentView === 'chat' && (
-                <Suspense fallback={<LoadingState size="md" />}>
-                    <ChatView
-                        templates={templates}
-                        messagesEndRef={messagesEndRef}
-                        fileInputRef={fileInputRef}
-                        textareaRef={textareaRef}
-                        onScrollToBottom={onScrollToBottom}
-                        showScrollButton={showScrollButton}
-                        setShowScrollButton={setShowScrollButton}
-                        showFileMenu={showFileMenu}
-                        setShowFileMenu={setShowFileMenu}
-                    />
-                </Suspense>
+                <motion.div key="chat" className="h-full overflow-hidden">
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <ChatView
+                            templates={templates}
+                            messagesEndRef={messagesEndRef}
+                            fileInputRef={fileInputRef}
+                            textareaRef={textareaRef}
+                            onScrollToBottom={onScrollToBottom}
+                            showScrollButton={showScrollButton}
+                            setShowScrollButton={setShowScrollButton}
+                            showFileMenu={showFileMenu}
+                            setShowFileMenu={setShowFileMenu}
+                        />
+                    </Suspense>
+                </motion.div>
             )}
             {currentView === 'projects' && (
                 <motion.div key="projects" className="h-full overflow-hidden">
@@ -116,7 +118,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                             settings={appSettings || undefined}
                             sendMessage={(text) => {
                                 setInput(text || '')
-                                sendMessage()
+                                sendMessage(text || '')
                             }}
                             messages={displayMessages}
                             isLoading={isLoading}
@@ -146,7 +148,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             )}
             {currentView === 'mcp' && (
                 <motion.div key="mcp" className="h-full overflow-hidden">
-                    <div className="flex-1 p-6 overflow-y-auto">
+                    <div className="h-full p-6 overflow-y-auto">
                         <Suspense fallback={<LoadingState size="md" />}>
                             <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language || 'en'} />
                         </Suspense>

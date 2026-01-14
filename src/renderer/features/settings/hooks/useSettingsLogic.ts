@@ -27,6 +27,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     const [quotaData, setQuotaData] = useState<QuotaResponse | null>(null)
     const [copilotQuota, setCopilotQuota] = useState<CopilotQuota | null>(null)
     const [codexUsage, setCodexUsage] = useState<CodexUsage | null>(null)
+    const [claudeQuota, setClaudeQuota] = useState<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null>(null)
     const [reloadTrigger, setReloadTrigger] = useState(0)
 
     // Benchmark State
@@ -53,14 +54,14 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
                 })
             }
 
-            console.log('[SettingsLogic] refreshAuthStatus: Auth files found:', files);
+            console.log('[SettingsLogic] refreshAuthStatus: Auth files found:', JSON.stringify(files));
             const newStatus = {
                 codex: hasProvider(['codex', 'openai']),
                 claude: hasProvider(['claude', 'anthropic']),
                 antigravity: hasProvider(['antigravity']),
                 copilot: hasProvider(['copilot', 'copilot_token'])
             };
-            console.log('[SettingsLogic] refreshAuthStatus: Computed status:', newStatus);
+            console.log('[SettingsLogic] refreshAuthStatus: Computed status:', JSON.stringify(newStatus));
             setAuthStatus(newStatus)
         } catch (error) {
             console.error('Auth check failed:', error)
@@ -373,6 +374,14 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
                 } catch (e) {
                     console.error('Failed to load codex usage:', e)
                 }
+
+                try {
+                    const cQuota = await window.electron.getClaudeQuota()
+                    console.log('[SettingsLogic] Claude Quota received:', JSON.stringify(cQuota))
+                    setClaudeQuota(cQuota)
+                } catch (e) {
+                    console.error('Failed to load claude quota:', e)
+                }
             } catch (error) {
                 console.error('Failed to load stats:', error)
             } finally {
@@ -458,6 +467,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         quotaData,
         copilotQuota,
         codexUsage,
+        claudeQuota,
         setReloadTrigger,
 
         // Benchmark

@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { CommandService } from '../services/command.service'
+import { CommandService } from '../services/system/command.service'
 import { ToolExecutor } from '../tools/tool-executor'
 import { JsonObject } from '../../shared/types/common'
 

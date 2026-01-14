@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, WebContents } from 'electron'
 import { CopilotService } from '../services/llm/copilot.service'
 import { SettingsService } from '../services/settings.service'
 import { LLMService } from '../services/llm/llm.service'
@@ -14,6 +14,31 @@ import { chatQueueManager } from '../services/chat-queue.manager'
 import { getErrorMessage } from '../../shared/utils/error.util'
 import { createIpcHandler } from '../utils/ipc-wrapper.util'
 import { sanitizeString, sanitizeObject } from '../../shared/utils/sanitize.util'
+
+/**
+ * Safely send IPC message to renderer, catching broken pipe errors
+ * when the window/webContents has been destroyed
+ */
+function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boolean {
+    const senderId = sender.id;
+    const senderURL = sender.getURL();
+    try {
+        if (sender.isDestroyed()) {
+            console.warn(`[IPC:safeSend] Attempted to send to destroyed sender ${senderId}`);
+            return false
+        }
+        console.log(`[IPC:safeSend] Sending to channel=${channel}, senderId=${senderId}, url=${senderURL}`);
+        sender.send(channel, ...args)
+        return true
+    } catch (e) {
+        const msg = getErrorMessage(e as Error)
+        // Silently ignore broken pipe / destroyed errors
+        if (!msg.includes('EPIPE') && !msg.includes('destroyed') && !msg.includes('broken pipe')) {
+            console.error(`[IPC:safeSend] Failed to send to ${channel} (senderId=${senderId}):`, msg)
+        }
+        return false
+    }
+}
 
 export function registerChatIpc(options: {
     settingsService: SettingsService
@@ -162,7 +187,17 @@ export function registerChatIpc(options: {
             return { content, role: 'assistant' }
         }
 
-        // 2. Cliproxy Routing (Default for everything else)
+        // 2. Opencode Routing
+        if (sanitizedProvider === 'opencode') {
+            console.log(`[Main] Routing ${sanitizedModel} via OpenCode`)
+            const res = await llmService.chatOpenCode(finalMessages, sanitizedModel, sanitizedTools)
+            const content = res.content || '';
+            const reasoning = res.reasoning_content || '';
+            const images = res.images || [];
+            return { content, reasoning, images, role: 'assistant', sources };
+        }
+
+        // 3. Cliproxy Routing (Default for everything else)
         const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
         const proxyKey = proxyService.getProxyKey()
 
@@ -259,7 +294,7 @@ export function registerChatIpc(options: {
             const ragPrompt = `\n\nRetrieved Context:\n${contextString}`;
 
             // Emit metadata to frontend
-            event.sender.send('chat:stream-chunk', {
+            safeSend(event.sender, 'ollama:streamChunk', {
                 chatId,
                 type: 'metadata',
                 sources: sources.map(src => sanitizeString(src, { maxLength: 500, allowNewlines: false }))
@@ -319,7 +354,7 @@ export function registerChatIpc(options: {
                                 const content = delta.content || '';
                                 const reasoning = delta.reasoning_content || delta.reasoning || '';
                                 if (content || reasoning) {
-                                    event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                                    safeSend(event.sender, 'ollama:streamChunk', { chatId, content, reasoning });
                                 }
                             }
                         } catch (err) {
@@ -356,7 +391,7 @@ export function registerChatIpc(options: {
                             const content = delta.content || '';
                             const reasoning = delta.reasoning_content || delta.reasoning || '';
                             if (content || reasoning) {
-                                event.sender.send('ollama:streamChunk', { chatId, content, reasoning });
+                                safeSend(event.sender, 'ollama:streamChunk', { chatId, content, reasoning });
                             }
                         }
                     } catch (err) {
@@ -370,6 +405,29 @@ export function registerChatIpc(options: {
     /**
      * Handles proxy/ollama streaming response
      */
+    async function handleOpencodeStream(
+        messages: Message[],
+        model: string,
+        tools: ToolDefinition[] | undefined,
+        chatId: string,
+        event: IpcMainInvokeEvent
+    ): Promise<void> {
+        const sanitizedTools: ToolDefinition[] | undefined = tools ? tools.map(tool => ({
+            type: tool.type,
+            function: {
+                name: tool.function.name,
+                description: tool.function.description,
+                parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters as Record<string, unknown>) as JsonObject : undefined
+            }
+        })) : undefined;
+
+        for await (const chunk of llmService.chatOpenCodeStream(messages, model, sanitizedTools)) {
+            if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId })) {
+                break; // Stop streaming if window is destroyed
+            }
+        }
+    }
+
     async function handleProxyStream(
         messages: Message[],
         model: string,
@@ -398,7 +456,11 @@ export function registerChatIpc(options: {
         })) : undefined;
 
         for await (const chunk of llmService.chatOpenAIStream(messages, model, sanitizedTools, proxyUrl, proxyKey)) {
-            event.sender.send('ollama:streamChunk', { ...chunk, chatId });
+            console.log(`[Main:Chat:handleProxyStream] Sending chunk to ${chatId}:`, chunk);
+            if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId })) {
+                console.warn(`[Main:Chat:handleProxyStream] Failed to send chunk to ${chatId}, stopping stream`);
+                break; // Stop streaming if window is destroyed
+            }
         }
     }
 
@@ -428,13 +490,18 @@ export function registerChatIpc(options: {
                     if (!body) throw new Error('Failed to start Copilot stream');
                     await handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitizedChatId, event);
                     return;
+                } else if (sanitizedProvider === 'opencode') {
+                    await handleOpencodeStream(finalMessages, sanitizedModel, tools, sanitizedChatId, event);
+                    return;
                 }
 
                 await handleProxyStream(finalMessages, sanitizedModel, tools, sanitizedProvider, sanitizedChatId, event);
             } catch (error) {
                 const message = getErrorMessage(error as Error);
                 console.error('[Main:ChatStream] Error:', error);
-                event.sender.send('ollama:streamChunk', { chatId: sanitizedChatId, type: 'error', content: message });
+                safeSend(event.sender, 'ollama:streamChunk', { chatId: sanitizedChatId, type: 'error', content: message });
+            } finally {
+                safeSend(event.sender, 'ollama:streamChunk', { chatId: sanitizedChatId, done: true });
             }
         };
 

@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { app } from 'electron'
+import * as zlib from 'zlib'
 import { JsonValue, AppError } from '../../shared/types/common'
 
 export enum LogLevel {
@@ -10,15 +10,29 @@ export enum LogLevel {
     ERROR = 3
 }
 
+export interface LoggerConfig {
+    maxBytes: number
+    maxFiles: number
+    compressRotated: boolean
+    jsonFormat: boolean
+    retentionDays: number
+}
+
 type LogPayload = {
     level: LogLevel
     message: string
     context: string
     data?: JsonValue | Error | AppError
+    timestamp?: string
 }
 
-const MAX_BYTES = 10 * 1024 * 1024
-const MAX_FILES = 5
+const DEFAULT_CONFIG: LoggerConfig = {
+    maxBytes: 10 * 1024 * 1024,  // 10 MB
+    maxFiles: 5,
+    compressRotated: true,
+    jsonFormat: false,
+    retentionDays: 30
+}
 
 class AppLogger {
     private logDir = ''
@@ -34,16 +48,30 @@ class AppLogger {
         error: Console['error']
     } | null = null
     private currentLevel: LogLevel = LogLevel.INFO
+    private config: LoggerConfig = { ...DEFAULT_CONFIG }
+    private cleanupTimer: ReturnType<typeof setInterval> | null = null
 
-    init(logDir?: string) {
-        if (this.initialized && !logDir) return
+    init(logDir?: string, config?: Partial<LoggerConfig>) {
+        if (this.initialized && !logDir && !config) return
+
+        if (config) {
+            this.config = { ...this.config, ...config }
+        }
 
         if (logDir) {
             this.logDir = logDir
         } else {
             try {
-                const base = app.getPath('userData')
-                this.logDir = path.join(base, 'logs')
+                // Try to get userData path, but don't crash if app is not ready
+                const electron = require('electron')
+                const appInstance = electron.app || electron.remote?.app
+
+                if (appInstance) {
+                    const base = appInstance.getPath('userData')
+                    this.logDir = path.join(base, 'logs')
+                } else {
+                    this.logDir = path.join(process.cwd(), 'logs')
+                }
             } catch {
                 this.logDir = path.join(process.cwd(), 'logs')
             }
@@ -55,11 +83,31 @@ class AppLogger {
         }
         this.size = this.safeStatSize(this.logPath)
         this.initialized = true
+
+        // Start cleanup scheduler (runs every 24 hours)
+        this.startCleanupScheduler()
+
         this.info('Logger', `Logger initialized at ${this.logPath}`)
+    }
+
+    configure(config: Partial<LoggerConfig>) {
+        this.config = { ...this.config, ...config }
+    }
+
+    getConfig(): LoggerConfig {
+        return { ...this.config }
     }
 
     setLevel(level: LogLevel) {
         this.currentLevel = level
+    }
+
+    getLevel(): LogLevel {
+        return this.currentLevel
+    }
+
+    getLogDir(): string {
+        return this.logDir
     }
 
     installConsoleRedirect() {
@@ -123,7 +171,9 @@ class AppLogger {
             this.init()
         }
 
-        const line = formatLine(payload)
+        const line = this.config.jsonFormat
+            ? formatLineJson(payload)
+            : formatLine(payload)
 
         // Console Output (with colors if possible)
         const color = getLevelColor(payload.level)
@@ -137,7 +187,7 @@ class AppLogger {
         }
 
         this.queue = this.queue.then(async () => {
-            this.rotateIfNeeded(line.length)
+            await this.rotateIfNeeded(line.length)
             await fs.promises.appendFile(this.logPath, line, 'utf8')
             this.size += Buffer.byteLength(line, 'utf8')
         }).catch((err) => {
@@ -145,21 +195,148 @@ class AppLogger {
         })
     }
 
-    private rotateIfNeeded(nextBytes: number) {
-        if (this.size + nextBytes <= MAX_BYTES) {
+    private async rotateIfNeeded(nextBytes: number) {
+        if (this.size + nextBytes <= this.config.maxBytes) {
             return
         }
-        for (let i = MAX_FILES - 1; i >= 1; i--) {
-            const src = `${this.logPath}.${i}`
-            const dest = `${this.logPath}.${i + 1}`
-            if (fs.existsSync(src)) {
-                fs.renameSync(src, dest)
+
+        // Handle compressed files (.gz)
+        if (this.config.compressRotated) {
+            for (let i = this.config.maxFiles - 1; i >= 1; i--) {
+                const src = `${this.logPath}.${i}.gz`
+                const dest = `${this.logPath}.${i + 1}.gz`
+                if (fs.existsSync(src)) {
+                    fs.renameSync(src, dest)
+                }
+            }
+            // Compress the current .1 file if it exists
+            const firstRotated = `${this.logPath}.1`
+            if (fs.existsSync(firstRotated)) {
+                await this.compressFile(firstRotated, `${firstRotated}.gz`)
+                fs.unlinkSync(firstRotated)
+            }
+        } else {
+            for (let i = this.config.maxFiles - 1; i >= 1; i--) {
+                const src = `${this.logPath}.${i}`
+                const dest = `${this.logPath}.${i + 1}`
+                if (fs.existsSync(src)) {
+                    fs.renameSync(src, dest)
+                }
             }
         }
+
         if (fs.existsSync(this.logPath)) {
             fs.renameSync(this.logPath, `${this.logPath}.1`)
         }
         this.size = 0
+    }
+
+    private async compressFile(src: string, dest: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const input = fs.createReadStream(src)
+            const output = fs.createWriteStream(dest)
+            const gzip = zlib.createGzip()
+
+            input.pipe(gzip).pipe(output)
+
+            output.on('finish', resolve)
+            output.on('error', reject)
+            input.on('error', reject)
+        })
+    }
+
+    private startCleanupScheduler() {
+        if (this.cleanupTimer) return
+
+        // Run cleanup every 24 hours
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000
+        this.cleanupTimer = setInterval(() => {
+            this.cleanupOldLogs()
+        }, ONE_DAY_MS)
+
+        // Also run cleanup on startup
+        this.cleanupOldLogs()
+    }
+
+    /**
+     * Clean up log files older than retentionDays
+     */
+    cleanupOldLogs(): number {
+        if (!this.logDir || !fs.existsSync(this.logDir)) {
+            return 0
+        }
+
+        const retentionMs = this.config.retentionDays * 24 * 60 * 60 * 1000
+        const now = Date.now()
+        let deleted = 0
+
+        try {
+            const files = fs.readdirSync(this.logDir)
+            for (const file of files) {
+                if (!file.endsWith('.log') && !file.endsWith('.gz')) {
+                    continue
+                }
+                const filePath = path.join(this.logDir, file)
+                const stat = fs.statSync(filePath)
+                if (now - stat.mtime.getTime() > retentionMs) {
+                    fs.unlinkSync(filePath)
+                    deleted++
+                }
+            }
+        } catch (err) {
+            if (this.originalConsole) {
+                this.originalConsole.error('Failed to cleanup old logs', err)
+            }
+        }
+
+        return deleted
+    }
+
+    /**
+     * Get log statistics
+     */
+    getStats(): { totalFiles: number; totalSize: number; oldestLog: Date | null; newestLog: Date | null } {
+        if (!this.logDir || !fs.existsSync(this.logDir)) {
+            return { totalFiles: 0, totalSize: 0, oldestLog: null, newestLog: null }
+        }
+
+        let totalFiles = 0
+        let totalSize = 0
+        let oldestLog: Date | null = null
+        let newestLog: Date | null = null
+
+        try {
+            const files = fs.readdirSync(this.logDir)
+            for (const file of files) {
+                if (!file.endsWith('.log') && !file.endsWith('.gz')) {
+                    continue
+                }
+                const filePath = path.join(this.logDir, file)
+                const stat = fs.statSync(filePath)
+                totalFiles++
+                totalSize += stat.size
+                if (!oldestLog || stat.mtime < oldestLog) {
+                    oldestLog = stat.mtime
+                }
+                if (!newestLog || stat.mtime > newestLog) {
+                    newestLog = stat.mtime
+                }
+            }
+        } catch {
+            // Ignore errors
+        }
+
+        return { totalFiles, totalSize, oldestLog, newestLog }
+    }
+
+    /**
+     * Dispose resources
+     */
+    dispose() {
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer)
+            this.cleanupTimer = null
+        }
     }
 
     private safeStatSize(filePath: string): number {
@@ -205,6 +382,36 @@ function formatLine(payload: LogPayload): string {
     const base = sanitize(payload.message)
     const meta = payload.data !== undefined ? ` | ${sanitize(formatValue(payload.data))}` : ''
     return `[${timestamp}] [${level}] [${context}] ${base}${meta}\n`
+}
+
+function formatLineJson(payload: LogPayload): string {
+    const timestamp = new Date().toISOString()
+    const entry = {
+        timestamp,
+        level: LogLevel[payload.level],
+        context: payload.context,
+        message: payload.message,
+        data: payload.data !== undefined ? formatValueForJson(payload.data) : undefined
+    }
+    return JSON.stringify(entry) + '\n'
+}
+
+function formatValueForJson(value: JsonValue | Error | AppError | object): JsonValue {
+    if (value instanceof Error) {
+        return {
+            error: value.message,
+            stack: value.stack
+        }
+    }
+    if (value && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)) {
+        const ae = value as AppError
+        return {
+            message: ae.message,
+            code: ae.code,
+            stack: ae.stack
+        }
+    }
+    return value as JsonValue
 }
 
 function formatArgs(args: Array<JsonValue | Error | object>): string {

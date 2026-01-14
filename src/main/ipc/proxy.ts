@@ -1,12 +1,11 @@
 import { ipcMain } from 'electron'
 import { ProxyService } from '../services/proxy/proxy.service'
+import { ProxyProcessManager } from '../services/proxy/proxy-process.manager'
 
-export function registerProxyIpc(proxyService: ProxyService) {
+export function registerProxyIpc(proxyService: ProxyService, processManager?: ProxyProcessManager) {
     ipcMain.handle('proxy:antigravityLogin', async () => {
         return await proxyService.getAntigravityAuthUrl()
     })
-
-
 
     ipcMain.handle('proxy:claudeLogin', async () => {
         return await proxyService.getAnthropicAuthUrl()
@@ -40,7 +39,20 @@ export function registerProxyIpc(proxyService: ProxyService) {
         return await proxyService.getCodexUsage()
     })
 
+    ipcMain.handle('proxy:getClaudeQuota', async () => {
+        return await proxyService.getClaudeQuota()
+    })
+
     ipcMain.handle('proxy:deleteAuthFile', async (_event, name: string) => {
         return await proxyService.deleteAuthFile(name)
+    })
+
+    // Sync auth files from temp to permanent storage after OAuth callbacks
+    ipcMain.handle('proxy:syncAuthFiles', async () => {
+        if (processManager) {
+            await processManager.forceSyncAuthFiles()
+            return { success: true }
+        }
+        return { success: false, error: 'Process manager not available' }
     })
 }

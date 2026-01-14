@@ -67,6 +67,7 @@ export interface ElectronAPI {
     getQuota: () => Promise<QuotaResponse | null>
     getCopilotQuota: () => Promise<CopilotQuota>
     getCodexUsage: () => Promise<Partial<QuotaResponse>>
+    getClaudeQuota: () => Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
@@ -418,6 +419,42 @@ export interface ElectronAPI {
         invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>
         removeAllListeners: (channel: string) => void
     }
+
+    // IPC Batching for performance
+    batch: {
+        invoke: (requests: Array<{ channel: string; args: IpcValue[] }>) => Promise<{
+            results: Array<{ channel: string; success: boolean; data?: IpcValue; error?: string }>
+            timing: { startTime: number; endTime: number; totalMs: number }
+        }>
+        invokeSequential: (requests: Array<{ channel: string; args: IpcValue[] }>) => Promise<{
+            results: Array<{ channel: string; success: boolean; data?: IpcValue; error?: string }>
+            timing: { startTime: number; endTime: number; totalMs: number }
+        }>
+        getChannels: () => Promise<string[]>
+    }
+
+    // Backup & Restore
+    backup: {
+        create: (options?: { includeChats?: boolean; includeAuth?: boolean; includeSettings?: boolean; includePrompts?: boolean }) => Promise<{ success: boolean; path?: string; error?: string; metadata?: { version: string; createdAt: string; appVersion: string; platform: string; includes: string[] } }>
+        restore: (backupPath: string, options?: { restoreChats?: boolean; restoreSettings?: boolean; restorePrompts?: boolean; mergeChats?: boolean }) => Promise<{ success: boolean; restored: string[]; errors: string[] }>
+        list: () => Promise<Array<{ name: string; path: string; metadata?: { version: string; createdAt: string; appVersion: string; platform: string; includes: string[] } }>>
+        delete: (backupPath: string) => Promise<boolean>
+        getDir: () => Promise<string>
+        getAutoBackupStatus: () => Promise<{ enabled: boolean; intervalHours: number; maxBackups: number; lastBackup: string | null }>
+        configureAutoBackup: (config: { enabled: boolean; intervalHours?: number; maxBackups?: number }) => Promise<void>
+        cleanup: () => Promise<number>
+    }
+
+    // Export chat to multiple formats
+    export: {
+        chat: (chat: Chat, options: { format: 'markdown' | 'html' | 'json' | 'txt'; includeTimestamps?: boolean; includeMetadata?: boolean; includeSystemMessages?: boolean; includeToolCalls?: boolean; title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        chatToMarkdown: (chat: Chat, options?: { includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        chatToHTML: (chat: Chat, options?: { includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        chatToJSON: (chat: Chat, options?: { includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        chatToText: (chat: Chat, options?: { includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        chatToPDF: (chat: Chat, options?: { title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
+        getContent: (chat: Chat, options: { format: 'markdown' | 'html' | 'json' | 'txt'; includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; content?: string; error?: string }>
+    }
 }
 
 const api: ElectronAPI = {
@@ -449,6 +486,7 @@ const api: ElectronAPI = {
     getQuota: () => ipcRenderer.invoke('proxy:getQuota'),
     getCopilotQuota: () => ipcRenderer.invoke('proxy:getCopilotQuota'),
     getCodexUsage: () => ipcRenderer.invoke('proxy:getCodexUsage'),
+    getClaudeQuota: () => ipcRenderer.invoke('proxy:getClaudeQuota'),
     checkUsageLimit: (provider: string, model: string) => ipcRenderer.invoke('usage:checkLimit', provider, model),
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => ipcRenderer.invoke('usage:getUsageCount', period, provider, model),
     importChatHistory: (provider: string) => ipcRenderer.invoke('history:import', provider),
@@ -464,11 +502,19 @@ const api: ElectronAPI = {
     chatStream: (messages, model, tools, provider, options, chatId, projectId) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options, chatId, projectId),
     abortChat: () => ipcRenderer.invoke('ollama:abort'),
     onStreamChunk: (callback) => {
-        const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => callback(chunk)
+        console.log(`[Preload] onStreamChunk registered on ${window.location.href}`);
+        const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; chatId?: string; done?: boolean }) => {
+            console.log('[Preload] Received ollama:streamChunk:', JSON.stringify(chunk));
+            callback(chunk);
+        }
         ipcRenderer.on('ollama:streamChunk', listener)
-        return () => ipcRenderer.removeListener('ollama:streamChunk', listener)
+        return () => {
+            console.log('[Preload] onStreamChunk unsubscribing');
+            ipcRenderer.removeListener('ollama:streamChunk', listener)
+        }
     },
     removeStreamChunkListener: () => {
+        console.log('[Preload] removeAllListeners for ollama:streamChunk');
         ipcRenderer.removeAllListeners('ollama:streamChunk')
     },
 
@@ -854,6 +900,33 @@ const api: ElectronAPI = {
         send: (channel: string, ...args: IpcValue[]) => ipcRenderer.send(channel, ...args),
         invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args) as Promise<T>,
         removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
+    },
+
+    batch: {
+        invoke: (requests) => ipcRenderer.invoke('batch:invoke', requests),
+        invokeSequential: (requests) => ipcRenderer.invoke('batch:invokeSequential', requests),
+        getChannels: () => ipcRenderer.invoke('batch:getChannels')
+    },
+
+    backup: {
+        create: (options) => ipcRenderer.invoke('backup:create', options),
+        restore: (backupPath, options) => ipcRenderer.invoke('backup:restore', backupPath, options),
+        list: () => ipcRenderer.invoke('backup:list'),
+        delete: (backupPath) => ipcRenderer.invoke('backup:delete', backupPath),
+        getDir: () => ipcRenderer.invoke('backup:getDir'),
+        getAutoBackupStatus: () => ipcRenderer.invoke('backup:getAutoBackupStatus'),
+        configureAutoBackup: (config) => ipcRenderer.invoke('backup:configureAutoBackup', config),
+        cleanup: () => ipcRenderer.invoke('backup:cleanup')
+    },
+
+    export: {
+        chat: (chat, options) => ipcRenderer.invoke('export:chat', chat, options),
+        chatToMarkdown: (chat, options) => ipcRenderer.invoke('export:chatToMarkdown', chat, options),
+        chatToHTML: (chat, options) => ipcRenderer.invoke('export:chatToHTML', chat, options),
+        chatToJSON: (chat, options) => ipcRenderer.invoke('export:chatToJSON', chat, options),
+        chatToText: (chat, options) => ipcRenderer.invoke('export:chatToText', chat, options),
+        chatToPDF: (chat, options) => ipcRenderer.invoke('export:chatToPDF', chat, options),
+        getContent: (chat, options) => ipcRenderer.invoke('export:getContent', chat, options)
     }
 }
 

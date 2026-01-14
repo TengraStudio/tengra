@@ -39,10 +39,10 @@ export class TimeTrackingService extends BaseService {
     async initialize(): Promise<void> {
         // Load any incomplete sessions on startup
         await this.resumeTracking()
-        
+
         // Start tracking app online time
         this.startAppTracking()
-        
+
         // Save tracking data every 60 seconds
         this.saveInterval = setInterval(() => {
             this.saveCurrentTracking().catch(err => {
@@ -77,14 +77,14 @@ export class TimeTrackingService extends BaseService {
         if (!this.isTracking || !this.appStartTime) return
         const endTime = Date.now()
         const duration = endTime - this.appStartTime
-        
+
         await this.recordTime({
             type: 'app_online',
             startTime: this.appStartTime,
             endTime,
             durationMs: duration
         })
-        
+
         this.appStartTime = null
         this.isTracking = false
         this.logInfo('Stopped app tracking')
@@ -106,7 +106,7 @@ export class TimeTrackingService extends BaseService {
      */
     async stopCodingTracking(projectId?: string): Promise<void> {
         const now = Date.now()
-        
+
         if (projectId) {
             const startTime = this.projectStartTimes.get(projectId)
             if (startTime) {
@@ -142,8 +142,8 @@ export class TimeTrackingService extends BaseService {
             const db = this.databaseService.getDatabase()
             const id = require('uuid').v4()
             const now = Date.now()
-            
-            db.prepare(`
+
+            await db.prepare(`
                 INSERT INTO time_tracking (id, type, project_id, start_time, end_time, duration_ms, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
@@ -186,48 +186,48 @@ export class TimeTrackingService extends BaseService {
     async getTimeStats(): Promise<TimeTrackingStats> {
         try {
             const db = this.databaseService.getDatabase()
-            
+
             // Get total app online time
-            const appOnlineResult = db.prepare(`
+            const appOnlineResult = await db.prepare(`
                 SELECT COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'app_online'
             `).get() as { total: number }
-            
+
             // Get total coding time
-            const codingResult = db.prepare(`
+            const codingResult = await db.prepare(`
                 SELECT COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'coding'
             `).get() as { total: number }
-            
+
             // Get per-project coding time
-            const projectResult = db.prepare(`
+            const projectResult = await db.prepare(`
                 SELECT project_id, COALESCE(SUM(duration_ms), 0) as total
                 FROM time_tracking
                 WHERE type = 'project_coding' AND project_id IS NOT NULL
                 GROUP BY project_id
             `).all() as Array<{ project_id: string; total: number }>
-            
+
             const projectCodingTime: Record<string, number> = {}
             for (const row of projectResult) {
                 projectCodingTime[row.project_id] = row.total
             }
-            
+
             // Add current active tracking time
-            const currentAppTime = this.isTracking && this.appStartTime 
-                ? Date.now() - this.appStartTime 
+            const currentAppTime = this.isTracking && this.appStartTime
+                ? Date.now() - this.appStartTime
                 : 0
-            const currentCodingTime = this.codingStartTime 
-                ? Date.now() - this.codingStartTime 
+            const currentCodingTime = this.codingStartTime
+                ? Date.now() - this.codingStartTime
                 : 0
-            
+
             // Add current project times
             for (const [projectId, startTime] of this.projectStartTimes.entries()) {
                 const currentTime = Date.now() - startTime
                 projectCodingTime[projectId] = (projectCodingTime[projectId] || 0) + currentTime
             }
-            
+
             return {
                 totalOnlineTime: (appOnlineResult.total || 0) + currentAppTime,
                 totalCodingTime: (codingResult.total || 0) + currentCodingTime,

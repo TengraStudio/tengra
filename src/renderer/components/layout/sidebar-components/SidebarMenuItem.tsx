@@ -34,7 +34,7 @@ export interface SidebarMenuItemProps {
     className?: string
 }
 
-export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
+export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
     id: _id,
     icon,
     label,
@@ -62,7 +62,7 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
     return (
         <motion.button
             onClick={onClick}
-            disabled={isDisabled}
+            aria-disabled={isDisabled}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={cn(
@@ -80,7 +80,7 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
                     'text-muted-foreground hover:text-foreground',
                     'hover:bg-muted/10'
                 ],
-                isDisabled && 'opacity-50 cursor-not-allowed',
+                isDisabled && 'opacity-50 cursor-not-allowed pointer-events-none',
                 className
             )}
             whileHover={{ x: isDisabled ? 0 : 2 }}
@@ -113,8 +113,8 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
 
             {/* Status Indicator */}
             {status && (
-                <SidebarStatusIndicator 
-                    status={status} 
+                <SidebarStatusIndicator
+                    status={status}
                     label={statusLabel}
                     size="sm"
                 />
@@ -143,6 +143,6 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
             )}
         </motion.button>
     )
-}
+})
 
 SidebarMenuItem.displayName = 'SidebarMenuItem'

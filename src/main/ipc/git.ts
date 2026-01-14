@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { GitService } from '../services/git.service'
+import { GitService } from '../services/project/git.service'
 import { getErrorMessage } from '../../shared/utils/error.util'
 
 export function registerGitIpc(gitService: GitService) {
@@ -21,8 +21,8 @@ export function registerGitIpc(gitService: GitService) {
         try {
             const result = await gitService.getStatus(cwd)
             const isClean = result.length === 0
-            return { 
-                success: true, 
+            return {
+                success: true,
                 isClean,
                 changes: result.length,
                 files: result
@@ -38,13 +38,13 @@ export function registerGitIpc(gitService: GitService) {
             const result = await gitService.executeRaw(cwd, 'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"')
             if (result.success && result.stdout) {
                 const [hash, message, author, relativeTime, date] = result.stdout.trim().split('|')
-                return { 
-                    success: true, 
-                    hash, 
-                    message, 
-                    author, 
+                return {
+                    success: true,
+                    hash,
+                    message,
+                    author,
                     relativeTime,
-                    date 
+                    date
                 }
             }
             return { success: false, error: 'No commits found' }
@@ -137,7 +137,7 @@ export function registerGitIpc(gitService: GitService) {
             const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --name-status')
             // Get unstaged files
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --name-status')
-            
+
             const parseStatus = (output: string): Array<{ status: string; path: string; staged: boolean }> => {
                 if (!output) return []
                 return output.split('\n')
@@ -155,10 +155,10 @@ export function registerGitIpc(gitService: GitService) {
                     })
                     .filter(Boolean) as Array<{ status: string; path: string; staged: boolean }>
             }
-            
+
             const stagedFiles = parseStatus(stagedResult.stdout || '').map(f => ({ ...f, staged: true }))
             const unstagedFiles = parseStatus(unstagedResult.stdout || '')
-            
+
             return {
                 success: true,
                 stagedFiles,
@@ -222,31 +222,31 @@ export function registerGitIpc(gitService: GitService) {
                 const remotes: Array<{ name: string; url: string; fetch: boolean; push: boolean }> = []
                 const lines = result.stdout.split('\n').filter(line => line.trim())
                 const remoteMap = new Map<string, { url?: string; fetch: boolean; push: boolean }>()
-                
+
                 lines.forEach(line => {
                     const parts = line.trim().split(/\s+/)
                     if (parts.length >= 3) {
                         const name = parts[0]
                         const url = parts[1]
                         const type = parts[2]
-                        
+
                         if (!remoteMap.has(name)) {
                             remoteMap.set(name, { url, fetch: false, push: false })
                         }
-                        
+
                         const remote = remoteMap.get(name)!
                         remote.url = url
                         if (type === '(fetch)') remote.fetch = true
                         if (type === '(push)') remote.push = true
                     }
                 })
-                
+
                 remoteMap.forEach((value, name) => {
                     if (value.url) {
                         remotes.push({ name, url: value.url, fetch: value.fetch, push: value.push })
                     }
                 })
-                
+
                 return { success: true, remotes }
             }
             return { success: true, remotes: [] }
@@ -262,22 +262,22 @@ export function registerGitIpc(gitService: GitService) {
             if (!branchResult.success || !branchResult.stdout) {
                 return { success: true, tracking: null, ahead: 0, behind: 0 }
             }
-            
+
             const branch = branchResult.stdout.trim()
             const trackingResult = await gitService.executeRaw(cwd, `rev-parse --abbrev-ref ${branch}@{upstream}`)
-            
+
             if (!trackingResult.success || !trackingResult.stdout) {
                 return { success: true, tracking: null, ahead: 0, behind: 0 }
             }
-            
+
             const tracking = trackingResult.stdout.trim()
             const countsResult = await gitService.executeRaw(cwd, `rev-list --left-right --count ${branch}...${tracking}`)
-            
+
             if (countsResult.success && countsResult.stdout) {
                 const [ahead, behind] = countsResult.stdout.trim().split('\t').map(Number)
                 return { success: true, tracking, ahead: ahead || 0, behind: behind || 0 }
             }
-            
+
             return { success: true, tracking, ahead: 0, behind: 0 }
         } catch (error) {
             return { success: true, tracking: null, ahead: 0, behind: 0 }
@@ -291,11 +291,11 @@ export function registerGitIpc(gitService: GitService) {
             if (result.success && result.stdout) {
                 const dates = result.stdout.split('\n').filter(line => line.trim())
                 const commitCounts: Record<string, number> = {}
-                
+
                 dates.forEach(date => {
                     commitCounts[date] = (commitCounts[date] || 0) + 1
                 })
-                
+
                 return { success: true, commitCounts }
             }
             return { success: true, commitCounts: {} }
@@ -309,13 +309,13 @@ export function registerGitIpc(gitService: GitService) {
         try {
             const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --numstat')
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --numstat')
-            
+
             const parseStats = (output: string): { added: number; deleted: number; files: number } => {
                 if (!output) return { added: 0, deleted: 0, files: 0 }
                 const lines = output.split('\n').filter(line => line.trim())
                 let added = 0
                 let deleted = 0
-                
+
                 lines.forEach(line => {
                     const parts = line.trim().split(/\s+/)
                     if (parts.length >= 2) {
@@ -325,13 +325,13 @@ export function registerGitIpc(gitService: GitService) {
                         deleted += del
                     }
                 })
-                
+
                 return { added, deleted, files: lines.length }
             }
-            
+
             const stagedStats = parseStats(stagedResult.stdout || '')
             const unstagedStats = parseStats(unstagedResult.stdout || '')
-            
+
             return {
                 success: true,
                 staged: stagedStats,

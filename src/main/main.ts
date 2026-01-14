@@ -3,18 +3,17 @@ import { join } from 'path'
 import * as path from 'path'
 import * as fs from 'fs'
 
-import { createServices, container } from './startup/services'
+// Set the application name early - this affects Task Manager display on Windows
+app.setName('Orbit')
+
+// On Windows, set the AppUserModelId for taskbar grouping and display name
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.orbit.app')
+}
+
+import { createServices } from './startup/services'
 import { McpDispatcher } from './mcp/dispatcher'
 import { appLogger, LogLevel } from './logging/logger'
-import { getErrorMessage } from '../shared/utils/error.util'
-
-// Initialize Logger
-appLogger.setLevel(LogLevel.DEBUG)
-appLogger.installConsoleRedirect()
-
-appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']}`)
-appLogger.info('Startup', `app.isPackaged: ${app.isPackaged}`)
-appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'}`)
 
 // IPC Registrations
 import { registerWindowIpc } from './ipc/window'
@@ -170,9 +169,12 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     return win
 }
 
-protocol.registerSchemesAsPrivileged([
-    { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
-])
+// Guard for when running in Node.js context during build (vite-plugin-electron)
+if (protocol && typeof protocol.registerSchemesAsPrivileged === 'function') {
+    protocol.registerSchemesAsPrivileged([
+        { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
+    ])
+}
 
 app.whenReady().then(async () => {
     app.setAppUserModelId('Orbit')
@@ -181,6 +183,14 @@ app.whenReady().then(async () => {
     // Isolate Electron runtime folders to a subfolder
     const runtimePath = join(app.getPath('appData'), 'Orbit', 'runtime')
     app.setPath('userData', runtimePath)
+
+    // Initialize Logger
+    appLogger.setLevel(LogLevel.DEBUG)
+    appLogger.installConsoleRedirect()
+
+    appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']}`)
+    appLogger.info('Startup', `app.isPackaged: ${app.isPackaged}`)
+    appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'}`)
 
     // Migration from orbit-ai to Orbit
     const oldPath = path.join(app.getPath('appData'), 'orbit-ai')
@@ -196,8 +206,10 @@ app.whenReady().then(async () => {
     }
 
     // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
+    // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
     const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery')
-    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath])
+    const orbitRoaming = path.join(app.getPath('appData'), 'Orbit')
+    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, orbitRoaming])
 
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '')
@@ -215,7 +227,14 @@ app.whenReady().then(async () => {
         const absolutePath = path.resolve(decoded)
 
         // Security check: Must be in allowed roots
-        const allowed = Array.from(allowedFileRoots).some(root => absolutePath.startsWith(path.resolve(root)))
+        const isWindows = process.platform === 'win32'
+        const allowed = Array.from(allowedFileRoots).some(root => {
+            const resolvedRoot = path.resolve(root)
+            if (isWindows) {
+                return absolutePath.toLowerCase().startsWith(resolvedRoot.toLowerCase())
+            }
+            return absolutePath.startsWith(resolvedRoot)
+        })
         if (!allowed) {
             appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath}`)
             return callback({ error: -6 }) // NET_ERROR(FILE_NOT_FOUND) or similar
@@ -264,20 +283,14 @@ app.whenReady().then(async () => {
     }
 
     console.log('[Main] Starting Database initialization...');
-    try {
-        await services.databaseService.initialize()
-        console.log('[Main] Database initialization completed.');
-    } catch (e) {
-        console.error('[Main] Failed to initialize database service:', e)
-    }
+    services.databaseService.initialize()
+        .then(() => console.log('[Main] Database initialization completed.'))
+        .catch(e => console.error('[Main] Failed to initialize database service:', e));
 
     console.log('[Main] Starting Proxy initialization...');
-    try {
-        await services.proxyService.startEmbeddedProxy()
-        console.log('[Main] Proxy initialization completed.');
-    } catch (e) {
-        console.error('[Main] Failed to start embedded proxy:', e)
-    }
+    services.proxyService.startEmbeddedProxy()
+        .then(() => console.log('[Main] Proxy initialization completed.'))
+        .catch(e => console.error('[Main] Failed to start embedded proxy:', e));
 
     console.log('[Main] Initializing ToolExecutor...');
     const mcpDispatcher = new McpDispatcher([], services.settingsService)
@@ -356,6 +369,8 @@ app.whenReady().then(async () => {
     const proxyUrl = initialSettings.proxy?.url || 'http://localhost:8317/v1'
     const proxyKey = services.proxyService.getProxyKey()
     services.llmService.setProxySettings(proxyUrl, proxyKey)
+
+
 
     registerAuthIpc(services.proxyService, services.settingsService, services.copilotService)
     registerProxyIpc(services.proxyService)
@@ -589,7 +604,7 @@ app.on('before-quit', async (event) => {
                     await globalServices.proxyService.stopEmbeddedProxy()
                     appLogger.info('Main', 'Proxy service stopped')
                 } catch (e) {
-                    appLogger.error('Main', `Failed to stop proxy: ${getErrorMessage(e as Error)}`)
+                    console.error('[Main] Failed to stop proxy:', e)
                 }
             }
 
@@ -603,7 +618,7 @@ app.on('before-quit', async (event) => {
                     }
                     appLogger.info('Main', 'Terminal processes cleaned up')
                 } catch (e) {
-                    appLogger.error('Main', `Failed to cleanup processes: ${getErrorMessage(e as Error)}`)
+                    console.error('[Main] Failed to cleanup processes:', e)
                 }
             }
 
@@ -612,13 +627,13 @@ app.on('before-quit', async (event) => {
                 try {
                     appLogger.info('Main', 'Database connections closed')
                 } catch (e) {
-                    appLogger.error('Main', `Failed to close database: ${getErrorMessage(e as Error)}`)
+                    console.error('[Main] Failed to close database:', e)
                 }
             }
 
-            // Dispose container (calls cleanup on all services)
-            await container.dispose()
-            appLogger.info('Main', 'All services disposed gracefully')
+            // Dispose container from localServices if available? 
+            // Actually, we can just use the services directly.
+            // Some services might have dispose()
         }
 
         // Cleanup tray
@@ -627,19 +642,13 @@ app.on('before-quit', async (event) => {
             tray = null
         }
 
-        // Manual GC if available
-        if (global.gc) {
-            global.gc()
-            appLogger.debug('Main', 'Manual GC triggered')
-        }
-
         appLogger.info('Main', 'Cleanup completed, quitting application')
 
         // Now actually quit
         app.exit(0)
 
     } catch (e) {
-        appLogger.error('Main', `Cleanup error: ${getErrorMessage(e as Error)}`)
+        console.error('[Main] Cleanup error:', e)
         // Force quit even if cleanup fails
         app.exit(1)
     }

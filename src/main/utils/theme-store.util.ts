@@ -287,5 +287,17 @@ class ThemeStore {
     }
 }
 
-export const themeStore = ThemeStore.getInstance()
+
+// Export a robust singleton getter or just the class?
+// Usage in ipc/theme.ts expects 'themeStore'
+// We can use a Proxy to lazy load it.
+
+const themeStoreProxy = new Proxy({} as ThemeStore, {
+    get: (_target, prop) => {
+        const instance = ThemeStore.getInstance()
+        return (instance as any)[prop]
+    }
+})
+
+export const themeStore = themeStoreProxy
 export { BUILTIN_THEMES, getThemeById }

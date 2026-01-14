@@ -258,21 +258,36 @@ export class ProxyService {
     return this.quotaService.getCopilotQuota()
   }
 
+  async getClaudeQuota(): Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }> {
+    return this.quotaService.getClaudeQuota()
+  }
+
   async getModels(): Promise<ProxyModelResponse> {
     const apiKey = this.getProxyKey()
     let baseRes: ProxyModelResponse = { data: [] }
     try {
+      console.log(`[ProxyService] getModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
       const res = await this.makeRequest('/v1/models', apiKey)
+      console.log('[ProxyService] getModels: Raw response type:', typeof res);
+      console.log('[ProxyService] getModels: Has data?', res && 'data' in res);
       if (res && 'data' in res && Array.isArray(res.data)) {
+        console.log('[ProxyService] getModels: Found', res.data.length, 'models from proxy');
+        const anthropicModels = res.data.filter((m: any) => m.owned_by === 'anthropic');
+        console.log('[ProxyService] getModels: Anthropic models:', anthropicModels.length);
         baseRes = res as ProxyModelResponse;
+      } else if (res && 'success' in res && !res.success) {
+        console.warn('[ProxyService] getModels: Request failed:', res.error, res.raw);
+      } else {
+        console.warn('[ProxyService] getModels: Unexpected response structure:', JSON.stringify(res).slice(0, 500));
       }
     } catch (error) {
       console.warn('[ProxyService] getModels: Primary proxy fetch failed.', getErrorMessage(error))
     }
 
-    const [codexData, copilotData] = await Promise.all([
+    const [codexData, copilotData, claudeData] = await Promise.all([
       this.quotaService.fetchCodexUsage(),
-      this.quotaService.getCopilotQuota()
+      this.quotaService.getCopilotQuota(),
+      this.quotaService.getClaudeQuota()
     ]);
 
     let codexQuotaFn: QuotaInfo | undefined = undefined;
@@ -309,24 +324,44 @@ export class ProxyService {
       };
     }
 
-    const extra: ModelQuotaItem[] = []
+    // Claude quota - uses utilization (100 = exhausted, 0 = full)
+    let claudeQuotaFn: QuotaInfo | undefined = undefined;
+    if (claudeData && claudeData.success) {
+      // Use 5-hour limit as primary (more restrictive), fall back to 7-day
+      const fiveHour = claudeData.fiveHour;
+      const sevenDay = claudeData.sevenDay;
+      const utilization = fiveHour?.utilization ?? sevenDay?.utilization ?? 0;
+      const resetTime = fiveHour?.resetsAt ?? sevenDay?.resetsAt;
+      claudeQuotaFn = {
+        remainingQuota: Math.round(100 - utilization),
+        totalQuota: 100,
+        remainingFraction: (100 - utilization) / 100,
+        resetTime: resetTime
+      };
+    }
+
+    let extra: ModelQuotaItem[] = []
     let antigravityError: string | undefined
 
-    // Antigravity support removed
-    // try {
-    //   extra = await this.quotaService.getAntigravityAvailableModels();
-    // } catch (error) {
-    //   if (getErrorMessage(error) === 'AUTH_EXPIRED') {
-    //     antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.'
-    //   }
-    // }
+    // Antigravity support restored
+    try {
+      extra = await this.quotaService.getAntigravityAvailableModels();
+      console.log(`[ProxyService] Fetched ${extra.length} Antigravity models`);
+    } catch (error) {
+      console.warn('[ProxyService] Failed to fetch Antigravity models:', getErrorMessage(error));
+      if (getErrorMessage(error) === 'AUTH_EXPIRED') {
+        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.'
+      }
+    }
 
     const base = Array.isArray(baseRes?.data) ? baseRes.data.map((m: ModelItem) => {
       const id = m.id.toLowerCase();
-      let provider = m.provider;
+      // Map owned_by to provider if provider is missing (common in OpenAI-compat APIs)
+      let provider = m.provider || (m['owned_by'] as string);
 
       if (!provider) {
-        if (id.includes('gemini-3')) provider = 'copilot';
+        if (id.includes('claude') || id.includes('anthropic')) provider = 'anthropic';
+        else if (id.includes('gemini-3')) provider = 'copilot';
         else if (id.startsWith('gemini-') || id.includes('google') || m.id.startsWith('google/')) provider = 'gemini';
         else provider = 'antigravity';
       }
@@ -364,6 +399,9 @@ export class ProxyService {
       if (provider === 'copilot' && copilotQuotaFn) {
         model.quotaInfo = copilotQuotaFn;
       }
+      if ((provider === 'anthropic' || provider === 'claude' || m.id.startsWith('claude-')) && claudeQuotaFn) {
+        model.quotaInfo = claudeQuotaFn;
+      }
 
       if (!model.quota && model.quotaInfo) {
         const fraction = model.quotaInfo.remainingFraction;
@@ -396,6 +434,7 @@ export class ProxyService {
     return {
       ...baseRes,
       data: finalData,
+      claudeQuota: claudeData,
       antigravityError
     }
   }
@@ -514,7 +553,7 @@ export class ProxyService {
             try { fs.unlinkSync(filePath) } catch { /* ignore */ }
             return null
           }
-          try { fs.writeFileSync('c:\\Users\\agnes\\Desktop\\projects\\orbit\\decrypted_token.txt', decrypted); } catch (e) { console.error('Failed to write debug token file', e) }
+          // jsonValue = JSON.parse(decrypted) as JsonValue // Removed debug write
           jsonValue = JSON.parse(decrypted) as JsonValue
         }
       }

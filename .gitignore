@@ -125,25 +125,4 @@ release/
 
 # Windows
 Thumbs.db
-
-# Project specific
-# data/ # Commented out to allow renderer data
-!src/renderer/data/
-
-
-# Sidecar (Python voice service)
-sidecar/.venv/
-sidecar/__pycache__/
-sidecar/cloned_voices/
-sidecar/output.wav
-sidecar/temp_stt.wav
-sidecar/*.tmp
-sidecar/.python-version
-sidecar/install-pyenv-win.ps1
-docs/ADRs/001-unified-error-handling-ipc.md
-docs/ADRs/002-input-sanitization-strategy.md
-docs/ADRs/003-component-standardization.md
-I18N_MIGRATION_SUMMARY.md
-docs/ADRs/006-component-standardization.md
-docs/ADRs/004-debounced-search-pattern.md
-docs/ADRs/005-accessibility-improvements.md
+ 

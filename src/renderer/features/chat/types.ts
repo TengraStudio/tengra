@@ -4,5 +4,6 @@ export interface ChatTemplate {
     iconColor: string;
     title: string;
     description: string;
-    prompt: string;
+    prompt?: string;
+    systemPrompt?: string;
 }

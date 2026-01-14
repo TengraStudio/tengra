@@ -10,12 +10,12 @@ import { FileManagementService } from '../services/data/file.service'
 import { CollaborationService } from '../services/collaboration.service'
 import { LocalAIService } from '../services/llm/local-ai.service'
 import { FileSystemService } from '../services/data/filesystem.service'
-import { CommandService } from '../services/command.service'
+import { CommandService } from '../services/system/command.service'
 import { DatabaseService } from '../services/data/database.service'
-import { LanceDbService } from '../services/data/lancedb.service'
+
 import { SSHService } from '../services/ssh.service'
 import { EmbeddingService } from '../services/llm/embedding.service'
-import { DockerService } from '../services/docker.service'
+import { DockerService } from '../services/project/docker.service'
 import { SecurityService } from '../services/security.service'
 import { ContentService } from '../services/content.service'
 import { UtilityService } from '../services/utility.service'
@@ -26,7 +26,7 @@ import { SystemService } from '../services/system.service'
 import { NetworkService } from '../services/network.service'
 import { NotificationService } from '../services/notification.service'
 import { ClipboardService } from '../services/clipboard.service'
-import { GitService } from '../services/git.service'
+import { GitService } from '../services/project/git.service'
 import { ProxyService } from '../services/proxy/proxy.service'
 import { ProxyProcessManager } from '../services/proxy/proxy-process.manager'
 import { QuotaService } from '../services/proxy/quota.service'
@@ -38,7 +38,7 @@ import { AgentCouncilService } from '../services/agent-council.service'
 import { getOllamaHealthService } from '../services/llm/ollama-health.service'
 import { LlamaService } from '../services/llm/llama.service'
 import { HuggingFaceService } from '../services/llm/huggingface.service'
-import { ProjectService } from '../services/project.service'
+import { ProjectService } from '../services/project/project.service'
 import { LogoService } from '../services/logo.service'
 import { ProcessService } from '../services/process.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
@@ -46,7 +46,7 @@ import { CodeIntelligenceService } from '../services/code-intelligence.service'
 import { ContextRetrievalService } from '../services/llm/context-retrieval.service'
 import { JobSchedulerService } from '../services/job-scheduler.service'
 import { WebService } from '../services/web.service'
-import { TokenRefreshService } from '../services/token-refresh.service'
+import { TokenService } from '../services/security/token.service'
 import { MemoryService } from '../services/memory.service'
 import { UsageTrackingService } from '../services/usage-tracking.service'
 import { AuditLogService } from '../services/audit-log.service'
@@ -62,8 +62,11 @@ import { ChatEventService } from '../services/data/chat-event.service'
 import { PromptTemplatesService } from '../services/prompt-templates.service'
 import { ModelCollaborationService } from '../services/model-collaboration.service'
 import { PerformanceService } from '../services/performance.service'
+import { ImagePersistenceService } from '../services/data/image-persistence.service'
 import { MultiModelComparisonService } from '../services/llm/multi-model-comparison.service'
 import { MultiLLMOrchestrator } from '../services/multi-llm-orchestrator.service'
+import { ModelRegistryService } from '../services/llm/model-registry.service'
+import { BackupService } from '../services/backup.service'
 import { Logger } from '../utils/logger'
 
 // Export the container instance so it can be accessed if needed
@@ -123,12 +126,13 @@ export interface Services {
     keyRotationService: KeyRotationService;
     rateLimitService: RateLimitService;
     utilityService: UtilityService;
-    tokenRefreshService: TokenRefreshService;
+    tokenService: TokenService;
     usageTrackingService: UsageTrackingService;
     auditLogService: AuditLogService;
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
     multiModelComparisonService: MultiModelComparisonService;
+    backupService: BackupService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>) {
@@ -157,7 +161,7 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('screenshotService', () => new ScreenshotService());
     container.register('pageSpeedService', () => new PageSpeedService());
     container.register('ruleService', () => new RuleService());
-    container.register('copilotService', (as) => new CopilotService(as as AuthService), ['authService']);
+    container.register('copilotService', (as, ns) => new CopilotService(as as AuthService, ns as NotificationService), ['authService', 'notificationService']);
     container.register('scannerService', () => new ScannerService());
     container.register('fileManagementService', () => new FileManagementService());
     container.register('huggingFaceService', () => new HuggingFaceService());
@@ -180,10 +184,8 @@ export async function createServices(allowedFileRoots: Set<string>) {
         krs as KeyRotationService,
         rls as RateLimitService
     ), ['httpService', 'configService', 'keyRotationService', 'rateLimitService']);
-    container.register('lanceDbService', (ds) => new LanceDbService(ds as DataService), ['dataService']);
-
-    // Database depends on Data, LanceDB
-    container.register('databaseService', (ds, ldb) => new DatabaseService(ds as DataService, ldb as LanceDbService), ['dataService', 'lanceDbService']);
+    // Database depends on Data
+    container.register('databaseService', (ds) => new DatabaseService(ds as DataService), ['dataService']);
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
 
     container.register('sshService', (ds) => new SSHService((ds as DataService).getPath('config')), ['dataService']);
@@ -202,12 +204,13 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
 
     // Token Refresh Service
-    container.register('tokenRefreshService', (ss, cs, ds, sec) => new TokenRefreshService(
+    container.register('tokenService', (ss, cs, ds, sec, js) => new TokenService(
         ss as SettingsService,
         cs as CopilotService,
         ds as DataService,
-        sec as SecurityService
-    ), ['settingsService', 'copilotService', 'dataService', 'securityService']);
+        sec as SecurityService,
+        js as JobSchedulerService
+    ), ['settingsService', 'copilotService', 'dataService', 'securityService', 'jobSchedulerService']);
 
     // Complex Helpers
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(
@@ -231,7 +234,7 @@ export async function createServices(allowedFileRoots: Set<string>) {
         ls as LLMService
     ), ['databaseService', 'embeddingService', 'llmService']);
 
-    container.register('agentService', (ldb) => new AgentService(ldb as LanceDbService), ['lanceDbService']);
+    container.register('agentService', (dbs) => new AgentService(dbs as DatabaseService), ['databaseService']);
 
     container.register('updateService', (ss, ds) => new UpdateService(ss as SettingsService, ds as DataService), ['settingsService', 'dataService']);
     container.register('sentryService', (ss) => new SentryService(ss as SettingsService), ['settingsService']);
@@ -246,12 +249,21 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('promptTemplatesService', (ds) => new PromptTemplatesService(ds as DataService), ['dataService']);
     container.register('modelCollaborationService', (ls) => new ModelCollaborationService(ls as LLMService), ['llmService']);
     container.register('performanceService', () => new PerformanceService());
+    container.register('imagePersistenceService', (ds) => new ImagePersistenceService(ds as DataService), ['dataService']);
     container.register('multiLLMOrchestrator', () => new MultiLLMOrchestrator());
+    container.register('backupService', (ds) => new BackupService(ds as DataService), ['dataService']);
     container.register('multiModelComparisonService', (ls, mo) => new MultiModelComparisonService(ls as LLMService, mo as MultiLLMOrchestrator), ['llmService', 'multiLLMOrchestrator']);
+
+    container.register('modelRegistryService', (os, hf, js, ss) => new ModelRegistryService(
+        os as OllamaService,
+        hf as HuggingFaceService,
+        js as JobSchedulerService,
+        ss as SettingsService
+    ), ['ollamaService', 'huggingFaceService', 'jobSchedulerService', 'settingsService']);
 
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
     container.register('contextRetrievalService', (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
-    container.register('jobSchedulerService', () => new JobSchedulerService());
+    container.register('jobSchedulerService', (ds) => new JobSchedulerService(ds as DataService), ['dataService']);
 
     container.register('logoService', (ls, ps) => new LogoService(ls as LLMService, ps as ProjectService), ['llmService', 'projectService']);
 
@@ -353,13 +365,14 @@ export async function createServices(allowedFileRoots: Set<string>) {
         configService: container.resolve<ConfigService>('configService'),
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
-        tokenRefreshService: container.resolve<TokenRefreshService>('tokenRefreshService'),
+        tokenService: container.resolve<TokenService>('tokenService'),
         usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService'),
         auditLogService: container.resolve<AuditLogService>('auditLogService'),
         promptTemplatesService: container.resolve<PromptTemplatesService>('promptTemplatesService'),
         modelCollaborationService: container.resolve<ModelCollaborationService>('modelCollaborationService'),
         performanceService: container.resolve<PerformanceService>('performanceService'),
-        multiModelComparisonService: container.resolve<MultiModelComparisonService>('multiModelComparisonService')
+        multiModelComparisonService: container.resolve<MultiModelComparisonService>('multiModelComparisonService'),
+        backupService: container.resolve<BackupService>('backupService')
     };
 
     healthCheckService.registerCriticalChecks({
@@ -369,7 +382,7 @@ export async function createServices(allowedFileRoots: Set<string>) {
     healthCheckService.start();
 
     // Start token refresh service
-    services.tokenRefreshService.start();
+    services.tokenService.start();
 
     return services;
 }

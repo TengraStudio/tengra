@@ -158,15 +158,17 @@ export class AgentCouncilService {
     async addLog(sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action' = 'info') {
         const log = await this.db.addCouncilLog(sessionId, agentId, message, type)
 
-        // Broadcast via WebSocket for real-time "Chat"
-        this.collaboration.broadcast(sessionId, {
-            id: log.id,
-            sessionId,
-            sender: agentId,
-            content: message,
-            timestamp: new Date(log.timestamp).getTime(),
-            type: type === 'plan' || type === 'action' ? 'code' : 'text'
-        })
+        if (log) {
+            // Broadcast via WebSocket for real-time "Chat"
+            this.collaboration.broadcast(sessionId, {
+                id: log.id,
+                sessionId,
+                sender: agentId,
+                content: message,
+                timestamp: new Date(log.timestamp).getTime(),
+                type: type === 'plan' || type === 'action' ? 'code' : 'text'
+            })
+        }
 
         return log
     }

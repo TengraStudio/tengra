@@ -21,6 +21,37 @@ export class QuotaService {
         private securityService: SecurityService
     ) { }
 
+    private fetchWithNet(url: string, headers: Record<string, string>): Promise<any> {
+        return new Promise((resolve, reject) => {
+            try {
+                const req = net.request({ url, method: 'GET' })
+                for (const [k, v] of Object.entries(headers)) {
+                    req.setHeader(k, v)
+                }
+                req.on('response', (response) => {
+                    let body = ''
+                    response.on('data', (chunk) => body += chunk.toString())
+                    response.on('end', () => {
+                        if (response.statusCode >= 200 && response.statusCode < 300) {
+                            try {
+                                resolve(JSON.parse(body))
+                            } catch (e) {
+                                // If response is empty or not JSON, resolve null or reject
+                                if (!body.trim()) resolve(null)
+                                else reject(new Error(`Failed to parse JSON: ${body.substring(0, 50)}`))
+                            }
+                        } else {
+                            reject(new Error(`Request failed with status code ${response.statusCode}`))
+                        }
+                    })
+                    response.on('error', (err) => reject(err))
+                })
+                req.on('error', (err) => reject(err))
+                req.end()
+            } catch (e) { reject(e) }
+        })
+    }
+
     private async makeRequest(path: string, port: number, apiKey: string): Promise<JsonObject | { success: boolean; error?: string; raw?: string }> {
         return new Promise((resolve, reject) => {
             const options = {
@@ -325,6 +356,249 @@ export class QuotaService {
     }
 
     // --- Copilot ---
+
+    // --- Claude/Anthropic ---
+
+    async getClaudeQuota(): Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }> {
+        try {
+            // Migration: Move manual txt key to JSON if exists
+            try {
+                const dir = this.getAuthWorkDir()
+                const txtFile = path.join(dir, 'claude_session.txt')
+                if (fs.existsSync(txtFile)) {
+                    const key = fs.readFileSync(txtFile, 'utf8').trim()
+                    if (key) this.updateClaudeAuth({ session_key: key })
+                    fs.unlinkSync(txtFile)
+                }
+            } catch { }
+
+            // Capture from Electron if available (updates file)
+            await this.captureElectronSessionKey()
+
+            const authData = await this.getClaudeAuthData()
+
+            if (!authData) {
+                console.log('[DEBUG] getClaudeQuota: No authData')
+                return { success: false }
+            }
+
+            let accessToken = ''
+            if (typeof authData.access_token === 'string') accessToken = authData.access_token
+
+            const sessionKey = typeof authData.session_key === 'string' ? authData.session_key :
+                typeof authData.sessionKey === 'string' ? authData.sessionKey : null
+
+            if (!accessToken && !sessionKey) {
+                console.log('[DEBUG] getClaudeQuota: No access token or session key')
+                return { success: false }
+            }
+
+            let orgId = typeof authData?.organization_id === 'string' ? authData.organization_id : null
+
+            if (!orgId) {
+                console.log('[DEBUG] getClaudeQuota: Fetching Org ID...')
+                orgId = await this.fetchClaudeOrganizationId(accessToken, sessionKey)
+                if (orgId) {
+                    console.log('[DEBUG] getClaudeQuota: Found Org ID:', orgId)
+                    this.updateClaudeAuth({ organization_id: orgId })
+                } else {
+                    console.log('[DEBUG] getClaudeQuota: Failed to fetch Org ID')
+                }
+            } else {
+                console.log('[DEBUG] getClaudeQuota: Using cached Org ID:', orgId)
+            }
+
+            if (!orgId) return { success: false }
+
+            console.log('[DEBUG] getClaudeQuota: Fetching usage...')
+            const usage = await this.fetchClaudeUsage(accessToken, orgId, sessionKey)
+            if (!usage) {
+                console.log('[DEBUG] getClaudeQuota: Failed to fetch usage')
+                return { success: false }
+            }
+
+            console.log('[DEBUG] getClaudeQuota: Usage fetched:', JSON.stringify(usage))
+
+            return {
+                success: true,
+                fiveHour: usage.five_hour ? {
+                    utilization: usage.five_hour.utilization,
+                    resetsAt: usage.five_hour.resets_at
+                } : undefined,
+                sevenDay: usage.seven_day ? {
+                    utilization: usage.seven_day.utilization,
+                    resetsAt: usage.seven_day.resets_at
+                } : undefined
+            }
+        } catch (error) {
+            console.debug('[QuotaService] getClaudeQuota failed:', getErrorMessage(error))
+            return { success: false }
+        }
+    }
+
+    private async captureElectronSessionKey(): Promise<string | null> {
+        // Try Electron cookies (auto-capture)
+        try {
+            const cookies = await session.defaultSession.cookies.get({ url: 'https://claude.ai', name: 'sessionKey' })
+            if (cookies.length > 0) {
+                const val = cookies[0].value
+                this.updateClaudeAuth({ session_key: val })
+                return val
+            }
+        } catch (e) {
+            console.debug('[QuotaService] Failed to fetch Claude session cookies:', getErrorMessage(e))
+        }
+        return null
+    }
+
+    private updateClaudeAuth(updates: JsonObject) {
+        try {
+            const dir = this.getAuthWorkDir()
+            if (!dir || !fs.existsSync(dir)) return
+
+            // Logic to pick file
+            let targetFile = 'claude-session.json'
+            let existingContent: JsonObject = {}
+
+            const files = fs.readdirSync(dir).filter(f => {
+                const n = f.toLowerCase()
+                return (n.startsWith('claude') || n.startsWith('anthropic')) && n.endsWith('.json')
+            })
+
+            // Prefer file with existing access_token
+            const fileWithToken = files.find(f => {
+                const c = this.readAuthFile(path.join(dir, f))
+                return c && (c.access_token || c.accessToken)
+            })
+
+            if (fileWithToken) {
+                targetFile = fileWithToken
+                existingContent = this.readAuthFile(path.join(dir, targetFile)) || {}
+            } else if (files.length > 0) {
+                targetFile = files[0]
+                existingContent = this.readAuthFile(path.join(dir, targetFile)) || {}
+            }
+
+            // Update content by merging
+            existingContent = { ...existingContent, ...updates, provider: 'claude' }
+
+            this.updateAuthFile(targetFile, existingContent)
+        } catch { }
+    }
+
+    private async fetchClaudeOrganizationId(accessToken: string, sessionKey: string | null): Promise<string | null> {
+        // 1. Try to extract from JWT if possible
+        if (accessToken) {
+            try {
+                const parts = accessToken.split('.')
+                if (parts.length === 3) {
+                    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
+                    if (payload.org_id) return payload.org_id
+                    if (payload.organization_id) return payload.organization_id
+                    if (payload.org_uuid) return payload.org_uuid
+                    if (payload.uuid) return payload.uuid
+                }
+            } catch (e) { }
+        }
+
+        // 2. Try API endpoints
+        const endpoints = [
+            'https://claude.ai/api/organizations',
+            'https://console.anthropic.com/api/organizations',
+            'https://api.anthropic.com/v1/organizations'
+        ]
+
+        for (const url of endpoints) {
+            try {
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Anthropic-Version': '2023-06-01'
+                }
+
+                if (sessionKey) {
+                    headers['Cookie'] = `sessionKey=${sessionKey}`
+                } else if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`
+                } else {
+                    continue
+                }
+
+                const data = await this.fetchWithNet(url, headers)
+                if (Array.isArray(data) && data.length > 0) {
+                    return data[0].uuid || data[0].id || null
+                }
+                if (data && typeof data === 'object') {
+                    if (data.uuid) return data.uuid;
+                    if (data.id) return data.id;
+                }
+            } catch (error) {
+                console.log(`[DEBUG] fetchClaudeOrganizationId failed for ${url}:`, getErrorMessage(error))
+            }
+        }
+        return null
+    }
+
+    private async fetchClaudeUsage(accessToken: string, orgId: string, sessionKey: string | null): Promise<{
+        five_hour?: { utilization: number; resets_at: string };
+        seven_day?: { utilization: number; resets_at: string };
+    } | null> {
+        const endpoints = [
+            `https://claude.ai/api/organizations/${orgId}/usage`,
+            `https://console.anthropic.com/api/organizations/${orgId}/usage`,
+            `https://api.anthropic.com/v1/organizations/${orgId}/usage`
+        ]
+
+        for (const url of endpoints) {
+            try {
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Anthropic-Version': '2023-06-01'
+                }
+
+                if (sessionKey) {
+                    headers['Cookie'] = `sessionKey=${sessionKey}`
+                } else {
+                    headers['Authorization'] = `Bearer ${accessToken}`
+                }
+
+                const data = await this.fetchWithNet(url, headers)
+                return data as {
+                    five_hour?: { utilization: number; resets_at: string };
+                    seven_day?: { utilization: number; resets_at: string };
+                }
+            } catch (error) {
+                // ignore
+            }
+        }
+        return null
+    }
+
+    private async getClaudeAuthData(): Promise<JsonObject | null> {
+        try {
+            const dir = this.getAuthWorkDir()
+            if (dir && fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir)
+                const claudeFiles = files.filter(f => {
+                    const name = f.toLowerCase()
+                    return (name.startsWith('claude') || name.startsWith('anthropic')) &&
+                        (name.endsWith('.json') || name.endsWith('.enc'))
+                })
+
+                for (const file of claudeFiles) {
+                    const content = this.readAuthFile(path.join(dir, file))
+                    if (content && (content.access_token || content.accessToken || content.session_key || content.sessionKey)) {
+                        return content
+                    }
+                }
+            }
+            return null
+        } catch (error) {
+            console.debug('[QuotaService] getClaudeAuthData failed:', getErrorMessage(error))
+            return null
+        }
+    }
 
     async getCopilotQuota(): Promise<{ success: boolean; plan?: string; limit?: number; remaining?: number; used?: number; percentage?: number | null }> {
         const rawData = await this.fetchCopilotBilling()

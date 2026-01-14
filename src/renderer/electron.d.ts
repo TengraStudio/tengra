@@ -56,23 +56,23 @@ export interface ElectronAPI {
      * Minimizes the application window.
      */
     minimize: () => void
-    
+
     /**
      * Maximizes or restores the application window.
      */
     maximize: () => void
-    
+
     /**
      * Closes the application window.
      */
     close: () => void
-    
+
     /**
      * Resizes the window to a specific resolution.
      * @param resolution - Resolution string in format "WIDTHxHEIGHT" (e.g., "1920x1080")
      */
     resizeWindow: (resolution: string) => void
-    
+
     /**
      * Toggles compact mode for the window.
      * @param enabled - Whether to enable compact mode
@@ -85,7 +85,7 @@ export interface ElectronAPI {
      * @returns Promise resolving to OAuth device code information
      */
     githubLogin: (appId?: 'profile' | 'copilot') => Promise<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>
-    
+
     /**
      * Polls for GitHub OAuth token after device code authentication.
      * @param deviceCode - Device code received from githubLogin
@@ -94,7 +94,7 @@ export interface ElectronAPI {
      * @returns Promise resolving to authentication result
      */
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => Promise<{ success: boolean; token?: string; error?: string }>
-    
+
     /**
      * Initiates Antigravity OAuth login flow.
      * @returns Promise resolving to OAuth URL and state
@@ -156,6 +156,7 @@ export interface ElectronAPI {
     getQuota: (provider?: string) => Promise<QuotaResponse | null>
     getCopilotQuota: () => Promise<CopilotQuota>
     getCodexUsage: () => Promise<Partial<QuotaResponse>>
+    getClaudeQuota: () => Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
@@ -189,8 +190,8 @@ export interface ElectronAPI {
     chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, projectId?: string) => Promise<IpcValue>
     chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, chatId?: string, projectId?: string) => Promise<void>
     abortChat: () => void
-    onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
-    removeStreamChunkListener: (callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => void
+    onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; done?: boolean }) => void) => (() => void)
+    removeStreamChunkListener: (callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; done?: boolean }) => void) => void
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>

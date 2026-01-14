@@ -23,15 +23,27 @@ export default defineConfig({
             {
                 entry: 'src/main/main.ts',
                 onstart(options) {
-                    options.startup()
+                    // Unset ELECTRON_RUN_AS_NODE to ensure Electron runs properly
+                    // This variable may be set by IDE environments like VSCode
+                    const env = { ...process.env }
+                    delete env.ELECTRON_RUN_AS_NODE
+                    options.startup(['.', '--no-sandbox'], { env })
                 },
                 vite: {
+                    resolve: {
+                        alias: {
+                            '@main': resolve(__dirname, 'src/main'),
+                            '@shared': resolve(__dirname, 'src/shared'),
+                            '@renderer': resolve(__dirname, 'src/renderer'),
+                        }
+                    },
                     build: {
                         outDir: 'dist/main',
                         lib: {
                             entry: 'src/main/main.ts',
                             formats: ['cjs']
                         },
+                        minify: false,
                         rollupOptions: {
                             external: [
                                 'electron',
@@ -48,13 +60,15 @@ export default defineConfig({
                                 'tls',
                                 'crypto',
                                 'fs/promises',
-                                'sql.js',
+                                'node-pty',
+                                '@electric-sql/pglite',
+                                '@electric-sql/pglite/vector',
+                                '@primno/dpapi',
                                 'ssh2',
-                                '@lancedb/lancedb',
-                                'apache-arrow',
+                                'better-sqlite3',
                                 'ws',
                                 'bufferutil',
-                                'utf-8-validate',
+                                'utf-8-validate'
                             ]
                         }
                     }
@@ -66,12 +80,19 @@ export default defineConfig({
                     options.reload()
                 },
                 vite: {
+                    resolve: {
+                        alias: {
+                            '@main': resolve(__dirname, 'src/main'),
+                            '@shared': resolve(__dirname, 'src/shared'),
+                        }
+                    },
                     build: {
                         outDir: 'dist/preload',
                         lib: {
                             entry: 'src/main/preload.ts',
                             formats: ['cjs']
                         },
+                        minify: false,
                         rollupOptions: {
                             external: ['electron']
                         }
@@ -93,6 +114,7 @@ export default defineConfig({
             '@': resolve(__dirname, 'src/renderer'),
             '@main': resolve(__dirname, 'src/main'),
             '@renderer': resolve(__dirname, 'src/renderer'),
+            '@shared': resolve(__dirname, 'src/shared'),
         },
         // Ensure ESM modules are resolved correctly
         conditions: ['import', 'module', 'browser', 'default'],
@@ -103,10 +125,22 @@ export default defineConfig({
         outDir: 'dist/renderer',
         rollupOptions: {
             output: {
-                // Manual chunks for code splitting
+                // Better code splitting for faster builds
                 manualChunks: (id) => {
-                    // Keep it simple for now to avoid breaking React context
                     if (id.includes('node_modules')) {
+                        // Split large dependencies into separate chunks
+                        // if (id.includes('react') || id.includes('react-dom')) {
+                        //     return 'react-vendor';
+                        // }
+                        if (id.includes('@codemirror') || id.includes('@lezer')) {
+                            return 'codemirror';
+                        }
+                        if (id.includes('lucide-react')) {
+                            return 'icons';
+                        }
+                        if (id.includes('@radix-ui') || id.includes('@floating-ui')) {
+                            return 'ui-vendor';
+                        }
                         return 'vendor';
                     }
                 }
@@ -114,8 +148,8 @@ export default defineConfig({
         },
         // Increase chunk size warning limit
         chunkSizeWarningLimit: 2000,
-        // Disable minification to avoid CodeMirror class initialization issues
-        minify: false,
+        // Enable minification with esbuild (fast)
+        minify: 'esbuild',
         // CommonJS interop for ESM modules
         commonjsOptions: {
             include: [/node_modules/],
@@ -124,20 +158,22 @@ export default defineConfig({
             strictRequires: false
         },
         // Configure build target
-        target: 'es2020',
-        sourcemap: true
+        target: 'esnext',
+        // Disable sourcemaps in production for faster builds
+        sourcemap: process.env.NODE_ENV === 'development'
     },
-    // Optimize deps - pre-bundle React and related libs
+    // Optimize deps - pre-bundle for faster dev startup
     optimizeDeps: {
         include: [
             'react',
             'react-dom',
             'react/jsx-runtime',
-            '@floating-ui/react',
-            'react-transition-group'
+            '@floating-ui/react'
         ],
+        // Exclude large deps that don't need pre-bundling
+        exclude: ['@lancedb/lancedb', 'apache-arrow'],
         esbuildOptions: {
-            target: 'es2020',
+            target: 'esnext',
             keepNames: false,
             jsx: 'automatic',
             jsxImportSource: 'react'
@@ -145,7 +181,10 @@ export default defineConfig({
     },
     // Ensure ESM compatibility
     esbuild: {
-        target: 'es2020',
-        keepNames: false
+        target: 'esnext',
+        keepNames: false,
+        // Faster transforms
+        legalComments: 'none',
+        treeShaking: true
     },
 })

@@ -70,10 +70,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder
     })
 
-    const streamingContent = useMemo(() => {
-        const state = currentChatId ? streamingStates[currentChatId] : undefined
-        return state ? state.content : ''
-    }, [currentChatId, streamingStates])
+
     const streamingReasoning = useMemo(() => {
         const state = currentChatId ? streamingStates[currentChatId] : undefined
         return state ? state.reasoning : ''
@@ -85,8 +82,14 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const currentChat = chats.find(c => c.id === currentChatId)
     const isLoading = useMemo(() => {
-        if (!currentChatId) { return false }
-        return Boolean(currentChat?.isGenerating) || Boolean(streamingStates[currentChatId])
+        if (!currentChatId) {
+            console.debug('[useChatManager:isLoading] currentChatId is null, returning false');
+            return false
+        }
+        const isGenerating = Boolean(currentChat?.isGenerating)
+        const isStreaming = Boolean(streamingStates[currentChatId])
+        console.debug(`[useChatManager:isLoading] chatId=${currentChatId}, isGenerating=${isGenerating}, isStreaming=${isStreaming}`);
+        return isGenerating || isStreaming
     }, [currentChatId, currentChat?.isGenerating, streamingStates])
 
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat])
@@ -129,10 +132,11 @@ export function useChatManager(options: UseChatManagerOptions) {
 
 
     const handleSend = async (customInput?: string) => {
+        console.log('[useChatManager] handleSend called', { customInput, input, selectedModel, currentChatId, isLoading })
         const content = customInput ?? input
-        if (!content.trim()) { return }
-        if (!selectedModel) { return }
-        if (isLoading) { return }
+        if (!content.trim()) { console.log('[useChatManager] Empty content, returning'); return }
+        if (!selectedModel) { console.log('[useChatManager] No model selected, returning'); return }
+        if (isLoading) { console.log('[useChatManager] Already loading, returning'); return }
 
         // Set loading immediately so UI responds
         // Set generating immediately in UI
@@ -140,6 +144,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         setInput('')
         let chatId = currentChatId
         if (!chatId) {
+            console.log('[useChatManager] Creating new chat...')
             const newChatId = generateId()
             const timestamp = Date.now()
             const newChatDb = {
@@ -151,7 +156,14 @@ export function useChatManager(options: UseChatManagerOptions) {
                 updatedAt: timestamp,
                 isGenerating: true
             }
-            await window.electron.db.createChat(newChatDb)
+            console.log('[useChatManager] Calling createChat with:', newChatDb)
+            const createResult = await window.electron.db.createChat(newChatDb)
+            console.log('[useChatManager] createChat result:', createResult)
+            if (!createResult.success) {
+                console.error('[useChatManager] Failed to create chat:', createResult)
+                setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: false } : c))
+                return
+            }
             const newChatUi: Chat = { ...newChatDb, messages: [], createdAt: new Date(timestamp), updatedAt: new Date(timestamp), isGenerating: true }
             setChats(prev => [newChatUi, ...prev])
             chatId = newChatId
@@ -176,7 +188,7 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     return {
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages,
-        searchTerm, setSearchTerm, input, setInput, isLoading, streamingContent,
+        searchTerm, setSearchTerm, input, setInput, isLoading,
         streamingReasoning, streamingSpeed, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage,

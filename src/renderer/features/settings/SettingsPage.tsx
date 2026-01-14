@@ -6,7 +6,7 @@ import { GalleryView } from '@/features/chat/components/GalleryView'
 import { Search, X } from 'lucide-react'
 
 // Tab Components
-import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab } from '@/features/settings/components'
+import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab, MCPSettingsTab } from '@/features/settings/components'
 import './SettingsPage.css'
 
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
@@ -31,7 +31,7 @@ export function SettingsPage({
     const {
         settings, updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
-        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, setReloadTrigger,
+        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
@@ -42,7 +42,7 @@ export function SettingsPage({
 
     // Search state for settings
     const [searchQuery, setSearchQuery] = useState('')
-    
+
     // Define tabs for filtering
     const allTabs = useMemo(() => [
         { id: 'general', label: t('settings.tabs.general') },
@@ -56,10 +56,10 @@ export function SettingsPage({
         { id: 'advanced', label: t('settings.tabs.advanced') },
         { id: 'about', label: t('settings.tabs.about') }
     ], [t])
-    
+
     const filteredTabs = useMemo(() => {
         if (!searchQuery) return allTabs
-        return allTabs.filter(tab => 
+        return allTabs.filter(tab =>
             tab.label.toLowerCase().includes(searchQuery.toLowerCase())
         )
     }, [searchQuery, allTabs])
@@ -84,7 +84,7 @@ export function SettingsPage({
         settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
-        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, setReloadTrigger,
+        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         t, onRefreshModels, loadSettings, setIsLoading: (_v: boolean) => { }, onReset: handleFactoryReset
@@ -146,6 +146,7 @@ export function SettingsPage({
                         {activeTab === 'advanced' && <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />}
                         {activeTab === 'about' && <AboutTab {...sharedProps} onReset={handleFactoryReset} />}
                         {activeTab === 'usage-limits' && <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels || undefined} />}
+                        {activeTab === 'mcp-servers' && <MCPSettingsTab />}
                         {activeTab === 'gallery' && <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20"><GalleryView language={settings?.general?.language || 'tr'} /></div>}
                     </div>
                 </main>
