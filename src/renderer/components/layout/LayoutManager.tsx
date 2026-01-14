@@ -39,7 +39,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         const deltaPercent = (delta / containerWidth) * 100;
         setSidebarSize(prevSize => {
             const newSize = Math.max(3, Math.min(25, prevSize + deltaPercent));
-            
+
             if (setIsSidebarCollapsed) {
                 if (newSize < 8 && !isSidebarCollapsed) {
                     setIsSidebarCollapsed(true);
@@ -47,7 +47,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                     setIsSidebarCollapsed(false);
                 }
             }
-            
+
             return newSize;
         });
     }, [isSidebarCollapsed, setIsSidebarCollapsed]);
@@ -60,9 +60,9 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     }, []);
 
     return (
-        <div 
+        <div
             ref={containerRef}
-            className={cn("flex h-screen w-full overflow-hidden bg-background text-foreground", theme)}
+            className={cn("flex h-full w-full overflow-hidden bg-background text-foreground", theme)}
         >
             <ResizableContainer direction="horizontal" className="h-full w-full">
                 {/* Sidebar Panel */}
@@ -71,21 +71,24 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                     className={cn(
                         "z-20 bg-card/10 backdrop-blur-md flex flex-col"
                     )}
+                    direction="horizontal"
                 >
                     {sidebarContent}
                 </ResizablePane>
-                
+
                 <ResizableHandle onResize={handleSidebarResize} direction="horizontal" />
-                
+
                 {/* Main Content Panel */}
                 <ResizablePane
                     initialSize={100 - sidebarSize}
                     className="flex flex-col min-h-0"
+                    direction="horizontal"
                 >
                     <ResizableContainer direction="vertical" className="h-full">
                         <ResizablePane
                             initialSize={mainSize}
                             className="flex flex-col min-h-0"
+                            direction="vertical"
                         >
                             {mainContent}
                         </ResizablePane>
@@ -96,6 +99,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                                 <ResizablePane
                                     initialSize={100 - mainSize}
                                     className="bg-card/5 backdrop-blur-sm border-t border-border/50"
+                                    direction="vertical"
                                 >
                                     {panelContent}
                                 </ResizablePane>
