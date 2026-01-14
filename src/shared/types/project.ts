@@ -1,6 +1,6 @@
 import { Message } from '@/types/chat'
-import { WorkspaceMount } from '@/types/workspace'
 import { JsonObject } from '@/types/common'
+import { WorkspaceMount } from '@/types/workspace'
 
 export interface Project {
     id: string;

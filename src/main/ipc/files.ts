@@ -1,6 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { resolve } from 'path'
+
 import { FileSystemService } from '@main/services/data/filesystem.service'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 
 export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
@@ -9,11 +10,11 @@ export function registerFilesIpc(
 ) {
     ipcMain.handle('files:selectDirectory', async () => {
         const win = getMainWindow()
-        if (!win) return { success: false }
+        if (!win) {return { success: false }}
         const result = await dialog.showOpenDialog(win, {
             properties: ['openDirectory']
         })
-        if (result.canceled) return { success: false }
+        if (result.canceled) {return { success: false }}
         const chosenPath = result.filePaths[0]
         if (chosenPath) {
             allowedRoots.add(resolve(chosenPath))
@@ -60,7 +61,7 @@ export function registerFilesIpc(
 
     ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
         const win = getMainWindow()
-        if (!win) return { success: false }
+        if (!win) {return { success: false }}
 
         // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
         // Actually for a stream we should probably just return 'started' and emit events

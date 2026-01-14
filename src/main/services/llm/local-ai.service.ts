@@ -2,8 +2,9 @@ import { ChildProcess, exec, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import * as fsPromises from 'fs/promises'
 import { join } from 'path'
-import { app } from 'electron'
+
 import { SettingsService } from '@main/services/settings.service'
+import { app } from 'electron'
 
 export interface LocalAIModel {
     id: string
@@ -47,7 +48,7 @@ export class LocalAIService {
         try {
             console.log('[LocalAI] Fetching Ollama models from http://127.0.0.1:11434/api/tags...');
             const res = await this.ollamaRequest<OllamaResponse>('/api/tags')
-            if (res && res.models && Array.isArray(res.models)) {
+            if (res?.models && Array.isArray(res.models)) {
                 console.log(`[LocalAI] Found ${res.models.length} models in Ollama`);
                 return res.models;
             }
@@ -62,7 +63,7 @@ export class LocalAIService {
     }
 
     async maybeStartOllama() {
-        if (process.platform !== 'win32') return;
+        if (process.platform !== 'win32') { return; }
 
         try {
             console.log('[LocalAI] Attempting to auto-start Ollama headlessly...');
@@ -83,7 +84,7 @@ export class LocalAIService {
                     detached: true,
                     stdio: 'ignore',
                     windowsHide: true,
-                    shell: true
+                    shell: false
                 }).unref();
                 console.log('[LocalAI] Triggered headless ollama serve via PATH');
             }
@@ -111,16 +112,16 @@ export class LocalAIService {
             headers: { 'Content-Type': 'application/json' },
             body: body ? JSON.stringify(body) : undefined
         })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
         return await response.json() as T
     }
 
     // --- Llama.cpp Ops ---
 
     async startLlamaServer(modelPath: string): Promise<boolean> {
-        if (this.llamaProcess) this.stopLlamaServer()
+        if (this.llamaProcess) { this.stopLlamaServer() }
         const binPath = join(process.cwd(), 'vendor', 'llama-bin', 'llama-server.exe')
-        if (!existsSync(binPath)) return false
+        if (!existsSync(binPath)) { return false }
 
         this.llamaProcess = spawn(binPath, ['-m', modelPath, '--port', this.llamaPort.toString()], {
             windowsHide: true,
@@ -140,7 +141,7 @@ export class LocalAIService {
 
     async getLlamaStyles(): Promise<string[]> {
         const dir = join(app.getPath('userData'), 'models')
-        if (!existsSync(dir)) return []
+        if (!existsSync(dir)) { return [] }
         const files = await fsPromises.readdir(dir)
         return files.filter(f => f.endsWith('.gguf'))
     }

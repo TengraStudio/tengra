@@ -1,8 +1,9 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { app } from 'electron'
+
 import { BaseService } from '@main/services/base.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { app } from 'electron'
 
 export interface AuditLogEntry {
     timestamp: number

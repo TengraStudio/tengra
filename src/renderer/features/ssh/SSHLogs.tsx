@@ -38,7 +38,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         }
     }
 
-    if (!active) return null
+    if (!active) {return null}
 
     return (
         <div className="flex h-full">

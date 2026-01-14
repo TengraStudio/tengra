@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
+import { ipcMain } from 'electron'
 
 export function registerProxyIpc(proxyService: ProxyService, processManager?: ProxyProcessManager) {
     ipcMain.handle('proxy:antigravityLogin', async () => {

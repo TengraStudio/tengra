@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -22,8 +23,11 @@ import (
 const (
 	openaiAuthURL  = "https://auth.openai.com/oauth/authorize"
 	openaiTokenURL = "https://auth.openai.com/oauth/token"
-	openaiClientID = "app_EMoamEEZ73f0CkXaXp7hrann"
 	redirectURI    = "http://localhost:1455/auth/callback"
+)
+
+var (
+	openaiClientID = os.Getenv("OPENAI_OAUTH_CLIENT_ID")
 )
 
 // CodexAuth handles the OpenAI OAuth2 authentication flow.

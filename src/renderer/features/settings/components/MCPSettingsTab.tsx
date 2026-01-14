@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Server, ShoppingBag } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { MCPServersTab } from '@renderer/features/settings/components/MCPServersTab'
+import { Server, ShoppingBag } from 'lucide-react'
+import { useState } from 'react'
+
 import { MCPStore } from '@/features/mcp/MCPStore'
+import { cn } from '@/lib/utils'
 
 export const MCPSettingsTab = () => {
     const [activeTab, setActiveTab] = useState<'servers' | 'marketplace'>('servers')

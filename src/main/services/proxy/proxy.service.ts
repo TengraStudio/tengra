@@ -1,18 +1,19 @@
-import path from 'path'
-import fs from 'fs'
-
 import crypto from 'crypto'
-import { net, app } from 'electron'
-import { SettingsService } from '@main/services/settings.service'
+import fs from 'fs'
+import path from 'path'
+
+import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
-import { SecurityService } from '@main/services/security.service'
-import { ProxyProcessManager, ProxyEmbedStatus } from '@main/services/proxy/proxy-process.manager'
+import { ProxyEmbedStatus,ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
 import { QuotaService } from '@main/services/proxy/quota.service'
-import { LocalAuthServer } from '@main/utils/local-auth-server.util'
+import { SecurityService } from '@main/services/security.service'
+import { SettingsService } from '@main/services/settings.service'
 import { AuthenticationError } from '@main/utils/error.util'
+import { LocalAuthServer } from '@main/utils/local-auth-server.util'
 import { JsonObject, JsonValue } from '@shared/types'
 import { ModelQuotaItem, QuotaResponse } from '@shared/types/quota'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { app,net } from 'electron'
 
 export type QuotaInfo = {
   remainingQuota: number;
@@ -75,7 +76,7 @@ const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 /**
  * Manages GitHub/Google authentication and local proxy process.
  */
-export class ProxyService {
+export class ProxyService extends BaseService {
   private currentPort: number = 8317
 
   constructor(
@@ -85,8 +86,18 @@ export class ProxyService {
     private processManager: ProxyProcessManager,
     private quotaService: QuotaService
   ) {
+    super('ProxyService')
     this.ensureAuthStoreKey()
     this.ensureProxyKey()
+  }
+
+  override async cleanup(): Promise<void> {
+    try {
+      await this.stopEmbeddedProxy()
+      this.logInfo('Proxy service stopped')
+    } catch (e) {
+      this.logError('Failed to stop proxy during cleanup:', e)
+    }
   }
 
   // --- Auth Flow Logic ---
@@ -122,9 +133,9 @@ export class ProxyService {
           response.on('end', () => {
             try {
               const json: TokenResponse = JSON.parse(data);
-              if (json.access_token) resolve(json.access_token);
-              else if (json.error === 'authorization_pending') setTimeout(checkToken, (interval + 1) * 1000);
-              else reject(new Error(json.error_description || json.error));
+              if (json.access_token) {resolve(json.access_token);}
+              else if (json.error === 'authorization_pending') {setTimeout(checkToken, (interval + 1) * 1000);}
+              else {reject(new Error(json.error_description || json.error));}
             } catch (error) { reject(error); }
           });
         });
@@ -175,19 +186,19 @@ export class ProxyService {
 
   async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
     const dir = this.getAuthWorkDir();
-    if (!fs.existsSync(dir)) return { files: [] };
+    if (!fs.existsSync(dir)) {return { files: [] };}
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
     const res = {
       files: files.map(f => {
         let provider = f.replace(/\.(json|enc)$/, '').split('-')[0].split('_')[0]; // Handle github-token, github_token, etc.
         // Normalize common names
-        if (provider === 'github' || provider === 'github_token') provider = 'github';
-        if (provider === 'copilot' || provider === 'copilot_token') provider = 'copilot';
-        if (provider === 'antigravity' || provider === 'antigravity_token') provider = 'antigravity';
-        if (provider === 'gemini' || provider === 'gemini_key') provider = 'gemini';
-        if (provider === 'openai' || provider === 'openai_key') provider = 'openai';
-        if (provider === 'anthropic' || provider === 'anthropic_key') provider = 'anthropic';
-        if (provider === 'proxy' || provider === 'proxy_key') provider = 'proxy';
+        if (provider === 'github' || provider === 'github_token') {provider = 'github';}
+        if (provider === 'copilot' || provider === 'copilot_token') {provider = 'copilot';}
+        if (provider === 'antigravity' || provider === 'antigravity_token') {provider = 'antigravity';}
+        if (provider === 'gemini' || provider === 'gemini_key') {provider = 'gemini';}
+        if (provider === 'openai' || provider === 'openai_key') {provider = 'openai';}
+        if (provider === 'anthropic' || provider === 'anthropic_key') {provider = 'anthropic';}
+        if (provider === 'proxy' || provider === 'proxy_key') {provider = 'proxy';}
 
         return { name: f, provider };
       })
@@ -207,7 +218,7 @@ export class ProxyService {
 
   async getAuthFileContent(name: string): Promise<JsonObject | null> {
     const filePath = path.join(this.getAuthWorkDir(), name)
-    if (!fs.existsSync(filePath)) return null
+    if (!fs.existsSync(filePath)) {return null}
     return this.readAuthFile(filePath)
   }
 
@@ -224,7 +235,7 @@ export class ProxyService {
 
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus()
-    if (status.running && status.port) this.currentPort = status.port
+    if (status.running && status.port) {this.currentPort = status.port}
     return status
   }
 
@@ -360,10 +371,10 @@ export class ProxyService {
       let provider = m.provider || (m['owned_by'] as string);
 
       if (!provider) {
-        if (id.includes('claude') || id.includes('anthropic')) provider = 'anthropic';
-        else if (id.includes('gemini-3')) provider = 'copilot';
-        else if (id.startsWith('gemini-') || id.includes('google') || m.id.startsWith('google/')) provider = 'gemini';
-        else provider = 'antigravity';
+        if (id.includes('claude') || id.includes('anthropic')) {provider = 'anthropic';}
+        else if (id.includes('gemini-3')) {provider = 'copilot';}
+        else if (id.startsWith('gemini-') || id.includes('google') || m.id.startsWith('google/')) {provider = 'gemini';}
+        else {provider = 'antigravity';}
       }
 
       return { ...m, provider };
@@ -469,7 +480,7 @@ export class ProxyService {
   }
 
   getAuthWorkDir(): string {
-    if (this.dataService) return this.dataService.getPath('auth')
+    if (this.dataService) {return this.dataService.getPath('auth')}
     return path.join(app.getPath('userData'), 'auth')
   }
 

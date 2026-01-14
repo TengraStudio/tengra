@@ -1,11 +1,11 @@
 ﻿
 import React, { useState } from 'react'
-import { cn } from '@/lib/utils'
-import { ModelExplorer } from '@/features/models/components/ModelExplorer'
-import { AppSettings } from '@/types/settings'
 
-import { CombinedModel } from '@/types/renderer'
+import { ModelExplorer } from '@/features/models/components/ModelExplorer'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { cn } from '@/lib/utils'
+import { CombinedModel } from '@/types/renderer'
+import { AppSettings } from '@/types/settings'
 
 interface ModelsTabProps {
     settings: AppSettings | null
@@ -22,27 +22,27 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
     const [modelSearch, setModelSearch] = useState('')
     const [showHiddenModels, setShowHiddenModels] = useState(false)
 
-    if (!settings) return null
+    if (!settings) {return null}
     const hiddenModels = settings.general.hiddenModels || []
     const defaultModel = settings.general.defaultModel || ''
 
     const combined = new Map()
     for (const model of installedModels) {
-        if (!model?.id) continue
+        if (!model?.id) {continue}
         combined.set(model.id, { id: model.id, sources: ['ollama'], details: model })
     }
     for (const model of (proxyModels || [])) {
         const id = String(model?.id || '').trim()
-        if (!id) continue
+        if (!id) {continue}
         const existing = combined.get(id)
         const source = model?.provider || 'proxy'
-        if (existing) existing.sources = Array.from(new Set([...(existing.sources || []), source]))
-        else combined.set(id, { id, sources: [source] })
+        if (existing) {existing.sources = Array.from(new Set([...(existing.sources || []), source]))}
+        else {combined.set(id, { id, sources: [source] })}
     }
 
     const filtered = Array.from(combined.values()).filter((m: CombinedModel) => {
-        if (!showHiddenModels && hiddenModels.includes(m.id)) return false
-        if (!modelSearch) return true
+        if (!showHiddenModels && hiddenModels.includes(m.id)) {return false}
+        if (!modelSearch) {return true}
         return m.id.toLowerCase().includes(modelSearch.toLowerCase())
     })
 

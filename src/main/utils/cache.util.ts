@@ -79,7 +79,7 @@ export class Cache<T = JsonValue> {
      */
     get(key: string): T | undefined {
         const entry = this.entries.get(key)
-        if (!entry) return undefined
+        if (!entry) {return undefined}
 
         // Check expiration
         if (Date.now() > entry.expiresAt) {
@@ -125,7 +125,7 @@ export class Cache<T = JsonValue> {
      */
     has(key: string): boolean {
         const entry = this.entries.get(key)
-        if (!entry) return false
+        if (!entry) {return false}
         if (Date.now() > entry.expiresAt) {
             this.delete(key)
             return false

@@ -1,14 +1,15 @@
-import React, { useState, ComponentType } from 'react'
 import {
-    Settings, ChevronDown, Database, Image, Mic, Activity, Info,
-    Terminal, Cpu, UserCircle, TrendingUp, LayoutGrid
-} from 'lucide-react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
+Activity, ChevronDown, Cpu, Database, Image, Info,
+LayoutGrid,
+Mic,     Settings,     Terminal, TrendingUp, UserCircle} from 'lucide-react'
+import React, { ComponentType,useState } from 'react'
+
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { useTranslation, Language } from '@/i18n'
 import { SettingsCategory } from '@/features/settings/types'
 import { AppView } from '@/hooks/useAppState'
+import { Language,useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 
 const SettingsMenuItem: React.FC<{
     id: string;

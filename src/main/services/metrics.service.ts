@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
+
 import { JsonValue } from '@shared/types/common'
 
 export interface MetricData {

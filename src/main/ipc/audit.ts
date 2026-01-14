@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron'
 import { AuditLogService } from '@main/services/audit-log.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ipcMain } from 'electron'
 
 export function registerAuditIpc(auditLogService: AuditLogService) {
     ipcMain.handle('audit:getLogs', createIpcHandler('audit:getLogs', async (_event, options?: {

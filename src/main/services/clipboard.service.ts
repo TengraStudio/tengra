@@ -1,16 +1,29 @@
+import { BaseService } from '@main/services/base.service'
 import { clipboard, nativeImage } from 'electron'
 
-export class ClipboardService {
+export class ClipboardService extends BaseService {
     private history: string[] = []
     private maxHistory = 50
     private lastText = ''
+    private watcherInterval: NodeJS.Timeout | null = null
 
     constructor() {
+        super('ClipboardService')
+    }
+
+    override async initialize(): Promise<void> {
         this.startWatcher()
     }
 
+    override async cleanup(): Promise<void> {
+        if (this.watcherInterval) {
+            clearInterval(this.watcherInterval)
+            this.watcherInterval = null
+        }
+    }
+
     private startWatcher() {
-        setInterval(() => {
+        this.watcherInterval = setInterval(() => {
             const text = clipboard.readText()
             if (text && text !== this.lastText) {
                 this.lastText = text
@@ -60,7 +73,7 @@ export class ClipboardService {
 
     readImage() {
         const img = clipboard.readImage()
-        if (img.isEmpty()) return { success: false, error: 'Clipboard does not contain an image' }
+        if (img.isEmpty()) {return { success: false, error: 'Clipboard does not contain an image' }}
         return { success: true, dataUrl: img.toDataURL() }
     }
 

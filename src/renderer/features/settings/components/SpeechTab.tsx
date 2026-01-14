@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect, useMemo } from 'react'
-import { Volume2, Speaker } from 'lucide-react'
-import { AppSettings } from '@/types/settings'
+﻿import { Speaker,Volume2 } from 'lucide-react'
+import React, { useEffect, useMemo,useState } from 'react'
+
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+import { AppSettings } from '@/types/settings'
 
 interface SpeechTabProps {
     settings: AppSettings | null
@@ -16,7 +17,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({ settings, updateSpeech, t 
     useEffect(() => {
         const loadVoices = () => {
             const v = window.speechSynthesis.getVoices()
-            if (v.length > 0) setVoices(v)
+            if (v.length > 0) {setVoices(v)}
         }
 
         const loadDevices = async () => {
@@ -33,7 +34,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({ settings, updateSpeech, t 
         loadVoices()
         loadDevices()
 
-        if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = loadVoices
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {window.speechSynthesis.onvoiceschanged = loadVoices}
 
         // Listen for device changes
         navigator.mediaDevices.ondevicechange = loadDevices
@@ -54,7 +55,7 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({ settings, updateSpeech, t 
     const handleTest = () => {
         const utterance = new SpeechSynthesisUtterance(t('speech.previewText'))
         const voice = voices.find(v => v.voiceURI === settings?.speech?.voiceURI)
-        if (voice) utterance.voice = voice
+        if (voice) {utterance.voice = voice}
         utterance.rate = settings?.speech?.rate || 1
         window.speechSynthesis.speak(utterance)
     }

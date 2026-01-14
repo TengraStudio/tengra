@@ -1,5 +1,6 @@
-import { Message, ToolCall, ToolDefinition } from '@/types'
 import { CatchError, JsonObject, JsonValue } from '@shared/types/common'
+
+import { Message, ToolCall, ToolDefinition } from '@/types'
 
 export interface ChatStreamChunk {
     type?: 'content' | 'reasoning' | 'images' | 'tool_calls' | 'metadata' | 'error'
@@ -92,7 +93,7 @@ export async function* chatStream(
             let queueIterations = 0;
             while (queue.length > 0 && queueIterations < MAX_QUEUE_ITERATIONS) {
                 const chunk = queue.shift();
-                if (!chunk) continue;
+                if (!chunk) {continue;}
                 queueIterations++;
 
                 console.log(`[ChatStream] Yielding chunk from queue:`, chunk);
@@ -104,8 +105,8 @@ export async function* chatStream(
                 if (chunk.reasoning !== undefined && chunk.reasoning !== null) {
                     yield { type: 'reasoning', content: chunk.reasoning };
                 }
-                if (chunk.images) yield { type: 'images', images: chunk.images };
-                if (chunk.type === 'tool_calls') yield chunk;
+                if (chunk.images) {yield { type: 'images', images: chunk.images };}
+                if (chunk.type === 'tool_calls') {yield chunk;}
                 if (chunk.type === 'metadata') {
                     const rawSources = chunk.metadata?.sources
                     const sources = Array.isArray(rawSources)
@@ -113,11 +114,11 @@ export async function* chatStream(
                         : undefined
                     yield { ...chunk, sources: chunk.sources || sources };
                 }
-                if (chunk.type === 'error') yield chunk;
+                if (chunk.type === 'error') {yield chunk;}
             }
 
             if (isDone) {
-                if (error) throw error;
+                if (error) {throw error;}
                 break;
             }
 

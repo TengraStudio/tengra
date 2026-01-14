@@ -1,4 +1,5 @@
 import { categorizeModel } from '@renderer/features/models/utils/model-categorization';
+
 import type { JsonValue } from '@/types';
 
 export interface ModelInfo {

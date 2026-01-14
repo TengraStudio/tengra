@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/codex"
@@ -28,13 +29,10 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-const (
-	geminiOauthClientID     = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-	geminiOauthClientSecret = "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"
-)
-
 var (
-	geminiOauthScopes = []string{
+	geminiOauthClientID     = os.Getenv("GEMINI_OAUTH_CLIENT_ID")
+	geminiOauthClientSecret = os.Getenv("GEMINI_OAUTH_CLIENT_SECRET")
+	geminiOauthScopes       = []string{
 		"https://www.googleapis.com/auth/cloud-platform",
 		"https://www.googleapis.com/auth/generative-language",
 		"https://www.googleapis.com/auth/userinfo.email",

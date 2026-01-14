@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
-import Editor, { OnMount, Monaco } from '@monaco-editor/react';
-import type * as monaco from 'monaco-editor';
+import Editor, { Monaco,OnMount } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
+import type * as monaco from 'monaco-editor';
+import React, { useRef } from 'react';
+
 import { useTheme } from '@/hooks/useTheme';
 import { normalizeLanguage } from '@/utils/language-map';
 import { initTextMateSupport } from '@/utils/textmate-loader';
@@ -41,9 +42,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const normalizedLanguage = normalizeLanguage(language);
 
     const updateDecorations = (editor: monaco.editor.IStandaloneCodeEditor) => {
-        if (!editor) return;
+        if (!editor) {return;}
         const model = editor.getModel();
-        if (!model) return;
+        if (!model) {return;}
 
         const lineCount = model.getLineCount();
         const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
@@ -106,7 +107,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // Inline Completions Provider registration
     React.useEffect(() => {
-        if (!monacoRef.current) return;
+        if (!monacoRef.current) {return;}
         const monaco = monacoRef.current;
 
         const provider = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
@@ -118,12 +119,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     endColumn: position.column
                 });
 
-                if (textBefore.trim().length === 0) return { items: [] };
+                if (textBefore.trim().length === 0) {return { items: [] };}
 
                 try {
                     // Call backend for suggestion
                     const suggestion = await window.electron.project.getCompletion(textBefore);
-                    if (!suggestion) return { items: [] };
+                    if (!suggestion) {return { items: [] };}
 
                     return {
                         items: [{

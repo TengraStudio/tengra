@@ -3,14 +3,13 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(50)
 import {
-    Chat, Message, Folder, Project, AgentDefinition, Prompt,
-    SSHConnection, SSHFile, SSHConfig, ToolCall, ToolDefinition, ToolResult,
-    MCPServerConfig,
-    TodoItem, FileEntry, ProcessInfo,
-    ProjectAnalysis, QuotaResponse, OllamaLibraryModel,
-    AppSettings, IpcValue, SSHExecOptions, AuthStatus,
-    SSHSystemStats, SSHPackageInfo, FileSearchResult, CopilotQuota, CouncilSession
-} from '@shared/types'
+AgentDefinition,     AppSettings, AuthStatus,
+    Chat, CopilotQuota, CouncilSession,
+FileEntry, FileSearchResult, Folder, IpcValue,     MCPServerConfig,
+Message, OllamaLibraryModel,
+ProcessInfo,
+Project,     ProjectAnalysis, Prompt,
+QuotaResponse, SSHConfig,     SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo,     SSHSystemStats,     TodoItem, ToolCall, ToolDefinition, ToolResult} from '@shared/types'
 
 interface ModelDefinition {
     id: string
@@ -496,7 +495,7 @@ const api: ElectronAPI = {
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
     chatOpenAI: async (messages, model, tools, provider, options) => {
         const res = await ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options)
-        if (res.success) return res.data
+        if (res.success) {return res.data}
         throw new Error(res.error?.message || 'Chat request failed')
     },
     chatStream: (messages, model, tools, provider, options, chatId, projectId) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options, chatId, projectId),
@@ -732,7 +731,7 @@ const api: ElectronAPI = {
         const completeListener = () => {
             ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener)
             ipcRenderer.removeListener(`files:search-complete:${jobId}`, completeListener)
-            if (onComplete) onComplete()
+            if (onComplete) {onComplete()}
         }
 
         ipcRenderer.on(`files:search-result:${jobId}`, resultListener)
@@ -761,42 +760,42 @@ const api: ElectronAPI = {
     project: {
         analyze: async (rootPath: string, projectId: string) => {
             const res = await ipcRenderer.invoke('project:analyze', rootPath, projectId)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Analysis failed')
         },
         analyzeIdentity: async (rootPath: string) => {
             const res = await ipcRenderer.invoke('project:analyzeIdentity', rootPath)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Identity analysis failed')
         },
         generateLogo: async (projectPath: string, prompt: string, style: string) => {
             const res = await ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Logo generation failed')
         },
         analyzeDirectory: async (dirPath: string) => {
             const res = await ipcRenderer.invoke('project:analyzeDirectory', dirPath)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Directory analysis failed')
         },
         applyLogo: async (projectPath: string, tempLogoPath: string) => {
             const res = await ipcRenderer.invoke('project:applyLogo', projectPath, tempLogoPath)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Apply logo failed')
         },
         getCompletion: async (text: string) => {
             const res = await ipcRenderer.invoke('project:getCompletion', text)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Completion failed')
         },
         improveLogoPrompt: async (prompt: string) => {
             const res = await ipcRenderer.invoke('project:improveLogoPrompt', prompt)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             throw new Error(res.error?.message || 'Prompt improvement failed')
         },
         uploadLogo: async (projectPath: string) => {
             const res = await ipcRenderer.invoke('project:uploadLogo', projectPath)
-            if (res.success) return res.data
+            if (res.success) {return res.data}
             return null
         },
         watch: async (rootPath: string) => {

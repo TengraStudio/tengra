@@ -56,8 +56,8 @@ export const validators = {
     },
 
     url: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined || value === '') return []
-        if (typeof value !== 'string') return [{ path, message: 'Must be a string', value }]
+        if (value === undefined || value === '') {return []}
+        if (typeof value !== 'string') {return [{ path, message: 'Must be a string', value }]}
         try {
             new URL(value)
             return []
@@ -67,7 +67,7 @@ export const validators = {
     },
 
     port: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined) return []
+        if (value === undefined) {return []}
         if (typeof value !== 'number' || value < 1 || value > 65535) {
             return [{ path, message: 'Must be a valid port (1-65535)', value }]
         }
@@ -75,8 +75,8 @@ export const validators = {
     },
 
     email: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined || value === '') return []
-        if (typeof value !== 'string') return [{ path, message: 'Must be a string', value }]
+        if (value === undefined || value === '') {return []}
+        if (typeof value !== 'string') {return [{ path, message: 'Must be a string', value }]}
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value as string)) {
             return [{ path, message: 'Must be a valid email address', value }]

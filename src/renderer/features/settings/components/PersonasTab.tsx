@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { AppSettings } from '@/types/settings'
 
 type PersonaDraft = { name: string; description: string; prompt: string }
@@ -17,7 +18,7 @@ interface PersonasTabProps {
 export const PersonasTab: React.FC<PersonasTabProps> = ({
     settings, editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona, t
 }) => {
-    if (!settings) return null
+    if (!settings) {return null}
     const personas = settings.personas || []
 
     return (

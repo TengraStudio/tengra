@@ -1,6 +1,7 @@
+import { Globe, Loader2, Play,Save, Server, ShieldCheck } from 'lucide-react'
 import React, { useState } from 'react'
+
 import { Language } from '@/i18n'
-import { Loader2, ShieldCheck, Globe, Server, Save, Play } from 'lucide-react'
 
 interface NginxWizardProps {
     connectionId: string

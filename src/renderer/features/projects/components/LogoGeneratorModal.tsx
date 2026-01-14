@@ -1,9 +1,10 @@
+import { Check, ImageIcon, Loader2,Sparkles, Wand2 } from 'lucide-react'
 import React, { useState } from 'react'
+
 import { Modal } from '@/components/ui/modal'
-import { Sparkles, Wand2, ImageIcon, Check, Loader2 } from 'lucide-react'
-import { useTranslation, Language } from '@/i18n'
-import { Project } from '@/types'
+import { Language,useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { Project } from '@/types'
 
 interface LogoGeneratorModalProps {
     isOpen: boolean
@@ -42,7 +43,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleGenerate = async () => {
-        if (!prompt) return
+        if (!prompt) {return}
         setIsGenerating(true)
         try {
             // Include palette colors in prompt if available
@@ -58,7 +59,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleImprovePrompt = async () => {
-        if (!prompt || isAnalyzing) return
+        if (!prompt || isAnalyzing) {return}
         setIsAnalyzing(true)
         try {
             const improved = await window.electron.project.improveLogoPrompt(prompt)
@@ -83,7 +84,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleApply = async () => {
-        if (!generatedLogo) return
+        if (!generatedLogo) {return}
         setIsGenerating(true)
         try {
             const finalPath = await window.electron.project.applyLogo(project.path, generatedLogo)

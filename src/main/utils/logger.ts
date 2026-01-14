@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { app } from 'electron';
+
 import { JsonValue } from '@shared/types/common';
+import { app } from 'electron';
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
@@ -46,7 +47,7 @@ export class Logger {
         console.log(line.trim());
         if (this.logFile) {
             fs.appendFile(this.logFile, line, (err) => {
-                if (err) console.error('Failed to write to log file', err);
+                if (err) {console.error('Failed to write to log file', err);}
             });
         }
     }

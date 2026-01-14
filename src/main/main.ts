@@ -1,7 +1,11 @@
-import { app, BrowserWindow, shell, protocol, HandlerDetails, Tray, Menu, nativeImage } from 'electron'
-import { join } from 'path'
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
+
+import * as dotenv from 'dotenv'
+
+dotenv.config()
+
+import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell, Tray } from 'electron'
 
 // Set the application name early - this affects Task Manager display on Windows
 app.setName('Orbit')
@@ -11,43 +15,13 @@ if (process.platform === 'win32') {
     app.setAppUserModelId('com.orbit.app')
 }
 
-import { createServices } from '@main/startup/services'
-import { McpDispatcher } from '@main/mcp/dispatcher'
 import { appLogger, LogLevel } from '@main/logging/logger'
-
-// IPC Registrations
-import { registerWindowIpc } from '@main/ipc/window'
-import { registerAuthIpc } from '@main/ipc/auth'
-import { registerProxyIpc } from '@main/ipc/proxy'
-import { registerChatIpc } from '@main/ipc/chat'
-import { registerUsageIpc } from '@main/ipc/usage'
-import { registerOllamaIpc } from '@main/ipc/ollama'
-import { registerDbIpc } from '@main/ipc/db'
-import { registerSettingsIpc } from '@main/ipc/settings'
-import { registerSshIpc } from '@main/ipc/ssh'
-import { registerFilesIpc } from '@main/ipc/files'
-import { registerToolsIpc } from '@main/ipc/tools'
-import { registerMcpIpc } from '@main/ipc/mcp'
-import { registerScreenshotIpc } from '@main/ipc/screenshot'
-import { registerHFModelIpc } from '@main/ipc/huggingface'
-import { registerAgentIpc } from '@main/ipc/agent'
-import { registerProjectIpc } from '@main/ipc/project'
-import { registerLoggingIpc } from '@main/ipc/logging'
-import { registerTerminalIpc } from '@main/ipc/terminal'
-import { registerDialogIpc } from '@main/ipc/dialog'
-import { registerHistoryIpc } from '@main/ipc/history'
-import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed'
-import { registerExportIpc } from '@main/ipc/export'
-import { registerCouncilIpc } from '@main/ipc/council'
-import { registerGalleryIpc } from '@main/ipc/gallery'
-import { registerLlamaIpc } from '@main/ipc/llama'
-import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process'
-import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence'
-import { registerMemoryIpc } from '@main/ipc/memory'
-import { registerGitIpc } from '@main/ipc/git'
-
-import { ToolExecutor } from '@main/tools/tool-executor'
+import { McpDispatcher } from '@main/mcp/dispatcher'
 import { SettingsService } from '@main/services/settings.service'
+import { registerIpcHandlers } from '@main/startup/ipc'
+import { container, createServices } from '@main/startup/services'
+import { ToolExecutor } from '@main/tools/tool-executor'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -90,7 +64,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     // Save window position and size on move/resize
     let saveTimeout: NodeJS.Timeout | null = null
     const saveWindowState = () => {
-        if (saveTimeout) clearTimeout(saveTimeout)
+        if (saveTimeout) { clearTimeout(saveTimeout) }
         saveTimeout = setTimeout(() => {
             if (settingsService && !win.isDestroyed()) {
                 const bounds = win.getBounds()
@@ -151,7 +125,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
         const levels = ['debug', 'info', 'warn', 'error']
         const lvl = levels[level] as 'debug' | 'info' | 'warn' | 'error'
-        const context = `renderer:${path.basename(sourceId)}:${line}`
+        const context = `renderer:${path.basename(sourceId)}:${line} `
         appLogger[lvl](context, message)
     })
 
@@ -163,7 +137,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
         win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
-        win.loadFile(join(__dirname, '@renderer/index.html'))
+        win.loadFile(path.join(__dirname, '@renderer/index.html'))
     }
 
     return win
@@ -181,16 +155,16 @@ app.whenReady().then(async () => {
     app.name = 'Orbit'
 
     // Isolate Electron runtime folders to a subfolder
-    const runtimePath = join(app.getPath('appData'), 'Orbit', 'runtime')
+    const runtimePath = path.join(app.getPath('appData'), 'Orbit', 'runtime')
     app.setPath('userData', runtimePath)
 
     // Initialize Logger
     appLogger.setLevel(LogLevel.DEBUG)
     appLogger.installConsoleRedirect()
 
-    appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']}`)
-    appLogger.info('Startup', `app.isPackaged: ${app.isPackaged}`)
-    appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'}`)
+    appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']} `)
+    appLogger.info('Startup', `app.isPackaged: ${app.isPackaged} `)
+    appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'} `)
 
     // Migration from orbit-ai to Orbit
     const oldPath = path.join(app.getPath('appData'), 'orbit-ai')
@@ -198,10 +172,10 @@ app.whenReady().then(async () => {
 
     if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
         try {
-            appLogger.info('Main', `Migrating AppData from ${oldPath} to ${newPath}`)
+            appLogger.info('Main', `Migrating AppData from ${oldPath} to ${newPath} `)
             fs.renameSync(oldPath, newPath)
         } catch (e) {
-            appLogger.error('Main', `Failed to migrate AppData folder: ${e}`)
+            appLogger.error('Main', `Failed to migrate AppData folder: ${e} `)
         }
     }
 
@@ -236,7 +210,7 @@ app.whenReady().then(async () => {
             return absolutePath.startsWith(resolvedRoot)
         })
         if (!allowed) {
-            appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath}`)
+            appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath} `)
             return callback({ error: -6 }) // NET_ERROR(FILE_NOT_FOUND) or similar
         }
 
@@ -250,7 +224,7 @@ app.whenReady().then(async () => {
     let services;
     try {
         services = await createServices(allowedFileRoots)
-        console.log(`[Main] !!! createServices completed.`);
+        console.log(`[Main]!!! createServices completed.`);
     } catch (e) {
         console.error('[Main] Critical error during service creation:', e)
         // Try to recover or exit gracefully? For now, let's allow it to fall through 
@@ -271,15 +245,15 @@ app.whenReady().then(async () => {
     // Debug: Check what tokens are available
     if (services.settingsService['authService']) {
         const tokens = services.settingsService['authService'].getAllTokens();
-        console.log(`[Main] !!! AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`);
+        console.log(`[Main]!!! AuthService identified ${Object.keys(tokens).length} tokens at startup.Keys: ${JSON.stringify(Object.keys(tokens))} `);
         if (tokens['copilot_token']) {
-            console.log(`[Main] !!! copilot_token found in AuthService, length: ${tokens['copilot_token'].length}`);
+            console.log(`[Main]!!! copilot_token found in AuthService, length: ${tokens['copilot_token'].length} `);
         }
         if (tokens['github_token']) {
-            console.log(`[Main] !!! github_token found in AuthService, length: ${tokens['github_token'].length}`);
+            console.log(`[Main]!!! github_token found in AuthService, length: ${tokens['github_token'].length} `);
         }
     } else {
-        console.warn(`[Main] !!! AuthService not available in settingsService`);
+        console.warn(`[Main]!!! AuthService not available in settingsService`);
     }
 
     console.log('[Main] Starting Database initialization...');
@@ -322,14 +296,14 @@ app.whenReady().then(async () => {
     console.log('[Main] ToolExecutor initialized.');
 
     // Register all IPC handlers BEFORE creating window to prevent race conditions
-    registerWindowIpc(() => mainWindow)
+    // registerWindowIpc(() => mainWindow) // This will be handled by registerIpcHandlers
     console.log('[Main] Window IPC registered.');
 
     // Initialize Copilot Token
     // Tokens are stored in data/auth folder, NOT in settings.json
     // We ONLY use copilot_token - NO fallback to github_token
     const initialSettings = services.settingsService.getSettings()
-    console.log(`[Main] !!! settings.copilot.token length: ${initialSettings.copilot?.token?.length || 0}`);
+    console.log(`[Main]!!! settings.copilot.token length: ${initialSettings.copilot?.token?.length || 0} `);
 
     // Load token directly from AuthService (tokens are in data/auth folder)
     // ONLY use copilot_token, no fallback
@@ -337,32 +311,32 @@ app.whenReady().then(async () => {
 
     // If not in settings, try AuthService directly
     if (!copilotToken) {
-        console.log(`[Main] !!! Token not in settings, trying AuthService directly...`);
+        console.log(`[Main]!!! Token not in settings, trying AuthService directly...`);
         if (services.settingsService['authService']) {
             const authService = services.settingsService['authService'] as any
-            console.log(`[Main] !!! Attempting to get copilot_token from AuthService...`);
+            console.log(`[Main]!!! Attempting to get copilot_token from AuthService...`);
             copilotToken = authService.getToken('copilot_token')
-            console.log(`[Main] !!! authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'}`);
+            console.log(`[Main]!!! authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'} `);
 
             if (copilotToken) {
-                console.log(`[Main] !!! Loaded copilot_token from AuthService, length: ${copilotToken.length}`)
+                console.log(`[Main]!!! Loaded copilot_token from AuthService, length: ${copilotToken.length} `)
             } else {
-                console.warn(`[Main] !!! copilot_token not found in AuthService`)
+                console.warn(`[Main]!!! copilot_token not found in AuthService`)
             }
         } else {
-            console.error(`[Main] !!! AuthService not available in settingsService`)
+            console.error(`[Main]!!! AuthService not available in settingsService`)
         }
     } else {
-        console.log(`[Main] !!! Token found in settings, length: ${copilotToken.length}`)
+        console.log(`[Main]!!! Token found in settings, length: ${copilotToken.length} `)
     }
 
     if (copilotToken) {
         services.copilotService.setGithubToken(copilotToken)
-        console.log(`[Main] !!! Set copilot_token to CopilotService, length: ${copilotToken.length}`)
+        console.log(`[Main]!!! Set copilot_token to CopilotService, length: ${copilotToken.length} `)
         // Verify it was set
-        console.log(`[Main] !!! CopilotService.isConfigured(): ${services.copilotService.isConfigured()}`)
+        console.log(`[Main]!!! CopilotService.isConfigured(): ${services.copilotService.isConfigured()} `)
     } else {
-        console.warn(`[Main] !!! No copilot_token found - CopilotService will try to recover from AuthService when needed`)
+        console.warn(`[Main]!!! No copilot_token found - CopilotService will try to recover from AuthService when needed`)
     }
 
     // Sync proxy settings to LLMService
@@ -370,89 +344,9 @@ app.whenReady().then(async () => {
     const proxyKey = services.proxyService.getProxyKey()
     services.llmService.setProxySettings(proxyUrl, proxyKey)
 
-
-
-    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService)
-    registerProxyIpc(services.proxyService)
-    registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService)
-    registerChatIpc({
-        settingsService: services.settingsService,
-        copilotService: services.copilotService,
-        llmService: services.llmService,
-        proxyService: services.proxyService,
-        codeIntelligenceService: services.codeIntelligenceService,
-        contextRetrievalService: services.contextRetrievalService
-    })
-
-    registerOllamaIpc({
-        localAIService: services.localAIService,
-        settingsService: services.settingsService,
-        llmService: services.llmService,
-        ollamaService: services.ollamaService,
-        ollamaHealthService: services.ollamaHealthService,
-        proxyService: services.proxyService,
-        copilotService: services.copilotService,
-        llamaService: services.llamaService
-    })
-    console.log('[Main] IPC handlers registered (Batch 1).');
-
-    registerProjectIpc(() => mainWindow, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService)
-    registerAgentIpc(services.agentService)
-    registerProcessIpc(services.processService)
-    setupProcessEvents(services.processService)
-    registerCodeIntelligenceIpc(services.codeIntelligenceService)
-
-    registerDbIpc(services.databaseService, services.embeddingService)
-    registerLlamaIpc(services.llamaService)
-    registerMemoryIpc(services.memoryService)
-    registerGitIpc(services.gitService)
-
-    registerSettingsIpc({
-        settingsService: services.settingsService,
-        llmService: services.llmService,
-        copilotService: services.copilotService,
-        updateOpenAIConnection: () => {
-            if (globalServices) {
-                mainWindow?.webContents.send('openai:connection-status', globalServices.llmService.isOpenAIConnected())
-            }
-        },
-        updateOllamaConnection: async () => {
-            if (globalServices) {
-                try {
-                    const status = await globalServices.ollamaHealthService.checkHealth()
-                    mainWindow?.webContents.send('ollama:connection-status', status.online)
-                } catch (error) {
-                    console.error('[Main] Failed to check Ollama connection:', error)
-                    mainWindow?.webContents.send('ollama:connection-status', false)
-                }
-            }
-        }
-    })
-
-    registerSshIpc(() => mainWindow, services.sshService)
-    registerFilesIpc(() => mainWindow, services.fileSystemService, allowedFileRoots)
-    registerHFModelIpc(services.llmService, services.huggingFaceService)
-
-    registerToolsIpc(toolExecutor, services.commandService)
-    registerMcpIpc(mcpDispatcher)
-
-    registerScreenshotIpc()
-    registerLoggingIpc()
-
-    // Terminal needs the instance - use getter for deferred access
-    registerTerminalIpc(() => mainWindow)
-
-    registerDialogIpc(() => mainWindow)
-    registerHistoryIpc(services.historyImportService)
-
-    registerProxyEmbedIpc(services.proxyService)
-    registerExportIpc(() => mainWindow)
-
-    // Council IPC
-    registerCouncilIpc(services.agentCouncilService, services.databaseService)
-
-    // Register Gallery IPC
-    registerGalleryIpc(services.dataService.getPath('gallery'))
+    // Register all IPC handlers
+    registerIpcHandlers(services, toolExecutor, () => mainWindow, allowedFileRoots, mcpDispatcher)
+    console.log('[Main] All IPC handlers registered.');
 
     // Store services for use in event handlers
     globalServices = services
@@ -493,7 +387,7 @@ app.whenReady().then(async () => {
 
 
     // Re-create on activate if needed
-    app.on('activate', function () {
+    app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             if (globalServices) {
                 mainWindow = createWindow(globalServices.settingsService)
@@ -507,7 +401,7 @@ app.whenReady().then(async () => {
 })
 
 function setupTray() {
-    if (tray) return // Already set up
+    if (tray) { return } // Already set up
 
     try {
         // Create a simple icon (you can replace this with an actual icon file)
@@ -554,12 +448,12 @@ function setupTray() {
             }
         })
     } catch (error) {
-        appLogger.error('Main', `Failed to setup tray: ${error}`)
+        appLogger.error('Main', `Failed to setup tray: ${error} `)
     }
 }
 
 app.on('window-all-closed', () => {
-    if (!globalServices) return
+    if (!globalServices) { return }
 
     const settings = globalServices.settingsService.getSettings()
     // If workAtBackground is enabled, don't quit - keep app running in background
@@ -595,48 +489,15 @@ app.on('before-quit', async (event) => {
         }
 
         // Cleanup services
-        if (globalServices) {
-            appLogger.info('Main', 'Cleaning up services...')
-
-            // Stop proxy service
-            if (globalServices.proxyService) {
-                try {
-                    await globalServices.proxyService.stopEmbeddedProxy()
-                    appLogger.info('Main', 'Proxy service stopped')
-                } catch (e) {
-                    console.error('[Main] Failed to stop proxy:', e)
-                }
+        if (container) {
+            appLogger.info('Main', 'Disposing service container...')
+            try {
+                await container.dispose()
+                appLogger.info('Main', 'Service container disposed successfully')
+            } catch (e) {
+                appLogger.error('Main', `Failed to dispose container: ${getErrorMessage(e)} `)
             }
-
-            // Stop terminal service
-            if (globalServices.processService) {
-                try {
-                    // Kill all processes
-                    const processes = globalServices.processService.getRunningTasks()
-                    for (const proc of processes) {
-                        globalServices.processService.kill(proc.id)
-                    }
-                    appLogger.info('Main', 'Terminal processes cleaned up')
-                } catch (e) {
-                    console.error('[Main] Failed to cleanup processes:', e)
-                }
-            }
-
-            // Stop database connections
-            if (globalServices.databaseService) {
-                try {
-                    appLogger.info('Main', 'Database connections closed')
-                } catch (e) {
-                    console.error('[Main] Failed to close database:', e)
-                }
-            }
-
-            // Dispose container from localServices if available? 
-            // Actually, we can just use the services directly.
-            // Some services might have dispose()
         }
-
-        // Cleanup tray
         if (tray) {
             tray.destroy()
             tray = null

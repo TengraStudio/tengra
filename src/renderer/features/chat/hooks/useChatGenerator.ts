@@ -1,10 +1,11 @@
+import { formatMessageContent, getPresetOptions, processStreamChunk } from '@renderer/features/chat/hooks/utils'
 import { useState } from 'react'
-import { generateId } from '@/lib/utils'
+
 import { chatStream } from '@/lib/chat-stream'
 import { getSystemPrompt } from '@/lib/identity'
-import { Chat, Message, AppSettings, ToolDefinition } from '@/types'
+import { generateId } from '@/lib/utils'
+import { AppSettings, Chat, Message, ToolDefinition } from '@/types'
 import { CatchError } from '@/types/common'
-import { formatMessageContent, getPresetOptions, processStreamChunk } from '@renderer/features/chat/hooks/utils'
 
 interface UseChatGeneratorProps {
     chats: Chat[]
@@ -172,7 +173,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             const errText = formatChatError(e as CatchError)
             const errMsg: Message = { id: assistantId, role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date(), provider: selectedProvider, model: activeModel }
             setChats(prev => prev.map(c => {
-                if (c.id !== chatId) return c
+                if (c.id !== chatId) {return c}
                 return {
                     ...c,
                     messages: c.messages.map(m => m.id === assistantId ? errMsg : m),

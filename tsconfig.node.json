@@ -8,6 +8,8 @@
     },
     "include": [
         "vite.config.ts",
-        "electron.vite.config.ts"
+        "electron.vite.config.ts",
+        "vite-plugin-react-global.ts",
+        "vitest.config.ts"
     ]
 }

@@ -3,13 +3,14 @@
  * Browse, install, and manage Model Context Protocol tools/servers.
  */
 
-import React, { useState, useMemo } from 'react'
-import { cn } from '@/lib/utils'
 import {
-    Search, Download, Check, Star, Plug,
-    Server, Database, Code, FileText, Globe, Terminal,
-    Zap, Shield, Settings
-} from 'lucide-react'
+Check, Code, Database, Download, FileText, Globe, Plug,
+    Search,     Server, Settings,
+Shield, Star, Terminal,
+    Zap} from 'lucide-react'
+import React, { useMemo,useState } from 'react'
+
+import { cn } from '@/lib/utils'
 
 interface MCPTool {
     id: string

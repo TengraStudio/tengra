@@ -1,8 +1,9 @@
 
-import React, { useEffect, useState } from 'react'
 import type { IpcRendererEvent } from 'electron'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { X, Download, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle,Download, RefreshCw, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 
 interface UpdateStatus {
     state: 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error' | 'idle'
@@ -57,7 +58,7 @@ export const UpdateNotification: React.FC = () => {
         setIsVisible(false)
     }
 
-    if (!isVisible || status.state === 'idle') return null
+    if (!isVisible || status.state === 'idle') {return null}
 
     return (
         <AnimatePresence>
@@ -139,7 +140,7 @@ export const UpdateNotification: React.FC = () => {
 }
 
 function formatBytes(bytes: number, decimals = 2) {
-    if (!+bytes) return '0 B'
+    if (!+bytes) {return '0 B'}
     const k = 1024
     const dm = decimals < 0 ? 0 : decimals
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']

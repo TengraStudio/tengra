@@ -72,7 +72,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         // Handle Tab key to trap focus
         const handleTab = (e: KeyboardEvent) => {
-            if (!modalRef.current || e.key !== 'Tab') return
+            if (!modalRef.current || e.key !== 'Tab') {return}
 
             const focusableElements = getFocusableElements(modalRef.current)
             if (focusableElements.length === 0) {
@@ -136,7 +136,7 @@ export const Modal: React.FC<ModalProps> = ({
         full: 'sm:max-w-[95vw]'
     }
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <div

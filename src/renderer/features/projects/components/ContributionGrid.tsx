@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface ContributionGridProps {
@@ -67,13 +68,13 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
     
     // Get color intensity based on commit count
     const getColorIntensity = (count: number): string => {
-        if (count === 0) return 'bg-muted/10 border border-muted/20'
+        if (count === 0) {return 'bg-muted/10 border border-muted/20'}
         
         const intensity = Math.min(count / maxCommits, 1)
         
-        if (intensity < 0.25) return 'bg-emerald-500/20 border border-emerald-500/30'
-        if (intensity < 0.5) return 'bg-emerald-500/40 border border-emerald-500/50'
-        if (intensity < 0.75) return 'bg-emerald-500/60 border border-emerald-500/70'
+        if (intensity < 0.25) {return 'bg-emerald-500/20 border border-emerald-500/30'}
+        if (intensity < 0.5) {return 'bg-emerald-500/40 border border-emerald-500/50'}
+        if (intensity < 0.75) {return 'bg-emerald-500/60 border border-emerald-500/70'}
         return 'bg-emerald-500 border border-emerald-400'
     }
     

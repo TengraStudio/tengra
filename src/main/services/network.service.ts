@@ -1,12 +1,14 @@
-import { INetworkService } from '@main/types/services';
-import { ServiceResponse } from '@/types';
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import * as net from 'net';
 import * as os from 'os';
-import { WebSocketServer } from 'ws';
-import { JsonObject } from '@/types/common';
+import { promisify } from 'util';
+
+import { INetworkService } from '@main/types/services';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { WebSocketServer } from 'ws';
+
+import { ServiceResponse } from '@/types';
+import { JsonObject } from '@/types/common';
 
 const execAsync = promisify(exec);
 

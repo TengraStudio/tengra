@@ -1,5 +1,6 @@
+import { PanelLeft,PanelLeftClose, Plus, Search } from 'lucide-react'
 import React from 'react'
-import { Plus, Search, PanelLeftClose, PanelLeft } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -62,7 +63,7 @@ interface SidebarFooterProps {
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSearch }) => {
-    if (isCollapsed) return null
+    if (isCollapsed) {return null}
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest px-1">

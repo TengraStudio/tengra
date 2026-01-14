@@ -4,36 +4,35 @@
  * Uses react-file-icon for files and Lucide for folders with custom colors
  */
 
-import { FileIcon as ReactFileIcon, defaultStyles, DefaultExtensionType } from 'react-file-icon';
 import {
+    Blocks,
+    Database,
     Folder,
-    FolderOpen,
-    FolderGit,
-    FolderCog,
-    FolderCode,
-    FolderKanban,
     FolderArchive,
+    FolderCheck,
+    FolderCode,
+    FolderCog,
     FolderDot,
+    FolderGit,
+    FolderHeart,
     FolderInput,
+    FolderKanban,
+    FolderKey,
+    FolderLock,
+    FolderOpen,
     FolderOutput,
     FolderSearch,
-    FolderTree,
-    FolderHeart,
-    FolderLock,
-    FolderCheck,
-    FolderSync,
-    FolderKey,
     FolderSymlink,
-    Database,
+    FolderSync,
+    FolderTree,
     Globe,
-    TestTube2,
-    Blocks,
     Layers,
     Layout,
+    type LucideIcon,
     Palette,
     Settings,
-    type LucideIcon
-} from 'lucide-react';
+    TestTube2} from 'lucide-react';
+import { DefaultExtensionType,defaultStyles, FileIcon as ReactFileIcon } from 'react-file-icon';
 
 export interface IconProps {
     size?: number;

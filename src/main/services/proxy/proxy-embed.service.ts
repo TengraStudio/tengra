@@ -1,10 +1,11 @@
 import { ChildProcess, spawn } from 'child_process'
-import * as path from 'path'
-import * as os from 'os'
 import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 import { promisify } from 'util'
-import { ProxyService } from '@main/services/proxy/proxy.service'
+
 import { appLogger } from '@main/logging/logger'
+import { ProxyService } from '@main/services/proxy/proxy.service'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const execAsync = promisify(require('child_process').exec)
@@ -52,8 +53,8 @@ export class ProxyEmbedService {
         }
 
         const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir, env })
-        if (stdout?.trim()) appLogger.info('ProxyEmbed:Build', stdout.trim())
-        if (stderr?.trim()) appLogger.warn('ProxyEmbed:Build', stderr.trim())
+        if (stdout?.trim()) {appLogger.info('ProxyEmbed:Build', stdout.trim())}
+        if (stderr?.trim()) {appLogger.warn('ProxyEmbed:Build', stderr.trim())}
 
         if (!fs.existsSync(binaryPath)) {
             throw new Error('Failed to build embed binary')
@@ -169,7 +170,7 @@ export class ProxyEmbedService {
         const remainder = lines.pop() || ''
         for (const line of lines) {
             const trimmed = line.trim()
-            if (!trimmed) continue
+            if (!trimmed) {continue}
             if (level === 'error') {
                 appLogger.error('ProxyEmbed', trimmed)
             } else {

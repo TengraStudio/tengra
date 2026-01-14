@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Lightbulb } from 'lucide-react';
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { Lightbulb,X } from 'lucide-react';
+import React, { useEffect,useState } from 'react';
+
 import { useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
 interface TipOfTheDayProps {
     language?: 'en' | 'tr';
@@ -31,7 +32,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
         return () => clearTimeout(timer);
     }, [TIPS.length]);
 
-    if (!isOpen) return null;
+    if (!isOpen) {return null;}
 
     return (
         <AnimatePresence>

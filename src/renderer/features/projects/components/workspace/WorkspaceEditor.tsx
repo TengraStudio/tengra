@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import { EditorTab } from '@/types';
 import { getLanguageFromExtension } from '@/utils/language-map';
@@ -22,7 +23,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     updateTabContent,
     emptyState
 }) => {
-    if (!activeTab) return <>{emptyState}</>;
+    if (!activeTab) {return <>{emptyState}</>;}
 
     if (activeTab.type === 'image') {
         return (

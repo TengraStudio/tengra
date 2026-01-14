@@ -1,36 +1,35 @@
-import { useEffect, useRef } from 'react'
-import { cn } from '@/lib/utils'
-import { SSHManager } from '@renderer/features/ssh/SSHManager'
-import { Sidebar } from '@renderer/components/layout/Sidebar'
-import { CommandPalette } from '@renderer/components/layout/CommandPalette'
-import { QuickActionBar } from '@renderer/components/layout/QuickActionBar'
-import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay'
 import { AppHeader } from '@renderer/components/layout/AppHeader'
-import { Modal } from '@renderer/components/ui/modal'
-import { UpdateNotification } from '@renderer/components/layout/UpdateNotification'
+import { CommandPalette } from '@renderer/components/layout/CommandPalette'
 import { LayoutManager } from '@renderer/components/layout/LayoutManager'
-
-import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput'
+import { QuickActionBar } from '@renderer/components/layout/QuickActionBar'
+import { Sidebar } from '@renderer/components/layout/Sidebar'
+import { UpdateNotification } from '@renderer/components/layout/UpdateNotification'
+import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary'
+import { ErrorFallback } from '@renderer/components/shared/ErrorFallback'
+import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal'
+import { Modal } from '@renderer/components/ui/modal'
+import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay'
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
-
-import { ViewManager } from '@renderer/views/ViewManager'
-import '@renderer/App.css'
-
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { Chat } from '@/types'
+import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput'
 import { ChatTemplate } from '@renderer/features/chat/types'
 import { SettingsCategory } from '@renderer/features/settings/types'
-import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal'
+import { SSHManager } from '@renderer/features/ssh/SSHManager'
+import { useAppState } from '@renderer/hooks/useAppState'
+import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useTranslation } from '@renderer/i18n'
+import { ViewManager } from '@renderer/views/ViewManager'
+import { useEffect, useRef } from 'react'
+
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
 import { useModel } from '@/context/ModelContext'
 import { useProject } from '@/context/ProjectContext'
-import { useAppState } from '@renderer/hooks/useAppState'
-import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { ThemeProvider } from '@/context/ThemeContext'
-import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary'
-import { ErrorFallback } from '@renderer/components/shared/ErrorFallback'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
+import { Chat } from '@/types'
+
+import '@renderer/App.css'
 
 
 export default function App() {
@@ -56,7 +55,7 @@ export default function App() {
 
     // Debug / Global Speak Handler
     useEffect(() => {
-        if (speakingMessageId) console.log('🔊 Speaking Message:', speakingMessageId)
+        if (speakingMessageId) {console.log('🔊 Speaking Message:', speakingMessageId)}
         window.orbitSpeak = handleSpeak
     }, [speakingMessageId, handleSpeak])
 
@@ -215,7 +214,7 @@ export default function App() {
                         }}
                         onOpenSettings={(cat?: SettingsCategory) => {
                             appState.setCurrentView('settings')
-                            if (cat) setSettingsCategory(cat)
+                            if (cat) {setSettingsCategory(cat)}
                         }}
                         onOpenSSHManager={() => appState.setShowSSHManager(true)}
                         onRefreshModels={loadModels}
@@ -246,7 +245,7 @@ export default function App() {
                                         toggleSidebar={() => appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed)}
                                         onOpenSettings={(cat?: SettingsCategory) => {
                                             appState.setCurrentView('settings')
-                                            if (cat) setSettingsCategory(cat)
+                                            if (cat) {setSettingsCategory(cat)}
                                         }}
                                         onSearch={() => { }}
                                     />
@@ -260,11 +259,11 @@ export default function App() {
                                         onDragEnter={(e) => {
                                             e.preventDefault()
                                             dragCounter.current++
-                                            if (!appState.isDragging) appState.setIsDragging(true)
+                                            if (!appState.isDragging) {appState.setIsDragging(true)}
                                         }}
                                         onDragOver={(e) => {
                                             e.preventDefault()
-                                            if (!appState.isDragging) appState.setIsDragging(true)
+                                            if (!appState.isDragging) {appState.setIsDragging(true)}
                                         }}
                                         onDragLeave={(e) => {
                                             e.preventDefault()

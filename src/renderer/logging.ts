@@ -6,11 +6,11 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 type LogValue = JsonValue | Error | object
 
 export function installRendererLogger() {
-    if (installed) return
+    if (installed) {return}
     installed = true
 
     const logger = window.electron?.log
-    if (!logger) return
+    if (!logger) {return}
 
     const original = {
         debug: console.debug.bind(console),

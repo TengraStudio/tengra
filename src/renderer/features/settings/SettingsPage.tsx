@@ -1,17 +1,17 @@
-import { memo, useState, useMemo } from 'react'
-import { useTranslation } from '@/i18n'
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
-import { cn } from '@/lib/utils'
-import { GalleryView } from '@/features/chat/components/GalleryView'
+import { SettingsCategory } from '@renderer/features/settings/types'
 import { Search, X } from 'lucide-react'
+import { memo, useMemo,useState } from 'react'
 
-// Tab Components
-import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab, MCPSettingsTab } from '@/features/settings/components'
-import '@renderer/features/settings/SettingsPage.css'
-
+import { GalleryView } from '@/features/chat/components/GalleryView'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { SettingsCategory } from '@renderer/features/settings/types'
+// Tab Components
+import { AboutTab, AccountsTab, AdvancedTab, AppearanceTab, DeveloperTab, GeneralTab, MCPSettingsTab,ModelsTab, ModelUsageLimitsTab, PersonasTab, SpeechTab, StatisticsTab } from '@/features/settings/components'
+import { useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
+
+import '@renderer/features/settings/SettingsPage.css'
 
 export interface SettingsPageProps {
     installedModels: ModelInfo[]
@@ -58,7 +58,7 @@ export function SettingsPage({
     ], [t])
 
     const filteredTabs = useMemo(() => {
-        if (!searchQuery) return allTabs
+        if (!searchQuery) {return allTabs}
         return allTabs.filter(tab =>
             tab.label.toLowerCase().includes(searchQuery.toLowerCase())
         )

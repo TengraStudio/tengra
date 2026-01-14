@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { DataService } from '@main/services/data/data.service'
 import * as fs from 'fs'
-import * as path from 'path'
 import * as os from 'os'
+import * as path from 'path'
+
+import { DataService } from '@main/services/data/data.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetPath } = vi.hoisted(() => {
     return { mockGetPath: vi.fn() }

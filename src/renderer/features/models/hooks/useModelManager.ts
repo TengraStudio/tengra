@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useCallback } from 'react'
-import { GroupedModels, ModelInfo, fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher'
+﻿import { fetchModels, GroupedModels, groupModels,ModelInfo } from '@renderer/features/models/utils/model-fetcher'
+import { useCallback,useEffect, useState } from 'react'
+
 import { AppSettings } from '@/types'
 
 export function useModelManager(
@@ -41,7 +42,7 @@ export function useModelManager(
     }, [appSettings])
 
     const handleSelectModel = (provider: string, model: string) => {
-        if (!appSettings) return
+        if (!appSettings) {return}
         setSelectedModel(model)
         setSelectedProvider(provider)
         setAppSettings({
@@ -56,7 +57,7 @@ export function useModelManager(
     }
 
     const persistLastSelection = (provider: string, model: string) => {
-        if (!appSettings) return
+        if (!appSettings) {return}
         setAppSettings({
             ...appSettings,
             general: {

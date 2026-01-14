@@ -1,8 +1,8 @@
 /**
  * Unit tests for HealthCheckService
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HealthCheckService } from '@main/services/health-check.service';
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('HealthCheckService', () => {
     let service: HealthCheckService;

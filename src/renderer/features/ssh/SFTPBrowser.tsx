@@ -1,7 +1,7 @@
-﻿import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from '@/i18n'
+﻿import { useCallback,useEffect, useState } from 'react'
 
-import { SSHFile, ServiceResponse } from '@/types'
+import { useTranslation } from '@/i18n'
+import { ServiceResponse,SSHFile } from '@/types'
 
 interface SFTPBrowserProps {
     connectionId: string
@@ -42,14 +42,14 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     }
 
     const handleBack = () => {
-        if (currentPath === '/') return
+        if (currentPath === '/') {return}
         const parts = currentPath.split('/').filter(p => p.length > 0)
         parts.pop()
         setCurrentPath('/' + parts.join('/'))
     }
 
     const handleDelete = async (item: SSHFile) => {
-        if (!confirm(t('ssh.confirmDeleteFile', { name: item.name }))) return
+        if (!confirm(t('ssh.confirmDeleteFile', { name: item.name }))) {return}
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
         const result = item.isDirectory
@@ -65,7 +65,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
 
     const handleMkdir = async () => {
         const name = prompt(t('ssh.newFolderName'))
-        if (!name) return
+        if (!name) {return}
 
         const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`
         const result = await window.electron.ssh.mkdir(connectionId, path)
@@ -78,7 +78,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
 
     const handleRename = async (item: SSHFile) => {
         const newName = prompt(t('ssh.newName'), item.name)
-        if (!newName || newName === item.name) return
+        if (!newName || newName === item.name) {return}
 
         const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
         const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`

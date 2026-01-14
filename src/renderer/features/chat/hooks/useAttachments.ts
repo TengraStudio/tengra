@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Attachment } from '@/types'
+
 import { generateId } from '@/lib/utils'
+import { Attachment } from '@/types'
 
 export const useAttachments = () => {
     const [attachments, setAttachments] = useState<Attachment[]>([])

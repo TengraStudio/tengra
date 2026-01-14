@@ -1,7 +1,7 @@
 
-import { getErrorMessage } from '@shared/utils/error.util';
-import { CatchError, JsonObject } from '@shared/types/common';
 import { ChatMessage, ToolCall } from '@main/types/llm.types';
+import { CatchError, JsonObject } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface LLMTool {
     type: string;
@@ -29,7 +29,7 @@ export abstract class BaseLLMService {
      * Ensures MCP tools and native tools are formatted flexibly for diff providers.
      */
     protected prepareTools(tools?: LLMTool[]): LLMTool[] | undefined {
-        if (!tools || tools.length === 0) return undefined;
+        if (!tools || tools.length === 0) {return undefined;}
 
         // Common filtering logic can go here if needed
         // For now, we pass them through but ensure structure is clean

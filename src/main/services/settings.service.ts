@@ -1,11 +1,11 @@
 
-import { app } from 'electron'
-import * as path from 'path'
 import * as fs from 'fs'
-import { appLogger } from '@main/logging/logger'
-import { getErrorMessage } from '@shared/utils/error.util'
+import * as path from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { AppSettings } from '@shared/types/settings'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { app } from 'electron'
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
@@ -79,9 +79,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpAutoExecuteSafe: true
 }
 
-import { DataService } from '@main/services/data/data.service'
 import { AuthService } from '@main/services/auth.service'
 import { BaseService } from '@main/services/base.service'
+import { DataService } from '@main/services/data/data.service'
 
 export class SettingsService extends BaseService {
     private settingsPath: string
@@ -119,10 +119,10 @@ export class SettingsService extends BaseService {
             let loaded: Partial<AppSettings> = {};
             if (exists) {
                 appLogger.info('SettingsService', `Found settings file at ${this.settingsPath}`);
-                let data = fs.readFileSync(this.settingsPath, 'utf8')
+                const data = fs.readFileSync(this.settingsPath, 'utf8')
 
                 // Check for empty or whitespace-only file
-                if (!data || !data.trim()) {
+                if (!data?.trim()) {
                     appLogger.warn('SettingsService', 'Settings file is empty, using defaults');
                     loaded = {}
                 } else {
@@ -165,8 +165,8 @@ export class SettingsService extends BaseService {
                     }
                 }
 
-                if (loaded.userAvatar) delete loaded.userAvatar;
-                if (loaded.aiAvatar) delete loaded.aiAvatar;
+                if (loaded.userAvatar) {delete loaded.userAvatar;}
+                if (loaded.aiAvatar) {delete loaded.aiAvatar;}
             } else {
                 appLogger.info('SettingsService', `settings.json NOT FOUND at ${this.settingsPath}`);
             }
@@ -293,11 +293,11 @@ export class SettingsService extends BaseService {
         // This handles: trailing garbage, incomplete writes, BOM issues
 
         // Remove BOM if present
-        let cleanData = data.replace(/^\uFEFF/, '')
+        const cleanData = data.replace(/^\uFEFF/, '')
 
         // Find the start of JSON object
         const startIndex = cleanData.indexOf('{')
-        if (startIndex < 0) return null
+        if (startIndex < 0) {return null}
 
         // Parse character by character to find valid JSON end
         let depth = 0
@@ -323,9 +323,9 @@ export class SettingsService extends BaseService {
                 continue
             }
 
-            if (inString) continue
+            if (inString) {continue}
 
-            if (char === '{') depth++
+            if (char === '{') {depth++}
             else if (char === '}') {
                 depth--
                 if (depth === 0) {
@@ -335,7 +335,7 @@ export class SettingsService extends BaseService {
             }
         }
 
-        if (endIndex < 0) return null
+        if (endIndex < 0) {return null}
 
         const jsonCandidate = cleanData.substring(startIndex, endIndex + 1)
         const wasModified = endIndex < cleanData.length - 1 || startIndex > 0
@@ -369,7 +369,7 @@ export class SettingsService extends BaseService {
 
         this.saveInProgress = true
         const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>) => {
-            if (!source) return target;
+            if (!source) {return target;}
             const res = { ...target };
             for (const key of Object.keys(source)) {
                 if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -435,14 +435,14 @@ export class SettingsService extends BaseService {
 
             // Strip secrets if AuthService is active
             if (this.authService) {
-                if (settingsToSave.github) settingsToSave.github.token = ''
-                if (settingsToSave.openai) settingsToSave.openai.apiKey = ''
-                if (settingsToSave.anthropic) settingsToSave.anthropic.apiKey = ''
+                if (settingsToSave.github) {settingsToSave.github.token = ''}
+                if (settingsToSave.openai) {settingsToSave.openai.apiKey = ''}
+                if (settingsToSave.anthropic) {settingsToSave.anthropic.apiKey = ''}
 
-                if (settingsToSave.groq) settingsToSave.groq.apiKey = ''
+                if (settingsToSave.groq) {settingsToSave.groq.apiKey = ''}
                 // Using undefined for optional properties
-                if (settingsToSave.antigravity) settingsToSave.antigravity.token = undefined
-                if (settingsToSave.copilot) settingsToSave.copilot.token = undefined
+                if (settingsToSave.antigravity) {settingsToSave.antigravity.token = undefined}
+                if (settingsToSave.copilot) {settingsToSave.copilot.token = undefined}
                 if (settingsToSave.proxy && settingsToSave.proxy.key !== 'connected') {
                     settingsToSave.proxy.key = ''
                 }

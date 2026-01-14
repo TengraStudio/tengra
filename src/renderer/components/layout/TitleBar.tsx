@@ -1,7 +1,8 @@
-import { ReactNode, type CSSProperties } from 'react'
 import { Minus, Square, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { type CSSProperties,ReactNode } from 'react'
+
 import { useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
 
 interface TitleBarProps {
     children?: ReactNode

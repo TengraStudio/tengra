@@ -1,5 +1,6 @@
+import { FolderPlus,Search } from 'lucide-react'
 import React from 'react'
-import { Search, FolderPlus } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 
 interface ChatSearchProps {

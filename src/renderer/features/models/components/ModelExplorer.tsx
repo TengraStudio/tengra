@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { Search, Loader2, X, Box, Download, Database, Server, ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Box, ChevronLeft, ChevronRight,Database, Download, Loader2, Search, Server, X } from 'lucide-react'
+import { useCallback,useEffect, useMemo, useState } from 'react'
+
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 
 interface HFModel {
     id: string
@@ -33,10 +34,10 @@ interface HFFile {
     quantization: string
 }
 
-import { useTranslation } from '@/i18n'
-import type { Language } from '@/i18n'
-
 import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher'
+
+import type { Language } from '@/i18n'
+import { useTranslation } from '@/i18n'
 
 interface ModelExplorerProps {
     onClose?: () => void
@@ -144,8 +145,8 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
     // Filter Ollama locally
     const filteredOllama = useMemo(() => {
-        if (activeSource === 'huggingface') return []
-        if (page > 0) return [] // Only show Ollama on first page mixed results
+        if (activeSource === 'huggingface') {return []}
+        if (page > 0) {return []} // Only show Ollama on first page mixed results
 
         let filtered = ollamaLibrary
         if (query) {
@@ -159,12 +160,12 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         if (activeSource === 'all' && filtered.length > 12) {
             // Sort by popularity first to get the best ones
             const parsePulls = (pulls?: string): number => {
-                if (!pulls) return 0;
+                if (!pulls) {return 0;}
                 const str = pulls.toUpperCase().replace(/\s+PULLS/i, '').trim();
                 const num = parseFloat(str);
-                if (isNaN(num)) return 0;
-                if (str.endsWith('M')) return num * 1000000;
-                if (str.endsWith('K')) return num * 1000;
+                if (isNaN(num)) {return 0;}
+                if (str.endsWith('M')) {return num * 1000000;}
+                if (str.endsWith('K')) {return num * 1000;}
                 return num;
             };
             return [...filtered].sort((a, b) => parsePulls(b.pulls) - parsePulls(a.pulls)).slice(0, 12)
@@ -177,18 +178,18 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         const base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])]
 
         const parsePulls = (pulls?: string): number => {
-            if (!pulls) return 0;
+            if (!pulls) {return 0;}
             const str = pulls.toUpperCase().replace(/\s+PULLS/i, '').trim();
             const num = parseFloat(str);
-            if (isNaN(num)) return 0;
-            if (str.endsWith('M')) return num * 1000000;
-            if (str.endsWith('K')) return num * 1000;
-            if (str.endsWith('B')) return num * 1000000000;
+            if (isNaN(num)) {return 0;}
+            if (str.endsWith('M')) {return num * 1000000;}
+            if (str.endsWith('K')) {return num * 1000;}
+            if (str.endsWith('B')) {return num * 1000000000;}
             return num;
         };
 
         return base.sort((a, b) => {
-            if (sortBy === 'name') return a.name.localeCompare(b.name)
+            if (sortBy === 'name') {return a.name.localeCompare(b.name)}
             if (sortBy === 'popularity') {
                 const aVal = a.provider === 'huggingface' ? (a as HFModel).downloads : parsePulls((a as OllamaLibraryModel).pulls)
                 const bVal = b.provider === 'huggingface' ? (b as HFModel).downloads : parsePulls((b as OllamaLibraryModel).pulls)
@@ -232,7 +233,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
     }
 
     const handleDownloadHF = async (file: HFFile) => {
-        if (!modelsDir || !selectedModel || selectedModel.provider !== 'huggingface') return
+        if (!modelsDir || selectedModel?.provider !== 'huggingface') {return}
 
         const safeName = `${selectedModel.author}-${selectedModel.name}-${file.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
         const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/')
@@ -261,7 +262,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
     }
 
     const formatSize = (bytes: number) => {
-        if (bytes === 0) return '0 B'
+        if (bytes === 0) {return '0 B'}
         const k = 1024
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
         const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -643,10 +644,10 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
 function BadgeQ({ quantization }: { quantization: string }) {
     let color = "bg-muted text-muted-foreground"
-    if (quantization.includes("Q4")) color = "bg-emerald-500/10 text-emerald-500"
-    if (quantization.includes("Q5")) color = "bg-blue-500/10 text-blue-500"
-    if (quantization.includes("Q6") || quantization.includes("Q8")) color = "bg-purple-500/10 text-purple-500"
-    if (quantization.includes("Q2") || quantization.includes("Q3")) color = "bg-red-500/10 text-red-500"
+    if (quantization.includes("Q4")) {color = "bg-emerald-500/10 text-emerald-500"}
+    if (quantization.includes("Q5")) {color = "bg-blue-500/10 text-blue-500"}
+    if (quantization.includes("Q6") || quantization.includes("Q8")) {color = "bg-purple-500/10 text-purple-500"}
+    if (quantization.includes("Q2") || quantization.includes("Q3")) {color = "bg-red-500/10 text-red-500"}
 
     return (
         <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", color)}>

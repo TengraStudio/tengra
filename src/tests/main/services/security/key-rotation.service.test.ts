@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 // import { SettingsService } from '@main/services/settings.service';
 
 // Mock the logger to avoid side effects

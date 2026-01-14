@@ -1,15 +1,17 @@
-import { useState, useEffect, useRef, memo, useCallback } from 'react'
+import {
+ChevronDown,
+    Maximize2, Minimize2, Plus,     Terminal, TerminalSquare,
+X} from 'lucide-react'
+import { memo, useCallback,useEffect, useRef, useState } from 'react'
 import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
-import 'xterm/css/xterm.css'
-import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { TerminalTab } from '@/types'
-import {
-    Terminal, X, Plus, ChevronDown,
-    Maximize2, Minimize2, TerminalSquare
-} from 'lucide-react'
+
 import { useTheme } from '@/hooks/useTheme'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
+import { TerminalTab } from '@/types'
+
+import 'xterm/css/xterm.css'
 
 // Global registry to track initialized terminal sessions (prevents duplicate spawns across remounts)
 const initializedTerminals = new Set<string>()
@@ -251,7 +253,7 @@ const TerminalSession = memo(({
 
     // Helper to safely fit terminal
     const safeFit = useCallback(() => {
-        if (!fitAddonRef.current || !containerRef.current || !isActive) return
+        if (!fitAddonRef.current || !containerRef.current || !isActive) {return}
         try {
             // Check if element is actually visible and has dimensions
             const rect = containerRef.current.getBoundingClientRect()
@@ -265,12 +267,12 @@ const TerminalSession = memo(({
 
     // Handle incoming data via global multiplexer
     useEffect(() => {
-        if (!isReady || !xtermRef.current) return
+        if (!isReady || !xtermRef.current) {return}
 
         const handleData = (e: Event) => {
             try {
                 const detail = (e as CustomEvent).detail
-                if (detail && detail.id === tab.id && xtermRef.current) {
+                if (detail?.id === tab.id && xtermRef.current) {
                     xtermRef.current.write(detail.data)
                 }
             } catch (error) {
@@ -281,7 +283,7 @@ const TerminalSession = memo(({
         const handleExit = (e: Event) => {
             try {
                 const detail = (e as CustomEvent).detail
-                if (detail && detail.id === tab.id) {
+                if (detail?.id === tab.id) {
                     // Write exit message to terminal
                     if (xtermRef.current) {
                         xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code || 0}]\x1b[0m\r\n`)
@@ -313,7 +315,7 @@ const TerminalSession = memo(({
 
     // Resize observer for container
     useEffect(() => {
-        if (!containerRef.current) return
+        if (!containerRef.current) {return}
 
         const observer = new ResizeObserver(() => {
             if (isActive) {
@@ -481,15 +483,15 @@ export function TerminalPanel({
         })
 
         return () => {
-            if (cleanupData) cleanupData()
-            if (cleanupExit) cleanupExit()
+            if (cleanupData) {cleanupData()}
+            if (cleanupExit) {cleanupExit()}
         }
     }, [])
 
     // Resize logic
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) return
+            if (!isResizing) {return}
             const newHeight = window.innerHeight - e.clientY
             onHeightChange(Math.min(Math.max(150, newHeight), window.innerHeight * 0.8))
         }

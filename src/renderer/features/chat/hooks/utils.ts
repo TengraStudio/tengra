@@ -1,4 +1,4 @@
-import { Message, AppSettings } from '@/types'
+import { AppSettings,Message } from '@/types'
 
 export const formatMessageContent = (msg: Message): Message['content'] => {
     let content = msg.content

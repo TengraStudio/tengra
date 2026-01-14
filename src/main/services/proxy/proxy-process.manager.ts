@@ -1,14 +1,15 @@
 
-import { spawn, ChildProcess } from 'child_process'
-import * as path from 'path'
+import { ChildProcess,spawn } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
+import * as path from 'path'
+
 import { appLogger } from '@main/logging/logger'
-import { SettingsService } from '@main/services/settings.service'
-import { SecurityService } from '@main/services/security.service'
 import { DataService } from '@main/services/data/data.service'
-import { app } from 'electron'
+import { SecurityService } from '@main/services/security.service'
+import { SettingsService } from '@main/services/settings.service'
 import { JsonObject } from '@shared/types/common'
+import { app } from 'electron'
 
 export interface ProxyEmbedStatus {
     running: boolean
@@ -98,7 +99,7 @@ export class ProxyProcessManager {
      * This ensures OAuth tokens saved by the proxy are persisted and encrypted correctly.
      */
     async syncAuthFilesFromTemp(force: boolean = false): Promise<void> {
-        if (!this.tempAuthDir || !fs.existsSync(this.tempAuthDir)) return
+        if (!this.tempAuthDir || !fs.existsSync(this.tempAuthDir)) {return}
 
         const realAuthDir = this.getAuthWorkDir()
         console.log('[ProxyProcessManager] Syncing auth files from temp to:', realAuthDir)
@@ -107,7 +108,7 @@ export class ProxyProcessManager {
             const tempFiles = fs.readdirSync(this.tempAuthDir)
 
             for (const file of tempFiles) {
-                if (!file.endsWith('.json')) continue
+                if (!file.endsWith('.json')) {continue}
 
                 const tempPath = path.join(this.tempAuthDir, file)
                 const realPath = path.join(realAuthDir, file)
@@ -181,13 +182,13 @@ export class ProxyProcessManager {
         const lines = buffer.split(/\r?\n/)
         const remainder = lines.pop() || ''
         for (const line of lines) {
-            if (!line.trim()) continue
+            if (!line.trim()) {continue}
 
             // Try to detect level from structured log
             let level: 'info' | 'warning' | 'error' = defaultLevel
-            if (line.includes('level=info') || line.includes('[INFO]')) level = 'info'
-            else if (line.includes('level=warning') || line.includes('level=warn') || line.includes('[WARN]')) level = 'warning'
-            else if (line.includes('level=error') || line.includes('level=fatal') || line.includes('[ERROR]')) level = 'error'
+            if (line.includes('level=info') || line.includes('[INFO]')) {level = 'info'}
+            else if (line.includes('level=warning') || line.includes('level=warn') || line.includes('[WARN]')) {level = 'warning'}
+            else if (line.includes('level=error') || line.includes('level=fatal') || line.includes('[ERROR]')) {level = 'error'}
 
             // Special case: Go logs often go to stderr but are just info
             if (defaultLevel === 'error' && (level === 'info' || level === 'warning')) {
@@ -197,9 +198,9 @@ export class ProxyProcessManager {
                 level = 'info'
             }
 
-            if (level === 'error') appLogger.error('Proxy', line.trim())
-            else if (level === 'warning') appLogger.warn('Proxy', line.trim())
-            else appLogger.info('Proxy', line.trim())
+            if (level === 'error') {appLogger.error('Proxy', line.trim())}
+            else if (level === 'warning') {appLogger.warn('Proxy', line.trim())}
+            else {appLogger.info('Proxy', line.trim())}
 
             // Auto-sync triggering
             if (line.includes('auth file changed')) {
@@ -224,7 +225,7 @@ export class ProxyProcessManager {
                         try {
                             // Decrypt and copy
                             const json = this.readAuthFile(path.join(realAuthDir, file))
-                            if (!json) continue
+                            if (!json) {continue}
 
                             // The proxy expects the internal "cliproxy format" (usually { access_token: ... })
                             // Or the decrypted payload of our own format.

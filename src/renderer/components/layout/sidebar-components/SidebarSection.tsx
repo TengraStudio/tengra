@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import React, { useCallback,useEffect, useRef, useState } from 'react'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 export interface SidebarSectionProps {

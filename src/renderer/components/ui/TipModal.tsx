@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Modal } from '@renderer/components/ui/modal'
 import { Button } from '@renderer/components/ui/button'
-import { Lightbulb, Sparkles, Zap, Brain } from 'lucide-react'
-import { useTranslation, Language } from '@/i18n'
+import { Modal } from '@renderer/components/ui/modal'
+import { Brain,Lightbulb, Sparkles, Zap } from 'lucide-react'
+import { useEffect,useState } from 'react'
+
+import { Language,useTranslation } from '@/i18n'
 
 export function TipModal({ language = 'tr' }: { language?: Language }) {
     const { t } = useTranslation(language)
@@ -32,7 +33,7 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
         }
     }, [t])
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('tips.title')}>

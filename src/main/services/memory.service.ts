@@ -1,5 +1,5 @@
 // MemoryService - Refactored for Async DatabaseService
-import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge } from '@main/services/data/database.service'
+import { DatabaseService, EntityKnowledge,EpisodicMemory, SemanticFragment } from '@main/services/data/database.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { LLMService } from '@main/services/llm/llm.service'
 import { ChatMessage } from '@main/types/llm.types'
@@ -81,7 +81,7 @@ export class MemoryService {
     // Episodic Memory (Conversation History)
     async summarizeChat(chatId: string, provider?: string, model?: string): Promise<SummarizationResult> {
         const messages = await this.db.getMessages(chatId);
-        if (messages.length === 0) return { summary: '', title: 'Empty Chat', topics: [], pendingTasks: [] };
+        if (messages.length === 0) {return { summary: '', title: 'Empty Chat', topics: [], pendingTasks: [] };}
 
         const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
         const prompt = `Analyze the following chat transcript and provide:
@@ -123,7 +123,7 @@ ${transcript}`;
 
     async summarizeSession(chatId: string, provider?: string, model?: string): Promise<EpisodicMemory | null> {
         const messages = await this.db.getMessages(chatId);
-        if (messages.length < 5) return null;
+        if (messages.length < 5) {return null;}
 
         const analysis = await this.summarizeChat(chatId, provider, model);
 
@@ -273,7 +273,7 @@ Example Output:
         // Quick check for intent keywords to avoid unnecessary LLM calls
         const keywords = ['davran', 'ol', 'konuş', 'speak', 'act', 'be ', 'personality', 'kişilik', 'tarz', 'style'];
         const hasKeyword = keywords.some(k => content.toLowerCase().includes(k));
-        if (!hasKeyword) return;
+        if (!hasKeyword) {return;}
 
         const prompt = `Analyze if the user is giving instructions on how YOU (the AI) should behave, speak, or what personality YOU should have.
 If they are, extract the new personality traits and response style.
@@ -314,11 +314,11 @@ User Message: "${content}"`;
      * Get first available Ollama model from preferred list
      */
     private async getAvailableOllamaModel(): Promise<string | null> {
-        if (this.cachedOllamaModel) return this.cachedOllamaModel;
+        if (this.cachedOllamaModel) {return this.cachedOllamaModel;}
 
         try {
             const res = await fetch('http://127.0.0.1:11434/api/tags');
-            if (!res.ok) return null;
+            if (!res.ok) {return null;}
 
             const data = await res.json() as OllamaTagsResponse;
             const installedModels = (data.models || []).map((m) => m.name?.toLowerCase());

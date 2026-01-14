@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -20,9 +21,12 @@ import (
 )
 
 const (
-	antigravityClientID     = "225646015720-1fl1ojosillaqi2vb76gdf9ct0nma6n5.apps.googleusercontent.com"
-	antigravityClientSecret = "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"
 	antigravityCallbackPort = 51121
+)
+
+var (
+	antigravityClientID     = os.Getenv("ANTIGRAVITY_SDK_CLIENT_ID")
+	antigravityClientSecret = os.Getenv("ANTIGRAVITY_SDK_CLIENT_SECRET")
 )
 
 var antigravityScopes = []string{

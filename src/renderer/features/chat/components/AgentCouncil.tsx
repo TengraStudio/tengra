@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Brain, Terminal, User, Play, Loader2, AlertCircle } from 'lucide-react'
-import { JsonValue } from '@/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { AlertCircle,Brain, Loader2, Play, Terminal, User } from 'lucide-react'
+import { useEffect,useState } from 'react'
+
 import { cn } from '@/lib/utils'
+import { JsonValue } from '@/types/common'
 
 // Types aligned with backend CouncilSession
 interface AgentConfig {
@@ -125,7 +126,7 @@ export const AgentCouncil = () => {
     }, [])
 
     const handleStart = async () => {
-        if (!taskInput.trim()) return
+        if (!taskInput.trim()) {return}
         setIsGenerating(true)
         try {
             const newSession = await window.electron.council.createSession(taskInput)

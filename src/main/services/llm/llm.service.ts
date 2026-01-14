@@ -1,18 +1,18 @@
-import { Agent } from 'undici';
-import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
-import { MessageNormalizer } from '@main/utils/message-normalizer.util';
-import { StreamParser } from '@main/utils/stream-parser.util';
-import { ApiError, NetworkError, AuthenticationError } from '@main/utils/error.util';
-import { ChatMessage, ToolCall } from '@main/types/llm.types';
-import { Message, ToolDefinition } from '@/types/chat';
-import { OpenAIChatCompletion, OpenAIContentPartImage } from '@/types/llm-provider-types';
 import { CircuitBreaker } from '@main/core/circuit-breaker';
-import { HttpService } from '@main/services/http.service';
 import { ConfigService } from '@main/services/config.service';
+import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
+import { HttpService } from '@main/services/http.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
-
+import { ChatMessage, ToolCall } from '@main/types/llm.types';
 import { OpenAIResponse } from '@main/types/llm.types';
+import { ApiError, AuthenticationError,NetworkError } from '@main/utils/error.util';
+import { MessageNormalizer } from '@main/utils/message-normalizer.util';
+import { StreamParser } from '@main/utils/stream-parser.util';
+import { Agent } from 'undici';
+
+import { Message, ToolDefinition } from '@/types/chat';
+import { OpenAIChatCompletion, OpenAIContentPartImage } from '@/types/llm-provider-types';
 
 export interface OpenAIModelDefinition {
     id: string;
@@ -124,7 +124,7 @@ export class LLMService {
     }
 
     private getDispatcher(): Agent | null {
-        if (this.dispatcher) return this.dispatcher;
+        if (this.dispatcher) {return this.dispatcher;}
         try {
             this.dispatcher = new Agent({
                 connectTimeout: 30000,
@@ -218,7 +218,7 @@ export class LLMService {
                 headers,
                 body: JSON.stringify(body)
             };
-            if (dispatcher) requestInit.dispatcher = dispatcher;
+            if (dispatcher) {requestInit.dispatcher = dispatcher;}
 
             // Use HttpService containing Retry Logic, wrapped in Circuit Breaker
             const response = await this.breakers.openai.execute(() =>
@@ -280,7 +280,7 @@ export class LLMService {
             throw new ApiError('No choices returned from model', 'openai', 200, false);
         } catch (error) {
             console.error('[LLMService:OpenAI] Chat Error:', error);
-            if (error instanceof ApiError) throw error;
+            if (error instanceof ApiError) {throw error;}
             throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: error instanceof Error ? error : String(error) });
         }
     }
@@ -447,8 +447,8 @@ export class LLMService {
 
                 if (Array.isArray(output.content)) {
                     for (const part of output.content) {
-                        if (part.type === 'output_text') content += part.text || '';
-                        if (part.type === 'reasoning' || part.type === 'summary_text') reasoning += part.text || '';
+                        if (part.type === 'output_text') {content += part.text || '';}
+                        if (part.type === 'reasoning' || part.type === 'summary_text') {reasoning += part.text || '';}
                         if (part.type === 'function_call' && part.function_call) {
                             tool_calls.push({
                                 id: part.function_call.id || `call_${Math.random().toString(36).substring(2, 11)}`,
@@ -520,7 +520,7 @@ export class LLMService {
 
     async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = 'claude-3-5-sonnet-20240620'): Promise<OpenAIResponse> {
         const key = this.keyRotationService.getCurrentKey('anthropic') || this.anthropicApiKey;
-        if (!key) throw new AuthenticationError('Anthropic API Key not set');
+        if (!key) {throw new AuthenticationError('Anthropic API Key not set');}
 
         await this.rateLimitService.waitForToken('anthropic');
 
@@ -533,7 +533,7 @@ export class LLMService {
                 messages: normalized,
                 max_tokens: 4096
             };
-            if (systemMessage && typeof systemMessage === 'string') body.system = systemMessage;
+            if (systemMessage && typeof systemMessage === 'string') {body.system = systemMessage;}
 
             const response = await this.breakers.anthropic.execute(() =>
                 this.httpService.fetch('https://api.anthropic.com/v1/messages', {
@@ -550,13 +550,13 @@ export class LLMService {
 
             const data = await response.json() as { content: Array<{ text: string }>; error?: { message: string; type: string } };
             if (data.error) {
-                if (response.status === 401) this.keyRotationService.rotateKey('anthropic');
+                if (response.status === 401) {this.keyRotationService.rotateKey('anthropic');}
                 throw new ApiError(data.error.message, 'anthropic', response.status, false, { type: data.error.type });
             }
 
             return { content: data.content[0].text || '', role: 'assistant' };
         } catch (error) {
-            if (error instanceof ApiError || error instanceof AuthenticationError) throw error;
+            if (error instanceof ApiError || error instanceof AuthenticationError) {throw error;}
             throw new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
         }
     }
@@ -565,7 +565,7 @@ export class LLMService {
 
     async chatGroq(messages: Array<Message | ChatMessage>, model: string = 'llama3-70b-8192'): Promise<OpenAIResponse> {
         const key = this.keyRotationService.getCurrentKey('groq') || this.groqApiKey;
-        if (!key) throw new AuthenticationError('Groq API Key not set');
+        if (!key) {throw new AuthenticationError('Groq API Key not set');}
 
         await this.rateLimitService.waitForToken('groq');
 
@@ -583,11 +583,11 @@ export class LLMService {
             );
 
             const data = await response.json() as { choices: Array<{ message: { content: string } }>; error?: { message: string } };
-            if (data.error) throw new ApiError(data.error.message, 'groq', response.status, false);
+            if (data.error) {throw new ApiError(data.error.message, 'groq', response.status, false);}
 
             return { content: data.choices[0].message.content || '', role: 'assistant' };
         } catch (error) {
-            if (error instanceof ApiError || error instanceof AuthenticationError) throw error;
+            if (error instanceof ApiError || error instanceof AuthenticationError) {throw error;}
             throw new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'groq' });
         }
     }
@@ -616,10 +616,10 @@ export class LLMService {
 
         try {
             let searchQuery = query.trim() || 'GGUF';
-            if (searchQuery !== 'GGUF' && !searchQuery.toLowerCase().includes('gguf')) searchQuery = `${searchQuery} GGUF`;
+            if (searchQuery !== 'GGUF' && !searchQuery.toLowerCase().includes('gguf')) {searchQuery = `${searchQuery} GGUF`;}
 
             let hfSort = sort;
-            if (sort === 'newest') hfSort = 'updated';
+            if (sort === 'newest') {hfSort = 'updated';}
 
             // Construct Query String manually if using fetch
             const params = new URLSearchParams({
@@ -675,7 +675,7 @@ export class LLMService {
             return json.data[0].embedding;
         } catch (error) {
             console.error('[LLMService] Embedding Error:', error);
-            if (error instanceof ApiError || error instanceof AuthenticationError) throw error;
+            if (error instanceof ApiError || error instanceof AuthenticationError) {throw error;}
             throw new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'openai-bindings' });
         }
     }
@@ -685,7 +685,7 @@ export class LLMService {
             const key = this.keyRotationService.getCurrentKey('openai') || this.openaiApiKey;
             const headers: Record<string, string> = { 'Authorization': `Bearer ${key || 'dummy'}` };
             const response = await this.httpService.fetch(`${this.openaiBaseUrl}/models`, { method: 'GET', headers, retryCount: 1 });
-            if (!response.ok) return [];
+            if (!response.ok) {return [];}
             const json = await response.json() as { data: OpenAIModelDefinition[] };
             return json.data || [];
         } catch { return []; }

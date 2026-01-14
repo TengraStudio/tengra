@@ -1,7 +1,7 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FolderRepository } from '@main/repositories/folder.repository';
 import { Folder } from '@main/services/data/database.service';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 const mockDb = {
     getFolders: vi.fn(),

@@ -1,13 +1,14 @@
-import { BrowserWindow, ipcMain, shell } from 'electron'
-import { appLogger } from '@main/logging/logger'
 import { spawn } from 'child_process'
+
+import { appLogger } from '@main/logging/logger'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { BrowserWindow, ipcMain, shell } from 'electron'
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:minimize', () => getMainWindow()?.minimize())
     ipcMain.on('window:maximize', () => {
         const win = getMainWindow()
-        if (!win) return
+        if (!win) {return}
         if (win.isMaximized()) {
             win.unmaximize()
         } else {
@@ -17,7 +18,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:close', () => getMainWindow()?.close())
     ipcMain.on('window:toggle-compact', (_event, enabled) => {
         const win = getMainWindow()
-        if (!win) return
+        if (!win) {return}
         if (enabled) {
             win.setSize(400, 600)
         } else {
@@ -26,7 +27,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     })
     ipcMain.on('window:resize', (_event, resolution: string) => {
         const win = getMainWindow()
-        if (!win) return
+        if (!win) {return}
         const [width, height] = resolution.split('x').map(Number)
         if (width && height) {
             win.setSize(width, height)
@@ -36,7 +37,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
 
     ipcMain.on('window:toggle-fullscreen', () => {
         const win = getMainWindow()
-        if (!win) return
+        if (!win) {return}
         win.setFullScreen(!win.isFullScreen())
     })
 

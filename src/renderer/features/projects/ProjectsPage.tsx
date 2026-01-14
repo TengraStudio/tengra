@@ -1,18 +1,18 @@
-import React, { useState, memo } from 'react'
-import { useTranslation } from '@/i18n'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { Plus, Calendar, Search, Terminal, ArrowRight, Monitor, MoreVertical, Pencil, Trash2 } from 'lucide-react'
-import { Modal } from '@/components/ui/modal'
-import { Project, TerminalTab, Message } from '@/types'
-import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace'
-import { Language } from '@/i18n'
 import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal'
-
+import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace'
 import { AppSettings } from '@shared/types'
-import { ProjectMount } from '@shared/types/renderer'
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { CodexUsage, QuotaResponse } from '@shared/types/quota'
+import { ProjectMount } from '@shared/types/renderer'
+import { ArrowRight, Calendar, Monitor, MoreVertical, Pencil, Plus, Search, Terminal, Trash2 } from 'lucide-react'
+import React, { memo,useState } from 'react'
+
+import { Modal } from '@/components/ui/modal'
+import { GroupedModels } from '@/features/models/utils/model-fetcher'
+import { useTranslation } from '@/i18n'
+import { Language } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
+import { Message,Project, TerminalTab } from '@/types'
 
 interface ProjectsPageProps {
     projects: Project[]
@@ -90,7 +90,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     }
 
     const handleUpdateProject = async () => {
-        if (!editingProject) return
+        if (!editingProject) {return}
         try {
             await window.electron.db.updateProject(editingProject.id, editForm)
             setEditingProject(null)
@@ -101,7 +101,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     }
 
     const handleDeleteProject = async () => {
-        if (!deletingProject) return
+        if (!deletingProject) {return}
         try {
             await window.electron.db.deleteProject(deletingProject.id)
             setDeletingProject(null)

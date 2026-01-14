@@ -30,7 +30,7 @@ export class ContextRetrievalService {
                 contextParts.push("Relevant Code Symbols:");
                 symbols.slice(0, 3).forEach(sym => {
                     contextParts.push(`- ${sym.kind} ${sym.name} (${sym.path}:${sym.line})\n  ${sym.signature}\n  ${sym.docstring || ''}`);
-                    if (!sources.includes(sym.path)) sources.push(sym.path);
+                    if (!sources.includes(sym.path)) {sources.push(sym.path);}
                 });
             }
 
@@ -38,7 +38,7 @@ export class ContextRetrievalService {
                 contextParts.push("\nRelevant Context:");
                 fragments.forEach(frag => {
                     contextParts.push(`- [${frag.source}] ${frag.content.trim().substring(0, 300)}...`);
-                    if (!sources.includes(frag.sourceId)) sources.push(frag.sourceId);
+                    if (!sources.includes(frag.sourceId)) {sources.push(frag.sourceId);}
                 });
             }
 

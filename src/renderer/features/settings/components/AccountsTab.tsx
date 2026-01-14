@@ -1,13 +1,13 @@
+import { ExternalLink,RefreshCw } from 'lucide-react'
 import React from 'react'
-import { RefreshCw, ExternalLink } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@/types'
-import chatgptLogo from '@/assets/chatgpt.svg'
-import antigravityLogo from '@/assets/antigravity.svg'
-import claudeLogo from '@/assets/claude.svg'
 
+import antigravityLogo from '@/assets/antigravity.svg'
+import chatgptLogo from '@/assets/chatgpt.svg'
+import claudeLogo from '@/assets/claude.svg'
 import copilotLogo from '@/assets/copilot.png'
 import ollamaLogo from '@/assets/ollama.svg'
+import { cn } from '@/lib/utils'
+import { AppSettings } from '@/types'
 
 interface AccountsTabProps {
     settings: AppSettings | null
@@ -32,7 +32,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
     connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
     startOllama, checkOllama, handleSave, setSettings, t
 }) => {
-    if (!settings) return null
+    if (!settings) {return null}
 
     // Check Copilot connection: either from settings OR from auth file
     const isCopilotConnected = Boolean(
@@ -59,11 +59,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
     type ApiKeyProvider = typeof apiKeyProviders[number]
 
     const getProviderApiKey = (provider: ApiKeyProvider): string => {
-        if (provider === 'huggingface') return normalizeKeyValue(settings.huggingface?.apiKey)
-        if (provider === 'openai') return normalizeKeyValue(settings.openai?.apiKey)
-        if (provider === 'anthropic') return normalizeKeyValue(settings.anthropic?.apiKey)
+        if (provider === 'huggingface') {return normalizeKeyValue(settings.huggingface?.apiKey)}
+        if (provider === 'openai') {return normalizeKeyValue(settings.openai?.apiKey)}
+        if (provider === 'anthropic') {return normalizeKeyValue(settings.anthropic?.apiKey)}
 
-        if (provider === 'groq') return normalizeKeyValue(settings.groq?.apiKey)
+        if (provider === 'groq') {return normalizeKeyValue(settings.groq?.apiKey)}
         return ''
     }
 

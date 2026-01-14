@@ -1,5 +1,5 @@
-import { tr } from '@renderer/i18n/tr'
 import { en } from '@renderer/i18n/en'
+import { tr } from '@renderer/i18n/tr'
 import { JsonValue } from '@shared/types/common'
 
 export type Language = 'tr' | 'en'

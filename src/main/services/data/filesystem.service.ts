@@ -1,8 +1,9 @@
-import * as fs from 'fs/promises'
 import { watch } from 'fs'
-import * as path from 'path'
-import * as https from 'https'
 import { createWriteStream } from 'fs'
+import * as fs from 'fs/promises'
+import * as https from 'https'
+import * as path from 'path'
+
 import { ServiceResponse } from '@shared/types/index'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -88,10 +89,10 @@ export class FileSystemService {
             // Determine mime type from extension
             const ext = path.extname(absolutePath).toLowerCase()
             let mime = 'image/jpeg'
-            if (ext === '.png') mime = 'image/png'
-            if (ext === '.gif') mime = 'image/gif'
-            if (ext === '.webp') mime = 'image/webp'
-            if (ext === '.svg') mime = 'image/svg+xml'
+            if (ext === '.png') {mime = 'image/png'}
+            if (ext === '.gif') {mime = 'image/gif'}
+            if (ext === '.webp') {mime = 'image/webp'}
+            if (ext === '.svg') {mime = 'image/svg+xml'}
 
             return { success: true, data: `data:${mime};base64,${base64}` }
         } catch (error) {
@@ -104,7 +105,7 @@ export class FileSystemService {
             this.validatePath(filePath)
             const absolutePath = path.resolve(filePath)
             const stats = await fs.stat(absolutePath)
-            if (stats.size === 0) return false
+            if (stats.size === 0) {return false}
 
             const handle = await fs.open(absolutePath, 'r')
             const buffer = Buffer.alloc(Math.min(stats.size, 1024))
@@ -263,7 +264,7 @@ export class FileSystemService {
                 if (char >= 32 && char <= 126) {
                     current += String.fromCharCode(char)
                 } else {
-                    if (current.length >= minLength) strings.push(current)
+                    if (current.length >= minLength) {strings.push(current)}
                     current = ""
                 }
             }
@@ -313,8 +314,8 @@ export class FileSystemService {
                 let error = ''
                 proc.stderr?.on('data', (data) => error += data.toString())
                 proc.on('close', (code) => {
-                    if (code === 0) resolve({ success: true, message: `Extracted to ${destPath}` })
-                    else resolve({ success: false, error: error || `Exit code ${code}` })
+                    if (code === 0) {resolve({ success: true, message: `Extracted to ${destPath}` })}
+                    else {resolve({ success: false, error: error || `Exit code ${code}` })}
                 })
             })
         } catch (e) {
@@ -343,12 +344,12 @@ export class FileSystemService {
         try {
             const absoluteDir = path.resolve(dir)
             const watcher = watch(absoluteDir, { recursive: true }, (eventType, filename) => {
-                if (!filename) return
-                if (this.shouldIgnore(path.join(absoluteDir, filename.toString()))) return
+                if (!filename) {return}
+                if (this.shouldIgnore(path.join(absoluteDir, filename.toString()))) {return}
 
                 // Debounce or just emission could be handled by caller, but basic log here
                 console.log(`[FileWatcher] ${eventType}: ${filename}`)
-                if (callback) callback(eventType, filename.toString())
+                if (callback) {callback(eventType, filename.toString())}
             })
 
             return {
@@ -404,7 +405,7 @@ export class FileSystemService {
                 const entries = await fs.readdir(dir, { withFileTypes: true })
                 for (const entry of entries) {
                     const full = path.join(dir, entry.name)
-                    if (this.shouldIgnore(full)) continue
+                    if (this.shouldIgnore(full)) {continue}
 
                     if (entry.isDirectory()) {
                         await walk(full)
@@ -422,7 +423,7 @@ export class FileSystemService {
     async applyEdits(filePath: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
         try {
             const result = await this.readFile(filePath)
-            if (!result.success || !result.data) return { success: false, error: result.error || 'File read failed' }
+            if (!result.success || !result.data) {return { success: false, error: result.error || 'File read failed' }}
 
             const lines = result.data.split('\n');
             const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine);

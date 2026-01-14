@@ -1,8 +1,9 @@
 /**
  * Unit tests for BackupService
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
+
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
 
 // Mock fs
@@ -18,8 +19,8 @@ vi.mock('fs', () => ({
 // Mock DataService
 const mockDataService = {
     getPath: vi.fn().mockImplementation((type: string) => {
-        if (type === 'data') return '/mock/data';
-        if (type === 'config') return '/mock/config';
+        if (type === 'data') {return '/mock/data';}
+        if (type === 'config') {return '/mock/config';}
         return '/mock';
     })
 };
@@ -68,9 +69,9 @@ describe('BackupService', () => {
         it('should create a backup with default options', async () => {
             vi.mocked(fs.existsSync).mockImplementation((p) => {
                 const pathStr = p as string;
-                if (pathStr.includes('backups')) return true;
-                if (pathStr.includes('settings.json')) return true;
-                if (pathStr.includes('chats.json')) return true;
+                if (pathStr.includes('backups')) {return true;}
+                if (pathStr.includes('settings.json')) {return true;}
+                if (pathStr.includes('chats.json')) {return true;}
                 return false;
             });
             vi.mocked(fs.readFileSync).mockImplementation((p) => {
@@ -98,9 +99,9 @@ describe('BackupService', () => {
         it('should respect includeChats option', async () => {
             vi.mocked(fs.existsSync).mockImplementation((p) => {
                 const pathStr = p as string;
-                if (pathStr.includes('backups')) return true;
-                if (pathStr.includes('settings.json')) return true;
-                if (pathStr.includes('chats.json')) return true;
+                if (pathStr.includes('backups')) {return true;}
+                if (pathStr.includes('settings.json')) {return true;}
+                if (pathStr.includes('chats.json')) {return true;}
                 return false;
             });
             vi.mocked(fs.readFileSync).mockImplementation((p) => {
@@ -164,7 +165,7 @@ describe('BackupService', () => {
 
         it('should return error for missing backup file', async () => {
             vi.mocked(fs.existsSync).mockImplementation((p) => {
-                if ((p as string).includes('backups')) return true;
+                if ((p as string).includes('backups')) {return true;}
                 return false;
             });
 
@@ -281,7 +282,7 @@ describe('BackupService', () => {
 
         it('should return false for non-existent backup', async () => {
             vi.mocked(fs.existsSync).mockImplementation((p) => {
-                if ((p as string).includes('backups')) return true;
+                if ((p as string).includes('backups')) {return true;}
                 return false;
             });
 

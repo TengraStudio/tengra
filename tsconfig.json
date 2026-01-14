@@ -39,13 +39,18 @@
             "@shared/*": [
                 "src/shared/*"
             ]
-        }
+        },
+        "types": [
+            "vitest",
+            "node",
+            "react"
+        ]
     },
     "include": [
-        "src"
+        "src",
+        "src/tests"
     ],
     "exclude": [
-        "src/tests",
         "node_modules",
         "dist"
     ],

@@ -34,7 +34,7 @@ const TEXTMATE_LANGUAGES = new Set([
  * For full TextMate grammar support, additional WASM loading would be needed
  */
 export async function initTextMateSupport(monaco: Monaco): Promise<boolean> {
-    if (isInitialized) return true;
+    if (isInitialized) {return true;}
 
     if (initPromise) {
         return initPromise;

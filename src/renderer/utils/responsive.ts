@@ -3,7 +3,7 @@
  * Provides hooks and utilities for responsive design across screen sizes
  */
 
-import { useState, useEffect } from 'react'
+import { useEffect,useState } from 'react'
 
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
@@ -25,12 +25,12 @@ export function useBreakpoint(): Breakpoint {
     useEffect(() => {
         const updateBreakpoint = () => {
             const width = window.innerWidth
-            if (width >= breakpoints['2xl']) setBreakpoint('2xl')
-            else if (width >= breakpoints.xl) setBreakpoint('xl')
-            else if (width >= breakpoints.lg) setBreakpoint('lg')
-            else if (width >= breakpoints.md) setBreakpoint('md')
-            else if (width >= breakpoints.sm) setBreakpoint('sm')
-            else setBreakpoint('xs')
+            if (width >= breakpoints['2xl']) {setBreakpoint('2xl')}
+            else if (width >= breakpoints.xl) {setBreakpoint('xl')}
+            else if (width >= breakpoints.lg) {setBreakpoint('lg')}
+            else if (width >= breakpoints.md) {setBreakpoint('md')}
+            else if (width >= breakpoints.sm) {setBreakpoint('sm')}
+            else {setBreakpoint('xs')}
         }
 
         updateBreakpoint()

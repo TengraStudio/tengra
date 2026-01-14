@@ -101,7 +101,7 @@ export class RateLimiter {
      * Calculates the time in milliseconds until the next token refill.
      */
     getTimeUntilNextToken(): number {
-        if (this.tokens >= 1) return 0
+        if (this.tokens >= 1) {return 0}
         const elapsed = Date.now() - this.lastRefill
         return Math.max(0, this.refillIntervalMs - elapsed)
     }

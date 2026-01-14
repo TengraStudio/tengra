@@ -1,7 +1,8 @@
-import React from 'react';
 import { DiffEditor } from '@monaco-editor/react';
-import { useTheme } from '@/hooks/useTheme';
 import { Loader2 } from 'lucide-react';
+import React from 'react';
+
+import { useTheme } from '@/hooks/useTheme';
 
 interface DiffViewerProps {
     original: string;

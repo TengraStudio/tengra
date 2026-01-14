@@ -1,7 +1,8 @@
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { promisify } from 'util';
+
 import { getErrorMessage } from '@shared/utils/error.util';
 
 const execAsync = promisify(exec);
@@ -18,7 +19,7 @@ export class GitService {
 
     async getStatus(cwd: string): Promise<{ path: string, status: string }[]> {
         const { stdout } = await this.execute('status --short', cwd);
-        if (!stdout) return []
+        if (!stdout) {return []}
 
         return stdout.split('\n')
             .filter(line => line.trim())
@@ -47,7 +48,7 @@ export class GitService {
 
     async getLog(cwd: string, count: number = 10) {
         const { stdout } = await this.execute(`log - n ${count} --pretty=format: "%h|%s|%an|%cI"`, cwd);
-        if (!stdout) return []
+        if (!stdout) {return []}
 
         return stdout.split('\n')
             .filter(line => line.trim())
@@ -125,8 +126,8 @@ export class GitService {
             let inModified = false;
 
             for (const line of lines) {
-                if (line.startsWith('---')) continue;
-                if (line.startsWith('+++')) continue;
+                if (line.startsWith('---')) {continue;}
+                if (line.startsWith('+++')) {continue;}
                 if (line.startsWith('@@')) {
                     inOriginal = true;
                     inModified = true;

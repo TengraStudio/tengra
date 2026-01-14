@@ -1,5 +1,6 @@
-import { appLogger } from '@main/logging/logger';
 import { EventEmitter } from 'events';
+
+import { appLogger } from '@main/logging/logger';
 
 export interface ServiceMetadata {
     id: string;

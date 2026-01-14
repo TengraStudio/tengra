@@ -3,11 +3,12 @@
  * Provides utilities for detecting memory leaks and profiling memory usage.
  */
 
-import { app } from 'electron';
-import * as v8 from 'v8';
 import * as path from 'path';
+import * as v8 from 'v8';
+
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { app } from 'electron';
 
 export interface MemorySnapshot {
     timestamp: number;
@@ -138,7 +139,7 @@ export class MemoryProfilingService extends BaseService {
      * Calculate memory trend
      */
     private calculateTrend(values: number[]): 'stable' | 'increasing' | 'decreasing' {
-        if (values.length < 3) return 'stable';
+        if (values.length < 3) {return 'stable';}
 
         // Simple linear regression
         const n = values.length;
@@ -153,8 +154,8 @@ export class MemoryProfilingService extends BaseService {
         const avgValue = sumY / n;
         const normalizedSlope = slope / avgValue;
 
-        if (normalizedSlope > 0.01) return 'increasing';
-        if (normalizedSlope < -0.01) return 'decreasing';
+        if (normalizedSlope > 0.01) {return 'increasing';}
+        if (normalizedSlope < -0.01) {return 'decreasing';}
         return 'stable';
     }
 

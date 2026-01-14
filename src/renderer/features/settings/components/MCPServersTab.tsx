@@ -1,5 +1,6 @@
+import { CheckCircle2, Edit2,Plus, Server, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
-import { Plus, Server, CheckCircle2, XCircle, Trash2, Edit2 } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 interface MCPServer {

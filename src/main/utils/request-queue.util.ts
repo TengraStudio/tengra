@@ -113,7 +113,7 @@ export class RequestQueue {
 
         while (this.running < this.options.maxConcurrent && this.queue.length > 0 && iterations < MAX_QUEUE_ITERATIONS) {
             const request = this.queue.shift()
-            if (!request) break
+            if (!request) {break}
 
             this.running++
             iterations++

@@ -2,7 +2,8 @@
  * Simple CSS-based Resizable Layout
  * No external dependencies, no useLayoutEffect issues
  */
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useCallback,useEffect, useRef, useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 // Removed duplicate interface
@@ -73,7 +74,7 @@ export const ResizableHandle: React.FC<{
     }, [direction]);
 
     useEffect(() => {
-        if (!isDragging) return;
+        if (!isDragging) {return;}
 
         const handleMouseMove = (e: MouseEvent) => {
             const currentPos = direction === 'horizontal' ? e.clientX : e.clientY;

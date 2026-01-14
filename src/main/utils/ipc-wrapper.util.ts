@@ -1,7 +1,7 @@
-import { IpcMainInvokeEvent } from 'electron';
 import { appLogger } from '@main/logging/logger';
-import { getErrorMessage, AppErrorCode, OrbitError } from '@shared/utils/error.util';
 import { JsonValue } from '@shared/types/common';
+import { AppErrorCode, getErrorMessage, OrbitError } from '@shared/utils/error.util';
+import { IpcMainInvokeEvent } from 'electron';
 
 export interface IpcResponse<T = JsonValue> {
     success: boolean;
@@ -61,7 +61,7 @@ export const createIpcHandler = <T = JsonValue>(
             // Default error handling
             if (wrapResponse) {
                 let code = AppErrorCode.UNKNOWN;
-                let message = getErrorMessage(errorObj);
+                const message = getErrorMessage(errorObj);
                 let context: Record<string, JsonValue | Error> | undefined;
 
                 if (errorObj instanceof OrbitError) {

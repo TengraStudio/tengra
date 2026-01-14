@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useTranslation, Language } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { Project, WorkspaceEntry, TerminalTab, Message, QuotaResponse, CodexUsage, AppSettings, CouncilAgent, ActivityEntry, ProjectDashboardTab, CouncilSession } from '@/types'
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar'
-import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip'
-import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer'
-import { WorkspaceEditor } from '@renderer/features/projects/components/workspace/WorkspaceEditor'
-import { TerminalPanel } from '@/features/terminal/TerminalPanel'
+import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoGeneratorModal'
 import { ProjectDashboard } from '@renderer/features/projects/components/ProjectDashboard'
 import { AIAssistantSidebar } from '@renderer/features/projects/components/workspace/AIAssistantSidebar'
-import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager'
+import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip'
 import { EditorTabs } from '@renderer/features/projects/components/workspace/EditorTabs'
-import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoGeneratorModal'
-import { X, Activity } from 'lucide-react'
+import { WorkspaceEditor } from '@renderer/features/projects/components/workspace/WorkspaceEditor'
+import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar'
+import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer'
+import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager'
+import { Activity,X } from 'lucide-react'
+import React, { useCallback,useEffect, useState } from 'react'
+
+import { GroupedModels } from '@/features/models/utils/model-fetcher'
+import { TerminalPanel } from '@/features/terminal/TerminalPanel'
+import { Language,useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
+import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, CouncilSession,Message, Project, ProjectDashboardTab, QuotaResponse, TerminalTab, WorkspaceEntry } from '@/types'
 
 // Types are now shared from @/types
 
@@ -108,7 +109,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
     // WebSocket Connection for Council
     useEffect(() => {
-        if (!councilSession?.id) return
+        if (!councilSession?.id) {return}
 
         // Get WebSocket URL from environment or use default
         // In production, this should use wss:// for secure connections
@@ -165,7 +166,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const [agentChatMessage, setAgentChatMessage] = useState('')
 
     const runCouncil = async () => {
-        if (!agentChatMessage.trim()) return;
+        if (!agentChatMessage.trim()) {return;}
         try {
             notify('info', 'Initializing Council Session...')
             const session = await window.electron.council.createSession(agentChatMessage)
@@ -241,7 +242,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                             onEnsureMount={wm.ensureMountReady}
                             onContextAction={(action) => {
                                 setEntryModal({ type: action.type, entry: action.entry })
-                                if (action.type !== 'delete') setEntryName(action.entry.name)
+                                if (action.type !== 'delete') {setEntryName(action.entry.name)}
                             }}
                             variant="panel"
                             language={language}

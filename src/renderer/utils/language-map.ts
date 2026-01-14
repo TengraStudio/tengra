@@ -304,7 +304,7 @@ export const getLanguageFromExtension = (filename: string): string => {
  * Handles aliases, short forms, and case variations
  */
 export const normalizeLanguage = (lang: string): string => {
-    if (!lang) return 'plaintext';
+    if (!lang) {return 'plaintext';}
 
     const lowerLang = lang.toLowerCase().trim();
 

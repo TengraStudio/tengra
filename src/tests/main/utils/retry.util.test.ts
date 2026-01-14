@@ -1,6 +1,6 @@
 
-import { describe, it, expect, vi } from 'vitest'
-import { withRetry, getErrorMessage, isNonRetryableError } from '@main/utils/retry.util'
+import { getErrorMessage, isNonRetryableError,withRetry } from '@main/utils/retry.util'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('retry.util', () => {
     describe('withRetry', () => {

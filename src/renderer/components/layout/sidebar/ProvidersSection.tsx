@@ -1,8 +1,9 @@
+import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components'
+import { Brain, Cpu,Sparkles } from 'lucide-react'
 import React from 'react'
-import { Brain, Sparkles, Cpu } from 'lucide-react'
-import { SidebarSection, SidebarMenuItem } from '@renderer/components/layout/sidebar-components'
-import { useTranslation } from '@/i18n'
+
 import { SettingsCategory } from '@/features/settings/types'
+import { useTranslation } from '@/i18n'
 
 interface ProvidersSectionProps {
     isCollapsed: boolean;

@@ -238,13 +238,13 @@ export function normalizeStreamChunk(chunk: JsonValue, provider: string): Normal
 // Helpers
 
 function normalizeFinishReason(reason: string | undefined | null): NormalizedResponse['finishReason'] {
-    if (!reason) return undefined
+    if (!reason) {return undefined}
 
     const lower = reason.toLowerCase()
-    if (lower === 'stop' || lower === 'end_turn' || lower === 'stop_sequence') return 'stop'
-    if (lower === 'length' || lower === 'max_tokens') return 'length'
-    if (lower === 'tool_calls' || lower === 'tool_use' || lower === 'function_call') return 'tool_calls'
-    if (lower === 'content_filter' || lower === 'safety') return 'content_filter'
+    if (lower === 'stop' || lower === 'end_turn' || lower === 'stop_sequence') {return 'stop'}
+    if (lower === 'length' || lower === 'max_tokens') {return 'length'}
+    if (lower === 'tool_calls' || lower === 'tool_use' || lower === 'function_call') {return 'tool_calls'}
+    if (lower === 'content_filter' || lower === 'safety') {return 'content_filter'}
 
     return 'stop'
 }
@@ -265,11 +265,11 @@ function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
 }
 
 function asObject(value: JsonValue | undefined): JsonObject | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {return null}
     return value as JsonObject
 }
 
 function asArray(value: JsonValue | undefined): JsonValue[] | null {
-    if (!Array.isArray(value)) return null
+    if (!Array.isArray(value)) {return null}
     return value
 }

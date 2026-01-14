@@ -1,11 +1,12 @@
+import * as crypto from 'crypto';
+import * as fs from 'fs/promises';
+
+import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { ISecurityService } from '@main/types/services';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeStorage } from 'electron';
-import * as crypto from 'crypto';
-import * as fs from 'fs/promises';
-import { BaseService } from '@main/services/base.service';
-import { appLogger } from '@main/logging/logger';
 
 export class SecurityService extends BaseService implements ISecurityService {
     constructor() {
@@ -45,11 +46,11 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
 
         let score = 0;
-        if (password.length > 8) score++;
-        if (password.length > 12) score++;
-        if (/[A-Z]/.test(password)) score++;
-        if (/[0-9]/.test(password)) score++;
-        if (/[^A-Za-z0-9]/.test(password)) score++;
+        if (password.length > 8) {score++;}
+        if (password.length > 12) {score++;}
+        if (/[A-Z]/.test(password)) {score++;}
+        if (/[0-9]/.test(password)) {score++;}
+        if (/[^A-Za-z0-9]/.test(password)) {score++;}
 
         const labels = ["Very Weak", "Weak", "Fair", "Strong", "Very Strong", "Excellent"];
         return { success: true, result: { score, label: labels[score] || "Unknown" } };
@@ -80,7 +81,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     encryptSync(text: string): string {
-        if (!text) return '';
+        if (!text) {return '';}
         try {
             if (safeStorage && safeStorage.isEncryptionAvailable()) {
                 const buffer = safeStorage.encryptString(text);
@@ -95,7 +96,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     decryptSync(encryptedText: string): string | null {
-        if (!encryptedText) return null;
+        if (!encryptedText) {return null;}
 
         try {
             if (safeStorage && safeStorage.isEncryptionAvailable()) {

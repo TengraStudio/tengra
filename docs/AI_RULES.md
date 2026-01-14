@@ -710,20 +710,167 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`
 
 ### NEVER DO:
 
-1. ❌ Create files without extensions
-2. ❌ Create files in root directory (except configs)
-3. ❌ Use `console.log` (use `appLogger`)
-4. ❌ Use `any` type
-5. ❌ Use `// @ts-ignore` or `// eslint-disable`
-6. ❌ Swallow errors silently
-7. ❌ Log tokens or secrets
-8. ❌ Create circular dependencies
-9. ❌ Use `var` keyword
-10. ❌ Leave TODO comments in production code
-11. ❌ Commit commented-out code
-12. ❌ Use synchronous file operations in main thread
-13. ❌ Create memory leaks (event listeners without cleanup)
-14. ❌ Use deprecated APIs
+1. Do not create files without extensions
+2. Do not create files in root directory (except configs)
+3. Do not use `console.log` (use `appLogger`)
+4. Do not use `any` and `unknown` type
+5. Do not use `// @ts-ignore` or `// eslint-disable`
+6. Do not swallow errors silently
+7. Do not log tokens or secrets
+8. Do not create circular dependencies
+9. Do not use `var` keyword
+10. Do not leave TODO comments in production code
+11. Do not commit commented-out code
+12. Do not use synchronous file operations in main thread
+13. Do not create memory leaks (event listeners without cleanup)
+14. Do not use deprecated APIs
+
+---
+
+## 11a. Forbidden Tools (User Configurable)
+
+When instructions are sent to AI, a list of forbidden tools will be included.
+These tools MUST NOT be used under any circumstances.
+
+### Default Forbidden Tools:
+- `rm -rf /` or equivalent destructive commands
+- Format/partition commands
+- Registry editing commands
+- System modification commands
+
+### User-Configurable Forbidden Tools:
+The user can disable specific tools in settings. When a tool is forbidden:
+```markdown
+## FORBIDDEN TOOLS
+The following tools are DISABLED by the user. DO NOT USE THEM:
+- web_search
+- execute_command
+- [user-defined list]
+
+If a task requires a forbidden tool, inform the user and ask for alternatives.
+```
+
+---
+
+## 11b. Forbidden Paths (Protected Directories)
+
+Certain directories are OFF-LIMITS. Never read, write, or modify files in these paths:
+
+### System Protected Paths:
+```
+# Windows
+C:\Windows\
+C:\Program Files\
+C:\Program Files (x86)\
+%SYSTEMROOT%\
+
+# User Protected
+%USERPROFILE%\.ssh\
+%USERPROFILE%\.gnupg\
+```
+
+### Project Protected Paths:
+```
+# Git internals
+.git/
+
+# Dependencies (read-only reference allowed)
+node_modules/
+
+# Build outputs (don't manually edit)
+dist/
+
+# Vendor code (don't modify)
+vendor/
+
+# Secret/config files
+.env
+.env.local
+*.key
+*.pem
+```
+
+### Instruction Format:
+```markdown
+## FORBIDDEN PATHS
+Never access or modify files in these directories:
+- C:\Windows\
+- .git/
+- node_modules/
+- vendor/
+- [user-defined paths]
+
+If a task requires accessing a forbidden path, stop and ask the user.
+```
+
+---
+
+## 11c. File Editing Rules
+
+### NEVER delete and recreate files to edit them.
+
+**Correct Approach:**
+1. Read the specific section to modify
+2. Edit only the lines that need changes
+3. Preserve all other content
+
+**Wrong Approach:**
+1. Read entire file
+2. Delete file
+3. Write new file with modifications
+
+### Instruction Format:
+```markdown
+## FILE EDITING RULES
+- Use targeted edits, not full file replacement
+- Modify only the specific lines needed
+- Never delete a file to recreate it
+- Preserve existing comments and formatting
+- Keep diff size minimal
+
+Bad: Delete file → Create new file with changes
+Good: Edit specific lines → Keep everything else
+```
+
+---
+
+## 11d. Tool Transmission Rules
+
+All AI interactions MUST include our standard tools:
+
+### Required Tools to Send:
+```typescript
+const AI_TOOLS = [
+    // File operations
+    'read_file',
+    'write_file',
+    'edit_file',      // Preferred over write_file
+    'list_directory',
+    'search_files',
+    
+    // Code analysis
+    'grep_search',
+    'find_definition',
+    'get_references',
+    
+    // Command execution
+    'execute_command',
+    'run_terminal',
+    
+    // MCP tools
+    'mcp_filesystem',
+    'mcp_git',
+    'mcp_web',
+    'mcp_memory',
+    // ... all registered MCPs
+]
+```
+
+### Dynamic Tool Filtering:
+1. Start with full tool list
+2. Remove user-forbidden tools
+3. Add context-specific tools (e.g., project has Docker → add mcp_docker)
+4. Send filtered list to AI
 
 ---
 
@@ -762,6 +909,93 @@ Before submitting any change, verify:
 
 ---
 
+## 13. AI Workflow Rules (MANDATORY)
+
+### 13.1 Build Before Commit
+
+Every change MUST be validated before committing:
+
+```bash
+# Required workflow order:
+1. npm run build        # Build the application
+2. npm run lint         # Check for lint errors
+3. npm run type-check   # TypeScript validation
+4. # If all pass → commit
+5. git commit
+6. git push
+```
+
+**NEVER commit code that:**
+- Fails to build
+- Has lint errors
+- Has TypeScript errors
+- Has failing tests
+
+### 13.2 TODO.md Management
+
+When completing a task from `docs/TODO.md`:
+
+1. **Mark as completed** using `[x]` instead of `[ ]`
+2. **NEVER delete** the item from the file
+3. Keep the history for tracking purposes
+
+```markdown
+# Example:
+Before:
+- [ ] Add token caching
+
+After:
+- [x] Add token caching  ← Mark done, DO NOT DELETE
+```
+
+### 13.3 CHANGELOG.md Updates
+
+Every code change MUST be logged in `docs/CHANGELOG.md`:
+
+```markdown
+## [Unreleased]
+
+### Added
+- New feature description
+
+### Changed
+- Modified feature description
+
+### Fixed
+- Bug fix description
+
+### Removed
+- Removed feature description
+```
+
+**Required for:**
+- New features
+- Bug fixes
+- Breaking changes
+- Dependency updates
+- Performance improvements
+
+### 13.4 Complete Workflow Example
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    AI CHANGE WORKFLOW                        │
+├──────────────────────────────────────────────────────────────┤
+│ 1. Read docs/AI_RULES.md                                     │
+│ 2. Read docs/TODO.md to check if task exists                 │
+│ 3. Make code changes                                         │
+│ 4. Run: npm run build                                        │
+│ 5. Run: npm run lint                                         │
+│ 6. If errors → fix and repeat step 4-5                       │
+│ 7. Update docs/TODO.md (mark [x], DON'T delete)              │
+│ 8. Update docs/CHANGELOG.md                                  │
+│ 9. Commit with conventional message                          │
+│ 10. Push to repository                                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Quick Reference Card
 
 ```
@@ -777,6 +1011,10 @@ Before submitting any change, verify:
 │ Errors:   throw new AppError('msg', { cause: error })      │
 │ Jobs:     jobScheduler.registerRecurringJob(...)           │
 ├─────────────────────────────────────────────────────────────┤
+│ WORKFLOW: build → lint → type-check → commit → push        │
+│ TODO:     Mark [x] done, NEVER delete                       │
+│ CHANGELOG: Always update for any change                     │
+├─────────────────────────────────────────────────────────────┤
 │ NEVER:    any | console.log | files without ext | @ts-ignore│
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -784,4 +1022,4 @@ Before submitting any change, verify:
 ---
 
 *Last updated: 2026-01-14*
-*Version: 1.0.0*
+*Version: 1.1.0*

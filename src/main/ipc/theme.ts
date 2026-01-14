@@ -1,6 +1,7 @@
-import { ipcMain, shell } from 'electron'
-import { themeStore } from '@main/utils/theme-store.util'
 import * as fs from 'fs'
+
+import { themeStore } from '@main/utils/theme-store.util'
+import { ipcMain, shell } from 'electron'
 
 export function registerThemeIpc(): void {
     ipcMain.handle('theme:getCurrent', async () => {
@@ -75,7 +76,7 @@ export function registerThemeIpc(): void {
 
     ipcMain.handle('theme:export', async (_event, themeId: string) => {
         const json = themeStore.exportTheme(themeId)
-        if (!json) return false
+        if (!json) {return false}
 
         const tempPath = `${themeId}-theme.json`
         fs.writeFileSync(tempPath, json)

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react'
+import React, { useRef,useState } from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface RippleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -40,7 +41,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         const button = buttonRef.current
-        if (!button) return
+        if (!button) {return}
 
         const rect = button.getBoundingClientRect()
         const x = e.clientX - rect.left

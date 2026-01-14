@@ -1,10 +1,11 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
 import * as fs from 'fs'
+
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 
 export function registerDialogIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.handle('dialog:selectDirectory', async () => {
         const win = getMainWindow()
-        if (!win) return { success: false, error: 'Window not found' }
+        if (!win) {return { success: false, error: 'Window not found' }}
         const result = await dialog.showOpenDialog(win, {
             properties: ['openDirectory', 'createDirectory']
         })
@@ -16,7 +17,7 @@ export function registerDialogIpc(getMainWindow: () => BrowserWindow | null) {
 
     ipcMain.handle('dialog:saveFile', async (_event, { content, filename }) => {
         const win = getMainWindow()
-        if (!win) return { success: false, error: 'Window not found' }
+        if (!win) {return { success: false, error: 'Window not found' }}
         const { filePath } = await dialog.showSaveDialog(win, {
             defaultPath: filename
         })

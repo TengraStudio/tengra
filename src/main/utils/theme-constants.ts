@@ -1,4 +1,4 @@
-import { ThemeDefinition, ThemeCategory } from '@shared/types/theme'
+import { ThemeCategory,ThemeDefinition } from '@shared/types/theme'
 
 function createHsl(h: number, s: number, l: number): string {
     return `${h} ${s}% ${l}%`

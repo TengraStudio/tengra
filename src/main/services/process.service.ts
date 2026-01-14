@@ -1,11 +1,12 @@
-import * as pty from 'node-pty'
+import { exec } from 'child_process'
+import { EventEmitter } from 'events'
+import { promises as fs } from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { promises as fs } from 'fs'
-import { EventEmitter } from 'events'
-import { exec } from 'child_process'
 import { promisify } from 'util'
+
 import { getErrorMessage } from '@shared/utils/error.util'
+import * as pty from 'node-pty'
 
 
 const execAsync = promisify(exec)
@@ -137,7 +138,7 @@ export class ProcessService extends EventEmitter {
 
     resize(id: string, cols: number, rows: number): boolean {
         const task = this.processes.get(id)
-        if (!task) return false
+        if (!task) {return false}
         try {
             task.ptyProcess.resize(cols, rows)
             return true
@@ -149,7 +150,7 @@ export class ProcessService extends EventEmitter {
 
     write(id: string, data: string): boolean {
         const task = this.processes.get(id)
-        if (!task) return false
+        if (!task) {return false}
         try {
             task.ptyProcess.write(data)
             return true

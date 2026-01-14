@@ -1,12 +1,13 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import * as net from 'net'
 import * as crypto from 'crypto'
-import { Client, ClientChannel } from 'ssh2'
 import { EventEmitter } from 'events'
-import { safeStorage } from 'electron'
-import { SSHExecOptions, SSHFile, SSHSystemStats, SSHPackageInfo } from '@shared/types/ssh'
+import * as fs from 'fs'
+import * as net from 'net'
+import * as path from 'path'
+
+import { SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats } from '@shared/types/ssh'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeStorage } from 'electron'
+import { Client, ClientChannel } from 'ssh2'
 
 export interface SSHConnection {
     id: string
@@ -74,7 +75,7 @@ export class SSHService extends EventEmitter {
      * Encrypt sensitive data using Electron's safeStorage
      */
     private encryptCredential(value: string): string {
-        if (!value || !safeStorage.isEncryptionAvailable()) return value
+        if (!value || !safeStorage.isEncryptionAvailable()) { return value }
         try {
             return safeStorage.encryptString(value).toString('base64')
         } catch {
@@ -86,7 +87,7 @@ export class SSHService extends EventEmitter {
      * Decrypt sensitive data using Electron's safeStorage
      */
     private decryptCredential(value: string): string {
-        if (!value || !safeStorage.isEncryptionAvailable()) return value
+        if (!value || !safeStorage.isEncryptionAvailable()) { return value }
         try {
             const buffer = Buffer.from(value, 'base64')
             return safeStorage.decryptString(buffer)
@@ -110,7 +111,7 @@ export class SSHService extends EventEmitter {
 
     async getSavedProfiles(): Promise<SSHConnection[]> {
         try {
-            if (!fs.existsSync(this.profilesPath)) return []
+            if (!fs.existsSync(this.profilesPath)) { return [] }
             const content = fs.readFileSync(this.profilesPath, 'utf-8')
             return JSON.parse(content) as SSHConnection[]
         } catch (error) {
@@ -153,7 +154,7 @@ export class SSHService extends EventEmitter {
     async getProfileWithCredentials(id: string): Promise<SSHConnection | null> {
         const profiles = await this.getSavedProfiles()
         const profile = profiles.find(p => p.id === id)
-        if (!profile) return null
+        if (!profile) { return null }
 
         // Decrypt credentials
         const decrypted = { ...profile }
@@ -172,7 +173,7 @@ export class SSHService extends EventEmitter {
     async toggleFavorite(id: string): Promise<boolean> {
         const profiles = await this.getSavedProfiles()
         const index = profiles.findIndex(p => p.id === id)
-        if (index === -1) return false
+        if (index === -1) { return false }
 
         profiles[index].isFavorite = !profiles[index].isFavorite
         fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
@@ -204,7 +205,7 @@ export class SSHService extends EventEmitter {
     async setProfileTags(id: string, tags: string[]): Promise<boolean> {
         const profiles = await this.getSavedProfiles()
         const index = profiles.findIndex(p => p.id === id)
-        if (index === -1) return false
+        if (index === -1) { return false }
 
         profiles[index].tags = tags
         fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
@@ -285,7 +286,7 @@ export class SSHService extends EventEmitter {
             }).on('close', () => {
                 // Cleanup
                 const timer = this.keepaliveTimers.get(config.id)
-                if (timer) clearInterval(timer)
+                if (timer) { clearInterval(timer) }
                 this.keepaliveTimers.delete(config.id)
                 this.connections.delete(config.id)
                 this.connectionDetails.delete(config.id)
@@ -345,7 +346,7 @@ export class SSHService extends EventEmitter {
 
     async executeCommand(connectionId: string, command: string, options?: SSHExecOptions): Promise<{ stdout: string; stderr: string; code: number }> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         // Update stats
         const stats = this.connectionStats.get(connectionId)
@@ -357,11 +358,11 @@ export class SSHService extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             const execOptions: Record<string, unknown> = {}
-            if (options?.env) execOptions.env = options.env
-            if (options?.pty) execOptions.pty = true
+            if (options?.env) { execOptions.env = options.env }
+            if (options?.pty) { execOptions.pty = true }
 
             conn.exec(command, execOptions, (err, stream) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 let stdout = ''
                 let stderr = ''
 
@@ -375,7 +376,7 @@ export class SSHService extends EventEmitter {
                 }
 
                 stream.on('close', (code: number) => {
-                    if (timeout) clearTimeout(timeout)
+                    if (timeout) { clearTimeout(timeout) }
                     // Update bytes received
                     if (stats) {
                         stats.bytesReceived += stdout.length + stderr.length
@@ -401,7 +402,7 @@ export class SSHService extends EventEmitter {
         options?: SSHExecOptions
     ): Promise<number> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         const stats = this.connectionStats.get(connectionId)
         if (stats) {
@@ -411,11 +412,11 @@ export class SSHService extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             const execOptions: Record<string, unknown> = {}
-            if (options?.env) execOptions.env = options.env
-            if (options?.pty) execOptions.pty = true
+            if (options?.env) { execOptions.env = options.env }
+            if (options?.pty) { execOptions.pty = true }
 
             conn.exec(command, execOptions, (err, stream) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
 
                 stream.on('close', (code: number) => {
                     resolve(code)
@@ -430,13 +431,13 @@ export class SSHService extends EventEmitter {
 
     async listDirectory(connectionId: string, path: string): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve) => {
             conn.sftp((err, sftp) => {
-                if (err) return resolve({ success: false, error: err.message })
+                if (err) { return resolve({ success: false, error: err.message }) }
                 sftp.readdir(path, (err, list) => {
-                    if (err) return resolve({ success: false, error: err.message })
+                    if (err) { return resolve({ success: false, error: err.message }) }
                     const files = list.map((entry) => {
                         const permissions = typeof entry.longname === 'string'
                             ? entry.longname.split(/\s+/)[0]
@@ -462,11 +463,11 @@ export class SSHService extends EventEmitter {
 
     async readFile(connectionId: string, path: string): Promise<string> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 const stream = sftp.createReadStream(path)
                 let data = ''
                 stream.on('data', (d: Buffer | string) => data += d.toString())
@@ -478,11 +479,11 @@ export class SSHService extends EventEmitter {
 
     async writeFile(connectionId: string, path: string, content: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 const stream = sftp.createWriteStream(path)
                 stream.write(content)
                 stream.end()
@@ -494,13 +495,13 @@ export class SSHService extends EventEmitter {
 
     async deleteDirectory(connectionId: string, path: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 sftp.rmdir(path, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -509,13 +510,13 @@ export class SSHService extends EventEmitter {
 
     async deleteFile(connectionId: string, path: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 sftp.unlink(path, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -524,13 +525,13 @@ export class SSHService extends EventEmitter {
 
     async createDirectory(connectionId: string, path: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 sftp.mkdir(path, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -539,13 +540,13 @@ export class SSHService extends EventEmitter {
 
     async rename(connectionId: string, oldPath: string, newPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
                 sftp.rename(oldPath, newPath, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -554,19 +555,19 @@ export class SSHService extends EventEmitter {
 
     async uploadFile(connectionId: string, localPath: string, remotePath: string, onProgress?: (transferred: number, total: number) => void): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
 
                 // Use fastPut for efficiency
                 sftp.fastPut(localPath, remotePath, {
                     step: (transferred, _chunk, total) => {
-                        if (onProgress) onProgress(transferred, total)
+                        if (onProgress) { onProgress(transferred, total) }
                     }
                 }, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -575,18 +576,18 @@ export class SSHService extends EventEmitter {
 
     async downloadFile(connectionId: string, remotePath: string, localPath: string, onProgress?: (transferred: number, total: number) => void): Promise<boolean> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
-                if (err) return reject(err)
+                if (err) { return reject(err) }
 
                 sftp.fastGet(remotePath, localPath, {
                     step: (transferred, _chunk, total) => {
-                        if (onProgress) onProgress(transferred, total)
+                        if (onProgress) { onProgress(transferred, total) }
                     }
                 }, (err) => {
-                    if (err) return reject(err)
+                    if (err) { return reject(err) }
                     resolve(true)
                 })
             })
@@ -595,7 +596,7 @@ export class SSHService extends EventEmitter {
 
     async startShell(connectionId: string, onData: (data: string) => void, onExit: () => void): Promise<{ success: boolean; error?: string }> {
         const conn = this.connections.get(connectionId)
-        if (!conn) return { success: false, error: 'Not connected' }
+        if (!conn) { return { success: false, error: 'Not connected' } }
 
         // Check if shell already exists
         if (this.shellSessions.has(connectionId)) {
@@ -630,7 +631,7 @@ export class SSHService extends EventEmitter {
      */
     resizeShell(connectionId: string, cols: number, rows: number): boolean {
         const session = this.shellSessions.get(connectionId)
-        if (!session) return false
+        if (!session) { return false }
 
         session.stream.setWindow(rows, cols, 0, 0)
         return true
@@ -641,7 +642,7 @@ export class SSHService extends EventEmitter {
      */
     closeShell(connectionId: string): boolean {
         const session = this.shellSessions.get(connectionId)
-        if (!session) return false
+        if (!session) { return false }
 
         session.stream.close()
         this.shellSessions.delete(connectionId)
@@ -650,7 +651,7 @@ export class SSHService extends EventEmitter {
 
     async getLogFiles(connectionId: string): Promise<string[]> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
         // List common log locations
         try {
@@ -663,20 +664,30 @@ export class SSHService extends EventEmitter {
         }
     }
 
-    async readLogFile(connectionId: string, path: string, lines: number = 50): Promise<string> {
+    async readLogFile(connectionId: string, filePath: string, lines: number = 50): Promise<string> {
         const conn = this.connections.get(connectionId)
-        if (!conn) throw new Error('Not connected')
+        if (!conn) { throw new Error('Not connected') }
 
-        // Safety check path
-        if (!path.startsWith('/var/log')) throw new Error('Access denied')
+        // Normalize path to resolve '..' segments
+        // We use path.posix because SSH targets are typically Linux/Unix
+        const normalizedPath = path.posix.normalize(filePath)
 
-        const { stdout } = await this.executeCommand(connectionId, `tail -n ${lines} ${path}`)
+        // Ensure it starts with /var/log
+        if (!normalizedPath.startsWith('/var/log/') && normalizedPath !== '/var/log') {
+            throw new Error('Access denied: Path must be within /var/log')
+        }
+
+        // Safe quoting for shell command
+        // Replace single quotes with '"'"' to breaks out of single quotes, insert a single quote, and resume
+        const safePath = `'${normalizedPath.replace(/'/g, "'\"'\"'")}'`
+
+        const { stdout } = await this.executeCommand(connectionId, `tail -n ${lines} ${safePath}`)
         return stdout
     }
 
     sendShellData(connectionId: string, data: string): boolean {
         const session = this.shellSessions.get(connectionId)
-        if (!session) return false
+        if (!session) { return false }
 
         session.stream.write(data)
 
@@ -701,7 +712,7 @@ export class SSHService extends EventEmitter {
         remotePort: number
     ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
         const conn = this.connections.get(connectionId)
-        if (!conn) return { success: false, error: 'Not connected' }
+        if (!conn) { return { success: false, error: 'Not connected' } }
 
         const forwardId = crypto.randomUUID()
 
@@ -760,7 +771,7 @@ export class SSHService extends EventEmitter {
      */
     closePortForward(forwardId: string): boolean {
         const forward = this.portForwards.get(forwardId)
-        if (!forward) return false
+        if (!forward) { return false }
 
         forward.active = false
         this.portForwards.delete(forwardId)
@@ -830,9 +841,9 @@ export class SSHService extends EventEmitter {
     async getInstalledPackages(connectionId: string, manager: 'apt' | 'npm' | 'pip' = 'apt'): Promise<SSHPackageInfo[]> {
         try {
             let command = ''
-            if (manager === 'apt') command = 'apt list --installed'
-            if (manager === 'npm') command = 'npm list -g --depth=0'
-            if (manager === 'pip') command = 'pip list'
+            if (manager === 'apt') { command = 'apt list --installed' }
+            if (manager === 'npm') { command = 'npm list -g --depth=0' }
+            if (manager === 'pip') { command = 'pip list' }
 
             const result = await this.executeCommand(connectionId, command)
             const lines = result.stdout.split('\n')

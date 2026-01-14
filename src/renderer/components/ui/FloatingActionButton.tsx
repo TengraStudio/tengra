@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
+import React, { useEffect,useRef, useState } from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface FabAction {
@@ -60,7 +61,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     // Close on escape
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setIsOpen(false)
+            if (e.key === 'Escape') {setIsOpen(false)}
         }
 
         if (isOpen) {

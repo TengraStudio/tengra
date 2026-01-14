@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -21,8 +22,11 @@ import (
 const (
 	anthropicAuthURL  = "https://claude.ai/oauth/authorize"
 	anthropicTokenURL = "https://console.anthropic.com/v1/oauth/token"
-	anthropicClientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 	redirectURI       = "http://localhost:54545/callback"
+)
+
+var (
+	anthropicClientID = os.Getenv("ANTHROPIC_OAUTH_CLIENT_ID")
 )
 
 // tokenResponse represents the response structure from Anthropic's OAuth token endpoint.

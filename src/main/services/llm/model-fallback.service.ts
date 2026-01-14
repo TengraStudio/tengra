@@ -3,9 +3,9 @@
  * Provides automatic failover between LLM providers for improved reliability
  */
 
-import { Message } from '@shared/types/chat';
-import { ToolDefinition } from '@shared/types';
 import { appLogger } from '@main/logging/logger';
+import { ToolDefinition } from '@shared/types';
+import { Message } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface FallbackModelConfig {
@@ -262,7 +262,7 @@ export class ModelFallbackService {
         }
 
         const state = this.circuitStates.get(modelKey);
-        if (!state || !state.isOpen) {
+        if (!state?.isOpen) {
             return false;
         }
 

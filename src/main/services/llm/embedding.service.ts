@@ -1,6 +1,6 @@
-import { OllamaService } from '@main/services/llm/ollama.service';
-import { LLMService } from '@main/services/llm/llm.service';
 import { LlamaService } from '@main/services/llm/llama.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
 import { SettingsService } from '@main/services/settings.service';
 
 export type EmbeddingProvider = 'ollama' | 'openai' | 'llama' | 'none';
@@ -27,7 +27,7 @@ export class EmbeddingService {
 
     setProvider(provider: EmbeddingProvider, model?: string) {
         this.currentProvider = provider;
-        if (model) this.model = model;
+        if (model) {this.model = model;}
     }
 
     getCurrentProvider(): EmbeddingProvider {
@@ -44,7 +44,7 @@ export class EmbeddingService {
         const settings = this.settingsService.getSettings();
         if (settings.embeddings?.provider) {
             this.currentProvider = settings.embeddings.provider;
-            if (settings.embeddings.model) this.model = settings.embeddings.model;
+            if (settings.embeddings.model) {this.model = settings.embeddings.model;}
         }
 
         switch (this.currentProvider) {

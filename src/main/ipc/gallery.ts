@@ -1,7 +1,8 @@
-import { ipcMain, shell } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+
 import { appLogger } from '@main/logging/logger'
+import { ipcMain, shell } from 'electron'
 
 
 interface GalleryItem {
@@ -30,7 +31,7 @@ export function registerGalleryIpc(galleryPath: string) {
 
             for (const sub of subdirs) {
                 const subPath = path.join(galleryPath, sub)
-                if (!fs.existsSync(subPath)) continue
+                if (!fs.existsSync(subPath)) {continue}
 
                 const files = await fs.promises.readdir(subPath)
                 for (const f of files) {

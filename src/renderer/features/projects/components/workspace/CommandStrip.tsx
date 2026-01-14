@@ -1,7 +1,8 @@
+import { AlertCircle,Bell, CheckCircle2, Command, GitBranch } from 'lucide-react';
 import React from 'react';
-import { GitBranch, Command, Bell, CheckCircle2, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface CommandStripProps {
     className?: string;

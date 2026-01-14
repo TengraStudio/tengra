@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react'
+﻿import { useCallback, useEffect, useRef,useState } from 'react'
 
 export interface VoiceInputReturn {
     isListening: boolean
@@ -43,7 +43,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             setIsSupported(true)
             const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition
-            if (!SpeechRecognitionCtor) return
+            if (!SpeechRecognitionCtor) {return}
             const recognitionInstance = new SpeechRecognitionCtor()
 
             recognitionInstance.continuous = true
@@ -57,7 +57,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                         finalTranscript += event.results[i][0].transcript
                     }
                 }
-                if (finalTranscript) onFinalResult(finalTranscript)
+                if (finalTranscript) {onFinalResult(finalTranscript)}
             }
 
             recognitionInstance.onerror = (event: SpeechRecognitionErrorEventLike) => {

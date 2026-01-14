@@ -2,9 +2,10 @@
  * Terminal Service - PTY-based terminal integration for CMD/PowerShell
  * Uses node-pty for native shell support
  */
+import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import * as fs from 'fs'
+
 import { app } from 'electron'
 
 // Type definitions for node-pty
@@ -146,7 +147,7 @@ export class TerminalService {
                 { id: 'fish', name: 'Fish', path: '/usr/bin/fish' }
             ]
             for (const s of commonPaths) {
-                if (fs.existsSync(s.path)) shells.push(s)
+                if (fs.existsSync(s.path)) {shells.push(s)}
             }
         }
 
@@ -298,7 +299,7 @@ export class TerminalService {
      */
     write(sessionId: string, data: string): boolean {
         const session = this.sessions.get(sessionId)
-        if (!session || !session.ptyProcess) return false
+        if (!session?.ptyProcess) {return false}
 
         try {
             session.ptyProcess.write(data)
@@ -314,7 +315,7 @@ export class TerminalService {
      */
     resize(sessionId: string, cols: number, rows: number): boolean {
         const session = this.sessions.get(sessionId)
-        if (!session || !session.ptyProcess) return false
+        if (!session?.ptyProcess) {return false}
 
         try {
             session.ptyProcess.resize(cols, rows)
@@ -332,7 +333,7 @@ export class TerminalService {
      */
     kill(sessionId: string): boolean {
         const session = this.sessions.get(sessionId)
-        if (!session || !session.ptyProcess) return false
+        if (!session?.ptyProcess) {return false}
 
         try {
             session.ptyProcess.kill()
@@ -384,7 +385,7 @@ export class TerminalService {
      * Save active sessions to disk
      */
     private saveSnapshots() {
-        if (!this.persistencePath) return
+        if (!this.persistencePath) {return}
 
         try {
             const snapshots: TerminalSnapshot[] = []

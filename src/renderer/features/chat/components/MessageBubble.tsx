@@ -1,23 +1,24 @@
-import { useState, useEffect, useMemo, isValidElement, memo, useId } from 'react'
+import DOMPurify from 'dompurify'
+import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronUp, Clock, Code2, Copy, Eye, FileCode,ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import mermaid from 'mermaid'
+import { Highlight, themes } from 'prism-react-renderer'
+import { isValidElement, memo, useEffect, useId,useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
-import mermaid from 'mermaid'
-import { useTranslation, Language } from '@/i18n'
-import { cn } from '@/lib/utils'
-import '@renderer/features/chat/components/MessageBubble.css'
-import { Copy, Check, ChevronDown, ChevronUp, Eye, Code2, AlertCircle, Clock, Volume2, VolumeX, Brain, Sparkles, Smile, Bookmark, ThumbsUp, ThumbsDown, ListTodo, FileCode } from 'lucide-react'
-import { Highlight, themes } from 'prism-react-renderer'
+
 import LogoAntigravity from '@/assets/antigravity.svg'
-import LogoClaude from '@/assets/claude.svg'
-import LogoOllama from '@/assets/ollama.svg'
 import LogoOpenAI from '@/assets/chatgpt.svg'
-
+import LogoClaude from '@/assets/claude.svg'
 import LogoCopilot from '@/assets/copilot.png'
-
+import LogoOllama from '@/assets/ollama.svg'
+import { Language,useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
 import { Message } from '@/types'
+
+import 'katex/dist/katex.min.css'
+import '@renderer/features/chat/components/MessageBubble.css'
 
 // Initialize mermaid
 mermaid.initialize({
@@ -135,7 +136,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         const render = async () => {
             try {
                 const { svg } = await mermaid.render(id, code)
-                setSvg(svg)
+                setSvg(DOMPurify.sanitize(svg))
                 setError(null)
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err)
@@ -145,7 +146,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         render()
     }, [code, id])
 
-    if (error) return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>
+    if (error) {return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>}
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />
 })
 
@@ -205,7 +206,7 @@ interface MessageProps {
     onSourceClick?: (path: string) => void
 }
 
-export const MessageBubble = memo(function MessageBubble({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) {
+export const MessageBubble = memo(({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) => {
     const { t } = useTranslation(language)
     const isUser = message.role === 'user'
     const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
@@ -215,7 +216,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
     const COLLAPSE_THRESHOLD = 30
 
     const getAssistantLogo = () => {
-        if (isUser) return null
+        if (isUser) {return null}
         const modelName = (message.model || '').toString().toLowerCase()
         const inferredProvider = modelName.startsWith('gpt-') || modelName.startsWith('o1-')
             ? 'openai'
@@ -318,7 +319,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
             ? message.content
             : Array.isArray(message.content)
                 ? message.content.map((c) => {
-                    if (typeof c === 'string') return c
+                    if (typeof c === 'string') {return c}
                     return typeof c.text === 'string' ? c.text : ''
                 }).join('')
                 : ''
@@ -364,15 +365,15 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
         : displayContent
 
     // Detect various quota/rate limit errors
-    const is429Error = displayContent.includes('429') || 
+    const is429Error = displayContent.includes('429') ||
         displayContent.includes('RESOURCE_EXHAUSTED') ||
         displayContent.includes('Rate limit or quota exceeded') ||
         displayContent.includes('Quota or rate limit exceeded') ||
         (displayContent.includes('usage_limit_reached') ||
-        displayContent.includes('usage limit') ||
-        displayContent.includes('rate limit') ||
-        displayContent.includes('Rate limit') ||
-        displayContent.includes('quota'));
+            displayContent.includes('usage limit') ||
+            displayContent.includes('rate limit') ||
+            displayContent.includes('Rate limit') ||
+            displayContent.includes('quota'));
 
     // Parse error details for quota card
     const parseQuotaError = () => {
@@ -486,7 +487,7 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
                                                 const match = /language-(\w+)/.exec(className || '')
                                                 const isInline = !match
                                                 const codeString = String(children).replace(/\n$/, '')
-                                                if (match && match[1] === 'mermaid') return <MermaidDiagram code={codeString} />
+                                                if (match?.[1] === 'mermaid') {return <MermaidDiagram code={codeString} />}
                                                 return (isInline || !match) ? (
                                                     <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80" {...props}>
                                                         {children}
@@ -544,18 +545,18 @@ export const MessageBubble = memo(function MessageBubble({ message, isLast, back
                                                 </span>
                                             ),
                                             a: ({ href, children }) => (
-                                                <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) window.electron.openExternal(href) }}>{children}</a>
+                                                <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) {window.electron.openExternal(href)} }}>{children}</a>
                                             ),
                                             li: ({ children }) => {
                                                 const isCheckbox = Array.isArray(children) && children.some(c => {
-                                                    if (!isValidElement(c)) return false
+                                                    if (!isValidElement(c)) {return false}
                                                     const element = c as React.ReactElement<{ type?: string }>
                                                     return element.props?.type === 'checkbox'
                                                 })
                                                 return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                                             },
                                             input: ({ type, checked, ...props }) => {
-                                                if (type === 'checkbox') return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />
+                                                if (type === 'checkbox') {return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />}
                                                 return <input {...props} />
                                             },
                                             ul: ({ children }) => <ul className="pl-4 my-2 space-y-1">{children}</ul>,

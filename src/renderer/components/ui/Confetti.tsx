@@ -58,7 +58,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
         return () => clearTimeout(timer)
     }, [active, particleCount, colors, duration])
 
-    if (!active || pieces.length === 0) return null
+    if (!active || pieces.length === 0) {return null}
 
     return (
         <>

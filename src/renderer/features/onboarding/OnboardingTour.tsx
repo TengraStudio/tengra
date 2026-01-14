@@ -1,17 +1,17 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import {
-    X,
-    ChevronRight,
     ChevronLeft,
-    Sparkles,
+    ChevronRight,
     Command,
-    MessageSquare,
     Layers,
-    ShieldCheck
-} from 'lucide-react'
+    MessageSquare,
+    ShieldCheck,
+    Sparkles,
+    X} from 'lucide-react'
+import { useState } from 'react'
+
+import { Language,useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import { useTranslation, Language } from '@/i18n'
 
 interface Step {
     title: string
@@ -74,7 +74,7 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
         }
     }
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <AnimatePresence>

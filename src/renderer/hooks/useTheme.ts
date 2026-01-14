@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect,useState } from 'react';
 
 export const useTheme = () => {
     // Initialize with current attribute or default
@@ -12,7 +12,7 @@ export const useTheme = () => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
                     const newTheme = document.documentElement.getAttribute('data-theme');
-                    if (newTheme) setTheme(newTheme);
+                    if (newTheme) {setTheme(newTheme);}
                 }
             });
         });

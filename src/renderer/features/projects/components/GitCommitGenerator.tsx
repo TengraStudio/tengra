@@ -1,6 +1,7 @@
-﻿import { useState } from 'react'
-import { chatStream } from '@renderer/lib/chat-stream'
-import { GitCommit, Copy, Check, RefreshCw, Sparkles } from 'lucide-react'
+﻿import { chatStream } from '@renderer/lib/chat-stream'
+import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+
 import { useTranslation } from '@/i18n'
 
 interface GitCommitGeneratorProps {
@@ -17,7 +18,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     const [error, setError] = useState<string | null>(null)
 
     const fetchStagedDiff = async () => {
-        if (!projectPath) return
+        if (!projectPath) {return}
 
         setIsLoading(true)
         setError(null)
@@ -67,7 +68,7 @@ Commit message:`
 
             let fullContent = ''
             for await (const chunk of stream) {
-                if (chunk.type === 'content') fullContent += chunk.content
+                if (chunk.type === 'content') {fullContent += chunk.content}
             }
 
             const response = { content: fullContent }
@@ -82,7 +83,7 @@ Commit message:`
     }
 
     const copyToClipboard = async () => {
-        if (!suggestion) return
+        if (!suggestion) {return}
 
         try {
             await navigator.clipboard.writeText(suggestion)
@@ -94,7 +95,7 @@ Commit message:`
     }
 
     const executeCommit = async () => {
-        if (!projectPath || !suggestion) return
+        if (!projectPath || !suggestion) {return}
 
         try {
             const result = await window.electron.runCommand('git', ['commit', '-m', suggestion], projectPath)

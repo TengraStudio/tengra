@@ -1,8 +1,7 @@
+import { JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { getErrorMessage } from '@shared/utils/error.util';
-
-import { JsonValue } from '@shared/types/common';
 export interface ScanResult {
     path: string;
     content: string;
@@ -42,7 +41,7 @@ export class ScannerService {
             const fullPath = path.join(dir, file.name);
 
             if (file.isDirectory()) {
-                if (this.ignoreList.includes(file.name)) continue;
+                if (this.ignoreList.includes(file.name)) {continue;}
                 await this.walk(fullPath, results);
             } else {
                 const ext = path.extname(file.name).toLowerCase();

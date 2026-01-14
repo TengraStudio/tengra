@@ -1,5 +1,5 @@
-import { BaseService } from '@main/services/base.service';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface HttpRequestOptions extends RequestInit {
@@ -19,12 +19,13 @@ interface PendingRequest {
 export class HttpService extends BaseService {
     private pendingRequests: Map<string, PendingRequest> = new Map();
     private readonly DEDUPLICATION_WINDOW_MS = 1000; // 1 second window
+    private cleanupInterval: NodeJS.Timeout | null = null;
 
     constructor() {
         super('HttpService');
-        
+
         // Clean up old pending requests periodically
-        setInterval(() => {
+        this.cleanupInterval = setInterval(() => {
             const now = Date.now();
             for (const [key, request] of this.pendingRequests.entries()) {
                 if (now - request.timestamp > this.DEDUPLICATION_WINDOW_MS * 2) {
@@ -32,6 +33,14 @@ export class HttpService extends BaseService {
                 }
             }
         }, 5000);
+    }
+
+    override async cleanup(): Promise<void> {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
+        this.pendingRequests.clear();
     }
 
     /**
@@ -54,7 +63,7 @@ export class HttpService extends BaseService {
         if (deduplicate) {
             const key = deduplicateKey || this.generateRequestKey(url, fetchOptions);
             const pending = this.pendingRequests.get(key);
-            
+
             if (pending) {
                 const age = Date.now() - pending.timestamp;
                 if (age < this.DEDUPLICATION_WINDOW_MS) {
@@ -75,14 +84,14 @@ export class HttpService extends BaseService {
         const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const requestHeaders = fetchOptions.headers ? JSON.stringify(fetchOptions.headers) : '{}';
         const requestBody = fetchOptions.body ? (typeof fetchOptions.body === 'string' ? fetchOptions.body.substring(0, 500) : '[Binary/Stream]') : '';
-        
+
         const httpMethod = fetchOptions.method || 'GET';
         appLogger.debug('HTTP', `[${requestId}] --> ${httpMethod} ${url}`);
         appLogger.debug('HTTP', `[${requestId}] Headers: ${requestHeaders}`);
         if (requestBody) {
             appLogger.debug('HTTP', `[${requestId}] Body: ${requestBody}${requestBody.length >= 500 ? '...' : ''}`);
         }
-        
+
         const startTime = Date.now();
 
         // Create the request promise
@@ -140,7 +149,7 @@ export class HttpService extends BaseService {
     ): Promise<Response> {
         let currentDelay = initialDelayMs;
         // Method is used internally for request execution
-        
+
         // Note: Request logging is done in the main fetch() method before calling this
 
         for (let attempt = 0; attempt <= retryCount; attempt++) {
@@ -162,7 +171,7 @@ export class HttpService extends BaseService {
                 const response = await fetch(url, requestInit);
 
                 // Success
-                if (timeoutId) clearTimeout(timeoutId);
+                if (timeoutId) {clearTimeout(timeoutId);}
                 const duration = Date.now() - startTime;
 
                 // Response logging interceptor
@@ -170,10 +179,10 @@ export class HttpService extends BaseService {
                 response.headers.forEach((value, key) => {
                     responseHeaders[key] = value;
                 });
-                
+
                 appLogger.debug('HTTP', `[${requestId}] <-- ${response.status} ${response.statusText} ${url} (${duration}ms)`);
                 appLogger.debug('HTTP', `[${requestId}] Response Headers: ${JSON.stringify(responseHeaders)}`);
-                
+
                 // Log response body for non-streaming responses (first 500 chars)
                 if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
                     try {
@@ -194,7 +203,7 @@ export class HttpService extends BaseService {
                 return response;
 
             } catch (error: unknown) {
-                if (timeoutId) clearTimeout(timeoutId);
+                if (timeoutId) {clearTimeout(timeoutId);}
                 const errName = (error as Error).name;
                 const errMsg = getErrorMessage(error);
 

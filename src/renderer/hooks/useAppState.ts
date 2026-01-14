@@ -3,7 +3,8 @@
  * Centralizes UI state management for the App component
  */
 
-import { useState, useRef } from 'react'
+import { useRef,useState } from 'react'
+
 import { Toast } from '@/types'
 // SettingsCategory type is used by dependent modules via AppState interface
 

@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { getErrorMessage } from '@shared/utils/error.util';
+import axios from 'axios';
 
 interface PageSpeedParams {
     url: string;

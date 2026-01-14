@@ -27,7 +27,7 @@ export class StreamParser {
      * Supports both Web Streams (ReadableStream) and Node.js Streams (AsyncIterable).
      */
     static async *parseChatStream(response: Response): AsyncGenerator<StreamChunk> {
-        if (!response.body) throw new Error('No response body');
+        if (!response.body) {throw new Error('No response body');}
 
         const decoder = new TextDecoder();
         let buffer = '';
@@ -81,9 +81,9 @@ export class StreamParser {
 
         for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith('data:')) continue;
+            if (!trimmed?.startsWith('data:')) {continue;}
             const data = trimmed.slice(5).trim();
-            if (data === '[DONE]') continue;
+            if (data === '[DONE]') {continue;}
 
             // Handle nested data: prefix issue
             let jsonData = data;
@@ -93,7 +93,7 @@ export class StreamParser {
                 jsonData = jsonData.slice(5).trim();
                 prefixIterations++;
             }
-            if (jsonData === '[DONE]') continue;
+            if (jsonData === '[DONE]') {continue;}
 
             try {
                 const json = JSON.parse(jsonData) as OpenAIStreamPayload & { type?: string; delta?: string | { text?: string }; message?: string };
@@ -149,7 +149,7 @@ export class StreamParser {
 
                 // 2. STANDARD OpenAI format
                 const delta = json.choices?.[0]?.delta;
-                if (!delta) continue;
+                if (!delta) {continue;}
 
                 const content = delta.content || '';
                 const reasoning = delta.reasoning_content || delta.reasoning || '';

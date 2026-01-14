@@ -4,22 +4,15 @@
  * Updated for Async/PGlite compatibility
  */
 
-export interface AsyncDatabaseAdapter {
-    prepare(sql: string): {
-        run(...params: any[]): Promise<any>;
-        all(...params: any[]): Promise<any[]>;
-        get(...params: any[]): Promise<any>;
-    };
-    exec(sql: string): Promise<void>;
-    transaction<T>(fn: (tx: any) => Promise<T>): Promise<T>;
-    query(sql: string, params?: any[]): Promise<any>; // PGlite raw access
-}
+import { DatabaseAdapter } from '@shared/types/database'
+
+export type { DatabaseAdapter } // Re-export for convenience if needed
 
 export interface Migration {
     id: number
     name: string
-    up: (db: AsyncDatabaseAdapter) => Promise<void>
-    down?: (db: AsyncDatabaseAdapter) => Promise<void> // Optional rollback
+    up: (db: DatabaseAdapter) => Promise<void>
+    down?: (db: DatabaseAdapter) => Promise<void> // Optional rollback
 }
 
 export interface MigrationStatus {
@@ -32,7 +25,7 @@ export interface MigrationStatus {
 export class MigrationManager {
     private migrations: Migration[] = []
 
-    constructor(private db: AsyncDatabaseAdapter) {
+    constructor(private db: DatabaseAdapter) {
         // Init happens in migrate() to ensure async is awaited
     }
 
@@ -45,7 +38,7 @@ export class MigrationManager {
     }
 
     registerAll(migrations: Migration[]): void {
-        for (const migration of migrations) this.register(migration)
+        for (const migration of migrations) { this.register(migration) }
     }
 
     getMigrations(): Migration[] {
@@ -92,12 +85,12 @@ export class MigrationManager {
     async rollback(): Promise<void> {
         await this.ensureMigrationsTable()
         const applied = await this.getAppliedMigrations()
-        if (applied.length === 0) return
+        if (applied.length === 0) { return }
 
         const lastMigration = applied[applied.length - 1]
         const migration = this.migrations.find(m => m.id === lastMigration.id)
 
-        if (!migration || !migration.down) {
+        if (!migration?.down) {
             throw new Error(`Migration ${lastMigration.id} does not support rollback`)
         }
 

@@ -1,11 +1,11 @@
+import * as crypto from 'crypto'
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import * as crypto from 'crypto'
 
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
-import { BrowserWindow } from 'electron'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { BrowserWindow } from 'electron'
 
 export interface CodeSymbol {
     file: string;
@@ -179,7 +179,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) continue
+                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) {continue}
 
                 if (entry.isDirectory()) {
                     await this.scanDirRecursively(fullPath, fileList)
@@ -369,7 +369,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') continue
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') {continue}
 
                 if (entry.isDirectory()) {
                     await this.scanDirForTodos(fullPath, results)
@@ -397,7 +397,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') continue
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') {continue}
 
                 if (entry.isDirectory()) {
                     await this.scanDirForSymbols(fullPath, query, results)
@@ -430,7 +430,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') continue
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') {continue}
 
                 if (entry.isDirectory()) {
                     await this.scanDirForText(fullPath, query, isRegex, results)
@@ -442,10 +442,10 @@ export class CodeIntelligenceService {
                         let match = false
                         if (isRegex) {
                             try {
-                                if (new RegExp(query).test(line)) match = true
+                                if (new RegExp(query).test(line)) {match = true}
                             } catch { /* ignore invalid regex */ }
                         } else {
-                            if (line.includes(query)) match = true
+                            if (line.includes(query)) {match = true}
                         }
 
                         if (match) {

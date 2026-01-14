@@ -1,12 +1,13 @@
-import React from 'react';
-import { motion } from '@/lib/framer-motion-compat';
-import { Users, ArrowLeft } from 'lucide-react';
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { ModelSelector } from '@renderer/features/models/components/ModelSelector';
-import { CouncilPanel } from '@renderer/features/projects/components/workspace/CouncilPanel';
-import { CouncilAgent, ActivityEntry, Message, AppSettings, QuotaResponse, CodexUsage } from '@/types';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import { CouncilPanel } from '@renderer/features/projects/components/workspace/CouncilPanel';
+import { ArrowLeft,Users } from 'lucide-react';
+import React from 'react';
+
 import { Language } from '@/i18n';
+import { motion } from '@/lib/framer-motion-compat';
+import { ActivityEntry, AppSettings, CodexUsage,CouncilAgent, Message, QuotaResponse } from '@/types';
 
 interface AIAssistantSidebarProps {
     viewTab: 'editor' | 'council' | 'logs';

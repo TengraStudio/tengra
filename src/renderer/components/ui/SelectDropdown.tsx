@@ -1,14 +1,15 @@
-import React, { useState } from 'react'
-import { ChevronDown, Check } from 'lucide-react'
 import {
-    useFloating,
     autoUpdate,
-    offset,
     flip,
-    shift,
     FloatingPortal,
+    offset,
+    shift,
+    useFloating,
 } from '@floating-ui/react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
+import { Check,ChevronDown } from 'lucide-react'
+import React, { useState } from 'react'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 interface SelectOption {

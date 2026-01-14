@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { CheckSquare, Square, RefreshCw, AlertCircle, Plus, FileText, ChevronDown, ChevronRight } from 'lucide-react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
+import { AlertCircle, CheckSquare, ChevronDown, ChevronRight,FileText, Plus, RefreshCw, Square } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo,useState } from 'react'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 interface ProjectTodoTabProps {
@@ -40,8 +41,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             const entryList = Array.isArray(entries) ? entries : []
 
             for (const entry of entryList) {
-                if (IGNORED_FOLDERS.includes(entry.name)) continue
-                if (entry.name.startsWith('.')) continue
+                if (IGNORED_FOLDERS.includes(entry.name)) {continue}
+                if (entry.name.startsWith('.')) {continue}
 
                 const fullPath = `${dirPath}/${entry.name}`
 
@@ -96,7 +97,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
     }
 
     const fetchTodos = async () => {
-        if (!projectRoot) return
+        if (!projectRoot) {return}
         setLoading(true)
         setError(null)
         try {
@@ -139,7 +140,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
 
             // Optimistic update
             setTodoFiles(prev => prev.map(f => {
-                if (f.path !== item.filePath) return f
+                if (f.path !== item.filePath) {return f}
                 return {
                     ...f,
                     items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
@@ -152,7 +153,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
     }
 
     const handleAddTask = async () => {
-        if (!newTaskText.trim()) return
+        if (!newTaskText.trim()) {return}
 
         try {
             // Default to root TODO.md
@@ -162,7 +163,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             // Check if file exists
             if (await window.electron.files.exists(targetPath)) {
                 content = await window.electron.files.readFile(targetPath)
-                if (content && !content.endsWith('\n')) content += '\n'
+                if (content && !content.endsWith('\n')) {content += '\n'}
             } else {
                 content = '# Project Tasks\n\n'
             }
@@ -189,7 +190,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
         let completed = 0
         todoFiles.forEach(f => {
             total += f.items.length
-            f.items.forEach(i => { if (i.completed) completed++ })
+            f.items.forEach(i => { if (i.completed) {completed++} })
         })
         return { total, completed, pending: total - completed }
     }, [todoFiles])

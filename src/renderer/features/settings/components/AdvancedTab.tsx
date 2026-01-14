@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
-import { MessageSquare, Sliders, Zap, Activity, Thermometer, Clock, RefreshCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@shared/types/settings'
-import { SelectDropdown } from '@/components/ui/SelectDropdown'
 import { SERVICE_INTERVALS } from '@shared/constants'
+import { AppSettings } from '@shared/types/settings'
+import { Activity, Clock, MessageSquare, RefreshCw,Sliders, Thermometer, Zap } from 'lucide-react'
+import React, { useState } from 'react'
 
+import { SelectDropdown } from '@/components/ui/SelectDropdown'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { cn } from '@/lib/utils'
 
 interface BenchmarkResult {
     tokensPerSec: number
@@ -41,7 +41,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 
     type ModelSettingsPatch = Partial<NonNullable<AppSettings['modelSettings']>[string]>
     const updateModelSetting = (patch: ModelSettingsPatch) => {
-        if (!settings || !currentModelId) return
+        if (!settings || !currentModelId) {return}
         const updated = { ...settings, modelSettings: { ...settings.modelSettings, [currentModelId]: { ...(settings.modelSettings?.[currentModelId] || {}), ...patch } } }
         setSettings(updated)
         handleSave(updated)
@@ -94,7 +94,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                             { value: 'parallel', label: t('advanced.orchestrationParallel') }
                         ]}
                         onChange={(val) => {
-                            if (!settings) return
+                            if (!settings) {return}
                             const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as 'auto' | 'fifo' | 'parallel' } }
                             setSettings(updated)
                             handleSave(updated)
@@ -137,7 +137,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.modelUpdateInterval ?? SERVICE_INTERVALS.MODEL_UPDATE}
                             onChange={(e) => {
-                                if (!settings) return
+                                if (!settings) {return}
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, modelUpdateInterval: parseInt(e.target.value) }
@@ -166,7 +166,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.tokenRefreshInterval ?? SERVICE_INTERVALS.TOKEN_REFRESH}
                             onChange={(e) => {
-                                if (!settings) return
+                                if (!settings) {return}
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, tokenRefreshInterval: parseInt(e.target.value) }
@@ -195,7 +195,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.copilotRefreshInterval ?? SERVICE_INTERVALS.COPILOT_REFRESH}
                             onChange={(e) => {
-                                if (!settings) return
+                                if (!settings) {return}
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, copilotRefreshInterval: parseInt(e.target.value) }

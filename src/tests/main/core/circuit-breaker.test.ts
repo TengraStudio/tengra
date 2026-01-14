@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CircuitBreaker, CircuitState } from '@main/core/circuit-breaker';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('CircuitBreaker', () => {
     let breaker: CircuitBreaker;

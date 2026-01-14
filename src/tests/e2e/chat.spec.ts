@@ -1,4 +1,4 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+import { _electron as electron,expect, test } from '@playwright/test';
 
 test.describe('Chat Feature E2E Tests', () => {
     let electronApp: any;

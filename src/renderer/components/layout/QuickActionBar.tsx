@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { Globe, Copy, X, Sparkles } from 'lucide-react'
+import { Copy, Globe, Sparkles,X } from 'lucide-react'
+import { useEffect, useRef,useState } from 'react'
+
 import { useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 
 interface QuickActionBarProps {
     onExplain: (text: string) => void
@@ -44,7 +45,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 if (isVisible) {
                     setTimeout(() => {
                         const activeSelection = window.getSelection()?.toString().trim()
-                        if (!activeSelection) setIsVisible(false)
+                        if (!activeSelection) {setIsVisible(false)}
                     }, 100)
                 }
             }
@@ -63,7 +64,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
         setIsVisible(false)
     }
 
-    if (!isVisible) return null
+    if (!isVisible) {return null}
 
     return (
         <AnimatePresence>

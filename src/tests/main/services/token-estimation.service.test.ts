@@ -1,8 +1,9 @@
 /**
  * Unit tests for TokenEstimationService
  */
-import { describe, it, expect, beforeEach } from 'vitest';
 import { TokenEstimationService } from '@main/services/token-estimation.service';
+import { beforeEach,describe, expect, it } from 'vitest';
+
 import { Message } from '@/types/chat';
 
 describe('TokenEstimationService', () => {

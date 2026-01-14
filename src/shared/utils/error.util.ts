@@ -1,4 +1,4 @@
-import { CatchError, AppError } from '@/types/common';
+import { AppError,CatchError } from '@/types/common';
 
 /**
  * Error handling utilities
@@ -30,12 +30,12 @@ export class OrbitError extends Error {
  * Usage: catch (e) { const msg = getErrorMessage(e) }
  */
 export function getErrorMessage(error: unknown): string {
-    if (error instanceof Error) return error.message;
-    if (typeof error === 'string') return error;
+    if (error instanceof Error) {return error.message;}
+    if (typeof error === 'string') {return error;}
     if (error && typeof error === 'object') {
         const err = error as Record<string, unknown>;
-        if (typeof err.message === 'string') return err.message;
-        if (typeof err.error === 'string') return err.error;
+        if (typeof err.message === 'string') {return err.message;}
+        if (typeof err.error === 'string') {return err.error;}
         if (err.error && typeof err.error === 'object' && typeof (err.error as Record<string, unknown>).message === 'string') {
             return (err.error as Record<string, unknown>).message as string;
         }

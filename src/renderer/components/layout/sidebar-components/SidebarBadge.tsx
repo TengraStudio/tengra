@@ -1,5 +1,6 @@
 import React from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 export interface SidebarBadgeProps {

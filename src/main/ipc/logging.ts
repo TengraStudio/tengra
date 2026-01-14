@@ -1,6 +1,6 @@
-import { ipcMain, BrowserWindow } from 'electron'
 import { appLogger, LogLevel } from '@main/logging/logger'
 import { JsonValue } from '@shared/types/common'
+import { BrowserWindow,ipcMain } from 'electron'
 
 // Log buffer for streaming to renderer
 const logBuffer: Array<{
@@ -54,10 +54,10 @@ export function registerLoggingIpc() {
         if (typeof arg1 === 'string') {
             // log:write, level, message
             const upper = arg1.toUpperCase()
-            if (upper === 'DEBUG') level = LogLevel.DEBUG
-            else if (upper === 'INFO') level = LogLevel.INFO
-            else if (upper === 'WARN') level = LogLevel.WARN
-            else if (upper === 'ERROR') level = LogLevel.ERROR
+            if (upper === 'DEBUG') {level = LogLevel.DEBUG}
+            else if (upper === 'INFO') {level = LogLevel.INFO}
+            else if (upper === 'WARN') {level = LogLevel.WARN}
+            else if (upper === 'ERROR') {level = LogLevel.ERROR}
             message = arg2 || ''
         } else if (typeof arg1 === 'object' && arg1 !== null) {
             // log:write, { level, message, context, data }

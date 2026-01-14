@@ -3,12 +3,12 @@
  * Compare responses from multiple AI models side by side.
  */
 
-import React, { useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
 import {
-    Play, Loader2, Plus, X, BarChart3, Clock, Zap,
-    ChevronDown, Copy, Check
-} from 'lucide-react'
+BarChart3, Check,
+    ChevronDown, Clock, Copy, Loader2,     Play, Plus, X, Zap} from 'lucide-react'
+import React, { useCallback,useState } from 'react'
+
+import { cn } from '@/lib/utils'
 
 interface ModelResponse {
     model: string
@@ -46,7 +46,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     const [copiedId, setCopiedId] = useState<string | null>(null)
 
     const addSlot = useCallback(() => {
-        if (slots.length >= 4) return
+        if (slots.length >= 4) {return}
         const unusedModel = availableModels.find(m =>
             !slots.some(s => s.provider === m.provider && s.model === m.model)
         ) || availableModels[0]
@@ -60,7 +60,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     }, [slots, availableModels])
 
     const removeSlot = useCallback((id: string) => {
-        if (slots.length <= 2) return
+        if (slots.length <= 2) {return}
         setSlots(prev => prev.filter(s => s.id !== id))
     }, [slots])
 
@@ -71,7 +71,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     }, [])
 
     const runComparison = useCallback(async () => {
-        if (!prompt.trim() || isComparing) return
+        if (!prompt.trim() || isComparing) {return}
 
         setIsComparing(true)
         setSlots(prev => prev.map(s => ({ ...s, isLoading: true, response: undefined })))

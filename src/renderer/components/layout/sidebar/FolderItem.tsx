@@ -1,9 +1,10 @@
+import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
+import { Edit2, FolderIcon, FolderOpen, Trash2 } from 'lucide-react'
 import React, { useState } from 'react'
-import { FolderIcon, FolderOpen, Edit2, Trash2 } from 'lucide-react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
+
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { Chat, Folder } from '@/types'
-import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
 
 interface FolderItemProps {
     folder: Folder;

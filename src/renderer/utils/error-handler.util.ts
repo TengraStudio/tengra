@@ -1,4 +1,4 @@
-import { getErrorMessage, AppErrorCode, OrbitError } from '@shared/utils/error.util'
+import { AppErrorCode, getErrorMessage, OrbitError } from '@shared/utils/error.util'
 
 /**
  * Standardized error handling utilities for the renderer process.
