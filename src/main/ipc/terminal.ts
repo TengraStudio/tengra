@@ -1,12 +1,11 @@
 import { ipcMain, BrowserWindow, IpcMainInvokeEvent } from 'electron'
-import { TerminalService } from '../services/terminal.service'
+import { TerminalService } from '../services/project/terminal.service'
 import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
 
 let terminalService: TerminalService | null = null
 
-ipcMain.setMaxListeners(50)
-
 export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
+    ipcMain.setMaxListeners(50)
     try {
         terminalService = new TerminalService()
         console.log('[IPC] Terminal service initialized')

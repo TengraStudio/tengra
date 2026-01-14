@@ -66,7 +66,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
             priority: 9,
             rateLimitPerMinute: 60
         })
-        
+
         // Local providers are more resource-constrained
         this.setProviderConfig('ollama', {
             maxConcurrent: 2,
@@ -82,6 +82,11 @@ export class MultiLLMOrchestrator extends EventEmitter {
             maxConcurrent: 3,
             priority: 7,
             rateLimitPerMinute: 20
+        })
+        this.setProviderConfig('opencode', {
+            maxConcurrent: 3,
+            priority: 8,
+            rateLimitPerMinute: 30
         })
     }
 
@@ -108,17 +113,17 @@ export class MultiLLMOrchestrator extends EventEmitter {
     async addTask(task: LLMTask) {
         const provider = task.provider.toLowerCase()
         const normalizedProvider = this.normalizeProvider(provider)
-        
+
         if (!this.providerQueues.has(normalizedProvider)) {
             this.providerQueues.set(normalizedProvider, [])
         }
 
         const queue = this.providerQueues.get(normalizedProvider)!
         queue.push(task)
-        
+
         // Sort by priority (higher first)
         queue.sort((a, b) => (b.priority || 0) - (a.priority || 0))
-        
+
         this.updateProviderStats(normalizedProvider)
         this.processQueues()
     }
@@ -180,7 +185,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
     private async startTask(task: LLMTask) {
         this.activeTasks.set(task.taskId, task)
         this.taskStartTimes.set(task.taskId, Date.now())
-        
+
         const provider = this.normalizeProvider(task.provider)
         const stats = this.providerStats.get(provider)
         if (stats) {
@@ -192,12 +197,12 @@ export class MultiLLMOrchestrator extends EventEmitter {
 
         try {
             await task.execute()
-            
+
             // Record success
             const endTime = Date.now()
             const startTime = this.taskStartTimes.get(task.taskId) || endTime
             const latency = endTime - startTime
-            
+
             if (stats) {
                 stats.totalCompleted++
                 stats.activeTasks--
@@ -208,7 +213,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
             }
         } catch (error) {
             console.error(`[MultiLLMOrchestrator] Error in task ${task.taskId}:`, error)
-            
+
             const provider = this.normalizeProvider(task.provider)
             const stats = this.providerStats.get(provider)
             if (stats) {
@@ -299,7 +304,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
      */
     cancelChatTasks(chatId: string): number {
         let cancelled = 0
-        
+
         // Cancel from queues
         for (const queue of this.providerQueues.values()) {
             const tasks = queue.filter(t => t.chatId === chatId)
@@ -311,7 +316,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
                 }
             })
         }
-        
+
         return cancelled
     }
 }

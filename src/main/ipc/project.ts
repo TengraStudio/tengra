@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron'
-import { ProjectService } from '../services/project.service'
+import { ProjectService } from '../services/project/project.service'
 import { LogoService } from '../services/logo.service'
 import { CodeIntelligenceService } from '../services/code-intelligence.service'
 import { JobSchedulerService } from '../services/job-scheduler.service'

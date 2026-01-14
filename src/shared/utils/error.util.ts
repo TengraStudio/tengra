@@ -40,7 +40,8 @@ export function getErrorMessage(error: unknown): string {
             return (err.error as Record<string, unknown>).message as string;
         }
     }
-    return String(error || 'Unknown error');
+    const str = String(error);
+    return str === '[object Object]' ? 'Unknown error' : str;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { LanceDbService, type AgentRecord } from './data/lancedb.service'
+import { DatabaseService } from './data/database.service'
 import { randomUUID } from 'crypto'
 
 export interface AgentDefinition {
@@ -12,7 +12,7 @@ export interface AgentDefinition {
 }
 
 export class AgentService {
-    constructor(private lanceDb: LanceDbService) { }
+    constructor(private dbService: DatabaseService) { }
 
     async init() {
         await this.seedBuiltInAgents()
@@ -20,67 +20,62 @@ export class AgentService {
 
     async registerAgent(agent: AgentDefinition): Promise<string> {
         const id = agent.id || randomUUID()
-        const record = {
-            id: id,
-            name: agent.name,
-            system_prompt: agent.systemPrompt,
-            tools: agent.tools,
-            parent_model: agent.parentModel || 'gpt-4o'
-        }
+        const now = Date.now()
+        const toolsJson = JSON.stringify(agent.tools || [])
 
-        let table
-        try {
-            table = await this.lanceDb.getTable('agents')
-        } catch {
-            // Table doesn't exist, create it with the first record
-            await this.lanceDb.createTable('agents', [record])
+        const db = this.dbService.getDatabase()
+
+        // Check for existing by name
+        const existing = await db.prepare('SELECT id FROM agents WHERE name = $1').get(agent.name)
+
+        if (existing) {
+            // Update
+            await db.prepare(`
+                UPDATE agents 
+                SET system_prompt = $1, tools = $2, parent_model = $3, updated_at = $4
+                WHERE name = $5
+             `).run(agent.systemPrompt, toolsJson, agent.parentModel || 'gpt-4o', now, agent.name)
+            return existing.id
+        } else {
+            await db.prepare(`
+                INSERT INTO agents (id, name, system_prompt, tools, parent_model, created_at, updated_at) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel || 'gpt-4o', now, now)
             return id
         }
-
-        // Check if exists
-        const existing = await table.query().where(`name = '${agent.name}'`).limit(1).toArray()
-        if (existing.length > 0) {
-            // Update
-            await table.delete(`name = '${agent.name}'`)
-        }
-
-        await table.add([record])
-
-        return id
     }
 
     async getAgent(idOrName: string): Promise<AgentDefinition | null> {
-        const table = await this.lanceDb.getTable('agents')
-        let results = await table.query().where(`id = '${idOrName}'`).limit(1).toArray()
+        const db = this.dbService.getDatabase()
+        let result = await db.prepare('SELECT * FROM agents WHERE id = $1').get(idOrName)
 
-        if (results.length === 0) {
-            results = await table.query().where(`name = '${idOrName}'`).limit(1).toArray()
+        if (!result) {
+            result = await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)
         }
 
-        if (results.length === 0) return null
+        if (!result) return null
 
-        const record = results[0] as AgentRecord
         return {
-            id: record.id,
-            name: record.name,
-            description: 'Agent', // Schema doesn't have description yet, implicit
-            systemPrompt: record.system_prompt,
-            tools: record.tools,
-            parentModel: record.parent_model
+            id: result.id,
+            name: result.name,
+            description: 'Agent', // Implicit
+            systemPrompt: result.system_prompt,
+            tools: JSON.parse(result.tools || '[]'),
+            parentModel: result.parent_model
         }
     }
 
     async getAllAgents(): Promise<AgentDefinition[]> {
-        const table = await this.lanceDb.getTable('agents')
-        const records = await table.query().toArray() as AgentRecord[]
+        const db = this.dbService.getDatabase()
+        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all()
 
-        return records.map(r => ({
-            id: r.id,
-            name: r.name,
+        return results.map((result: any) => ({
+            id: result.id,
+            name: result.name,
             description: 'Agent',
-            systemPrompt: r.system_prompt,
-            tools: r.tools,
-            parentModel: r.parent_model
+            systemPrompt: result.system_prompt,
+            tools: JSON.parse(result.tools || '[]'),
+            parentModel: result.parent_model
         }))
     }
 
@@ -110,7 +105,12 @@ export class AgentService {
         ]
 
         for (const agent of builtIns) {
-            await this.registerAgent(agent)
+            try {
+                await this.registerAgent(agent)
+            } catch (error) {
+                // Database might not be ready yet (table doesn't exist)
+                console.warn(`[AgentService] Failed to seed agent ${agent.name}:`, error instanceof Error ? error.message : error)
+            }
         }
     }
 }

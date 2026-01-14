@@ -42,7 +42,7 @@ export const processStreamChunk = (chunk: any, current: { content: string, reaso
     if (chunk.type === 'reasoning') {
         return { updated: true, newReasoning: current.reasoning + chunk.content }
     }
-    if (chunk.type === 'content') {
+    if (chunk.type === 'content' || (!chunk.type && chunk.content)) {
         const newContent = current.content + chunk.content
         const elapsed = (performance.now() - streamStartTime) / 1000
         const speed = elapsed > 0.5 ? (newContent.length / 4) / elapsed : null

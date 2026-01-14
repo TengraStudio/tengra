@@ -20,18 +20,20 @@ export class DataService extends BaseService {
         const userData = app.getPath('userData')
         this.baseDir = path.join(userData, 'data')
 
-        const rootPath = path.dirname(userData)
+
+
+
 
         this.paths = {
             auth: path.join(this.baseDir, 'auth'),
-            db: path.join(this.baseDir, 'db'),
+            db: path.join(userData, 'db'),
             config: path.join(this.baseDir, 'config'),
             logs: path.join(this.baseDir, 'logs'),
             models: path.join(this.baseDir, 'models'),
             data: this.baseDir, // Base data directory
-            gallery: path.join(rootPath, 'Gallery'),
-            galleryImages: path.join(rootPath, 'Gallery', 'Images'),
-            galleryVideos: path.join(rootPath, 'Gallery', 'Videos')
+            gallery: path.join(this.baseDir, 'gallery'),
+            galleryImages: path.join(this.baseDir, 'gallery', 'images'),
+            galleryVideos: path.join(this.baseDir, 'gallery', 'videos')
         }
 
         this.ensureDirectories()

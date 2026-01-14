@@ -110,12 +110,12 @@ export class UtilityService {
 
     // 39. Long-term Memory
     async storeMemory(key: string, value: string) {
-        this.db.storeMemory(key, value);
+        await this.db.storeMemory(key, value);
         return { success: true, message: `Memory stored for "${key}"` };
     }
 
     async recallMemory(key: string) {
-        const value = this.db.recallMemory(key);
+        const value = await this.db.recallMemory(key);
         return { success: true, value };
     }
 

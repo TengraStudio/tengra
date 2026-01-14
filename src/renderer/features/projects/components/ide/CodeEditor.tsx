@@ -24,29 +24,31 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
 
         const initEditor = async () => {
             try {
-                // Dynamic imports to avoid circular dependency issues
+                // Dynamic imports to avoid fully mixing meta-package and scoped packages (though we now strictly use scoped)
                 const [
-                    { EditorView, basicSetup },
                     { EditorState },
-                    { hoverTooltip },
+                    { EditorView, lineNumbers, highlightActiveLineGutter, drawSelection, dropCursor, keymap, hoverTooltip, highlightActiveLine },
+                    { defaultKeymap, history, historyKeymap },
                     { javascript },
                     { json },
                     { markdown },
                     { html },
                     { css },
                     { python },
-                    { oneDark }
+                    { oneDark },
+                    { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap }
                 ] = await Promise.all([
-                    import('codemirror'),
                     import('@codemirror/state'),
                     import('@codemirror/view'),
+                    import('@codemirror/commands'),
                     import('@codemirror/lang-javascript'),
                     import('@codemirror/lang-json'),
                     import('@codemirror/lang-markdown'),
                     import('@codemirror/lang-html'),
                     import('@codemirror/lang-css'),
                     import('@codemirror/lang-python'),
-                    import('@codemirror/theme-one-dark')
+                    import('@codemirror/theme-one-dark'),
+                    import('@codemirror/autocomplete')
                 ])
 
                 if (!mounted || !editorRef.current) return
@@ -64,10 +66,29 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     }
                 }
 
+                // Minimal setup equivalent to basicSetup but safe
+                const minimalSetup = [
+                    lineNumbers(),
+                    highlightActiveLineGutter(),
+                    history(),
+                    drawSelection(),
+                    dropCursor(),
+                    EditorState.allowMultipleSelections.of(true),
+                    highlightActiveLine(),
+                    closeBrackets(),
+                    autocompletion(),
+                    keymap.of([
+                        ...closeBracketsKeymap,
+                        ...defaultKeymap,
+                        ...historyKeymap,
+                        ...completionKeymap
+                    ])
+                ]
+
                 const startState = EditorState.create({
                     doc: content,
                     extensions: [
-                        basicSetup,
+                        ...minimalSetup,
                         getLanguageExtension(language),
                         oneDark,
                         EditorView.theme({

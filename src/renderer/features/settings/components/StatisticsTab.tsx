@@ -28,6 +28,7 @@ interface StatisticsTabProps {
     quotaData: QuotaResponse | null
     copilotQuota: CopilotQuota | null
     codexUsage: CodexUsage | null
+    claudeQuota: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null
     statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly'
     setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => void
     settings: AppSettings | null
@@ -40,7 +41,7 @@ const formatTime = (ms: number): string => {
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
-    
+
     if (days > 0) return `${days}d ${hours % 24}h`
     if (hours > 0) return `${hours}h ${minutes % 60}m`
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`
@@ -83,7 +84,7 @@ const TimeBarChart = ({ value, maxValue, label, color = 'hsl(var(--primary))' }:
                 <span className="text-sm font-bold text-foreground">{formatTime(value)}</span>
             </div>
             <div className="h-3 bg-muted/20 rounded-full overflow-hidden">
-                <div 
+                <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(percentage, 100)}%`, background: color }}
                 />
@@ -105,7 +106,7 @@ const ProjectBarChart = ({ projects, maxTime }: { projects: Array<{ id: string; 
                             <span className="text-sm font-bold text-primary ml-2 flex-shrink-0">{formatTime(time)}</span>
                         </div>
                         <div className="h-2 bg-muted/20 rounded-full overflow-hidden">
-                            <div 
+                            <div
                                 className="h-full rounded-full transition-all duration-500 bg-primary"
                                 style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
@@ -118,7 +119,7 @@ const ProjectBarChart = ({ projects, maxTime }: { projects: Array<{ id: string; 
 }
 
 export const StatisticsTab: React.FC<StatisticsTabProps> = ({
-    statsLoading, statsData, quotaData, copilotQuota, codexUsage, statsPeriod, setStatsPeriod, settings, authStatus, setReloadTrigger
+    statsLoading, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, statsPeriod, setStatsPeriod, settings, authStatus, setReloadTrigger
 }) => {
     const { t } = useTranslation(settings?.general?.language || 'en')
     const [timeStats, setTimeStats] = useState<TimeStats | null>(null)
@@ -166,12 +167,12 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     const codex = codexUsage || {}
     const dailyUsedPercent = codex.dailyUsedPercent || 0
     const weeklyUsedPercent = codex.weeklyUsedPercent || 0
-    
+
     // Copilot quota - service returns { success, plan, limit, remaining, used, percentage }
     const copilotLimit = (copilotQuota && typeof copilotQuota === 'object' && 'limit' in copilotQuota) ? (copilotQuota.limit ?? 0) : 0
     const copilotRemaining = (copilotQuota && typeof copilotQuota === 'object' && 'remaining' in copilotQuota) ? (copilotQuota.remaining ?? 0) : 0
     const copilotSuccess = (copilotQuota && typeof copilotQuota === 'object' && 'success' in copilotQuota) ? (copilotQuota.success ?? false) : false
-    
+
     // Use percentage from service if available, otherwise calculate from remaining/limit
     let copilotPercent: number | null = null
     if (copilotQuota && typeof copilotQuota === 'object' && 'percentage' in copilotQuota && copilotQuota.percentage !== null && typeof copilotQuota.percentage === 'number') {
@@ -181,7 +182,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     }
 
     // Filter Antigravity models from quotaData
-    const antigravityModels = quotaData?.models?.filter((m: ModelQuotaItem) => 
+    const antigravityModels = quotaData?.models?.filter((m: ModelQuotaItem) =>
         m.provider === 'antigravity' || m.provider?.toLowerCase() === 'antigravity'
     ) || []
 
@@ -263,9 +264,9 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                         {loadingTimeStats ? (
                             <Loader2 className="w-5 h-5 animate-spin text-primary" />
                         ) : (
-                            <TimeBarChart 
-                                value={timeStats?.totalOnlineTime || 0} 
-                                maxValue={Math.max(timeStats?.totalOnlineTime || 0, 86400000)} 
+                            <TimeBarChart
+                                value={timeStats?.totalOnlineTime || 0}
+                                maxValue={Math.max(timeStats?.totalOnlineTime || 0, 86400000)}
                                 label={t('statistics.totalAppUsage')}
                                 color="hsl(var(--primary))"
                             />
@@ -341,6 +342,38 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                 </div>
             )}
 
+            {/* Claude Quota */}
+            {authStatus.claude && claudeQuota && claudeQuota.success && (
+                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-bold text-foreground">Anthropic Claude</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center gap-4">
+                            {claudeQuota.fiveHour && (
+                                <div className="flex items-center gap-3">
+                                    {renderRing(100 - claudeQuota.fiveHour.utilization, 'hsl(280 70% 60%)')}
+                                    <div>
+                                        <div className="text-xs font-bold uppercase text-muted-foreground">5-Hour Limit</div>
+                                        <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(claudeQuota.fiveHour.resetsAt)}</div>
+                                    </div>
+                                </div>
+                            )}
+                            {claudeQuota.sevenDay && (
+                                <div className="flex items-center gap-3">
+                                    {renderRing(100 - claudeQuota.sevenDay.utilization, 'hsl(260 70% 60%)')}
+                                    <div>
+                                        <div className="text-xs font-bold uppercase text-muted-foreground">7-Day Limit</div>
+                                        <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(claudeQuota.sevenDay.resetsAt)}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+
             {/* Antigravity Model Quotas - Grid Layout */}
             {authStatus.antigravity && antigravityModels.length > 0 && (
                 <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
@@ -350,8 +383,8 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                             <p className="text-xs text-muted-foreground mt-1">Per-model quota information</p>
                         </div>
                         {setReloadTrigger && (
-                            <button 
-                                onClick={() => setReloadTrigger((p: number) => p + 1)} 
+                            <button
+                                onClick={() => setReloadTrigger((p: number) => p + 1)}
                                 className="p-1.5 hover:bg-muted/20 rounded-full text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
@@ -391,8 +424,8 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                                     onClick={() => setStatsPeriod(period)}
                                     className={cn(
                                         "px-3 py-1 text-xs rounded-md capitalize transition-all",
-                                        statsPeriod === period 
-                                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                                        statsPeriod === period
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
                                             : 'hover:bg-muted/30 text-muted-foreground'
                                     )}
                                 >
@@ -407,7 +440,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             </div>
                         ) : (
-                            <ProjectBarChart 
+                            <ProjectBarChart
                                 projects={Object.entries(timeStats.projectCodingTime)
                                     .sort(([, a], [, b]) => b - a)
                                     .map(([projectId, time]) => {
@@ -436,8 +469,8 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                                 onClick={() => setStatsPeriod(period)}
                                 className={cn(
                                     "px-3 py-1 text-xs rounded-md capitalize transition-all",
-                                    statsPeriod === period 
-                                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                                    statsPeriod === period
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'hover:bg-muted/30 text-muted-foreground'
                                 )}
                             >

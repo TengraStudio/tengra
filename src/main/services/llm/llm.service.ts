@@ -1,5 +1,5 @@
 import { Agent } from 'undici';
-import { ImagePersistenceService } from '../image-persistence.service';
+import { ImagePersistenceService } from '../data/image-persistence.service';
 import { MessageNormalizer } from '../../utils/message-normalizer.util';
 import { StreamParser } from '../../utils/stream-parser.util';
 import { ApiError, NetworkError, AuthenticationError } from '../../utils/error.util';

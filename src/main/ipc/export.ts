@@ -1,33 +1,70 @@
-import { ipcMain, dialog } from 'electron'
-import { join } from 'path'
-import { writeFileSync } from 'fs'
+import { ipcMain } from 'electron'
 import { BrowserWindow } from 'electron'
-
+import { exportService, ExportFormat, ExportOptions } from '../services/export.service'
+import { Chat } from '../../shared/types/chat'
+import { appLogger } from '../logging/logger'
 
 export function registerExportIpc(getWindow: () => BrowserWindow | null) {
+    // Set window reference on service
+    const updateWindow = () => {
+        exportService.setWindow(getWindow());
+    };
+
+    // Legacy PDF export (prints current view)
     ipcMain.handle('files:exportChatToPdf', async (_event, _chatId: string, title: string) => {
-        const window = getWindow()
-        if (!window) return { success: false, error: 'No window' }
+        updateWindow();
+        const chat: Chat = {
+            id: _chatId,
+            title: title || 'Untitled Chat',
+            model: 'Unknown',
+            messages: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        return exportService.exportToPDF(chat, { title });
+    });
 
+    // Export chat to various formats
+    ipcMain.handle('export:chat', async (_event, chat: Chat, options: ExportOptions) => {
+        updateWindow();
+        appLogger.info('ExportIpc', `Exporting chat "${chat.title}" as ${options.format}`);
+        return exportService.exportChat(chat, options);
+    });
+
+    // Export chat to specific format (convenience handlers)
+    ipcMain.handle('export:chatToMarkdown', async (_event, chat: Chat, options?: Partial<ExportOptions>) => {
+        updateWindow();
+        return exportService.exportChat(chat, { ...options, format: 'markdown' as ExportFormat });
+    });
+
+    ipcMain.handle('export:chatToHTML', async (_event, chat: Chat, options?: Partial<ExportOptions>) => {
+        updateWindow();
+        return exportService.exportChat(chat, { ...options, format: 'html' as ExportFormat });
+    });
+
+    ipcMain.handle('export:chatToJSON', async (_event, chat: Chat, options?: Partial<ExportOptions>) => {
+        updateWindow();
+        return exportService.exportChat(chat, { ...options, format: 'json' as ExportFormat });
+    });
+
+    ipcMain.handle('export:chatToText', async (_event, chat: Chat, options?: Partial<ExportOptions>) => {
+        updateWindow();
+        return exportService.exportChat(chat, { ...options, format: 'txt' as ExportFormat });
+    });
+
+    ipcMain.handle('export:chatToPDF', async (_event, chat: Chat, options?: Partial<ExportOptions>) => {
+        updateWindow();
+        return exportService.exportToPDF(chat, options);
+    });
+
+    // Get export content without saving (for clipboard)
+    ipcMain.handle('export:getContent', async (_event, chat: Chat, options: ExportOptions) => {
         try {
-            const { filePath, canceled } = await dialog.showSaveDialog(window, {
-                title: 'Export Chat to PDF',
-                defaultPath: join(process.env.USERPROFILE || '', 'Documents', `${title || 'chat'}.pdf`),
-                filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-            })
-
-            if (canceled || !filePath) return { success: false }
-
-            const data = await window.webContents.printToPDF({
-                printBackground: true
-            })
-
-            writeFileSync(filePath, data)
-            return { success: true, path: filePath }
+            const content = exportService.getExportContent(chat, options);
+            return { success: true, content };
         } catch (error) {
-            console.error('Export PDF error:', error)
-            const message = error instanceof Error ? error.message : String(error)
-            return { success: false, error: message }
+            const message = error instanceof Error ? error.message : String(error);
+            return { success: false, error: message };
         }
-    })
+    });
 }

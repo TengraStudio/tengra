@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ResizableContainer, ResizablePane, ResizableHandle } from './SimpleResizable';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -22,92 +21,154 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 }) => {
     const { theme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
-    const [sidebarSize, setSidebarSize] = useState(isSidebarCollapsed ? 4 : 15);
-    const [mainSize, setMainSize] = useState(showPanel && panelContent ? 75 : 100);
+    const [sidebarWidth, setSidebarWidth] = useState(isSidebarCollapsed ? 60 : 280);
+    const [isDragging, setIsDragging] = useState(false);
+    const startXRef = useRef(0);
+    const startWidthRef = useRef(0);
+
+    // Load saved width on mount
+    useEffect(() => {
+        const savedWidth = localStorage.getItem('sidebarWidth');
+        if (savedWidth && !isSidebarCollapsed) {
+            const width = parseInt(savedWidth, 10);
+            if (!isNaN(width)) {
+                setSidebarWidth(width);
+            }
+        }
+    }, []);
 
     useEffect(() => {
-        setSidebarSize(isSidebarCollapsed ? 4 : 15);
+        setSidebarWidth(isSidebarCollapsed ? 60 : (parseInt(localStorage.getItem('sidebarWidth') || '280', 10)));
     }, [isSidebarCollapsed]);
 
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+        startXRef.current = e.clientX;
+        startWidthRef.current = sidebarWidth;
+    }, [sidebarWidth]);
+
     useEffect(() => {
-        setMainSize(showPanel && panelContent ? 75 : 100);
-    }, [showPanel, panelContent]);
+        if (!isDragging) return;
 
-    const handleSidebarResize = useCallback((delta: number) => {
-        if (!containerRef.current) return;
-        const containerWidth = containerRef.current.offsetWidth;
-        const deltaPercent = (delta / containerWidth) * 100;
-        setSidebarSize(prevSize => {
-            const newSize = Math.max(3, Math.min(25, prevSize + deltaPercent));
+        const handleMouseMove = (e: MouseEvent) => {
+            const SNAP_POINTS = [280, 400, 600];
+            const SNAP_THRESHOLD = 15;
 
-            if (setIsSidebarCollapsed) {
-                if (newSize < 8 && !isSidebarCollapsed) {
-                    setIsSidebarCollapsed(true);
-                } else if (newSize > 8 && isSidebarCollapsed) {
-                    setIsSidebarCollapsed(false);
+            const delta = e.clientX - startXRef.current;
+            const maxWidth = Math.min(window.innerWidth * 0.4, 800); // Max 40% or 800px
+            let newWidth = Math.max(60, Math.min(maxWidth, startWidthRef.current + delta));
+
+            // Magnetic Snapping
+            for (const point of SNAP_POINTS) {
+                if (Math.abs(newWidth - point) < SNAP_THRESHOLD) {
+                    newWidth = point;
+                    break;
                 }
             }
 
-            return newSize;
-        });
-    }, [isSidebarCollapsed, setIsSidebarCollapsed]);
+            setSidebarWidth(newWidth);
 
-    const handleMainResize = useCallback((delta: number) => {
-        if (!containerRef.current) return;
-        const containerHeight = containerRef.current.offsetHeight;
-        const deltaPercent = (delta / containerHeight) * 100;
-        setMainSize(prevSize => Math.max(50, Math.min(90, prevSize + deltaPercent)));
-    }, []);
+            if (setIsSidebarCollapsed) {
+                if (newWidth < 100 && !isSidebarCollapsed) {
+                    setIsSidebarCollapsed(true);
+                } else if (newWidth >= 100 && isSidebarCollapsed) {
+                    setIsSidebarCollapsed(false);
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            if (!isSidebarCollapsed) {
+                localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+            }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, isSidebarCollapsed, setIsSidebarCollapsed, sidebarWidth]);
 
     return (
         <div
             ref={containerRef}
-            className={cn("flex h-full w-full overflow-hidden bg-background text-foreground", theme)}
+            className={cn("fixed inset-0 flex overflow-hidden bg-background text-foreground", theme)}
         >
-            <ResizableContainer direction="horizontal" className="h-full w-full">
-                {/* Sidebar Panel */}
-                <ResizablePane
-                    initialSize={sidebarSize}
-                    className={cn(
-                        "z-20 bg-card/10 backdrop-blur-md flex flex-col"
-                    )}
-                    direction="horizontal"
-                >
-                    {sidebarContent}
-                </ResizablePane>
+            {/* Sidebar */}
+            <div
+                className="h-full flex-shrink-0 z-20 bg-card/10 backdrop-blur-md border-r border-border/40"
+                style={{ width: sidebarWidth }}
+            >
+                {sidebarContent}
+            </div>
 
-                <ResizableHandle onResize={handleSidebarResize} direction="horizontal" />
+            {/* Resize Handle */}
+            <div
+                tabIndex={0}
+                role="separator"
+                aria-valuenow={sidebarWidth}
+                aria-valuemin={60}
+                aria-valuemax={800}
+                onMouseDown={handleMouseDown}
+                onKeyDown={(e) => {
+                    const step = e.shiftKey ? 50 : 10;
+                    if (e.key === 'ArrowLeft') {
+                        const newWidth = Math.max(60, sidebarWidth - step);
+                        setSidebarWidth(newWidth);
+                        localStorage.setItem('sidebarWidth', newWidth.toString());
+                    } else if (e.key === 'ArrowRight') {
+                        const newWidth = Math.min(800, sidebarWidth + step);
+                        setSidebarWidth(newWidth);
+                        localStorage.setItem('sidebarWidth', newWidth.toString());
+                    } else if (e.key === 'Enter' || e.key === ' ') {
+                        if (setIsSidebarCollapsed) {
+                            setIsSidebarCollapsed(!isSidebarCollapsed);
+                        }
+                    }
+                }}
+                onDoubleClick={() => {
+                    setSidebarWidth(280);
+                    localStorage.setItem('sidebarWidth', '280');
+                    if (isSidebarCollapsed && setIsSidebarCollapsed) {
+                        setIsSidebarCollapsed(false);
+                    }
+                }}
+                className={cn(
+                    "w-4 -ml-2 relative z-50 cursor-col-resize flex flex-col justify-center items-center group outline-none select-none touch-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
+                )}
+            >
+                {/* Visible Line */}
+                <div className={cn(
+                    "w-[1px] h-full bg-border/0 transition-all duration-300 ease-out",
+                    "group-hover:bg-primary/50 group-active:bg-primary",
+                    "group-focus-visible:bg-primary/50",
+                    isDragging && "bg-primary w-[2px] shadow-none"
+                )} />
+            </div>
 
-                {/* Main Content Panel */}
-                <ResizablePane
-                    initialSize={100 - sidebarSize}
-                    className="flex flex-col min-h-0"
-                    direction="horizontal"
-                >
-                    <ResizableContainer direction="vertical" className="h-full">
-                        <ResizablePane
-                            initialSize={mainSize}
-                            className="flex flex-col min-h-0"
-                            direction="vertical"
-                        >
+            {/* Main Content */}
+            <div className="flex-1 h-full min-w-0 flex flex-col overflow-hidden">
+                {showPanel && panelContent ? (
+                    <>
+                        <div className="flex-1 min-h-0 overflow-hidden">
                             {mainContent}
-                        </ResizablePane>
-
-                        {showPanel && panelContent && (
-                            <>
-                                <ResizableHandle onResize={handleMainResize} direction="vertical" />
-                                <ResizablePane
-                                    initialSize={100 - mainSize}
-                                    className="bg-card/5 backdrop-blur-sm border-t border-border/50"
-                                    direction="vertical"
-                                >
-                                    {panelContent}
-                                </ResizablePane>
-                            </>
-                        )}
-                    </ResizableContainer>
-                </ResizablePane>
-            </ResizableContainer>
+                        </div>
+                        <div className="h-px bg-border/50" />
+                        <div className="h-1/4 min-h-[100px] bg-card/5 backdrop-blur-sm overflow-hidden">
+                            {panelContent}
+                        </div>
+                    </>
+                ) : (
+                    <div className="h-full w-full flex flex-col overflow-hidden">
+                        {mainContent}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

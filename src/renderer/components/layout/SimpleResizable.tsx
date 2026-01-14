@@ -5,12 +5,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
-interface ResizablePaneProps {
-    children: React.ReactNode;
-    initialSize?: number;
-    className?: string;
-    onResize?: (size: number) => void;
-}
+// Removed duplicate interface
 
 interface ResizableContainerProps {
     children: React.ReactNode;
@@ -18,11 +13,20 @@ interface ResizableContainerProps {
     className?: string;
 }
 
+export interface ResizablePaneProps {
+    children: React.ReactNode;
+    initialSize?: number;
+    className?: string;
+    onResize?: (size: number) => void;
+    direction?: 'horizontal' | 'vertical'; // Add direction prop
+}
+
 export const ResizablePane: React.FC<ResizablePaneProps> = ({
     children,
     initialSize = 50,
     className,
-    onResize
+    onResize,
+    direction = 'horizontal'
 }) => {
     const [size, setSize] = useState(initialSize);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -43,8 +47,8 @@ export const ResizablePane: React.FC<ResizablePaneProps> = ({
             ref={containerRef}
             className={cn('overflow-hidden', className)}
             style={{
-                width: `${size}%`,
-                height: '100%',
+                width: direction === 'horizontal' ? `${size}%` : '100%',
+                height: direction === 'vertical' ? `${size}%` : '100%',
                 flexShrink: 0,
                 flexGrow: 0
             }}
@@ -75,6 +79,7 @@ export const ResizableHandle: React.FC<{
             const currentPos = direction === 'horizontal' ? e.clientX : e.clientY;
             const delta = currentPos - startPosRef.current;
             onResize(delta);
+            startPosRef.current = currentPos; // Update start position for next move
         };
 
         const handleMouseUp = () => {

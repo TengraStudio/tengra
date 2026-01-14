@@ -11,6 +11,7 @@ export interface ChatStreamChunk {
     metadata?: JsonObject
     sources?: string[]
     error?: string
+    done?: boolean
 }
 
 export async function* chatStream(
@@ -30,38 +31,63 @@ export async function* chatStream(
     // Type for the listener callback
     const listener = (chunk: JsonValue) => {
         const typedChunk = chunk as ChatStreamChunk;
-        if (isDone) return;
+        if (isDone) {
+            console.log(`[ChatStream] Received chunk after isDone=true for chatId: ${chatId}. Ignoring.`);
+            return;
+        }
+
         // If chatId is provided and chunk has chatId, filter it. 
-        if (chatId && typedChunk.chatId && typedChunk.chatId !== chatId) return;
+        if (chatId && typedChunk.chatId && typedChunk.chatId !== chatId) {
+            console.warn(`[ChatStream] Ignoring chunk for different chatId: ${typedChunk.chatId} (expected ${chatId})`);
+            return;
+        }
+
+        console.log(`[ChatStream] Received chunk for ${chatId}:`, typedChunk);
+
+        if (typedChunk.done) {
+            console.log(`[ChatStream] Received DONE signal for chatId: ${chatId}`);
+            isDone = true;
+            if (currentResolver) {
+                console.log(`[ChatStream] Resolving currentResolver (DONE) for chatId: ${chatId}`);
+                currentResolver();
+                currentResolver = null;
+            }
+            return;
+        }
 
         queue.push(typedChunk);
+        console.log(`[ChatStream] Pushed chunk to queue. Queue size: ${queue.length}`);
 
         if (currentResolver) {
+            console.log(`[ChatStream] Resolving currentResolver for chatId: ${chatId}`);
             currentResolver(); // Signal that data is available
             currentResolver = null;
         }
     };
 
     // Subscribe using the exposed bridge method
-    window.electron.onStreamChunk(listener);
+    const unsubscribe = window.electron.onStreamChunk(listener);
+    console.log(`[ChatStream] Subscribed to streams for chatId: ${chatId}`);
 
     // Start the stream via IPC
     window.electron.chatStream(messages, model, tools, provider, options, chatId, projectId)
         .then(() => {
-            isDone = true;
-            if (currentResolver) currentResolver();
+            // Request successfully sent/queued. Completion will be signaled via 'done' chunk.
         })
         .catch(err => {
             error = err;
             isDone = true;
-            if (currentResolver) currentResolver();
+            if (currentResolver) {
+                currentResolver();
+                currentResolver = null;
+            }
         });
 
     try {
         const MAX_OUTER_ITERATIONS = 100000;
         const MAX_QUEUE_ITERATIONS = 1000;
         let outerIterations = 0;
-        
+
         while (outerIterations < MAX_OUTER_ITERATIONS) {
             let queueIterations = 0;
             while (queue.length > 0 && queueIterations < MAX_QUEUE_ITERATIONS) {
@@ -69,9 +95,15 @@ export async function* chatStream(
                 if (!chunk) continue;
                 queueIterations++;
 
+                console.log(`[ChatStream] Yielding chunk from queue:`, chunk);
+
                 // Inspect chunk structure and normalize keys
-                if (chunk.content) yield { type: 'content', content: chunk.content };
-                if (chunk.reasoning) yield { type: 'reasoning', content: chunk.reasoning };
+                if (chunk.content !== undefined && chunk.content !== null) {
+                    yield { type: 'content', content: chunk.content };
+                }
+                if (chunk.reasoning !== undefined && chunk.reasoning !== null) {
+                    yield { type: 'reasoning', content: chunk.reasoning };
+                }
                 if (chunk.images) yield { type: 'images', images: chunk.images };
                 if (chunk.type === 'tool_calls') yield chunk;
                 if (chunk.type === 'metadata') {
@@ -93,12 +125,18 @@ export async function* chatStream(
             await new Promise<void | null>(resolve => currentResolver = resolve);
             outerIterations++;
         }
-        
+
         if (outerIterations >= MAX_OUTER_ITERATIONS) {
             throw new Error('Chat stream processing exceeded maximum iterations');
         }
     } finally {
-        // Clean up listener
-        window.electron.removeStreamChunkListener(listener);
+        // Clean up listener using the unsubscribe function
+        if (typeof unsubscribe === 'function') {
+            (unsubscribe as () => void)();
+            console.log(`[ChatStream] Unsubscribed from streams for chatId: ${chatId}`);
+        } else {
+            // Fallback for older versions of the bridge
+            window.electron.removeStreamChunkListener(listener);
+        }
     }
 }

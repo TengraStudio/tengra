@@ -80,7 +80,7 @@ export class MemoryService {
 
     // Episodic Memory (Conversation History)
     async summarizeChat(chatId: string, provider?: string, model?: string): Promise<SummarizationResult> {
-        const messages = await this.db.getChatMessages(chatId);
+        const messages = await this.db.getMessages(chatId);
         if (messages.length === 0) return { summary: '', title: 'Empty Chat', topics: [], pendingTasks: [] };
 
         const transcript = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
@@ -122,7 +122,7 @@ ${transcript}`;
     }
 
     async summarizeSession(chatId: string, provider?: string, model?: string): Promise<EpisodicMemory | null> {
-        const messages = await this.db.getChatMessages(chatId);
+        const messages = await this.db.getMessages(chatId);
         if (messages.length < 5) return null;
 
         const analysis = await this.summarizeChat(chatId, provider, model);

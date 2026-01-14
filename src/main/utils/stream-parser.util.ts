@@ -34,6 +34,7 @@ export class StreamParser {
         const body = response.body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
 
         try {
+            console.log(`[StreamParser] Starting parse. Body type: ${response.body?.constructor.name}`);
             if ('getReader' in body && typeof body.getReader === 'function') {
                 // Web Standard ReadableStream
                 const reader = body.getReader();
@@ -42,7 +43,11 @@ export class StreamParser {
                 try {
                     while (iterations < MAX_STREAM_ITERATIONS) {
                         const { done, value } = await reader.read();
-                        if (done) break;
+                        if (done) {
+                            console.log('[StreamParser] Reader done');
+                            break;
+                        }
+                        console.debug(`[StreamParser] Received ${value.length} bytes`);
                         buffer += decoder.decode(value, { stream: true });
                         yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
                         iterations++;
@@ -55,7 +60,9 @@ export class StreamParser {
                 }
             } else {
                 // Node.js Stream
+                console.log('[StreamParser] Using AsyncIterable iteration');
                 for await (const value of body as AsyncIterable<Uint8Array>) {
+                    console.debug(`[StreamParser] Received ${value.length} bytes`);
                     buffer += decoder.decode(value, { stream: true });
                     yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
                 }
@@ -89,20 +96,38 @@ export class StreamParser {
             if (jsonData === '[DONE]') continue;
 
             try {
-                const json = JSON.parse(jsonData) as OpenAIStreamPayload & { type?: string; delta?: string; message?: string };
+                const json = JSON.parse(jsonData) as OpenAIStreamPayload & { type?: string; delta?: string | { text?: string }; message?: string };
 
                 // 1. OPENCODE /responses format
                 if (json.type === 'response.output_text.delta' && json.delta) {
-                    yield { content: json.delta };
+                    const content = typeof json.delta === 'string' ? json.delta : json.delta?.text || '';
+                    if (content) {
+                        yield { content };
+                    }
                     continue;
                 }
 
                 if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
-                    yield { reasoning: json.delta };
+                    const reasoning = typeof json.delta === 'string' ? json.delta : json.delta?.text || '';
+                    if (reasoning) {
+                        yield { reasoning };
+                    }
+                    continue;
+                }
+
+                if (json.type === 'response.output_item.done' && (json as any).item?.content) {
+                    const contentValues = (json as any).item.content
+                        .filter((c: any) => c.type === 'output_text')
+                        .map((c: any) => c.text)
+                        .join('');
+                    if (contentValues) {
+                        yield { content: contentValues };
+                    }
                     continue;
                 }
 
                 if (json.type === 'response.function_call_arguments.delta' && json.delta) {
+                    const args = typeof json.delta === 'string' ? json.delta : JSON.stringify(json.delta);
                     yield {
                         type: 'tool_calls',
                         tool_calls: [{
@@ -110,7 +135,7 @@ export class StreamParser {
                             type: 'function',
                             function: {
                                 name: (json as any).name || 'unknown',
-                                arguments: json.delta
+                                arguments: args
                             }
                         }]
                     };

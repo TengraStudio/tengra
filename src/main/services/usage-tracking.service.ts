@@ -80,7 +80,7 @@ export class UsageTrackingService {
     getUsageCount(period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string): number {
         this.cleanupOldRecords()
         const records = this.stats[period]
-        
+
         if (provider && model) {
             return records.filter(r => r.provider === provider && r.model === model).length
         } else if (provider) {
@@ -103,7 +103,7 @@ export class UsageTrackingService {
                 const limit = copilotLimits.hourly.type === 'requests'
                     ? copilotLimits.hourly.value
                     : currentQuota ? Math.round(currentQuota.remaining * (copilotLimits.hourly.value / 100)) : 0
-                
+
                 if (hourlyUsage >= limit) {
                     return { allowed: false, reason: `Hourly limit reached: ${hourlyUsage}/${limit} ${copilotLimits.hourly.type === 'requests' ? 'requests' : '%'}` }
                 }
@@ -115,7 +115,7 @@ export class UsageTrackingService {
                 const limit = copilotLimits.daily.type === 'requests'
                     ? copilotLimits.daily.value
                     : currentQuota ? Math.round(currentQuota.remaining * (copilotLimits.daily.value / 100)) : 0
-                
+
                 if (dailyUsage >= limit) {
                     return { allowed: false, reason: `Daily limit reached: ${dailyUsage}/${limit} ${copilotLimits.daily.type === 'requests' ? 'requests' : '%'}` }
                 }
@@ -127,7 +127,7 @@ export class UsageTrackingService {
                 const limit = copilotLimits.weekly.type === 'requests'
                     ? copilotLimits.weekly.value
                     : currentQuota ? Math.round(currentQuota.remaining * (copilotLimits.weekly.value / 100)) : 0
-                
+
                 if (weeklyUsage >= limit) {
                     return { allowed: false, reason: `Weekly limit reached: ${weeklyUsage}/${limit} ${copilotLimits.weekly.type === 'requests' ? 'requests' : '%'}` }
                 }
@@ -137,7 +137,7 @@ export class UsageTrackingService {
         // Check Antigravity limits
         // Note: Antigravity limits are percentage-based and checked in ModelSelector
         // where we have quota info. This service just tracks usage counts.
-        
+
         // Check Codex limits
         // Note: Codex limits are percentage-based and checked in ModelSelector
         // where we have codexUsage info. This service just tracks usage counts.
@@ -146,4 +146,4 @@ export class UsageTrackingService {
     }
 }
 
-export const usageTrackingService = new UsageTrackingService()
+

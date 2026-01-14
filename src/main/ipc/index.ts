@@ -43,6 +43,8 @@ import { registerAuditIpc } from './audit';
 import { registerPerformanceIpc } from './performance';
 import { registerMultiModelIpc } from './multi-model';
 import { registerMetricsIpc } from './metrics';
+import { registerBackupIpc } from './backup';
+import { registerBatchIpc } from '../utils/ipc-batch.util';
 
 /**
  * Registers all Inter-Process Communication handlers.
@@ -141,4 +143,10 @@ export function registerAllIpc(
     // External Integrations
     registerToolsIpc(toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher);
+
+    // Backup & Restore
+    registerBackupIpc(services.backupService);
+
+    // IPC Batching
+    registerBatchIpc();
 }

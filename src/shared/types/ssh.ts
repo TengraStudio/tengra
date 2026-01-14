@@ -32,6 +32,8 @@ export interface SSHFile {
 export interface SSHExecOptions {
     cwd?: string;
     env?: Record<string, string>;
+    pty?: boolean;
+    timeout?: number;
 }
 
 export interface SSHDiskStat {

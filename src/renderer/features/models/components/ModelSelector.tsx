@@ -109,10 +109,10 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     // Check usage limits for all models
     useEffect(() => {
         if (!settings?.modelUsageLimits) return
-        
+
         const checkLimits = async () => {
             const checks: Record<string, { allowed: boolean; reason?: string }> = {}
-            
+
             // Check limits for all models in groupedModels
             if (groupedModels) {
                 for (const [provider, group] of Object.entries(groupedModels)) {
@@ -129,17 +129,17 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     }
                 }
             }
-            
+
             setUsageLimitChecks(checks)
         }
-        
+
         checkLimits()
     }, [settings?.modelUsageLimits, groupedModels])
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
         if (!quotas && !codexUsage && !settings?.modelUsageLimits) return false;
         const lowerModelId = modelId.toLowerCase();
-        
+
         // Check usage limits first
         const limitKey = `${provider}:${modelId}`
         const limitCheck = usageLimitChecks[limitKey]
@@ -154,7 +154,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             if (usage) {
                 // Check user-defined usage limits from settings
                 const codexLimits = settings?.modelUsageLimits?.codex
-                
+
                 // Check weekly limit from settings
                 if (codexLimits?.weekly?.enabled && usage.weeklyLimit !== undefined && usage.weeklyLimit > 0) {
                     const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0)
@@ -165,7 +165,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                         }
                     }
                 }
-                
+
                 // Check daily limit from settings
                 const usageExt = usage as { dailyLimit?: number }
                 if (codexLimits?.daily?.enabled && usageExt.dailyLimit !== undefined && usageExt.dailyLimit > 0) {
@@ -177,7 +177,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                         }
                     }
                 }
-                
+
                 // If weekly limit is 0, disable all Codex models
                 if (usage.weeklyLimit === 0) {
                     if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
@@ -206,16 +206,16 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         }
 
         // 3. Antigravity Quota Handling - disable if percentage is 0-5% or below user-defined limit
-        if (provider === 'antigravity' ) {
+        if (provider === 'antigravity') {
             // Check user-defined usage limits from settings
             const antigravityLimits = settings?.modelUsageLimits?.antigravity
             const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId]
-            
+
             if (modelLimit?.enabled) {
                 // Check models array in quotas for percentage
                 if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
-                    const modelQuotaItem = quotas.models.find((m: any) => 
-                        m.id?.toLowerCase() === lowerModelId || 
+                    const modelQuotaItem = quotas.models.find((m: any) =>
+                        m.id?.toLowerCase() === lowerModelId ||
                         m.id?.toLowerCase() === modelId.toLowerCase()
                     );
                     if (modelQuotaItem) {
@@ -228,11 +228,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     }
                 }
             }
-            
+
             // Check models array in quotas for percentage
             if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
-                const modelQuotaItem = quotas.models.find((m: any) => 
-                    m.id?.toLowerCase() === lowerModelId || 
+                const modelQuotaItem = quotas.models.find((m: any) =>
+                    m.id?.toLowerCase() === lowerModelId ||
                     m.id?.toLowerCase() === modelId.toLowerCase()
                 );
                 if (modelQuotaItem) {
@@ -243,7 +243,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     }
                 }
             }
-            
+
             // Fallback to old structure
             const agQuota = (quotas as { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> })?.antigravity ||
                 (quotas as { data?: { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> } })?.data?.antigravity;
@@ -334,6 +334,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             interface RawModel {
                 id?: string
                 name?: string
+                label?: string
                 provider?: string
                 quota?: { percentage?: number }
                 type?: string
@@ -348,8 +349,8 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
                 if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) continue
 
-                let label = m.name || id;
-                label = label.replace(/^(github-|copilot-|ollama-)/i, '');
+                let label = m.label || m.name || id;
+                label = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
                 if (label.startsWith('gpt-')) label = label.toUpperCase();
 
                 cat.models.push({

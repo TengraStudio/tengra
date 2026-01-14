@@ -1,36 +1,32 @@
-# Changelog
+# Changelog & Updates
 
-All notable changes to this project will be documented in this file.
+Track the evolution of Orbit.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+---
 
-## [Unreleased]
+## Recent Updates
 
-### Added
-- **Architecture**: Complete refactor of the Renderer process architecture using React Contexts (`AuthContext`, `ModelContext`, `ChatContext`, `ProjectContext`).
-- **Features**: 
-    - Full "The Council" agent persona support.
-    - Enhanced "Workspace Explorer" with easier file management and tree view.
-    - "Audio Chat Overlay" for seamless voice interactions.
-- **Documentation**: 
-    - Comprehensive `PRD.md`, `ARCHITECTURE.md`, `USER_GUIDE.md`, and `DEVELOPER_GUIDE.md` added to `docs/`.
-    - Professional standard files: `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
-- **Testing**: Added integration tests for Proxy and Data services.
+### 2026-01-15: Stats & Performance
+- **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats` to populate the Statistics tab correctly.
+- **Sidebar**: Fixed infinite render loop by memoizing `ChatItem` and `FolderSection`.
+- **Chat**: Resolved "placeholder ghosting" when API generation fails.
+- **Docs**: Consolidated 19 markdown files into 6 themed documents.
 
-### Changed
-- **Optimization**: Reduced prop drilling in `App.tsx` by ~90%.
-- **UI/UX**: Improved `Sidebar` and `AppHeader` responsiveness and state management.
-- **Performance**: Optimized chat streaming and rendering logic.
+### 2026-01-14: Build Improvements
+- **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.
+- **IPC**: Standardized `onStreamChunk` return types.
 
-### Fixed
-- Resolved issues with context menu z-indexing in Workspace Explorer.
-- Fixed speech recognition state persistence.
+---
 
-## [0.1.0] - 2025-12-01
+## Version History
 
-### Added
-- Initial beta release.
-- Basic chat functionality with Ollama support.
-- Project file explorer.
-- Settings management.
+### v1.1.0: Multi-LLM Support
+- Added `MultiLLMOrchestrator` for concurrent model execution.
+- Introduced Model Collaboration strategies.
+- Switched to PGlite for better local performance.
+
+### v1.0.0: Initial Release
+- Basic chat functionality with OpenAI and Anthropic.
+- Local Ollama support.
+- Project management view.
+- Theme support (Dark/Light).

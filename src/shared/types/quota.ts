@@ -47,6 +47,11 @@ export interface QuotaResponse {
     email?: string;
     usageSource?: 'openai' | 'anthropic' | 'copilot' | 'local' | 'none' | 'chatgpt';
     copilot?: CopilotQuota;
+    claudeQuota?: {
+        success: boolean;
+        fiveHour?: { utilization: number; resetsAt: string };
+        sevenDay?: { utilization: number; resetsAt: string };
+    };
 }
 
 export interface CopilotQuota {

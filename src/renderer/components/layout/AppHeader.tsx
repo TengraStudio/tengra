@@ -48,7 +48,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                    <h1 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+                    <h1 className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
                         {currentView === 'chat' && currentChat ? currentChat.title : t(`nav.${currentView}`)}
                     </h1>
                 </div>

@@ -1,7 +1,10 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { Client } from 'ssh2'
+import * as net from 'net'
+import * as crypto from 'crypto'
+import { Client, ClientChannel } from 'ssh2'
 import { EventEmitter } from 'events'
+import { safeStorage } from 'electron'
 import { SSHExecOptions, SSHFile, SSHSystemStats, SSHPackageInfo } from '../../shared/types/ssh'
 import { getErrorMessage } from '../../shared/utils/error.util'
 
@@ -16,18 +19,80 @@ export interface SSHConnection {
     privateKey?: string
     passphrase?: string
     connected: boolean
-    [key: string]: string | number | boolean | undefined
+    // Enhanced fields
+    lastConnected?: number
+    connectionCount?: number
+    isFavorite?: boolean
+    tags?: string[]
+    jumpHost?: string // For SSH tunneling through another host
+    forwardAgent?: boolean
+    keepaliveInterval?: number
+    [key: string]: string | number | boolean | string[] | undefined
+}
+
+export interface PortForward {
+    id: string
+    connectionId: string
+    type: 'local' | 'remote' | 'dynamic'
+    localHost: string
+    localPort: number
+    remoteHost: string
+    remotePort: number
+    active: boolean
+}
+
+export interface SSHConnectionStats {
+    bytesReceived: number
+    bytesSent: number
+    commandsExecuted: number
+    connectedAt: number
+    lastActivity: number
+}
+
+interface ShellSession {
+    stream: ClientChannel
+    onData: (data: string) => void
+    onExit: () => void
 }
 
 export class SSHService extends EventEmitter {
     private connections: Map<string, Client> = new Map()
     private connectionDetails: Map<string, SSHConnection> = new Map()
+    private connectionStats: Map<string, SSHConnectionStats> = new Map()
+    private shellSessions: Map<string, ShellSession> = new Map()
+    private portForwards: Map<string, PortForward> = new Map()
+    private keepaliveTimers: Map<string, NodeJS.Timeout> = new Map()
     private storagePath: string
 
     constructor(storagePath: string) {
         super()
         this.storagePath = storagePath
         this.ensureProfilesFile()
+    }
+
+    /**
+     * Encrypt sensitive data using Electron's safeStorage
+     */
+    private encryptCredential(value: string): string {
+        if (!value || !safeStorage.isEncryptionAvailable()) return value
+        try {
+            return safeStorage.encryptString(value).toString('base64')
+        } catch {
+            return value
+        }
+    }
+
+    /**
+     * Decrypt sensitive data using Electron's safeStorage
+     */
+    private decryptCredential(value: string): string {
+        if (!value || !safeStorage.isEncryptionAvailable()) return value
+        try {
+            const buffer = Buffer.from(value, 'base64')
+            return safeStorage.decryptString(buffer)
+        } catch {
+            return value
+        }
     }
 
     private get profilesPath(): string {
@@ -59,8 +124,14 @@ export class SSHService extends EventEmitter {
             const profiles = await this.getSavedProfiles()
             const index = profiles.findIndex(p => p.id === profile.id)
 
-            // simple obfuscation for password/key (NOT SECURE PRODUCTION STORAGE)
+            // Encrypt sensitive credentials
             const safeProfile = { ...profile }
+            if (safeProfile.password) {
+                safeProfile.password = this.encryptCredential(safeProfile.password)
+            }
+            if (safeProfile.passphrase) {
+                safeProfile.passphrase = this.encryptCredential(safeProfile.passphrase)
+            }
 
             if (index >= 0) {
                 profiles[index] = safeProfile
@@ -76,6 +147,84 @@ export class SSHService extends EventEmitter {
         }
     }
 
+    /**
+     * Get a profile with decrypted credentials
+     */
+    async getProfileWithCredentials(id: string): Promise<SSHConnection | null> {
+        const profiles = await this.getSavedProfiles()
+        const profile = profiles.find(p => p.id === id)
+        if (!profile) return null
+
+        // Decrypt credentials
+        const decrypted = { ...profile }
+        if (decrypted.password) {
+            decrypted.password = this.decryptCredential(decrypted.password)
+        }
+        if (decrypted.passphrase) {
+            decrypted.passphrase = this.decryptCredential(decrypted.passphrase)
+        }
+        return decrypted
+    }
+
+    /**
+     * Toggle favorite status for a profile
+     */
+    async toggleFavorite(id: string): Promise<boolean> {
+        const profiles = await this.getSavedProfiles()
+        const index = profiles.findIndex(p => p.id === id)
+        if (index === -1) return false
+
+        profiles[index].isFavorite = !profiles[index].isFavorite
+        fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
+        return true
+    }
+
+    /**
+     * Get favorite profiles
+     */
+    async getFavorites(): Promise<SSHConnection[]> {
+        const profiles = await this.getSavedProfiles()
+        return profiles.filter(p => p.isFavorite)
+    }
+
+    /**
+     * Get recent connections sorted by last connected time
+     */
+    async getRecentConnections(limit: number = 10): Promise<SSHConnection[]> {
+        const profiles = await this.getSavedProfiles()
+        return profiles
+            .filter(p => p.lastConnected)
+            .sort((a, b) => (b.lastConnected || 0) - (a.lastConnected || 0))
+            .slice(0, limit)
+    }
+
+    /**
+     * Add tags to a profile
+     */
+    async setProfileTags(id: string, tags: string[]): Promise<boolean> {
+        const profiles = await this.getSavedProfiles()
+        const index = profiles.findIndex(p => p.id === id)
+        if (index === -1) return false
+
+        profiles[index].tags = tags
+        fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
+        return true
+    }
+
+    /**
+     * Search profiles by name, host, or tags
+     */
+    async searchProfiles(query: string): Promise<SSHConnection[]> {
+        const profiles = await this.getSavedProfiles()
+        const q = query.toLowerCase()
+        return profiles.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            p.host.toLowerCase().includes(q) ||
+            p.username.toLowerCase().includes(q) ||
+            p.tags?.some(t => t.toLowerCase().includes(q))
+        )
+    }
+
     async deleteProfile(id: string): Promise<boolean> {
         try {
             const profiles = await this.getSavedProfiles()
@@ -89,36 +238,90 @@ export class SSHService extends EventEmitter {
     }
 
     async connect(config: SSHConnection): Promise<{ success: boolean; error?: string }> {
+        // Check if already connected
+        if (this.connections.has(config.id)) {
+            return { success: true }
+        }
+
         return new Promise((resolve) => {
             const conn = new Client()
+            const keepaliveInterval = config.keepaliveInterval || 30000
 
-            conn.on('ready', () => {
+            conn.on('ready', async () => {
                 this.connections.set(config.id, conn)
                 this.connectionDetails.set(config.id, { ...config, connected: true })
+
+                // Initialize connection stats
+                this.connectionStats.set(config.id, {
+                    bytesReceived: 0,
+                    bytesSent: 0,
+                    commandsExecuted: 0,
+                    connectedAt: Date.now(),
+                    lastActivity: Date.now()
+                })
+
+                // Setup keepalive
+                const timer = setInterval(() => {
+                    if (conn) {
+                        conn.exec('echo keepalive', () => {})
+                    }
+                }, keepaliveInterval)
+                this.keepaliveTimers.set(config.id, timer)
+
+                // Update profile with connection history
+                const profiles = await this.getSavedProfiles()
+                const profileIndex = profiles.findIndex(p => p.id === config.id)
+                if (profileIndex >= 0) {
+                    profiles[profileIndex].lastConnected = Date.now()
+                    profiles[profileIndex].connectionCount = (profiles[profileIndex].connectionCount || 0) + 1
+                    fs.writeFileSync(this.profilesPath, JSON.stringify(profiles, null, 2))
+                }
+
                 this.emit('connected', config.id)
                 resolve({ success: true })
             }).on('error', (err: Error) => {
                 this.emit('error', { id: config.id, message: err.message })
                 resolve({ success: false, error: err.message })
             }).on('close', () => {
+                // Cleanup
+                const timer = this.keepaliveTimers.get(config.id)
+                if (timer) clearInterval(timer)
+                this.keepaliveTimers.delete(config.id)
                 this.connections.delete(config.id)
                 this.connectionDetails.delete(config.id)
+                this.connectionStats.delete(config.id)
+                this.shellSessions.delete(config.id)
                 this.emit('disconnected', config.id)
             })
 
             try {
+                // Decrypt credentials if needed
+                const password = config.password ? this.decryptCredential(config.password) : undefined
+                const passphrase = config.passphrase ? this.decryptCredential(config.passphrase) : undefined
+
                 conn.connect({
                     host: config.host,
                     port: config.port,
                     username: config.username,
-                    password: config.password,
+                    password,
                     privateKey: config.privateKey ? fs.readFileSync(config.privateKey) : undefined,
-                    passphrase: config.passphrase
+                    passphrase,
+                    keepaliveInterval,
+                    keepaliveCountMax: 3,
+                    readyTimeout: 20000,
+                    agentForward: config.forwardAgent
                 })
             } catch (error) {
                 resolve({ success: false, error: getErrorMessage(error as Error) })
             }
         })
+    }
+
+    /**
+     * Get connection statistics
+     */
+    getConnectionStats(connectionId: string): SSHConnectionStats | null {
+        return this.connectionStats.get(connectionId) || null
     }
 
     async disconnect(connectionId: string): Promise<boolean> {
@@ -140,21 +343,86 @@ export class SSHService extends EventEmitter {
         return this.connections.has(connectionId)
     }
 
-    async executeCommand(connectionId: string, command: string, _options?: SSHExecOptions): Promise<{ stdout: string; stderr: string; code: number }> {
+    async executeCommand(connectionId: string, command: string, options?: SSHExecOptions): Promise<{ stdout: string; stderr: string; code: number }> {
         const conn = this.connections.get(connectionId)
         if (!conn) throw new Error('Not connected')
 
+        // Update stats
+        const stats = this.connectionStats.get(connectionId)
+        if (stats) {
+            stats.commandsExecuted++
+            stats.lastActivity = Date.now()
+            stats.bytesSent += command.length
+        }
+
         return new Promise((resolve, reject) => {
-            conn.exec(command, (err, stream) => {
+            const execOptions: Record<string, unknown> = {}
+            if (options?.env) execOptions.env = options.env
+            if (options?.pty) execOptions.pty = true
+
+            conn.exec(command, execOptions, (err, stream) => {
                 if (err) return reject(err)
                 let stdout = ''
                 let stderr = ''
+
+                // Handle timeout
+                let timeout: NodeJS.Timeout | null = null
+                if (options?.timeout) {
+                    timeout = setTimeout(() => {
+                        stream.close()
+                        reject(new Error('Command timed out'))
+                    }, options.timeout)
+                }
+
                 stream.on('close', (code: number) => {
+                    if (timeout) clearTimeout(timeout)
+                    // Update bytes received
+                    if (stats) {
+                        stats.bytesReceived += stdout.length + stderr.length
+                    }
                     resolve({ stdout, stderr, code })
                 }).on('data', (data: Buffer | string) => {
                     stdout += data.toString()
                 }).stderr.on('data', (data: Buffer | string) => {
                     stderr += data.toString()
+                })
+            })
+        })
+    }
+
+    /**
+     * Execute command with streaming output
+     */
+    async executeCommandStreaming(
+        connectionId: string,
+        command: string,
+        onStdout: (data: string) => void,
+        onStderr: (data: string) => void,
+        options?: SSHExecOptions
+    ): Promise<number> {
+        const conn = this.connections.get(connectionId)
+        if (!conn) throw new Error('Not connected')
+
+        const stats = this.connectionStats.get(connectionId)
+        if (stats) {
+            stats.commandsExecuted++
+            stats.lastActivity = Date.now()
+        }
+
+        return new Promise((resolve, reject) => {
+            const execOptions: Record<string, unknown> = {}
+            if (options?.env) execOptions.env = options.env
+            if (options?.pty) execOptions.pty = true
+
+            conn.exec(command, execOptions, (err, stream) => {
+                if (err) return reject(err)
+
+                stream.on('close', (code: number) => {
+                    resolve(code)
+                }).on('data', (data: Buffer | string) => {
+                    onStdout(data.toString())
+                }).stderr.on('data', (data: Buffer | string) => {
+                    onStderr(data.toString())
                 })
             })
         })
@@ -325,9 +593,59 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async startShell(_connectionId: string, _onData: (data: string) => void, _onExit: () => void): Promise<{ success: boolean }> {
-        // Simple mock shell
-        return { success: true }
+    async startShell(connectionId: string, onData: (data: string) => void, onExit: () => void): Promise<{ success: boolean; error?: string }> {
+        const conn = this.connections.get(connectionId)
+        if (!conn) return { success: false, error: 'Not connected' }
+
+        // Check if shell already exists
+        if (this.shellSessions.has(connectionId)) {
+            return { success: true }
+        }
+
+        return new Promise((resolve) => {
+            conn.shell({ term: 'xterm-256color' }, (err, stream) => {
+                if (err) {
+                    resolve({ success: false, error: err.message })
+                    return
+                }
+
+                this.shellSessions.set(connectionId, { stream, onData, onExit })
+
+                stream.on('data', (data: Buffer | string) => {
+                    onData(data.toString())
+                })
+
+                stream.on('close', () => {
+                    this.shellSessions.delete(connectionId)
+                    onExit()
+                })
+
+                resolve({ success: true })
+            })
+        })
+    }
+
+    /**
+     * Resize the shell terminal
+     */
+    resizeShell(connectionId: string, cols: number, rows: number): boolean {
+        const session = this.shellSessions.get(connectionId)
+        if (!session) return false
+
+        session.stream.setWindow(rows, cols, 0, 0)
+        return true
+    }
+
+    /**
+     * Close the shell session
+     */
+    closeShell(connectionId: string): boolean {
+        const session = this.shellSessions.get(connectionId)
+        if (!session) return false
+
+        session.stream.close()
+        this.shellSessions.delete(connectionId)
+        return true
     }
 
     async getLogFiles(connectionId: string): Promise<string[]> {
@@ -356,8 +674,123 @@ export class SSHService extends EventEmitter {
         return stdout
     }
 
-    sendShellData(_connectionId: string, _data: string): boolean {
+    sendShellData(connectionId: string, data: string): boolean {
+        const session = this.shellSessions.get(connectionId)
+        if (!session) return false
+
+        session.stream.write(data)
+
+        // Update stats
+        const stats = this.connectionStats.get(connectionId)
+        if (stats) {
+            stats.bytesSent += data.length
+            stats.lastActivity = Date.now()
+        }
+
         return true
+    }
+
+    /**
+     * Create a local port forward (local -> remote)
+     */
+    async createLocalForward(
+        connectionId: string,
+        localHost: string,
+        localPort: number,
+        remoteHost: string,
+        remotePort: number
+    ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+        const conn = this.connections.get(connectionId)
+        if (!conn) return { success: false, error: 'Not connected' }
+
+        const forwardId = crypto.randomUUID()
+
+        return new Promise((resolve) => {
+            const server = net.createServer((socket: net.Socket) => {
+                conn.forwardOut(
+                    socket.remoteAddress || '127.0.0.1',
+                    socket.remotePort || 0,
+                    remoteHost,
+                    remotePort,
+                    (err: Error | undefined, stream: NodeJS.ReadWriteStream) => {
+                        if (err) {
+                            socket.end()
+                            return
+                        }
+                        socket.pipe(stream).pipe(socket)
+                    }
+                )
+            })
+
+            server.listen(localPort, localHost, () => {
+                const forward: PortForward = {
+                    id: forwardId,
+                    connectionId,
+                    type: 'local',
+                    localHost,
+                    localPort,
+                    remoteHost,
+                    remotePort,
+                    active: true
+                }
+                this.portForwards.set(forwardId, forward)
+                this.emit('portForwardCreated', forward)
+                resolve({ success: true, forwardId })
+            })
+
+            server.on('error', (err: Error) => {
+                resolve({ success: false, error: err.message })
+            })
+        })
+    }
+
+    /**
+     * Get all active port forwards
+     */
+    getPortForwards(connectionId?: string): PortForward[] {
+        const forwards = Array.from(this.portForwards.values())
+        if (connectionId) {
+            return forwards.filter(f => f.connectionId === connectionId)
+        }
+        return forwards
+    }
+
+    /**
+     * Close a port forward
+     */
+    closePortForward(forwardId: string): boolean {
+        const forward = this.portForwards.get(forwardId)
+        if (!forward) return false
+
+        forward.active = false
+        this.portForwards.delete(forwardId)
+        this.emit('portForwardClosed', forwardId)
+        return true
+    }
+
+    /**
+     * Disconnect all connections and cleanup
+     */
+    async disconnectAll(): Promise<void> {
+        for (const [id, conn] of this.connections) {
+            try {
+                conn.end()
+            } catch (e) {
+                console.error(`Error disconnecting ${id}:`, getErrorMessage(e as Error))
+            }
+        }
+
+        // Clear all timers
+        for (const timer of this.keepaliveTimers.values()) {
+            clearInterval(timer)
+        }
+
+        this.connections.clear()
+        this.connectionDetails.clear()
+        this.connectionStats.clear()
+        this.shellSessions.clear()
+        this.portForwards.clear()
+        this.keepaliveTimers.clear()
     }
 
     async getSystemStats(connectionId: string): Promise<SSHSystemStats> {
