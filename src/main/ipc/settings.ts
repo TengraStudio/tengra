@@ -1,10 +1,10 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { SettingsService } from '../services/settings.service'
-import { LLMService } from '../services/llm/llm.service'
-import { CopilotService } from '../services/llm/copilot.service'
-import { AuditLogService } from '../services/audit-log.service'
-import { AppSettings } from '../../shared/types/settings'
-import { createIpcHandler } from '../utils/ipc-wrapper.util'
+import { SettingsService } from '@main/services/settings.service'
+import { LLMService } from '@main/services/llm/llm.service'
+import { CopilotService } from '@main/services/llm/copilot.service'
+import { AuditLogService } from '@main/services/audit-log.service'
+import { AppSettings } from '@shared/types/settings'
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 export function registerSettingsIpc(options: {
     settingsService: SettingsService
@@ -25,7 +25,7 @@ export function registerSettingsIpc(options: {
     ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
         const oldSettings = settingsService.getSettings()
         const saved = settingsService.saveSettings(newSettings)
-        
+
         // Audit log for sensitive settings changes
         if (auditLogService) {
             const sensitiveChanges: string[] = []
@@ -44,7 +44,7 @@ export function registerSettingsIpc(options: {
             if (newSettings.copilot?.token && newSettings.copilot.token !== oldSettings.copilot?.token) {
                 sensitiveChanges.push('Copilot token updated')
             }
-            
+
             if (sensitiveChanges.length > 0) {
                 await auditLogService.log({
                     action: 'Settings updated',
@@ -57,7 +57,7 @@ export function registerSettingsIpc(options: {
                 })
             }
         }
-        
+
         if (newSettings.ollama) {
             const result = updateOllamaConnection()
             if (result instanceof Promise) {

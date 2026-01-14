@@ -3,8 +3,8 @@ import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs'
 import { promisify } from 'util'
-import { ProxyService } from './proxy.service'
-import { appLogger } from '../../logging/logger'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { appLogger } from '@main/logging/logger'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const execAsync = promisify(require('child_process').exec)

@@ -1,89 +1,109 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { Copy, Check, Bookmark, ThumbsUp, ThumbsDown, Code2, Smile, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n'
+import { FEEDBACK_TIMEOUTS } from '@shared/constants'
 
 interface ActionButtonProps {
-    title?: string
+    label: string
     onClick: () => void
     children: React.ReactNode
     active?: boolean
     activeClassName?: string
 }
 
-const ActionButton: React.FC<ActionButtonProps> = ({ title, onClick, children, active, activeClassName }) => (
+const ActionButton: React.FC<ActionButtonProps> = ({ label, onClick, children, active, activeClassName }) => (
     <button
         onClick={onClick}
         className={cn(
             "p-1.5 rounded-lg transition-all border border-transparent backdrop-blur-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             active ? (activeClassName || "bg-primary/10 text-primary border-primary/20") : "bg-muted/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground"
         )}
-        title={title}
+        title={label}
+        aria-label={label}
+        aria-pressed={active}
     >
         {children}
     </button>
 )
 
 export const CopyButton = ({ text }: { text: string }) => {
+    const { t } = useTranslation()
     const [copied, setCopied] = useState(false)
     const handleCopy = async () => {
         await navigator.clipboard.writeText(text)
         setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK)
     }
     return (
-        <ActionButton title="Kopyala" onClick={handleCopy}>
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+        <ActionButton label={t('messageBubble.copy')} onClick={handleCopy}>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     )
 }
 
-export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: () => void }) => (
-    <ActionButton
-        title={active ? "Yer iÅŸaretini kaldÄ±r" : "Yer iÅŸareti ekle"}
-        onClick={onClick}
-        active={active}
-        activeClassName="text-amber-400 bg-amber-400/10 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.1)]"
-    >
-        <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} />
-    </ActionButton>
-)
+export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: () => void }) => {
+    const { t } = useTranslation()
+    return (
+        <ActionButton
+            label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
+            onClick={onClick}
+            active={active}
+            activeClassName="text-amber-400 bg-amber-400/10 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.1)]"
+        >
+            <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} aria-hidden="true" />
+        </ActionButton>
+    )
+}
 
-export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void }) => (
-    <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1">
-        <button
-            onClick={() => onRate(rating === 1 ? 0 : 1)}
-            className={cn(
-                "p-1.5 rounded-md transition-all duration-200",
-                rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/5"
-            )}
-            title="Ä°yi cevap"
-        >
-            <ThumbsUp className={cn("w-3.5 h-3.5", rating === 1 && "fill-current")} />
-        </button>
-        <button
-            onClick={() => onRate(rating === -1 ? 0 : -1)}
-            className={cn(
-                "p-1.5 rounded-md transition-all duration-200",
-                rating === -1 ? "text-red-400 bg-red-400/10" : "text-zinc-400 hover:text-red-400 hover:bg-red-400/5"
-            )}
-            title="KÃ¶tÃ¼ cevap"
-        >
-            <ThumbsDown className={cn("w-3.5 h-3.5", rating === -1 && "fill-current")} />
-        </button>
-    </div>
-)
+export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void }) => {
+    const { t } = useTranslation()
+    return (
+        <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1" role="group" aria-label={t('messageBubble.rating') || 'Rate response'}>
+            <button
+                onClick={() => onRate(rating === 1 ? 0 : 1)}
+                className={cn(
+                    "p-1.5 rounded-md transition-all duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/5"
+                )}
+                title={t('messageBubble.goodAnswer')}
+                aria-label={t('messageBubble.goodAnswer')}
+                aria-pressed={rating === 1}
+            >
+                <ThumbsUp className={cn("w-3.5 h-3.5", rating === 1 && "fill-current")} aria-hidden="true" />
+            </button>
+            <button
+                onClick={() => onRate(rating === -1 ? 0 : -1)}
+                className={cn(
+                    "p-1.5 rounded-md transition-all duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    rating === -1 ? "text-red-400 bg-red-400/10" : "text-zinc-400 hover:text-red-400 hover:bg-red-400/5"
+                )}
+                title={t('messageBubble.badAnswer')}
+                aria-label={t('messageBubble.badAnswer')}
+                aria-pressed={rating === -1}
+            >
+                <ThumbsDown className={cn("w-3.5 h-3.5", rating === -1 && "fill-current")} aria-hidden="true" />
+            </button>
+        </div>
+    )
+}
 
 export const CopyMarkdownButton = ({ text, role }: { text: string; role: string }) => {
+    const { t } = useTranslation()
     const [copied, setCopied] = useState(false)
     const handleCopy = async () => {
-        const markdown = `**${role === 'user' ? 'KullanÄ±cÄ±' : 'Asistan'}:**\n\n${text}`
+        const roleLabel = role === 'user' ? t('messageBubble.user') : t('messageBubble.assistant')
+        const markdown = `**${roleLabel}:**\n\n${text}`
         await navigator.clipboard.writeText(markdown)
         setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK)
     }
     return (
-        <ActionButton title="Markdown olarak kopyala" onClick={handleCopy}>
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Code2 className="w-3.5 h-3.5" />}
+        <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={handleCopy}>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Code2 className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     )
 }
@@ -101,6 +121,14 @@ interface MessageActionsGroupProps {
     onReact?: (emoji: string) => void
 }
 
+const EMOJI_REACTIONS = [
+    { emoji: '\u{1F44D}', label: 'Thumbs up' },
+    { emoji: '\u{1F44E}', label: 'Thumbs down' },
+    { emoji: '\u{2764}\u{FE0F}', label: 'Heart' },
+    { emoji: '\u{1F389}', label: 'Celebrate' },
+    { emoji: '\u{1F680}', label: 'Rocket' }
+]
+
 export const MessageActionsGroup = ({
     displayContent,
     role,
@@ -113,14 +141,20 @@ export const MessageActionsGroup = ({
     onStop,
     onReact
 }: MessageActionsGroupProps) => {
+    const { t } = useTranslation()
+
     return (
-        <div className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
+        <div
+            className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200"
+            role="toolbar"
+            aria-label={t('messageBubble.actions') || 'Message actions'}
+        >
             <ActionButton
-                title={isSpeaking ? "Durdur" : "Sesli Oku"}
+                label={isSpeaking ? t('messageBubble.stop') : t('messageBubble.speakAloud')}
                 onClick={isSpeaking ? (onStop || (() => { })) : () => onSpeak?.(displayContent)}
                 active={isSpeaking}
             >
-                {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                {isSpeaking ? <VolumeX className="w-3.5 h-3.5" aria-hidden="true" /> : <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />}
             </ActionButton>
 
             <CopyButton text={displayContent} />
@@ -128,15 +162,20 @@ export const MessageActionsGroup = ({
             <BookmarkButton active={!!isBookmarked} onClick={() => onBookmark?.(!isBookmarked)} />
 
             <div className="relative group/react">
-                <ActionButton title="Tepki Ver" onClick={() => { }}>
-                    <Smile className="w-3.5 h-3.5" />
+                <ActionButton label={t('messageBubble.react')} onClick={() => { }}>
+                    <Smile className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
-                <div className="absolute bottom-full mb-2 bg-[#1a1b26] border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom">
-                    {['ğŸ‘', 'ğŸ‘', 'â¤ï¸', 'ğŸ‰', 'ğŸš€'].map(emoji => (
+                <div
+                    className="absolute bottom-full mb-2 bg-[#1a1b26] border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom"
+                    role="group"
+                    aria-label="Emoji reactions"
+                >
+                    {EMOJI_REACTIONS.map(({ emoji, label }) => (
                         <button
                             key={emoji}
                             onClick={() => onReact?.(emoji)}
-                            className="hover:scale-125 transition-transform text-sm p-1"
+                            className="hover:scale-125 transition-transform text-sm p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+                            aria-label={label}
                         >
                             {emoji}
                         </button>
@@ -144,10 +183,9 @@ export const MessageActionsGroup = ({
                 </div>
             </div>
 
-            {/* Regenerate Skeleton */}
             {role === 'assistant' && (
-                <ActionButton title="Yeniden Oluştur (Geçici)" onClick={() => alert('Regenerate feature coming soon!')}>
-                    <RotateCcw className="w-3.5 h-3.5" />
+                <ActionButton label={t('messageBubble.regenerate') || 'Regenerate'} onClick={() => alert('Regenerate feature coming soon!')}>
+                    <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
             )}
 

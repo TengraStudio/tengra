@@ -1,11 +1,11 @@
-import { McpService, McpDispatchResult } from './types'
-import { SettingsService } from '../services/settings.service'
+import { McpService, McpDispatchResult } from '@main/mcp/types'
+import { SettingsService } from '@main/services/settings.service'
 import { spawn, ChildProcess } from 'child_process'
 import { randomUUID } from 'crypto'
-import { ToolDefinition } from '../../shared/types/chat'
-import { JsonObject, CatchError } from '../../shared/types/common'
-import { MCPServerConfig } from '../../shared/types/settings'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { ToolDefinition } from '@shared/types/chat'
+import { JsonObject, CatchError } from '@shared/types/common'
+import { MCPServerConfig } from '@shared/types/settings'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 type McpToolContent = {
     type?: string

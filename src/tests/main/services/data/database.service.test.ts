@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { DatabaseService } from '../../../main/services/data/database.service'
+import { DatabaseService } from '@main/services/data/database.service'
 
 // Mock DataService
 const mockDataService = {

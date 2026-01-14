@@ -1,12 +1,12 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { DatabaseService } from '../services/data/database.service'
-import { EmbeddingService } from '../services/llm/embedding.service'
-import { AuditLogService } from '../services/audit-log.service'
-import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
-import { Chat, Message, Folder, Prompt } from '../../shared/types/chat'
-import { Project } from '../../shared/types/project'
-import { WorkspaceMount } from '../../shared/types/workspace'
-import { JsonObject } from '../../shared/types/common'
+import { DatabaseService } from '@main/services/data/database.service'
+import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { AuditLogService } from '@main/services/audit-log.service'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { Chat, Message, Folder, Prompt } from '@shared/types/chat'
+import { Project } from '@shared/types/project'
+import { WorkspaceMount } from '@shared/types/workspace'
+import { JsonObject } from '@shared/types/common'
 
 export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
     ipcMain.handle('db:createChat', createSafeIpcHandler('db:createChat', async (_event: IpcMainInvokeEvent, chat: Partial<Chat> & { title: string; model: string }) => {

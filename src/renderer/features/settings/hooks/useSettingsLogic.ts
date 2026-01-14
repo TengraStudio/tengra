@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { AppSettings, QuotaResponse, CodexUsage, JsonValue } from '../../../../shared/types'
+import { AppSettings, QuotaResponse, CodexUsage, JsonValue } from '@/types'
 import { CopilotQuota } from '@/types';
 
 type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>

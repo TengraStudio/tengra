@@ -14,7 +14,13 @@ export const tr = {
         active: 'AKTİF',
         draft: 'Taslak',
         retry: 'Tekrar Dene',
-        getStarted: 'Başla'
+        getStarted: 'Başla',
+        minute: 'dakika',
+        minutes: 'dakika',
+        hour: 'saat',
+        hours: 'saat',
+        clear: 'Temizle',
+        add: 'Ekle'
     },
     modelSelector: {
         searchModels: 'Model Ara...',
@@ -503,7 +509,10 @@ export const tr = {
         orchestrationDesc: 'Birden fazla sohbet aynı anda çalışırken izlenecek yol.',
         orchestrationAuto: 'Otomatik (Donanıma Göre)',
         orchestrationFIFO: 'Sıralı (FIFO - Teker Teker)',
-        orchestrationParallel: 'Paralel (Hepsini Aynı Anda)'
+        orchestrationParallel: 'Paralel (Hepsini Aynı Anda)',
+        regenerate: 'Yeniden Oluştur',
+        rating: 'Yanıtı değerlendir',
+        actions: 'Mesaj işlemleri'
     },
     general: {
         turkish: 'Türkçe',
@@ -629,7 +638,22 @@ export const tr = {
     },
     advanced: {
         systemInfo: 'Sistem Bilgisi',
-        platform: 'PLATFORM'
+        platform: 'PLATFORM',
+        orchestration: 'Model Orkestrasyonu',
+        orchestrationDesc: 'Çoklu model istekleri nasıl işlensin',
+        orchestrationAuto: 'Otomatik',
+        orchestrationFIFO: 'Sıralı (FIFO)',
+        orchestrationParallel: 'Paralel',
+        tokensPerSec: 'Token/Saniye',
+        latency: 'Gecikme',
+        serviceIntervals: 'Servis Aralıkları',
+        serviceIntervalsDesc: 'Arka plan görevlerinin ne sıklıkla çalışacağını yapılandırın',
+        modelUpdateInterval: 'Model Güncelleme Aralığı',
+        modelUpdateIntervalDesc: 'Model listesinin ne sıklıkla yenileneceği',
+        tokenRefreshInterval: 'Token Yenileme Aralığı',
+        tokenRefreshIntervalDesc: 'OAuth tokenlarının ne sıklıkla yenileneceği',
+        copilotRefreshInterval: 'Copilot Yenileme Aralığı',
+        copilotRefreshIntervalDesc: 'Copilot oturumunun ne sıklıkla yenileneceği'
     },
     tips: {
         title: 'Biliyor muydunuz?',

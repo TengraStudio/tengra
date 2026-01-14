@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow, IpcMainInvokeEvent } from 'electron'
-import { TerminalService } from '../services/project/terminal.service'
-import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { TerminalService } from '@main/services/project/terminal.service'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 let terminalService: TerminalService | null = null
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Brain, Terminal, User, Play, Loader2, AlertCircle } from 'lucide-react'
-import { JsonValue } from '../../../../shared/types/common'
-import { getErrorMessage } from '../../../../shared/utils/error.util'
+import { JsonValue } from '@/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 import { cn } from '@/lib/utils'
 
 // Types aligned with backend CouncilSession

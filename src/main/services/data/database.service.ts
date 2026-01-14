@@ -1,13 +1,14 @@
 import { PGlite } from '@electric-sql/pglite'
 import { vector } from '@electric-sql/pglite/vector'
-import { BaseService } from '../base.service'
-import { DataService } from './data.service'
-import { MigrationManager, AsyncDatabaseAdapter, Migration } from './migration-manager' // Updated import
+import { appLogger } from '@main/logging/logger'
+import { BaseService } from '@main/services/base.service'
+import { DataService } from '@main/services/data/data.service'
+import { MigrationManager, AsyncDatabaseAdapter, Migration } from '@main/services/data/migration-manager' // Updated import
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { JsonObject, JsonValue } from '../../../shared/types/common'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { JsonObject, JsonValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 // Re-export interfaces from previous implementation (copy-pasted for clarity/continuity)
 export interface Folder { id: string; name: string; color?: string; createdAt: number; updatedAt: number }
@@ -69,7 +70,7 @@ export class DatabaseService extends BaseService {
             const effectivePath = this.isTest ? undefined : this.dbPath
             const extensions = this.isTest ? {} : { vector }
 
-            console.log(`[DatabaseService] Initializing at ${effectivePath || 'memory'}`)
+            appLogger.info('DatabaseService', `Initializing at ${effectivePath || 'memory'}`)
 
             // Ensure directory exists only if not in-memory
             if (effectivePath && !fs.existsSync(effectivePath)) {
@@ -91,9 +92,9 @@ export class DatabaseService extends BaseService {
             // Migrate legacy JSON data to Postgres tables
             await this.migrateLegacyJsonData()
 
-            console.log('[DatabaseService] Initialization complete!')
+            appLogger.info('DatabaseService', 'Initialization complete!')
         } catch (error) {
-            console.error('[DatabaseService] Failed to initialize PGlite:', error)
+            appLogger.error('DatabaseService', 'Failed to initialize PGlite:', error as Error)
             this.initError = error instanceof Error ? error : new Error(String(error))
             this.db = null
             throw this.initError
@@ -101,15 +102,15 @@ export class DatabaseService extends BaseService {
     }
 
     private async ensureDb(): Promise<AsyncDatabaseAdapter> {
-        console.log('[DatabaseService] ensureDb called, initPromise:', !!this.initPromise, 'db:', !!this.db)
+        appLogger.info('DatabaseService', `ensureDb called, initPromise: ${!!this.initPromise}, db: ${!!this.db}`)
         if (this.initPromise) {
-            console.log('[DatabaseService] Waiting for init promise...')
+            appLogger.info('DatabaseService', 'Waiting for init promise...')
             await this.initPromise
-            console.log('[DatabaseService] Init promise resolved, db:', !!this.db)
+            appLogger.info('DatabaseService', `Init promise resolved, db: ${!!this.db}`)
         }
         if (!this.db) {
-            console.error('[DatabaseService] Database not initialized after waiting! InitError:', this.initError)
-            console.error('[DatabaseService] InitPromise state:', !!this.initPromise)
+            appLogger.error('DatabaseService', `Database not initialized after waiting! InitError: ${this.initError?.message || 'unknown'}`)
+            appLogger.error('DatabaseService', `InitPromise state: ${!!this.initPromise}`)
             throw new Error(`Database not initialized. Reason: ${this.initError?.message || 'unknown'}`)
         }
         return this.createAdapter()
@@ -425,7 +426,55 @@ export class DatabaseService extends BaseService {
                             await db.exec(query);
                         } catch (e) {
                             // Likely already bigint
-                            console.debug(`[DatabaseService] Type fix skipped: ${query}`);
+                            appLogger.debug('DatabaseService', `Type fix skipped: ${query}`);
+                        }
+                    }
+                }
+            },
+            {
+                id: 7,
+                name: 'Add Performance Indexes',
+                up: async (db) => {
+                    // Indexes for frequently queried fields
+                    const indexQueries = [
+                        // Chats table indexes
+                        'CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id)',
+                        'CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id)',
+                        'CREATE INDEX IF NOT EXISTS idx_chats_created_at ON chats(created_at DESC)',
+                        'CREATE INDEX IF NOT EXISTS idx_chats_is_pinned ON chats(is_pinned) WHERE is_pinned = 1',
+                        'CREATE INDEX IF NOT EXISTS idx_chats_is_favorite ON chats(is_favorite) WHERE is_favorite = 1',
+
+                        // Messages table indexes
+                        'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC)',
+                        'CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role)',
+
+                        // Projects table indexes
+                        'CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)',
+                        'CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)',
+                        'CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at DESC)',
+
+                        // Time tracking indexes
+                        'CREATE INDEX IF NOT EXISTS idx_time_tracking_project_id ON time_tracking(project_id)',
+                        'CREATE INDEX IF NOT EXISTS idx_time_tracking_start_time ON time_tracking(start_time DESC)',
+
+                        // Council sessions indexes
+                        'CREATE INDEX IF NOT EXISTS idx_council_sessions_status ON council_sessions(status)',
+                        'CREATE INDEX IF NOT EXISTS idx_council_sessions_created_at ON council_sessions(created_at DESC)',
+
+                        // Semantic fragments indexes for search
+                        'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_id ON semantic_fragments(project_id)',
+                        'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_source ON semantic_fragments(source)',
+
+                        // Entity knowledge indexes
+                        'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_type ON entity_knowledge(entity_type)',
+                        'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_name ON entity_knowledge(entity_name)'
+                    ];
+
+                    for (const query of indexQueries) {
+                        try {
+                            await db.exec(query);
+                        } catch (e) {
+                            appLogger.debug('DatabaseService', `Index creation skipped: ${query}`);
                         }
                     }
                 }
@@ -456,7 +505,7 @@ export class DatabaseService extends BaseService {
                         await fs.promises.rename(this.foldersPath, this.foldersPath + '.migrated');
                     }
                 }
-            } catch (e) { console.error('Failed migration folders', e) }
+            } catch (e) { appLogger.error('DatabaseService', 'Failed migration folders', e as Error) }
         }
 
         // Migrate Prompts
@@ -474,7 +523,7 @@ export class DatabaseService extends BaseService {
                         await fs.promises.rename(this.promptsPath, this.promptsPath + '.migrated');
                     }
                 }
-            } catch (e) { console.error('Failed migration prompts', e) }
+            } catch (e) { appLogger.error('DatabaseService', 'Failed migration prompts', e as Error) }
         }
 
         // Migrate Council
@@ -492,7 +541,7 @@ export class DatabaseService extends BaseService {
                         await fs.promises.rename(this.councilPath, this.councilPath + '.migrated');
                     }
                 }
-            } catch (e) { console.error('Failed migration council', e) }
+            } catch (e) { appLogger.error('DatabaseService', 'Failed migration council', e as Error) }
         }
 
         // Projects JSON migration logic similar to existing one but creating 'projects' table entries
@@ -733,10 +782,10 @@ export class DatabaseService extends BaseService {
                 chat.folderId || null, chat.projectId || null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
                 JSON.stringify(chat.metadata || {}), now, now
             )
-            console.log('[DatabaseService] Created chat:', id)
+            appLogger.info('DatabaseService', `Created chat: ${id}`)
             return { success: true, id }
         } catch (error) {
-            console.error('[DatabaseService] Failed to create chat:', error)
+            appLogger.error('DatabaseService', 'Failed to create chat:', error as Error)
             return { success: false, id: '', error: getErrorMessage(error as Error) }
         }
     }

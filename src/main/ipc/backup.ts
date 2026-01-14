@@ -4,8 +4,8 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { BackupService, BackupResult, RestoreResult, BackupMetadata } from '../services/backup.service'
-import { createIpcHandler } from '../utils/ipc-wrapper.util'
+import { BackupService, BackupResult, RestoreResult, BackupMetadata } from '@main/services/backup.service'
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 export interface BackupListItem {
     name: string

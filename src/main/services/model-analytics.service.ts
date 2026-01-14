@@ -3,8 +3,8 @@
  * Tracks and analyzes model usage, response times, token counts, and costs.
  */
 
-import { BaseService } from './base.service';
-import { DataService } from './data/data.service';
+import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
 
 export interface ModelUsageRecord {
     id: string;

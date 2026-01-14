@@ -1,14 +1,14 @@
 import { createContext, useContext, ReactNode, useEffect, useMemo } from 'react'
 import React from 'react'
-import { useChatManager } from '../features/chat/hooks/useChatManager'
-import { useAuth } from './AuthContext'
-import { useModel } from './ModelContext'
-import { useTextToSpeech } from '../features/chat/hooks/useTextToSpeech'
-import { useTranslation } from '../i18n'
-import { useProjectManager } from '../features/projects/hooks/useProjectManager'
-import { useChatHistory } from '../features/chat/hooks/useChatHistory'
+import { useChatManager } from '@renderer/features/chat/hooks/useChatManager'
+import { useAuth } from '@renderer/context/AuthContext'
+import { useModel } from '@renderer/context/ModelContext'
+import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
+import { useTranslation } from '@renderer/i18n'
+import { useProjectManager } from '@renderer/features/projects/hooks/useProjectManager'
+import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory'
 import { Project } from '@/types'
-import { CatchError } from '../../shared/types/common'
+import { CatchError } from '@shared/types/common'
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {

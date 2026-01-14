@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react'
-import { useProjectManager } from '../features/projects/hooks/useProjectManager'
+import { useProjectManager } from '@renderer/features/projects/hooks/useProjectManager'
 
 type ProjectContextType = ReturnType<typeof useProjectManager>
 

@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
-import { GroupedModels, ModelInfo, fetchModels, groupModels } from '../utils/model-fetcher'
+import { GroupedModels, ModelInfo, fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher'
 import { AppSettings } from '@/types'
 
 export function useModelManager(

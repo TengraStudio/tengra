@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import { SidebarStatusIndicator, StatusType } from './SidebarStatusIndicator'
+import { SidebarStatusIndicator, StatusType } from '@renderer/components/layout/sidebar-components/SidebarStatusIndicator'
 
 export interface SidebarMenuItemProps {
     /** Unique identifier */

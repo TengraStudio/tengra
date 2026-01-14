@@ -1,5 +1,5 @@
 import { ipcMain, shell } from 'electron'
-import { themeStore } from '../utils/theme-store.util'
+import { themeStore } from '@main/utils/theme-store.util'
 import * as fs from 'fs'
 
 export function registerThemeIpc(): void {

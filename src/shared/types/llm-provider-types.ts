@@ -3,7 +3,7 @@
  * Used to eliminate 'any' casts in normalization layers.
  */
 
-import { JsonObject } from './common';
+import { JsonObject } from '@/types/common';
 
 // --- OpenAI Types ---
 

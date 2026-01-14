@@ -3,7 +3,7 @@ import { FolderIcon, FolderOpen, Edit2, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { Chat, Folder } from '@/types'
-import { ChatListItem } from './ChatListItem'
+import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
 
 interface FolderItemProps {
     folder: Folder;

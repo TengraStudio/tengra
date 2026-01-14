@@ -3,7 +3,7 @@
  * Standardizes responses from different LLM providers
  */
 
-import { JsonObject, JsonValue } from '../../shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 
 export interface NormalizedResponse {
     content: string

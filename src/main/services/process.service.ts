@@ -5,7 +5,7 @@ import { promises as fs } from 'fs'
 import { EventEmitter } from 'events'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 
 const execAsync = promisify(exec)

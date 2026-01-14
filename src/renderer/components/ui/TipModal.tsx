@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Modal } from './modal'
-import { Button } from './button'
+import { Modal } from '@renderer/components/ui/modal'
+import { Button } from '@renderer/components/ui/button'
 import { Lightbulb, Sparkles, Zap, Brain } from 'lucide-react'
 import { useTranslation, Language } from '@/i18n'
 

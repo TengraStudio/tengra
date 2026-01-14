@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as zlib from 'zlib'
-import { JsonValue, AppError } from '../../shared/types/common'
+import { JsonValue, AppError } from '@/types/common'
 
 export enum LogLevel {
     DEBUG = 0,

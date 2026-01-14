@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { History, Pin } from 'lucide-react'
-import { SidebarDivider } from '../sidebar-components'
+import { SidebarDivider } from '@renderer/components/layout/sidebar-components'
 import { Chat, Folder } from '@/types'
-import { ChatSearch } from './ChatSearch'
-import { ChatListItem } from './ChatListItem'
-import { FolderItem } from './FolderItem'
+import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch'
+import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
+import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem'
 import { AppView } from '@/hooks/useAppState'
 
 interface ChatHistorySectionProps {

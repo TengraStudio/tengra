@@ -3,7 +3,7 @@
  * Validates application settings with type safety
  */
 
-import { JsonObject, JsonValue } from '../../shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common'
 
 export type ValidationResult = {
     valid: boolean

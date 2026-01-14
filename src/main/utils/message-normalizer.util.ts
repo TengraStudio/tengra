@@ -1,12 +1,12 @@
-import { Message } from '../../shared/types/chat';
-import { ChatMessage } from '../types/llm.types';
+import { Message } from '@shared/types/chat';
+import { ChatMessage } from '@main/types/llm.types';
 import {
     OpenAIMessage,
     AnthropicMessage,
     AnthropicContentBlock,
 
     OpenAIContentPart
-} from '../../shared/types/llm-provider-types';
+} from '@shared/types/llm-provider-types';
 
 /**
  * Handles message format conversion between different LLM providers.

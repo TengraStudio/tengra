@@ -1,11 +1,11 @@
 
 import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, app, ipcMain } from 'electron'
-import { SettingsService } from './settings.service'
-import { DataService } from './data/data.service'
-import { IpcValue } from '../../shared/types'
+import { SettingsService } from '@main/services/settings.service'
+import { DataService } from '@main/services/data/data.service'
+import { IpcValue } from '@shared/types'
 import log from 'electron-log'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export class UpdateService {
     private settingsService: SettingsService

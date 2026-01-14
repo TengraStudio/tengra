@@ -5,7 +5,7 @@ import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRig
 import { cn } from '@/lib/utils'
 import { useTranslation, Language } from '@/i18n'
 
-import { ProjectMount, SSHFile } from '../../../../shared/types'
+import { ProjectMount, SSHFile } from '@/types'
 
 interface ProjectWizardModalProps {
     isOpen: boolean

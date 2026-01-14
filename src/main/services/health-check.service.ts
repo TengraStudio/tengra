@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface HealthStatus {
     name: string

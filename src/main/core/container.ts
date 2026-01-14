@@ -1,5 +1,5 @@
-import { ValidationError } from '../utils/error.util';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { ValidationError } from '@main/utils/error.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 
 

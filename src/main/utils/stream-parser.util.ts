@@ -1,5 +1,5 @@
-import { ToolCall } from '../../shared/types/chat';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { ToolCall } from '@shared/types/chat';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface StreamChunk {
     content?: string

@@ -1,6 +1,6 @@
-import { BaseService } from './base.service';
-import { appLogger } from '../logging/logger';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { BaseService } from '@main/services/base.service';
+import { appLogger } from '@main/logging/logger';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface HttpRequestOptions extends RequestInit {
     retryCount?: number;

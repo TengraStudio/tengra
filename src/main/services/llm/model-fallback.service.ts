@@ -3,9 +3,10 @@
  * Provides automatic failover between LLM providers for improved reliability
  */
 
-import { Message, ToolDefinition } from '../../../shared/types';
-import { appLogger } from '../../logging/logger';
-import { getErrorMessage } from '../../../shared/utils/error.util';
+import { Message } from '@shared/types/chat';
+import { ToolDefinition } from '@shared/types';
+import { appLogger } from '@main/logging/logger';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface FallbackModelConfig {
     provider: string;

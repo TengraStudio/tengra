@@ -14,7 +14,13 @@ export const en = {
         active: 'ACTIVE',
         draft: 'Draft',
         retry: 'Retry',
-        getStarted: 'Get Started'
+        getStarted: 'Get Started',
+        minute: 'minute',
+        minutes: 'minutes',
+        hour: 'hour',
+        hours: 'hours',
+        clear: 'Clear',
+        add: 'Add'
     },
     modelSelector: {
         searchModels: 'Search Models...',
@@ -504,7 +510,10 @@ export const en = {
         orchestrationFIFO: 'Sequential (FIFO)',
         orchestrationParallel: 'Parallel (Simultaneous)',
         favorite: 'Favorite',
-        thinking: 'Thinking...'
+        thinking: 'Thinking...',
+        regenerate: 'Regenerate',
+        rating: 'Rate response',
+        actions: 'Message actions'
     },
     general: {
         turkish: 'Turkish',
@@ -630,7 +639,22 @@ export const en = {
     },
     advanced: {
         systemInfo: 'System Info',
-        platform: 'PLATFORM'
+        platform: 'PLATFORM',
+        orchestration: 'Orchestration Policy',
+        orchestrationDesc: 'Process policy when multiple chats are active.',
+        orchestrationAuto: 'Auto (Hardware based)',
+        orchestrationFIFO: 'Sequential (FIFO)',
+        orchestrationParallel: 'Parallel (Simultaneous)',
+        tokensPerSec: 'Tokens/sec',
+        latency: 'Latency',
+        serviceIntervals: 'Service Intervals',
+        serviceIntervalsDesc: 'Configure how often background services refresh data.',
+        modelUpdateInterval: 'Model Update',
+        modelUpdateIntervalDesc: 'How often to refresh model lists from providers.',
+        tokenRefreshInterval: 'Token Refresh',
+        tokenRefreshIntervalDesc: 'How often to refresh OAuth tokens.',
+        copilotRefreshInterval: 'Copilot Refresh',
+        copilotRefreshIntervalDesc: 'How often to refresh Copilot session tokens.'
     },
     tips: {
         title: 'Did you know?',

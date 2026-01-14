@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
-import { AppSettings } from '../../shared/types/settings'
+import { AppSettings } from '@shared/types/settings'
 
 interface UsageRecord {
     timestamp: number

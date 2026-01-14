@@ -1,14 +1,14 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { LocalAIService } from '../services/llm/local-ai.service'
-import { SettingsService } from '../services/settings.service'
-import { LLMService } from '../services/llm/llm.service'
-import { OllamaService } from '../services/llm/ollama.service'
-import { LlamaService } from '../services/llm/llama.service'
-import { OllamaHealthService } from '../services/llm/ollama-health.service'
-import { ProxyService } from '../services/proxy/proxy.service'
-import { CopilotService } from '../services/llm/copilot.service';
-import { JsonValue } from '../../shared/types/common';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { LocalAIService } from '@main/services/llm/local-ai.service'
+import { SettingsService } from '@main/services/settings.service'
+import { LLMService } from '@main/services/llm/llm.service'
+import { OllamaService } from '@main/services/llm/ollama.service'
+import { LlamaService } from '@main/services/llm/llama.service'
+import { OllamaHealthService } from '@main/services/llm/ollama-health.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 interface ModelDefinition {
     id: string;

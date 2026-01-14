@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { BrowserWindow } from 'electron'
-import { multiLLMOrchestrator } from './multi-llm-orchestrator.service'
+import { multiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service'
 import { v4 as uuidv4 } from 'uuid'
 
 export type OrchestrationPolicy = 'auto' | 'fifo' | 'parallel'

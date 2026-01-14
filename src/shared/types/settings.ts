@@ -1,4 +1,4 @@
-import { JsonValue } from './common'
+import { JsonValue } from '@/types/common'
 
 export type AppSettings = {
     ollama: {

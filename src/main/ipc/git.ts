@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { GitService } from '../services/project/git.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { GitService } from '@main/services/project/git.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export function registerGitIpc(gitService: GitService) {
     // Get current branch

@@ -1,7 +1,6 @@
-import { DatabaseService } from './data/database.service';
-import { ScannerService } from './scanner.service';
-import { EmbeddingService } from './llm/embedding.service';
-// import * as fs from 'fs/promises'; (Unused)
+import { DatabaseService } from '@main/services/data/database.service';
+import { ScannerService } from '@main/services/scanner.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
 
 interface ExchangeRateResponse {
     rates: Record<string, number>;

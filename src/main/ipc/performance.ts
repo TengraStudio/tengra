@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { IPerformanceService } from '../types/services';
+import { IPerformanceService } from '@main/types/services';
 
 export function registerPerformanceIpc(performanceService: IPerformanceService): void {
     ipcMain.handle('performance:get-memory-stats', () => {

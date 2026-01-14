@@ -1,4 +1,4 @@
-import { JsonObject } from './common'
+import { JsonObject } from '@/types/common'
 
 // Basic agent definition
 export interface AgentDefinition {

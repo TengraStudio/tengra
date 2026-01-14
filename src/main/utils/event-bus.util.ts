@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { JsonObject, JsonValue } from '../../shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common'
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>
 

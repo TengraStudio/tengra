@@ -1,9 +1,9 @@
-import { LLMService } from './llm.service';
-import { MultiLLMOrchestrator, LLMTask } from '../multi-llm-orchestrator.service';
-import { ChatMessage, OpenAIResponse } from '../../types/llm.types';
-import { ServiceResponse } from '../../../shared/types';
-import { BaseService } from '../base.service';
-import { getErrorMessage } from '../../../shared/utils/error.util';
+import { LLMService } from '@main/services/llm/llm.service';
+import { MultiLLMOrchestrator, LLMTask } from '@main/services/multi-llm-orchestrator.service';
+import { ChatMessage, OpenAIResponse } from '@main/types/llm.types';
+import { ServiceResponse } from '@shared/types';
+import { BaseService } from '@main/services/base.service';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ComparisonRequest {

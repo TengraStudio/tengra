@@ -3,8 +3,8 @@
  * Enables multiple LLMs to work together on the same task
  */
 
-import { Message } from '../../shared/types/chat'
-import { LLMService } from './llm/llm.service'
+import { Message } from '@shared/types/chat'
+import { LLMService } from '@main/services/llm/llm.service'
 // Note: multiLLMOrchestrator could be used for task management in the future
 
 export interface CollaborationRequest {
@@ -38,7 +38,7 @@ export interface CollaborationResult {
  * Service for coordinating multiple LLMs to work together
  */
 export class ModelCollaborationService {
-    constructor(private llmService: LLMService) {}
+    constructor(private llmService: LLMService) { }
 
     /**
      * Run multiple models in parallel and combine results
@@ -52,7 +52,7 @@ export class ModelCollaborationService {
         )
 
         const responses = await Promise.allSettled(promises)
-        
+
         const results = responses
             .map((result, index) => {
                 if (result.status === 'fulfilled') {
@@ -99,7 +99,7 @@ export class ModelCollaborationService {
         _options?: { temperature?: number; maxTokens?: number }
     ): Promise<{ content: string; latency: number; tokens?: number }> {
         const startTime = Date.now()
-        
+
         try {
             const response = await this.llmService.chat(
                 messages,
@@ -107,10 +107,10 @@ export class ModelCollaborationService {
                 undefined,
                 provider
             )
-            
+
             const latency = Date.now() - startTime
             const content = response.content || ''
-            
+
             return {
                 content,
                 latency,
@@ -132,7 +132,7 @@ export class ModelCollaborationService {
         // Simple consensus: find common themes and combine
         const contents = responses.map(r => r.content)
         const words = contents.flatMap(c => c.split(/\s+/))
-        
+
         // Count word frequencies
         const wordFreq = new Map<string, number>()
         words.forEach(word => {
@@ -173,7 +173,7 @@ export class ModelCollaborationService {
      */
     private voteOnResponses(responses: CollaborationResult['responses']): Record<string, number> {
         const votes: Record<string, number> = {}
-        
+
         responses.forEach((r) => {
             const key = `${r.provider}/${r.model}`
             votes[key] = (votes[key] || 0) + 1
@@ -194,12 +194,12 @@ export class ModelCollaborationService {
         // 1. Length (not too short, not too long)
         // 2. Latency (faster is better)
         // 3. Token efficiency (if available)
-        
+
         const scored = responses.map(r => {
             const lengthScore = Math.min(r.content.length / 500, 1) // Prefer ~500 chars
             const latencyScore = Math.max(0, 1 - r.latency / 10000) // Prefer <10s
             const tokenScore = r.tokens ? Math.max(0, 1 - r.tokens / 2000) : 0.5
-            
+
             return {
                 response: r,
                 score: (lengthScore * 0.4 + latencyScore * 0.3 + tokenScore * 0.3)

@@ -1,10 +1,10 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
 import axios from 'axios'
-import { JsonObject, JsonValue } from '../../../shared/types/common';
-import { SettingsService } from '../settings.service';
-import { ToolCall } from '../../../shared/types/chat';
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { SettingsService } from '@main/services/settings.service';
+import { ToolCall } from '@shared/types/chat';
+import { getErrorMessage } from '@shared/utils/error.util'
 
 
 interface OllamaMessage {

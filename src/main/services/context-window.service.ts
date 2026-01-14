@@ -3,8 +3,8 @@
  * Manages context window limits and message truncation
  */
 
-import { Message } from '../../shared/types/chat'
-import { TokenEstimationService, getTokenEstimationService } from './token-estimation.service'
+import { Message } from '@shared/types/chat'
+import { TokenEstimationService, getTokenEstimationService } from '@main/services/token-estimation.service'
 
 export interface ContextWindowInfo {
     model: string

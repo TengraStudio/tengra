@@ -1,5 +1,5 @@
 import { WorkspaceMount } from '@/types'
-import { FileNode } from '../components/WorkspaceTreeItem'
+import { FileNode } from '@renderer/features/projects/components/WorkspaceTreeItem'
 
 export const joinPath = (base: string, name: string, type: WorkspaceMount['type']) => {
     const sep = type === 'ssh' ? '/' : (base.includes('\\') ? '\\' : '/')

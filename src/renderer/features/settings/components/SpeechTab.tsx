@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react'
 import { Volume2, Speaker } from 'lucide-react'
-import { AppSettings } from '../../../../shared/types/settings'
+import { AppSettings } from '@/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
 
 interface SpeechTabProps {

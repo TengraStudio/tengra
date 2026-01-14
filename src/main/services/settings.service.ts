@@ -2,9 +2,10 @@
 import { app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
 
-import { AppSettings } from '../../shared/types/settings'
+import { AppSettings } from '@shared/types/settings'
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
@@ -78,9 +79,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpAutoExecuteSafe: true
 }
 
-import { DataService } from './data/data.service'
-import { AuthService } from './auth.service'
-import { BaseService } from './base.service'
+import { DataService } from '@main/services/data/data.service'
+import { AuthService } from '@main/services/auth.service'
+import { BaseService } from '@main/services/base.service'
 
 export class SettingsService extends BaseService {
     private settingsPath: string
@@ -112,23 +113,23 @@ export class SettingsService extends BaseService {
      * @returns The loaded settings merged with defaults
      */
     private loadSettings(): AppSettings {
-        console.log(`[SettingsService] loadSettings (authService=${!!this.authService})`);
+        appLogger.info('SettingsService', `loadSettings (authService=${!!this.authService})`);
         try {
             const exists = fs.existsSync(this.settingsPath);
             let loaded: Partial<AppSettings> = {};
             if (exists) {
-                console.log(`[SettingsService] Found settings file at ${this.settingsPath}`);
+                appLogger.info('SettingsService', `Found settings file at ${this.settingsPath}`);
                 let data = fs.readFileSync(this.settingsPath, 'utf8')
 
                 // Check for empty or whitespace-only file
                 if (!data || !data.trim()) {
-                    console.warn('[SettingsService] Settings file is empty, using defaults');
+                    appLogger.warn('SettingsService', 'Settings file is empty, using defaults');
                     loaded = {}
                 } else {
                     try {
                         loaded = JSON.parse(data) as Partial<AppSettings>;
                     } catch (parseError) {
-                        console.warn('[SettingsService] JSON.parse failed, attempting recovery...');
+                        appLogger.warn('SettingsService', 'JSON.parse failed, attempting recovery...');
 
                         // Smart recovery: find where valid JSON ends
                         // This handles cases where garbage was appended or write was interrupted
@@ -136,26 +137,26 @@ export class SettingsService extends BaseService {
 
                         if (recovered) {
                             loaded = recovered.data
-                            console.log('[SettingsService] JSON recovery successful');
+                            appLogger.info('SettingsService', 'JSON recovery successful');
 
                             // Only backup and rewrite if we actually had to truncate something
                             if (recovered.wasModified) {
                                 try {
                                     const backupPath = this.settingsPath + '.recovered.' + Date.now()
                                     fs.writeFileSync(backupPath, data, 'utf8')
-                                    console.log(`[SettingsService] Backed up original to: ${backupPath}`)
+                                    appLogger.info('SettingsService', `Backed up original to: ${backupPath}`)
                                     fs.writeFileSync(this.settingsPath, JSON.stringify(loaded, null, 2), 'utf8')
                                 } catch (backupError) {
-                                    console.warn('[SettingsService] Failed to backup:', getErrorMessage(backupError as Error));
+                                    appLogger.warn('SettingsService', `Failed to backup: ${getErrorMessage(backupError as Error)}`);
                                 }
                             }
                         } else {
                             // True corruption - backup and use defaults
-                            console.error('[SettingsService] JSON recovery failed, using defaults');
+                            appLogger.error('SettingsService', 'JSON recovery failed, using defaults');
                             try {
                                 const backupPath = this.settingsPath + '.corrupted.' + Date.now()
                                 fs.writeFileSync(backupPath, data, 'utf8')
-                                console.log(`[SettingsService] Backed up corrupted file to: ${backupPath}`)
+                                appLogger.info('SettingsService', `Backed up corrupted file to: ${backupPath}`)
                             } catch (e) {
                                 // Ignore backup failures
                             }
@@ -167,19 +168,19 @@ export class SettingsService extends BaseService {
                 if (loaded.userAvatar) delete loaded.userAvatar;
                 if (loaded.aiAvatar) delete loaded.aiAvatar;
             } else {
-                console.log(`[SettingsService] settings.json NOT FOUND at ${this.settingsPath}`);
+                appLogger.info('SettingsService', `settings.json NOT FOUND at ${this.settingsPath}`);
             }
 
             // Merge tokens from AuthService (always do this if authService is available)
             let authTokens: Record<string, string> = {}
             if (this.authService) {
                 authTokens = this.authService.getAllTokens()
-                console.log('[SettingsService] Loaded auth tokens. Keys:', Object.keys(authTokens))
+                appLogger.info('SettingsService', `Loaded auth tokens. Keys: ${Object.keys(authTokens)}`)
                 if (authTokens['copilot_token']) {
-                    console.log('[SettingsService] Found copilot_token, length:', authTokens['copilot_token'].length)
+                    appLogger.info('SettingsService', `Found copilot_token, length: ${authTokens['copilot_token'].length}`)
                 }
                 if (authTokens['github_token']) {
-                    console.log('[SettingsService] Found github_token, length:', authTokens['github_token'].length)
+                    appLogger.info('SettingsService', `Found github_token, length: ${authTokens['github_token'].length}`)
                 }
             }
 
@@ -270,16 +271,15 @@ export class SettingsService extends BaseService {
                 window: loaded.window
             };
 
-            // Migration: Force remove Antigravity/Gemini from embeddings
             if ((res.embeddings?.provider as any) === 'antigravity' || (res.embeddings?.provider as any) === 'gemini') {
-                console.log('[SettingsService] Migrating deprecated embedding provider to Ollama');
+                appLogger.info('SettingsService', 'Migrating deprecated embedding provider to Ollama');
                 res.embeddings.provider = 'ollama';
                 res.embeddings.model = 'all-minilm';
             }
 
             return res;
         } catch (error) {
-            console.error('[SettingsService] !!! loadSettings CRITICAL ERROR:', getErrorMessage(error as Error));
+            appLogger.error('SettingsService', `!!! loadSettings CRITICAL ERROR: ${getErrorMessage(error as Error)}`);
             return DEFAULT_SETTINGS;
         }
     }
@@ -363,7 +363,7 @@ export class SettingsService extends BaseService {
             this.pendingSave = this.pendingSave
                 ? { ...this.pendingSave, ...newSettings }
                 : newSettings
-            console.log('[SettingsService] Save in progress, queuing update')
+            appLogger.info('SettingsService', 'Save in progress, queuing update')
             return this.settings
         }
 
@@ -382,7 +382,7 @@ export class SettingsService extends BaseService {
         };
 
         const newKeys = Object.keys(newSettings);
-        console.log(`[SettingsService] saveSettings: Called with ${newKeys.length} keys: ${newKeys.join(', ')}`);
+        appLogger.info('SettingsService', `saveSettings: Called with ${newKeys.length} keys: ${newKeys.join(', ')}`);
 
         // TOKEN CONSERVATION:
         // When the renderer saves settings, it often has empty strings for tokens (secrets).
@@ -392,7 +392,7 @@ export class SettingsService extends BaseService {
                 const newProv = newSettings[provider] as Record<string, unknown> | undefined;
                 const oldProv = this.settings[provider] as Record<string, unknown> | undefined;
                 if (newProv && oldProv && !newProv[field] && oldProv[field]) {
-                    console.log(`[SettingsService] saveSettings: Conserving existing ${String(provider)} token.`);
+                    appLogger.info('SettingsService', `saveSettings: Conserving existing ${String(provider)} token.`);
                     newProv[field] = oldProv[field];
                 }
             };
@@ -410,7 +410,7 @@ export class SettingsService extends BaseService {
 
         // Secure Storage Logic
         if (this.authService) {
-            console.log(`[SettingsService] saveSettings: Processing secure storage.`);
+            appLogger.info('SettingsService', 'saveSettings: Processing secure storage.');
             const tokens: Record<string, string | undefined> = {
                 github_token: newSettings.github?.token,
                 copilot_token: newSettings.copilot?.token,
@@ -457,14 +457,14 @@ export class SettingsService extends BaseService {
             try {
                 JSON.parse(jsonString) // Verify it's valid JSON
             } catch (parseError) {
-                console.error('[SettingsService] Generated invalid JSON, aborting save:', getErrorMessage(parseError as Error))
+                appLogger.error('SettingsService', `Generated invalid JSON, aborting save: ${getErrorMessage(parseError as Error)}`)
                 throw new Error('Generated invalid JSON during save')
             }
 
             fs.writeFileSync(tempPath, jsonString, 'utf8')
             fs.renameSync(tempPath, this.settingsPath)
         } catch (error) {
-            console.error('[SettingsService] Failed to save settings:', getErrorMessage(error as Error))
+            appLogger.error('SettingsService', `Failed to save settings: ${getErrorMessage(error as Error)}`)
             // Try to remove temp file if it exists
             try {
                 const tempPath = this.settingsPath + '.tmp'

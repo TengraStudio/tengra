@@ -1,9 +1,9 @@
 import { ReactNode } from 'react'
-import { AuthProvider } from './AuthContext'
-import { ThemeProvider } from './ThemeContext'
-import { ModelProvider } from './ModelContext'
-import { ChatProvider } from './ChatContext'
-import { ProjectProvider } from './ProjectContext'
+import { AuthProvider } from '@renderer/context/AuthContext'
+import { ThemeProvider } from '@renderer/context/ThemeContext'
+import { ModelProvider } from '@renderer/context/ModelContext'
+import { ChatProvider } from '@renderer/context/ChatContext'
+import { ProjectProvider } from '@renderer/context/ProjectContext'
 
 export function AppProviders({ children }: { children: ReactNode }) {
     return (

@@ -1,4 +1,4 @@
-import { getErrorMessage, AppErrorCode, OrbitError } from '../../shared/utils/error.util'
+import { getErrorMessage, AppErrorCode, OrbitError } from '@shared/utils/error.util'
 
 /**
  * Standardized error handling utilities for the renderer process.
@@ -79,7 +79,7 @@ export function handleError(
     }
 
     if (showToast && typeof window !== 'undefined' && (window as any).showToast) {
-        ;(window as any).showToast({
+        ; (window as any).showToast({
             type: 'error',
             message: userMessage
         })

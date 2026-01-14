@@ -1,4 +1,4 @@
-import { OllamaModel } from './ai';
+import { OllamaModel } from '@/types/ai';
 
 export interface TokenTimelineItem {
     promptTokens: number;

@@ -24,7 +24,7 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
         >
             <div className="flex items-center gap-4" style={noDragStyle}>
                 <div className="flex items-center gap-2">
-                    <img src="./src/renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
+                    <img src="@renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
                     <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
                 </div>
                 {leftContent}

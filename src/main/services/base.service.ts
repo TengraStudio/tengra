@@ -1,4 +1,4 @@
-import { LifecycleAware } from '../core/container';
+import { LifecycleAware } from '@main/core/container';
 
 /**
  * Abstract base class for all application services.

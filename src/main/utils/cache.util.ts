@@ -1,12 +1,9 @@
-import { JsonValue } from '../../shared/types/common'
-import { QuotaResponse } from '../../shared/types/quota'
-import { AppSettings } from '../../shared/types/settings'
+import { JsonValue } from '@shared/types/common'
+import { QuotaResponse } from '@shared/types/quota'
+import { AppSettings } from '@shared/types/settings'
 
 /**
  * @fileoverview In-memory cache utility with TTL and LRU eviction.
- * 
- * Provides a generic caching mechanism with support for:
- * - Time-To-Live (TTL) expiration per entry or globally
  * - Least Recently Used (LRU) eviction when capacity is reached
  * - Eviction callbacks for resource cleanup
  * - Memoization decorator for function result caching

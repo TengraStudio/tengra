@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
-import { BUILTIN_THEMES, getThemeById } from './theme-constants'
-import { CustomTheme, ThemePreset, DEFAULT_THEME_PRESETS } from '../../shared/types/theme'
+import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants'
+import { CustomTheme, ThemePreset, DEFAULT_THEME_PRESETS } from '@shared/types/theme'
 
 interface ThemeStoreData {
     currentTheme: string

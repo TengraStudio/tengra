@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { DataService } from '../../../main/tests/../services/data/data.service'
-import { DatabaseService } from '../../../main/tests/../services/data/database.service'
-import { FolderRepository } from '../../../main/tests/../repositories/folder.repository'
+import { DataService } from '@main/services/data/data.service'
+import { DatabaseService } from '@main/services/data/database.service'
+import { FolderRepository } from '@main/repositories/folder.repository'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -9,7 +9,7 @@ vi.unmock('fs')
 vi.unmock('path')
 
 // Mock app logger to avoid console spam
-vi.mock('../../logging/logger', () => ({
+vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() }
 }))
 

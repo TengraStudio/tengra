@@ -1,5 +1,5 @@
 import { Message, ToolCall, ToolDefinition } from '@/types'
-import { CatchError, JsonObject, JsonValue } from '../../shared/types/common'
+import { CatchError, JsonObject, JsonValue } from '@shared/types/common'
 
 export interface ChatStreamChunk {
     type?: 'content' | 'reasoning' | 'images' | 'tool_calls' | 'metadata' | 'error'

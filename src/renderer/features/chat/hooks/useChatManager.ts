@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
 import { generateId } from '@/lib/utils'
 import { Chat, Message, AppSettings } from '@/types'
-import { CatchError, IpcValue } from '../../../../shared/types/common'
-import { usePromptManager } from './usePromptManager.ts'
-import { useChatCRUD } from './useChatCRUD.ts'
-import { useFolderManager } from './useFolderManager.ts'
-import { useAttachments } from './useAttachments.ts'
+import { CatchError, IpcValue } from '@/types/common'
+import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager'
+import { useChatCRUD } from '@renderer/features/chat/hooks/useChatCRUD'
+import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager'
+import { useAttachments } from '@renderer/features/chat/hooks/useAttachments'
 
-import { useSpeechRecognition } from './useSpeechRecognition.ts'
-import { useChatGenerator } from './useChatGenerator.ts'
+import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition'
+import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator'
 
 interface UseChatManagerOptions {
     selectedModel: string

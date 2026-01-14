@@ -2,8 +2,8 @@
  * Unit tests for TokenEstimationService
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TokenEstimationService } from '../../../main/services/token-estimation.service';
-import { Message } from '../../../main/../shared/types/chat';
+import { TokenEstimationService } from '@main/services/token-estimation.service';
+import { Message } from '@/types/chat';
 
 describe('TokenEstimationService', () => {
     let service: TokenEstimationService;

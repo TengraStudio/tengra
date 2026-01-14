@@ -5,9 +5,9 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from './data/data.service'
-import { JsonObject, JsonValue } from '../../shared/types/common'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { DataService } from '@main/services/data/data.service'
+import { JsonObject, JsonValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface BackupMetadata {
     version: string

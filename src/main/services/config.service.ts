@@ -1,9 +1,6 @@
-import { BaseService } from './base.service';
-import { SettingsService } from './settings.service';
-import { JsonValue } from '../../shared/types/common';
-// import * as dotenv from 'dotenv'; // Ensure dotenv is installed or load manually if not. Assuming typical electron setup. 
-// If dotenv is not available, we rely on process.env (already loaded) or simple file loading.
-// For Electron main process, usually envs are passed or loaded in main.ts. We assume process.env is populated.
+import { BaseService } from '@main/services/base.service';
+import { SettingsService } from '@main/services/settings.service';
+import { JsonValue } from '@shared/types/common';
 
 /**
  * Service for managing configuration values with priority-based resolution.

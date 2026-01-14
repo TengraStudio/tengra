@@ -1,13 +1,14 @@
 // LlamaService - Uses llama-server executable for fast CUDA inference
 // Communicates via HTTP API (OpenAI-compatible)
 
+import * as path from 'path'
 import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 import { app } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import * as http from 'http'
-import { DataService } from '../data/data.service'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { DataService } from '@main/services/data/data.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -53,11 +54,11 @@ export class LlamaService {
             mkdirSync(this.modelsDir, { recursive: true })
         } catch (e) {
             console.warn('[LlamaService] Failed to setup models directory:', getErrorMessage(e as Error))
-            this.modelsDir = './models'
+            this.modelsDir = path.join(process.cwd(), 'models')
         }
 
         // llama-server binary path
-        this.binDir = join(__dirname, '../../vendor/llama-bin')
+        this.binDir = path.join(process.cwd(), 'vendor/llama-bin')
 
         // Fallback to project root if not in dist
         if (!existsSync(this.binDir)) {

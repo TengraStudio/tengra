@@ -3,10 +3,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import { SettingsService } from '../../../main/services/settings.service';
-import { LLMService } from '../../../main/services/llm/llm.service';
-import { CopilotService } from '../../../main/services/llm/copilot.service';
-import { AppSettings } from '../../../main/../shared/types/settings';
+import { SettingsService } from '@main/services/settings.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { AppSettings } from '@/types/settings';
 
 // Mock electron
 vi.mock('electron', () => ({

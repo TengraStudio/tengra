@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from '@/lib/framer-motion-compat';
 import { ChevronDown } from 'lucide-react';
-import { ChatHeader } from './ChatHeader';
-import { MessageList } from './MessageList';
-import { ChatInput } from './ChatInput';
-import { WelcomeScreen } from './WelcomeScreen';
-import { ChatTemplate } from '../types';
+import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
+import { MessageList } from '@renderer/features/chat/components/MessageList';
+import { ChatInput } from '@renderer/features/chat/components/ChatInput';
+import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
+import { ChatTemplate } from '@renderer/features/chat/types';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import { useModel } from '@/context/ModelContext';

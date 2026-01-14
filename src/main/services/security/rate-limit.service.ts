@@ -1,5 +1,5 @@
-import { BaseService } from '../base.service';
-import { appLogger } from '../../logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { appLogger } from '@main/logging/logger';
 
 interface RateLimitConfig {
     requestsPerMinute: number;

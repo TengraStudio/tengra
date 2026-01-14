@@ -1,6 +1,6 @@
-import { BaseService } from './base.service';
-import { SettingsService } from './settings.service';
-import { appLogger } from '../logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { SettingsService } from '@main/services/settings.service';
+import { appLogger } from '@main/logging/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface TelemetryEvent {

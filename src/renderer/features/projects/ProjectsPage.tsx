@@ -5,14 +5,14 @@ import { cn } from '@/lib/utils'
 import { Plus, Calendar, Search, Terminal, ArrowRight, Monitor, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Project, TerminalTab, Message } from '@/types'
-import { ProjectWorkspace } from './components/ProjectWorkspace'
+import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace'
 import { Language } from '@/i18n'
-import { ProjectWizardModal } from './components/ProjectWizardModal'
+import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal'
 
-import { AppSettings } from '../../../shared/types/settings'
-import { ProjectMount } from '../../../shared/types/renderer'
+import { AppSettings } from '@shared/types'
+import { ProjectMount } from '@shared/types/renderer'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { CodexUsage, QuotaResponse } from '../../../shared/types/quota'
+import { CodexUsage, QuotaResponse } from '@shared/types/quota'
 
 interface ProjectsPageProps {
     projects: Project[]

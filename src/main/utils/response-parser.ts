@@ -2,7 +2,7 @@
  * Utility functions for parsing AI responses from various formats
  */
 
-import { JsonObject, JsonValue } from '../../shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common'
 
 const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
     typeof value === 'object' && value !== null && !Array.isArray(value)

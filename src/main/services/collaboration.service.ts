@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws'
-import { JsonObject } from '../../shared/types/common'
+import { JsonObject } from '@shared/types/common'
 
 export interface AgentMessage {
     id: string
@@ -25,7 +25,7 @@ export class CollaborationService {
     private initializeServer(port: number) {
         this.wss = new WebSocketServer({ port })
 
-        console.log(`[CollaborationService] WebSocket server started on port ${port}`)
+        console.log(`[CollaborationService] WebSocket server started on port ${ port } `)
 
         this.wss.on('connection', (ws) => {
             console.log('[CollaborationService] New client connected')
@@ -64,7 +64,7 @@ export class CollaborationService {
             this.clients.set(sessionId, [])
         }
         this.clients.get(sessionId)?.push(ws)
-        console.log(`[CollaborationService] Client joined session ${sessionId}`)
+        console.log(`[CollaborationService] Client joined session ${ sessionId } `)
     }
 
     private removeClient(ws: WebSocket) {

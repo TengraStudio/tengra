@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkspaceMount, WorkspaceEntry } from '@/types'
 import { FileIcon, FolderIcon } from '@/lib/file-icons'
-import { joinPath, sortNodes } from '../utils/workspaceUtils'
+import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
 
 export interface FileNode {
     name: string

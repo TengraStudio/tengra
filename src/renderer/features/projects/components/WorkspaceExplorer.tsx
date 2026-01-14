@@ -4,8 +4,8 @@ import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronRight, Folder, Plus, Server, X, FilePlus, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkspaceMount, WorkspaceEntry } from '@/types'
-import { WorkspaceTreeItem, FileNode } from './WorkspaceTreeItem'
-import { joinPath, sortNodes } from '../utils/workspaceUtils'
+import { WorkspaceTreeItem, FileNode } from '@renderer/features/projects/components/WorkspaceTreeItem'
+import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
 
 export interface ContextMenuAction {
     type: 'createFile' | 'createFolder' | 'rename' | 'delete'

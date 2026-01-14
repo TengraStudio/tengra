@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
-import { LlamaService } from '../services/llm/llama.service'
-import { IpcValue } from '../../shared/types/common'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { LlamaService } from '@main/services/llm/llama.service'
+import { IpcValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export function registerLlamaIpc(llamaService: LlamaService) {
     ipcMain.handle('llama:loadModel', async (_event, modelPath: string, config: Record<string, IpcValue>) => {

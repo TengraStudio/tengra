@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
-import { BaseService } from './base.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { BaseService } from '@main/services/base.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface AuditLogEntry {
     timestamp: number
@@ -34,7 +34,7 @@ export class AuditLogService extends BaseService {
                 fs.writeFileSync(this.logFilePath, JSON.stringify([]), 'utf8')
             }
         } catch (error) {
-            this.logError('AuditLog', `Failed to create audit log file: ${getErrorMessage(error as Error)}`)
+            this.logError('AuditLog', `Failed to create audit log file: ${getErrorMessage(error as Error)} `)
         }
     }
 
@@ -73,7 +73,7 @@ export class AuditLogService extends BaseService {
             // Write back to file
             // Logs exported successfully
             // const jsonContent = JSON.stringify(logs, null, 2) // Unused but kept for potential future use
-            
+
             // Check file size and rotate if needed
             if (fs.existsSync(this.logFilePath)) {
                 const stats = fs.statSync(this.logFilePath)
@@ -87,10 +87,10 @@ export class AuditLogService extends BaseService {
 
             // Also log to console in development
             if (process.env.NODE_ENV === 'development') {
-                this.logInfo('AuditLog', `${entry.category.toUpperCase()}: ${entry.action} - ${entry.success ? 'SUCCESS' : 'FAILED'}`)
+                this.logInfo('AuditLog', `${entry.category.toUpperCase()}: ${entry.action} - ${entry.success ? 'SUCCESS' : 'FAILED'} `)
             }
         } catch (error) {
-            this.logError('AuditLog', `Failed to write audit log: ${getErrorMessage(error as Error)}`)
+            this.logError('AuditLog', `Failed to write audit log: ${getErrorMessage(error as Error)} `)
         }
     }
 
@@ -138,7 +138,7 @@ export class AuditLogService extends BaseService {
 
             return logs
         } catch (error) {
-            this.logError('AuditLog', `Failed to read audit log: ${getErrorMessage(error as Error)}`)
+            this.logError('AuditLog', `Failed to read audit log: ${getErrorMessage(error as Error)} `)
             return []
         }
     }
@@ -149,8 +149,8 @@ export class AuditLogService extends BaseService {
     private async rotateLog(): Promise<void> {
         try {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-            const rotatedPath = `${this.logFilePath}.${timestamp}`
-            
+            const rotatedPath = `${this.logFilePath}.${timestamp} `
+
             if (fs.existsSync(this.logFilePath)) {
                 fs.renameSync(this.logFilePath, rotatedPath)
             }
@@ -172,7 +172,7 @@ export class AuditLogService extends BaseService {
                 fs.unlinkSync(files[i].path)
             }
         } catch (error) {
-            this.logError('AuditLog', `Failed to rotate audit log: ${getErrorMessage(error as Error)}`)
+            this.logError('AuditLog', `Failed to rotate audit log: ${getErrorMessage(error as Error)} `)
         }
     }
 
@@ -186,7 +186,7 @@ export class AuditLogService extends BaseService {
             }
             this.logInfo('AuditLog', 'Audit logs cleared')
         } catch (error) {
-            this.logError('AuditLog', `Failed to clear audit log: ${getErrorMessage(error as Error)}`)
+            this.logError('AuditLog', `Failed to clear audit log: ${getErrorMessage(error as Error)} `)
         }
     }
 }

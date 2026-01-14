@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { chatStream } from '../../../lib/chat-stream'
+import { chatStream } from '@renderer/lib/chat-stream'
 import { GitCommit, Copy, Check, RefreshCw, Sparkles } from 'lucide-react'
 import { useTranslation } from '@/i18n'
 

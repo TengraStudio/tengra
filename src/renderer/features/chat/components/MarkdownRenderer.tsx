@@ -7,7 +7,7 @@ import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
 import { Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MonacoBlock } from './MonacoBlock'
+import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock'
 import { useTranslation, Language } from '@/i18n'
 
 // Initialize mermaid

@@ -3,7 +3,7 @@
  * Estimates token counts for messages and tracks actual usage
  */
 
-import { Message } from '../../shared/types/chat'
+import { Message } from '@shared/types/chat'
 
 export interface TokenUsage {
     inputTokens: number

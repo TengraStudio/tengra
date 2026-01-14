@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react'
-import { useSettingsLogic } from './useSettingsLogic'
-import { SettingsCategory } from '../types'
+import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
+import { SettingsCategory } from '@renderer/features/settings/types'
 
 export function useAuthManager() {
     const logic = useSettingsLogic()

@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { HealthCheckService, HealthCheckResult, HealthStatus } from '../services/health-check.service'
-import { createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { HealthCheckService, HealthCheckResult, HealthStatus } from '@main/services/health-check.service'
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 /**
  * Registers IPC handlers for health check endpoints

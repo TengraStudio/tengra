@@ -1,8 +1,8 @@
 import { join } from 'path';
 import { promises as fs } from 'fs';
-import { LLMService } from './llm/llm.service';
-import { ProjectService } from './project/project.service';
-import { JsonObject } from '../../shared/types';
+import { LLMService } from '@main/services/llm/llm.service';
+import { ProjectService } from '@main/services/project/project.service';
+import { JsonObject } from '@shared/types/common';
 
 export class LogoService {
     constructor(private llmService: LLMService, private projectService: ProjectService) { }

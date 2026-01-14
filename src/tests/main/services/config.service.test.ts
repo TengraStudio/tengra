@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ConfigService } from '../../../main/services/config.service';
-import { SettingsService } from '../../../main/services/settings.service';
+import { ConfigService } from '@main/services/config.service';
+import { SettingsService } from '@main/services/settings.service';
 
 describe('ConfigService', () => {
     let configService: ConfigService;

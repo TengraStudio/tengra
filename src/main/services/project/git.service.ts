@@ -2,14 +2,14 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { getErrorMessage } from '../../../shared/utils/error.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 const execAsync = promisify(exec);
 
 export class GitService {
     private async execute(command: string, cwd: string) {
         try {
-            const { stdout, stderr } = await execAsync(`git ${command}`, { cwd });
+            const { stdout, stderr } = await execAsync(`git ${command} `, { cwd });
             return { success: true, stdout, stderr };
         } catch (error) {
             return { success: false, error: getErrorMessage(error) };
@@ -34,11 +34,11 @@ export class GitService {
     }
 
     async commit(cwd: string, message: string) {
-        return await this.execute(`commit -m "${message}"`, cwd);
+        return await this.execute(`commit - m "${message}"`, cwd);
     }
 
     async push(cwd: string, remote: string = 'origin', branch: string = 'main') {
-        return await this.execute(`push ${remote} ${branch}`, cwd);
+        return await this.execute(`push ${remote} ${branch} `, cwd);
     }
 
     async pull(cwd: string) {
@@ -46,7 +46,7 @@ export class GitService {
     }
 
     async getLog(cwd: string, count: number = 10) {
-        const { stdout } = await this.execute(`log -n ${count} --pretty=format:"%h|%s|%an|%cI"`, cwd);
+        const { stdout } = await this.execute(`log - n ${count} --pretty=format: "%h|%s|%an|%cI"`, cwd);
         if (!stdout) return []
 
         return stdout.split('\n')
@@ -62,7 +62,7 @@ export class GitService {
     }
 
     async checkout(cwd: string, branch: string) {
-        return await this.execute(`checkout ${branch}`, cwd);
+        return await this.execute(`checkout ${branch} `, cwd);
     }
 
     async executeRaw(cwd: string, command: string) {
@@ -72,8 +72,8 @@ export class GitService {
     async getFileDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ original: string; modified: string; success: boolean; error?: string }> {
         try {
             const command = staged
-                ? `diff --cached -- "${filePath}"`
-                : `diff -- "${filePath}"`
+                ? `diff--cached-- "${filePath}"`
+                : `diff-- "${filePath}"`
 
             const result = await this.execute(command, cwd);
 
@@ -81,7 +81,7 @@ export class GitService {
                 // File might be newly added
                 if (staged) {
                     // For staged new files, get the file content
-                    const contentResult = await this.execute(`show :"${filePath}"`, cwd);
+                    const contentResult = await this.execute(`show: "${filePath}"`, cwd);
                     if (contentResult.success && contentResult.stdout) {
                         return {
                             original: '',
@@ -94,7 +94,7 @@ export class GitService {
                 const fullPath = join(cwd, filePath);
                 try {
                     const currentContent = readFileSync(fullPath, 'utf8');
-                    const headResult = await this.execute(`show HEAD:"${filePath}"`, cwd);
+                    const headResult = await this.execute(`show HEAD: "${filePath}"`, cwd);
                     if (headResult.success && headResult.stdout) {
                         return {
                             original: headResult.stdout,
@@ -155,8 +155,8 @@ export class GitService {
     async getUnifiedDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ diff: string; success: boolean; error?: string }> {
         try {
             const command = staged
-                ? `diff --cached -- "${filePath}"`
-                : `diff -- "${filePath}"`
+                ? `diff--cached-- "${filePath}"`
+                : `diff-- "${filePath}"`
 
             const { stdout, stderr, success } = await this.execute(command, cwd);
 
@@ -176,6 +176,6 @@ export class GitService {
     }
 
     async unstageFile(cwd: string, filePath: string) {
-        return await this.execute(`reset HEAD -- "${filePath}"`, cwd);
+        return await this.execute(`reset HEAD-- "${filePath}"`, cwd);
     }
 }

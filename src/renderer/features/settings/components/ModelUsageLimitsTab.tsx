@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { AppSettings } from '../../../../shared/types/settings'
+import { AppSettings } from '@/types/settings'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { Settings, Clock, Calendar, TrendingUp, Percent, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'

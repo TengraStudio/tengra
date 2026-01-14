@@ -3,8 +3,8 @@
  * Tracks app online time, coding time, and per-project coding time
  */
 
-import { BaseService } from './base.service'
-import { DatabaseService } from './data/database.service'
+import { BaseService } from '@main/services/base.service'
+import { DatabaseService } from '@main/services/data/database.service'
 
 export interface TimeTrackingRecord {
     id: string

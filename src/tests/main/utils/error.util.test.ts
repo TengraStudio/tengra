@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { OrbitError, ApiError, isOrbitError, AppErrorCode } from '../../../main/utils/error.util';
+import { OrbitError, ApiError, isOrbitError, AppErrorCode } from '@main/utils/error.util';
 
 describe('Error Hierarchy', () => {
     it('should correctly construct OrbitError', () => {

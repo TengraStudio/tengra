@@ -1,6 +1,6 @@
 // Web service using native fetch and simplified HTML parsing (Electron compatible)
-import { getErrorMessage } from '../../shared/utils/error.util';
-import { JsonValue } from '../../shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { JsonValue } from '@shared/types/common';
 
 interface WebResult {
     success: boolean

@@ -1,7 +1,7 @@
-import { IPerformanceService } from '../types/services';
-import { ServiceResponse } from '../../shared/types';
-import { BaseService } from './base.service';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { IPerformanceService } from '@main/types/services';
+import { ServiceResponse } from '@shared/types';
+import { BaseService } from '@main/services/base.service';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export class PerformanceService extends BaseService implements IPerformanceService {
     private memoryHistory: number[] = [];

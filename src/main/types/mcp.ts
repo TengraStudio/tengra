@@ -3,7 +3,7 @@
  * Based on Anthropic's MCP specification
  */
 
-import { JsonObject, JsonValue } from '../../shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common'
 
 export interface MCPServerConfig {
     id: string

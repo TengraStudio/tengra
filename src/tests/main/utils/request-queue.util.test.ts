@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest'
-import { RequestQueue } from '../../../main/utils/request-queue.util'
+import { RequestQueue } from '@main/utils/request-queue.util'
 
 describe('RequestQueue', () => {
     it('should execute requests in order', async () => {

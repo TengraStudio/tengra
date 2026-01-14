@@ -12,7 +12,7 @@ export {
     type PanelPosition,
     type PanelSize,
     type PanelGroup
-} from './PanelLayout'
+} from '@renderer/components/layout/PanelLayout'
 
 // Activity Bar
 export {
@@ -22,7 +22,7 @@ export {
     useActivityBar,
     DEFAULT_ACTIVITIES,
     type ActivityItem
-} from './ActivityBar'
+} from '@renderer/components/layout/ActivityBar'
 
 // Status Bar
 export {
@@ -37,10 +37,10 @@ export {
     WarningStatus,
     ModelStatus,
     type StatusBarItem
-} from './StatusBar'
+} from '@renderer/components/layout/StatusBar'
 
 // Existing components
-export { LayoutManager } from './LayoutManager'
-export { Sidebar } from './Sidebar'
-export { AppHeader } from './AppHeader'
-export * from './SimpleResizable'
+export { LayoutManager } from '@renderer/components/layout/LayoutManager'
+export { Sidebar } from '@renderer/components/layout/Sidebar'
+export { AppHeader } from '@renderer/components/layout/AppHeader'
+export * from '@renderer/components/layout/SimpleResizable'

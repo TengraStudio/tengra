@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Server, ShoppingBag } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MCPServersTab } from './MCPServersTab'
+import { MCPServersTab } from '@renderer/features/settings/components/MCPServersTab'
 import { MCPStore } from '@/features/mcp/MCPStore'
 
 export const MCPSettingsTab = () => {

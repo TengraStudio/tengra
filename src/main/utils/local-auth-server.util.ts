@@ -1,8 +1,4 @@
-// import { shell } from 'electron'
-// import http from 'http'
-// import crypto from 'crypto'
-// import axios from 'axios'
-import { CatchError } from '../../shared/types/common'
+import { CatchError } from '@shared/types/common'
 
 export interface AuthResult {
     url: string
