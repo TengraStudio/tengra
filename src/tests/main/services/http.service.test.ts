@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HttpService } from '@main/services/http.service';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mock global fetch
 const globalFetch = vi.fn();

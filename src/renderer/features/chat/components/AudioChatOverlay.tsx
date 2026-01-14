@@ -1,8 +1,9 @@
+import { Loader2, Mic, StopCircle,Volume2, X } from 'lucide-react'
 import { useEffect } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { Mic, X, Volume2, Loader2, StopCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+
 import { useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 
 interface AudioChatOverlayProps {
     isOpen: boolean
@@ -34,7 +35,7 @@ export function AudioChatOverlay({
         }
     }, [isOpen, isSpeaking])
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <AnimatePresence>

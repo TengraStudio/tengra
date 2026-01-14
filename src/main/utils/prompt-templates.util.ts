@@ -93,9 +93,9 @@ export function validateTemplate(template: PromptTemplate): {
 } {
     const errors: string[] = []
 
-    if (!template.id) errors.push('Template ID is required')
-    if (!template.name) errors.push('Template name is required')
-    if (!template.template) errors.push('Template content is required')
+    if (!template.id) {errors.push('Template ID is required')}
+    if (!template.name) {errors.push('Template name is required')}
+    if (!template.template) {errors.push('Template content is required')}
 
     // Check that all declared variables exist in template
     const templateVars = extractVariables(template.template)
@@ -320,7 +320,7 @@ export class TemplateManager {
      */
     updateTemplate(id: string, updates: Partial<PromptTemplate>): PromptTemplate | null {
         const index = this.customTemplates.findIndex(t => t.id === id)
-        if (index === -1) return null
+        if (index === -1) {return null}
 
         this.customTemplates[index] = {
             ...this.customTemplates[index],
@@ -336,7 +336,7 @@ export class TemplateManager {
      */
     deleteTemplate(id: string): boolean {
         const index = this.customTemplates.findIndex(t => t.id === id)
-        if (index === -1) return false
+        if (index === -1) {return false}
 
         this.customTemplates.splice(index, 1)
         return true

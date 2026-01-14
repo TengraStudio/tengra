@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container, Scope } from '@main/core/container';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('Container', () => {
     let container: Container;

@@ -1,8 +1,9 @@
+import { exec } from 'child_process';
+import * as os from 'os';
+import { promisify } from 'util';
+
 import { ISystemService } from '@main/types/services';
 import { ServiceResponse, SystemInfo } from '@shared/types';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as os from 'os';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 

@@ -1,5 +1,5 @@
-﻿import React from 'react'
-import { ExternalLink, Activity, AlertTriangle } from 'lucide-react'
+﻿import { Activity, AlertTriangle,ExternalLink } from 'lucide-react'
+import React from 'react'
 
 import antigravityLogo from '@/assets/antigravity.svg'
 

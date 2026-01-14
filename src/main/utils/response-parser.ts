@@ -11,7 +11,7 @@ const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
  * Parse content from various API response formats
  */
 export function parseAIResponseContent(response: JsonValue | undefined): string {
-    if (!response) return ''
+    if (!response) {return ''}
 
     // If response is a string, try to parse it
     if (typeof response === 'string') {
@@ -37,7 +37,7 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
             .join('')
     }
 
-    if (!isJsonObject(response)) return ''
+    if (!isJsonObject(response)) {return ''}
     const res = response
 
     // Handle new Copilot format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
@@ -52,13 +52,13 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
     if (Array.isArray(res.content)) {
         return res.content
             .filter((item) => {
-                if (!item) return false
-                if (typeof item === 'string') return true
+                if (!item) {return false}
+                if (typeof item === 'string') {return true}
                 return isJsonObject(item) && (item.type === 'output_text' || item.text)
             })
             .map((item) => {
-                if (typeof item === 'string') return item
-                if (!isJsonObject(item)) return ''
+                if (typeof item === 'string') {return item}
+                if (!isJsonObject(item)) {return ''}
                 return typeof item.text === 'string' ? item.text : ''
             })
             .join('')
@@ -110,8 +110,8 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
     }
 
     // Fallback - if nothing else works
-    if (typeof res.text === 'string') return res.text
-    if (res.role === 'assistant' && !res.content) return ''
+    if (typeof res.text === 'string') {return res.text}
+    if (res.role === 'assistant' && !res.content) {return ''}
 
     return ''
 }

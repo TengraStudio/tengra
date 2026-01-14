@@ -1,10 +1,10 @@
 ﻿import React from 'react'
-import LogoAntigravity from '@/assets/antigravity.svg'
-import LogoClaude from '@/assets/claude.svg'
-import LogoOllama from '@/assets/ollama.svg'
-import LogoOpenAI from '@/assets/chatgpt.svg'
 
+import LogoAntigravity from '@/assets/antigravity.svg'
+import LogoOpenAI from '@/assets/chatgpt.svg'
+import LogoClaude from '@/assets/claude.svg'
 import LogoCopilot from '@/assets/copilot.png'
+import LogoOllama from '@/assets/ollama.svg'
 
 interface AssistantIdentityProps {
     model?: string

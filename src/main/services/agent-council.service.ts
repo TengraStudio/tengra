@@ -1,18 +1,16 @@
-import { DatabaseService } from '@main/services/data/database.service'
-import { v4 as uuidv4 } from 'uuid'
-import { PLANNER_SYSTEM_PROMPT, EXECUTOR_SYSTEM_PROMPT, REVIEWER_SYSTEM_PROMPT } from '@main/services/prompts/agent-prompts'
-import { LLMService } from '@main/services/llm/llm.service'
-import { FileSystemService } from '@main/services/data/filesystem.service'
-import { ProcessService } from '@main/services/process.service'
 import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
-import { WebService } from '@main/services/web.service'
-
 import { CollaborationService } from '@main/services/collaboration.service'
-
+import { DatabaseService } from '@main/services/data/database.service'
+import { FileSystemService } from '@main/services/data/filesystem.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { LLMService } from '@main/services/llm/llm.service'
+import { ProcessService } from '@main/services/process.service'
+import { EXECUTOR_SYSTEM_PROMPT, PLANNER_SYSTEM_PROMPT, REVIEWER_SYSTEM_PROMPT } from '@main/services/prompts/agent-prompts'
+import { WebService } from '@main/services/web.service'
+import { AgentDefinition, AgentLog,AgentMessage, CouncilSession } from '@shared/types/agent'
 import { JsonValue } from '@shared/types/common'
-import { CouncilSession, AgentDefinition, AgentMessage, AgentLog } from '@shared/types/agent'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { v4 as uuidv4 } from 'uuid'
 
 interface ToolCallArgs {
     command?: string;
@@ -60,7 +58,7 @@ export class AgentCouncilService {
      * @param sessionId - The ID of the session to activate
      */
     async startSessionLoop(sessionId: string) {
-        if (this.activeLoops.has(sessionId)) return
+        if (this.activeLoops.has(sessionId)) {return}
         this.activeLoops.add(sessionId)
 
         // Run in background (fire and forget from caller's perspective, but we log errors)
@@ -93,7 +91,7 @@ export class AgentCouncilService {
         let iterations = 0;
         while (this.activeLoops.has(sessionId) && safetyLimit > 0 && iterations < MAX_SESSION_ITERATIONS) {
             const session = await this.db.getCouncilSession(sessionId)
-            if (!session) break
+            if (!session) {break}
 
             if (session.status === 'completed' || session.status === 'failed') {
                 this.activeLoops.delete(sessionId)
@@ -186,9 +184,9 @@ export class AgentCouncilService {
      */
     async runSessionStep(sessionId: string) {
         const session = await this.db.getCouncilSession(sessionId)
-        if (!session) throw new Error('Session not found')
+        if (!session) {throw new Error('Session not found')}
 
-        if (session.status === 'completed' || session.status === 'failed') return
+        if (session.status === 'completed' || session.status === 'failed') {return}
 
         // Default Model/Provider (TODO: Pass in session)
         const model = 'gpt-4o'
@@ -374,7 +372,7 @@ export class AgentCouncilService {
                 if (match && match[1]) {
                     try {
                         const parsed = JSON.parse(match[1])
-                        if (parsed.tool && parsed.args) results.push(parsed)
+                        if (parsed.tool && parsed.args) {results.push(parsed)}
                     } catch (e) {
                         console.error('Failed to parse inner JSON block:', e)
                     }
@@ -384,7 +382,7 @@ export class AgentCouncilService {
             if (results.length === 0 && content.trim().startsWith('{')) {
                 try {
                     const parsed = JSON.parse(content)
-                    if (parsed.tool && parsed.args) results.push(parsed)
+                    if (parsed.tool && parsed.args) {results.push(parsed)}
                 } catch (e) {
                     console.error('Failed to parse tool calls raw:', e)
                 }
@@ -405,32 +403,32 @@ export class AgentCouncilService {
     private async executeTool(name: string, args: ToolCallArgs): Promise<string> {
         switch (name) {
             case 'runCommand': {
-                if (!args.command) throw new Error('Missing command argument')
+                if (!args.command) {throw new Error('Missing command argument')}
                 return await this.process.execute(args.command, args.cwd || process.cwd())
             }
 
             case 'readFile': {
-                if (!args.path) throw new Error('Missing path argument')
+                if (!args.path) {throw new Error('Missing path argument')}
                 const readRes = await this.fs.readFile(args.path)
-                if (!readRes.success) throw new Error(readRes.error || 'Failed to read file')
+                if (!readRes.success) {throw new Error(readRes.error || 'Failed to read file')}
                 return readRes.data || ''
             }
 
             case 'writeFile': {
-                if (!args.path || !args.content) throw new Error('Missing path or content')
+                if (!args.path || !args.content) {throw new Error('Missing path or content')}
                 const writeRes = await this.fs.writeFile(args.path, args.content)
-                if (!writeRes.success) throw new Error(writeRes.error || 'Failed to write file')
+                if (!writeRes.success) {throw new Error(writeRes.error || 'Failed to write file')}
                 return `File written to ${args.path}`
             }
 
             case 'runScript': {
-                if (!args.code || !args.language) throw new Error('Missing code or language (node/python)')
+                if (!args.code || !args.language) {throw new Error('Missing code or language (node/python)')}
                 const ext = args.language === 'python' ? 'py' : 'js'
                 const scriptPath = `.orbit/temp/agent_script_${Date.now()}.${ext}`
 
                 await this.fs.createDirectory('.orbit/temp')
                 const writeScript = await this.fs.writeFile(scriptPath, args.code)
-                if (!writeScript.success) throw new Error(`Failed to write script: ${writeScript.error}`)
+                if (!writeScript.success) {throw new Error(`Failed to write script: ${writeScript.error}`)}
 
                 const cmd = args.language === 'python' ? `python "${scriptPath}"` : `node "${scriptPath}"`
                 const output = await this.process.execute(cmd, process.cwd())
@@ -438,15 +436,15 @@ export class AgentCouncilService {
             }
 
             case 'listDir': {
-                if (!args.path) throw new Error('Missing path argument')
+                if (!args.path) {throw new Error('Missing path argument')}
                 const listRes = await this.fs.listDirectory(args.path)
-                if (!listRes.success) throw new Error(listRes.error || 'Failed to list directory')
+                if (!listRes.success) {throw new Error(listRes.error || 'Failed to list directory')}
                 const files = listRes.data || []
                 return files.map((f: { name: string }) => f.name).join('\n')
             }
 
             case 'callSystem': {
-                if (!args.service || !args.method) throw new Error('Missing service or method')
+                if (!args.service || !args.method) {throw new Error('Missing service or method')}
 
                 const services = {
                     llm: this.llm,
@@ -460,7 +458,7 @@ export class AgentCouncilService {
 
                 const serviceKey = args.service as keyof typeof services
                 const serviceInstance = services[serviceKey]
-                if (!serviceInstance) throw new Error(`Service ${args.service} not found available for agents.`)
+                if (!serviceInstance) {throw new Error(`Service ${args.service} not found available for agents.`)}
 
                 const methodName = args.method as keyof typeof serviceInstance
                 const method = serviceInstance[methodName]

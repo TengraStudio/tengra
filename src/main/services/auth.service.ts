@@ -1,16 +1,19 @@
 import * as fs from 'fs'
 import * as path from 'path'
+
+import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { SecurityService } from '@main/services/security.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
-export class AuthService {
+export class AuthService extends BaseService {
     private authDir: string
 
     constructor(
         private dataService: DataService,
         private securityService: SecurityService
     ) {
+        super('AuthService')
         this.authDir = this.dataService.getPath('auth')
     }
 
@@ -41,10 +44,10 @@ export class AuthService {
     }
 
     getToken(provider: string): string | undefined {
-        if (!provider) return undefined;
+        if (!provider) {return undefined;}
 
         const filePath = this.resolveFilePath(provider);
-        if (!filePath) return undefined;
+        if (!filePath) {return undefined;}
 
         try {
             const content = fs.readFileSync(filePath, 'utf-8');
@@ -64,7 +67,7 @@ export class AuthService {
         ];
 
         for (const p of possiblePaths) {
-            if (fs.existsSync(p)) return p;
+            if (fs.existsSync(p)) {return p;}
         }
         return undefined;
     }
@@ -74,7 +77,7 @@ export class AuthService {
         const payload = this.extractEncryptedPayload(content);
 
         // 2. Try to decrypt
-        let decrypted = this.securityService.decryptSync(payload);
+        const decrypted = this.securityService.decryptSync(payload);
 
         // 3. Fallback: If decryption failed, check if it's already plain text (legacy)
         if (decrypted === null) {
@@ -95,7 +98,7 @@ export class AuthService {
 
     private extractEncryptedPayload(content: string): string {
         const trimmed = content.trim();
-        if (!trimmed.startsWith('{')) return trimmed;
+        if (!trimmed.startsWith('{')) {return trimmed;}
 
         try {
             const data = JSON.parse(trimmed) as Record<string, unknown>;
@@ -103,13 +106,13 @@ export class AuthService {
 
             for (const key of candidates) {
                 const val = data[key];
-                if (typeof val === 'string' && val) return val;
+                if (typeof val === 'string' && val) {return val;}
                 // Shallow search for nested objects (limit depth for NASA Rule 4)
                 if (typeof val === 'object' && val !== null) {
                     const nested = val as Record<string, unknown>;
                     for (const subKey of candidates) {
                         const subVal = nested[subKey];
-                        if (typeof subVal === 'string' && subVal) return subVal;
+                        if (typeof subVal === 'string' && subVal) {return subVal;}
                     }
                 }
             }
@@ -121,13 +124,13 @@ export class AuthService {
         try {
             const parsed = JSON.parse(jsonStr) as Record<string, any>;
             const token = parsed.access_token || parsed.token?.access_token || parsed.token || parsed.apiKey || parsed.accessToken;
-            if (typeof token === 'string' && token) return token.trim();
+            if (typeof token === 'string' && token) {return token.trim();}
         } catch { /* Fail silently */ }
         return jsonStr.trim();
     }
 
     deleteToken(provider: string): void {
-        if (!provider) return;
+        if (!provider) {return;}
         const filePath = path.join(this.authDir, `${provider}.json`);
         if (fs.existsSync(filePath)) {
             try {
@@ -140,18 +143,18 @@ export class AuthService {
 
     getAllTokens(): Record<string, string> {
         const tokens: Record<string, string> = {};
-        if (!fs.existsSync(this.authDir)) return tokens;
+        if (!fs.existsSync(this.authDir)) {return tokens;}
 
         try {
             const files = fs.readdirSync(this.authDir);
             for (const file of files) {
                 // Limit loop to avoid indefinite execution (NASA Rule 2)
-                if (Object.keys(tokens).length > 100) break;
+                if (Object.keys(tokens).length > 100) {break;}
 
                 if (file.endsWith('.json') || file.endsWith('.enc')) {
                     const provider = file.replace(/\.(json|enc)$/, '');
                     const token = this.getToken(provider);
-                    if (token) tokens[provider] = token;
+                    if (token) {tokens[provider] = token;}
                 }
             }
         } catch (error) {

@@ -1,14 +1,15 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { MessageSquarePlus, Trash2, Settings, Server, MessageSquare, Folder, RefreshCw, Cpu } from 'lucide-react'
-import { Chat, Project } from '@/types'
-import { ModelInfo } from '@/features/models/utils/model-fetcher'
-import { useDebounce } from '@/hooks/useDebounce'
-import { SettingsCategory } from '@/features/settings/types'
-import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader'
-import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList'
-import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel'
 import { CommandFooter } from '@renderer/components/layout/command-palette/CommandFooter'
+import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader'
+import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel'
+import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList'
+import { Cpu,Folder, MessageSquare, MessageSquarePlus, RefreshCw, Server, Settings, Trash2 } from 'lucide-react'
+import React, { useEffect,useMemo, useRef, useState } from 'react'
+
+import { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { SettingsCategory } from '@/features/settings/types'
+import { useDebounce } from '@/hooks/useDebounce'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { Chat, Project } from '@/types'
 
 export interface CommandItem {
     id: string;

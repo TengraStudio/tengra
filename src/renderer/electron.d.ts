@@ -1,10 +1,11 @@
-import {
-    AppSettings, ProjectAnalysis, ProjectStats, Chat, Message, Folder, Project,
-    AgentDefinition, SSHConnection, SSHFile,
-    SSHConfig, ToolCall, ToolDefinition, ToolResult, IpcValue, AuthStatus, QuotaResponse,
-    SSHSystemStats, SSHPackageInfo, FileSearchResult, CopilotQuota, CouncilSession
-} from '@/shared/types'
 import { IpcRendererEvent } from 'electron'
+
+import {
+    AgentDefinition,     AppSettings, AuthStatus, Chat, CopilotQuota, CouncilSession,
+FileSearchResult, Folder, IpcValue, Message, Project,
+ProjectAnalysis, ProjectStats, QuotaResponse,
+    SSHConfig, SSHConnection, SSHFile,
+SSHPackageInfo,     SSHSystemStats, ToolCall, ToolDefinition, ToolResult} from '@/shared/types'
 
 export interface TodoItem {
     file: string

@@ -1,7 +1,8 @@
-﻿import { useState, useEffect } from 'react';
-import { Image, Trash2, ExternalLink, RefreshCw, FolderOpen } from 'lucide-react';
+﻿import { ExternalLink, FolderOpen,Image, RefreshCw, Trash2 } from 'lucide-react';
+import { useEffect,useState } from 'react';
+
+import { Language,useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { useTranslation, Language } from '@/i18n';
 
 interface GalleryViewProps {
     language: Language;
@@ -31,7 +32,7 @@ export function GalleryView({ language }: GalleryViewProps) {
     };
 
     const handleDelete = async (path: string) => {
-        if (!confirm(t('gallery.deleteConfirm'))) return;
+        if (!confirm(t('gallery.deleteConfirm'))) {return;}
         setDeleting(path);
         try {
             await window.electron.gallery.delete(path);

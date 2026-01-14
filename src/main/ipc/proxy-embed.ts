@@ -1,5 +1,5 @@
-import { ipcMain } from 'electron'
 import { ProxyService } from '@main/services/proxy/proxy.service'
+import { ipcMain } from 'electron'
 
 export function registerProxyEmbedIpc(proxyService: ProxyService) {
     ipcMain.handle('proxy:embed:start', async (_event, args?: { port?: number }) => {

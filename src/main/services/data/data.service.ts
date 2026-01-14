@@ -1,9 +1,10 @@
-import { app } from 'electron'
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
+
 import { appLogger } from '@main/logging/logger'
-import { getErrorMessage } from '@shared/utils/error.util'
 import { BaseService } from '@main/services/base.service'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { app } from 'electron'
 
 export type DataType = 'auth' | 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
 
@@ -40,9 +41,9 @@ export class DataService extends BaseService {
     }
 
     private ensureDirectories() {
-        if (!fs.existsSync(this.baseDir)) fs.mkdirSync(this.baseDir, { recursive: true })
+        if (!fs.existsSync(this.baseDir)) {fs.mkdirSync(this.baseDir, { recursive: true })}
         Object.values(this.paths).forEach(p => {
-            if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true })
+            if (!fs.existsSync(p)) {fs.mkdirSync(p, { recursive: true })}
         })
     }
 
@@ -164,7 +165,7 @@ export class DataService extends BaseService {
                             appLogger.info('DataService', `Migrating ${path.basename(m.old)} to ${m.new}`)
                             // Ensure destination dir exists
                             const destDir = path.dirname(m.new)
-                            if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
+                            if (!fs.existsSync(destDir)) {fs.mkdirSync(destDir, { recursive: true })}
                             fs.renameSync(m.old, m.new)
                         }
                     }

@@ -1,6 +1,7 @@
 import React from 'react';
+
 import { cn } from '@/lib/utils';
-import { CouncilAgent, ActivityEntry } from '@/types';
+import { ActivityEntry,CouncilAgent } from '@/types';
 
 interface CouncilPanelProps {
     councilEnabled: boolean;

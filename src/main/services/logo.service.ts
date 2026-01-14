@@ -1,5 +1,6 @@
-import { join } from 'path';
 import { promises as fs } from 'fs';
+import { join } from 'path';
+
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProjectService } from '@main/services/project/project.service';
 import { JsonObject } from '@shared/types/common';

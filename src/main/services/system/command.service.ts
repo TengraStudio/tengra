@@ -1,5 +1,6 @@
-import { spawn, exec, ChildProcess } from 'child_process'
+import { ChildProcess,exec, spawn } from 'child_process'
 import { promisify } from 'util'
+
 import { getErrorMessage } from '@shared/utils/error.util'
 
 const execAsync = promisify(exec)
@@ -27,7 +28,7 @@ export class CommandService {
                 // Kill process tree
                 const killCmd = `taskkill / PID ${ child.pid } /T /F`
                 exec(killCmd, (err) => {
-                    if (err) console.error('Failed to kill process tree:', getErrorMessage(err as Error))
+                    if (err) {console.error('Failed to kill process tree:', getErrorMessage(err as Error))}
                 })
                 // Also try direct kill safety net
                 child.kill()
@@ -85,7 +86,7 @@ export class CommandService {
                     shell: options?.shell || 'powershell.exe',
                     maxBuffer: 10 * 1024 * 1024
                 }, (error, stdout, stderr) => {
-                    if (options.id) this.activeProcesses.delete(options.id)
+                    if (options.id) {this.activeProcesses.delete(options.id)}
 
                     if (error) {
                         resolve({
@@ -105,7 +106,7 @@ export class CommandService {
                     }
                 })
 
-                if (options.id) this.activeProcesses.set(options.id, child)
+                if (options.id) {this.activeProcesses.set(options.id, child)}
             })
         }
 
@@ -167,7 +168,7 @@ export class CommandService {
 
             const timeout = setTimeout(() => {
                 child.kill('SIGTERM')
-                if (options?.id) this.activeProcesses.delete(options.id)
+                if (options?.id) {this.activeProcesses.delete(options.id)}
                 resolve({
                     success: false,
                     stdout,
@@ -190,7 +191,7 @@ export class CommandService {
 
             child.on('close', (code) => {
                 clearTimeout(timeout)
-                if (options?.id) this.activeProcesses.delete(options.id)
+                if (options?.id) {this.activeProcesses.delete(options.id)}
                 resolve({
                     success: code === 0,
                     stdout: stdout.trim(),
@@ -201,7 +202,7 @@ export class CommandService {
 
             child.on('error', (error) => {
                 clearTimeout(timeout)
-                if (options?.id) this.activeProcesses.delete(options.id)
+                if (options?.id) {this.activeProcesses.delete(options.id)}
                 resolve({
                     success: false,
                     stdout,

@@ -3,12 +3,13 @@
  * VSCode-like status bar with left/right sections and interactive items.
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
 import {
-    GitBranch, AlertCircle, Loader2, Bell,
-    Wifi, WifiOff, Zap
+AlertCircle, Bell,
+    GitBranch, Loader2,     Wifi, WifiOff, Zap
 } from 'lucide-react'
+import React, { createContext, useCallback,useContext, useState } from 'react'
+
+import { cn } from '@/lib/utils'
 
 export interface StatusBarItem {
     id: string
@@ -32,7 +33,7 @@ const StatusBarContext = createContext<StatusBarContextType | null>(null)
 
 export const useStatusBar = () => {
     const context = useContext(StatusBarContext)
-    if (!context) throw new Error('useStatusBar must be used within StatusBarProvider')
+    if (!context) {throw new Error('useStatusBar must be used within StatusBarProvider')}
     return context
 }
 
@@ -49,7 +50,7 @@ export const StatusBarProvider: React.FC<{
         const setter = position === 'left' ? setLeftItems : setRightItems
         setter(prev => {
             const existing = prev.find(i => i.id === item.id)
-            if (existing) return prev
+            if (existing) {return prev}
             const newItems = [...prev, item]
             return newItems.sort((a, b) => (b.priority || 0) - (a.priority || 0))
         })
@@ -78,7 +79,7 @@ export const StatusBarProvider: React.FC<{
 const StatusBarItemView: React.FC<{
     item: StatusBarItem
 }> = ({ item }) => {
-    if (item.visible === false) return null
+    if (item.visible === false) {return null}
 
     return (
         <div
@@ -197,7 +198,7 @@ export const LoadingStatus: React.FC<{
     loading: boolean
     label?: string
 }> = ({ loading, label }) => {
-    if (!loading) return null
+    if (!loading) {return null}
 
     return (
         <div className="flex items-center gap-1 px-2 py-0.5 text-[11px]">
@@ -211,7 +212,7 @@ export const ErrorStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) return null
+    if (count === 0) {return null}
 
     return (
         <div
@@ -231,7 +232,7 @@ export const WarningStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) return null
+    if (count === 0) {return null}
 
     return (
         <div

@@ -1,5 +1,5 @@
 import { IRepository } from '@main/core/repository.interface';
-import { Folder, DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService,Folder } from '@main/services/data/database.service';
 
 /**
  * Repository for managing Folders.
@@ -22,7 +22,7 @@ export class FolderRepository implements IRepository<Folder> {
 
     async update(id: string, item: Partial<Folder>): Promise<Folder> {
         const updated = await this.db.updateFolder(id, item);
-        if (!updated) throw new Error(`Folder not found: ${id}`);
+        if (!updated) {throw new Error(`Folder not found: ${id}`);}
         return updated;
     }
 

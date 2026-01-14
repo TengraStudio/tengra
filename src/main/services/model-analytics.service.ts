@@ -83,7 +83,7 @@ export class ModelAnalyticsService extends BaseService {
      */
     getModelStats(model: string): ModelStats | null {
         const modelRecords = this.records.filter(r => r.model === model);
-        if (modelRecords.length === 0) return null;
+        if (modelRecords.length === 0) {return null;}
 
         return this.calculateStats(modelRecords, model);
     }
@@ -201,7 +201,7 @@ export class ModelAnalyticsService extends BaseService {
             modelLower.includes(key.toLowerCase())
         );
 
-        if (!matchedPricing) return 0;
+        if (!matchedPricing) {return 0;}
 
         const [, price] = matchedPricing;
         return (inputTokens * price.input + outputTokens * price.output) / 1_000_000;

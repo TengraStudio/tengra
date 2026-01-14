@@ -1,14 +1,16 @@
+import * as fs from 'fs'
+import * as path from 'path'
+
 import { PGlite } from '@electric-sql/pglite'
 import { vector } from '@electric-sql/pglite/vector'
 import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
-import { MigrationManager, AsyncDatabaseAdapter, Migration } from '@main/services/data/migration-manager' // Updated import
-import * as fs from 'fs'
-import * as path from 'path'
-import { v4 as uuidv4 } from 'uuid'
+import { Migration, MigrationManager } from '@main/services/data/migration-manager'
+import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database'
 import { JsonObject, JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { v4 as uuidv4 } from 'uuid'
 
 // Re-export interfaces from previous implementation (copy-pasted for clarity/continuity)
 export interface Folder { id: string; name: string; color?: string; createdAt: number; updatedAt: number }
@@ -101,7 +103,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    private async ensureDb(): Promise<AsyncDatabaseAdapter> {
+    private async ensureDb(): Promise<DatabaseAdapter> {
         appLogger.info('DatabaseService', `ensureDb called, initPromise: ${!!this.initPromise}, db: ${!!this.db}`)
         if (this.initPromise) {
             appLogger.info('DatabaseService', 'Waiting for init promise...')
@@ -117,14 +119,18 @@ export class DatabaseService extends BaseService {
     }
 
     // Create a compatible adapter for MigrationManager and internal usage
-    private createAdapter(): AsyncDatabaseAdapter {
-        if (!this.db) throw new Error('DB not ready')
+    private createAdapter(): DatabaseAdapter {
+        if (!this.db) { throw new Error('DB not ready') }
         const db = this.db
 
         return {
-            query: async (sql, params) => db.query(sql, params),
+            query: async <T = unknown>(sql: string, params?: SqlParams) => {
+                const safeParams = params?.map(p => p === undefined ? null : p)
+                const res = await db.query<T>(sql, safeParams)
+                return { rows: res.rows, fields: res.fields }
+            },
             exec: async (sql) => { await db.exec(sql); },
-            transaction: <T>(fn: (tx: any) => Promise<T>) => {
+            transaction: <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
                 return db.transaction(async (tx) => {
                     const txAdapter = this.createAdapterFromTx(tx);
                     return await fn(txAdapter);
@@ -133,16 +139,19 @@ export class DatabaseService extends BaseService {
             prepare: (sql: string) => {
                 const normalized = this.normalizeSql(sql)
                 return {
-                    run: async (...params: any[]) => {
-                        const res = await db.query(normalized, params)
-                        return res
+                    run: async (...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await db.query(normalized, safeParams)
+                        return { rowsAffected: res.affectedRows, insertId: undefined }
                     },
-                    all: async (...params: any[]) => {
-                        const res = await db.query(normalized, params)
+                    all: async <T = unknown>(...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await db.query<T>(normalized, safeParams)
                         return res.rows
                     },
-                    get: async (...params: any[]) => {
-                        const res = await db.query(normalized, params)
+                    get: async <T = unknown>(...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await db.query<T>(normalized, safeParams)
                         return res.rows[0]
                     }
                 }
@@ -150,11 +159,15 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    private createAdapterFromTx(tx: any): AsyncDatabaseAdapter {
+    private createAdapterFromTx(tx: any): DatabaseAdapter {
         return {
-            query: async (sql, params) => tx.query(sql, params),
+            query: async <T = unknown>(sql: string, params?: SqlParams) => {
+                const safeParams = params?.map(p => p === undefined ? null : p)
+                const res = await tx.query(sql, safeParams)
+                return { rows: res.rows, fields: res.fields }
+            },
             exec: async (sql) => { await tx.exec(sql); },
-            transaction: <T>(fn: (nestedTx: any) => Promise<T>) => {
+            transaction: <T>(fn: (nestedTx: DatabaseAdapter) => Promise<T>) => {
                 // PGlite might support nested transactions or savepoints?
                 // For now just execute function directly with current tx to avoid complexity
                 return fn(this.createAdapterFromTx(tx))
@@ -162,15 +175,19 @@ export class DatabaseService extends BaseService {
             prepare: (sql: string) => {
                 const normalized = this.normalizeSql(sql)
                 return {
-                    run: async (...params: any[]) => {
-                        return await tx.query(normalized, params)
+                    run: async (...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await tx.query(normalized, safeParams)
+                        return { rowsAffected: res.affectedRows, insertId: undefined }
                     },
-                    all: async (...params: any[]) => {
-                        const res = await tx.query(normalized, params)
+                    all: async <T = unknown>(...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await tx.query(normalized, safeParams)
                         return res.rows
                     },
-                    get: async (...params: any[]) => {
-                        const res = await tx.query(normalized, params)
+                    get: async <T = unknown>(...params: SqlValue[]) => {
+                        const safeParams = params.map(p => p === undefined ? null : p)
+                        const res = await tx.query(normalized, safeParams)
                         return res.rows[0]
                     }
                 }
@@ -180,14 +197,14 @@ export class DatabaseService extends BaseService {
 
     private normalizeSql(sql: string): string {
         // If it looks like it has $1, $2, return as is
-        if (/\$\d+/.test(sql)) return sql
+        if (/\$\d+/.test(sql)) { return sql }
         let i = 1
         return sql.replace(/\?/g, () => `$${i++}`)
     }
 
     getDatabase() {
         // Return the adapter, not raw PGlite, to maintain API compatibility
-        if (!this.db) throw new Error('DB not initialized')
+        if (!this.db) { throw new Error('DB not initialized') }
         return this.createAdapter()
     }
 
@@ -576,7 +593,7 @@ export class DatabaseService extends BaseService {
     async getFolder(id: string): Promise<Folder | undefined> {
         const db = await this.ensureDb()
         const row = await db.prepare('SELECT * FROM folders WHERE id = ?').get(id) as any
-        if (!row) return undefined
+        if (!row) { return undefined }
         return {
             id: row.id,
             name: row.name,
@@ -596,8 +613,8 @@ export class DatabaseService extends BaseService {
 
     async updateFolder(id: string, updates: Partial<Folder>) {
         const db = await this.ensureDb()
-        if (updates.name) await db.prepare('UPDATE folders SET name = ? WHERE id = ?').run(updates.name, id)
-        if (updates.color) await db.prepare('UPDATE folders SET color = ? WHERE id = ?').run(updates.color, id)
+        if (updates.name) { await db.prepare('UPDATE folders SET name = ? WHERE id = ?').run(updates.name, id) }
+        if (updates.color) { await db.prepare('UPDATE folders SET color = ? WHERE id = ?').run(updates.color, id) }
         await db.prepare('UPDATE folders SET updated_at = ? WHERE id = ?').run(Date.now(), id)
         return this.getFolder(id)
     }
@@ -624,7 +641,7 @@ export class DatabaseService extends BaseService {
     async getPrompt(id: string): Promise<Prompt | undefined> {
         const db = await this.ensureDb()
         const row = await db.prepare('SELECT * FROM prompts WHERE id = ?').get(id) as any
-        if (!row) return undefined
+        if (!row) { return undefined }
         return {
             id: row.id,
             title: row.title,
@@ -645,9 +662,9 @@ export class DatabaseService extends BaseService {
 
     async updatePrompt(id: string, updates: Partial<Prompt>) {
         const db = await this.ensureDb()
-        if (updates.title) await db.prepare('UPDATE prompts SET title = ? WHERE id = ?').run(updates.title, id)
-        if (updates.content) await db.prepare('UPDATE prompts SET content = ? WHERE id = ?').run(updates.content, id)
-        if (updates.tags) await db.prepare('UPDATE prompts SET tags = ? WHERE id = ?').run(JSON.stringify(updates.tags), id)
+        if (updates.title) { await db.prepare('UPDATE prompts SET title = ? WHERE id = ?').run(updates.title, id) }
+        if (updates.content) { await db.prepare('UPDATE prompts SET content = ? WHERE id = ?').run(updates.content, id) }
+        if (updates.tags) { await db.prepare('UPDATE prompts SET tags = ? WHERE id = ?').run(JSON.stringify(updates.tags), id) }
         await db.prepare('UPDATE prompts SET updated_at = ? WHERE id = ?').run(Date.now(), id)
         return this.getPrompt(id)
     }
@@ -676,7 +693,7 @@ export class DatabaseService extends BaseService {
     }
 
     private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
-        if (!json) return defaultValue
+        if (!json) { return defaultValue }
         try { return JSON.parse(json) as T } catch { return defaultValue }
     }
 
@@ -769,17 +786,20 @@ export class DatabaseService extends BaseService {
     }
 
     // ... Chats ...
-    async createChat(chat: JsonObject) {
+    async createChat(chat: Chat) {
         try {
             const db = await this.ensureDb()
             const id = (chat.id as string) || uuidv4()
             const now = Date.now()
             await db.prepare(`
-                INSERT INTO chats (id, title, is_Generating, backend, model, folder_id, project_id, is_pinned, is_favorite, metadata, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO chats (
+                    id, title, is_Generating, backend, model,
+                    folder_id, project_id, is_pinned, is_favorite,
+                    metadata, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              `).run(
-                id, chat.title || 'New Chat', chat.isGenerating ? 1 : 0, chat.backend || null, chat.model || null,
-                chat.folderId || null, chat.projectId || null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
+                id, (chat.title as string) || 'New Chat', chat.isGenerating ? 1 : 0, (chat.backend as string) || null, (chat.model as string) || null,
+                (chat.folderId as string) || null, (chat.projectId as string) || null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
                 JSON.stringify(chat.metadata || {}), now, now
             )
             appLogger.info('DatabaseService', `Created chat: ${id}`)
@@ -812,7 +832,7 @@ export class DatabaseService extends BaseService {
     async getChat(id: string) {
         const db = await this.ensureDb()
         const row = await db.prepare('SELECT * FROM chats WHERE id = ?').get(id) as any
-        if (!row) return undefined
+        if (!row) { return undefined }
         return {
             id: row.id,
             title: row.title,
@@ -893,11 +913,11 @@ export class DatabaseService extends BaseService {
     // To keep this overwrite manageable, I've covered key integration points. 
     // Ensure remaining methods from original file are present or errors will occur.
 
-    async updateChat(id: string, updates: JsonObject) {
+    async updateChat(id: string, updates: Partial<Chat>) {
         try {
             const db = await this.ensureDb()
             const fields: string[] = []
-            const values: any[] = []
+            const values: SqlValue[] = []
 
             if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title) }
             if (updates.isGenerating !== undefined) { fields.push('is_Generating = ?'); values.push(updates.isGenerating ? 1 : 0) }
@@ -948,11 +968,11 @@ export class DatabaseService extends BaseService {
                 INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata, vector) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
              `).run(
-                id, msg.chatId, msg.role, msg.content, msg.timestamp || Date.now(),
-                msg.provider || null, msg.model || null, JSON.stringify(msg.metadata || {}), vec
+                id, msg.chatId as string, msg.role as string, msg.content as string, (msg.timestamp as number) || Date.now(),
+                (msg.provider as string) || null, (msg.model as string) || null, JSON.stringify(msg.metadata || {}), vec
             )
 
-            await db.prepare('UPDATE chats SET updated_at = ? WHERE id = ?').run(Date.now(), msg.chatId)
+            await db.prepare('UPDATE chats SET updated_at = ? WHERE id = ?').run(Date.now(), msg.chatId as string)
             return { success: true, id }
         } catch (error) {
             console.error('[DatabaseService] Failed to add message:', error)
@@ -1006,7 +1026,7 @@ export class DatabaseService extends BaseService {
     async getCouncilSession(id: string): Promise<CouncilSession | null> {
         const db = await this.ensureDb()
         const row = await db.prepare('SELECT * FROM council_sessions WHERE id = ?').get(id) as any
-        if (!row) return null
+        if (!row) { return null }
         return {
             ...row,
             logs: this.parseJsonField<CouncilLog[]>(row.logs, []),
@@ -1043,7 +1063,7 @@ export class DatabaseService extends BaseService {
         // So I must do Read-Modify-Write.
 
         const session = await this.getCouncilSession(sessionId)
-        if (!session) return
+        if (!session) { return }
 
         const newLog: CouncilLog = {
             id: uuidv4(),
@@ -1333,10 +1353,10 @@ export class DatabaseService extends BaseService {
             const newMetadata: JsonObject = { ...currentMetadata }
 
             // Handle special fields that go into metadata
-            if ('isBookmarked' in updates) newMetadata.isBookmarked = updates.isBookmarked as boolean
-            if ('isPinned' in updates) newMetadata.isPinned = updates.isPinned as boolean
-            if ('rating' in updates) newMetadata.rating = updates.rating as number
-            if ('reactions' in updates) newMetadata.reactions = updates.reactions as string[]
+            if ('isBookmarked' in updates) { newMetadata.isBookmarked = updates.isBookmarked as boolean }
+            if ('isPinned' in updates) { newMetadata.isPinned = updates.isPinned as boolean }
+            if ('rating' in updates) { newMetadata.rating = updates.rating as number }
+            if ('reactions' in updates) { newMetadata.reactions = updates.reactions as string[] }
 
             // Build update query for direct columns
             const fields: string[] = ['metadata = ?']
@@ -1619,7 +1639,7 @@ export class DatabaseService extends BaseService {
 
             const projectCodingTime: Record<string, number> = {}
             for (const row of projectCodingTimeRows) {
-                if (row.project_id) projectCodingTime[row.project_id] = Number(row.total)
+                if (row.project_id) { projectCodingTime[row.project_id] = Number(row.total) }
             }
 
             return {
@@ -1637,7 +1657,7 @@ export class DatabaseService extends BaseService {
         try {
             const db = await this.ensureDb()
             const chat = await this.getChat(id)
-            if (!chat) return { success: false }
+            if (!chat) { return { success: false } }
 
             const metadata = { ...chat.metadata, isArchived }
             await db.prepare('UPDATE chats SET metadata = ?, updated_at = ? WHERE id = ?')
@@ -1654,7 +1674,7 @@ export class DatabaseService extends BaseService {
         try {
             const db = await this.ensureDb()
             const chat = await this.getChat(id)
-            if (!chat) return null
+            if (!chat) { return null }
 
             const newId = uuidv4()
             const now = Date.now()

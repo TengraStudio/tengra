@@ -1,9 +1,9 @@
 // Defer Sentry import to handle Electron's readiness
 let Sentry: typeof import('@sentry/electron/main') | null = null;
 
-import { app } from 'electron'
 import { SettingsService } from '@main/services/settings.service'
 import { JsonValue } from '@shared/types/common'
+import { app } from 'electron'
 
 // IMPORTANT: Replace this with your actual Sentry DSN
 const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000'
@@ -63,22 +63,22 @@ export class SentryService {
     }
 
     captureException(error: Error, context?: Record<string, JsonValue | Error>) {
-        if (!this.isInitialized || !Sentry) return
+        if (!this.isInitialized || !Sentry) {return}
         Sentry.captureException(error, { extra: context })
     }
 
     captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
-        if (!this.isInitialized || !Sentry) return
+        if (!this.isInitialized || !Sentry) {return}
         Sentry.captureMessage(message, level)
     }
 
     setUser(id: string | null) {
-        if (!this.isInitialized || !Sentry) return
+        if (!this.isInitialized || !Sentry) {return}
         Sentry.setUser(id ? { id } : null)
     }
 
     addBreadcrumb(message: string, category?: string, data?: Record<string, JsonValue | Error>) {
-        if (!this.isInitialized || !Sentry) return
+        if (!this.isInitialized || !Sentry) {return}
         Sentry.addBreadcrumb({ message, category, data })
     }
 }

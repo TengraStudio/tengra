@@ -3,9 +3,9 @@
  * Exposes backup and restore functionality to the renderer process
  */
 
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { BackupService, BackupResult, RestoreResult, BackupMetadata } from '@main/services/backup.service'
+import { BackupMetadata,BackupResult, BackupService, RestoreResult } from '@main/services/backup.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
 export interface BackupListItem {
     name: string

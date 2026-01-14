@@ -1,5 +1,5 @@
-import { WebSocketServer, WebSocket } from 'ws'
 import { JsonObject } from '@shared/types/common'
+import { WebSocket,WebSocketServer } from 'ws'
 
 export interface AgentMessage {
     id: string
@@ -82,7 +82,7 @@ export class CollaborationService {
 
     public broadcast(sessionId: string, message: AgentMessage) {
         const sockets = this.clients.get(sessionId)
-        if (!sockets) return
+        if (!sockets) {return}
 
         const payload = JSON.stringify(message)
         sockets.forEach(ws => {

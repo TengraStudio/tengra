@@ -1,7 +1,7 @@
 /**
  * Unit tests for SecurityService
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mock electron safeStorage
 vi.mock('electron', () => ({

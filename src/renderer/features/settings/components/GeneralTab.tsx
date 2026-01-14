@@ -1,7 +1,8 @@
-﻿import React from 'react'
-import { Globe, Activity, Database, Download, RefreshCw } from 'lucide-react'
-import { AppSettings } from '@/types/settings'
+﻿import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react'
+import React from 'react'
+
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+import { AppSettings } from '@/types/settings'
 
 interface GeneralTabProps {
     settings: AppSettings | null
@@ -17,7 +18,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
     ]
 
     const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
-        if (!settings) return
+        if (!settings) {return}
         const current = settings.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
         handleSave({ ...settings, autoUpdate: { ...current, ...patch } })
     }
@@ -123,7 +124,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                             </div>
                             <div
                                 onClick={() => {
-                                    if (!settings) return
+                                    if (!settings) {return}
                                     const current = settings.crashReporting || { enabled: false }
                                     handleSave({ ...settings, crashReporting: { enabled: !current.enabled } })
                                 }}

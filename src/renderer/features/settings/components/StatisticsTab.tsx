@@ -1,9 +1,10 @@
+import { Activity, Clock, Loader2, MessageSquare, RefreshCw, TrendingDown,TrendingUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Loader2, Clock, MessageSquare, Activity, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
-import { QuotaResponse, CodexUsage, CopilotQuota, AppSettings, ModelQuotaItem } from '@/types'
+
+import { Card, CardContent,CardHeader, CardTitle } from '@/components/ui/card'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { AppSettings, CodexUsage, CopilotQuota, ModelQuotaItem,QuotaResponse } from '@/types'
 
 type DetailedStats = {
     chatCount: number
@@ -42,9 +43,9 @@ const formatTime = (ms: number): string => {
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
 
-    if (days > 0) return `${days}d ${hours % 24}h`
-    if (hours > 0) return `${hours}h ${minutes % 60}m`
-    if (minutes > 0) return `${minutes}m ${seconds % 60}s`
+    if (days > 0) {return `${days}d ${hours % 24}h`}
+    if (hours > 0) {return `${hours}h ${minutes % 60}m`}
+    if (minutes > 0) {return `${minutes}m ${seconds % 60}s`}
     return `${seconds}s`
 }
 
@@ -62,15 +63,15 @@ const renderRing = (value: number, color: string, size: 'sm' | 'md' = 'md') => {
 }
 
 const getQuotaColor = (p: number) => {
-    if (p === 0) return 'rgb(239 68 68)'
-    if (p < 25) return 'rgb(249 115 22)'
-    if (p < 50) return 'rgb(234 179 8)'
+    if (p === 0) {return 'rgb(239 68 68)'}
+    if (p < 25) {return 'rgb(249 115 22)'}
+    if (p < 50) {return 'rgb(234 179 8)'}
     return 'rgb(34 197 94)'
 }
 
 const formatNumber = (num: number): string => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    if (num >= 1000000) {return (num / 1000000).toFixed(1) + 'M'}
+    if (num >= 1000) {return (num / 1000).toFixed(1) + 'K'}
     return num.toLocaleString()
 }
 
@@ -152,11 +153,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     }, [])
 
     const formatReset = (value?: string) => {
-        if (!value || value === '-') return '-'
+        if (!value || value === '-') {return '-'}
         try {
             const date = new Date(value)
             const locale = settings?.general?.language === 'tr' ? 'tr-TR' : 'en-US'
-            if (Number.isNaN(date.getTime())) return String(value)
+            if (Number.isNaN(date.getTime())) {return String(value)}
             return date.toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
         } catch {
             return value

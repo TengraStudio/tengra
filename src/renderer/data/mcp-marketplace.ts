@@ -1,20 +1,19 @@
 import {
   Activity,
   Box,
+  Calendar,
   Cloud,
   Database,
+  FileText,
   Github,
-  Layout,
   Globe,
+  HardDrive,
+  Layout,
+  Mail,
   MessageSquare,
   Search,
-  FileText,
-  HardDrive,
-  Calendar,
-  Mail,
-  Terminal,
-  Server
-} from 'lucide-react'
+  Server,
+  Terminal} from 'lucide-react'
 
 export const MARKETPLACE_MCP_DATA = [
   // Developer Tools & DevOps

@@ -1,5 +1,6 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react'
-import { WorkspaceMount, EditorTab, Project, WorkspaceEntry, ServiceResponse, WorkspaceDashboardTab } from '@/types'
+﻿import { useCallback, useEffect, useMemo,useState } from 'react'
+
+import { EditorTab, Project, ServiceResponse, WorkspaceDashboardTab,WorkspaceEntry, WorkspaceMount } from '@/types'
 
 interface UseWorkspaceManagerProps {
     project: Project
@@ -22,7 +23,7 @@ export function useWorkspaceManager({
     logActivity
 }: UseWorkspaceManagerProps) {
     const [mounts, setMounts] = useState<WorkspaceMount[]>(() => {
-        if (Array.isArray(project.mounts) && project.mounts.length > 0) return project.mounts
+        if (Array.isArray(project.mounts) && project.mounts.length > 0) {return project.mounts}
         return project.path ? [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }] : []
     })
     const [prevProjectData, setPrevProjectData] = useState({ id: project.id, mounts: project.mounts, path: project.path })
@@ -69,19 +70,19 @@ export function useWorkspaceManager({
                     }
                 }
             }
-            if (!cancelled) setMountStatus(next)
+            if (!cancelled) {setMountStatus(next)}
         }
         syncStatus()
         return () => { cancelled = true }
     }, [mounts])
 
     const ensureMountReady = useCallback(async (mount: WorkspaceMount) => {
-        if (mount.type === 'local') return true
+        if (mount.type === 'local') {return true}
         if (!mount.ssh?.host || !mount.ssh?.username) {
             notify('error', 'SSH config is missing.')
             return false
         }
-        if (mountStatus[mount.id] === 'connected') return true
+        if (mountStatus[mount.id] === 'connected') {return true}
         setMountStatus(prev => ({ ...prev, [mount.id]: 'connecting' }))
         const result = await window.electron.ssh.connect({
             id: mount.id,
@@ -104,9 +105,9 @@ export function useWorkspaceManager({
     }, [mountStatus, notify])
 
     const openFile = useCallback(async (entry: { mountId: string, path: string, name: string, isDirectory: boolean, initialLine?: number }) => {
-        if (entry.isDirectory) return
+        if (entry.isDirectory) {return}
         const mount = mounts.find(m => m.id === entry.mountId)
-        if (!mount) return
+        if (!mount) {return}
 
         const tabId = `${entry.mountId}:${entry.path}`
         const existing = openTabs.find(tab => tab.id === tabId)
@@ -120,7 +121,7 @@ export function useWorkspaceManager({
         }
 
         const isReady = await ensureMountReady(mount)
-        if (!isReady) return
+        if (!isReady) {return}
 
         const ext = entry.name.split('.').pop()?.toLowerCase() || ''
         const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)
@@ -130,7 +131,7 @@ export function useWorkspaceManager({
         let type: 'code' | 'image' = 'code'
 
         if (isImage) {
-            if (mount.type === 'local') result = await window.electron.files.readImage(entry.path)
+            if (mount.type === 'local') {result = await window.electron.files.readImage(entry.path)}
             else { notify('info', 'SSH image preview not supported yet.'); return }
             if (result?.success) { content = result.data || result.content || ''; type = 'image' }
         } else {
@@ -139,7 +140,7 @@ export function useWorkspaceManager({
                 const imgResult = await window.electron.files.readImage(entry.path)
                 if (imgResult?.success) { result = imgResult; type = 'image' }
             }
-            if (result?.success) content = result.data || result.content || ''
+            if (result?.success) {content = result.data || result.content || ''}
         }
 
         if (!result?.success) { notify('error', result?.error || 'Failed to read file.'); return }
@@ -162,11 +163,11 @@ export function useWorkspaceManager({
 
     const saveActiveTab = useCallback(async () => {
         const activeTab = openTabs.find(t => t.id === activeTabId)
-        if (!activeTab) return
+        if (!activeTab) {return}
         const mount = mounts.find(m => m.id === activeTab.mountId)
-        if (!mount) return
+        if (!mount) {return}
         const isReady = await ensureMountReady(mount)
-        if (!isReady) return
+        if (!isReady) {return}
 
         const result = mount.type === 'local'
             ? await window.electron.writeFile(activeTab.path, activeTab.content)
@@ -181,7 +182,7 @@ export function useWorkspaceManager({
     const closeTab = useCallback((tabId: string) => {
         const tab = openTabs.find(t => t.id === tabId)
         if (tab && tab.content !== tab.savedContent) {
-            if (!window.confirm(`Close without saving "${tab.name}"?`)) return
+            if (!window.confirm(`Close without saving "${tab.name}"?`)) {return}
         }
         setOpenTabs(prev => prev.filter(t => t.id !== tabId))
         if (activeTabId === tabId) {
@@ -206,7 +207,7 @@ export function useWorkspaceManager({
 
     const createFile = useCallback(async (path: string) => {
         const mount = mounts[0] // Assume first mount for now if not specified
-        if (!mount) return
+        if (!mount) {return}
         const result = mount.type === 'local' ? await window.electron.writeFile(path, '') : await window.electron.ssh.writeFile(mount.id, path, '')
         if (result?.success) {
             setRefreshSignal(s => s + 1)
@@ -218,7 +219,7 @@ export function useWorkspaceManager({
 
     const createFolder = useCallback(async (path: string) => {
         const mount = mounts[0]
-        if (!mount) return
+        if (!mount) {return}
         const result = mount.type === 'local' ? await window.electron.createDirectory(path) : await window.electron.ssh.mkdir(mount.id, path)
         if (result?.success) {
             setRefreshSignal(s => s + 1)
@@ -230,7 +231,7 @@ export function useWorkspaceManager({
 
     const renameEntry = useCallback(async (entry: WorkspaceEntry, newName: string) => {
         const mount = mounts.find(m => m.id === entry.mountId)
-        if (!mount) return
+        if (!mount) {return}
         const parentPath = entry.path.substring(0, entry.path.lastIndexOf('/'))
         const newPath = parentPath ? `${parentPath}/${newName}` : newName
         const result = mount.type === 'local' ? await window.electron.renamePath(entry.path, newPath) : await window.electron.ssh.rename(mount.id, entry.path, newPath)
@@ -244,7 +245,7 @@ export function useWorkspaceManager({
 
     const deleteEntry = useCallback(async (entry: WorkspaceEntry) => {
         const mount = mounts.find(m => m.id === entry.mountId)
-        if (!mount) return
+        if (!mount) {return}
         const result = mount.type === 'local'
             ? (entry.isDirectory ? await window.electron.deleteDirectory(entry.path) : await window.electron.deleteFile(entry.path))
             : (entry.isDirectory ? await window.electron.ssh.deleteDir(mount.id, entry.path) : await window.electron.ssh.deleteFile(mount.id, entry.path))
@@ -257,7 +258,7 @@ export function useWorkspaceManager({
     }, [mounts, logActivity, notify])
 
     const updateTabContent = useCallback((content: string) => {
-        if (!activeTabId) return
+        if (!activeTabId) {return}
         setOpenTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, content } : t))
     }, [activeTabId])
 

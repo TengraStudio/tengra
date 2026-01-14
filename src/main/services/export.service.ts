@@ -5,9 +5,10 @@
 
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { BrowserWindow, dialog } from 'electron';
+
 import { appLogger } from '@main/logging/logger';
 import { Chat, Message } from '@shared/types/chat';
+import { BrowserWindow, dialog } from 'electron';
 
 export type ExportFormat = 'markdown' | 'html' | 'json' | 'txt';
 
@@ -413,8 +414,8 @@ export class ExportService {
                 }
 
                 if (options.includeToolCalls) {
-                    if (msg.toolCalls) base.toolCalls = msg.toolCalls;
-                    if (msg.toolResults) base.toolResults = msg.toolResults;
+                    if (msg.toolCalls) {base.toolCalls = msg.toolCalls;}
+                    if (msg.toolResults) {base.toolResults = msg.toolResults;}
                 }
 
                 return base;

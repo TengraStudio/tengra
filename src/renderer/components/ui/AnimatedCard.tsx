@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react'
+import React, { useRef,useState } from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface AnimatedCardProps {
@@ -33,10 +34,10 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     const cardRef = useRef<HTMLDivElement>(null)
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (hoverEffect !== '3d') return
+        if (hoverEffect !== '3d') {return}
 
         const card = cardRef.current
-        if (!card) return
+        if (!card) {return}
 
         const rect = card.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2

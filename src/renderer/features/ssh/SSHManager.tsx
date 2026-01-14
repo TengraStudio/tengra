@@ -1,12 +1,12 @@
-﻿import { useState, useEffect, useCallback } from 'react'
-import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser'
-import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard'
+﻿import { NginxWizard } from '@renderer/features/ssh/NginxWizard'
 import { PackageManager } from '@renderer/features/ssh/PackageManager'
-import { NginxWizard } from '@renderer/features/ssh/NginxWizard'
+import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser'
 import { SSHLogs } from '@renderer/features/ssh/SSHLogs'
-import { SSHConnection } from '@/types'
+import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard'
+import { useCallback,useEffect, useState } from 'react'
 
-import { useTranslation, Language } from '@/i18n'
+import { Language,useTranslation } from '@/i18n'
+import { SSHConnection } from '@/types'
 
 interface SSHManagerProps {
     isOpen: boolean
@@ -69,7 +69,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         })
         window.electron.ssh.onDisconnected((id: string) => {
             updateConnectionStatus(id, 'disconnected')
-            if (selectedConnectionId === id) setSelectedConnectionId(null)
+            if (selectedConnectionId === id) {setSelectedConnectionId(null)}
         })
     }, [selectedConnectionId, updateConnectionStatus])
 
@@ -101,7 +101,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             setConnections(merged)
 
             for (const conn of merged) {
-                if (conn.status !== 'connected') continue
+                if (conn.status !== 'connected') {continue}
                 const isConnected = await window.electron.ssh.isConnected(conn.id)
                 if (!isConnected) {
                     updateConnectionStatus(conn.id, 'disconnected')
@@ -177,11 +177,11 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     }
 
     const handleExecute = async (id: string, cmd: string) => {
-        if (!cmd.trim()) return
+        if (!cmd.trim()) {return}
         await window.electron.ssh.shellWrite(id, cmd + '\n')
     }
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <div className="modal-overlay">

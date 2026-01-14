@@ -1,6 +1,6 @@
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/settings.service';
-import { appLogger } from '@main/logging/logger';
 
 export class KeyRotationService extends BaseService {
     private keyStates: Map<string, { keys: string[], currentIndex: number }> = new Map();
@@ -15,7 +15,7 @@ export class KeyRotationService extends BaseService {
      * Supports comma-separated keys in the settings string.
      */
     initializeProviderKeys(provider: string, keyString: string) {
-        if (!keyString) return;
+        if (!keyString) {return;}
 
         const keys = keyString.split(',').map(k => k.trim()).filter(k => k.length > 0);
         if (keys.length > 0) {
@@ -31,7 +31,7 @@ export class KeyRotationService extends BaseService {
      */
     getCurrentKey(provider: string): string | null {
         const state = this.keyStates.get(provider);
-        if (!state || state.keys.length === 0) return null;
+        if (!state || state.keys.length === 0) {return null;}
         return state.keys[state.currentIndex];
     }
 

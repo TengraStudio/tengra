@@ -1,6 +1,7 @@
-﻿import { useState, useCallback, useEffect } from 'react'
-import { Project, Folder, TerminalTab } from '@/types'
+﻿import { useCallback, useEffect,useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+
+import { Folder, Project, TerminalTab } from '@/types'
 
 export function useProjectManager() {
     const [projects, setProjects] = useState<Project[]>([])
@@ -65,11 +66,11 @@ export function useProjectManager() {
     }
 
     const handleDeleteFolder = async (id: string, onFolderDeleted?: () => void) => {
-        if (!confirm('Klasörü silmek istediğinize emin misiniz?')) return
+        if (!confirm('Klasörü silmek istediğinize emin misiniz?')) {return}
         try {
             await window.electron.db.deleteFolder(id)
             await loadFolders()
-            if (onFolderDeleted) onFolderDeleted()
+            if (onFolderDeleted) {onFolderDeleted()}
         } catch (e) {
             console.error('Failed to delete folder:', e)
         }

@@ -1,17 +1,37 @@
+import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { ScannerService } from '@main/services/scanner.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { ScannerService } from '@main/services/scanner.service';
 
 interface ExchangeRateResponse {
     rates: Record<string, number>;
 }
 
-export class UtilityService {
+export class UtilityService extends BaseService {
+    private monitors: Map<string, NodeJS.Timeout> = new Map();
+
     constructor(
         private db: DatabaseService,
         _scanner: ScannerService,
         _embedding: EmbeddingService
-    ) { }
+    ) {
+        super('UtilityService');
+    }
+
+    override async cleanup() {
+        // Stop all monitors
+        for (const [url, interval] of this.monitors.entries()) {
+            clearInterval(interval);
+            this.logInfo(`Stopped monitoring ${url}`);
+        }
+        this.monitors.clear();
+
+        // Clear all reminders
+        for (const timeout of this.reminders.values()) {
+            clearTimeout(timeout);
+        }
+        this.reminders.clear();
+    }
 
     // 16. Currency Converter (Simple static/ratio for demo or small API)
     async getExchangeRate(from: string, to: string) {
@@ -30,16 +50,24 @@ export class UtilityService {
     // 19. Uptime Monitor (Register a ping check)
     // 31. Uptime Monitor
     startMonitor(url: string, intervalSeconds: number = 60) {
+        const existing = this.monitors.get(url);
+        if (existing) {
+            clearInterval(existing);
+        }
+
         const interval = intervalSeconds * 1000;
-        console.log(`[Uptime] Monitoring ${url} every ${intervalSeconds}s`);
-        setInterval(async () => {
-            try {
-                await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                console.log(`[Uptime] ${url} is UP`);
-            } catch (e) {
-                console.error(`[Uptime] ${url} is DOWN!`, e);
-            }
+        this.logInfo(`Monitoring ${url} every ${intervalSeconds}s`);
+        const timer = setInterval(() => {
+            fetch(url, { method: 'HEAD', mode: 'no-cors' })
+                .then(() => {
+                    this.logInfo(`${url} is UP`);
+                })
+                .catch((e) => {
+                    this.logError(`${url} is DOWN!`, e);
+                });
         }, interval);
+
+        this.monitors.set(url, timer);
         return { success: true, message: `Started monitoring ${url}` };
     }
 
@@ -76,7 +104,9 @@ export class UtilityService {
 
     // 35. VirusTotal Integration
     async checkVirusTotal(hash: string, apiKey?: string) {
-        if (!apiKey) return { success: false, error: 'VirusTotal API key required in arguments or settings' };
+        if (!apiKey) {
+            return { success: false, error: 'VirusTotal API key required in arguments or settings' };
+        }
         try {
             const response = await fetch(`https://www.virustotal.com/api/v3/files/${hash}`, {
                 headers: { 'x-apikey': apiKey }
@@ -91,7 +121,9 @@ export class UtilityService {
 
     // 36. Shodan Link
     async lookupShodan(ip: string, apiKey?: string) {
-        if (!apiKey) return { success: false, error: 'Shodan API key required' };
+        if (!apiKey) {
+            return { success: false, error: 'Shodan API key required' };
+        }
         try {
             const response = await fetch(`https://api.shodan.io/shodan/host/${ip}?key=${apiKey}`);
             const data = await response.json();

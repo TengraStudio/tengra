@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react'
+﻿import { useCallback, useEffect,useState } from 'react'
 
 export interface TextToSpeechReturn {
     speak: (text: string, messageId?: string) => void
@@ -28,28 +28,28 @@ export function useTextToSpeech(options: TTSOptions = {}): TextToSpeechReturn {
     }, [])
 
     const stop = useCallback(() => {
-        if (!isSupported) return
+        if (!isSupported) {return}
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
         setSpeakingMessageId(null)
     }, [isSupported])
 
     const speak = useCallback((text: string, messageId?: string) => {
-        if (!isSupported) return
+        if (!isSupported) {return}
 
         // Cancel any ongoing speech
         window.speechSynthesis.cancel()
 
         const utterance = new SpeechSynthesisUtterance(text)
 
-        if (options.voice) utterance.voice = options.voice
-        if (options.rate) utterance.rate = options.rate
-        if (options.pitch) utterance.pitch = options.pitch
-        if (options.volume) utterance.volume = options.volume
+        if (options.voice) {utterance.voice = options.voice}
+        if (options.rate) {utterance.rate = options.rate}
+        if (options.pitch) {utterance.pitch = options.pitch}
+        if (options.volume) {utterance.volume = options.volume}
 
         utterance.onstart = () => {
             setIsSpeaking(true)
-            if (messageId) setSpeakingMessageId(messageId)
+            if (messageId) {setSpeakingMessageId(messageId)}
         }
         utterance.onend = () => {
             setIsSpeaking(false)

@@ -1,6 +1,6 @@
-import React from 'react'
-import { Command } from 'lucide-react'
 import { CommandItem } from '@renderer/components/layout/CommandPalette'
+import { Command } from 'lucide-react'
+import React from 'react'
 
 interface PreviewPanelProps {
     selectedItem?: CommandItem;

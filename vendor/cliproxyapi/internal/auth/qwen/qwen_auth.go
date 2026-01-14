@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -23,8 +24,14 @@ const (
 	QwenOAuthDeviceCodeEndpoint = "https://chat.qwen.ai/api/v1/oauth2/device/code"
 	// QwenOAuthTokenEndpoint is the URL for exchanging device codes or refresh tokens for access tokens.
 	QwenOAuthTokenEndpoint = "https://chat.qwen.ai/api/v1/oauth2/token"
+)
+
+var (
 	// QwenOAuthClientID is the client identifier for the Qwen OAuth 2.0 application.
-	QwenOAuthClientID = "f0304373b74a44d2b584a3fb70ca9e56"
+	QwenOAuthClientID = os.Getenv("QWEN_CLIENT_ID")
+)
+
+const (
 	// QwenOAuthScope defines the permissions requested by the application.
 	QwenOAuthScope = "openid profile email model.completion"
 	// QwenOAuthGrantType specifies the grant type for the device code flow.

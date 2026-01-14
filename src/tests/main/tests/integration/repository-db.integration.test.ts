@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { DataService } from '@main/services/data/data.service'
-import { DatabaseService } from '@main/services/data/database.service'
-import { FolderRepository } from '@main/repositories/folder.repository'
 import * as fs from 'fs'
 import * as path from 'path'
+
+import { FolderRepository } from '@main/repositories/folder.repository'
+import { DataService } from '@main/services/data/data.service'
+import { DatabaseService } from '@main/services/data/database.service'
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.unmock('fs')
 vi.unmock('path')
@@ -35,7 +36,7 @@ describe('Repository-DB Integration', () => {
 
     beforeEach(async () => {
         tempDir = path.resolve('./temp_integration_test')
-        if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true })
+        if (fs.existsSync(tempDir)) {fs.rmSync(tempDir, { recursive: true, force: true })}
         fs.mkdirSync(tempDir, { recursive: true })
 
         // Setup internal dirs BEFORE DataService/DatabaseService

@@ -47,7 +47,7 @@
 #### 1.1 Client Secret in Source Code
 **File**: `src/main/services/security/token.service.ts` (Line 15)
 ```typescript
-const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || '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'
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET
 ```
 **Impact**: Anyone with access to source code can use this OAuth secret
 **Fix**: Remove fallback, require environment variable, or use secure vault
@@ -98,7 +98,7 @@ Found **94 instances** of `JSON.parse` without try-catch or validation:
 - `settings.service.ts` (Lines 129, 344, 434, 458)
 - And 80+ more locations
 **Impact**: Malformed JSON crashes the application
-**Fix**: Wrap all JSON.parse in try-catch
+**Fix**: Wrap all JSON.parse in try-catch [x]
 
 ### 🟠 HIGH - Credential Logging Risk
 
@@ -191,6 +191,9 @@ Many places use `|| ''` or `|| undefined` instead of proper null coalescing:
 | `token.service.ts` | 605 | Auth file reading |
 | + 15 more files | | |
 
+#### Fixes for Synchronous File Reads
+- [x] Convert `fs.readFileSync` to `fs.promises.readFile` in `src/main/services/proxy/quota.service.ts` (lines 369, 876) and `token.service.ts` (line 605).
+
 #### 3.2 Synchronous File Writes (38 locations)
 **File Pattern**: `fs.writeFileSync` blocks the main process
 
@@ -265,8 +268,8 @@ Found **116+ useEffect** hooks in renderer features.
 #### 5.2 console.log Instead of Proper Logging
 **Files still using console.log/error**:
 - `backup.service.ts` - Lines 148, 157, 197, 339, 354, 406, 423, 443, 473
-- `database.service.ts` - Lines 72, 94, 96
-- `settings.service.ts` - Line 131
+- `database.service.ts` - Lines 72, 94, 96 [x]
+- `settings.service.ts` - Line 131 [x]
 
 ### 🟠 HIGH - Unhandled Promise Rejections
 
@@ -285,7 +288,7 @@ Others return:
 ```typescript
 { success: boolean, result?: T, error?: string }
 ```
-**Fix**: Create standardized `ServiceResponse<T>` and use consistently
+**Fix**: Create standardized `ServiceResponse<T>` and use consistently [x]
 
 ---
 
@@ -298,32 +301,33 @@ Files still using `../../../` patterns:
 #### Services - llm/
 | File | Lines |
 |------|-------|
-| `copilot.service.ts` | 2-3 |
-| `huggingface.service.ts` | 2 |
+| `copilot.service.ts` | 2-3 | [x]
+| `huggingface.service.ts` | 2 | [x]
 | `llm-plugin.interface.ts` | 6 |
-| `llama.service.ts` | 10 |
-| `llm.service.ts` | 7-8 |
-| `model-fallback.service.ts` | 6, 8 |
-| `multi-model-comparison.service.ts` | 4, 6 |
-| `ollama.service.ts` | 4, 6-7 |
+| `llama.service.ts` | 10 | [x]
+| `llm.service.ts` | 7-8 | [x]
+| `model-fallback.service.ts` | 6, 8 | [x]
+| `multi-model-comparison.service.ts` | 4, 6 | [x]
+| `ollama.service.ts` | 4, 6-7 | [x]
+| `ollama.service.ts` | 4, 6, 7 | [x]
 | `ollama-health.service.ts` | 2 |
 
 #### Services - data/
 | File | Lines |
 |------|-------|
-| `chat-event.service.ts` | 4 |
-| `database.service.ts` | 9-10 |
-| `image-persistence.service.ts` | 9 |
-| `filesystem.service.ts` | 6-7 |
-| `data.service.ts` | 5 |
-| `file.service.ts` | 1-2 |
+| `chat-event.service.ts` | 4 | [x]
+| `database.service.ts` | 9-10 | [x]
+| `image-persistence.service.ts` | 9 | [x]
+| `filesystem.service.ts` | 6-7 | [x]
+| `data.service.ts` | 5 | [x]
+| `file.service.ts` | 1-2 | [x]
 
 #### Services - proxy/
 | File | Lines |
 |------|-------|
-| `proxy.service.ts` | 13-15 |
-| `quota.service.ts` | 9-11 |
-| `proxy-process.manager.ts` | 11 |
+| `proxy.service.ts` | 13-15 | [x]
+| `quota.service.ts` | 9-11 | [x]
+| `proxy-process.manager.ts` | 11 | [x]
 
 #### Services - project/
 | File | Lines |
@@ -335,12 +339,16 @@ Files still using `../../../` patterns:
 #### Services - system/
 | File | Lines |
 |------|-------|
-| `command.service.ts` | 3, 7 |
+| `command.service.ts` | 3, 7 | [x]
 
 #### Services - Root Level
 | File | Lines |
 |------|-------|
 | `backup.service.ts` | 9-10 |
+
+#### Fixes for Relative Path Imports
+- [x] Convert relative imports to path aliases in `copilot.service.ts`, `huggingface.service.ts`, `ollama.service.ts`, `chat-event.service.ts`, `proxy.service.ts`
+- [x] Convert relative imports to path aliases in `image-persistence.service.ts`, `filesystem.service.ts`, `data.service.ts`, `file.service.ts`, `proxy-process.manager.ts`, `quota.service.ts`
 
 ---
 
@@ -1423,6 +1431,9 @@ Techniques:
 ```
 
 #### 24.2 Implementation Tasks
+- [x] 4.1 **Memory Leak**: `setInterval` used in services without `clearInterval` (Low Priority)
+  - **Status**: Fixed
+  - **Fix**: Implemented `cleanup()` and `dispose()` methods across all services (`TokenService`, `TelemetryService`, etc.) to clear intervals and timeouts.
 - [ ] Create `orbit-daemon` Node.js service
 - [ ] Windows service installer/uninstaller
 - [ ] Service status UI in settings
@@ -1660,7 +1671,199 @@ WantedBy=default.target
 
 ---
 
-## 27. Provider Plugin System
+### 🟡 MEDIUM - MCP Tool Organization
+
+#### 26.8 Current Scattered MCP Implementation
+Current MCP tools in `src/main/mcp/registry.ts` need reorganization:
+
+**Current Structure (messy)**:
+```
+mcp/
+├── registry.ts     # 318 lines - ALL tools in one file
+├── dispatcher.ts   # Execution logic
+└── types.ts        # Type definitions
+```
+
+**Proposed Structure (clean)**:
+```
+mcp/
+├── index.ts           # Public exports
+├── registry.ts        # Tool registration
+├── dispatcher.ts      # Execution engine
+├── types.ts           # Type definitions
+│
+├── servers/           # Individual MCP servers
+│   ├── index.ts       # Server aggregator
+│   ├── filesystem.server.ts
+│   ├── command.server.ts
+│   ├── web.server.ts
+│   ├── git.server.ts
+│   ├── docker.server.ts
+│   ├── ssh.server.ts
+│   ├── network.server.ts
+│   ├── security.server.ts
+│   ├── memory.server.ts
+│   ├── ollama.server.ts
+│   └── notification.server.ts
+│
+├── utils/             # MCP utilities
+│   ├── validation.ts  # Input validation
+│   ├── security.ts    # Path/permission checks
+│   └── logging.ts     # MCP-specific logging
+│
+└── tests/             # MCP tests
+    └── servers/
+```
+
+#### 26.9 MCP Tool Migration Tasks
+- [ ] Create `mcp/servers/` directory
+- [ ] Extract FileSystem MCP to `filesystem.server.ts`
+- [ ] Extract Command MCP to `command.server.ts`
+- [ ] Extract Web MCP to `web.server.ts`
+- [ ] Extract Git MCP to `git.server.ts`
+- [ ] Extract SSH MCP to `ssh.server.ts`
+- [ ] Extract Docker MCP to `docker.server.ts`
+- [ ] Extract Network MCP to `network.server.ts`
+- [ ] Extract Security MCP to `security.server.ts`
+- [ ] Extract Memory MCP to `memory.server.ts`
+- [ ] Extract Ollama MCP to `ollama.server.ts`
+- [ ] Create `mcp/servers/index.ts` aggregator
+- [ ] Update `registry.ts` to import from servers/
+- [ ] Add per-server configuration options
+- [ ] Add per-server enable/disable flag
+
+---
+
+## 26a. AI Instruction Tool System
+
+### 🔴 CRITICAL - Forbidden Tools Configuration
+
+#### 26a.1 User-Configurable Tool Restrictions
+- [ ] Create `ForbiddenToolsService` class
+- [ ] Add forbidden tools list to settings
+- [ ] UI for enabling/disabling tools
+- [ ] Per-project tool restrictions
+- [ ] Tool whitelist/blacklist support
+
+**Settings Schema**:
+```typescript
+interface ToolSettings {
+    forbiddenTools: string[]        // User-disabled tools
+    allowedTools: string[]          // Whitelist (if empty, all allowed)
+    requireConfirmation: string[]   // Tools needing user approval
+    projectOverrides: Record<string, {
+        forbidden: string[]
+        allowed: string[]
+    }>
+}
+```
+
+#### 26a.2 Forbidden Tools UI
+- [ ] Settings > AI > Tool Permissions section
+- [ ] Toggles for each tool category
+- [ ] Dangerous tool warnings
+- [ ] Reset to defaults button
+
+---
+
+### 🔴 CRITICAL - Forbidden Paths Configuration
+
+#### 26a.3 Protected Path System
+- [ ] Create `ProtectedPathsService` class
+- [ ] Default system protected paths
+- [ ] User-configurable protected paths
+- [ ] Per-project protected paths
+- [ ] Path validation before any tool execution
+
+**Default Protected Paths**:
+```typescript
+const DEFAULT_PROTECTED_PATHS = [
+    // System
+    'C:\\Windows\\',
+    'C:\\Program Files\\',
+    '%SYSTEMROOT%',
+    
+    // User sensitive
+    '%USERPROFILE%\\.ssh\\',
+    '%USERPROFILE%\\.gnupg\\',
+    
+    // Project
+    '.git/',
+    'node_modules/',
+    'vendor/',
+    '.env',
+    '.env.local',
+]
+```
+
+#### 26a.4 Protected Paths UI
+- [ ] Settings > AI > Protected Paths section
+- [ ] List view with add/remove
+- [ ] Path validation
+- [ ] Regex pattern support
+- [ ] Import/export paths list
+
+---
+
+### 🟠 HIGH - Tool Transmission System
+
+#### 26a.5 Dynamic Tool Assembly
+- [ ] Create `ToolAssemblyService` class
+- [ ] Filter by user permissions
+- [ ] Filter by project context
+- [ ] Add MCP tools dynamically
+- [ ] Tool capability detection
+
+**Tool Assembly Logic**:
+```typescript
+interface ToolAssemblyContext {
+    userId: string
+    projectId?: string
+    chatContext: 'general' | 'coding' | 'research'
+    enabledProviders: string[]
+}
+
+function assembleTools(context: ToolAssemblyContext): Tool[] {
+    let tools = getAllTools()
+    tools = filterForbiddenTools(tools, context.userId)
+    tools = addProjectTools(tools, context.projectId)
+    tools = addMcpTools(tools)
+    return tools
+}
+```
+
+#### 26a.6 Tool Usage Tracking
+- [ ] Log which tools are used
+- [ ] Track tool success/failure rates
+- [ ] Identify unused tools
+- [ ] Usage analytics dashboard
+
+---
+
+### 🟠 HIGH - File Editing Enforcement
+
+#### 26a.7 Targeted Edit Enforcement
+- [ ] Detect full-file replacement attempts
+- [ ] Warn AI about proper editing
+- [ ] Measure diff size vs file size
+- [ ] Reject excessive replacements
+
+**Instruction Enhancement**:
+```markdown
+## FILE EDITING ENFORCEMENT
+When editing files:
+1. Maximum replacement: 30% of file
+2. If more changes needed: split into multiple edits
+3. NEVER delete entire file content
+4. Preserve whitespace and formatting
+5. Keep original comments
+```
+
+#### 26a.8 Edit Size Limits
+- [ ] Configure max replacement percentage
+- [ ] Warning threshold (e.g., 20%)
+- [ ] Block threshold (e.g., 50%)
+- [ ] Override for known large refactors
 
 ### Current State
 
@@ -2725,7 +2928,419 @@ When fixing bugs:
 
 ---
 
-## Updated Metrics
+## 38. Folder Structure Reorganization
+
+### Current State Analysis
+
+**Problem**: 
+- 52 service files in `services/` root (should be categorized)
+- Inconsistent folder naming
+- Tests not mirroring source structure
+- Scattered utility files
+
+---
+
+### 🔴 CRITICAL - Source Folder Reorganization
+
+#### 38.1 Proposed Root Structure
+
+```
+orbit/
+├── .agent/                    # AI agent configuration
+│   └── workflows/             # AI workflow definitions
+├── .github/                   # GitHub configuration
+│   └── workflows/             # CI/CD workflows
+├── docs/                      # Documentation (all markdown)
+│   ├── AI_RULES.md           # AI coding rules
+│   ├── ARCHITECTURE.md       # System architecture
+│   ├── CHANGELOG.md          # Version history
+│   ├── SERVICES.md           # Service documentation
+│   └── TODO.md               # Task tracking
+├── logs/                      # Runtime logs (gitignored)
+├── src/                       # Source code
+├── vendor/                    # Third-party code
+├── dist/                      # Build output (gitignored)
+├── node_modules/              # Dependencies (gitignored)
+└── [config files]             # tsconfig, vite, eslint, etc.
+```
+
+---
+
+#### 38.2 Proposed src/ Structure
+
+```
+src/
+├── main/                      # Electron main process
+│   ├── index.ts              # Entry point
+│   ├── main.ts               # App initialization
+│   ├── preload.ts            # Preload script
+│   │
+│   ├── core/                  # Core infrastructure
+│   │   ├── base.service.ts
+│   │   ├── event-bus.service.ts
+│   │   ├── config.service.ts
+│   │   └── job-scheduler.service.ts
+│   │
+│   ├── services/              # Domain services
+│   │   ├── index.ts          # Service exports
+│   │   ├── types.ts          # Shared types
+│   │   │
+│   │   ├── ai/               # AI/LLM services
+│   │   │   ├── providers/    # LLM provider plugins
+│   │   │   │   ├── openai.provider.ts
+│   │   │   │   ├── anthropic.provider.ts
+│   │   │   │   ├── ollama.provider.ts
+│   │   │   │   └── copilot.provider.ts
+│   │   │   ├── llm.service.ts
+│   │   │   ├── model-registry.service.ts
+│   │   │   ├── embedding.service.ts
+│   │   │   └── token-estimation.service.ts
+│   │   │
+│   │   ├── auth/             # Authentication
+│   │   │   ├── auth.service.ts
+│   │   │   ├── token.service.ts
+│   │   │   ├── key-rotation.service.ts
+│   │   │   └── rate-limit.service.ts
+│   │   │
+│   │   ├── data/             # Data layer
+│   │   │   ├── database.service.ts
+│   │   │   ├── data.service.ts
+│   │   │   ├── migration.service.ts
+│   │   │   ├── settings.service.ts
+│   │   │   └── backup.service.ts
+│   │   │
+│   │   ├── project/          # Project management
+│   │   │   ├── project.service.ts
+│   │   │   ├── terminal.service.ts
+│   │   │   ├── git.service.ts
+│   │   │   └── docker.service.ts
+│   │   │
+│   │   ├── proxy/            # Proxy services
+│   │   │   ├── proxy.service.ts
+│   │   │   ├── quota.service.ts
+│   │   │   └── proxy-process.manager.ts
+│   │   │
+│   │   ├── integrations/     # External integrations
+│   │   │   ├── ssh.service.ts
+│   │   │   ├── web.service.ts
+│   │   │   └── pagespeed.service.ts
+│   │   │
+│   │   └── system/           # System utilities
+│   │       ├── system.service.ts
+│   │       ├── command.service.ts
+│   │       ├── clipboard.service.ts
+│   │       ├── notification.service.ts
+│   │       └── theme.service.ts
+│   │
+│   ├── ipc/                   # IPC handlers (grouped)
+│   │   ├── index.ts          # Register all handlers
+│   │   ├── chat/
+│   │   │   ├── index.ts
+│   │   │   └── handlers.ts
+│   │   ├── database/
+│   │   │   ├── index.ts
+│   │   │   └── handlers.ts
+│   │   ├── settings/
+│   │   │   ├── index.ts
+│   │   │   └── handlers.ts
+│   │   └── [domain]/
+│   │
+│   ├── mcp/                   # MCP system
+│   │   ├── registry.ts
+│   │   ├── dispatcher.ts
+│   │   ├── types.ts
+│   │   └── servers/          # MCP server definitions
+│   │       ├── filesystem.mcp.ts
+│   │       ├── git.mcp.ts
+│   │       └── database.mcp.ts
+│   │
+│   ├── logging/               # Logging infrastructure
+│   │   └── logger.ts
+│   │
+│   ├── startup/               # App startup
+│   │   ├── services.ts       # DI container
+│   │   └── migrations.ts
+│   │
+│   ├── types/                 # Main process types
+│   └── utils/                 # Main process utilities
+│
+├── renderer/                  # React frontend
+│   ├── index.tsx             # Entry point
+│   ├── App.tsx               # Root component
+│   │
+│   ├── features/             # Feature modules
+│   │   ├── chat/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── projects/
+│   │   ├── settings/
+│   │   ├── models/
+│   │   ├── mcp/
+│   │   └── plugins/          # NEW: Plugin management
+│   │
+│   ├── components/           # Shared components
+│   │   ├── ui/               # shadcn components
+│   │   ├── layout/           # Layout components
+│   │   └── shared/           # Common components
+│   │
+│   ├── hooks/                # Shared hooks
+│   │   ├── useChat.ts
+│   │   ├── useModels.ts
+│   │   ├── useQuota.ts
+│   │   ├── useTokens.ts
+│   │   ├── useEvents.ts
+│   │   └── useSettings.ts
+│   │
+│   ├── contexts/             # React contexts
+│   │   ├── AppContext.tsx
+│   │   └── ThemeContext.tsx
+│   │
+│   ├── i18n/                 # Internationalization
+│   │   ├── index.ts
+│   │   ├── en.ts
+│   │   ├── tr.ts
+│   │   └── [lang].ts
+│   │
+│   ├── lib/                   # Utility libraries
+│   │   ├── utils.ts
+│   │   ├── cache.ts
+│   │   └── events.ts
+│   │
+│   ├── styles/               # Global styles
+│   │   └── globals.css
+│   │
+│   └── types/                # Renderer types
+│
+├── shared/                    # Shared between main/renderer
+│   ├── types/                # Shared type definitions
+│   │   ├── index.ts
+│   │   ├── chat.ts
+│   │   ├── settings.ts
+│   │   ├── project.ts
+│   │   └── [domain].ts
+│   ├── utils/                # Shared utilities
+│   │   ├── error.util.ts
+│   │   └── format.util.ts
+│   └── constants/            # Shared constants
+│       └── index.ts
+│
+├── tests/                     # All tests
+│   ├── setup.ts              # Test setup
+│   ├── mocks/                # Shared mocks
+│   │   ├── electron.mock.ts
+│   │   ├── database.mock.ts
+│   │   └── services.mock.ts
+│   │
+│   ├── unit/                 # Unit tests
+│   │   ├── main/
+│   │   │   ├── services/
+│   │   │   │   ├── ai/
+│   │   │   │   │   └── llm.service.test.ts
+│   │   │   │   ├── auth/
+│   │   │   │   │   └── token.service.test.ts
+│   │   │   │   ├── data/
+│   │   │   │   │   └── database.service.test.ts
+│   │   │   │   └── [domain]/
+│   │   │   └── utils/
+│   │   ├── renderer/
+│   │   │   ├── components/
+│   │   │   └── hooks/
+│   │   └── shared/
+│   │       └── utils/
+│   │
+│   ├── integration/          # Integration tests
+│   │   ├── ipc/
+│   │   ├── database/
+│   │   └── services/
+│   │
+│   └── e2e/                  # End-to-end tests
+│       ├── setup.ts
+│       ├── chat.e2e.ts
+│       ├── settings.e2e.ts
+│       └── project.e2e.ts
+│
+└── scripts/                   # Build/dev scripts
+    ├── build.js
+    ├── dev.js
+    └── clean.js
+```
+
+---
+
+### 🔴 CRITICAL - Service Migration Tasks
+
+#### 38.3 Services to Move
+
+| Current Location | New Location | File Count |
+|-----------------|--------------|------------|
+| `services/*.ts` (root) | `services/system/` | 15 |
+| `services/*.ts` (root) | `services/ai/` | 8 |
+| `services/*.ts` (root) | `services/auth/` | 4 |
+| `services/*.ts` (root) | `services/integrations/` | 5 |
+| `services/llm/` | `services/ai/` | 13 (keep) |
+| `services/data/` | `services/data/` | 7 (keep) |
+| `services/project/` | `services/project/` | 4 (keep) |
+| `services/proxy/` | `services/proxy/` | 4 (keep) |
+| `services/security/` | `services/auth/` | 3 (merge) |
+
+#### 38.4 Migration Checklist
+
+- [ ] Create new folder structure
+- [ ] Move services one-by-one
+- [ ] Update import paths
+- [ ] Update `services.ts` registrations
+- [ ] Run build after each batch
+- [ ] Update AI_RULES.md folder documentation
+
+---
+
+### 🟠 HIGH - Test Structure Reorganization
+
+#### 38.5 Current Test Issues
+
+```
+src/tests/
+├── e2e/                # ✅ Good location
+├── main/               # ⚠️ Too flat
+│   ├── core/           # ✅ Good
+│   ├── ipc/            # ✅ Good
+│   ├── repositories/   # ✅ Good
+│   ├── services/       # ⚠️ Needs subdomain folders
+│   ├── tests/          # ❌ Confusing name
+│   └── utils/          # ✅ Good
+├── renderer/           # ⚠️ Empty
+└── shared/             # ⚠️ Empty
+```
+
+#### 38.6 Test Naming Convention
+
+```
+# Pattern: {source-file}.test.ts
+
+# Unit tests mirror source structure:
+src/main/services/ai/llm.service.ts
+→ tests/unit/main/services/ai/llm.service.test.ts
+
+# Integration tests by feature:
+tests/integration/chat-flow.test.ts
+tests/integration/auth-refresh.test.ts
+
+# E2E tests by user journey:
+tests/e2e/onboarding.e2e.ts
+tests/e2e/chat-basic.e2e.ts
+```
+
+#### 38.7 Test Migration Tasks
+
+- [ ] Create `tests/unit/main/services/ai/` folder
+- [ ] Move AI-related tests
+- [ ] Create `tests/unit/main/services/auth/` folder
+- [ ] Move auth-related tests
+- [ ] Create `tests/unit/main/services/data/` folder
+- [ ] Move data-related tests
+- [ ] Rename `tests/main/tests/` to appropriate location
+- [ ] Add renderer component tests structure
+- [ ] Add shared utils tests structure
+
+---
+
+### 🟡 MEDIUM - IPC Handler Reorganization
+
+#### 38.8 Current IPC Issues
+
+```
+src/main/ipc/           # 42 files in flat structure
+├── agent.ts
+├── audit.ts
+├── auth.ts
+├── backup.ts
+├── chat.ts             # 700+ lines - too big
+├── db.ts               # 400+ lines - too big
+├── ... (38 more files)
+```
+
+#### 38.9 Proposed IPC Structure
+
+```
+src/main/ipc/
+├── index.ts            # Register all handlers
+├── chat/
+│   ├── index.ts        # Export registrations
+│   ├── handlers.ts     # Handler implementations
+│   └── types.ts        # Chat IPC types
+├── database/
+│   ├── index.ts
+│   ├── handlers.ts
+│   └── types.ts
+├── settings/
+│   ├── index.ts
+│   ├── handlers.ts
+│   └── types.ts
+├── auth/
+├── project/
+├── models/
+└── system/
+```
+
+#### 38.10 IPC Migration Tasks
+
+- [ ] Create `ipc/chat/` folder
+- [ ] Split `chat.ts` into handlers.ts
+- [ ] Create `ipc/database/` folder
+- [ ] Split `db.ts` into handlers.ts
+- [ ] Create remaining domain folders
+- [ ] Update `ipc/index.ts` to import from subfolders
+
+---
+
+### 🟢 LOW - Documentation Structure
+
+#### 38.11 Proposed docs/ Structure
+
+```
+docs/
+├── README.md              # Documentation index
+├── AI_RULES.md           # AI agent rules
+├── ARCHITECTURE.md       # System architecture
+├── CHANGELOG.md          # Version history
+├── CONTRIBUTING.md       # Contribution guide
+├── SERVICES.md           # Service documentation
+├── TODO.md               # Task tracking
+│
+├── api/                   # API documentation
+│   ├── ipc-channels.md   # IPC channel reference
+│   └── services.md       # Service API reference
+│
+├── guides/                # How-to guides
+│   ├── adding-provider.md
+│   ├── adding-mcp.md
+│   └── adding-feature.md
+│
+└── diagrams/              # Architecture diagrams
+    ├── architecture.mmd   # Mermaid source
+    └── data-flow.mmd
+```
+
+---
+
+## Updated Priority Matrix
+
+### IMMEDIATE (This Week)
+1. 🔴 Security fixes
+2. 🔴 Build-before-commit workflow enforcement
+3. 🔴 AI instructions update
+
+### SHORT TERM (2 Weeks)  
+1. 🟠 Service folder reorganization
+2. 🟠 IPC handler splitting
+3. 🟠 Test structure alignment
+
+### MEDIUM TERM (1 Month)
+1. 🟡 Full folder migration
+2. 🟡 Documentation structure
+3. 🟡 Import path cleanup
 
 | Metric | Current | Target | Timeline |
 |--------|---------|--------|----------|

@@ -4,8 +4,9 @@
  */
 
 import { ReactNode } from 'react'
-import { useBreakpoint } from '@/utils/responsive'
+
 import { cn } from '@/lib/utils'
+import { useBreakpoint } from '@/utils/responsive'
 
 interface ResponsiveContainerProps {
     children: ReactNode
@@ -36,9 +37,9 @@ export function ResponsiveContainer({
     const isTablet = breakpoint === 'md'
     const isDesktop = breakpoint === 'lg' || breakpoint === 'xl' || breakpoint === '2xl'
 
-    if (hideOnMobile && isMobile) return null
-    if (hideOnTablet && isTablet) return null
-    if (hideOnDesktop && isDesktop) return null
+    if (hideOnMobile && isMobile) {return null}
+    if (hideOnTablet && isTablet) {return null}
+    if (hideOnDesktop && isDesktop) {return null}
 
     const responsiveClass = isMobile
         ? mobileClassName

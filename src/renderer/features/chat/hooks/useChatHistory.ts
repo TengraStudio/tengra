@@ -3,7 +3,8 @@
  * Provides undo/redo functionality for chat operations
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useCallback, useRef,useState } from 'react'
+
 import { Chat } from '@/types'
 
 export interface ChatHistoryState {
@@ -33,7 +34,7 @@ export function useChatHistory(): ChatHistoryManager {
 
     const saveState = useCallback((chats: Chat[], currentChatId: string | null) => {
         // Prevent saving during undo/redo operations
-        if (isSavingRef.current) return
+        if (isSavingRef.current) {return}
 
         const newState: ChatHistoryState = {
             chats: chats.map(chat => ({
@@ -68,7 +69,7 @@ export function useChatHistory(): ChatHistoryManager {
     }, [historyIndex])
 
     const undo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex <= 0) return null
+        if (historyIndex <= 0) {return null}
 
         isSavingRef.current = true
         const newIndex = historyIndex - 1
@@ -80,7 +81,7 @@ export function useChatHistory(): ChatHistoryManager {
     }, [history, historyIndex])
 
     const redo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex >= history.length - 1) return null
+        if (historyIndex >= history.length - 1) {return null}
 
         isSavingRef.current = true
         const newIndex = historyIndex + 1

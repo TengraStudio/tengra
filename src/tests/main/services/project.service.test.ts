@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ProjectService } from '@main/services/project/project.service'
 import { promises as fs } from 'fs'
+
+import { ProjectService } from '@main/services/project/project.service'
+import { beforeEach,describe, expect, it, vi } from 'vitest'
 
 // Mocking fs and path
 vi.mock('fs', () => ({

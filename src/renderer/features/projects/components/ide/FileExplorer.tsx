@@ -1,8 +1,9 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { ChevronDown,ChevronRight } from 'lucide-react'
+import { useEffect,useState } from 'react'
+
 import { useTranslation } from '@/i18n'
-import { ChevronRight, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { renderIcon } from '@/lib/file-icons'
+import { cn } from '@/lib/utils'
 
 interface FileNode {
     name: string
@@ -38,7 +39,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                         path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
                         isDirectory: f.isDirectory
                     })).sort((a: FileNode, b: FileNode) => {
-                        if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
+                        if (a.isDirectory === b.isDirectory) {return a.name.localeCompare(b.name)}
                         return a.isDirectory ? -1 : 1
                     })
                     setChildren(nodes)
@@ -99,7 +100,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
 
     useEffect(() => {
         const loadRoot = async () => {
-            if (!rootPath) return
+            if (!rootPath) {return}
             setLoading(true)
             try {
                 const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
@@ -110,7 +111,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                     path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
                     isDirectory: f.isDirectory
                 })).sort((a: FileNode, b: FileNode) => {
-                    if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
+                    if (a.isDirectory === b.isDirectory) {return a.name.localeCompare(b.name)}
                     return a.isDirectory ? -1 : 1
                 })
                 setRootNodes(nodes)
@@ -123,7 +124,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
         loadRoot()
     }, [rootPath])
 
-    if (loading) return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>
+    if (loading) {return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>}
 
     return (
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">

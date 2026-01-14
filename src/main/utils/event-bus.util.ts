@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
+
 import { JsonObject, JsonValue } from '@shared/types/common'
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>
@@ -158,7 +159,7 @@ class EventBus {
     ): Promise<AppEvents[K]> {
         return new Promise((resolve, reject) => {
             const handler = (data: AppEvents[K]) => {
-                if (timeoutId) clearTimeout(timeoutId)
+                if (timeoutId) {clearTimeout(timeoutId)}
                 resolve(data)
             }
 

@@ -1,11 +1,12 @@
 /**
  * Integration tests for Settings IPC handlers
  */
-import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import { SettingsService } from '@main/services/settings.service';
-import { LLMService } from '@main/services/llm/llm.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { SettingsService } from '@main/services/settings.service';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { afterEach, beforeEach, describe, expect, it, Mock,vi } from 'vitest';
+
 import { AppSettings } from '@/types/settings';
 
 // Mock electron

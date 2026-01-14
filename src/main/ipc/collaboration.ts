@@ -2,11 +2,11 @@
  * IPC Handlers for Model Collaboration
  */
 
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { ModelCollaborationService } from '@main/services/model-collaboration.service'
 import { multiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service'
+import { createIpcHandler,createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { Message } from '@shared/types/chat'
-import { createSafeIpcHandler, createIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
 export function registerCollaborationIpc(collaborationService: ModelCollaborationService) {
     /**

@@ -1,6 +1,6 @@
-import { JsonObject } from '@shared/types/common';
-import { CommandService } from '@main/services/system/command.service';
 import { SSHService } from '@main/services/ssh.service';
+import { CommandService } from '@main/services/system/command.service';
+import { JsonObject } from '@shared/types/common';
 
 export class DockerService {
     constructor(
@@ -30,7 +30,7 @@ export class DockerService {
         const cmd = `docker ps ${all ? '-a' : ''} --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);
 
-        if (!result.success) return result;
+        if (!result.success) {return result;}
 
         try {
             // Docker outputs multiple JSON objects, one per line
@@ -57,7 +57,7 @@ export class DockerService {
         const cmd = `docker stats --no-stream --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);
 
-        if (!result.success) return result;
+        if (!result.success) {return result;}
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
@@ -73,7 +73,7 @@ export class DockerService {
         const cmd = `docker images --format "{{json .}}"`;
         const result = await this.execute(cmd, connectionId);
 
-        if (!result.success) return result;
+        if (!result.success) {return result;}
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);

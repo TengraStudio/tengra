@@ -5,42 +5,39 @@
 
 // Panel Layout System
 export {
+    type Panel,
+    type PanelGroup,
     PanelLayout,
     PanelLayoutProvider,
-    usePanelLayout,
-    type Panel,
     type PanelPosition,
     type PanelSize,
-    type PanelGroup
-} from '@renderer/components/layout/PanelLayout'
+    usePanelLayout} from '@renderer/components/layout/PanelLayout'
 
 // Activity Bar
 export {
     ActivityBar,
-    ActivityBarProvider,
     ActivityBarLayout,
-    useActivityBar,
+    ActivityBarProvider,
+    type ActivityItem,
     DEFAULT_ACTIVITIES,
-    type ActivityItem
-} from '@renderer/components/layout/ActivityBar'
+    useActivityBar} from '@renderer/components/layout/ActivityBar'
 
 // Status Bar
 export {
+    ConnectionStatus,
+    ErrorStatus,
+    GitBranchStatus,
+    LoadingStatus,
+    ModelStatus,
+    NotificationBell,
     StatusBar,
+    type StatusBarItem,
     StatusBarProvider,
     useStatusBar,
-    GitBranchStatus,
-    ConnectionStatus,
-    NotificationBell,
-    LoadingStatus,
-    ErrorStatus,
-    WarningStatus,
-    ModelStatus,
-    type StatusBarItem
-} from '@renderer/components/layout/StatusBar'
+    WarningStatus} from '@renderer/components/layout/StatusBar'
 
 // Existing components
+export { AppHeader } from '@renderer/components/layout/AppHeader'
 export { LayoutManager } from '@renderer/components/layout/LayoutManager'
 export { Sidebar } from '@renderer/components/layout/Sidebar'
-export { AppHeader } from '@renderer/components/layout/AppHeader'
 export * from '@renderer/components/layout/SimpleResizable'

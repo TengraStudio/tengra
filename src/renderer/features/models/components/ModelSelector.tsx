@@ -1,21 +1,21 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import {
-    useFloating,
     autoUpdate,
-    offset,
     flip,
-    shift,
     FloatingPortal,
+    offset,
+    shift,
+    useFloating,
 } from '@floating-ui/react'
-import { ChevronDown, Sparkles, BrainCircuit, Zap, Server, Box, Search, Check, LayoutGrid, Info, ImageIcon, Code2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton'
-import type { AppSettings, QuotaResponse, CodexUsage } from '@/types'
 import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
-import { useDebounce } from '@/hooks/useDebounce'
+import { Box, BrainCircuit, Check, ChevronDown, Code2,ImageIcon, Info, LayoutGrid, Search, Server, Sparkles, Zap } from 'lucide-react'
+import { useCallback,useEffect, useMemo, useState } from 'react'
 
-import { useTranslation, Language } from '@/i18n'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useDebounce } from '@/hooks/useDebounce'
+import { Language,useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
+import type { AppSettings, CodexUsage,QuotaResponse } from '@/types'
 
 interface ModelSelectorProps {
     selectedProvider: string
@@ -63,7 +63,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [isOpen, onOpenChange])
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
 
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
             const target = event.target as Node
@@ -108,7 +108,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
     // Check usage limits for all models
     useEffect(() => {
-        if (!settings?.modelUsageLimits) return
+        if (!settings?.modelUsageLimits) {return}
 
         const checkLimits = async () => {
             const checks: Record<string, { allowed: boolean; reason?: string }> = {}
@@ -118,7 +118,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 for (const [provider, group] of Object.entries(groupedModels)) {
                     for (const model of group.models) {
                         const modelId = model.id || ''
-                        if (!modelId) continue
+                        if (!modelId) {continue}
                         const key = `${provider}:${modelId}`
                         try {
                             const result = await window.electron.checkUsageLimit(provider, modelId)
@@ -137,7 +137,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [settings?.modelUsageLimits, groupedModels])
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
-        if (!quotas && !codexUsage && !settings?.modelUsageLimits) return false;
+        if (!quotas && !codexUsage && !settings?.modelUsageLimits) {return false;}
         const lowerModelId = modelId.toLowerCase();
 
         // Check usage limits first
@@ -282,7 +282,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS, settings, usageLimitChecks]);
 
     const categories = useMemo(() => {
-        if (!groupedModels) return []
+        if (!groupedModels) {return []}
 
         interface ModelItem {
             id: string;
@@ -329,7 +329,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             const group = groupedModels[mapping.key]
             const models = group?.models || []
             const cat = cats.find(c => c.id === mapping.catId)
-            if (!cat) continue
+            if (!cat) {continue}
 
             interface RawModel {
                 id?: string
@@ -347,11 +347,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     (m.name || '').toLowerCase().includes(searchLower) ||
                     id.toLowerCase().includes(searchLower);
 
-                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) continue
+                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) {continue}
 
                 let label = m.label || m.name || id;
                 label = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
-                if (label.startsWith('gpt-')) label = label.toUpperCase();
+                if (label.startsWith('gpt-')) {label = label.toUpperCase();}
 
                 cat.models.push({
                     id: id,
@@ -373,7 +373,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             const match = cat.models.find(m => m.id === selectedModel)
                 || cat.models.find(m => m.id.toLowerCase() === normalizedSelectedModel)
                 || cat.models.find(m => m.id.replace(/\./g, '-').toLowerCase() === normalizedSelectedModel.replace(/\./g, '-'))
-            if (match) return match
+            if (match) {return match}
         }
         return null
     }, [categories, selectedModel])
@@ -384,11 +384,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
     const contextLimit = useMemo(() => {
         const id = selectedModel.toLowerCase()
-        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) return 128000
-        if (id.includes('claude-3-5') || id.includes('claude-3')) return 200000
-        if (id.includes('gemini-1.5')) return 1000000
-        if (id.includes('gemini-3')) return 2000000
-        if (id.includes('gpt-3.5')) return 160000
+        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) {return 128000}
+        if (id.includes('claude-3-5') || id.includes('claude-3')) {return 200000}
+        if (id.includes('gemini-1.5')) {return 1000000}
+        if (id.includes('gemini-3')) {return 2000000}
+        if (id.includes('gpt-3.5')) {return 160000}
         return 32000
     }, [selectedModel]);
 

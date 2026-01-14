@@ -1,6 +1,7 @@
+import { X } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 interface GlassModalProps {
@@ -42,7 +43,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
     // Handle escape key
     useEffect(() => {
-        if (!closeOnEscape || !isOpen) return
+        if (!closeOnEscape || !isOpen) {return}
 
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -68,7 +69,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
     // Focus trap
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {return}
 
         const focusableElements = modalRef.current?.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -77,7 +78,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
         const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement
 
         const handleTab = (e: KeyboardEvent) => {
-            if (e.key !== 'Tab') return
+            if (e.key !== 'Tab') {return}
 
             if (e.shiftKey) {
                 if (document.activeElement === firstElement) {
@@ -98,7 +99,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
         return () => document.removeEventListener('keydown', handleTab)
     }, [isOpen])
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     const sizeClasses = {
         sm: 'max-w-sm',

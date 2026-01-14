@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+
 import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
@@ -34,7 +35,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
 
     // Keyboard navigation
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {return}
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowDown') {
@@ -46,7 +47,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
             } else if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault()
                 const cmd = filteredCommands[selectedIndex]
-                if (cmd) onSelect(cmd)
+                if (cmd) {onSelect(cmd)}
             } else if (e.key === 'Escape') {
                 onClose()
             }
@@ -56,7 +57,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [isOpen, filteredCommands, selectedIndex, onSelect, onClose])
 
-    if (!isOpen || filteredCommands.length === 0) return null
+    if (!isOpen || filteredCommands.length === 0) {return null}
 
     return (
         <motion.div

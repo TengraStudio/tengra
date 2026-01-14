@@ -1,12 +1,13 @@
+import { exec } from 'child_process';
+import { watch } from 'fs';
+import { createWriteStream } from 'fs';
+import * as fs from 'fs/promises';
+import * as https from 'https';
+import * as path from 'path';
+import { promisify } from 'util';
+
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-import * as fs from 'fs/promises';
-import { watch } from 'fs';
-import * as path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as https from 'https';
-import { createWriteStream } from 'fs';
 
 const execAsync = promisify(exec);
 

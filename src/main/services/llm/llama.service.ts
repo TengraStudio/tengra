@@ -1,14 +1,15 @@
 // LlamaService - Uses llama-server executable for fast CUDA inference
 // Communicates via HTTP API (OpenAI-compatible)
 
-import * as path from 'path'
-import { join } from 'path'
-import { existsSync, mkdirSync } from 'fs'
-import { app } from 'electron'
-import { spawn, ChildProcess } from 'child_process'
+import { ChildProcess,spawn } from 'child_process'
+import * as fs from 'fs'
 import * as http from 'http'
+import * as path from 'path'
+
+import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { app } from 'electron'
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -26,7 +27,7 @@ interface ModelInfo {
     loaded: boolean
 }
 
-export class LlamaService {
+export class LlamaService extends BaseService {
     private serverProcess: ChildProcess | null = null
     private modelsDir: string
     private binDir: string
@@ -43,6 +44,7 @@ export class LlamaService {
     }
 
     constructor(dataService?: DataService) {
+        super('LlamaService');
         // Get paths
         try {
             if (dataService) {
@@ -51,19 +53,24 @@ export class LlamaService {
                 this.modelsDir = join(app.getPath('userData'), 'models')
             }
 
-            mkdirSync(this.modelsDir, { recursive: true })
+            fs.mkdirSync(this.modelsDir, { recursive: true })
         } catch (e) {
-            console.warn('[LlamaService] Failed to setup models directory:', getErrorMessage(e as Error))
+            this.logWarn(`Failed to setup models directory: ${getErrorMessage(e as Error)}`)
             this.modelsDir = path.join(process.cwd(), 'models')
         }
 
         // llama-server binary path
-        this.binDir = path.join(process.cwd(), 'vendor/llama-bin')
+        this.binDir = join(process.cwd(), 'vendor/llama-bin')
 
         // Fallback to project root if not in dist
-        if (!existsSync(this.binDir)) {
+        if (!fs.existsSync(this.binDir)) {
             this.binDir = join(process.cwd(), 'vendor', 'llama-bin')
         }
+    }
+
+    async cleanup(): Promise<void> {
+        await this.stopServer();
+        this.logInfo('Cleanup complete');
     }
 
     private getServerPath(): string {
@@ -94,7 +101,7 @@ export class LlamaService {
         try {
             // Check if llama-server exists
             const serverPath = this.getServerPath()
-            if (!existsSync(serverPath)) {
+            if (!fs.existsSync(serverPath)) {
                 return {
                     success: false,
                     error: `llama-server.exe bulunamadı: ${serverPath}`
@@ -102,7 +109,7 @@ export class LlamaService {
             }
 
             // Check if model exists
-            if (!existsSync(modelPath)) {
+            if (!fs.existsSync(modelPath)) {
                 return { success: false, error: `Model dosyası bulunamadı: ${modelPath}` }
             }
 
@@ -113,94 +120,99 @@ export class LlamaService {
             if (config) {
                 this.config = { ...this.config, ...config }
             }
-            this.serverPort = this.config.port || 8080
-            this.serverHost = this.config.host || '127.0.0.1'
+            this.serverPort = this.config.port ?? 8080
+            this.serverHost = this.config.host ?? '127.0.0.1'
 
-            console.log(`Starting llama-server with model: ${modelPath}`)
-            console.log(`GPU Layers: ${this.config.gpuLayers}, Context: ${this.config.contextSize}`)
+            this.logInfo(`Starting llama-server with model: ${modelPath}`)
+            this.logInfo(`GPU Layers: ${this.config.gpuLayers}, Context: ${this.config.contextSize}`)
 
-            // Build command arguments
-            const args = [
-                '--model', modelPath,
-                '--host', this.serverHost,
-                '--port', this.serverPort.toString(),
-                '--ctx-size', (this.config.contextSize || 8192).toString(),
-                '--batch-size', (this.config.batchSize || 512).toString(),
-                '--flash-attn',  // Enable flash attention
-                '--cont-batching',  // Continuous batching
-                '--mlock',  // Lock memory
-            ]
-
-            // Add GPU layers if specified
-            if (this.config.gpuLayers !== undefined && this.config.gpuLayers >= 0) {
-                args.push('--gpu-layers', this.config.gpuLayers.toString())
-            } else {
-                args.push('--gpu-layers', '999')  // All layers on GPU
-            }
-
-            // Start server
-            const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH }
-
-            // Backend specific environment variables
-            if (this.config.backend === 'vulkan') {
-                env['GGML_VULKAN'] = '1'
-            } else if (this.config.backend === 'cuda') {
-                env['GGML_CUDA'] = '1'
-            } else if (this.config.backend === 'metal') {
-                env['GGML_METAL'] = '1'
-            } else if (this.config.backend === 'cpu') {
-                args.push('--gpu-layers', '0')
-            }
-
-            this.serverProcess = spawn(serverPath, args, {
-                cwd: this.binDir,
-                env,
-                windowsHide: true
-            })
-
-            this.serverProcess.stdout?.on('data', (data) => {
-                console.log('llama-server:', data.toString())
-            })
-
-            this.serverProcess.stderr?.on('data', (data) => {
-                console.error('llama-server:', data.toString())
-            })
-
-            this.serverProcess.on('exit', (code) => {
-                console.log(`llama-server exited with code ${code}`)
-                this.serverProcess = null
-                this.currentModelPath = null
-            })
-
-            // Wait for server to start
-            for (let i = 0; i < 60; i++) {  // Wait up to 60 seconds
-                await new Promise(r => setTimeout(r, 1000))
-                if (await this.isServerRunning()) {
-                    this.currentModelPath = modelPath
-                    console.log('llama-server started successfully')
-                    return { success: true }
-                }
-            }
-
-            // Server didn't start
-            await this.stopServer()
-            return { success: false, error: 'llama-server başlatılamadı (timeout)' }
+            return this.startLlamaProcess(modelPath, serverPath);
 
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) }
         }
     }
 
-    async stopServer(): Promise<void> {
-        if (this.serverProcess) {
-            this.serverProcess.kill('SIGTERM')
-            await new Promise(r => setTimeout(r, 1000))
-            if (this.serverProcess && !this.serverProcess.killed) {
-                this.serverProcess.kill('SIGKILL')
-            }
+    private async startLlamaProcess(modelPath: string, serverPath: string): Promise<{ success: boolean; error?: string }> {
+        // Build command arguments
+        const args = [
+            '--model', modelPath,
+            '--port', this.serverPort.toString(),
+            '--host', this.serverHost,
+            '--ctx-size', (this.config.contextSize ?? 4096).toString(),
+            '--n-gpu-layers', (this.config.gpuLayers ?? -1).toString(),
+            '--flash-attn',
+            '--cont-batching',
+            '--mlock',
+        ]
+
+        if (this.config.gpuLayers !== undefined && this.config.gpuLayers >= 0) {
+            args.push('--gpu-layers', this.config.gpuLayers.toString())
+        } else {
+            args.push('--gpu-layers', '999')
+        }
+
+        // Start server
+        const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH }
+
+        if (this.config.backend === 'vulkan') {
+            env['GGML_VULKAN'] = '1'
+        } else if (this.config.backend === 'cuda') {
+            env['GGML_CUDA'] = '1'
+        } else if (this.config.backend === 'metal') {
+            env['GGML_METAL'] = '1'
+        } else if (this.config.backend === 'cpu') {
+            args.push('--gpu-layers', '0')
+        }
+
+        this.serverProcess = spawn(serverPath, args, {
+            cwd: this.binDir,
+            env,
+            windowsHide: true
+        })
+
+        this.serverProcess.stdout?.on('data', (data) => {
+            this.logInfo(`llama-server: ${data.toString()}`)
+        })
+
+        this.serverProcess.stderr?.on('data', (data) => {
+            this.logError(`llama-server: ${data.toString()}`)
+        })
+
+        this.serverProcess.on('exit', (code) => {
+            this.logInfo(`llama-server exited with code ${code}`)
             this.serverProcess = null
             this.currentModelPath = null
+        })
+
+        // Wait for server to start
+        for (let i = 0; i < 60; i++) {
+            await new Promise(r => setTimeout(r, 1000))
+            if (await this.isServerRunning()) {
+                this.currentModelPath = modelPath;
+                this.logInfo('llama-server started successfully');
+                return { success: true };
+            }
         }
+
+        // Server didn't start
+        await this.stopServer()
+        return { success: false, error: 'llama-server başlatılamadı (timeout)' }
+    }
+
+    async stopServer(): Promise<void> {
+        const proc = this.serverProcess;
+        if (!proc) {return;}
+
+        proc.kill('SIGTERM');
+        await new Promise(r => setTimeout(r, 1000));
+
+        if (!proc.killed) {
+            proc.kill('SIGKILL');
+        }
+
+        this.serverProcess = null;
+        this.currentModelPath = null;
     }
 
     async unloadModel(): Promise<void> {
@@ -251,7 +263,7 @@ export class LlamaService {
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
                                 const jsonStr = line.slice(6).trim()
-                                if (jsonStr === '[DONE]') continue
+                                if (jsonStr === '[DONE]') {continue}
                                 try {
                                     const obj = JSON.parse(jsonStr)
                                     const content = obj.choices?.[0]?.delta?.content
@@ -335,29 +347,30 @@ export class LlamaService {
     }
 
     getLoadedModel(): string | null {
-        return this.currentModelPath
+        return this.currentModelPath;
     }
 
     getModelsDir(): string {
-        return this.modelsDir
+        return this.modelsDir;
     }
 
     getBinDir(): string {
-        return this.binDir
+        return this.binDir;
     }
 
     async getModels(): Promise<ModelInfo[]> {
         const models: ModelInfo[] = []
         try {
-            const fs = await import('fs/promises')
-            if (!existsSync(this.modelsDir)) return models
+            if (!fs.existsSync(this.modelsDir)) {
+                return models
+            }
 
-            const files = await fs.readdir(this.modelsDir)
+            const files = await fs.promises.readdir(this.modelsDir)
 
             for (const file of files) {
                 if (file.endsWith('.gguf')) {
                     const fullPath = join(this.modelsDir, file)
-                    const stats = await fs.stat(fullPath)
+                    const stats = await fs.promises.stat(fullPath)
                     models.push({
                         name: file.replace('.gguf', ''),
                         path: fullPath,
@@ -367,17 +380,13 @@ export class LlamaService {
                 }
             }
         } catch (e) {
-            console.error('Error reading models directory:', getErrorMessage(e as Error))
+            this.logError(`Error reading models directory: ${getErrorMessage(e as Error)}`)
         }
 
         return models
     }
 
-    async downloadModel(
-        url: string,
-        filename: string,
-        onProgress?: (downloaded: number, total: number) => void
-    ): Promise<{ success: boolean; path?: string; error?: string }> {
+    async downloadModel(url: string, filename: string, onProgress?: (downloadedSize: number, total: number) => void): Promise<{ success: boolean; path?: string; error?: string }> {
         const https = await import('https')
         const httpModule = await import('http')
         const { createWriteStream } = await import('fs')
@@ -399,12 +408,12 @@ export class LlamaService {
                         }
                     }
 
-                    const totalSize = parseInt(response.headers['content-length'] || '0', 10)
-                    let downloaded = 0
+                    const totalSize = parseInt(response.headers['content-length'] ?? '0', 10)
+                    let downloadedSize = 0
 
                     response.on('data', (chunk: Buffer) => {
-                        downloaded += chunk.length
-                        onProgress?.(downloaded, totalSize)
+                        downloadedSize += chunk.length
+                        onProgress?.(downloadedSize, totalSize)
                     })
 
                     response.pipe(file)
@@ -428,14 +437,12 @@ export class LlamaService {
     }
 
     async deleteModel(modelPath: string): Promise<{ success: boolean; error?: string }> {
-        const fs = await import('fs/promises')
-
         try {
             if (this.currentModelPath === modelPath) {
                 await this.stopServer()
             }
-            if (existsSync(modelPath)) {
-                await fs.unlink(modelPath)
+            if (fs.existsSync(modelPath)) {
+                await fs.promises.unlink(modelPath)
             }
             return { success: true }
         } catch (error) {
@@ -457,17 +464,20 @@ export class LlamaService {
 
         // Check CUDA
         const cudaDll = join(this.binDir, 'ggml-cuda.dll')
-        if (existsSync(cudaDll)) {
+        if (fs.existsSync(cudaDll)) {
             backends.push('cuda')
             detectedName = 'NVIDIA CUDA'
         }
 
         // Check Vulkan
         const vulkanDll = join(this.binDir, 'ggml-vulkan.dll')
-        if (existsSync(vulkanDll)) {
+        if (fs.existsSync(vulkanDll)) {
             backends.push('vulkan')
-            if (backends.length === 1) detectedName = 'Vulkan'
-            else detectedName += ' / Vulkan'
+            if (backends.length === 1) {
+                detectedName = 'Vulkan'
+            } else {
+                detectedName += ' / Vulkan'
+            }
         }
 
         // Check Metal (Apple only)
@@ -484,6 +494,6 @@ export class LlamaService {
     }
 
     isServerAvailable(): boolean {
-        return existsSync(this.getServerPath())
+        return fs.existsSync(this.getServerPath())
     }
 }

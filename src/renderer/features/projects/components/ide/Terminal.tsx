@@ -1,7 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useCallback,useEffect, useRef } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
+
 import { useTranslation } from '@/i18n'
+
 import 'xterm/css/xterm.css'
 
 interface TerminalComponentProps {
@@ -210,7 +212,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
                 // Enhanced data handler with history support
                 term.onData(data => {
-                    if (!pidRef.current) return
+                    if (!pidRef.current) {return}
 
                     // Handle special key sequences for history navigation
                     if (data === '\x1b[A') {
@@ -323,8 +325,8 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
             // Call individual cleanups
             const cleanups = (term as any)._cleanups
             if (cleanups) {
-                if (typeof cleanups.data === 'function') cleanups.data()
-                if (typeof cleanups.exit === 'function') cleanups.exit()
+                if (typeof cleanups.data === 'function') {cleanups.data()}
+                if (typeof cleanups.exit === 'function') {cleanups.exit()}
             }
 
             try {

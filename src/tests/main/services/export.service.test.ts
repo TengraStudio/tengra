@@ -1,8 +1,9 @@
 /**
  * Unit tests for ExportService
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExportService } from '@main/services/export.service';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
+
 import { Chat, Message } from '@/types/chat';
 
 // Mock the logger

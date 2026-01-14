@@ -1,10 +1,11 @@
+import { Check, Copy, ExternalLink,Play, Save, Square, Volume2, VolumeX } from 'lucide-react'
 import React, { useState } from 'react'
+
 import { CodeEditor } from '@/components/ui/CodeEditor'
-import { Volume2, VolumeX, Copy, Check, Play, Square, Save, ExternalLink } from 'lucide-react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { normalizeLanguage } from '@/utils/language-map'
-import { useTranslation, Language } from '@/i18n'
+import { Language,useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
+import { normalizeLanguage } from '@/utils/language-map'
 
 interface MonacoBlockProps {
     language: string

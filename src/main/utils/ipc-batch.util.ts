@@ -4,10 +4,10 @@
  * Reduces IPC overhead by combining multiple requests into a single batch
  */
 
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { appLogger } from '@main/logging/logger'
-import { getErrorMessage } from '@shared/utils/error.util'
 import { JsonValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
 export interface BatchRequest {
     channel: string

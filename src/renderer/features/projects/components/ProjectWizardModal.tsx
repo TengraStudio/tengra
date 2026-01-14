@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { Modal } from '@/components/ui/modal'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { Plus, FolderOpen, Code, Terminal, Database, Smartphone, Globe, ArrowRight, ChevronLeft, Check, Loader2, Server } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useTranslation, Language } from '@/i18n'
+import { ArrowRight, Check, ChevronLeft, Code, Database, FolderOpen, Globe, Loader2, Plus, Server,Smartphone, Terminal } from 'lucide-react'
+import React, { useEffect,useState } from 'react'
 
+import { Modal } from '@/components/ui/modal'
+import { Language,useTranslation } from '@/i18n'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 import { ProjectMount, SSHFile } from '@/types'
 
 interface ProjectWizardModalProps {
@@ -133,7 +133,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
     }
 
     const handleCreate = async () => {
-        if (!formData.name) return
+        if (!formData.name) {return}
         setIsLoading(true)
         setError(null)
         setStep('creating')
@@ -437,7 +437,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     <button
                                         onClick={() => {
                                             const parent = sshPath.split('/').slice(0, -1).join('/') || '/'
-                                            if (sshConnectionId) loadRemoteDirectory(sshConnectionId, parent)
+                                            if (sshConnectionId) {loadRemoteDirectory(sshConnectionId, parent)}
                                         }}
                                         className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg text-left transition-colors group"
                                     >
@@ -497,9 +497,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                     <div className="flex justify-between items-center pt-6 border-t border-white/5 mt-auto">
                         <button
                             onClick={() => {
-                                if (step === 'selection') setStep('details')
-                                else if (step === 'ssh-connection') setStep('selection')
-                                else onClose()
+                                if (step === 'selection') {setStep('details')}
+                                else if (step === 'ssh-connection') {setStep('selection')}
+                                else {onClose()}
                             }}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                         >
@@ -511,7 +511,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             {step === 'details' && (
                                 <button
                                     onClick={() => {
-                                        if (!formData.name) return
+                                        if (!formData.name) {return}
                                         setStep('selection')
                                     }}
                                     disabled={!formData.name}

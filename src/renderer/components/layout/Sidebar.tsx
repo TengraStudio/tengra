@@ -1,18 +1,19 @@
-import { Chat, Folder } from '@/types'
-import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
-import { cn } from '@/lib/utils'
-import {
-    Plus, Settings, ChevronLeft, ChevronRight, Trash2, Search, MessageSquare,
-    Rocket, FolderPlus, FolderOpen, Folder as FolderIcon,
-    Edit2, Pin, Users, Sparkles, User, Palette, BarChart, Image, Mic, Code, Shield, Server
-} from 'lucide-react'
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useTranslation } from '@/i18n'
-import { useChat } from '@/context/ChatContext'
-import { useAuth } from '@/context/AuthContext'
-import { useProject } from '@/context/ProjectContext'
-import { SettingsCategory } from '@/features/settings/types'
 import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem'
+import {
+BarChart, ChevronLeft, ChevronRight, Code,     Edit2, Folder as FolderIcon,
+FolderOpen, FolderPlus, Image, MessageSquare,
+Mic, Palette, Pin,     Plus,     Rocket, Search, Server,
+Settings, Shield, Sparkles, Trash2, User, Users} from 'lucide-react'
+import React, { useCallback,useEffect, useMemo, useRef, useState } from 'react'
+
+import { useAuth } from '@/context/AuthContext'
+import { useChat } from '@/context/ChatContext'
+import { useProject } from '@/context/ProjectContext'
+import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
+import { SettingsCategory } from '@/features/settings/types'
+import { useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
+import { Chat, Folder } from '@/types'
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -23,14 +24,14 @@ interface SidebarProps {
     onSearch: (query: string) => void
 }
 
-export const Sidebar = React.memo(function Sidebar({
+export const Sidebar = React.memo(({
     onOpenSettings,
     isCollapsed,
     toggleSidebar,
     currentView,
     onChangeView,
     onSearch
-}: SidebarProps) {
+}: SidebarProps) => {
     const {
         chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
         folders, createFolder, deleteFolder,
@@ -52,7 +53,7 @@ export const Sidebar = React.memo(function Sidebar({
     const activeFolders = useMemo(() => folders || [], [folders])
 
     const filteredChats = useMemo(() => {
-        if (!searchQuery) return chats
+        if (!searchQuery) {return chats}
         const q = searchQuery.toLowerCase()
         return chats.filter(c => c.title?.toLowerCase().includes(q))
     }, [chats, searchQuery])
@@ -144,7 +145,7 @@ export const Sidebar = React.memo(function Sidebar({
                             value={editValue}
                             onChange={e => setEditValue(e.target.value)}
                             onBlur={saveEdit}
-                            onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit() }}
+                            onKeyDown={e => { if (e.key === 'Enter') {saveEdit();} if (e.key === 'Escape') {cancelEdit()} }}
                             onClick={e => e.stopPropagation()}
                             className="absolute inset-0 bg-background border border-primary rounded-md px-2 text-xs outline-none z-10"
                         />
@@ -325,8 +326,8 @@ export const Sidebar = React.memo(function Sidebar({
                                         isCollapsed={isCollapsed}
                                         toggleFolder={(id) => setExpandedFolders(prev => {
                                             const next = new Set(prev)
-                                            if (next.has(id)) next.delete(id)
-                                            else next.add(id)
+                                            if (next.has(id)) {next.delete(id)}
+                                            else {next.add(id)}
                                             return next
                                         })}
                                         deleteFolder={deleteFolder}

@@ -1,30 +1,31 @@
-import { OllamaService } from '@main/services/llm/ollama.service'
-import { ContentService } from '@main/services/content.service'
-import { CommandService } from '@main/services/system/command.service'
+import { promises as dns } from 'dns'
+
+import { McpAction, McpResult,McpService } from '@main/mcp/types'
 import { ClipboardService } from '@main/services/clipboard.service'
-import { DockerService } from '@main/services/project/docker.service'
+import { ContentService } from '@main/services/content.service'
 import { DatabaseService } from '@main/services/data/database.service'
-import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { FileManagementService } from '@main/services/data/file.service'
 import { FileSystemService } from '@main/services/data/filesystem.service'
-import { GitService } from '@main/services/project/git.service'
+import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { OllamaService } from '@main/services/llm/ollama.service'
 import { MonitoringService } from '@main/services/monitoring.service'
 import { NetworkService } from '@main/services/network.service'
 import { NotificationService } from '@main/services/notification.service'
+import { DockerService } from '@main/services/project/docker.service'
+import { GitService } from '@main/services/project/git.service'
 import { ScannerService } from '@main/services/scanner.service'
 import { ScreenshotService } from '@main/services/screenshot.service'
 import { SecurityService } from '@main/services/security.service'
 import { SettingsService } from '@main/services/settings.service'
-import { SSHService, SSHConnection } from '@main/services/ssh.service'
+import { SSHConnection,SSHService } from '@main/services/ssh.service'
 import { SystemService } from '@main/services/system.service'
+import { CommandService } from '@main/services/system/command.service'
 import { UtilityService } from '@main/services/utility.service'
 import { WebService } from '@main/services/web.service'
-import { McpAction, McpService, McpResult } from '@main/mcp/types'
-import { promises as dns } from 'dns'
-import { JsonObject, JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
 import { ServiceResponse } from '@shared/types'
+import { JsonObject, JsonValue } from '@shared/types/common'
 import { MCPServerConfig } from '@shared/types/settings'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 interface McpDeps {
     web: WebService
@@ -76,7 +77,7 @@ const buildActions = (actions: Array<Omit<McpAction, 'handler'> & { handler: (ar
 
 const normalizeTarget = (target: string): string => {
     const trimmed = String(target || '').trim()
-    if (!trimmed) return ''
+    if (!trimmed) {return ''}
     try {
         const url = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`)
         return url.hostname

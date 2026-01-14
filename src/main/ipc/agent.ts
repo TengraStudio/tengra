@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron'
 import { AgentService } from '@main/services/agent.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { ipcMain } from 'electron'
 
 
 export function registerAgentIpc(agentService: AgentService) {

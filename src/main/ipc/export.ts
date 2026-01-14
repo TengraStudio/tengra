@@ -1,8 +1,8 @@
+import { appLogger } from '@main/logging/logger'
+import { ExportFormat, ExportOptions,exportService } from '@main/services/export.service'
+import { Chat } from '@shared/types/chat'
 import { ipcMain } from 'electron'
 import { BrowserWindow } from 'electron'
-import { exportService, ExportFormat, ExportOptions } from '@main/services/export.service'
-import { Chat } from '@shared/types/chat'
-import { appLogger } from '@main/logging/logger'
 
 export function registerExportIpc(getWindow: () => BrowserWindow | null) {
     // Set window reference on service

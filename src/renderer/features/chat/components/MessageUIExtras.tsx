@@ -1,4 +1,5 @@
 ﻿import { Sparkles } from 'lucide-react'
+
 import { useTranslation } from '@/i18n'
 
 export const TypingDots = () => {

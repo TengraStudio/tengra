@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { AppSettings, QuotaResponse, CodexUsage, JsonValue } from '@/types'
+import { useCallback,useEffect, useRef, useState } from 'react'
+
+import { AppSettings, CodexUsage, JsonValue,QuotaResponse } from '@/types'
 import { CopilotQuota } from '@/types';
 
 type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
@@ -92,12 +93,12 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }, [loadSettings, checkOllama])
 
     useEffect(() => {
-        if (settings && originalSettings) setIsDirty(!deepEqual(settings, originalSettings))
+        if (settings && originalSettings) {setIsDirty(!deepEqual(settings, originalSettings))}
     }, [settings, originalSettings])
 
     const handleSave = async (newSettings?: AppSettings) => {
         const toSave = newSettings || settings
-        if (!toSave) return
+        if (!toSave) {return}
         setIsLoading(true)
         try {
             await window.electron.saveSettings(toSave)
@@ -112,9 +113,9 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
     // Auto-save debounce
     useEffect(() => {
-        if (!settings || !originalSettings) return
+        if (!settings || !originalSettings) {return}
         const equal = deepEqual(settings, originalSettings)
-        if (equal) return
+        if (equal) {return}
 
         console.log('[useSettingsLogic] Auto-save triggered! Settings differ from originalSettings.');
 
@@ -135,14 +136,14 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }, [settings, originalSettings])
 
     const updateGeneral = (patch: Partial<AppSettings['general']>) => {
-        if (!settings) return
+        if (!settings) {return}
         const updated = { ...settings, general: { ...settings.general, ...patch } }
         setSettings(updated)
         handleSave(updated)
     }
 
     const updateSpeech = (patch: Partial<NonNullable<AppSettings['speech']>>) => {
-        if (!settings) return
+        if (!settings) {return}
         const updated = { ...settings, speech: { ...settings.speech, ...patch } } as AppSettings
         setSettings(updated)
     }
@@ -162,7 +163,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const setAuthNotice = (message: string, duration = 5000) => {
-        if (authMessageTimer.current) clearTimeout(authMessageTimer.current)
+        if (authMessageTimer.current) {clearTimeout(authMessageTimer.current)}
         setAuthMessage(message)
         if (message && duration > 0) {
             authMessageTimer.current = setTimeout(() => setAuthMessage(''), duration)
@@ -170,13 +171,13 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const connectGitHubProfile = async () => {
-        if (!settings) return
+        if (!settings) {return}
         setAuthBusy('github')
         setAuthNotice('')
         try {
             const data = await window.electron.githubLogin('profile')
-            if (data?.verification_uri) window.electron.openExternal(data.verification_uri)
-            if (data?.user_code) setAuthNotice(`Kod: ${data.user_code}`, 0)
+            if (data?.verification_uri) {window.electron.openExternal(data.verification_uri)}
+            if (data?.user_code) {setAuthNotice(`Kod: ${data.user_code}`, 0)}
 
             const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'profile')
             if (pollResult.success && pollResult.token) {
@@ -199,13 +200,13 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const connectCopilot = async () => {
-        if (!settings) return
+        if (!settings) {return}
         setAuthBusy('copilot')
         setAuthNotice('')
         try {
             const data = await window.electron.githubLogin('copilot')
-            if (data?.verification_uri) window.electron.openExternal(data.verification_uri)
-            if (data?.user_code) setAuthNotice(`Kod: ${data.user_code}`, 0)
+            if (data?.verification_uri) {window.electron.openExternal(data.verification_uri)}
+            if (data?.user_code) {setAuthNotice(`Kod: ${data.user_code}`, 0)}
 
             const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'copilot')
             if (pollResult.success && pollResult.token) {
@@ -296,7 +297,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const disconnectProvider = async (provider: 'copilot' | 'codex' | 'claude' | 'antigravity') => {
-        if (!settings) return
+        if (!settings) {return}
         const updated: AppSettings = { ...settings }
 
         try {
@@ -323,15 +324,15 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
             console.error('[SettingsLogic] Backend auth deletion failed:', e)
         }
 
-        if (provider === 'copilot') updated.copilot = { connected: false }
+        if (provider === 'copilot') {updated.copilot = { connected: false }}
         if (provider === 'codex') {
-            if (updated.openai?.apiKey === 'connected') updated.openai = { ...updated.openai, apiKey: '' }
+            if (updated.openai?.apiKey === 'connected') {updated.openai = { ...updated.openai, apiKey: '' }}
             updated.codex = { connected: false }
             setAuthStatus(prev => ({ ...prev, codex: false }))
         }
         if (provider === 'claude') {
-            if (updated.claude?.apiKey === 'connected') updated.claude = { ...updated.claude, apiKey: '' }
-            if (updated.anthropic?.apiKey === 'connected') updated.anthropic = { ...updated.anthropic, apiKey: '' }
+            if (updated.claude?.apiKey === 'connected') {updated.claude = { ...updated.claude, apiKey: '' }}
+            if (updated.anthropic?.apiKey === 'connected') {updated.anthropic = { ...updated.anthropic, apiKey: '' }}
             setAuthStatus(prev => ({ ...prev, claude: false }))
         }
 
@@ -394,7 +395,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }, [statsPeriod, reloadTrigger])
 
     const handleRunBenchmark = async (currentModelId: string) => {
-        if (!currentModelId) return
+        if (!currentModelId) {return}
         setIsBenchmarking(true)
         setBenchmarkResult(null)
         try {
@@ -409,12 +410,12 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const handleSavePersona = () => {
-        if (!settings || !personaDraft.name.trim()) return
+        if (!settings || !personaDraft.name.trim()) {return}
         const next = { ...settings }
         const personas = [...(settings.personas || [])]
         if (editingPersonaId) {
             const idx = personas.findIndex(p => p.id === editingPersonaId)
-            if (idx >= 0) personas[idx] = { ...personas[idx], ...personaDraft }
+            if (idx >= 0) {personas[idx] = { ...personas[idx], ...personaDraft }}
         } else {
             personas.push({ id: `${Date.now()}`, ...personaDraft })
         }
@@ -426,7 +427,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
     }
 
     const handleDeletePersona = (personaId: string) => {
-        if (!settings) return
+        if (!settings) {return}
         const next = { ...settings }
         const personas = settings.personas || []
         next.personas = personas.filter(p => p.id !== personaId)

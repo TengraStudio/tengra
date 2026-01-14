@@ -1,5 +1,5 @@
+import { ComparisonRequest,MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
 import { ipcMain } from 'electron';
-import { MultiModelComparisonService, ComparisonRequest } from '@main/services/llm/multi-model-comparison.service';
 
 export function registerMultiModelIpc(comparisonService: MultiModelComparisonService): void {
     ipcMain.handle('llm:compare-models', async (_event, request: ComparisonRequest) => {

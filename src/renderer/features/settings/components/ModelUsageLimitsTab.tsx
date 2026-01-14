@@ -1,8 +1,9 @@
+import { Calendar, Clock, Hash,Percent, Settings, TrendingUp } from 'lucide-react'
 import React, { useMemo } from 'react'
-import { AppSettings } from '@/types/settings'
+
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { Settings, Clock, Calendar, TrendingUp, Percent, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AppSettings } from '@/types/settings'
 
 interface ModelUsageLimitsTabProps {
     settings: AppSettings | null
@@ -21,7 +22,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     copilotQuota,
     t: _t
 }) => {
-    if (!settings) return null
+    if (!settings) {return null}
 
     const limits = settings.modelUsageLimits || {}
     const copilotLimits = limits.copilot || {}
@@ -30,7 +31,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
 
     // Get Antigravity models
     const antigravityModels = useMemo(() => {
-        if (!groupedModels) return []
+        if (!groupedModels) {return []}
         const agGroup = groupedModels['antigravity']
         return agGroup?.models || []
     }, [groupedModels])

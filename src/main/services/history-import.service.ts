@@ -143,7 +143,7 @@ export class HistoryImportService {
 
         for (const item of items) {
             const conversationId = item.id
-            if (!conversationId) continue
+            if (!conversationId) {continue}
 
             const chatId = `openai:${conversationId}`
             if (await this.databaseService.getChat(chatId)) {
@@ -198,13 +198,13 @@ export class HistoryImportService {
     private async findAuthFile(providers: string[]): Promise<AuthFileEntry | null> {
         const response = await this.proxyService.getAuthFiles()
         const files = response.files
-        if (!Array.isArray(files) || files.length === 0) return null
+        if (!Array.isArray(files) || files.length === 0) {return null}
 
         const targets = providers.map((p) => p.toLowerCase())
         for (const file of files) {
             const authFile = file as AuthFileEntry
             const provider = String(authFile.provider || authFile.type || '').toLowerCase()
-            if (!provider) continue
+            if (!provider) {continue}
             if (targets.includes(provider)) {
                 return file as AuthFileEntry
             }
@@ -214,7 +214,7 @@ export class HistoryImportService {
     }
 
     private pickToken(authData: JsonObject | null): string | null {
-        if (!authData) return null
+        if (!authData) {return null}
         const data = authData as JsonObject
         const candidates = [
             data?.access_token,
@@ -268,7 +268,7 @@ export class HistoryImportService {
         const messages: ImportedMessage[] = []
         for (const node of Object.values(mapping)) {
             const message = node.message
-            if (!message) continue
+            if (!message) {continue}
 
             const role = message.author?.role
             if (role !== 'user' && role !== 'assistant' && role !== 'system') {
@@ -276,10 +276,10 @@ export class HistoryImportService {
             }
 
             const content = this.extractOpenAIContent(message)
-            if (!content) continue
+            if (!content) {continue}
 
             const id = message.id || node.id
-            if (!id) continue
+            if (!id) {continue}
 
             messages.push({
                 id,
@@ -295,7 +295,7 @@ export class HistoryImportService {
 
     private extractOpenAIContent(message: OpenAIMessage): string {
         const content = message.content
-        if (!content) return ''
+        if (!content) {return ''}
 
         if (Array.isArray(content.parts)) {
             const parts = content.parts.filter((part): part is string => typeof part === 'string' && part.trim() !== '')
@@ -309,7 +309,7 @@ export class HistoryImportService {
         }
 
         // Try fallback if content itself is a string string (legacy?)
-        if (typeof content === 'string') return content
+        if (typeof content === 'string') {return content}
 
         return ''
     }
@@ -326,11 +326,11 @@ export class HistoryImportService {
 
     private providerLabel(provider: string): string {
         const key = provider.toLowerCase()
-        if (key === 'openai') return 'OpenAI'
-        if (key === 'claude') return 'Claude'
-        if (key === 'gemini') return 'Gemini'
-        if (key === 'antigravity') return 'Antigravity'
-        if (key === 'github') return 'GitHub'
+        if (key === 'openai') {return 'OpenAI'}
+        if (key === 'claude') {return 'Claude'}
+        if (key === 'gemini') {return 'Gemini'}
+        if (key === 'antigravity') {return 'Antigravity'}
+        if (key === 'github') {return 'GitHub'}
         return provider
     }
 
@@ -356,7 +356,7 @@ export class HistoryImportService {
             let importedMessages = 0
 
             for (const chat of chatsToImport) {
-                if (!chat.id || !Array.isArray(chat.messages)) continue
+                if (!chat.id || !Array.isArray(chat.messages)) {continue}
 
                 // Check if chat exists
                 const existing = await this.databaseService.getChat(chat.id)

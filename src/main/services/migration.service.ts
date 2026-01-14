@@ -5,6 +5,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
+
 import { DataService } from '@main/services/data/data.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -78,7 +79,7 @@ export class MigrationService {
      */
     getCurrentVersion(): number {
         this.loadApplied()
-        if (this.applied.length === 0) return 0
+        if (this.applied.length === 0) {return 0}
         return Math.max(...this.applied.map(m => m.version))
     }
 

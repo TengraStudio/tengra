@@ -1,5 +1,6 @@
-﻿import React from 'react'
-import { Terminal, RefreshCw } from 'lucide-react'
+﻿import { RefreshCw,Terminal } from 'lucide-react'
+import React from 'react'
+
 import { AppSettings } from '@/types/settings'
 
 interface DeveloperTabProps {
@@ -30,11 +31,11 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
                         <div><div className="text-sm font-bold text-white">{t('developer.exportSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.exportSettingsDesc')}</div></div>
-                        <button onClick={() => { if (!settings) return; const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `orbit-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">{t('developer.exportSettings')}</button>
+                        <button onClick={() => { if (!settings) {return;} const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `orbit-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">{t('developer.exportSettings')}</button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
                         <div><div className="text-sm font-bold text-white">{t('developer.importSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.importSettingsDesc')}</div></div>
-                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-white/5 text-muted-foreground border border-white/10 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; try { const imported = JSON.parse(await file.text()); await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch (err) { alert(t('developer.invalidSettingsFile')); } }} /></label>
+                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-white/5 text-muted-foreground border border-white/10 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) {return;} try { const imported = JSON.parse(await file.text()); await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch (err) { alert(t('developer.invalidSettingsFile')); } }} /></label>
                     </div>
                 </div>
             </div>

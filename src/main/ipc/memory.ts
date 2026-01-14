@@ -1,5 +1,5 @@
-import { ipcMain } from 'electron'
 import { MemoryService } from '@main/services/memory.service'
+import { ipcMain } from 'electron'
 
 
 export function registerMemoryIpc(memoryService: MemoryService) {

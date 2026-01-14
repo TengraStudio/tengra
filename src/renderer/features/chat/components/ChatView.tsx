@@ -1,15 +1,16 @@
-import React from 'react';
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat';
-import { ChevronDown } from 'lucide-react';
 import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
-import { MessageList } from '@renderer/features/chat/components/MessageList';
 import { ChatInput } from '@renderer/features/chat/components/ChatInput';
+import { MessageList } from '@renderer/features/chat/components/MessageList';
 import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
 import { ChatTemplate } from '@renderer/features/chat/types';
-import { useChat } from '@/context/ChatContext';
+import { ChevronDown } from 'lucide-react';
+import React from 'react';
+
 import { useAuth } from '@/context/AuthContext';
+import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
 
 interface ChatViewProps {
     templates: ChatTemplate[];
@@ -66,7 +67,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 onScroll={(e) => {
                     const el = e.currentTarget;
                     const show = el.scrollHeight - el.scrollTop - el.clientHeight > 200;
-                    if (setShowScrollButton) setShowScrollButton(show);
+                    if (setShowScrollButton) {setShowScrollButton(show);}
                 }}
             >
                 {displayMessages.length === 0 ? (

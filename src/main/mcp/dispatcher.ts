@@ -1,9 +1,10 @@
-import { McpService, McpDispatchResult } from '@main/mcp/types'
-import { SettingsService } from '@main/services/settings.service'
-import { spawn, ChildProcess } from 'child_process'
+import { ChildProcess,spawn } from 'child_process'
 import { randomUUID } from 'crypto'
+
+import { McpDispatchResult,McpService } from '@main/mcp/types'
+import { SettingsService } from '@main/services/settings.service'
 import { ToolDefinition } from '@shared/types/chat'
-import { JsonObject, CatchError } from '@shared/types/common'
+import { CatchError,JsonObject } from '@shared/types/common'
 import { MCPServerConfig } from '@shared/types/settings'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -235,7 +236,7 @@ export class McpDispatcher {
     private async getOrStartServer(config: MCPServerConfig): Promise<ChildProcess> {
         if (this.activeServers.has(config.name)) {
             const process = this.activeServers.get(config.name)
-            if (process && !process.killed) return process
+            if (process && !process.killed) {return process}
         }
 
         console.log(`[MCP] Starting server: ${config.name} (${config.command})`)
@@ -280,12 +281,12 @@ export class McpDispatcher {
         this.bufferMap.set(serverName, lines.pop() || '')
 
         for (const line of lines) {
-            if (!line.trim()) continue
+            if (!line.trim()) {continue}
             try {
                 const msg = JSON.parse(line) as JsonObject
                 if (msg.jsonrpc === '2.0' && msg.id) {
                     const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
-                    if (!msgId) continue
+                    if (!msgId) {continue}
                     const handler = this.requestQueue.get(msgId)
                     if (handler) {
                         this.requestQueue.delete(msgId)

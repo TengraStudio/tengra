@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useEffect,useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+
 import { cn } from '@/lib/utils'
 
 export interface TooltipProps {
@@ -26,7 +27,7 @@ export function Tooltip({
     const tooltipRef = useRef<HTMLDivElement | null>(null)
 
     const showTooltip = () => {
-        if (disabled) return
+        if (disabled) {return}
         timeoutRef.current = setTimeout(() => {
             setIsVisible(true)
             updatePosition()
@@ -42,7 +43,7 @@ export function Tooltip({
     }
 
     const updatePosition = () => {
-        if (!triggerRef.current || !tooltipRef.current) return
+        if (!triggerRef.current || !tooltipRef.current) {return}
 
         const triggerRect = triggerRef.current.getBoundingClientRect()
         const tooltipRect = tooltipRef.current.getBoundingClientRect()
@@ -74,11 +75,11 @@ export function Tooltip({
         const viewportWidth = window.innerWidth
         const viewportHeight = window.innerHeight
 
-        if (left < 0) left = gap
+        if (left < 0) {left = gap}
         if (left + tooltipRect.width > viewportWidth) {
             left = viewportWidth - tooltipRect.width - gap
         }
-        if (top < 0) top = gap
+        if (top < 0) {top = gap}
         if (top + tooltipRect.height > viewportHeight) {
             top = viewportHeight - tooltipRect.height - gap
         }

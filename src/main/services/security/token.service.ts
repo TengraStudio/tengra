@@ -1,18 +1,19 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { app } from 'electron'
-import axios from 'axios'
-import { SettingsService } from '@main/services/settings.service'
-import { CopilotService } from '@main/services/llm/copilot.service'
+
 import { DataService } from '@main/services/data/data.service'
+import { CopilotService } from '@main/services/llm/copilot.service'
 import { SecurityService } from '@main/services/security.service'
+import { SettingsService } from '@main/services/settings.service'
 import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+import axios from 'axios'
+import { app } from 'electron'
 
 // OAuth Client IDs and Secrets
 // Client IDs are public, but secrets should be in environment variables
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
-const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || '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'
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || ''
 
 const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann' // OpenAI OAuth Client ID
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token'
@@ -35,6 +36,7 @@ const CLAUDE_TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 export class TokenService {
     private readonly DEFAULT_REFRESH_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
     private readonly DEFAULT_COPILOT_REFRESH_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
+    private legacyIntervals: NodeJS.Timeout[] = []
 
     constructor(
         private settingsService: SettingsService,
@@ -43,6 +45,10 @@ export class TokenService {
         private securityService: SecurityService,
         private jobScheduler?: import('@main/services/job-scheduler.service').JobSchedulerService
     ) { }
+
+    async cleanup() {
+        this.stop()
+    }
 
     /**
      * Start the token refresh service
@@ -91,24 +97,34 @@ export class TokenService {
 
     private startLegacyIntervals() {
         // Legacy interval-based refresh (not persisted across restarts)
-        setInterval(() => {
+        const oauthInterval = setInterval(() => {
             this.refreshAllTokens().catch(err => {
                 console.error('[TokenService] Periodic token refresh failed:', getErrorMessage(err))
             })
         }, this.DEFAULT_REFRESH_INTERVAL_MS)
+        this.legacyIntervals.push(oauthInterval)
 
-        setInterval(() => {
+        const copilotInterval = setInterval(() => {
             this.refreshCopilotToken().catch(err => {
                 console.error('[TokenService] Copilot token refresh failed:', getErrorMessage(err))
             })
         }, this.DEFAULT_COPILOT_REFRESH_INTERVAL_MS)
+        this.legacyIntervals.push(copilotInterval)
     }
 
     /**
      * Stop the token refresh service
      */
+    /**
+     * Stop the token refresh service
+     */
     stop() {
         // JobScheduler handles its own cleanup
+
+        // Clear legacy intervals
+        this.legacyIntervals.forEach(interval => clearInterval(interval))
+        this.legacyIntervals = []
+
         console.log('[TokenService] Token refresh service stopped')
     }
 
@@ -219,7 +235,7 @@ export class TokenService {
      */
     private async refreshGoogleToken(): Promise<void> {
         const authDir = this.getAuthDir()
-        if (!fs.existsSync(authDir)) return
+        if (!fs.existsSync(authDir)) { return }
 
         const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
@@ -230,10 +246,10 @@ export class TokenService {
             try {
                 const filePath = path.join(authDir, file)
                 const authData = await this.readAuthFile(filePath)
-                if (!authData) continue
+                if (!authData) { continue }
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
-                if (!refreshToken) continue
+                if (!refreshToken) { continue }
 
                 const expiresIn = typeof authData.expires_in === 'number' ? authData.expires_in : 0
                 const timestamp = typeof authData.timestamp === 'number' ? authData.timestamp : 0
@@ -298,7 +314,7 @@ export class TokenService {
      */
     private async refreshCodexToken(): Promise<void> {
         const authDir = this.getAuthDir()
-        if (!fs.existsSync(authDir)) return
+        if (!fs.existsSync(authDir)) { return }
 
         const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
@@ -309,10 +325,10 @@ export class TokenService {
             try {
                 const filePath = path.join(authDir, file)
                 const authData = await this.readAuthFile(filePath)
-                if (!authData) continue
+                if (!authData) { continue }
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
-                if (!refreshToken) continue
+                if (!refreshToken) { continue }
 
                 const expire = typeof authData.expired === 'string' ? authData.expired : ''
                 if (expire) {
@@ -409,7 +425,7 @@ export class TokenService {
         }
 
         // 2. If we have a refresh_token in file, try OAuth refresh
-        if (!fs.existsSync(authDir)) return
+        if (!fs.existsSync(authDir)) { return }
 
         const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
@@ -420,7 +436,7 @@ export class TokenService {
             try {
                 const filePath = path.join(authDir, file)
                 const authData = await this.readAuthFile(filePath)
-                if (!authData) continue
+                if (!authData) { continue }
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
                 if (!refreshToken) {
@@ -659,7 +675,7 @@ export class TokenService {
     }
 
     private getAuthDir(): string {
-        if (this.dataService) return this.dataService.getPath('auth')
+        if (this.dataService) { return this.dataService.getPath('auth') }
         return path.join(app.getPath('userData'), 'auth')
     }
 }

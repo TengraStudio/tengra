@@ -1,9 +1,10 @@
 ﻿import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+import { Language,useTranslation } from '@/i18n'
 import { ToolResult } from '@/types'
 import { JsonObject, JsonValue } from '@/types/common'
-import { useTranslation, Language } from '@/i18n'
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -37,7 +38,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     const [showMarkdown, setShowMarkdown] = useState(false)
 
     useEffect(() => {
-        if (toolCall.name !== 'execute_command') return
+        if (toolCall.name !== 'execute_command') {return}
         if (isExecuting || execError || execStderr) {
             setCommandExpanded(true)
         }
@@ -117,7 +118,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
                                     onClick={async (e) => {
                                         e.stopPropagation()
                                         const success = await window.electron.killTool(toolCall.id)
-                                        if (success) console.log("Process killed")
+                                        if (success) {console.log("Process killed")}
                                     }}
                                     className="text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors uppercase tracking-wider font-bold"
                                     title={t('tools.forceStop')}
@@ -206,13 +207,13 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     // Specific status messages
     let statusText = t('tools.usingTool')
     if (isExecuting) {
-        if (toolCall.name.includes('search')) statusText = t('tools.searching')
-        else if (toolCall.name.includes('file')) statusText = t('tools.readingFiles')
-        else if (toolCall.name.includes('command')) statusText = t('tools.executingCmd')
-        else if (toolCall.name.includes('screenshot')) statusText = t('tools.screenshotting')
+        if (toolCall.name.includes('search')) {statusText = t('tools.searching')}
+        else if (toolCall.name.includes('file')) {statusText = t('tools.readingFiles')}
+        else if (toolCall.name.includes('command')) {statusText = t('tools.executingCmd')}
+        else if (toolCall.name.includes('screenshot')) {statusText = t('tools.screenshotting')}
     } else {
-        if (hasError) statusText = t('tools.failed')
-        else statusText = t('tools.completed')
+        if (hasError) {statusText = t('tools.failed')}
+        else {statusText = t('tools.completed')}
     }
 
     if (isExecuting) {
@@ -329,7 +330,7 @@ function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (
         const imgParams = typeof result === 'string'
             ? result
             : (result && typeof result === 'object' && !Array.isArray(result) ? (result as JsonObject).image : undefined)
-        if (typeof imgParams === 'string') return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />
+        if (typeof imgParams === 'string') {return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />}
     }
 
     if (typeof result === 'string') {

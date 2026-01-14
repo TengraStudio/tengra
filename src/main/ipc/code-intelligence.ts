@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron'
 import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { ipcMain } from 'electron'
 
 export const registerCodeIntelligenceIpc = (codeIntelligenceService: CodeIntelligenceService) => {
     ipcMain.handle('code:scanTodos', async (_, rootPath: string) => {

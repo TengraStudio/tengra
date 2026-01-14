@@ -1,7 +1,8 @@
+import { ChevronDown,ChevronUp, Settings2 } from 'lucide-react'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
+
 import { motion } from '@/lib/framer-motion-compat'
-import { Settings2, ChevronUp, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface HyperparameterPanelProps {
     temperature: number

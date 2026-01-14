@@ -1,8 +1,9 @@
+import { AgentLog, AgentMessage } from '@shared/types/agent'
+import { Bot, Clock,Sparkles, Terminal } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
+
 import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import { Bot, Terminal, Sparkles, Clock } from 'lucide-react'
-import { AgentLog, AgentMessage } from '@shared/types/agent'
 
 
 interface AgentChatRoomProps {
@@ -33,7 +34,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
 
     // WebSocket Connection
     useEffect(() => {
-        if (!sessionId) return
+        if (!sessionId) {return}
 
         // Get WebSocket URL from environment or use default
         // In production, this should use wss:// for secure connections
@@ -58,7 +59,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                 const msg: AgentMessage = JSON.parse(event.data)
                 // Deduping based on ID in case of overlapping log polls/WS
                 setMessages(prev => {
-                    if (prev.some(p => p.id === msg.id)) return prev
+                    if (prev.some(p => p.id === msg.id)) {return prev}
                     return [...prev, msg]
                 })
             } catch (e) {

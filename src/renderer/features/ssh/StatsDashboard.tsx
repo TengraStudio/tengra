@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react'
+import { Activity, Clock,Cpu, HardDrive } from 'lucide-react'
+import { useEffect,useState } from 'react'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, HardDrive, Cpu, Clock } from 'lucide-react'
-import { motion } from '@/lib/framer-motion-compat'
 import { useTranslation } from '@/i18n'
+import { motion } from '@/lib/framer-motion-compat'
 
 interface SystemStats {
     cpu: number
@@ -46,7 +47,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
         }
     }, [connectionId])
 
-    if (!stats) return <div className="flex items-center justify-center p-8 text-zinc-500">{t('ssh.loadingStats')}</div>
+    if (!stats) {return <div className="flex items-center justify-center p-8 text-zinc-500">{t('ssh.loadingStats')}</div>}
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">

@@ -3,13 +3,14 @@
  * VSCode-like vertical activity bar with icon buttons for switching views.
  */
 
-import React, { useState, createContext, useContext } from 'react'
-import { cn } from '@/lib/utils'
 import {
-    MessageSquare, FolderTree, Settings, Search, GitBranch,
-    Puzzle,
-    Bug, ChevronLeft, ChevronRight
-} from 'lucide-react'
+    Bug, ChevronLeft, ChevronRight,
+FolderTree, GitBranch,
+    MessageSquare,     Puzzle,
+Search, Settings} from 'lucide-react'
+import React, { createContext, useContext,useState } from 'react'
+
+import { cn } from '@/lib/utils'
 
 export interface ActivityItem {
     id: string
@@ -30,7 +31,7 @@ const ActivityBarContext = createContext<ActivityBarContextType | null>(null)
 
 export const useActivityBar = () => {
     const context = useContext(ActivityBarContext)
-    if (!context) throw new Error('useActivityBar must be used within ActivityBarProvider')
+    if (!context) {throw new Error('useActivityBar must be used within ActivityBarProvider')}
     return context
 }
 

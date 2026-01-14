@@ -1,5 +1,6 @@
-import { memo, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
+import { memo, useEffect } from 'react';
+
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface ChatHeaderProps {

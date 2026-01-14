@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DatabaseService } from '@main/services/data/database.service'
+import { beforeEach,describe, expect, it, vi } from 'vitest'
 
 // Mock DataService
 const mockDataService = {
@@ -43,7 +43,7 @@ const mockPGliteInstance = {
         if (normalizedSql.includes('insert into')) {
             const tableMatch = sql.match(/INSERT INTO (\w+)/i)
             const table = tableMatch ? tableMatch[1] : ''
-            if (!dbState.data[table]) dbState.data[table] = []
+            if (!dbState.data[table]) {dbState.data[table] = []}
 
             // Extract column names if possible or just assume order
             // This is a bit complex for a mock, but we can do a simple version
@@ -73,10 +73,10 @@ const mockPGliteInstance = {
                 if (fieldsMatch) {
                     const fields = fieldsMatch[1].split(',').map(f => f.trim().split('=')[0].trim())
                     fields.forEach((field, i) => {
-                        if (field === 'name') items[index].name = params[i]
-                        if (field === 'color') items[index].color = params[i]
-                        if (field === 'title') items[index].title = params[i]
-                        if (field === 'status') items[index].status = params[i]
+                        if (field === 'name') {items[index].name = params[i]}
+                        if (field === 'color') {items[index].color = params[i]}
+                        if (field === 'title') {items[index].title = params[i]}
+                        if (field === 'status') {items[index].status = params[i]}
                     })
                 }
             }
@@ -102,7 +102,7 @@ const mockPGliteInstance = {
         const tableMatch = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/i)
         if (tableMatch) {
             const table = tableMatch[1]
-            if (!dbState.data[table]) dbState.data[table] = []
+            if (!dbState.data[table]) {dbState.data[table] = []}
         }
     })
 }

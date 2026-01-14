@@ -1,7 +1,8 @@
-import React, { Suspense, lazy } from 'react'
 import { Loader2 } from 'lucide-react'
-import { useTranslation } from '@/i18n'
+import React, { lazy,Suspense } from 'react'
+
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from '@/i18n'
 
 /**
  * Loading skeleton component with i18n support.

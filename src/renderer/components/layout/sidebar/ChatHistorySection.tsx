@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
-import { History, Pin } from 'lucide-react'
-import { SidebarDivider } from '@renderer/components/layout/sidebar-components'
-import { Chat, Folder } from '@/types'
-import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch'
 import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
+import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch'
 import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem'
+import { SidebarDivider } from '@renderer/components/layout/sidebar-components'
+import { History, Pin } from 'lucide-react'
+import React, { useState } from 'react'
+
 import { AppView } from '@/hooks/useAppState'
+import { Chat, Folder } from '@/types'
 
 interface ChatHistorySectionProps {
     isCollapsed: boolean;

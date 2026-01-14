@@ -1,11 +1,12 @@
-import React, { Suspense, lazy } from 'react'
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
-import { useAuth } from '@/context/AuthContext'
-import { useModel } from '@/context/ModelContext'
-import { useChat } from '@/context/ChatContext'
-import { useProject } from '@/context/ProjectContext'
 import { ChatTemplate } from '@renderer/features/chat/types'
+import React, { lazy,Suspense } from 'react'
+
 import { LoadingState } from '@/components/ui/LoadingState'
+import { useAuth } from '@/context/AuthContext'
+import { useChat } from '@/context/ChatContext'
+import { useModel } from '@/context/ModelContext'
+import { useProject } from '@/context/ProjectContext'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
 
 // Lazy load feature modules for better performance
 const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })))

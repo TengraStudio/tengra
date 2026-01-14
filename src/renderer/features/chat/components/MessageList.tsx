@@ -1,8 +1,9 @@
-import { memo, useRef, useEffect, useMemo, useState } from 'react';
-import { List } from 'react-window';
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
-import { Message } from '@/types';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { List } from 'react-window';
+
 import { Language } from '@/i18n';
+import { Message } from '@/types';
 
 interface MessageListProps {
     messages: Message[];
@@ -55,7 +56,7 @@ const MessageRow = memo(({
 }: MessageRowProps & { index: number; style: React.CSSProperties; ariaAttributes: { 'aria-posinset': number; 'aria-setsize': number; role: 'listitem' } }) => {
 
     const message = messages[index]
-    if (!message) return null
+    if (!message) {return null}
 
     const isStreamingCurrent = isLoading && index === messages.length - 1 && message.role === 'assistant'
 

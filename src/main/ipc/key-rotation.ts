@@ -1,6 +1,6 @@
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { KeyRotationService } from '@main/services/security/key-rotation.service'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
 /**
  * Registers IPC handlers for API key rotation management

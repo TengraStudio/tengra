@@ -1,9 +1,9 @@
 /**
  * Unit tests for ModelFallbackService
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ModelFallbackService, FallbackModelConfig, ChatHandler } from '@main/services/llm/model-fallback.service';
+import { ChatHandler,FallbackModelConfig, ModelFallbackService } from '@main/services/llm/model-fallback.service';
 import { Message } from '@shared/types';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mock logger
 vi.mock('@main/logging/logger', () => ({

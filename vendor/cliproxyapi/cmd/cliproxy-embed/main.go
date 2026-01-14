@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/router-for-me/CLIProxyAPI/v6/sdk/api"
 	"github.com/router-for-me/CLIProxyAPI/v6/sdk/api/handlers"
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v6/sdk/auth"
@@ -35,6 +36,10 @@ func main() {
 	flag.StringVar(&authStorePath, "auth-store", "", "Path to encrypted auth store file")
 	flag.StringVar(&authDir, "auth-dir", "", "Path to auth working directory (optional)")
 	flag.Parse()
+
+	// Try to load .env from project root (4 levels up) or current dir
+	_ = godotenv.Load("../../../../.env")
+	_ = godotenv.Load()
 
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {

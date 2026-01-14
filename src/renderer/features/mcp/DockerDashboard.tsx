@@ -1,8 +1,8 @@
-﻿import { useState, useEffect, useCallback } from 'react'
-import { Box, RefreshCw, Play, Square, Trash2, Terminal } from 'lucide-react'
-import { cn } from '@/lib/utils'
+﻿import { Box, Play, RefreshCw, Square, Terminal,Trash2 } from 'lucide-react'
+import { useCallback,useEffect, useState } from 'react'
 
-import { useTranslation, Language } from '@/i18n'
+import { Language,useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
 
 interface ContainerInfo {
     id: string
@@ -112,7 +112,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
         }
     }
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <div className="flex flex-col h-full bg-gradient-to-b from-zinc-900 to-black">

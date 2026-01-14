@@ -3,13 +3,14 @@
  * Allows users to run multiple LLMs simultaneously and compare/combine results
  */
 
+import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react'
 import { useState } from 'react'
-import { Message } from '@/types'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card } from '@/components/ui/card'
-import { Loader2, Sparkles, CheckCircle2, XCircle } from 'lucide-react'
+
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Message } from '@/types'
 
 interface MultiModelCollaborationProps {
     messages: Message[]

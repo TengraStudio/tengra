@@ -3,9 +3,8 @@
  * Automatically routes requests to the best available provider
  */
 
-import { getRateLimiter } from '@main/utils/rate-limiter.util'
-
 import { getHealthCheckService } from '@main/services/health-check.service'
+import { getRateLimiter } from '@main/utils/rate-limiter.util'
 
 export interface ModelInfo {
     id: string
@@ -212,11 +211,11 @@ export class ModelRouter {
     private inferProvider(modelId: string): string | null {
         const lower = modelId.toLowerCase()
 
-        if (lower.includes('gpt') || lower.includes('o1')) return 'openai'
-        if (lower.includes('claude')) return 'anthropic'
+        if (lower.includes('gpt') || lower.includes('o1')) {return 'openai'}
+        if (lower.includes('claude')) {return 'anthropic'}
 
-        if (lower.includes('llama') || lower.includes('mixtral')) return 'groq'
-        if (lower.includes('codex')) return 'copilot'
+        if (lower.includes('llama') || lower.includes('mixtral')) {return 'groq'}
+        if (lower.includes('codex')) {return 'copilot'}
 
         return null
     }

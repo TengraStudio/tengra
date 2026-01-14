@@ -1,5 +1,6 @@
+import { CornerUpRight, Folder as FolderIcon,MessageSquare, Pin, Trash2 } from 'lucide-react'
 import React from 'react'
-import { MessageSquare, Pin, Trash2, CornerUpRight, Folder as FolderIcon } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 import { Chat, Folder } from '@/types'
 

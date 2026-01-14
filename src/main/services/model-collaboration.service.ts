@@ -3,8 +3,8 @@
  * Enables multiple LLMs to work together on the same task
  */
 
-import { Message } from '@shared/types/chat'
 import { LLMService } from '@main/services/llm/llm.service'
+import { Message } from '@shared/types/chat'
 // Note: multiLLMOrchestrator could be used for task management in the future
 
 export interface CollaborationRequest {
@@ -126,8 +126,8 @@ export class ModelCollaborationService {
      * Build consensus from multiple responses
      */
     private buildConsensus(responses: CollaborationResult['responses']): string {
-        if (responses.length === 0) return ''
-        if (responses.length === 1) return responses[0].content
+        if (responses.length === 0) {return ''}
+        if (responses.length === 1) {return responses[0].content}
 
         // Simple consensus: find common themes and combine
         const contents = responses.map(r => r.content)
@@ -188,7 +188,7 @@ export class ModelCollaborationService {
     private selectBestResponse(
         responses: CollaborationResult['responses']
     ): CollaborationResult['bestResponse'] {
-        if (responses.length === 0) return undefined
+        if (responses.length === 0) {return undefined}
 
         // Score responses based on:
         // 1. Length (not too short, not too long)
@@ -224,8 +224,8 @@ export class ModelCollaborationService {
         responses: CollaborationResult['responses'],
         _originalMessages: Message[]
     ): string {
-        if (responses.length === 0) return ''
-        if (responses.length === 1) return responses[0].content
+        if (responses.length === 0) {return ''}
+        if (responses.length === 1) {return responses[0].content}
 
         // For now, return combined responses
         // In a full implementation, this would call another model with the first response as context

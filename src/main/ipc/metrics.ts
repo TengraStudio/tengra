@@ -1,5 +1,5 @@
-import { ipcMain } from 'electron';
 import { getMetricsService } from '@main/services/metrics.service';
+import { ipcMain } from 'electron';
 
 export function registerMetricsIpc(): void {
     ipcMain.handle('metrics:get-provider-stats', (_event, provider?: string) => {

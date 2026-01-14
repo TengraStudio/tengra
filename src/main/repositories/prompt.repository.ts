@@ -1,5 +1,5 @@
 import { IRepository } from '@main/core/repository.interface';
-import { Prompt, DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService,Prompt } from '@main/services/data/database.service';
 
 /**
  * Repository for managing Prompts.
@@ -23,7 +23,7 @@ export class PromptRepository implements IRepository<Prompt> {
 
     async update(id: string, item: Partial<Prompt>): Promise<Prompt> {
         const updated = await this.db.updatePrompt(id, item);
-        if (!updated) throw new Error(`Prompt not found: ${id}`);
+        if (!updated) {throw new Error(`Prompt not found: ${id}`);}
         return updated;
     }
 

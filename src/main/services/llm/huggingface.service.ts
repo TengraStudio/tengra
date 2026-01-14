@@ -1,5 +1,5 @@
-import axios from 'axios'
 import { getErrorMessage } from '@shared/utils/error.util'
+import axios from 'axios'
 
 interface HFApiModel {
     modelId: string;
@@ -112,7 +112,7 @@ export class HuggingFaceService {
                     // Already filtered, maybe verify hash?
                     console.log('File already exists with correct size, verifying hash...')
                     const valid = await this.verifyHash(outputPath, expectedSha256)
-                    if (valid) return { success: true }
+                    if (valid) {return { success: true }}
                     // If invalid, restart or resume? For safety, if full size but invalid, restart.
                     console.warn('File exists but hash mismatch, restarting download.')
                     start = 0
@@ -150,7 +150,7 @@ export class HuggingFaceService {
     }
 
     private async verifyHash(filePath: string, expectedSha256: string): Promise<boolean> {
-        if (!expectedSha256) return true // No hash provided to verify
+        if (!expectedSha256) {return true} // No hash provided to verify
         const fs = await import('fs')
         const { createHash } = await import('crypto')
 

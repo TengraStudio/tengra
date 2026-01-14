@@ -1,8 +1,9 @@
-﻿import React from 'react';
-import { ArrowLeft, Play, Terminal, Search, PanelRightClose, PanelRightOpen, Pencil, GitBranch, PanelLeftClose, PanelLeftOpen, Info } from 'lucide-react';
+﻿import { ArrowLeft, GitBranch, Info,PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil, Play, Search, Terminal } from 'lucide-react';
+import React from 'react';
+
+import { Language,useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
-import { useTranslation, Language } from '@/i18n';
 
 
 interface WorkspaceToolbarProps {
@@ -76,8 +77,8 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 onChange={e => setEditTitle(e.target.value)}
                                 onBlur={handleSaveTitle}
                                 onKeyDown={e => {
-                                    if (e.key === 'Enter') handleSaveTitle();
-                                    if (e.key === 'Escape') setIsEditing(false);
+                                    if (e.key === 'Enter') {handleSaveTitle();}
+                                    if (e.key === 'Escape') {setIsEditing(false);}
                                 }}
                                 className="text-sm font-bold bg-white/5 border border-primary/50 rounded px-1.5 py-0.5 outline-none text-white w-48"
                             />

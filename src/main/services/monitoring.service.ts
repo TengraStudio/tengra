@@ -1,8 +1,10 @@
-import { ServiceResponse } from '@/types';
-import { getErrorMessage } from '@shared/utils/error.util';
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import * as os from 'os';
+import { promisify } from 'util';
+
+import { getErrorMessage } from '@shared/utils/error.util';
+
+import { ServiceResponse } from '@/types';
 
 const execAsync = promisify(exec);
 

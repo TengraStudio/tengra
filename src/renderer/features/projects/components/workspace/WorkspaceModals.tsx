@@ -1,7 +1,8 @@
-import React, { Dispatch, SetStateAction } from 'react';
 import { X } from 'lucide-react';
+import React, { Dispatch, SetStateAction } from 'react';
+
 import { cn } from '@/lib/utils';
-import { WorkspaceEntry, MountForm } from '@/types';
+import { MountForm,WorkspaceEntry } from '@/types';
 
 interface WorkspaceModalsProps {
     showMountModal: boolean;

@@ -98,7 +98,7 @@ export class Container {
      * Initialize all singleton services that implement LifecycleAware.
      */
     async init(): Promise<void> {
-        if (this.initialized) return;
+        if (this.initialized) {return;}
 
         const singletons = Array.from(this.services.values())
             .filter(def => def.scope === Scope.SINGLETON);

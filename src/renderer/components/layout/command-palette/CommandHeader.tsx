@@ -1,5 +1,5 @@
+import { Command, Search, X } from 'lucide-react'
 import React from 'react'
-import { Search, Command, X } from 'lucide-react'
 
 interface CommandHeaderProps {
     search: string;

@@ -1,7 +1,8 @@
-import { app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+
 import { AppSettings } from '@shared/types/settings'
+import { app } from 'electron'
 
 interface UsageRecord {
     timestamp: number
@@ -91,7 +92,7 @@ export class UsageTrackingService {
 
     checkLimit(settings: AppSettings, provider: string, _model: string, currentQuota?: { remaining: number; limit: number }): { allowed: boolean; reason?: string } {
         const limits = settings.modelUsageLimits
-        if (!limits) return { allowed: true }
+        if (!limits) {return { allowed: true }}
 
         // Check Copilot limits
         if (provider === 'copilot' && limits.copilot) {

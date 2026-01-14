@@ -1,8 +1,8 @@
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { McpDispatcher } from '@main/mcp/dispatcher'
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { MCPServerConfig } from '@shared/types'
 import { JsonObject } from '@shared/types/common'
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
 export function registerMcpIpc(mcpDispatcher: McpDispatcher) {
     ipcMain.handle('mcp:list', createIpcHandler('mcp:list', async () => {

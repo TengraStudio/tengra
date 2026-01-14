@@ -11,6 +11,11 @@ export default tseslint.config(
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
         files: ['**/*.{ts,tsx}'],
         languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: {
+                project: './tsconfig.json',
+                tsconfigRootDir: import.meta.dirname,
+            },
             ecmaVersion: 2020,
             globals: globals.browser,
         },

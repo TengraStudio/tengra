@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Bot, Sparkles, Play, RefreshCw, Clock, CheckCircle2, Pause } from 'lucide-react'
+import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom'
+import { AgentDefinition,CouncilSession } from '@shared/types/agent'
+import { Bot, CheckCircle2, Clock, Pause,Play, RefreshCw, Sparkles } from 'lucide-react'
+import React, { useCallback,useEffect, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom'
-
-import { CouncilSession, AgentDefinition } from '@shared/types/agent'
 
 export const AgentDashboard: React.FC = () => {
     const [goal, setGoal] = useState('')
@@ -63,7 +63,7 @@ export const AgentDashboard: React.FC = () => {
     }, [activeSession?.logs?.length])
 
     const handleCreateSession = async () => {
-        if (!goal.trim()) return
+        if (!goal.trim()) {return}
         setIsLoading(true)
         try {
             const session = await window.electron.council.createSession(goal)
@@ -87,7 +87,7 @@ export const AgentDashboard: React.FC = () => {
     }
 
     const toggleAutoRun = () => {
-        if (!activeSessionId) return
+        if (!activeSessionId) {return}
 
         if (isRunning) {
             window.electron.council.stopLoop(activeSessionId)

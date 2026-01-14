@@ -1,8 +1,8 @@
-import { ipcMain } from 'electron'
-import { ProxyService } from '@main/services/proxy/proxy.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
 import { SettingsService } from '@main/services/settings.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { ipcMain } from 'electron'
 
 
 export function registerAuthIpc(proxyService: ProxyService, settingsService: SettingsService, copilotService: CopilotService) {

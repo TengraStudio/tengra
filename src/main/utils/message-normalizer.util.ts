@@ -1,12 +1,10 @@
-import { Message } from '@shared/types/chat';
 import { ChatMessage } from '@main/types/llm.types';
+import { Message } from '@shared/types/chat';
 import {
-    OpenAIMessage,
-    AnthropicMessage,
     AnthropicContentBlock,
-
-    OpenAIContentPart
-} from '@shared/types/llm-provider-types';
+    AnthropicMessage,
+    OpenAIContentPart,
+    OpenAIMessage} from '@shared/types/llm-provider-types';
 
 /**
  * Handles message format conversion between different LLM providers.
@@ -16,7 +14,7 @@ export class MessageNormalizer {
      * Converts generic message objects into OpenAI-compatible format.
      */
     static normalizeOpenAIMessages(messages: Array<Message | ChatMessage>, model?: string): OpenAIMessage[] {
-        if (!Array.isArray(messages)) return [];
+        if (!Array.isArray(messages)) {return [];}
 
         // Gemini 3 Thinking models (high/low) usually don't support multimodal input in history
         const shouldStripImages = !!model && (
@@ -83,7 +81,7 @@ export class MessageNormalizer {
 
             const parts: OpenAIContentPart[] = [];
             const text = typeof message.content === 'string' ? message.content : (message.content == null ? '' : String(message.content));
-            if (text.trim()) parts.push({ type: 'text', text });
+            if (text.trim()) {parts.push({ type: 'text', text });}
             for (const img of images) {
                 const url = typeof img === 'string' && img.startsWith('data:image/') ? img : `data:image/jpeg;base64,${img}`;
                 parts.push({ type: 'image_url', image_url: { url } });
@@ -96,11 +94,11 @@ export class MessageNormalizer {
         }
 
         return openAIMessages.filter(m => {
-            if (!m) return false;
+            if (!m) {return false;}
             // Safe check for valid messages
-            if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) return true;
-            if (typeof m.content === 'string' && m.content.trim() !== '') return true;
-            if (Array.isArray(m.content) && m.content.length > 0) return true;
+            if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {return true;}
+            if (typeof m.content === 'string' && m.content.trim() !== '') {return true;}
+            if (Array.isArray(m.content) && m.content.length > 0) {return true;}
             return false;
         });
     }
@@ -109,11 +107,11 @@ export class MessageNormalizer {
      * Adapts messages for Anthropic's API format.
      */
     static normalizeAnthropicMessages(messages: Array<Message | ChatMessage>): AnthropicMessage[] {
-        if (!Array.isArray(messages)) return [];
+        if (!Array.isArray(messages)) {return [];}
         return messages.filter(m => m.role !== 'system').map((message) => {
-            if (!message || typeof message !== 'object') return { role: 'user', content: '' };
+            if (!message || typeof message !== 'object') {return { role: 'user', content: '' };}
             const images = Array.isArray(message.images) ? message.images.filter((img): img is string => !!img) : [];
-            if (images.length === 0) return { role: message.role as 'user' | 'assistant', content: message.content || '' };
+            if (images.length === 0) {return { role: message.role as 'user' | 'assistant', content: message.content || '' };}
 
             const content: AnthropicContentBlock[] = [];
             if (message.content && typeof message.content === 'string') {
@@ -139,7 +137,7 @@ export class MessageNormalizer {
      * Adapts messages for OpenCode's /responses API format.
      */
     static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): any[] {
-        if (!Array.isArray(messages)) return [];
+        if (!Array.isArray(messages)) {return [];}
         return messages.map(msg => {
             const contentParts: any[] = [];
             const text = typeof msg.content === 'string' ? msg.content : '';

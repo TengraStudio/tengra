@@ -1,12 +1,13 @@
-import { app } from 'electron'
-import * as fs from 'fs'
-import * as path from 'path'
 import * as crypto from 'crypto'
-import * as https from 'https'
+import * as fs from 'fs'
 import * as http from 'http'
+import * as https from 'https'
+import * as path from 'path'
+
 import { appLogger } from '@main/logging/logger'
 import { DataService } from '@main/services/data/data.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { app } from 'electron'
 
 
 export class ImagePersistenceService {
@@ -46,21 +47,21 @@ export class ImagePersistenceService {
             if (imageData.startsWith('data:')) {
                 // Handle Data URI
                 const matches = imageData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-                if (!matches || matches.length !== 3) {
+                if (matches?.length !== 3) {
                     throw new Error('Invalid base64 string')
                 }
                 const type = matches[1]
                 buffer = Buffer.from(matches[2], 'base64')
 
-                if (type.includes('jpeg')) extension = 'jpg'
-                else if (type.includes('webp')) extension = 'webp'
+                if (type.includes('jpeg')) {extension = 'jpg'}
+                else if (type.includes('webp')) {extension = 'webp'}
 
             } else if (imageData.startsWith('http')) {
                 // Handle URL
                 buffer = await this.downloadImage(imageData)
                 // Try to infer extension from URL or header? For now default png/jpg
-                if (imageData.includes('.jpg') || imageData.includes('.jpeg')) extension = 'jpg'
-                if (imageData.includes('.webp')) extension = 'webp'
+                if (imageData.includes('.jpg') || imageData.includes('.jpeg')) {extension = 'jpg'}
+                if (imageData.includes('.webp')) {extension = 'webp'}
             } else {
                 throw new Error('Unknown image data format')
             }

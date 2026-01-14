@@ -1,5 +1,6 @@
-import { DatabaseService } from '@main/services/data/database.service'
 import { randomUUID } from 'crypto'
+
+import { DatabaseService } from '@main/services/data/database.service'
 
 export interface AgentDefinition {
     id?: string
@@ -53,7 +54,7 @@ export class AgentService {
             result = await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)
         }
 
-        if (!result) return null
+        if (!result) {return null}
 
         return {
             id: result.id,

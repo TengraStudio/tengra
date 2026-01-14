@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+
 import { useTranslation } from '@/i18n'
 import type { SSHPackageInfo } from '@/types/ssh'
 
@@ -34,7 +35,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
 
-    if (!active) return null
+    if (!active) {return null}
 
     return (
         <div className="flex flex-col h-full">

@@ -1,5 +1,5 @@
-import { BaseService } from '@main/services/base.service';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 
 interface RateLimitConfig {
     requestsPerMinute: number;
@@ -36,7 +36,7 @@ export class RateLimitService extends BaseService {
         }
 
         const bucket = this.buckets.get(provider);
-        if (!bucket) return; // No limit set
+        if (!bucket) {return;} // No limit set
 
         const MAX_WAIT_ITERATIONS = 100; // Prevent infinite loops
         let iterations = 0;
@@ -63,7 +63,7 @@ export class RateLimitService extends BaseService {
 
     private async refillBucket(provider: string) {
         const bucket = this.buckets.get(provider);
-        if (!bucket) return;
+        if (!bucket) {return;}
 
         const now = Date.now();
         const elapsed = now - bucket.lastRefill;

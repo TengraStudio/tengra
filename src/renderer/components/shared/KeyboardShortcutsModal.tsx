@@ -1,6 +1,7 @@
+import { Keyboard,X } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
-import { X, Keyboard } from 'lucide-react'
-import { useTranslation, Language } from '@/i18n'
+
+import { Language,useTranslation } from '@/i18n'
 
 /**
  * Get all focusable elements within a container.
@@ -49,7 +50,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
     const previousActiveElementRef = useRef<HTMLElement | null>(null)
 
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {return}
 
         // Save the previously focused element
         previousActiveElementRef.current = document.activeElement as HTMLElement
@@ -68,10 +69,10 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 
         // Handle Tab key to trap focus
         const handleTab = (e: KeyboardEvent) => {
-            if (!modalRef.current || e.key !== 'Tab') return
+            if (!modalRef.current || e.key !== 'Tab') {return}
 
             const focusableElements = getFocusableElements(modalRef.current)
-            if (focusableElements.length === 0) return
+            if (focusableElements.length === 0) {return}
 
             const firstElement = focusableElements[0]
             const lastElement = focusableElements[focusableElements.length - 1]
@@ -109,7 +110,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
         }
     }, [isOpen, onClose])
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <div 

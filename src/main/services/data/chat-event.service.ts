@@ -1,7 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { v4 as uuidv4 } from 'uuid';
 import { JsonValue } from '@shared/types/common';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ChatEvent {
     id: string;

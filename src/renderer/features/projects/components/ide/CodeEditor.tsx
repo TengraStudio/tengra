@@ -17,7 +17,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (!editorRef.current) return
+        if (!editorRef.current) {return}
 
         let view: EditorView | null = null
         let mounted = true
@@ -51,7 +51,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     import('@codemirror/autocomplete')
                 ])
 
-                if (!mounted || !editorRef.current) return
+                if (!mounted || !editorRef.current) {return}
 
                 const getLanguageExtension = (lang: string) => {
                     switch (lang) {
@@ -105,9 +105,9 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                         hoverTooltip(async (view, pos) => {
                             const { from, to, text } = view.state.doc.lineAt(pos)
                             let start = pos, end = pos
-                            while (start > from && /\w/.test(text[start - from - 1])) start--
-                            while (end < to && /\w/.test(text[end - from])) end++
-                            if (start == end) return null
+                            while (start > from && /\w/.test(text[start - from - 1])) {start--}
+                            while (end < to && /\w/.test(text[end - from])) {end++}
+                            if (start == end) {return null}
 
                             const word = text.slice(start - from, end - from)
 

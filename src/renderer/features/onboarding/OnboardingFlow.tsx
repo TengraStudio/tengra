@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from '@/lib/framer-motion-compat';
+
 import { Modal } from '@/components/ui/modal';
-import { useTranslation } from '@/i18n';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/i18n';
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 interface OnboardingFlowProps {

@@ -64,7 +64,7 @@ export class TimeTrackingService extends BaseService {
      * Start tracking app online time
      */
     startAppTracking(): void {
-        if (this.isTracking) return
+        if (this.isTracking) {return}
         this.isTracking = true
         this.appStartTime = Date.now()
         this.logInfo('Started app tracking')
@@ -74,7 +74,7 @@ export class TimeTrackingService extends BaseService {
      * Stop tracking app online time and save
      */
     async stopAppTracking(): Promise<void> {
-        if (!this.isTracking || !this.appStartTime) return
+        if (!this.isTracking || !this.appStartTime) {return}
         const endTime = Date.now()
         const duration = endTime - this.appStartTime
 

@@ -1,10 +1,11 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
-import axios from 'axios'
-import { JsonObject, JsonValue } from '@shared/types/common';
+
 import { SettingsService } from '@main/services/settings.service';
 import { ToolCall } from '@shared/types/chat';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util'
+import axios from 'axios'
 
 
 interface OllamaMessage {
@@ -246,8 +247,8 @@ export class OllamaService {
                                 toolCalls = data.message.tool_calls
                             }
                             if (data.done) {
-                                if (data.prompt_eval_count) promptTokens = data.prompt_eval_count
-                                if (data.eval_count) completionTokens = data.eval_count
+                                if (data.prompt_eval_count) {promptTokens = data.prompt_eval_count}
+                                if (data.eval_count) {completionTokens = data.eval_count}
                             }
                         } catch {
                             // Ignore parse errors

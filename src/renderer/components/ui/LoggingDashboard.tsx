@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
 import type { IpcRendererEvent } from 'electron'
-import { useTranslation } from '@/i18n'
+import React, { useEffect, useMemo,useRef, useState } from 'react'
+
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from '@/i18n'
 
 interface LogEntry {
     id: string
@@ -41,7 +42,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
     const logsEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen) {return}
 
         // Subscribe to logs from main process
         const handler = (_event: IpcRendererEvent, log: LogEntry) => {
@@ -89,7 +90,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
         URL.revokeObjectURL(url)
     }
 
-    if (!isOpen) return null
+    if (!isOpen) {return null}
 
     return (
         <div 

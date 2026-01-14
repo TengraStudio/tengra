@@ -1,5 +1,6 @@
-﻿import { useState } from 'react'
-import { Sparkles, Target, Code2, Sliders, Check, Plus, Trash2 } from 'lucide-react'
+﻿import { Check, Code2, Plus, Sliders, Sparkles, Target, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+
 import { cn } from '@/lib/utils'
 
 export interface ParameterPreset {
@@ -38,7 +39,7 @@ const getPresetIcon = (icon: ParameterPreset['icon']) => {
 }
 
 const getPresetColor = (icon: ParameterPreset['icon'], isActive: boolean) => {
-    if (!isActive) return 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+    if (!isActive) {return 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'}
     switch (icon) {
         case 'creative': return 'bg-orange-500/15 border-orange-500/30 text-orange-300'
         case 'precise': return 'bg-blue-500/15 border-blue-500/30 text-blue-300'

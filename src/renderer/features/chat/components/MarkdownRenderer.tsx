@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useMemo, isValidElement } from 'react'
+import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock'
+import DOMPurify from 'dompurify'
+import { Code2 } from 'lucide-react'
+import mermaid from 'mermaid'
+import React, { isValidElement,useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
-import mermaid from 'mermaid'
-import { Code2 } from 'lucide-react'
+
+import { Language,useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock'
-import { useTranslation, Language } from '@/i18n'
+
+import 'katex/dist/katex.min.css'
 
 // Initialize mermaid
 mermaid.initialize({
@@ -27,7 +30,7 @@ const MermaidDiagram = ({ code }: { code: string }) => {
         const render = async () => {
             try {
                 const { svg } = await mermaid.render(id, code)
-                setSvg(svg)
+                setSvg(DOMPurify.sanitize(svg))
                 setError(null)
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err)
@@ -37,7 +40,7 @@ const MermaidDiagram = ({ code }: { code: string }) => {
         render()
     }, [code, id])
 
-    if (error) return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>
+    if (error) {return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>}
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />
 }
 
@@ -71,7 +74,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                         const match = /language-(\w+)/.exec(className || '')
                         const isInline = !match
                         const codeString = String(children).replace(/\n$/, '')
-                        if (match && match[1] === 'mermaid') return <MermaidDiagram code={codeString} />
+                        if (match?.[1] === 'mermaid') {return <MermaidDiagram code={codeString} />}
 
                         return (isInline || !match) ? (
                             <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80" {...props}>
@@ -107,18 +110,18 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                         </span>
                     ),
                     a: ({ href, children }) => (
-                        <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) window.electron?.openExternal(href) }}>{children}</a>
+                        <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) {window.electron?.openExternal(href)} }}>{children}</a>
                     ),
                     li: ({ children }) => {
                         const isCheckbox = Array.isArray(children) && children.some(c => {
-                            if (!isValidElement(c)) return false
+                            if (!isValidElement(c)) {return false}
                             const element = c as React.ReactElement<{ type?: string }>
                             return element.props?.type === 'checkbox'
                         })
                         return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                     },
                     input: ({ type, checked, ...props }) => {
-                        if (type === 'checkbox') return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />
+                        if (type === 'checkbox') {return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />}
                         return <input {...props} />
                     },
                     ul: ({ children }) => <ul className="pl-4 my-2 space-y-1">{children}</ul>,

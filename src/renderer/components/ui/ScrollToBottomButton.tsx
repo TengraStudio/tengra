@@ -1,5 +1,6 @@
-import React from 'react'
 import { ChevronDown } from 'lucide-react'
+import React from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface ScrollToBottomButtonProps {
@@ -29,7 +30,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
     className,
     newMessageCount
 }) => {
-    if (!visible) return null
+    if (!visible) {return null}
 
     return (
         <button

@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
+
 import { BrowserWindow } from 'electron'
 
 export interface ProviderConfig {
@@ -133,13 +134,13 @@ export class MultiLLMOrchestrator extends EventEmitter {
      */
     private normalizeProvider(provider: string): string {
         const lower = provider.toLowerCase()
-        if (lower.includes('openai') || lower.includes('gpt')) return 'openai'
-        if (lower.includes('anthropic') || lower.includes('claude')) return 'anthropic'
-        if (lower.includes('groq')) return 'groq'
-        if (lower.includes('gemini') || lower.includes('google') || lower.includes('antigravity')) return 'gemini'
-        if (lower.includes('ollama')) return 'ollama'
-        if (lower.includes('llama') && !lower.includes('ollama')) return 'llama'
-        if (lower.includes('copilot') || lower.includes('github')) return 'copilot'
+        if (lower.includes('openai') || lower.includes('gpt')) {return 'openai'}
+        if (lower.includes('anthropic') || lower.includes('claude')) {return 'anthropic'}
+        if (lower.includes('groq')) {return 'groq'}
+        if (lower.includes('gemini') || lower.includes('google') || lower.includes('antigravity')) {return 'gemini'}
+        if (lower.includes('ollama')) {return 'ollama'}
+        if (lower.includes('llama') && !lower.includes('ollama')) {return 'llama'}
+        if (lower.includes('copilot') || lower.includes('github')) {return 'copilot'}
         return lower
     }
 

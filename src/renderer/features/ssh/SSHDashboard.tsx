@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useCallback,useEffect, useState } from 'react'
+
 import { useTranslation } from '@/i18n'
 
 interface SSHDashboardProps {
@@ -6,7 +7,7 @@ interface SSHDashboardProps {
     active: boolean
 }
 
-import { SSHSystemStats, SSHDiskStat } from '@/types'
+import { SSHDiskStat,SSHSystemStats } from '@/types'
 
 export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active }) => {
     const { t } = useTranslation()
@@ -35,10 +36,10 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
         }
     }, [fetchStats, active])
 
-    if (!active) return null
-    if (loading && !stats) return <div className="p-8 text-center text-muted-foreground">{t('ssh.loadingStats')}</div>
-    if (error) return <div className="p-8 text-center text-red-500">{t('ssh.connectionError', { error })}</div>
-    if (!stats) return null
+    if (!active) {return null}
+    if (loading && !stats) {return <div className="p-8 text-center text-muted-foreground">{t('ssh.loadingStats')}</div>}
+    if (error) {return <div className="p-8 text-center text-red-500">{t('ssh.connectionError', { error })}</div>}
+    if (!stats) {return null}
 
     return (
         <div className="p-6 space-y-6 h-full overflow-y-auto">

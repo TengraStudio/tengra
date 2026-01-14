@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+
 import { isNodeError } from '@shared/utils/error.util';
 
 export interface WorkspaceRules {
@@ -24,7 +25,7 @@ export class RuleService {
             const cached = this.cache.get(rulesPath);
 
             // Return cached version if file hasn't changed
-            if (cached && cached.lastModified === stats.mtimeMs) {
+            if (cached?.lastModified === stats.mtimeMs) {
                 return cached.content;
             }
 

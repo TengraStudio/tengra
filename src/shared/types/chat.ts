@@ -71,6 +71,8 @@ export interface Chat {
     isArchived?: boolean
     isFavorite?: boolean
     folderId?: string
+    projectId?: string
+    metadata?: JsonObject
     isGenerating?: boolean // Transient state for UI
 }
 

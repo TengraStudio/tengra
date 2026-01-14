@@ -1,7 +1,8 @@
+import { Palette,Type } from 'lucide-react'
 import React from 'react'
+
 import { cn } from '@/lib/utils'
 import { AppSettings } from '@/types/settings'
-import { Type, Palette } from 'lucide-react'
 
 interface AppearanceTabProps {
     settings: AppSettings | null

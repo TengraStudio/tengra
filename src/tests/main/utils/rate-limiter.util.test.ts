@@ -1,6 +1,6 @@
 
-import { describe, it, expect, vi } from 'vitest'
-import { RateLimiter, getRateLimiter, withRateLimit } from '@main/utils/rate-limiter.util'
+import { getRateLimiter, RateLimiter, withRateLimit } from '@main/utils/rate-limiter.util'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('RateLimiter', () => {
     describe('RateLimiter class', () => {

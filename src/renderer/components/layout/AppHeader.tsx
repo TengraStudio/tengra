@@ -1,18 +1,18 @@
-﻿import React from 'react'
-import {
+﻿import {
+    Container,
     Eraser,
-    X,
-    Minus,
-    Square,
-    MessageSquare,
     LayoutGrid,
+    MessageSquare,
+    Minus,
     Settings as SettingsIcon,
+    Square,
     Users,
-    Container
-} from 'lucide-react'
+    X} from 'lucide-react'
+import React from 'react'
+
+import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
 import { useTranslation } from '@/i18n'
-import { useAuth } from '@/context/AuthContext'
 
 interface AppHeaderProps {
     currentView: string

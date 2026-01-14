@@ -1,13 +1,14 @@
+import { File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff,Paperclip, Send, Square, X } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
-import { Send, Square, Paperclip, X, Image as ImageIcon, FileText, FileCode, File as FileIcon, Mic, MicOff } from 'lucide-react'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { Attachment } from '@/types'
-import { cn } from '@/lib/utils'
-import { ModelSelector } from '@/features/models/components/ModelSelector'
+
+import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
 import { useModel } from '@/context/ModelContext'
-import { useAuth } from '@/context/AuthContext'
+import { ModelSelector } from '@/features/models/components/ModelSelector'
 import { useTranslation } from '@/i18n'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
+import { Attachment } from '@/types'
 
 interface ChatInputProps {
     fileInputRef?: React.RefObject<HTMLInputElement>
@@ -53,8 +54,8 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     const [isDragging, setIsDragging] = React.useState(false)
 
     const filteredPrompts = React.useMemo(() => {
-        if (!prompts) return []
-        if (!commandQuery) return prompts.slice(0, 5)
+        if (!prompts) {return []}
+        if (!commandQuery) {return prompts.slice(0, 5)}
         return prompts.filter(p => p.title.toLowerCase().includes(commandQuery.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(commandQuery.toLowerCase()))).slice(0, 5)
     }, [prompts, commandQuery])
 
@@ -148,9 +149,9 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     }
 
     const getFileIcon = (type: string) => {
-        if (type.startsWith('image/')) return <ImageIcon size={14} />
-        if (type.includes('text') || type.includes('json') || type.includes('md')) return <FileText size={14} />
-        if (type.includes('code') || type.includes('javascript') || type.includes('python')) return <FileCode size={14} />
+        if (type.startsWith('image/')) {return <ImageIcon size={14} />}
+        if (type.includes('text') || type.includes('json') || type.includes('md')) {return <FileText size={14} />}
+        if (type.includes('code') || type.includes('javascript') || type.includes('python')) {return <FileCode size={14} />}
         return <FileIcon size={14} />
     }
 

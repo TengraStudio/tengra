@@ -1,8 +1,9 @@
 /**
  * Unit tests for AuditLogService
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
+
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
 vi.mock('electron', () => ({
@@ -22,7 +23,7 @@ vi.mock('fs', () => ({
     unlinkSync: vi.fn()
 }));
 
-import { AuditLogService, AuditLogEntry } from '@main/services/audit-log.service';
+import { AuditLogEntry,AuditLogService } from '@main/services/audit-log.service';
 
 describe('AuditLogService', () => {
     let service: AuditLogService;

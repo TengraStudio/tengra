@@ -3,6 +3,8 @@
  */
 
 import { EventEmitter } from 'events'
+
+import { BaseService } from '@main/services/base.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface HealthStatus {
@@ -29,14 +31,28 @@ interface ServiceCheck {
     critical: boolean
 }
 
-export class HealthCheckService extends EventEmitter {
+export class HealthCheckService extends BaseService {
     private checks: Map<string, ServiceCheck> = new Map()
     private statuses: Map<string, HealthStatus> = new Map()
     private intervals: Map<string, NodeJS.Timeout> = new Map()
     private running = false
+    private events = new EventEmitter()
 
     constructor() {
-        super()
+        super('HealthCheckService')
+    }
+
+    override async cleanup(): Promise<void> {
+        this.stop()
+    }
+
+    on(event: string, listener: (...args: any[]) => void) {
+        this.events.on(event, listener)
+        return this
+    }
+
+    emit(event: string, ...args: any[]) {
+        return this.events.emit(event, ...args)
     }
 
     /**
@@ -71,7 +87,7 @@ export class HealthCheckService extends EventEmitter {
      * Start all health checks
      */
     start() {
-        if (this.running) return
+        if (this.running) {return}
         this.running = true
 
         for (const [name, check] of this.checks) {
@@ -108,7 +124,7 @@ export class HealthCheckService extends EventEmitter {
      */
     private async runCheck(name: string) {
         const check = this.checks.get(name)
-        if (!check) return
+        if (!check) {return}
 
         const startTime = Date.now()
 

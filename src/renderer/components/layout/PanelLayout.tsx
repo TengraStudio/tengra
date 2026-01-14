@@ -3,9 +3,10 @@
  * Supports draggable, resizable panels with docking zones.
  */
 
-import React, { useState, useCallback, useRef, useEffect, createContext, useContext } from 'react'
+import { ChevronDown, ChevronRight,Maximize2, X } from 'lucide-react'
+import React, { createContext, useCallback, useContext,useEffect, useRef, useState } from 'react'
+
 import { cn } from '@/lib/utils'
-import { X, Maximize2, ChevronDown, ChevronRight } from 'lucide-react'
 
 // Types
 export type PanelPosition = 'left' | 'right' | 'bottom' | 'center'
@@ -54,7 +55,7 @@ const PanelLayoutContext = createContext<PanelLayoutContextType | null>(null)
 
 export const usePanelLayout = () => {
     const context = useContext(PanelLayoutContext)
-    if (!context) throw new Error('usePanelLayout must be used within PanelLayoutProvider')
+    if (!context) {throw new Error('usePanelLayout must be used within PanelLayoutProvider')}
     return context
 }
 
@@ -103,7 +104,7 @@ const PanelHeader: React.FC<{
 }> = ({ group, onToggleCollapse, onMaximize }) => {
     const { removePanel, setActivePanel } = usePanelLayout()
 
-    if (group.panels.length === 0) return null
+    if (group.panels.length === 0) {return null}
 
     return (
         <div className="flex items-center justify-between border-b border-border/30 bg-card/50">
@@ -157,7 +158,7 @@ const Resizer: React.FC<{
     }
 
     useEffect(() => {
-        if (!isDragging) return
+        if (!isDragging) {return}
 
         const handleMouseMove = (e: MouseEvent) => {
             const currentPos = direction === 'horizontal' ? e.clientX : e.clientY
@@ -202,7 +203,7 @@ const PanelGroupView: React.FC<{
     const { toggleCollapse } = usePanelLayout()
     const activePanel = group.panels.find(p => p.id === group.activePanel) || group.panels[0]
 
-    if (group.panels.length === 0) return null
+    if (group.panels.length === 0) {return null}
 
     return (
         <div
@@ -245,7 +246,7 @@ export const PanelLayoutProvider: React.FC<{
             const group = groups[panel.position]
             if (group) {
                 group.panels.push(panel)
-                if (!group.activePanel) group.activePanel = panel.id
+                if (!group.activePanel) {group.activePanel = panel.id}
             }
         }
 

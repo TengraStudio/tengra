@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Folder, Package, FileText, Activity } from 'lucide-react'
+import { Activity,FileText, Folder, Package } from 'lucide-react'
+import { useEffect,useState } from 'react'
+
 import { useTranslation } from '@/i18n'
 import type { IpcValue } from '@/types'
 
@@ -39,16 +40,16 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
         loadData()
     }, [folderPath])
 
-    if (!folderPath) return (
+    if (!folderPath) {return (
         <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
             <Folder className="w-12 h-12 mb-4 opacity-20" />
             <p className="text-sm">{t('inspector.selectFolder') || 'Select a folder to view details'}</p>
         </div>
-    )
+    )}
 
-    if (loading) return <div className="p-4 text-sm text-muted-foreground flex items-center gap-2"><Activity className="w-4 h-4 animate-spin" /> {t('inspector.analyzing') || 'Analyzing folder...'}</div>
+    if (loading) {return <div className="p-4 text-sm text-muted-foreground flex items-center gap-2"><Activity className="w-4 h-4 animate-spin" /> {t('inspector.analyzing') || 'Analyzing folder...'}</div>}
 
-    if (!data) return null
+    if (!data) {return null}
 
     const relativePath = folderPath.replace(rootPath, '') || '/'
 

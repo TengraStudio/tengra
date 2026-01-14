@@ -1,8 +1,9 @@
+import { Edit2, Plus, Save, Trash2, X } from 'lucide-react'
 import React, { useState } from 'react'
-import { Modal } from '@/components/ui/modal'
+
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Prompt } from '@/types'
-import { Plus, Trash2, Edit2, Save, X } from 'lucide-react'
 
 interface PromptManagerModalProps {
     isOpen: boolean
@@ -35,7 +36,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     }
 
     const handleSave = () => {
-        if (!editForm.title.trim() || !editForm.content.trim()) return
+        if (!editForm.title.trim() || !editForm.content.trim()) {return}
 
         if (isEditing === 'new') {
             onCreatePrompt(editForm.title, editForm.content)

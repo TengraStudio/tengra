@@ -34,7 +34,7 @@ const DEFAULT_OPTIONS: Required<RetryOptions> = {
  * Default retry condition that checks for retryable error types.
  */
 function defaultShouldRetry(error: CatchError, _attempt: number): boolean {
-    if (!error || typeof error !== 'object') return false
+    if (!error || typeof error !== 'object') {return false}
     const err = error as Record<string, JsonValue | undefined>
 
     // Network errors
@@ -138,7 +138,7 @@ export function retryable(options?: RetryOptions) {
  * Check if an error indicates the request should not be retried
  */
 export function isNonRetryableError(error: CatchError): boolean {
-    if (!error || typeof error !== 'object') return false
+    if (!error || typeof error !== 'object') {return false}
     const err = error as Record<string, JsonValue | undefined>
     const response = (err.response && typeof err.response === 'object') ? err.response as Record<string, JsonValue | undefined> : undefined
     const status = (typeof err.status === 'number' ? err.status : undefined) || (typeof response?.status === 'number' ? response.status : undefined)

@@ -3,9 +3,10 @@
  * Browse, preview, and install themes for the application.
  */
 
-import React, { useState, useMemo } from 'react'
+import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react'
+import React, { useMemo,useState } from 'react'
+
 import { cn } from '@/lib/utils'
-import { Search, Download, Check, Star, Palette, Moon, Sun } from 'lucide-react'
 
 interface Theme {
     id: string

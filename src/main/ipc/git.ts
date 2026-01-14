@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron'
 import { GitService } from '@main/services/project/git.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { ipcMain } from 'electron'
 
 export function registerGitIpc(gitService: GitService) {
     // Get current branch
@@ -139,7 +139,7 @@ export function registerGitIpc(gitService: GitService) {
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --name-status')
 
             const parseStatus = (output: string): Array<{ status: string; path: string; staged: boolean }> => {
-                if (!output) return []
+                if (!output) {return []}
                 return output.split('\n')
                     .filter(line => line.trim())
                     .map(line => {
@@ -236,8 +236,8 @@ export function registerGitIpc(gitService: GitService) {
 
                         const remote = remoteMap.get(name)!
                         remote.url = url
-                        if (type === '(fetch)') remote.fetch = true
-                        if (type === '(push)') remote.push = true
+                        if (type === '(fetch)') {remote.fetch = true}
+                        if (type === '(push)') {remote.push = true}
                     }
                 })
 
@@ -311,7 +311,7 @@ export function registerGitIpc(gitService: GitService) {
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --numstat')
 
             const parseStats = (output: string): { added: number; deleted: number; files: number } => {
-                if (!output) return { added: 0, deleted: 0, files: 0 }
+                if (!output) {return { added: 0, deleted: 0, files: 0 }}
                 const lines = output.split('\n').filter(line => line.trim())
                 let added = 0
                 let deleted = 0

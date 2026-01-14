@@ -1,4 +1,6 @@
 import { EventEmitter } from 'events'
+
+import { BaseService } from '@main/services/base.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface OllamaStatus {
@@ -9,34 +11,53 @@ export interface OllamaStatus {
     error?: string
 }
 
-export class OllamaHealthService extends EventEmitter {
+export class OllamaHealthService extends BaseService {
     private intervalId: NodeJS.Timeout | null = null
     private status: OllamaStatus = { online: false, lastCheck: new Date() }
     private baseUrl: string = 'http://127.0.0.1:11434'
     private checkInterval: number = 30000 // 30 seconds
+    private events = new EventEmitter()
 
     constructor(baseUrl?: string) {
-        super()
-        if (baseUrl) this.baseUrl = baseUrl
-        console.log('[OllamaHealth] Service initialized')
+        super('OllamaHealthService')
+        if (baseUrl) {this.baseUrl = baseUrl}
+        this.logInfo('Service initialized')
+    }
+
+    on(event: string | symbol, listener: (...args: any[]) => void): this {
+        this.events.on(event, listener)
+        return this
+    }
+
+    emit(event: string | symbol, ...args: any[]): boolean {
+        return this.events.emit(event, ...args)
+    }
+
+    setBaseUrl(url: string) {
+        this.baseUrl = url
+        this.logInfo(`Base URL updated: ${url}`)
     }
 
     getStatus(): OllamaStatus {
         return { ...this.status }
     }
 
-    setBaseUrl(url: string) {
-        this.baseUrl = url
-        console.log('[OllamaHealth] Base URL updated:', url)
+    async initialize(): Promise<void> {
+        this.start()
+    }
+
+    async cleanup(): Promise<void> {
+        this.stop()
+        this.events.removeAllListeners()
     }
 
     start() {
         if (this.intervalId) {
-            console.log('[OllamaHealth] Already running')
+            this.logInfo('Already running')
             return
         }
 
-        console.log('[OllamaHealth] Starting health checks...')
+        this.logInfo('Starting health checks...')
 
         // Initial check
         this.checkHealth()
@@ -51,7 +72,7 @@ export class OllamaHealthService extends EventEmitter {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            console.log('[OllamaHealth] Stopped health checks')
+            this.logInfo('Stopped health checks')
         }
     }
 
@@ -81,7 +102,7 @@ export class OllamaHealthService extends EventEmitter {
 
                 // Emit event if status changed
                 if (!wasOnline) {
-                    console.log('[OllamaHealth] Server came online')
+                    this.logInfo('Server came online')
                     this.emit('online', this.status)
                     this.emit('statusChange', this.status)
                 }
@@ -98,7 +119,7 @@ export class OllamaHealthService extends EventEmitter {
 
             // Emit event if status changed
             if (wasOnline) {
-                console.log('[OllamaHealth] Server went offline:', errorMsg)
+                this.logInfo(`Server went offline: ${errorMsg}`)
                 this.emit('offline', this.status)
                 this.emit('statusChange', this.status)
             }

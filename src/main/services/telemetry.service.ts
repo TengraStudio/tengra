@@ -1,6 +1,6 @@
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/settings.service';
-import { appLogger } from '@main/logging/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface TelemetryEvent {
@@ -66,7 +66,7 @@ export class TelemetryService extends BaseService {
     }
 
     private async flush() {
-        if (this.queue.length === 0) return;
+        if (this.queue.length === 0) {return;}
 
         const batch = [...this.queue];
         this.queue = [];

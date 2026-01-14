@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import React, { useCallback,useEffect, useRef, useState } from 'react';
+
 import { useTheme } from '@/context/ThemeContext';
+import { cn } from '@/lib/utils';
 
 interface LayoutManagerProps {
     sidebarContent: React.ReactNode;
@@ -49,7 +50,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     }, [sidebarWidth]);
 
     useEffect(() => {
-        if (!isDragging) return;
+        if (!isDragging) {return;}
 
         const handleMouseMove = (e: MouseEvent) => {
             const SNAP_POINTS = [280, 400, 600];

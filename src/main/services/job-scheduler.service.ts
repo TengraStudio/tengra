@@ -1,7 +1,9 @@
-import { DataService } from '@main/services/data/data.service'
-import { appLogger } from '@main/logging/logger'
 import * as fs from 'fs'
 import * as path from 'path'
+
+import { appLogger } from '@main/logging/logger'
+import { BaseService } from '@main/services/base.service'
+import { DataService } from '@main/services/data/data.service'
 
 interface RecurringJob {
     id: string
@@ -14,7 +16,7 @@ interface JobState {
     lastRun: number
 }
 
-export class JobSchedulerService {
+export class JobSchedulerService extends BaseService {
     private tasks: Map<string, NodeJS.Timeout> = new Map() // For debounced tasks
     private recurringJobs: Map<string, RecurringJob> = new Map()
     private recurringTimers: Map<string, NodeJS.Timeout> = new Map()
@@ -23,6 +25,7 @@ export class JobSchedulerService {
     constructor(
         private dataService: DataService
     ) {
+        super('JobSchedulerService')
         this.stateFilePath = path.join(this.dataService.getPath('config'), 'jobs.json')
         this.ensureConfigDir()
     }
@@ -159,7 +162,11 @@ export class JobSchedulerService {
         }
     }
 
-    stop() {
+    async cleanup(): Promise<void> {
+        this.stop()
+    }
+
+    private stop() {
         for (const timer of this.recurringTimers.values()) {
             clearTimeout(timer)
         }

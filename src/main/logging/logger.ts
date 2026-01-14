@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as zlib from 'zlib'
-import { JsonValue, AppError } from '@/types/common'
+
+import { AppError,JsonValue } from '@/types/common'
 
 export enum LogLevel {
     DEBUG = 0,
@@ -52,7 +53,7 @@ class AppLogger {
     private cleanupTimer: ReturnType<typeof setInterval> | null = null
 
     init(logDir?: string, config?: Partial<LoggerConfig>) {
-        if (this.initialized && !logDir && !config) return
+        if (this.initialized && !logDir && !config) {return}
 
         if (config) {
             this.config = { ...this.config, ...config }
@@ -111,7 +112,7 @@ class AppLogger {
     }
 
     installConsoleRedirect() {
-        if (this.originalConsole) return
+        if (this.originalConsole) {return}
         this.originalConsole = {
             debug: console.debug.bind(console),
             info: console.info.bind(console),
@@ -181,9 +182,9 @@ class AppLogger {
         const levelStr = LogLevel[payload.level].padEnd(5)
         if (this.originalConsole) {
             const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`
-            if (payload.level === LogLevel.ERROR) this.originalConsole.error(consoleMsg)
-            else if (payload.level === LogLevel.WARN) this.originalConsole.warn(consoleMsg)
-            else this.originalConsole.log(consoleMsg)
+            if (payload.level === LogLevel.ERROR) {this.originalConsole.error(consoleMsg)}
+            else if (payload.level === LogLevel.WARN) {this.originalConsole.warn(consoleMsg)}
+            else {this.originalConsole.log(consoleMsg)}
         }
 
         this.queue = this.queue.then(async () => {
@@ -191,7 +192,7 @@ class AppLogger {
             await fs.promises.appendFile(this.logPath, line, 'utf8')
             this.size += Buffer.byteLength(line, 'utf8')
         }).catch((err) => {
-            if (this.originalConsole) this.originalConsole.error('Logger write failed', err)
+            if (this.originalConsole) {this.originalConsole.error('Logger write failed', err)}
         })
     }
 
@@ -246,7 +247,7 @@ class AppLogger {
     }
 
     private startCleanupScheduler() {
-        if (this.cleanupTimer) return
+        if (this.cleanupTimer) {return}
 
         // Run cleanup every 24 hours
         const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -425,8 +426,8 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
     if (value && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)) {
         const ae = value as AppError
         let res = ae.message
-        if (ae.code) res = `[${ae.code}] ${res}`
-        if (ae.stack) res = `${res} | ${ae.stack}`
+        if (ae.code) {res = `[${ae.code}] ${res}`}
+        if (ae.stack) {res = `${res} | ${ae.stack}`}
         return res
     }
     if (typeof value === 'string') {

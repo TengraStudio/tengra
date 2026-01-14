@@ -1,17 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
-import { FileCode, X, Pencil, Camera, Sparkles, Check, RefreshCw, Trash2, Plus, Minus, GitBranch, ArrowUp, ArrowDown, Upload, Download, GitCommit, Globe } from 'lucide-react'
-import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal'
-import { FileExplorer } from '@renderer/features/projects/components/ide/FileExplorer'
-import { CodeEditor } from '@renderer/features/projects/components/ide/CodeEditor'
-import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector'
-import { AgentCouncil } from '@/features/chat/components/AgentCouncil'
-import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab'
-import { Project, ProjectAnalysis, ProjectStats } from '@/types'
-import { cn } from '@/lib/utils'
-import { DiffViewer } from '@/components/ui/DiffViewer'
-import { getLanguageFromExtension } from '@/utils/language-map'
 import { ContributionGrid } from '@renderer/features/projects/components/ContributionGrid'
+import { CodeEditor } from '@renderer/features/projects/components/ide/CodeEditor'
+import { FileExplorer } from '@renderer/features/projects/components/ide/FileExplorer'
+import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector'
+import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal'
+import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab'
+import { ArrowDown, ArrowUp, Camera, Check, Download, FileCode, GitBranch, GitCommit, Globe,Minus, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { useCallback,useEffect, useState } from 'react'
+
+import { DiffViewer } from '@/components/ui/DiffViewer'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AgentCouncil } from '@/features/chat/components/AgentCouncil'
+import { cn } from '@/lib/utils'
+import { Project, ProjectAnalysis, ProjectStats } from '@/types'
+import { getLanguageFromExtension } from '@/utils/language-map'
 
 interface OpenFile {
     path: string
@@ -20,7 +21,7 @@ interface OpenFile {
     isDirty: boolean
 }
 
-import { useTranslation, Language } from '@/i18n'
+import { Language,useTranslation } from '@/i18n'
 
 interface ProjectDashboardProps {
     project: Project
@@ -100,7 +101,7 @@ export const ProjectDashboard = ({
     const [isCheckingOut, setIsCheckingOut] = useState(false)
 
     const fetchGitData = useCallback(async () => {
-        if (!project.path) return
+        if (!project.path) {return}
 
         setGitData(prev => ({ ...prev, loading: true }))
         try {
@@ -177,7 +178,7 @@ export const ProjectDashboard = ({
     }, [activeTab, project.path, fetchGitData])
 
     const loadFileDiff = useCallback(async (filePath: string, staged: boolean) => {
-        if (!project.path) return
+        if (!project.path) {return}
 
         setLoadingDiff(true)
         try {
@@ -201,7 +202,7 @@ export const ProjectDashboard = ({
     }, [loadFileDiff])
 
     const handleStageFile = useCallback(async (filePath: string) => {
-        if (!project.path) return
+        if (!project.path) {return}
 
         try {
             const result = await window.electron.git.stageFile(project.path, filePath)
@@ -219,7 +220,7 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData, selectedFile, loadFileDiff])
 
     const handleUnstageFile = useCallback(async (filePath: string) => {
-        if (!project.path) return
+        if (!project.path) {return}
 
         try {
             const result = await window.electron.git.unstageFile(project.path, filePath)
@@ -237,23 +238,23 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData, selectedFile, loadFileDiff])
 
     const getStatusIcon = (status: string) => {
-        if (status.startsWith('A')) return <Plus className="w-3.5 h-3.5 text-emerald-400" />
-        if (status.startsWith('D')) return <Minus className="w-3.5 h-3.5 text-red-400" />
-        if (status.startsWith('M')) return <FileCode className="w-3.5 h-3.5 text-amber-400" />
-        if (status.startsWith('R')) return <FileCode className="w-3.5 h-3.5 text-blue-400" />
+        if (status.startsWith('A')) {return <Plus className="w-3.5 h-3.5 text-emerald-400" />}
+        if (status.startsWith('D')) {return <Minus className="w-3.5 h-3.5 text-red-400" />}
+        if (status.startsWith('M')) {return <FileCode className="w-3.5 h-3.5 text-amber-400" />}
+        if (status.startsWith('R')) {return <FileCode className="w-3.5 h-3.5 text-blue-400" />}
         return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />
     }
 
     const getStatusLabel = (status: string) => {
-        if (status.startsWith('A')) return t('projectDashboard.added')
-        if (status.startsWith('D')) return t('projectDashboard.deleted')
-        if (status.startsWith('M')) return t('projectDashboard.modified')
-        if (status.startsWith('R')) return t('projectDashboard.renamed')
+        if (status.startsWith('A')) {return t('projectDashboard.added')}
+        if (status.startsWith('D')) {return t('projectDashboard.deleted')}
+        if (status.startsWith('M')) {return t('projectDashboard.modified')}
+        if (status.startsWith('R')) {return t('projectDashboard.renamed')}
         return status
     }
 
     const handleCheckout = useCallback(async (branch: string) => {
-        if (!project.path) return
+        if (!project.path) {return}
         
         setIsCheckingOut(true)
         try {
@@ -271,7 +272,7 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData])
 
     const handleCommit = useCallback(async () => {
-        if (!project.path || !commitMessage.trim()) return
+        if (!project.path || !commitMessage.trim()) {return}
         
         setIsCommitting(true)
         try {
@@ -290,7 +291,7 @@ export const ProjectDashboard = ({
     }, [project.path, commitMessage, fetchGitData])
 
     const handlePush = useCallback(async () => {
-        if (!project.path) return
+        if (!project.path) {return}
         
         setIsPushing(true)
         try {
@@ -308,7 +309,7 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData])
 
     const handlePull = useCallback(async () => {
-        if (!project.path) return
+        if (!project.path) {return}
         
         setIsPulling(true)
         try {
@@ -445,8 +446,8 @@ export const ProjectDashboard = ({
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => {
-                                                    if (e.key === 'Enter') handleSaveName()
-                                                    if (e.key === 'Escape') setIsEditingName(false)
+                                                    if (e.key === 'Enter') {handleSaveName()}
+                                                    if (e.key === 'Escape') {setIsEditingName(false)}
                                                 }}
                                                 onBlur={handleSaveName}
                                                 className="text-3xl font-black bg-black/40 border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight"
@@ -1135,7 +1136,7 @@ export const ProjectDashboard = ({
 }
 
 const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B'
+    if (bytes === 0) {return '0 B'}
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -1154,7 +1155,7 @@ const SearchResults = ({ projectRoot, onSelect, t }: { projectRoot: string, onSe
         return () => window.removeEventListener('search-results', handler)
     }, [])
 
-    if (results.length === 0) return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>
+    if (results.length === 0) {return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>}
 
     return (
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 space-y-2">

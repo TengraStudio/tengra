@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -26,10 +27,12 @@ const (
 
 	// Cookie authentication endpoints
 	iFlowAPIKeyEndpoint = "https://platform.iflow.cn/api/openapi/apikey"
+)
 
+var (
 	// Client credentials provided by iFlow for the Code Assist integration.
-	iFlowOAuthClientID     = "10009311001"
-	iFlowOAuthClientSecret = "4Z3YjXycVsQvyGF1etiNlIBB4RsqSDtW"
+	iFlowOAuthClientID     = os.Getenv("IFLOW_CLIENT_ID")
+	iFlowOAuthClientSecret = os.Getenv("IFLOW_CLIENT_SECRET")
 )
 
 // DefaultAPIBaseURL is the canonical chat completions endpoint.
