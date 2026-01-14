@@ -8,7 +8,7 @@ import {
     shift,
     FloatingPortal,
 } from '@floating-ui/react'
-import { ChevronDown, Sparkles, BrainCircuit, Zap, Server, Box, Search, Check, LayoutGrid, Info, ImageIcon } from 'lucide-react'
+import { ChevronDown, Sparkles, BrainCircuit, Zap, Server, Box, Search, Check, LayoutGrid, Info, ImageIcon, Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AppSettings, QuotaResponse, CodexUsage } from '@/types'
@@ -306,8 +306,8 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             { id: 'copilot', name: 'GitHub Copilot', icon: Zap, color: 'text-indigo-400', bg: 'bg-indigo-500/10', providerId: 'copilot', models: [] },
             { id: 'openai', name: 'OpenAI', icon: Sparkles, color: 'text-green-400', bg: 'bg-green-500/10', providerId: 'openai', models: [] },
             { id: 'claude', name: 'Anthropic', icon: BrainCircuit, color: 'text-purple-400', bg: 'bg-pink-500/10', providerId: 'anthropic', models: [] },
-
             { id: 'antigravity', name: 'Antigravity', icon: LayoutGrid, color: 'text-pink-400', bg: 'bg-pink-500/10', providerId: 'antigravity', models: [] },
+            { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-cyan-400', bg: 'bg-cyan-500/10', providerId: 'opencode', models: [] },
             { id: 'ollama', name: t('modelSelector.ollamaLocal'), icon: Server, color: 'text-orange-400', bg: 'bg-orange-500/10', providerId: 'ollama', models: [] },
             { id: 'custom', name: t('modelSelector.proxyCustom'), icon: Box, color: 'text-zinc-400', bg: 'bg-zinc-500/10', providerId: 'openai', models: [] }
         ]
@@ -317,8 +317,8 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             { key: 'copilot', catId: 'copilot' },
             { key: 'openai', catId: 'openai' },
             { key: 'anthropic', catId: 'claude' },
-
             { key: 'antigravity', catId: 'antigravity' },
+            { key: 'opencode', catId: 'opencode' },
             { key: 'custom', catId: 'custom' }
         ]
 

@@ -10,7 +10,7 @@ import {
     FolderPlus, FolderOpen, Folder as FolderIcon, Edit2, CornerUpRight, Book, Pin, TrendingUp,
     Users, Plug, Container, Sparkles, Brain
 } from 'lucide-react'
-import React, { useState, useEffect, useRef, ChangeEvent, type ComponentType } from 'react'
+import React, { useState, useEffect, useRef, ChangeEvent, type ComponentType, useMemo, useCallback } from 'react'
 import { useTranslation } from '@/i18n'
 import { motion, AnimatePresence } from '@/lib/framer-motion-compat'
 import { useChat } from '@/context/ChatContext'
@@ -88,29 +88,44 @@ export const Sidebar = React.memo(function Sidebar({
     const [editFolderName, setEditFolderName] = useState('')
     const [showPrompts, setShowPrompts] = useState(false)
 
-    // Ensure folders are available
-    const activeFolders = folders || []
-    const sortedFolders = [...activeFolders].sort((a, b) => a.name.localeCompare(b.name))
+    // Track if initial folder expansion has been applied
+    const initialExpansionDoneRef = useRef(false)
 
+    // Ensure folders are available - memoized to prevent unnecessary recalculations
+    const activeFolders = useMemo(() => folders || [], [folders])
+    const sortedFolders = useMemo(() => [...activeFolders].sort((a, b) => a.name.localeCompare(b.name)), [activeFolders])
+
+    // Initial folder expansion effect - runs only once when conditions are met
     useEffect(() => {
-        if (activeFolders.length > 0 && expandedFolders.size === 0) {
-            if (currentChatId && chats) {
-                const chat = chats.find(c => c.id === currentChatId)
-                if (chat?.folderId) {
-                    setTimeout(() => {
-                        setExpandedFolders(prev => new Set(prev).add(chat.folderId!))
-                    }, 0)
-                }
+        // Skip if already done or no folders
+        if (initialExpansionDoneRef.current || activeFolders.length === 0) {
+            return
+        }
+
+        // Only expand if folders are empty (initial load)
+        if (expandedFolders.size > 0) {
+            initialExpansionDoneRef.current = true
+            return
+        }
+
+        // Find current chat's folder and expand it
+        if (currentChatId && chats) {
+            const chat = chats.find(c => c.id === currentChatId)
+            if (chat?.folderId) {
+                initialExpansionDoneRef.current = true
+                setExpandedFolders(new Set([chat.folderId]))
             }
         }
-    }, [activeFolders.length, currentChatId, chats])
+    }, [activeFolders.length, currentChatId, chats, expandedFolders.size])
 
-    const toggleFolder = (folderId: string) => {
-        const newExpanded = new Set(expandedFolders)
-        if (newExpanded.has(folderId)) newExpanded.delete(folderId)
-        else newExpanded.add(folderId)
-        setExpandedFolders(newExpanded)
-    }
+    const toggleFolder = useCallback((folderId: string) => {
+        setExpandedFolders(prev => {
+            const newExpanded = new Set(prev)
+            if (newExpanded.has(folderId)) newExpanded.delete(folderId)
+            else newExpanded.add(folderId)
+            return newExpanded
+        })
+    }, [])
 
     const handleCreateFolder = () => {
         if (newFolderName.trim()) {
@@ -141,12 +156,17 @@ export const Sidebar = React.memo(function Sidebar({
         setEditingChatId(null)
     }
 
-    const groupChatsByDate = (chatsToGroup: Chat[]) => {
+    const groupChatsByDate = useCallback((chatsToGroup: Chat[]) => {
+        const todayLabel = t('dateGroups.today')
+        const yesterdayLabel = t('dateGroups.yesterday')
+        const lastWeekLabel = t('dateGroups.lastWeek')
+        const olderLabel = t('dateGroups.older')
+
         const groups: Record<string, Chat[]> = {
-            [t('dateGroups.today')]: [],
-            [t('dateGroups.yesterday')]: [],
-            [t('dateGroups.lastWeek')]: [],
-            [t('dateGroups.older')]: []
+            [todayLabel]: [],
+            [yesterdayLabel]: [],
+            [lastWeekLabel]: [],
+            [olderLabel]: []
         }
 
         const now = new Date()
@@ -155,19 +175,19 @@ export const Sidebar = React.memo(function Sidebar({
 
         chatsToGroup.forEach(chat => {
             const date = new Date(chat.createdAt).getTime()
-            if (date >= today) groups[t('dateGroups.today')].push(chat)
-            else if (date >= yesterday) groups[t('dateGroups.yesterday')].push(chat)
-            else if (date >= today - 7 * 86400000) groups[t('dateGroups.lastWeek')].push(chat)
-            else groups[t('dateGroups.older')].push(chat)
+            if (date >= today) groups[todayLabel].push(chat)
+            else if (date >= yesterday) groups[yesterdayLabel].push(chat)
+            else if (date >= today - 7 * 86400000) groups[lastWeekLabel].push(chat)
+            else groups[olderLabel].push(chat)
         })
 
         return groups
-    }
+    }, [t])
 
-    // Separate chats into Pinned, Foldered and Unfoldered
-    const pinnedChats = chats.filter(c => c.isPinned)
-    const unfolderedChats = chats.filter(c => !c.folderId && !c.isPinned)
-    const dateGroups = groupChatsByDate(unfolderedChats)
+    // Separate chats into Pinned, Foldered and Unfoldered - memoized for performance
+    const pinnedChats = useMemo(() => chats.filter(c => c.isPinned), [chats])
+    const unfolderedChats = useMemo(() => chats.filter(c => !c.folderId && !c.isPinned), [chats])
+    const dateGroups = useMemo(() => groupChatsByDate(unfolderedChats), [groupChatsByDate, unfolderedChats])
 
     const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
@@ -243,11 +263,11 @@ export const Sidebar = React.memo(function Sidebar({
                             <SidebarMenuItem
                                 id="council"
                                 icon={<Users className="w-4 h-4" />}
-                                label={t('sidebar.council') || 'Agent Council'}
+                                label={t('sidebar.council')}
                                 onClick={() => onChangeView('council')}
                                 isActive={currentView === 'council'}
                                 status="online"
-                                statusLabel="Ready"
+                                statusLabel={t('sidebar.councilReady')}
                             />
                             <SidebarMenuItem
                                 id="prompts"
@@ -298,8 +318,8 @@ export const Sidebar = React.memo(function Sidebar({
                             <SidebarMenuItem
                                 id="mcp"
                                 icon={<Plug className="w-4 h-4" />}
-                                label="MCP Services"
-                                description="Model Context Protocol"
+                                label={t('sidebar.mcpServices')}
+                                description={t('sidebar.mcpDescription')}
                                 onClick={() => onChangeView('mcp')}
                                 isActive={currentView === 'mcp'}
                                 status="online"
@@ -308,16 +328,16 @@ export const Sidebar = React.memo(function Sidebar({
                             <SidebarMenuItem
                                 id="docker"
                                 icon={<Container className="w-4 h-4" />}
-                                label="Docker"
-                                description="Container management"
+                                label={t('sidebar.docker')}
+                                description={t('sidebar.dockerDescription')}
                                 onClick={() => { /* TODO: Add Docker view */ }}
                                 status="idle"
                             />
                             <SidebarMenuItem
                                 id="terminal"
                                 icon={<Terminal className="w-4 h-4" />}
-                                label="Terminal"
-                                description="Command line access"
+                                label={t('sidebar.terminal')}
+                                description={t('sidebar.terminalDescription')}
                                 onClick={() => { /* TODO: Add Terminal */ }}
                             />
                         </SidebarSection>
@@ -335,36 +355,36 @@ export const Sidebar = React.memo(function Sidebar({
                             <SidebarMenuItem
                                 id="ollama"
                                 icon={<Brain className="w-4 h-4" />}
-                                label="Ollama"
-                                description="Local models"
+                                label={t('sidebar.ollama')}
+                                description={t('sidebar.ollamaDescription')}
                                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                                 status="online"
-                                statusLabel="Running"
+                                statusLabel={t('sidebar.ollamaRunning')}
                             />
                             <SidebarMenuItem
                                 id="openai"
                                 icon={<Sparkles className="w-4 h-4" />}
-                                label="OpenAI"
-                                description="GPT-4, GPT-4o"
+                                label={t('sidebar.openai')}
+                                description={t('sidebar.openaiDescription')}
                                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                                 status="online"
                             />
                             <SidebarMenuItem
                                 id="anthropic"
                                 icon={<Brain className="w-4 h-4" />}
-                                label="Anthropic"
-                                description="Claude 3.5"
+                                label={t('sidebar.anthropic')}
+                                description={t('sidebar.anthropicDescription')}
                                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                                 status="online"
                             />
                             <SidebarMenuItem
                                 id="copilot"
                                 icon={<Cpu className="w-4 h-4" />}
-                                label="GitHub Copilot"
-                                description="Code completion"
+                                label={t('sidebar.copilot')}
+                                description={t('sidebar.copilotDescription')}
                                 onClick={() => onOpenSettings('accounts' as SettingsCategory)}
                                 status="online"
-                                statusLabel="Active"
+                                statusLabel={t('sidebar.copilotActive')}
                             />
                         </SidebarSection>
                     )}
@@ -480,7 +500,7 @@ export const Sidebar = React.memo(function Sidebar({
                                                 if (e.key === 'Escape') setIsCreatingFolder(false)
                                             }}
                                             onBlur={() => { if (!newFolderName) setIsCreatingFolder(false) }}
-                                            placeholder="Folder Name..."
+                                            placeholder={t('sidebar.newFolderPlaceholder')}
                                             className="w-full bg-transparent text-xs outline-none px-1 py-0.5"
                                         />
                                     </div>
@@ -586,7 +606,7 @@ export const Sidebar = React.memo(function Sidebar({
                                                 ) : (
                                                     <span className="text-xs font-medium truncate select-none">{folder.name}</span>
                                                 )}
-                                                
+
                                                 <span className="text-[10px] text-muted-foreground/40">
                                                     {chats.filter(c => c.folderId === folder.id).length}
                                                 </span>
@@ -745,7 +765,7 @@ export const Sidebar = React.memo(function Sidebar({
                                                                             </div>
                                                                             {/* Simple Hover Dropdown for Folders */}
                                                                             <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
-                                                                                <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">Move to...</div>
+                                                                                <div className="text-[9px] px-2 py-1 text-muted-foreground uppercase font-bold tracking-wider">{t('sidebar.moveTo')}</div>
                                                                                 {sortedFolders.map(f => (
                                                                                     <div
                                                                                         key={f.id}
@@ -775,6 +795,13 @@ export const Sidebar = React.memo(function Sidebar({
                                         </div>
                                     )
                                 ))}
+
+                                {chats.length === 0 && sortedFolders.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center pt-12 opacity-40">
+                                        <MessageSquare className="w-8 h-8 mb-2 text-muted-foreground" />
+                                        <p className="text-xs font-medium text-muted-foreground">{t('sidebar.noChats') || 'No Chats'}</p>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -785,7 +812,7 @@ export const Sidebar = React.memo(function Sidebar({
                     {/* Active Project Indicator */}
                     {!isCollapsed && selectedProject && (
                         <div className="px-3 py-2 bg-muted/20 rounded-md border border-border/40 mb-1">
-                            <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">Project</div>
+                            <div className="text-[10px] text-muted-foreground/50 uppercase font-bold tracking-wider mb-0.5">{t('sidebar.project')}</div>
                             <div className="text-xs font-medium truncate flex items-center gap-2">
                                 <SidebarStatusIndicator status="online" size="sm" />
                                 {selectedProject.title}
