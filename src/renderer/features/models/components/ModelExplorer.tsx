@@ -36,7 +36,7 @@ interface HFFile {
 import { useTranslation } from '@/i18n'
 import type { Language } from '@/i18n'
 
-import type { ModelInfo } from '../utils/model-fetcher'
+import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher'
 
 interface ModelExplorerProps {
     onClose?: () => void

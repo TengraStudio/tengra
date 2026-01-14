@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { Bot, Terminal, Sparkles, Clock } from 'lucide-react'
-import { AgentLog, AgentMessage } from '../../../shared/types/agent'
+import { AgentLog, AgentMessage } from '@shared/types/agent'
 
 
 interface AgentChatRoomProps {
@@ -39,7 +39,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
         // In production, this should use wss:// for secure connections
         // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
         const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) || 'ws://localhost:3001'
-        
+
         // Validate WebSocket URL
         if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
             console.error('[AgentChatRoom] Invalid WebSocket URL:', wsUrl)

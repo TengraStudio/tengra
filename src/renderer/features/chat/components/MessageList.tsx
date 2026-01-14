@@ -1,6 +1,6 @@
 import { memo, useRef, useEffect, useMemo, useState } from 'react';
 import { List } from 'react-window';
-import { MessageBubble } from './MessageBubble';
+import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { Message } from '@/types';
 import { Language } from '@/i18n';
 

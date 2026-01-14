@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
-import { UsageTrackingService } from '../services/usage-tracking.service'
-import { SettingsService } from '../services/settings.service'
-import { ProxyService } from '../services/proxy/proxy.service'
+import { UsageTrackingService } from '@main/services/usage-tracking.service'
+import { SettingsService } from '@main/services/settings.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
 
 export function registerUsageIpc(usageTrackingService: UsageTrackingService, settingsService: SettingsService, proxyService: ProxyService) {
     ipcMain.handle('usage:checkLimit', async (_event, provider: string, model: string) => {

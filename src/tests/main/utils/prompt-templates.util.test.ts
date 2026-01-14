@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest'
-import { renderTemplate, extractVariables, validateTemplate, PromptTemplate } from '../../../main/utils/prompt-templates.util'
+import { renderTemplate, extractVariables, validateTemplate, PromptTemplate } from '@main/utils/prompt-templates.util'
 
 describe('Prompt Templates', () => {
     describe('renderTemplate', () => {

@@ -22,7 +22,7 @@ vi.mock('fs', () => ({
     unlinkSync: vi.fn()
 }));
 
-import { AuditLogService, AuditLogEntry } from '../../../main/services/audit-log.service';
+import { AuditLogService, AuditLogEntry } from '@main/services/audit-log.service';
 
 describe('AuditLogService', () => {
     let service: AuditLogService;

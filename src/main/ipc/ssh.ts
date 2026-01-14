@@ -1,8 +1,8 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { SSHService, SSHConnection } from '../services/ssh.service'
+import { SSHService, SSHConnection } from '@main/services/ssh.service'
 import { randomUUID } from 'crypto'
-import { IpcValue, JsonValue } from '../../shared/types/common'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { IpcValue, JsonValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService) {
     const send = (channel: string, data: JsonValue) => {

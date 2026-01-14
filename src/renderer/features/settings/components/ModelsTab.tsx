@@ -2,9 +2,9 @@
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ModelExplorer } from '@/features/models/components/ModelExplorer'
-import { AppSettings } from '../../../../shared/types/settings'
+import { AppSettings } from '@/types/settings'
 
-import { CombinedModel } from '../../../../shared/types/renderer'
+import { CombinedModel } from '@/types/renderer'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 
 interface ModelsTabProps {

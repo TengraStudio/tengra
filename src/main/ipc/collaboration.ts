@@ -3,10 +3,10 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { ModelCollaborationService } from '../services/model-collaboration.service'
-import { multiLLMOrchestrator } from '../services/multi-llm-orchestrator.service'
-import { Message } from '../../shared/types/chat'
-import { createSafeIpcHandler, createIpcHandler } from '../utils/ipc-wrapper.util'
+import { ModelCollaborationService } from '@main/services/model-collaboration.service'
+import { multiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service'
+import { Message } from '@shared/types/chat'
+import { createSafeIpcHandler, createIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 export function registerCollaborationIpc(collaborationService: ModelCollaborationService) {
     /**

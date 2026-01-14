@@ -1,5 +1,5 @@
-import { IRepository } from '../core/repository.interface';
-import { Prompt, DatabaseService } from '../services/data/database.service';
+import { IRepository } from '@main/core/repository.interface';
+import { Prompt, DatabaseService } from '@main/services/data/database.service';
 
 /**
  * Repository for managing Prompts.

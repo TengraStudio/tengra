@@ -1,10 +1,11 @@
-import { ISecurityService } from '../types/services';
-import { ServiceResponse } from '../../shared/types';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { ISecurityService } from '@main/types/services';
+import { ServiceResponse } from '@shared/types';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { safeStorage } from 'electron';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
-import { BaseService } from './base.service';
+import { BaseService } from '@main/services/base.service';
+import { appLogger } from '@main/logging/logger';
 
 export class SecurityService extends BaseService implements ISecurityService {
     constructor() {
@@ -85,10 +86,10 @@ export class SecurityService extends BaseService implements ISecurityService {
                 const buffer = safeStorage.encryptString(text);
                 return buffer.toString('base64');
             }
-            console.error('[SecurityService] Encryption not available');
+            appLogger.error('SecurityService', 'Encryption not available');
             return '';
         } catch (error) {
-            console.error('[SecurityService] Encryption failed:', getErrorMessage(error));
+            appLogger.error('SecurityService', `Encryption failed: ${getErrorMessage(error as Error)}`);
             return '';
         }
     }
@@ -101,10 +102,10 @@ export class SecurityService extends BaseService implements ISecurityService {
                 const buffer = Buffer.from(encryptedText, 'base64');
                 return safeStorage.decryptString(buffer);
             }
-            console.error('[SecurityService] Decryption not available');
+            appLogger.error('SecurityService', 'Decryption not available');
             return null;
         } catch (error) {
-            console.warn('[SecurityService] Decryption failed:', getErrorMessage(error));
+            appLogger.warn('SecurityService', `Decryption failed: ${getErrorMessage(error as Error)}`);
             return null;
         }
     }

@@ -1,8 +1,9 @@
-﻿import React, { useState } from 'react'
-import { MessageSquare, Sliders, Zap, Activity, Thermometer } from 'lucide-react'
+import React, { useState } from 'react'
+import { MessageSquare, Sliders, Zap, Activity, Thermometer, Clock, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { AppSettings } from '../../../../shared/types/settings'
+import { AppSettings } from '@shared/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+import { SERVICE_INTERVALS } from '@shared/constants'
 
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 
@@ -113,6 +114,106 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* AI Service Intervals */}
+            <div className="bg-card p-6 rounded-xl border border-border space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <Clock className="w-5 h-5 text-blue-400" />
+                    <div>
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('advanced.serviceIntervals')}</h3>
+                        <p className="text-xs text-muted-foreground">{t('advanced.serviceIntervalsDesc')}</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Model Update Interval */}
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                            <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                            {t('advanced.modelUpdateInterval')}
+                        </label>
+                        <p className="text-[10px] text-muted-foreground">{t('advanced.modelUpdateIntervalDesc')}</p>
+                        <select
+                            value={settings?.ai?.modelUpdateInterval ?? SERVICE_INTERVALS.MODEL_UPDATE}
+                            onChange={(e) => {
+                                if (!settings) return
+                                const updated = {
+                                    ...settings,
+                                    ai: { ...settings.ai, modelUpdateInterval: parseInt(e.target.value) }
+                                }
+                                setSettings(updated)
+                                handleSave(updated)
+                            }}
+                            className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            aria-label={t('advanced.modelUpdateInterval')}
+                        >
+                            <option value={1800000}>30 {t('common.minutes')}</option>
+                            <option value={3600000}>1 {t('common.hour')}</option>
+                            <option value={7200000}>2 {t('common.hours')}</option>
+                            <option value={14400000}>4 {t('common.hours')}</option>
+                            <option value={86400000}>24 {t('common.hours')}</option>
+                        </select>
+                    </div>
+
+                    {/* Token Refresh Interval */}
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                            <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                            {t('advanced.tokenRefreshInterval')}
+                        </label>
+                        <p className="text-[10px] text-muted-foreground">{t('advanced.tokenRefreshIntervalDesc')}</p>
+                        <select
+                            value={settings?.ai?.tokenRefreshInterval ?? SERVICE_INTERVALS.TOKEN_REFRESH}
+                            onChange={(e) => {
+                                if (!settings) return
+                                const updated = {
+                                    ...settings,
+                                    ai: { ...settings.ai, tokenRefreshInterval: parseInt(e.target.value) }
+                                }
+                                setSettings(updated)
+                                handleSave(updated)
+                            }}
+                            className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            aria-label={t('advanced.tokenRefreshInterval')}
+                        >
+                            <option value={60000}>1 {t('common.minute')}</option>
+                            <option value={300000}>5 {t('common.minutes')}</option>
+                            <option value={600000}>10 {t('common.minutes')}</option>
+                            <option value={900000}>15 {t('common.minutes')}</option>
+                            <option value={1800000}>30 {t('common.minutes')}</option>
+                        </select>
+                    </div>
+
+                    {/* Copilot Refresh Interval */}
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                            <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
+                            {t('advanced.copilotRefreshInterval')}
+                        </label>
+                        <p className="text-[10px] text-muted-foreground">{t('advanced.copilotRefreshIntervalDesc')}</p>
+                        <select
+                            value={settings?.ai?.copilotRefreshInterval ?? SERVICE_INTERVALS.COPILOT_REFRESH}
+                            onChange={(e) => {
+                                if (!settings) return
+                                const updated = {
+                                    ...settings,
+                                    ai: { ...settings.ai, copilotRefreshInterval: parseInt(e.target.value) }
+                                }
+                                setSettings(updated)
+                                handleSave(updated)
+                            }}
+                            className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            aria-label={t('advanced.copilotRefreshInterval')}
+                        >
+                            <option value={300000}>5 {t('common.minutes')}</option>
+                            <option value={600000}>10 {t('common.minutes')}</option>
+                            <option value={900000}>15 {t('common.minutes')}</option>
+                            <option value={1800000}>30 {t('common.minutes')}</option>
+                            <option value={3600000}>1 {t('common.hour')}</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
     )

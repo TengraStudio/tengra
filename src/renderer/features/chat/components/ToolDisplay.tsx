@@ -2,7 +2,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ToolResult } from '@/types'
-import { JsonObject, JsonValue } from '../../../../shared/types/common'
+import { JsonObject, JsonValue } from '@/types/common'
 import { useTranslation, Language } from '@/i18n'
 
 interface CommandExecutionResult {

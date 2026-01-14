@@ -1,5 +1,5 @@
-import { BaseService } from './base.service';
-import { DataService } from './data/data.service';
+import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
 import * as path from 'path';
 import * as fs from 'fs';
 

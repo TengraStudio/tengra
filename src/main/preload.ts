@@ -10,7 +10,7 @@ import {
     ProjectAnalysis, QuotaResponse, OllamaLibraryModel,
     AppSettings, IpcValue, SSHExecOptions, AuthStatus,
     SSHSystemStats, SSHPackageInfo, FileSearchResult, CopilotQuota, CouncilSession
-} from '../shared/types'
+} from '@shared/types'
 
 interface ModelDefinition {
     id: string

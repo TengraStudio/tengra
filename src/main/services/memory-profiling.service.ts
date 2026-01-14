@@ -6,8 +6,8 @@
 import { app } from 'electron';
 import * as v8 from 'v8';
 import * as path from 'path';
-import { BaseService } from './base.service';
-import { DataService } from './data/data.service';
+import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
 
 export interface MemorySnapshot {
     timestamp: number;

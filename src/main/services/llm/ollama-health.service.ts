@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface OllamaStatus {
     online: boolean

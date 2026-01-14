@@ -1,5 +1,5 @@
-import { ServiceResponse } from '../../../shared/types';
-import { getErrorMessage } from '../../../shared/utils/error.util';
+import { ServiceResponse } from '@shared/types';
+import { getErrorMessage } from '@shared/utils/error.util';
 import * as fs from 'fs/promises';
 import { watch } from 'fs';
 import * as path from 'path';

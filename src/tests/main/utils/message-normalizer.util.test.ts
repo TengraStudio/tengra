@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MessageNormalizer } from '../../../main/utils/message-normalizer.util';
+import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 
 describe('MessageNormalizer', () => {
     describe('normalizeOpenAIMessages', () => {

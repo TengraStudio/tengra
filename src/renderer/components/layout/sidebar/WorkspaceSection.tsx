@@ -1,6 +1,6 @@
 import React from 'react'
 import { Rocket, MessageSquare, Users, Book, Folder as FolderIcon } from 'lucide-react'
-import { SidebarSection, SidebarMenuItem } from '../sidebar-components'
+import { SidebarSection, SidebarMenuItem } from '@renderer/components/layout/sidebar-components'
 import { useTranslation, Language } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'

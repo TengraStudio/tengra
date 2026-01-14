@@ -1,8 +1,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { LLMService } from '../../../main/services/llm/llm.service';
-import { ChatMessage } from '../../../main/services/../types/llm.types';
-import { ApiError, AuthenticationError } from '../../../main/services/../utils/error.util';
+import { LLMService } from '@main/services/llm/llm.service';
+import { ChatMessage } from '@main/types/llm.types';
+import { ApiError, AuthenticationError } from '@main/utils/error.util';
 
 // Mock dependencies
 

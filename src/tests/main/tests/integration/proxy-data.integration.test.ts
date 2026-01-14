@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ProxyService } from '../../../main/tests/../services/proxy/proxy.service'
-import { DataService } from '../../../main/tests/../services/data/data.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { DataService } from '@main/services/data/data.service'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'

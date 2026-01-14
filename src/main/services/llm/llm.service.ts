@@ -1,18 +1,18 @@
 import { Agent } from 'undici';
-import { ImagePersistenceService } from '../data/image-persistence.service';
-import { MessageNormalizer } from '../../utils/message-normalizer.util';
-import { StreamParser } from '../../utils/stream-parser.util';
-import { ApiError, NetworkError, AuthenticationError } from '../../utils/error.util';
-import { ChatMessage, ToolCall } from '../../types/llm.types';
-import { Message, ToolDefinition } from '../../../shared/types/chat';
-import { OpenAIChatCompletion, OpenAIContentPartImage } from '../../../shared/types/llm-provider-types';
-import { CircuitBreaker } from '../../core/circuit-breaker';
-import { HttpService } from '../http.service';
-import { ConfigService } from '../config.service';
-import { KeyRotationService } from '../security/key-rotation.service';
-import { RateLimitService } from '../security/rate-limit.service';
+import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
+import { MessageNormalizer } from '@main/utils/message-normalizer.util';
+import { StreamParser } from '@main/utils/stream-parser.util';
+import { ApiError, NetworkError, AuthenticationError } from '@main/utils/error.util';
+import { ChatMessage, ToolCall } from '@main/types/llm.types';
+import { Message, ToolDefinition } from '@/types/chat';
+import { OpenAIChatCompletion, OpenAIContentPartImage } from '@/types/llm-provider-types';
+import { CircuitBreaker } from '@main/core/circuit-breaker';
+import { HttpService } from '@main/services/http.service';
+import { ConfigService } from '@main/services/config.service';
+import { KeyRotationService } from '@main/services/security/key-rotation.service';
+import { RateLimitService } from '@main/services/security/rate-limit.service';
 
-import { OpenAIResponse } from '../../types/llm.types';
+import { OpenAIResponse } from '@main/types/llm.types';
 
 export interface OpenAIModelDefinition {
     id: string;

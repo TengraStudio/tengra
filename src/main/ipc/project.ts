@@ -1,10 +1,10 @@
 import { ipcMain, dialog } from 'electron'
-import { ProjectService } from '../services/project/project.service'
-import { LogoService } from '../services/logo.service'
-import { CodeIntelligenceService } from '../services/code-intelligence.service'
-import { JobSchedulerService } from '../services/job-scheduler.service'
-import { DatabaseService } from '../services/data/database.service'
-import { createIpcHandler } from '../utils/ipc-wrapper.util'
+import { ProjectService } from '@main/services/project/project.service'
+import { LogoService } from '@main/services/logo.service'
+import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
+import { JobSchedulerService } from '@main/services/job-scheduler.service'
+import { DatabaseService } from '@main/services/data/database.service'
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService, jobSchedulerService: JobSchedulerService, databaseService: DatabaseService) => {
     ipcMain.handle('project:analyze', createIpcHandler('project:analyze', async (_event, rootPath: string, projectId: string) => {

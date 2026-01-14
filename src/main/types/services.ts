@@ -1,5 +1,5 @@
-import { ServiceResponse, SystemInfo } from '../../shared/types';
-import { JsonObject } from '../../shared/types/common';
+import { ServiceResponse, SystemInfo } from '@shared/types';
+import { JsonObject } from '@shared/types/common';
 
 export interface ISecurityService {
     generatePassword(length: number, numbers: boolean, symbols: boolean): ServiceResponse<{ password: string }>;

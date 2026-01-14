@@ -5,8 +5,8 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from '../services/data/data.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { DataService } from '@main/services/data/data.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface Migration {
     version: number

@@ -1,7 +1,7 @@
 import { ipcMain, shell } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
-import { appLogger } from '../logging/logger'
+import { appLogger } from '@main/logging/logger'
 
 
 interface GalleryItem {

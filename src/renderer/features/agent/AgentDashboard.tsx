@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-// import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, Sparkles, Play, RefreshCw, Clock, CheckCircle2, Pause } from 'lucide-react'
-// import { ModelSelector } from '@/features/models/components/ModelSelector'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { AgentChatRoom } from './AgentChatRoom'
+import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom'
 
-import { CouncilSession, AgentDefinition } from '../../../shared/types/agent'
+import { CouncilSession, AgentDefinition } from '@shared/types/agent'
 
 export const AgentDashboard: React.FC = () => {
     const [goal, setGoal] = useState('')

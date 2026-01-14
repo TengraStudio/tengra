@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useModel } from '@/context/ModelContext'
 import { useChat } from '@/context/ChatContext'
 import { useProject } from '@/context/ProjectContext'
-import { ChatTemplate } from '../features/chat/types'
+import { ChatTemplate } from '@renderer/features/chat/types'
 import { LoadingState } from '@/components/ui/LoadingState'
 
 // Lazy load feature modules for better performance

@@ -1,7 +1,7 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { AgentCouncilService } from '../services/agent-council.service'
-import { DatabaseService } from '../services/data/database.service'
-import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { AgentCouncilService } from '@main/services/agent-council.service'
+import { DatabaseService } from '@main/services/data/database.service'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 export function registerCouncilIpc(agentCouncil: AgentCouncilService, _db: DatabaseService) {
     ipcMain.handle('council:create', createIpcHandler('council:create', async (_event: IpcMainInvokeEvent, goal: string) => {

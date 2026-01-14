@@ -1,10 +1,10 @@
 import { spawn, exec, ChildProcess } from 'child_process'
 import { promisify } from 'util'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 const execAsync = promisify(exec)
 
-import { JsonValue } from '../../../shared/types/common'
+import { JsonValue } from '@shared/types/common'
 
 interface CommandResult {
     success: boolean
@@ -25,7 +25,7 @@ export class CommandService {
         if (child) {
             try {
                 // Kill process tree
-                const killCmd = `taskkill /PID ${child.pid} /T /F`
+                const killCmd = `taskkill / PID ${ child.pid } /T /F`
                 exec(killCmd, (err) => {
                     if (err) console.error('Failed to kill process tree:', getErrorMessage(err as Error))
                 })

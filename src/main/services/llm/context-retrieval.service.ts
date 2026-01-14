@@ -1,5 +1,5 @@
-import { DatabaseService } from '../data/database.service';
-import { EmbeddingService } from './embedding.service';
+import { DatabaseService } from '@main/services/data/database.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
 
 export interface RetrievalResult {
     contextString: string;

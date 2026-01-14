@@ -1,18 +1,18 @@
-export * from './ai'
-export * from './chat'
-export * from './project'
-export * from './ssh'
-export * from './system'
-export * from './terminal'
-export * from './workspace'
-export * from './templates'
-export * from './settings'
-export * from './quota'
-export * from './agent'
-export * from './llm-provider-types'
-export * from './renderer'
+export * from '@/types/ai'
+export * from '@/types/chat'
+export * from '@/types/project'
+export * from '@/types/ssh'
+export * from '@/types/system'
+export * from '@/types/terminal'
+export * from '@/types/workspace'
+export * from '@/types/templates'
+export * from '@/types/settings'
+export * from '@/types/quota'
+export * from '@/types/agent'
+export * from '@/types/llm-provider-types'
+export * from '@/types/renderer'
 // Export common types
-export * from './common';
+export * from '@/types/common';
 
 
 

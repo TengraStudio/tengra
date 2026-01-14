@@ -1,7 +1,7 @@
 
-import { getErrorMessage } from '../../shared/utils/error.util';
-import { CatchError, JsonObject } from '../../shared/types/common';
-import { ChatMessage, ToolCall } from '../types/llm.types';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { CatchError, JsonObject } from '@shared/types/common';
+import { ChatMessage, ToolCall } from '@main/types/llm.types';
 
 export interface LLMTool {
     type: string;

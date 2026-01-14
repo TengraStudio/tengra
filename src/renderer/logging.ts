@@ -1,4 +1,4 @@
-import { JsonValue } from '../shared/types/common'
+import { JsonValue } from '@shared/types/common'
 
 let installed = false
 

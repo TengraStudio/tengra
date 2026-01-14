@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { StreamParser } from '../../../main/utils/stream-parser.util';
+import { StreamParser } from '@main/utils/stream-parser.util';
 
 describe('StreamParser', () => {
     it('should parse simple chunks', async () => {

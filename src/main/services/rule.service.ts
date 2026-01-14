@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { isNodeError } from '../../shared/utils/error.util';
+import { isNodeError } from '@shared/utils/error.util';
 
 export interface WorkspaceRules {
     content: string; // The raw or processed content of RULES.md

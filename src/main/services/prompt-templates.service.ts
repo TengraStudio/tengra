@@ -5,9 +5,9 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from './data/data.service'
-import { PromptTemplate, TemplateManager, BUILTIN_TEMPLATES } from '../utils/prompt-templates.util'
-import { BaseService } from './base.service'
+import { DataService } from '@main/services/data/data.service'
+import { PromptTemplate, TemplateManager, BUILTIN_TEMPLATES } from '@main/utils/prompt-templates.util'
+import { BaseService } from '@main/services/base.service'
 
 export class PromptTemplatesService extends BaseService {
     private templatesPath: string

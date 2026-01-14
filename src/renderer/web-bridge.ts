@@ -1,12 +1,12 @@
-import type { ElectronAPI } from './electron.d.ts'
-import type { Message, ToolDefinition, Chat, ToolResult, ToolCall, Folder } from '../shared/types/chat'
-import type { AppSettings } from '../shared/types/settings'
-import type { IpcValue, AuthStatus } from '../shared/types/common'
+import type { ElectronAPI } from '@renderer/electron.d'
+import type { Message, ToolDefinition, Chat, ToolResult, ToolCall, Folder } from '@shared/types/chat'
+import type { AppSettings } from '@shared/types/settings'
+import type { IpcValue, AuthStatus } from '@shared/types/common'
 import type { IpcRendererEvent } from 'electron'
-import type { ProjectAnalysis, Project } from '../shared/types/project'
-import type { QuotaResponse, CopilotQuota } from '../shared/types/quota'
-import type { CouncilSession } from '../shared/types/agent'
-import type { SSHConnection, SSHSystemStats, SSHConfig } from '../shared/types/ssh'
+import type { SSHConnection, SSHSystemStats, SSHConfig } from '@/types/ssh'
+import type { Project, ProjectAnalysis } from '@shared/types/project'
+import type { QuotaResponse, CopilotQuota } from '@shared/types/quota'
+import type { CouncilSession } from '@shared/types/agent'
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ChatEventService } from '../../../main/services/data/chat-event.service';
-import { DatabaseService } from '../../../main/services/data/database.service';
+import { ChatEventService } from '@main/services/data/chat-event.service';
+import { DatabaseService } from '@main/services/data/database.service';
 
 describe('ChatEventService', () => {
     let service: ChatEventService;

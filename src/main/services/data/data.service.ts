@@ -1,9 +1,9 @@
 import { app } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
-import { appLogger } from '../../logging/logger'
-import { getErrorMessage } from '../../../shared/utils/error.util'
-import { BaseService } from '../base.service'
+import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { BaseService } from '@main/services/base.service'
 
 export type DataType = 'auth' | 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
 
@@ -55,8 +55,8 @@ export class DataService extends BaseService {
      * Should be called on app startup.
      */
     async migrate() {
-        const userData = app.getPath('userData') // .../Orbit/runtime
-        const rootPath = path.dirname(userData)  // .../Orbit
+        const userData = app.getPath('userData') // Orbit/runtime
+        const rootPath = path.dirname(userData)  // Orbit
 
         const migrations = [
             // Auth: root/auth -> data/auth

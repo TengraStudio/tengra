@@ -3,8 +3,8 @@ import { generateId } from '@/lib/utils'
 import { chatStream } from '@/lib/chat-stream'
 import { getSystemPrompt } from '@/lib/identity'
 import { Chat, Message, AppSettings, ToolDefinition } from '@/types'
-import { CatchError } from '../../../../shared/types/common'
-import { formatMessageContent, getPresetOptions, processStreamChunk } from './utils.ts'
+import { CatchError } from '@/types/common'
+import { formatMessageContent, getPresetOptions, processStreamChunk } from '@renderer/features/chat/hooks/utils'
 
 interface UseChatGeneratorProps {
     chats: Chat[]

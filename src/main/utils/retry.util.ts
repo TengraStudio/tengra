@@ -2,8 +2,8 @@
  * @fileoverview Retry utility with exponential backoff and jitter.
  */
 
-import { CatchError, JsonValue } from '../../shared/types/common'
-import { getErrorMessage as getSharedErrorMessage } from '../../shared/utils/error.util'
+import { CatchError, JsonValue } from '@shared/types/common'
+import { getErrorMessage as getSharedErrorMessage } from '@shared/utils/error.util'
 export { getSharedErrorMessage as getErrorMessage }
 
 /**

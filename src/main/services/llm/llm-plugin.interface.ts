@@ -3,7 +3,7 @@
  * Abstract interface for LLM providers to enable a plugin architecture.
  */
 
-import { Message, ToolDefinition } from '../../../shared/types';
+import { Message, ToolDefinition } from '@/types';
 
 /**
  * Model information returned by providers

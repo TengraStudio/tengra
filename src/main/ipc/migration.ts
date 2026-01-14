@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { DatabaseService } from '../services/data/database.service'
-import { createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { DatabaseService } from '@main/services/data/database.service'
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 /**
  * Registers IPC handlers for database migration management

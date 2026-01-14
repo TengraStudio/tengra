@@ -1,6 +1,6 @@
-import { tr } from './tr'
-import { en } from './en'
-import { JsonValue } from '../../shared/types/common'
+import { tr } from '@renderer/i18n/tr'
+import { en } from '@renderer/i18n/en'
+import { JsonValue } from '@shared/types/common'
 
 export type Language = 'tr' | 'en'
 export type TranslationKeys = typeof tr

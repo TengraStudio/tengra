@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PromptRepository } from '../../../main/repositories/prompt.repository';
+import { PromptRepository } from '@main/repositories/prompt.repository';
 
 // Mock DatabaseService
 const mockDb = {

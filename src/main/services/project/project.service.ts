@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { JsonObject } from '../../../shared/types'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { JsonObject } from '@shared/types/common'
 
 export interface ProjectStats {
     fileCount: number

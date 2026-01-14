@@ -3,7 +3,7 @@
  * Define all schema migrations here
  */
 
-import { Migration } from '../services/migration.service'
+import { Migration } from '@main/services/migration.service'
 
 /**
  * Migration v1: Initial schema setup

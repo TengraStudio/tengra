@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { OllamaService } from '../../../main/tests/../services/llm/ollama.service'
-import { SettingsService } from '../../../main/tests/../services/settings.service'
+import { OllamaService } from '@main/services/llm/ollama.service'
+import { SettingsService } from '@main/services/settings.service'
 
 // We will mock settings store but keep service logic real
 const initialSettings = {

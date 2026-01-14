@@ -11,43 +11,43 @@ if (process.platform === 'win32') {
     app.setAppUserModelId('com.orbit.app')
 }
 
-import { createServices } from './startup/services'
-import { McpDispatcher } from './mcp/dispatcher'
-import { appLogger, LogLevel } from './logging/logger'
+import { createServices } from '@main/startup/services'
+import { McpDispatcher } from '@main/mcp/dispatcher'
+import { appLogger, LogLevel } from '@main/logging/logger'
 
 // IPC Registrations
-import { registerWindowIpc } from './ipc/window'
-import { registerAuthIpc } from './ipc/auth'
-import { registerProxyIpc } from './ipc/proxy'
-import { registerChatIpc } from './ipc/chat'
-import { registerUsageIpc } from './ipc/usage'
-import { registerOllamaIpc } from './ipc/ollama'
-import { registerDbIpc } from './ipc/db'
-import { registerSettingsIpc } from './ipc/settings'
-import { registerSshIpc } from './ipc/ssh'
-import { registerFilesIpc } from './ipc/files'
-import { registerToolsIpc } from './ipc/tools'
-import { registerMcpIpc } from './ipc/mcp'
-import { registerScreenshotIpc } from './ipc/screenshot'
-import { registerHFModelIpc } from './ipc/huggingface'
-import { registerAgentIpc } from './ipc/agent'
-import { registerProjectIpc } from './ipc/project'
-import { registerLoggingIpc } from './ipc/logging'
-import { registerTerminalIpc } from './ipc/terminal'
-import { registerDialogIpc } from './ipc/dialog'
-import { registerHistoryIpc } from './ipc/history'
-import { registerProxyEmbedIpc } from './ipc/proxy-embed'
-import { registerExportIpc } from './ipc/export'
-import { registerCouncilIpc } from './ipc/council'
-import { registerGalleryIpc } from './ipc/gallery'
-import { registerLlamaIpc } from './ipc/llama'
-import { registerProcessIpc, setupProcessEvents } from './ipc/process'
-import { registerCodeIntelligenceIpc } from './ipc/code-intelligence'
-import { registerMemoryIpc } from './ipc/memory'
-import { registerGitIpc } from './ipc/git'
+import { registerWindowIpc } from '@main/ipc/window'
+import { registerAuthIpc } from '@main/ipc/auth'
+import { registerProxyIpc } from '@main/ipc/proxy'
+import { registerChatIpc } from '@main/ipc/chat'
+import { registerUsageIpc } from '@main/ipc/usage'
+import { registerOllamaIpc } from '@main/ipc/ollama'
+import { registerDbIpc } from '@main/ipc/db'
+import { registerSettingsIpc } from '@main/ipc/settings'
+import { registerSshIpc } from '@main/ipc/ssh'
+import { registerFilesIpc } from '@main/ipc/files'
+import { registerToolsIpc } from '@main/ipc/tools'
+import { registerMcpIpc } from '@main/ipc/mcp'
+import { registerScreenshotIpc } from '@main/ipc/screenshot'
+import { registerHFModelIpc } from '@main/ipc/huggingface'
+import { registerAgentIpc } from '@main/ipc/agent'
+import { registerProjectIpc } from '@main/ipc/project'
+import { registerLoggingIpc } from '@main/ipc/logging'
+import { registerTerminalIpc } from '@main/ipc/terminal'
+import { registerDialogIpc } from '@main/ipc/dialog'
+import { registerHistoryIpc } from '@main/ipc/history'
+import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed'
+import { registerExportIpc } from '@main/ipc/export'
+import { registerCouncilIpc } from '@main/ipc/council'
+import { registerGalleryIpc } from '@main/ipc/gallery'
+import { registerLlamaIpc } from '@main/ipc/llama'
+import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process'
+import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence'
+import { registerMemoryIpc } from '@main/ipc/memory'
+import { registerGitIpc } from '@main/ipc/git'
 
-import { ToolExecutor } from './tools/tool-executor'
-import { SettingsService } from './services/settings.service'
+import { ToolExecutor } from '@main/tools/tool-executor'
+import { SettingsService } from '@main/services/settings.service'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -70,7 +70,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         backgroundColor: '#000000',
         autoHideMenuBar: true,
         webPreferences: {
-            preload: join(__dirname, '../preload/preload.js'),
+            preload: path.resolve(app.getAppPath(), 'dist/preload/preload.js'),
             sandbox: false,
             contextIsolation: true,
             nodeIntegration: false
@@ -163,7 +163,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
         win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
-        win.loadFile(join(__dirname, '../renderer/index.html'))
+        win.loadFile(join(__dirname, '@renderer/index.html'))
     }
 
     return win
@@ -513,7 +513,7 @@ function setupTray() {
         // Create a simple icon (you can replace this with an actual icon file)
         const icon = nativeImage.createEmpty()
         // For now, use a simple approach - you may want to load an actual icon file
-        // const iconPath = path.join(__dirname, '../assets/icon.png')
+        // const iconPath = path.join(process.cwd(), 'src/renderer/assets/logo.png')
         // const icon = nativeImage.createFromPath(iconPath)
 
         tray = new Tray(icon)

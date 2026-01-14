@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { resolve } from 'path'
-import { FileSystemService } from '../services/data/filesystem.service'
+import { FileSystemService } from '@main/services/data/filesystem.service'
 
 export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,

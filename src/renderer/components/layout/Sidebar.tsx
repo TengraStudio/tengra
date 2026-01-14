@@ -12,7 +12,7 @@ import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
 import { useProject } from '@/context/ProjectContext'
 import { SettingsCategory } from '@/features/settings/types'
-import { SidebarItem } from './sidebar/SidebarItem'
+import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem'
 
 interface SidebarProps {
     isCollapsed: boolean

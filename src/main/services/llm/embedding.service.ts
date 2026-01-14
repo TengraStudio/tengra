@@ -1,7 +1,7 @@
-import { OllamaService } from './ollama.service';
-import { LLMService } from './llm.service';
-import { LlamaService } from './llama.service';
-import { SettingsService } from '../settings.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { LlamaService } from '@main/services/llm/llama.service';
+import { SettingsService } from '@main/services/settings.service';
 
 export type EmbeddingProvider = 'ollama' | 'openai' | 'llama' | 'none';
 

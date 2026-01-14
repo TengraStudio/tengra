@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Message, ToolCall, JsonValue, JsonObject, ToolDefinition } from '../../../shared/types';
-import { getErrorMessage } from '../../../shared/utils/error.util';
+import { Message, ToolCall, JsonValue, JsonObject, ToolDefinition } from '@shared/types';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
 const API_VERSION = '2023-07-07';

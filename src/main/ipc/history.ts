@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { HistoryImportService } from '../services/history-import.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { HistoryImportService } from '@main/services/history-import.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export function registerHistoryIpc(historyImportService: HistoryImportService) {
     ipcMain.handle('history:import', async (_event, provider: string) => {

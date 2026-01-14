@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useDebounce } from './useDebounce'
+import { useDebounce } from '@renderer/hooks/useDebounce'
 
 /**
  * Custom hook for debounced search with filtering

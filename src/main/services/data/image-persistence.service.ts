@@ -4,9 +4,9 @@ import * as path from 'path'
 import * as crypto from 'crypto'
 import * as https from 'https'
 import * as http from 'http'
-import { appLogger } from '../../logging/logger'
-import { DataService } from './data.service'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { appLogger } from '@main/logging/logger'
+import { DataService } from '@main/services/data/data.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 
 export class ImagePersistenceService {

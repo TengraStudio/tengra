@@ -1,4 +1,4 @@
-import { appLogger } from '../logging/logger';
+import { appLogger } from '@main/logging/logger';
 
 export enum CircuitState {
     CLOSED = 'CLOSED',

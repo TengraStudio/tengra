@@ -1,7 +1,7 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { PromptTemplatesService } from '../services/prompt-templates.service'
-import { PromptTemplate } from '../utils/prompt-templates.util'
-import { createIpcHandler, createSafeIpcHandler } from '../utils/ipc-wrapper.util'
+import { PromptTemplatesService } from '@main/services/prompt-templates.service'
+import { PromptTemplate } from '@main/utils/prompt-templates.util'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 
 /**
  * Registers IPC handlers for prompt templates library

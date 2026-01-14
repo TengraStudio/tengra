@@ -3,12 +3,12 @@ import { spawn, ChildProcess } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
-import { appLogger } from '../../logging/logger'
-import { SettingsService } from '../settings.service'
-import { SecurityService } from '../security.service'
-import { DataService } from '../data/data.service'
+import { appLogger } from '@main/logging/logger'
+import { SettingsService } from '@main/services/settings.service'
+import { SecurityService } from '@main/services/security.service'
+import { DataService } from '@main/services/data/data.service'
 import { app } from 'electron'
-import { JsonObject } from '../../../shared/types/common' 
+import { JsonObject } from '@shared/types/common'
 
 export interface ProxyEmbedStatus {
     running: boolean

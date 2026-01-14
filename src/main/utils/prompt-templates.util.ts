@@ -3,7 +3,7 @@
  * Reusable prompts with variable substitution
  */
 
-import { JsonObject } from '../../shared/types/common'
+import { JsonObject } from '@shared/types/common'
 
 export interface PromptTemplate {
     id: string

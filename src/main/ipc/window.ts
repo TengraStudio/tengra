@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from 'electron'
-import { appLogger } from '../logging/logger'
-import { exec, spawn } from 'child_process'
+import { appLogger } from '@main/logging/logger'
+import { spawn } from 'child_process'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:minimize', () => getMainWindow()?.minimize())
@@ -32,7 +33,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
             win.center()
         }
     })
-    
+
     ipcMain.on('window:toggle-fullscreen', () => {
         const win = getMainWindow()
         if (!win) return
@@ -65,18 +66,12 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
             const urlString = parsed.toString()
 
             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                console.log('[MAIN] Opening URL with shell.openExternal...')
+                appLogger.info('WindowIPC', `Opening URL with shell.openExternal: ${urlString}`)
                 try {
                     await shell.openExternal(urlString)
                     return { success: true }
                 } catch (e) {
-                    console.error('[MAIN] shell.openExternal failed:', e)
-                    if (process.platform === 'win32') {
-                        console.log('[MAIN] Falling back to PowerShell/CMD for Windows...')
-                        exec(`powershell -Command "Start-Process '${urlString}'"`)
-                        exec(`start "" "${urlString}"`)
-                        return { success: true, warning: 'Fallback triggered' }
-                    }
+                    appLogger.error('WindowIPC', `shell.openExternal failed: ${getErrorMessage(e as Error)}`)
                     return { success: false, error: String(e) }
                 }
             } else {
@@ -90,19 +85,22 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
 
     ipcMain.handle('shell:openTerminal', async (_event, command) => {
         if (process.platform === 'win32') {
-            spawn('start', ['cmd', '/k', command], { shell: true })
+            // Sanitize command - only allow alphanumeric and common symbols, no shell redirects
+            const sanitized = command.replace(/[&|><;]/g, '')
+            spawn('cmd', ['/k', sanitized], { shell: true })
         } else {
             // Basic fallback for Linux/Mac
-            console.log('Open terminal not fully supported on non-windows yet:', command)
+            appLogger.warn('WindowIPC', `Open terminal not fully supported on non-windows yet: ${command}`)
         }
         return true
     })
 
     ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
         return new Promise((resolve) => {
+            appLogger.info('WindowIPC', `Running command: ${command} ${args.join(' ')}`)
             const child = spawn(command, args, {
                 cwd: cwd || process.cwd(),
-                shell: true
+                shell: false // Disable shell for security
             })
 
             let stdout = ''

@@ -1,4 +1,4 @@
-import { JsonObject, JsonValue } from './common';
+import { JsonObject, JsonValue } from '@/types/common';
 
 export interface Attachment {
     id: string

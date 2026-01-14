@@ -1,7 +1,7 @@
 import { IpcMainInvokeEvent } from 'electron';
-import { appLogger } from '../logging/logger';
-import { getErrorMessage, AppErrorCode, OrbitError } from '../../shared/utils/error.util';
-import { JsonValue } from '../../shared/types/common';
+import { appLogger } from '@main/logging/logger';
+import { getErrorMessage, AppErrorCode, OrbitError } from '@shared/utils/error.util';
+import { JsonValue } from '@shared/types/common';
 
 export interface IpcResponse<T = JsonValue> {
     success: boolean;
@@ -43,7 +43,7 @@ export const createIpcHandler = <T = JsonValue>(
             // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
             const result = await handler(event, ...args);
             // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
-            
+
             if (wrapResponse) {
                 return { success: true, data: result } as IpcResponse<T>;
             }

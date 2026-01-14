@@ -6,8 +6,8 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { BrowserWindow, dialog } from 'electron';
-import { appLogger } from '../logging/logger';
-import { Message, Chat } from '../../shared/types/chat';
+import { appLogger } from '@main/logging/logger';
+import { Chat, Message } from '@shared/types/chat';
 
 export type ExportFormat = 'markdown' | 'html' | 'json' | 'txt';
 

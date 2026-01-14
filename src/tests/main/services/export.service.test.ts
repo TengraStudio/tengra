@@ -2,11 +2,11 @@
  * Unit tests for ExportService
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ExportService } from '../../../main/services/export.service';
-import { Chat, Message } from '../../../main/../shared/types/chat';
+import { ExportService } from '@main/services/export.service';
+import { Chat, Message } from '@/types/chat';
 
 // Mock the logger
-vi.mock('../logging/logger', () => ({
+vi.mock('@main/logging/logger', () => ({
     appLogger: {
         debug: vi.fn(),
         info: vi.fn(),

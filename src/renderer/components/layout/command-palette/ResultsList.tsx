@@ -1,7 +1,7 @@
 import React from 'react'
 import { Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CommandItem } from '../CommandPalette'
+import { CommandItem } from '@renderer/components/layout/CommandPalette'
 
 interface ResultsListProps {
     groupedCommands: Record<string, CommandItem[]>;

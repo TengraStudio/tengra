@@ -1,6 +1,6 @@
 ﻿import React from 'react'
 import { Globe, Activity, Database, Download, RefreshCw } from 'lucide-react'
-import { AppSettings } from '../../../../shared/types/settings'
+import { AppSettings } from '@/types/settings'
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
 
 interface GeneralTabProps {

@@ -1,17 +1,17 @@
 import { memo, useState, useMemo } from 'react'
 import { useTranslation } from '@/i18n'
-import { useSettingsLogic } from './hooks/useSettingsLogic'
+import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
 import { cn } from '@/lib/utils'
 import { GalleryView } from '@/features/chat/components/GalleryView'
 import { Search, X } from 'lucide-react'
 
 // Tab Components
 import { GeneralTab, AccountsTab, AppearanceTab, ModelsTab, StatisticsTab, PersonasTab, SpeechTab, DeveloperTab, AdvancedTab, AboutTab, ModelUsageLimitsTab, MCPSettingsTab } from '@/features/settings/components'
-import './SettingsPage.css'
+import '@renderer/features/settings/SettingsPage.css'
 
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { SettingsCategory } from './types'
+import { SettingsCategory } from '@renderer/features/settings/types'
 
 export interface SettingsPageProps {
     installedModels: ModelInfo[]

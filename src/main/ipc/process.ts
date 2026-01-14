@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import { ProcessService } from '../services/process.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { ProcessService } from '@main/services/process.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export const registerProcessIpc = (processService: ProcessService) => {
     ipcMain.handle('process:spawn', async (_, command: string, args: string[], cwd: string) => {

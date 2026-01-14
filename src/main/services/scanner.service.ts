@@ -1,9 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { getErrorMessage } from '../../shared/utils/error.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
-import { JsonValue } from '../../shared/types/common';
-
+import { JsonValue } from '@shared/types/common';
 export interface ScanResult {
     path: string;
     content: string;

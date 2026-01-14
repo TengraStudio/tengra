@@ -1,7 +1,7 @@
 import React from 'react'
 import { RefreshCw, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { AppSettings } from '../../../../shared/types'
+import { AppSettings } from '@/types'
 import chatgptLogo from '@/assets/chatgpt.svg'
 import antigravityLogo from '@/assets/antigravity.svg'
 import claudeLogo from '@/assets/claude.svg'

@@ -1,5 +1,5 @@
 
-import { ToolDefinition } from '../../shared/types';
+import { ToolDefinition } from '@shared/types';
 
 /**
  * Role of the message sender.

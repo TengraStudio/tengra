@@ -23,7 +23,7 @@ vi.mock('fs/promises', () => ({
     copyFile: vi.fn().mockResolvedValue(undefined)
 }));
 
-import { SecurityService } from '../../../main/services/security.service';
+import { SecurityService } from '@main/services/security.service';
 
 describe('SecurityService', () => {
     let service: SecurityService;

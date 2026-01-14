@@ -3,8 +3,8 @@
  * Manages concurrent API requests with priority and throttling
  */
 
-import { CatchError } from '../../shared/types/common'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { CatchError } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export type Priority = 'high' | 'normal' | 'low'
 
@@ -110,7 +110,7 @@ export class RequestQueue {
 
         const MAX_QUEUE_ITERATIONS = 10000;
         let iterations = 0;
-        
+
         while (this.running < this.options.maxConcurrent && this.queue.length > 0 && iterations < MAX_QUEUE_ITERATIONS) {
             const request = this.queue.shift()
             if (!request) break
@@ -137,7 +137,7 @@ export class RequestQueue {
                     }
                 })
         }
-        
+
         if (iterations >= MAX_QUEUE_ITERATIONS) {
             console.error('[RequestQueue] Queue processing exceeded maximum iterations');
         }

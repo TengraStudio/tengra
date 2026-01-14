@@ -1,4 +1,5 @@
-import { CatchError, JsonValue } from '../../shared/types/common'
+import { CatchError, JsonValue } from '@shared/types/common'
+
 export enum AppErrorCode {
     UNKNOWN = 'UNKNOWN',
     NETWORK_ERROR = 'NETWORK_ERROR',

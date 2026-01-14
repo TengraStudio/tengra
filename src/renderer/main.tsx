@@ -1,13 +1,13 @@
-import './web-bridge'
-import { installRendererLogger } from './logging'
+import '@renderer/web-bridge'
+import { installRendererLogger } from '@renderer/logging'
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
 
-import App from './App'
-import { AppProviders } from './context/AppProviders'
-import './index.css'
+import App from '@renderer/App'
+import { AppProviders } from '@renderer/context/AppProviders'
+import '@renderer/index.css'
 
 installRendererLogger()
 

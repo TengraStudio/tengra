@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Loader2, Clock, MessageSquare, Activity, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'
-import { QuotaResponse, CodexUsage, CopilotQuota, AppSettings, ModelQuotaItem } from '../../../../shared/types'
+import { QuotaResponse, CodexUsage, CopilotQuota, AppSettings, ModelQuotaItem } from '@/types'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 

@@ -1,7 +1,8 @@
-import { DatabaseService } from './data/database.service'
-import { ProxyService } from './proxy/proxy.service'
-import { JsonObject, JsonValue } from '../../shared/types'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { DatabaseService } from '@main/services/data/database.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { JsonObject, JsonValue } from '@shared/types'
+import { Chat, Message } from '@shared/types/chat'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 
 type ImportResult = {

@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataService } from './data/data.service'
-import { SecurityService } from './security.service'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { DataService } from '@main/services/data/data.service'
+import { SecurityService } from '@main/services/security.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export class AuthService {
     private authDir: string

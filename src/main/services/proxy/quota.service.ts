@@ -3,12 +3,13 @@ import { net, session, app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import axios from 'axios'
-import { SettingsService } from '../settings.service'
-import { DataService } from '../data/data.service'
-import { SecurityService } from '../security.service'
-import { QuotaInfo, ModelQuotaItem, QuotaResponse, CodexUsage } from '../../../shared/types/quota'
-import { JsonObject, JsonValue } from '../../../shared/types/common'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { appLogger } from '@main/logging/logger'
+import { SettingsService } from '@main/services/settings.service'
+import { DataService } from '@main/services/data/data.service'
+import { SecurityService } from '@main/services/security.service'
+import { QuotaInfo, ModelQuotaItem, QuotaResponse, CodexUsage } from '@shared/types/quota'
+import { JsonObject, JsonValue } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
 const ANTIGRAVITY_CLIENT_SECRET = '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'
@@ -312,7 +313,7 @@ export class QuotaService {
                     const files = fs.readdirSync(authDir).filter(f => f.startsWith('codex-') && f.endsWith('.json'))
                     if (files.length > 0) {
                         const authFile = path.join(authDir, files[0])
-                        const content = this.readAuthFile(authFile)
+                        const content = await this.readAuthFile(authFile)
                         const fileToken = content ? this.pickOpenAiAccessToken(content) : null
                         if (fileToken) token = fileToken
                     }
@@ -345,7 +346,7 @@ export class QuotaService {
 
         const data = await this.fetchCodexUsageFromWham(token) as ({ email?: string } & JsonObject) | null
         if (data) {
-            this.updateAuthFile('codex-session.json', {
+            await this.updateAuthFile('codex-session.json', {
                 accessToken: token,
                 provider: 'codex',
                 timestamp: Date.now(),
@@ -366,11 +367,13 @@ export class QuotaService {
                 const dir = this.getAuthWorkDir()
                 const txtFile = path.join(dir, 'claude_session.txt')
                 if (fs.existsSync(txtFile)) {
-                    const key = fs.readFileSync(txtFile, 'utf8').trim()
-                    if (key) this.updateClaudeAuth({ session_key: key })
-                    fs.unlinkSync(txtFile)
+                    const key = (await fs.promises.readFile(txtFile, 'utf8')).trim()
+                    if (key) await this.updateClaudeAuth({ session_key: key })
+                    await fs.promises.unlink(txtFile)
                 }
-            } catch { }
+            } catch (error) {
+                appLogger.error('QuotaService', `Claude TXT migration failed: ${getErrorMessage(error as Error)}`)
+            }
 
             // Capture from Electron if available (updates file)
             await this.captureElectronSessionKey()
@@ -442,7 +445,7 @@ export class QuotaService {
             const cookies = await session.defaultSession.cookies.get({ url: 'https://claude.ai', name: 'sessionKey' })
             if (cookies.length > 0) {
                 const val = cookies[0].value
-                this.updateClaudeAuth({ session_key: val })
+                await this.updateClaudeAuth({ session_key: val })
                 return val
             }
         } catch (e) {
@@ -451,7 +454,7 @@ export class QuotaService {
         return null
     }
 
-    private updateClaudeAuth(updates: JsonObject) {
+    private async updateClaudeAuth(updates: JsonObject) {
         try {
             const dir = this.getAuthWorkDir()
             if (!dir || !fs.existsSync(dir)) return
@@ -460,30 +463,36 @@ export class QuotaService {
             let targetFile = 'claude-session.json'
             let existingContent: JsonObject = {}
 
-            const files = fs.readdirSync(dir).filter(f => {
+            const files = (await fs.promises.readdir(dir)).filter(f => {
                 const n = f.toLowerCase()
                 return (n.startsWith('claude') || n.startsWith('anthropic')) && n.endsWith('.json')
             })
 
-            // Prefer file with existing access_token
-            const fileWithToken = files.find(f => {
-                const c = this.readAuthFile(path.join(dir, f))
-                return c && (c.access_token || c.accessToken)
-            })
+            // Let's find a file that has an access token
+            let foundFile = '';
+            for (const f of files) {
+                const c = await this.readAuthFile(path.join(dir, f))
+                if (c && (c.access_token || c.accessToken)) {
+                    foundFile = f;
+                    existingContent = c;
+                    break;
+                }
+            }
 
-            if (fileWithToken) {
-                targetFile = fileWithToken
-                existingContent = this.readAuthFile(path.join(dir, targetFile)) || {}
+            if (foundFile) {
+                targetFile = foundFile;
             } else if (files.length > 0) {
-                targetFile = files[0]
-                existingContent = this.readAuthFile(path.join(dir, targetFile)) || {}
+                targetFile = files[0];
+                existingContent = await this.readAuthFile(path.join(dir, targetFile)) || {}
             }
 
             // Update content by merging
             existingContent = { ...existingContent, ...updates, provider: 'claude' }
 
-            this.updateAuthFile(targetFile, existingContent)
-        } catch { }
+            await this.updateAuthFile(targetFile, existingContent)
+        } catch (error) {
+            appLogger.error('QuotaService', `updateClaudeAuth failed: ${getErrorMessage(error as Error)}`)
+        }
     }
 
     private async fetchClaudeOrganizationId(accessToken: string, sessionKey: string | null): Promise<string | null> {
@@ -587,7 +596,7 @@ export class QuotaService {
                 })
 
                 for (const file of claudeFiles) {
-                    const content = this.readAuthFile(path.join(dir, file))
+                    const content = await this.readAuthFile(path.join(dir, file))
                     if (content && (content.access_token || content.accessToken || content.session_key || content.sessionKey)) {
                         return content
                     }
@@ -636,7 +645,7 @@ export class QuotaService {
 
                     for (const file of [...copilotFiles, ...githubFiles]) {
                         const authFile = path.join(authDir, file)
-                        const content = this.readAuthFile(authFile)
+                        const content = await this.readAuthFile(authFile)
                         if (content) {
                             // Try to extract token - could be in 'token' or 'access_token' field
                             const fileToken = typeof content.token === 'string' ? content.token :
@@ -815,7 +824,7 @@ export class QuotaService {
         try {
             const dir = this.getAuthWorkDir()
             if (dir && fs.existsSync(dir)) {
-                const files = fs.readdirSync(dir)
+                const files = await fs.promises.readdir(dir)
                 const findFile = (pattern: string | RegExp) => {
                     return files.find(f => {
                         const name = f.toLowerCase()
@@ -828,11 +837,11 @@ export class QuotaService {
                 }
 
                 const specific = findFile('antigravity-')
-                if (specific) return this.readAuthFile(path.join(dir, specific))
+                if (specific) return await this.readAuthFile(path.join(dir, specific))
                 const tokenFile = findFile('antigravity_token')
-                if (tokenFile) return this.readAuthFile(path.join(dir, tokenFile))
+                if (tokenFile) return await this.readAuthFile(path.join(dir, tokenFile))
                 const generic = findFile('antigravity')
-                if (generic) return this.readAuthFile(path.join(dir, generic))
+                if (generic) return await this.readAuthFile(path.join(dir, generic))
 
             }
             return null
@@ -871,9 +880,9 @@ export class QuotaService {
         return this.dataService ? this.dataService.getPath('auth') : path.join(app.getPath('userData'), 'auth')
     }
 
-    private readAuthFile(filePath: string): JsonObject | null {
+    private async readAuthFile(filePath: string): Promise<JsonObject | null> {
         try {
-            const content = fs.readFileSync(filePath, 'utf8')
+            const content = await fs.promises.readFile(filePath, 'utf8')
             let extracted: string = content;
 
             // Try to see if it's a JSON wrapper first
@@ -925,13 +934,13 @@ export class QuotaService {
         }
     }
 
-    private updateAuthFile(nameOrPrefix: string, data: JsonObject) {
+    private async updateAuthFile(nameOrPrefix: string, data: JsonObject) {
         try {
             const dir = this.getAuthWorkDir()
             let fileName: string
             if (nameOrPrefix.endsWith('.json')) fileName = nameOrPrefix
             else {
-                const files = fs.readdirSync(dir).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
+                const files = (await fs.promises.readdir(dir)).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
                 fileName = files.length > 0 ? files[0] : `${nameOrPrefix}.json`
             }
             const filePath = path.join(dir, fileName)
@@ -940,9 +949,9 @@ export class QuotaService {
                 const encrypted = this.securityService.encryptSync(persistedData)
                 persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 })
             }
-            fs.writeFileSync(filePath, persistedData)
+            await fs.promises.writeFile(filePath, persistedData)
         } catch (error) {
-            console.error('[QuotaService] updateAuthFile failed:', getErrorMessage(error))
+            appLogger.error('QuotaService', `updateAuthFile failed: ${getErrorMessage(error as Error)}`)
         }
     }
 

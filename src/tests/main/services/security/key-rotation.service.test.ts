@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { KeyRotationService } from '../../../main/services/security/key-rotation.service';
-// import { SettingsService } from '../../../main/services/settings.service';
+import { KeyRotationService } from '@main/services/security/key-rotation.service';
+// import { SettingsService } from '@main/services/settings.service';
 
 // Mock the logger to avoid side effects
-vi.mock('../../logging/logger', () => ({
+vi.mock('@main/logging/logger', () => ({
     appLogger: {
         debug: vi.fn(),
         info: vi.fn(),

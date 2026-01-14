@@ -49,7 +49,7 @@ vi.mock('path', () => ({
 }))
 
 import { describe, it, expect } from 'vitest'
-import { QuotaService } from '../../../main/services/proxy/quota.service'
+import { QuotaService } from '@main/services/proxy/quota.service'
 
 const mockSettingsService = { getSettings: vi.fn(() => ({})) } as any
 const mockDataService = { getPath: vi.fn() } as any

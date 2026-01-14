@@ -5,8 +5,8 @@ import * as crypto from 'crypto'
 import { Client, ClientChannel } from 'ssh2'
 import { EventEmitter } from 'events'
 import { safeStorage } from 'electron'
-import { SSHExecOptions, SSHFile, SSHSystemStats, SSHPackageInfo } from '../../shared/types/ssh'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { SSHExecOptions, SSHFile, SSHSystemStats, SSHPackageInfo } from '@shared/types/ssh'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface SSHConnection {
     id: string
@@ -263,7 +263,7 @@ export class SSHService extends EventEmitter {
                 // Setup keepalive
                 const timer = setInterval(() => {
                     if (conn) {
-                        conn.exec('echo keepalive', () => {})
+                        conn.exec('echo keepalive', () => { })
                     }
                 }, keepaliveInterval)
                 this.keepaliveTimers.set(config.id, timer)

@@ -2,10 +2,10 @@ import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 
-import { DatabaseService, SemanticFragment } from './data/database.service'
-import { EmbeddingService } from './llm/embedding.service'
+import { DatabaseService, SemanticFragment } from '@main/services/data/database.service'
+import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { BrowserWindow } from 'electron'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface CodeSymbol {
     file: string;

@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { appLogger, LogLevel } from '../logging/logger'
-import { JsonValue } from '../../shared/types/common'
+import { appLogger, LogLevel } from '@main/logging/logger'
+import { JsonValue } from '@shared/types/common'
 
 // Log buffer for streaming to renderer
 const logBuffer: Array<{
@@ -18,7 +18,7 @@ let streamingEnabled = false
  */
 export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source: string, message: string) {
     const entry = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `${ Date.now() } -${ Math.random().toString(36).substr(2, 9) } `,
         timestamp: new Date(),
         level,
         source,
@@ -63,7 +63,7 @@ export function registerLoggingIpc() {
             // log:write, { level, message, context, data }
             level = arg1.level ?? LogLevel.INFO
             message = arg1.message ?? ''
-            context = arg1.context ? `renderer:${arg1.context}` : 'renderer'
+            context = arg1.context ? `renderer:${ arg1.context } ` : 'renderer'
             data = arg1.data
         }
 

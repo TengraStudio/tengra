@@ -1,8 +1,8 @@
 // MemoryService - Refactored for Async DatabaseService
-import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge } from './data/database.service'
-import { EmbeddingService } from './llm/embedding.service'
-import { LLMService } from './llm/llm.service'
-import { ChatMessage } from '../types/llm.types'
+import { DatabaseService, SemanticFragment, EpisodicMemory, EntityKnowledge } from '@main/services/data/database.service'
+import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { LLMService } from '@main/services/llm/llm.service'
+import { ChatMessage } from '@main/types/llm.types'
 
 interface PersonalitySettings {
     traits: string[];

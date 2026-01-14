@@ -1,5 +1,5 @@
-import { IRepository } from '../core/repository.interface';
-import { Folder, DatabaseService } from '../services/data/database.service';
+import { IRepository } from '@main/core/repository.interface';
+import { Folder, DatabaseService } from '@main/services/data/database.service';
 
 /**
  * Repository for managing Folders.

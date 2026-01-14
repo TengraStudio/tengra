@@ -2,7 +2,7 @@ import { BrowserWindow, dialog } from 'electron'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as http from 'http'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 
 const execAsync = promisify(exec)

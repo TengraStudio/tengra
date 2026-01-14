@@ -41,7 +41,7 @@ export class TokenService {
         private copilotService: CopilotService,
         private dataService: DataService,
         private securityService: SecurityService,
-        private jobScheduler?: import('../job-scheduler.service').JobSchedulerService
+        private jobScheduler?: import('@main/services/job-scheduler.service').JobSchedulerService
     ) { }
 
     /**
@@ -115,12 +115,12 @@ export class TokenService {
     /**
      * Check which providers are logged in
      */
-    private getLoggedInProviders(): {
+    private async getLoggedInProviders(): Promise<{
         google: boolean
         codex: boolean
         claude: boolean
         copilot: boolean
-    } {
+    }> {
         const settings = this.settingsService.getSettings()
         const authDir = this.getAuthDir()
 
@@ -131,7 +131,7 @@ export class TokenService {
         }
         if (!hasGoogle && fs.existsSync(authDir)) {
             try {
-                const files = fs.readdirSync(authDir)
+                const files = await fs.promises.readdir(authDir)
                 hasGoogle = files.some(f => {
                     const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
                     return name.startsWith('antigravity') || name.startsWith('google')
@@ -148,7 +148,7 @@ export class TokenService {
         }
         if (!hasCodex && fs.existsSync(authDir)) {
             try {
-                const files = fs.readdirSync(authDir)
+                const files = await fs.promises.readdir(authDir)
                 hasCodex = files.some(f => {
                     const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
                     return name.startsWith('codex') || name.startsWith('openai')
@@ -165,7 +165,7 @@ export class TokenService {
         }
         if (!hasClaude && fs.existsSync(authDir)) {
             try {
-                const files = fs.readdirSync(authDir)
+                const files = await fs.promises.readdir(authDir)
                 hasClaude = files.some(f => {
                     const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
                     return name.startsWith('claude') || name.startsWith('anthropic')
@@ -186,7 +186,7 @@ export class TokenService {
      * Refresh all OAuth tokens
      */
     private async refreshAllTokens() {
-        const providers = this.getLoggedInProviders()
+        const providers = await this.getLoggedInProviders()
 
         const tasks: Promise<void>[] = []
 
@@ -221,7 +221,7 @@ export class TokenService {
         const authDir = this.getAuthDir()
         if (!fs.existsSync(authDir)) return
 
-        const files = fs.readdirSync(authDir).filter(f => {
+        const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
             return name.startsWith('antigravity') || name.startsWith('google')
         })
@@ -229,7 +229,7 @@ export class TokenService {
         for (const file of files) {
             try {
                 const filePath = path.join(authDir, file)
-                const authData = this.readAuthFile(filePath)
+                const authData = await this.readAuthFile(filePath)
                 if (!authData) continue
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
@@ -272,7 +272,7 @@ export class TokenService {
                 }
 
                 // Save updated token
-                this.saveAuthFile(filePath, updatedData)
+                await this.saveAuthFile(filePath, updatedData)
 
                 console.log('[TokenService] Google/Antigravity token refreshed successfully')
             } catch (error: unknown) {
@@ -300,7 +300,7 @@ export class TokenService {
         const authDir = this.getAuthDir()
         if (!fs.existsSync(authDir)) return
 
-        const files = fs.readdirSync(authDir).filter(f => {
+        const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
             return name.startsWith('codex') || name.startsWith('openai')
         })
@@ -308,7 +308,7 @@ export class TokenService {
         for (const file of files) {
             try {
                 const filePath = path.join(authDir, file)
-                const authData = this.readAuthFile(filePath)
+                const authData = await this.readAuthFile(filePath)
                 if (!authData) continue
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
@@ -321,7 +321,6 @@ export class TokenService {
                         continue // Token still valid
                     }
                 }
-
                 console.log('[TokenService] Refreshing Codex token...')
 
                 // Codex uses OpenAI OAuth flow (form-encoded)
@@ -356,8 +355,7 @@ export class TokenService {
                 }
 
                 // Save updated token
-                this.saveAuthFile(filePath, updatedData)
-
+                await this.saveAuthFile(filePath, updatedData)
                 console.log('[TokenService] Codex token refreshed successfully')
             } catch (error: unknown) {
                 const errorMsg = getErrorMessage(error)
@@ -413,7 +411,7 @@ export class TokenService {
         // 2. If we have a refresh_token in file, try OAuth refresh
         if (!fs.existsSync(authDir)) return
 
-        const files = fs.readdirSync(authDir).filter(f => {
+        const files = (await fs.promises.readdir(authDir)).filter(f => {
             const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
             return name.startsWith('claude') || name.startsWith('anthropic')
         })
@@ -421,7 +419,7 @@ export class TokenService {
         for (const file of files) {
             try {
                 const filePath = path.join(authDir, file)
-                const authData = this.readAuthFile(filePath)
+                const authData = await this.readAuthFile(filePath)
                 if (!authData) continue
 
                 const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
@@ -481,8 +479,7 @@ export class TokenService {
                 }
 
                 // Save updated token
-                this.saveAuthFile(filePath, updatedData)
-
+                await this.saveAuthFile(filePath, updatedData)
                 console.log('[TokenService] Claude OAuth token refreshed successfully')
             } catch (error: unknown) {
                 const errorMsg = getErrorMessage(error)
@@ -529,14 +526,14 @@ export class TokenService {
         let targetFile = 'claude-session.json'
         let existingContent: JsonObject = {}
 
-        const files = fs.readdirSync(authDir).filter(f => {
+        const files = (await fs.promises.readdir(authDir)).filter(f => {
             const n = f.toLowerCase()
             return (n.startsWith('claude') || n.startsWith('anthropic')) && n.endsWith('.json')
         })
 
         if (files.length > 0) {
             targetFile = files[0]
-            existingContent = this.readAuthFile(path.join(authDir, targetFile)) || {}
+            existingContent = await this.readAuthFile(path.join(authDir, targetFile)) || {}
         }
 
         const updatedContent: JsonObject = {
@@ -546,7 +543,7 @@ export class TokenService {
             updated_at: Date.now()
         }
 
-        this.saveAuthFile(path.join(authDir, targetFile), updatedContent)
+        await this.saveAuthFile(path.join(authDir, targetFile), updatedContent)
     }
 
     /**
@@ -555,7 +552,7 @@ export class TokenService {
      * This only refreshes the Copilot session token (which expires every ~20 minutes).
      */
     private async refreshCopilotToken(): Promise<void> {
-        const providers = this.getLoggedInProviders()
+        const providers = await this.getLoggedInProviders()
 
         if (!providers.copilot) {
             return // Copilot not logged in, skip
@@ -577,7 +574,7 @@ export class TokenService {
 
                 // ONLY use copilot_token, no fallback
                 if (fs.existsSync(copilotTokenFile)) {
-                    const authData = this.readAuthFile(copilotTokenFile)
+                    const authData = await this.readAuthFile(copilotTokenFile)
                     if (authData && typeof authData.token === 'string') {
                         copilotToken = authData.token
                     } else if (authData && typeof authData.access_token === 'string') {
@@ -600,9 +597,9 @@ export class TokenService {
     /**
      * Read and decrypt auth file
      */
-    private readAuthFile(filePath: string): JsonObject | null {
+    private async readAuthFile(filePath: string): Promise<JsonObject | null> {
         try {
-            const content = fs.readFileSync(filePath, 'utf8')
+            const content = await fs.promises.readFile(filePath, 'utf8')
             let json: JsonObject
 
             try {
@@ -641,7 +638,7 @@ export class TokenService {
     /**
      * Save and encrypt auth file
      */
-    private saveAuthFile(filePath: string, data: JsonObject): void {
+    private async saveAuthFile(filePath: string, data: JsonObject): Promise<void> {
         try {
             if (this.securityService) {
                 // Encrypt the token data
@@ -651,10 +648,10 @@ export class TokenService {
                     token: encrypted,
                     updatedAt: Date.now()
                 }
-                fs.writeFileSync(filePath, JSON.stringify(wrapper, null, 2), 'utf8')
+                await fs.promises.writeFile(filePath, JSON.stringify(wrapper, null, 2), 'utf8')
             } else {
                 // Save as plain JSON (not recommended but fallback)
-                fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8')
+                await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
             }
         } catch (error) {
             console.error(`[TokenService] Failed to save auth file ${filePath}:`, getErrorMessage(error))

@@ -5,9 +5,9 @@
  */
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
-import { appLogger } from '../logging/logger'
-import { getErrorMessage } from '../../shared/utils/error.util'
-import { JsonValue } from '../../shared/types/common'
+import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
+import { JsonValue } from '@shared/types/common'
 
 export interface BatchRequest {
     channel: string

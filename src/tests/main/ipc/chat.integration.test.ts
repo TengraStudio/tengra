@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IpcMainInvokeEvent } from 'electron';
-import { registerChatIpc } from '../../../main/ipc/chat';
+import { registerChatIpc } from '@main/ipc/chat';
 
 // Mock Electron ipcMain
 const ipcMainHandlers = new Map<string, Function>();

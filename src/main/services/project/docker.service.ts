@@ -1,6 +1,6 @@
-import { JsonObject } from '../../../shared/types/common';
-import { CommandService } from '../system/command.service';
-import { SSHService } from '../ssh.service';
+import { JsonObject } from '@shared/types/common';
+import { CommandService } from '@main/services/system/command.service';
+import { SSHService } from '@main/services/ssh.service';
 
 export class DockerService {
     constructor(

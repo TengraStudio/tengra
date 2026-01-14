@@ -1,4 +1,4 @@
-import { JsonValue } from '../../shared/types/common'
+import { JsonValue } from '@/types/common'
 export enum LogLevel {
     DEBUG = 0,
     INFO = 1,

@@ -5,10 +5,10 @@ import { Chat, Project } from '@/types'
 import { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { useDebounce } from '@/hooks/useDebounce'
 import { SettingsCategory } from '@/features/settings/types'
-import { CommandHeader } from './command-palette/CommandHeader'
-import { ResultsList } from './command-palette/ResultsList'
-import { PreviewPanel } from './command-palette/PreviewPanel'
-import { CommandFooter } from './command-palette/CommandFooter'
+import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader'
+import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList'
+import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel'
+import { CommandFooter } from '@renderer/components/layout/command-palette/CommandFooter'
 
 export interface CommandItem {
     id: string;

@@ -2,8 +2,8 @@
 let Sentry: typeof import('@sentry/electron/main') | null = null;
 
 import { app } from 'electron'
-import { SettingsService } from './settings.service'
-import { JsonValue } from '../../shared/types/common'
+import { SettingsService } from '@main/services/settings.service'
+import { JsonValue } from '@shared/types/common'
 
 // IMPORTANT: Replace this with your actual Sentry DSN
 const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000'

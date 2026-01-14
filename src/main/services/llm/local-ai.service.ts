@@ -3,8 +3,7 @@ import { existsSync } from 'fs'
 import * as fsPromises from 'fs/promises'
 import { join } from 'path'
 import { app } from 'electron'
-import { SettingsService } from '../settings.service'
-
+import { SettingsService } from '@main/services/settings.service'
 
 export interface LocalAIModel {
     id: string
@@ -13,8 +12,6 @@ export interface LocalAIModel {
     provider: 'ollama' | 'llama-cpp'
     loaded: boolean
 }
-
-// import { DataService } from './data.service'
 
 export interface OllamaModel {
     name: string

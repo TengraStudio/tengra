@@ -2,7 +2,7 @@
  * @fileoverview Rate limiter utility using the Token Bucket algorithm.
  */
 
-import { JsonValue } from '../../shared/types/common'
+import { JsonValue } from '@shared/types/common'
 /**
  * Configuration for a rate limiter instance.
  */

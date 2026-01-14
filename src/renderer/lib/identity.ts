@@ -1,4 +1,4 @@
-import { buildSystemPrompt, SupportedLanguage } from '../../shared/instructions'
+import { buildSystemPrompt, SupportedLanguage } from '@shared/instructions'
 
 export interface BrandConfig {
     name: string

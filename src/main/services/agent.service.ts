@@ -1,4 +1,4 @@
-import { DatabaseService } from './data/database.service'
+import { DatabaseService } from '@main/services/data/database.service'
 import { randomUUID } from 'crypto'
 
 export interface AgentDefinition {

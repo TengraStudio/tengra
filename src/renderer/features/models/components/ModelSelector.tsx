@@ -12,7 +12,7 @@ import { ChevronDown, Sparkles, BrainCircuit, Zap, Server, Box, Search, Check, L
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AppSettings, QuotaResponse, CodexUsage } from '@/types'
-import type { GroupedModels } from '../utils/model-fetcher'
+import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
 import { useDebounce } from '@/hooks/useDebounce'
 
 import { useTranslation, Language } from '@/i18n'

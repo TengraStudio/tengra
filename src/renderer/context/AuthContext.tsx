@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react'
-import { useAuthManager } from '../features/settings/hooks/useAuthManager'
+import { useAuthManager } from '@renderer/features/settings/hooks/useAuthManager'
 
 type AuthContextType = ReturnType<typeof useAuthManager>
 

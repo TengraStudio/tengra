@@ -3,9 +3,9 @@
  * Automatically routes requests to the best available provider
  */
 
-import { getRateLimiter } from './rate-limiter.util'
+import { getRateLimiter } from '@main/utils/rate-limiter.util'
 
-import { getHealthCheckService } from '../services/health-check.service'
+import { getHealthCheckService } from '@main/services/health-check.service'
 
 export interface ModelInfo {
     id: string

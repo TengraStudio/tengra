@@ -1,4 +1,4 @@
-import { CatchError, AppError } from '../types/common';
+import { CatchError, AppError } from '@/types/common';
 
 /**
  * Error handling utilities

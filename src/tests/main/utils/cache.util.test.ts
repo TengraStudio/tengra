@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Cache, memoize } from '../../../main/utils/cache.util'
+import { Cache, memoize } from '@main/utils/cache.util'
 
 describe('Cache', () => {
     let cache: Cache<string>

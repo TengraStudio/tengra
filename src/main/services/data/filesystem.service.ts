@@ -3,8 +3,8 @@ import { watch } from 'fs'
 import * as path from 'path'
 import * as https from 'https'
 import { createWriteStream } from 'fs'
-import { ServiceResponse } from '../../../shared/types/index'
-import { getErrorMessage } from '../../../shared/utils/error.util'
+import { ServiceResponse } from '@shared/types/index'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export class FileSystemService {
     private allowedRoots: string[] = []

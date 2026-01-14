@@ -1,17 +1,18 @@
-import { DatabaseService, CouncilSession } from './data/database.service'
+import { DatabaseService } from '@main/services/data/database.service'
 import { v4 as uuidv4 } from 'uuid'
-import { PLANNER_SYSTEM_PROMPT, EXECUTOR_SYSTEM_PROMPT, REVIEWER_SYSTEM_PROMPT } from './prompts/agent-prompts'
-import { LLMService } from './llm/llm.service'
-import { FileSystemService } from './data/filesystem.service'
-import { ProcessService } from './process.service'
-import { CodeIntelligenceService } from './code-intelligence.service'
-import { WebService } from './web.service'
+import { PLANNER_SYSTEM_PROMPT, EXECUTOR_SYSTEM_PROMPT, REVIEWER_SYSTEM_PROMPT } from '@main/services/prompts/agent-prompts'
+import { LLMService } from '@main/services/llm/llm.service'
+import { FileSystemService } from '@main/services/data/filesystem.service'
+import { ProcessService } from '@main/services/process.service'
+import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
+import { WebService } from '@main/services/web.service'
 
-import { CollaborationService } from './collaboration.service'
+import { CollaborationService } from '@main/services/collaboration.service'
 
-import { EmbeddingService } from './llm/embedding.service'
-import { JsonValue } from '../../shared/types/common'
-import { getErrorMessage } from '../../shared/utils/error.util'
+import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { JsonValue } from '@shared/types/common'
+import { CouncilSession, AgentDefinition, AgentMessage, AgentLog } from '@shared/types/agent'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 interface ToolCallArgs {
     command?: string;
