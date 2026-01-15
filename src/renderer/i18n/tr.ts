@@ -22,6 +22,19 @@ export const tr = {
         clear: 'Temizle',
         add: 'Ekle'
     },
+    themeStore: {
+        title: 'Tema Mağazası',
+        subtitle: 'Çalışma alanı görünümünü özelleştirin',
+        searchPlaceholder: 'Tema ara...',
+        filterAll: 'Tümü',
+        filterInstalled: 'Yüklü',
+        filterDark: 'Koyu',
+        filterLight: 'Açık',
+        noThemes: 'Tema bulunamadı',
+        apply: 'Temayı Uygula',
+        active: 'Aktif',
+        pro: 'PRO'
+    },
     modelSelector: {
         searchModels: 'Model Ara...',
         image: 'Görsel',
@@ -49,6 +62,7 @@ export const tr = {
         statistics: 'İstatistikler',
         gallery: 'Galeri',
         about: 'Hakkında',
+        personas: 'Kişilikler',
         factoryResetConfirm: 'Tüm verileri silmek istediğinize emin misiniz?'
     },
     projects: {
@@ -268,7 +282,70 @@ export const tr = {
         fileName: 'Ad',
         fileSize: 'Boyut',
         fileDate: 'Tarih',
-        fileActions: 'İşlemler'
+        fileActions: 'İşlemler',
+        placeholders: {
+            host: '192.168.1.1',
+            port: '22',
+            username: 'root'
+        },
+        nginx: {
+            title: 'Nginx Ters Proxy Sihirbazı',
+            subtitle: 'Backend uygulamanızı bir alan adı üzerinden kolayca yayınlayın.',
+            domain: 'Alan Adı',
+            port: 'Dahili Port',
+            preview: 'Yapılandırmayı Önizle',
+            apply: 'Uygula & Nginx\'i Yenile',
+            configPreview: 'Yapılandırma Önizlemesi',
+            placeholders: {
+                domain: 'api.benimuygulamam.com',
+                port: '3000'
+            },
+            status: {
+                domainRequired: 'Alan adı gereklidir',
+                connecting: 'Sunucuya bağlanılıyor...',
+                moving: 'Yapılandırma Nginx dizinine taşınıyor...',
+                success: 'Nginx başarıyla yenilendi!',
+                error: 'Uygulama başarısız: {{error}}. Sudo yetkilerine sahip olduğunuzdan emin olun.'
+            }
+        },
+        presets: {
+            title: 'Parametre Hazır Ayarları',
+            creative: 'Yaratıcı',
+            precise: 'Hassas',
+            coding: 'Kodlama',
+            balanced: 'Dengeli',
+            custom: 'Özel',
+            labels: {
+                name: 'Ayar Adı',
+                temperature: 'Sıcaklık',
+                topP: 'Top P'
+            },
+            placeholders: {
+                name: 'Örn. Benim Ayarım'
+            }
+        },
+        promptManager: {
+            title: 'Prompt Kütüphanesi',
+            newPrompt: 'Yeni Prompt',
+            labels: {
+                title: 'Başlık',
+                content: 'İçerik'
+            },
+            placeholders: {
+                title: 'Örn. Kod İyileştirme',
+                content: 'Prompt içeriğini girin...'
+            },
+            empty: {
+                title: 'Henüz prompt yok',
+                subtitle: 'Başlamak için bir tane oluşturun'
+            }
+        },
+        editor: {
+            loading: 'Editör yükleniyor...',
+            initializing: 'Editör başlatılıyor...',
+            error: 'Editör hatası: {{error}}',
+            aiRefactor: 'YZ Refaktör / Açıkla'
+        }
     },
     accounts: {
         title: 'Bağlı Hesaplar',
@@ -803,5 +880,24 @@ export const tr = {
         showing: 'Gösteriliyor',
         of: '/',
         logs: 'günlük'
+    },
+    personas: {
+        title: 'Kişilikler',
+        description: 'Yanıtları şekillendiren kişiselleştirme profilleri.',
+        namePlaceholder: 'Kişilik adı',
+        descriptionPlaceholder: 'Kısa açıklama',
+        promptPlaceholder: 'Prompt'
+    },
+    advancedTab: {
+        modelConfiguration: 'Model Yapılandırma',
+        modelConfigurationDesc: 'Seçili modele özel sistem komutları ve parametreler.',
+        customSystemMessage: 'Özel Sistem Mesajı',
+        systemPromptPlaceholder: 'Bu modele özel sistem komutu...',
+        parameterPreset: 'Parametre Seti'
+    },
+    toolDisplay: {
+        markdownView: 'Markdown Görünümü',
+        text: 'Metin',
+        markdown: 'Markdown'
     }
 }

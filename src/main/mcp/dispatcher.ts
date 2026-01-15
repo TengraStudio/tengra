@@ -1,10 +1,11 @@
-import { ChildProcess,spawn } from 'child_process'
+import { ChildProcess, spawn } from 'child_process'
 import { randomUUID } from 'crypto'
 
-import { McpDispatchResult,McpService } from '@main/mcp/types'
-import { SettingsService } from '@main/services/settings.service'
+import { appLogger } from '@main/logging/logger'
+import { McpDispatchResult, McpService } from '@main/mcp/types'
+import { SettingsService } from '@main/services/system/settings.service'
 import { ToolDefinition } from '@shared/types/chat'
-import { CatchError,JsonObject } from '@shared/types/common'
+import { CatchError, JsonObject } from '@shared/types/common'
 import { MCPServerConfig } from '@shared/types/settings'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -35,8 +36,8 @@ export class McpDispatcher {
 
     listServices() {
         const settings = this.settingsService.getSettings()
-        const disabledServers = settings.mcpDisabledServers || []
-        const userServers = settings.mcpUserServers || []
+        const disabledServers = settings.mcpDisabledServers ?? []
+        const userServers = settings.mcpUserServers ?? []
 
         const coreList = this.services.map(s => ({
             name: s.name,
@@ -51,7 +52,7 @@ export class McpDispatcher {
             description: s.description,
             source: 'user' as const,
             isEnabled: !disabledServers.includes(s.name),
-            actions: s.tools || []
+            actions: s.tools ?? []
         }))
 
         return [...coreList, ...userList]
@@ -59,7 +60,7 @@ export class McpDispatcher {
 
     getToolDefinitions() {
         const settings = this.settingsService.getSettings()
-        const disabledServers = settings.mcpDisabledServers || []
+        const disabledServers = settings.mcpDisabledServers ?? []
 
         const tools: ToolDefinition[] = []
 
@@ -84,10 +85,10 @@ export class McpDispatcher {
         }
 
         // Add tools from user-defined servers
-        const userServers = settings.mcpUserServers || []
+        const userServers = settings.mcpUserServers ?? []
         const enabledUserServers = userServers.filter(s => !disabledServers.includes(s.name))
         for (const server of enabledUserServers) {
-            const toolsList = server.tools || []
+            const toolsList = server.tools ?? []
             for (const tool of toolsList) {
                 const toolName = `mcp__${server.name}__${tool.name}`
                 tools.push({
@@ -111,7 +112,7 @@ export class McpDispatcher {
 
     installService(config: MCPServerConfig) {
         const settings = this.settingsService.getSettings()
-        const userServers = [...(settings.mcpUserServers || [])]
+        const userServers = [...(settings.mcpUserServers ?? [])]
 
         if (userServers.find(s => s.name === config.name)) {
             return { success: false, error: 'Server already exists' }
@@ -125,7 +126,7 @@ export class McpDispatcher {
     uninstallService(name: string) {
         this.killServer(name)
         const settings = this.settingsService.getSettings()
-        const userServers = (settings.mcpUserServers || []).filter(s => s.name !== name)
+        const userServers = (settings.mcpUserServers ?? []).filter(s => s.name !== name)
         this.settingsService.saveSettings({ mcpUserServers: userServers })
         return { success: true }
     }
@@ -135,7 +136,7 @@ export class McpDispatcher {
             this.killServer(name)
         }
         const settings = this.settingsService.getSettings()
-        let disabledServers = [...(settings.mcpDisabledServers || [])]
+        let disabledServers = [...(settings.mcpDisabledServers ?? [])]
 
         if (enabled) {
             disabledServers = disabledServers.filter(s => s !== name)
@@ -150,7 +151,7 @@ export class McpDispatcher {
     }
 
     async dispatch(serviceName: string, actionName: string, args: JsonObject): Promise<McpDispatchResult> {
-        const disabledServers = this.settingsService.getSettings().mcpDisabledServers || []
+        const disabledServers = this.settingsService.getSettings().mcpDisabledServers ?? []
         if (disabledServers.includes(serviceName)) {
             return { success: false, error: `Service ${serviceName} is currently disabled.` }
         }
@@ -172,7 +173,7 @@ export class McpDispatcher {
 
         // Try External Service
         const settings = this.settingsService.getSettings()
-        const userServer = (settings.mcpUserServers || []).find(s => s.name === serviceName)
+        const userServer = (settings.mcpUserServers ?? []).find(s => s.name === serviceName)
         if (userServer) {
             return this.dispatchExternal(userServer, actionName, args)
         }
@@ -206,7 +207,7 @@ export class McpDispatcher {
                     resolve: (result: McpToolResult) => {
                         clearTimeout(timeout)
                         if (result.isError) {
-                            resolve({ success: false, error: result.content?.map((c) => c.text).join('\n') || 'Unknown tool error' })
+                            resolve({ success: false, error: result.content?.map((c) => c.text).join('\n') ?? 'Unknown tool error' })
                         } else {
                             // Extract content from MCP tool result
                             const text = result.content?.map((c) => c.text).join('\n')
@@ -236,11 +237,11 @@ export class McpDispatcher {
     private async getOrStartServer(config: MCPServerConfig): Promise<ChildProcess> {
         if (this.activeServers.has(config.name)) {
             const process = this.activeServers.get(config.name)
-            if (process && !process.killed) {return process}
+            if (process && !process.killed) { return process }
         }
 
-        console.log(`[MCP] Starting server: ${config.name} (${config.command})`)
-        const args = config.args || []
+        appLogger.info('MCP', `Starting server: ${config.name} (${config.command})`)
+        const args = config.args ?? []
         const env = { ...process.env, ...config.env } // Merge process env with config env
         // Use shell: true for npx on windows compatibility
         const server = spawn(config.command, args, {
@@ -253,15 +254,15 @@ export class McpDispatcher {
         server.stderr?.setEncoding('utf8')
 
         server.stdout?.on('data', (chunk) => this.handleServerOutput(config.name, chunk))
-        server.stderr?.on('data', (chunk) => console.log(`[MCP:${config.name}] ERR:`, chunk))
+        server.stderr?.on('data', (chunk) => appLogger.debug('MCP', `${config.name} ERR: ${chunk}`))
 
         server.on('error', (err) => {
-            console.error(`[MCP:${config.name}] Process error:`, err)
+            appLogger.error('MCP', `${config.name} Process error: ${getErrorMessage(err)}`)
             this.killServer(config.name)
         })
 
         server.on('exit', (code) => {
-            console.log(`[MCP:${config.name}] Exited with code ${code}`)
+            appLogger.info('MCP', `${config.name} Exited with code ${code}`)
             this.activeServers.delete(config.name)
         })
 
@@ -275,18 +276,18 @@ export class McpDispatcher {
     }
 
     private handleServerOutput(serverName: string, chunk: string) {
-        const buffer = (this.bufferMap.get(serverName) || '') + chunk
+        const buffer = (this.bufferMap.get(serverName) ?? '') + chunk
         const lines = buffer.split('\n')
         // Keep the last part if not complete line
-        this.bufferMap.set(serverName, lines.pop() || '')
+        this.bufferMap.set(serverName, lines.pop() ?? '')
 
         for (const line of lines) {
-            if (!line.trim()) {continue}
+            if (!line.trim()) { continue }
             try {
                 const msg = JSON.parse(line) as JsonObject
                 if (msg.jsonrpc === '2.0' && msg.id) {
                     const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
-                    if (!msgId) {continue}
+                    if (!msgId) { continue }
                     const handler = this.requestQueue.get(msgId)
                     if (handler) {
                         this.requestQueue.delete(msgId)
@@ -312,7 +313,7 @@ export class McpDispatcher {
     private killServer(name: string) {
         const server = this.activeServers.get(name)
         if (server) {
-            console.log(`[MCP] Killing server: ${name}`)
+            appLogger.info('MCP', `Killing server: ${name}`)
             server.stdout?.removeAllListeners()
             server.stderr?.removeAllListeners()
             server.kill()

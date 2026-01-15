@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger'
-import { ExportFormat, ExportOptions,exportService } from '@main/services/export.service'
+import { ExportFormat, ExportOptions, exportService } from '@main/services/data/export.service'
 import { Chat } from '@shared/types/chat'
 import { ipcMain } from 'electron'
 import { BrowserWindow } from 'electron'

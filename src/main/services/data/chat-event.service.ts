@@ -109,17 +109,19 @@ export class ChatEventService extends BaseService {
                         timestamp: event.timestamp
                     });
                     break;
-                case 'message_edited':
+                case 'message_edited': {
                     const editPayload = event.payload as { messageId: string, newContent: string };
                     const msg = state.messages.find(m => m.id === editPayload.messageId);
                     if (msg) {
                         msg.content = editPayload.newContent;
                     }
                     break;
-                case 'message_deleted':
+                }
+                case 'message_deleted': {
                     const deletePayload = event.payload as { messageId: string };
                     state.messages = state.messages.filter(m => m.id !== deletePayload.messageId);
                     break;
+                }
             }
         }
 

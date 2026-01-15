@@ -3,9 +3,9 @@ import { PackageManager } from '@renderer/features/ssh/PackageManager'
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser'
 import { SSHLogs } from '@renderer/features/ssh/SSHLogs'
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard'
-import { useCallback,useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { SSHConnection } from '@/types'
 
 interface SSHManagerProps {
@@ -69,7 +69,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         })
         window.electron.ssh.onDisconnected((id: string) => {
             updateConnectionStatus(id, 'disconnected')
-            if (selectedConnectionId === id) {setSelectedConnectionId(null)}
+            if (selectedConnectionId === id) { setSelectedConnectionId(null) }
         })
     }, [selectedConnectionId, updateConnectionStatus])
 
@@ -101,7 +101,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             setConnections(merged)
 
             for (const conn of merged) {
-                if (conn.status !== 'connected') {continue}
+                if (conn.status !== 'connected') { continue }
                 const isConnected = await window.electron.ssh.isConnected(conn.id)
                 if (!isConnected) {
                     updateConnectionStatus(conn.id, 'disconnected')
@@ -177,11 +177,11 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     }
 
     const handleExecute = async (id: string, cmd: string) => {
-        if (!cmd.trim()) {return}
+        if (!cmd.trim()) { return }
         await window.electron.ssh.shellWrite(id, cmd + '\n')
     }
 
-    if (!isOpen) {return null}
+    if (!isOpen) { return null }
 
     return (
         <div className="modal-overlay">
@@ -358,7 +358,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                 <input
                                     value={newConnection.host}
                                     onChange={e => setNewConnection({ ...newConnection, host: e.target.value })}
-                                    placeholder="192.168.1.1"
+                                    placeholder={t('ssh.placeholders.host')}
                                 />
                             </div>
                             <div className="form-group">
@@ -367,7 +367,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                     type="number"
                                     value={newConnection.port}
                                     onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) })}
-                                    placeholder="22"
+                                    placeholder={t('ssh.placeholders.port')}
                                 />
                             </div>
                             <div className="form-group">
@@ -375,7 +375,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                 <input
                                     value={newConnection.username}
                                     onChange={e => setNewConnection({ ...newConnection, username: e.target.value })}
-                                    placeholder="root"
+                                    placeholder={t('ssh.placeholders.username')}
                                 />
                             </div>
                             <div className="form-group">

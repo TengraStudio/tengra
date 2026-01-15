@@ -1,6 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LLMTask,MultiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service';
+import { LLMTask, MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { ChatMessage, OpenAIResponse } from '@main/types/llm.types';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';

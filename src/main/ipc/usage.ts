@@ -1,13 +1,13 @@
+import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { SettingsService } from '@main/services/settings.service'
-import { UsageTrackingService } from '@main/services/usage-tracking.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { ipcMain } from 'electron'
 
 export function registerUsageIpc(usageTrackingService: UsageTrackingService, settingsService: SettingsService, proxyService: ProxyService) {
     ipcMain.handle('usage:checkLimit', async (_event, provider: string, model: string) => {
         const settings = settingsService.getSettings()
         let quota: { remaining: number; limit: number } | undefined = undefined
-        
+
         if (provider === 'copilot') {
             try {
                 const copilotQuota = await proxyService.getCopilotQuota()
@@ -21,7 +21,7 @@ export function registerUsageIpc(usageTrackingService: UsageTrackingService, set
                 console.debug('[UsageIPC] Failed to get copilot quota:', error)
             }
         }
-        
+
         return usageTrackingService.checkLimit(settings, provider, model, quota)
     })
 

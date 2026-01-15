@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 
-import { multiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service'
+import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service'
 import { BrowserWindow } from 'electron'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -93,10 +93,10 @@ export class ChatQueueManager extends EventEmitter {
 
         const MAX_PROCESS_ITERATIONS = 10000;
         let iterations = 0;
-        
+
         while (this.activeCount < maxConcurrency && this.queue.length > 0 && iterations < MAX_PROCESS_ITERATIONS) {
             const task = this.queue.shift()
-            if (!task) {break}
+            if (!task) { break }
 
             this.activeCount++
             iterations++
@@ -114,15 +114,15 @@ export class ChatQueueManager extends EventEmitter {
                 this.updateStatus(task.chatId, false)
             }
         }
-        
+
         if (iterations >= MAX_PROCESS_ITERATIONS) {
             console.error('[ChatQueueManager] Queue processing exceeded maximum iterations');
         }
     }
 
     private getMaxConcurrency(): number {
-        if (this.policy === 'parallel') {return 10} // Arbitrary high number
-        if (this.policy === 'fifo') {return 1}
+        if (this.policy === 'parallel') { return 10 } // Arbitrary high number
+        if (this.policy === 'fifo') { return 1 }
 
         // Auto: Use multi-LLM orchestrator's intelligent concurrency
         return this.useMultiLLM ? 10 : 1

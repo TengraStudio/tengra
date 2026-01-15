@@ -1,0 +1,30 @@
+﻿node.exe : npm warn U
+nknown env config "ms
+vs-version". This wil
+l stop working in the
+ next major version o
+f npm.
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" "C:
+\Program Files\nodejs
+/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (npm war   
+ n Unknow...versi    
+on of npm.:Strin    g
+) [], RemoteExc    ep
+tion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+src/main/ipc/chat.ts(204,106): error TS2345: Argument of type 'Promise<string>' is not assignable to parameter of type 'string'.
+src/main/ipc/chat.ts(445,13): error TS2322: Type 'string' is not assignable to type 'Promise<string>'.
+src/main/ipc/chat.ts(457,106): error TS2345: Argument of type 'Promise<string>' is not assignable to parameter of type 'string'.
+src/main/main.ts(345,52): error TS2345: Argument of type 'Promise<string>' is not assignable to parameter of type 'string'.

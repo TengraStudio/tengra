@@ -36,10 +36,11 @@ export interface AgentLog {
 export interface CouncilSession {
     id: string
     goal: string
-    status: 'created' | 'executing' | 'completed' | 'failed'
+    status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'
     createdAt: number
     updatedAt: number
     agents: AgentDefinition[]
     plan?: string
+    solution?: string
     logs: AgentLog[]
 }

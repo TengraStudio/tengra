@@ -2,9 +2,9 @@
  * IPC Handlers for Model Collaboration
  */
 
-import { ModelCollaborationService } from '@main/services/model-collaboration.service'
-import { multiLLMOrchestrator } from '@main/services/multi-llm-orchestrator.service'
-import { createIpcHandler,createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service'
+import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { Message } from '@shared/types/chat'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 

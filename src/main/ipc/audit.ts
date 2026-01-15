@@ -1,4 +1,4 @@
-import { AuditLogService } from '@main/services/audit-log.service'
+import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { ipcMain } from 'electron'
 

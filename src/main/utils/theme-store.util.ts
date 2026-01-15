@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants'
-import { CustomTheme, DEFAULT_THEME_PRESETS,ThemePreset } from '@shared/types/theme'
+import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme'
 import { app } from 'electron'
 
 interface ThemeStoreData {
@@ -28,34 +28,37 @@ class ThemeStore {
 
     private constructor() {
         this.storePath = path.join(app.getPath('userData'), 'theme-store.json')
-        this.store = this.loadStore()
+        // Initialize with defaults, call init() for async loading
+        this.store = { ...DEFAULT_THEME_STORE }
+        void this.init()
+    }
+
+    async init(): Promise<void> {
+        this.store = await this.loadStore()
     }
 
     static getInstance(): ThemeStore {
-        if (!ThemeStore.instance) {
-            ThemeStore.instance = new ThemeStore()
-        }
+        ThemeStore.instance ??= new ThemeStore()
         return ThemeStore.instance
     }
 
-    private loadStore(): ThemeStoreData {
+    private async loadStore(): Promise<ThemeStoreData> {
         try {
-            if (fs.existsSync(this.storePath)) {
-                const data = fs.readFileSync(this.storePath, 'utf8')
-                const loaded = JSON.parse(data) as ThemeStoreData
-                return { ...DEFAULT_THEME_STORE, ...loaded }
-            }
+            await fs.promises.access(this.storePath)
+            const data = await fs.promises.readFile(this.storePath, 'utf8')
+            const loaded = JSON.parse(data) as ThemeStoreData
+            return { ...DEFAULT_THEME_STORE, ...loaded }
         } catch {
             console.warn('[ThemeStore] Failed to load, using defaults')
         }
         return { ...DEFAULT_THEME_STORE }
     }
 
-    private saveStore(): void {
+    private async saveStore(): Promise<void> {
         try {
             const tempPath = this.storePath + '.tmp'
-            fs.writeFileSync(tempPath, JSON.stringify(this.store, null, 2), 'utf8')
-            fs.renameSync(tempPath, this.storePath)
+            await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8')
+            await fs.promises.rename(tempPath, this.storePath)
         } catch (error) {
             console.error('[ThemeStore] Failed to save:', error)
         }
@@ -65,7 +68,7 @@ class ThemeStore {
         return this.store.currentTheme
     }
 
-    setTheme(themeId: string): boolean {
+    async setTheme(themeId: string): Promise<boolean> {
         const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId)
         if (!theme) {
             console.warn(`[ThemeStore] Theme not found: ${themeId}`)
@@ -86,8 +89,8 @@ class ThemeStore {
             this.store.history.push(previousTheme)
         }
 
-        this.saveStore()
-        console.log(`[ThemeStore] Theme changed to: ${themeId}`)
+        await this.saveStore()
+        // appLogger.info('[ThemeStore] Theme changed to:', themeId)
         return true
     }
 
@@ -122,7 +125,7 @@ class ThemeStore {
         return [...this.store.customThemes]
     }
 
-    addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): CustomTheme {
+    async addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): Promise<CustomTheme> {
         const customTheme: CustomTheme = {
             ...theme,
             id: `custom-${Date.now()}`,
@@ -130,12 +133,12 @@ class ThemeStore {
             modifiedAt: Date.now()
         }
         this.store.customThemes.push(customTheme)
-        this.saveStore()
-        console.log(`[ThemeStore] Custom theme added: ${customTheme.id}`)
+        await this.saveStore()
+        // appLogger.info('[ThemeStore] Custom theme added:', customTheme.id)
         return customTheme
     }
 
-    updateCustomTheme(id: string, updates: Partial<CustomTheme>): boolean {
+    async updateCustomTheme(id: string, updates: Partial<CustomTheme>): Promise<boolean> {
         const index = this.store.customThemes.findIndex(t => t.id === id)
         if (index === -1) {
             console.warn(`[ThemeStore] Custom theme not found: ${id}`)
@@ -148,12 +151,12 @@ class ThemeStore {
             id,
             modifiedAt: Date.now()
         }
-        this.saveStore()
-        console.log(`[ThemeStore] Custom theme updated: ${id}`)
+        await this.saveStore()
+        // appLogger.info('[ThemeStore] Custom theme updated:', id)
         return true
     }
 
-    deleteCustomTheme(id: string): boolean {
+    async deleteCustomTheme(id: string): Promise<boolean> {
         const index = this.store.customThemes.findIndex(t => t.id === id)
         if (index === -1) {
             console.warn(`[ThemeStore] Custom theme not found: ${id}`)
@@ -163,24 +166,24 @@ class ThemeStore {
         this.store.customThemes.splice(index, 1)
 
         if (this.store.currentTheme === id) {
-            this.setTheme('graphite')
+            await this.setTheme('graphite')
         }
 
-        this.saveStore()
-        console.log(`[ThemeStore] Custom theme deleted: ${id}`)
+        await this.saveStore()
+        // appLogger.info('[ThemeStore] Custom theme deleted:', id)
         return true
     }
 
-    toggleFavorite(themeId: string): boolean {
+    async toggleFavorite(themeId: string): Promise<boolean> {
         const index = this.store.favorites.indexOf(themeId)
         if (index === -1) {
             this.store.favorites.push(themeId)
-            console.log(`[ThemeStore] Theme favorited: ${themeId}`)
+            // appLogger.info('[ThemeStore] Theme favorited:', themeId)
         } else {
             this.store.favorites.splice(index, 1)
-            console.log(`[ThemeStore] Theme unfavorited: ${themeId}`)
+            // appLogger.info('[ThemeStore] Theme unfavorited:', themeId)
         }
-        this.saveStore()
+        await this.saveStore()
         return this.store.favorites.includes(themeId)
     }
 
@@ -196,9 +199,9 @@ class ThemeStore {
         return [...this.store.history]
     }
 
-    clearHistory(): void {
+    async clearHistory(): Promise<void> {
         this.store.history = []
-        this.saveStore()
+        await this.saveStore()
     }
 
     getPresets(): ThemePreset[] {
@@ -209,7 +212,7 @@ class ThemeStore {
         return DEFAULT_THEME_PRESETS.find(p => p.id === id)
     }
 
-    applyPreset(presetId: string): boolean {
+    async applyPreset(presetId: string): Promise<boolean> {
         const preset = this.getPreset(presetId)
         if (!preset) {
             console.warn(`[ThemeStore] Preset not found: ${presetId}`)
@@ -217,8 +220,8 @@ class ThemeStore {
         }
 
         this.store.preset = preset
-        this.setTheme(preset.themeId)
-        console.log(`[ThemeStore] Preset applied: ${presetId}`)
+        await this.setTheme(preset.themeId)
+        // appLogger.info('[ThemeStore] Preset applied:', presetId)
         return true
     }
 
@@ -226,9 +229,9 @@ class ThemeStore {
         return this.store.preset
     }
 
-    clearPreset(): void {
+    async clearPreset(): Promise<void> {
         this.store.preset = null
-        this.saveStore()
+        await this.saveStore()
     }
 
     exportTheme(themeId: string): string | null {
@@ -245,7 +248,7 @@ class ThemeStore {
         return JSON.stringify(exportData, null, 2)
     }
 
-    importTheme(jsonString: string): CustomTheme | null {
+    async importTheme(jsonString: string): Promise<CustomTheme | null> {
         try {
             const data = JSON.parse(jsonString)
             if (data.version !== '1.0' || !data.theme) {
@@ -272,7 +275,7 @@ class ThemeStore {
         }
     }
 
-    duplicateTheme(themeId: string, newName: string): CustomTheme | null {
+    async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {
         const original = this.getThemeDetails(themeId)
         if (!original || 'isBuiltIn' in original) {
             return null
@@ -294,8 +297,9 @@ class ThemeStore {
 // We can use a Proxy to lazy load it.
 
 const themeStoreProxy = new Proxy({} as ThemeStore, {
-    get: (_target, prop) => {
+    get: (_target, prop: string | symbol) => {
         const instance = ThemeStore.getInstance()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (instance as any)[prop]
     }
 })

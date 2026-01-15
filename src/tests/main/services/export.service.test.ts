@@ -1,8 +1,8 @@
 /**
  * Unit tests for ExportService
  */
-import { ExportService } from '@main/services/export.service';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { ExportService } from '@main/services/data/export.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Chat, Message } from '@/types/chat';
 
@@ -21,7 +21,7 @@ vi.mock('electron', () => ({
     dialog: {
         showSaveDialog: vi.fn()
     },
-    BrowserWindow: class {}
+    BrowserWindow: class { }
 }));
 
 // Mock fs

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Prompt } from '@/types'
+import { Language, useTranslation } from '@/i18n'
 
 interface PromptManagerModalProps {
     isOpen: boolean
@@ -12,6 +13,7 @@ interface PromptManagerModalProps {
     onCreatePrompt: (title: string, content: string, tags?: string[]) => void
     onUpdatePrompt: (id: string, updates: Partial<Prompt>) => void
     onDeletePrompt: (id: string) => void
+    language?: Language
 }
 
 export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
@@ -20,8 +22,10 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     prompts,
     onCreatePrompt,
     onUpdatePrompt,
-    onDeletePrompt
+    onDeletePrompt,
+    language
 }) => {
+    const { t } = useTranslation(language)
     const [isEditing, setIsEditing] = useState<string | 'new' | null>(null)
     const [editForm, setEditForm] = useState({ title: '', content: '' })
 
@@ -36,7 +40,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     }
 
     const handleSave = () => {
-        if (!editForm.title.trim() || !editForm.content.trim()) {return}
+        if (!editForm.title.trim() || !editForm.content.trim()) { return }
 
         if (isEditing === 'new') {
             onCreatePrompt(editForm.title, editForm.content)
@@ -47,35 +51,35 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Prompt Library">
+        <Modal isOpen={isOpen} onClose={onClose} title={t('ssh.promptManager.title')}>
             <div className="h-[400px] flex flex-col">
                 {isEditing ? (
                     <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-right-2 duration-200">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">Title</label>
+                            <label className="text-xs font-medium text-muted-foreground">{t('ssh.promptManager.labels.title')}</label>
                             <input
                                 value={editForm.title}
                                 onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                                 className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                                placeholder="e.g. Code Refactor"
+                                placeholder={t('ssh.promptManager.placeholders.title')}
                                 autoFocus
                             />
                         </div>
                         <div className="space-y-2 flex-1 flex flex-col">
-                            <label className="text-xs font-medium text-muted-foreground">Content</label>
+                            <label className="text-xs font-medium text-muted-foreground">{t('ssh.promptManager.labels.content')}</label>
                             <textarea
                                 value={editForm.content}
                                 onChange={e => setEditForm(prev => ({ ...prev, content: e.target.value }))}
                                 className="w-full flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none font-mono"
-                                placeholder="Enter prompt content..."
+                                placeholder={t('ssh.promptManager.placeholders.content')}
                             />
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
                             <Button variant="ghost" size="sm" onClick={() => setIsEditing(null)}>
-                                <X className="w-4 h-4 mr-1" /> Cancel
+                                <X className="w-4 h-4 mr-1" /> {t('common.cancel')}
                             </Button>
                             <Button size="sm" onClick={handleSave} disabled={!editForm.title || !editForm.content}>
-                                <Save className="w-4 h-4 mr-1" /> Save
+                                <Save className="w-4 h-4 mr-1" /> {t('common.save')}
                             </Button>
                         </div>
                     </div>
@@ -83,15 +87,15 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                     <>
                         <div className="flex justify-end mb-4">
                             <Button size="sm" onClick={() => handleStartEdit()}>
-                                <Plus className="w-4 h-4 mr-2" /> New Prompt
+                                <Plus className="w-4 h-4 mr-2" /> {t('ssh.promptManager.newPrompt')}
                             </Button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
                             {prompts.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm opacity-60">
-                                    <p>No prompts yet</p>
-                                    <p className="text-xs">Create one to get started</p>
+                                    <p>{t('ssh.promptManager.empty.title')}</p>
+                                    <p className="text-xs">{t('ssh.promptManager.empty.subtitle')}</p>
                                 </div>
                             ) : (
                                 prompts.map(prompt => (

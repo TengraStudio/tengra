@@ -17,7 +17,7 @@ if (process.platform === 'win32') {
 
 import { appLogger, LogLevel } from '@main/logging/logger'
 import { McpDispatcher } from '@main/mcp/dispatcher'
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { registerIpcHandlers } from '@main/startup/ipc'
 import { container, createServices } from '@main/startup/services'
 import { ToolExecutor } from '@main/tools/tool-executor'
@@ -27,6 +27,7 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let globalServices: Awaited<ReturnType<typeof createServices>> | null = null
 
+// eslint-disable-next-line complexity
 function createWindow(settingsService?: SettingsService): BrowserWindow {
     // Get saved window settings or use defaults
     const settings = settingsService?.getSettings()
@@ -44,7 +45,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         backgroundColor: '#000000',
         autoHideMenuBar: true,
         webPreferences: {
-            preload: path.resolve(app.getAppPath(), 'dist/preload/preload.js'),
+            preload: path.join(__dirname, '../preload/preload.js'),
             sandbox: false,
             contextIsolation: true,
             nodeIntegration: false
@@ -70,7 +71,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
                 const bounds = win.getBounds()
                 const isFullscreen = win.isFullScreen()
                 const currentSettings = settingsService.getSettings()
-                settingsService.saveSettings({
+                void settingsService.saveSettings({
                     ...currentSettings,
                     window: {
                         ...currentSettings.window,
@@ -91,7 +92,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         if (settingsService) {
             const currentSettings = settingsService.getSettings()
             const currentWindow = currentSettings.window
-            settingsService.saveSettings({
+            void settingsService.saveSettings({
                 ...currentSettings,
                 window: {
                     width: currentWindow?.width ?? defaultWidth,
@@ -108,7 +109,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         if (settingsService) {
             const currentSettings = settingsService.getSettings()
             const currentWindow = currentSettings.window
-            settingsService.saveSettings({
+            void settingsService.saveSettings({
                 ...currentSettings,
                 window: {
                     width: currentWindow?.width ?? defaultWidth,
@@ -130,26 +131,27 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     })
 
     win.webContents.setWindowOpenHandler((details: HandlerDetails) => {
-        shell.openExternal(details.url)
+        void shell.openExternal(details.url)
         return { action: 'deny' }
     })
 
     if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-        win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+        void win.loadURL(process.env['ELECTRON_RENDERER_URL'])
     } else {
-        win.loadFile(path.join(__dirname, '@renderer/index.html'))
+        void win.loadFile(path.join(__dirname, '../renderer/index.html'))
     }
 
     return win
 }
 
 // Guard for when running in Node.js context during build (vite-plugin-electron)
-if (protocol && typeof protocol.registerSchemesAsPrivileged === 'function') {
+if (typeof protocol.registerSchemesAsPrivileged === 'function') {
     protocol.registerSchemesAsPrivileged([
         { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
     ])
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 app.whenReady().then(async () => {
     app.setAppUserModelId('Orbit')
     app.name = 'Orbit'
@@ -217,16 +219,16 @@ app.whenReady().then(async () => {
         try {
             return callback(absolutePath)
         } catch (error) {
-            console.error('[SAFE-FILE] Error:', error)
+            appLogger.error('Main', `SAFE-FILE protocol error: ${error}`)
         }
     })
 
     let services;
     try {
         services = await createServices(allowedFileRoots)
-        console.log(`[Main]!!! createServices completed.`);
+        appLogger.info('Main', 'createServices completed')
     } catch (e) {
-        console.error('[Main] Critical error during service creation:', e)
+        appLogger.error('Main', `Critical error during service creation: ${e}`)
         // Try to recover or exit gracefully? For now, let's allow it to fall through 
         // effectively continuing with undefined services, which will likely crash later 
         // BUT we might get some UI or logs. 
@@ -244,29 +246,29 @@ app.whenReady().then(async () => {
 
     // Debug: Check what tokens are available
     if (services.settingsService['authService']) {
-        const tokens = services.settingsService['authService'].getAllTokens();
-        console.log(`[Main]!!! AuthService identified ${Object.keys(tokens).length} tokens at startup.Keys: ${JSON.stringify(Object.keys(tokens))} `);
+        const tokens = await services.settingsService['authService'].getAllTokens();
+        appLogger.debug('Main', `AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`)
         if (tokens['copilot_token']) {
-            console.log(`[Main]!!! copilot_token found in AuthService, length: ${tokens['copilot_token'].length} `);
+            appLogger.debug('Main', `copilot_token found in AuthService, length: ${tokens['copilot_token'].length}`)
         }
         if (tokens['github_token']) {
-            console.log(`[Main]!!! github_token found in AuthService, length: ${tokens['github_token'].length} `);
+            appLogger.debug('Main', `github_token found in AuthService, length: ${tokens['github_token'].length}`)
         }
     } else {
-        console.warn(`[Main]!!! AuthService not available in settingsService`);
+        appLogger.warn('Main', 'AuthService not available in settingsService')
     }
 
-    console.log('[Main] Starting Database initialization...');
+    appLogger.info('Main', 'Starting Database initialization...')
     services.databaseService.initialize()
-        .then(() => console.log('[Main] Database initialization completed.'))
-        .catch(e => console.error('[Main] Failed to initialize database service:', e));
+        .then(() => appLogger.info('Main', 'Database initialization completed'))
+        .catch(e => appLogger.error('Main', `Failed to initialize database service: ${e}`))
 
-    console.log('[Main] Starting Proxy initialization...');
+    appLogger.info('Main', 'Starting Proxy initialization...')
     services.proxyService.startEmbeddedProxy()
-        .then(() => console.log('[Main] Proxy initialization completed.'))
-        .catch(e => console.error('[Main] Failed to start embedded proxy:', e));
+        .then(() => appLogger.info('Main', 'Proxy initialization completed'))
+        .catch(e => appLogger.error('Main', `Failed to start embedded proxy: ${e}`))
 
-    console.log('[Main] Initializing ToolExecutor...');
+    appLogger.info('Main', 'Initializing ToolExecutor...')
     const mcpDispatcher = new McpDispatcher([], services.settingsService)
 
     const toolExecutor = new ToolExecutor({
@@ -293,17 +295,17 @@ app.whenReady().then(async () => {
         memory: services.memoryService,
         pageSpeed: services.pageSpeedService
     })
-    console.log('[Main] ToolExecutor initialized.');
+    appLogger.info('Main', 'ToolExecutor initialized')
 
     // Register all IPC handlers BEFORE creating window to prevent race conditions
     // registerWindowIpc(() => mainWindow) // This will be handled by registerIpcHandlers
-    console.log('[Main] Window IPC registered.');
+    appLogger.info('Main', 'Window IPC registered')
 
     // Initialize Copilot Token
     // Tokens are stored in data/auth folder, NOT in settings.json
     // We ONLY use copilot_token - NO fallback to github_token
     const initialSettings = services.settingsService.getSettings()
-    console.log(`[Main]!!! settings.copilot.token length: ${initialSettings.copilot?.token?.length || 0} `);
+    appLogger.debug('Main', `settings.copilot.token length: ${initialSettings.copilot?.token?.length ?? 0}`)
 
     // Load token directly from AuthService (tokens are in data/auth folder)
     // ONLY use copilot_token, no fallback
@@ -311,42 +313,39 @@ app.whenReady().then(async () => {
 
     // If not in settings, try AuthService directly
     if (!copilotToken) {
-        console.log(`[Main]!!! Token not in settings, trying AuthService directly...`);
+        appLogger.debug('Main', 'Token not in settings, trying AuthService directly...')
         if (services.settingsService['authService']) {
-            const authService = services.settingsService['authService'] as any
-            console.log(`[Main]!!! Attempting to get copilot_token from AuthService...`);
-            copilotToken = authService.getToken('copilot_token')
-            console.log(`[Main]!!! authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'} `);
+            const authService = services.settingsService['authService'] as { getToken: (key: string) => Promise<string | undefined> }
+            appLogger.debug('Main', 'Attempting to get copilot_token from AuthService...')
+            copilotToken = await authService.getToken('copilot_token')
+            appLogger.debug('Main', `authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'}`)
 
             if (copilotToken) {
-                console.log(`[Main]!!! Loaded copilot_token from AuthService, length: ${copilotToken.length} `)
+                appLogger.debug('Main', `Loaded copilot_token from AuthService, length: ${copilotToken.length}`)
             } else {
-                console.warn(`[Main]!!! copilot_token not found in AuthService`)
+                appLogger.warn('Main', 'copilot_token not found in AuthService')
             }
         } else {
-            console.error(`[Main]!!! AuthService not available in settingsService`)
+            appLogger.error('Main', 'AuthService not available in settingsService')
         }
     } else {
-        console.log(`[Main]!!! Token found in settings, length: ${copilotToken.length} `)
+        appLogger.debug('Main', `Token found in settings, length: ${copilotToken.length}`)
     }
 
     if (copilotToken) {
         services.copilotService.setGithubToken(copilotToken)
-        console.log(`[Main]!!! Set copilot_token to CopilotService, length: ${copilotToken.length} `)
+        appLogger.debug('Main', `Set copilot_token to CopilotService, length: ${copilotToken.length}`)
         // Verify it was set
-        console.log(`[Main]!!! CopilotService.isConfigured(): ${services.copilotService.isConfigured()} `)
+        appLogger.debug('Main', `CopilotService.isConfigured(): ${services.copilotService.isConfigured()}`)
     } else {
-        console.warn(`[Main]!!! No copilot_token found - CopilotService will try to recover from AuthService when needed`)
+        appLogger.warn('Main', 'No copilot_token found - CopilotService will try to recover from AuthService when needed')
     }
 
-    // Sync proxy settings to LLMService
-    const proxyUrl = initialSettings.proxy?.url || 'http://localhost:8317/v1'
-    const proxyKey = services.proxyService.getProxyKey()
-    services.llmService.setProxySettings(proxyUrl, proxyKey)
+
 
     // Register all IPC handlers
     registerIpcHandlers(services, toolExecutor, () => mainWindow, allowedFileRoots, mcpDispatcher)
-    console.log('[Main] All IPC handlers registered.');
+    appLogger.info('Main', 'All IPC handlers registered')
 
     // Store services for use in event handlers
     globalServices = services
@@ -356,7 +355,7 @@ app.whenReady().then(async () => {
     if (settings.window?.startOnStartup !== undefined) {
         app.setLoginItemSettings({
             openAtLogin: settings.window.startOnStartup,
-            openAsHidden: settings.window.workAtBackground || false
+            openAsHidden: settings.window.workAtBackground ?? false
         })
     }
 
@@ -366,19 +365,19 @@ app.whenReady().then(async () => {
     }
 
     // NOW create window after all handlers are registered
-    console.log('[Main] Creating window...');
+    appLogger.info('Main', 'Creating window...')
     try {
         mainWindow = createWindow(services.settingsService)
-        console.log('[Main] Window created.');
+        appLogger.info('Main', 'Window created')
     } catch (e) {
-        console.error('[Main] Failed to create window:', e);
+        appLogger.error('Main', `Failed to create window: ${e}`)
     }
 
     // Initialize Auto-Updater
     if (mainWindow) {
         services.updateService.init(mainWindow)
     } else {
-        console.error('[Main] MainWindow is null, skipping updateService init');
+        appLogger.error('Main', 'MainWindow is null, skipping updateService init')
     }
 
     // Initialize Crash Reporting
@@ -489,6 +488,7 @@ app.on('before-quit', async (event) => {
         }
 
         // Cleanup services
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (container) {
             appLogger.info('Main', 'Disposing service container...')
             try {
@@ -509,9 +509,9 @@ app.on('before-quit', async (event) => {
         app.exit(0)
 
     } catch (e) {
-        console.error('[Main] Cleanup error:', e)
+        appLogger.error('Main', `Cleanup error: ${e}`)
         // Force quit even if cleanup fails
         app.exit(1)
     }
-})
+}) as unknown as (event: Event) => void
 

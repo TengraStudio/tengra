@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 
-import { SSHConnection,SSHService } from '@main/services/ssh.service'
+import { SSHConnection, SSHService } from '@main/services/project/ssh.service'
 import { IpcValue, JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { BrowserWindow, ipcMain } from 'electron'

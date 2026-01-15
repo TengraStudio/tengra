@@ -19,7 +19,9 @@ export * from '@/types/common';
 export interface ServiceResponse<T = void> {
     success: boolean;
     data?: T;
+    /** @deprecated Use data instead */
     result?: T;
+    /** @deprecated Use data instead */
     content?: T;
     message?: string;
     error?: string;

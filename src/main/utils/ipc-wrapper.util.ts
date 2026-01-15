@@ -31,17 +31,18 @@ export interface IpcHandlerOptions {
  * @param handler The actual handler function.
  * @param options Optional configuration for the handler wrapper.
  */
-export const createIpcHandler = <T = JsonValue>(
+export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
     handlerName: string,
-    handler: (event: IpcMainInvokeEvent, ...args: any[]) => Promise<T>,
+    handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: IpcHandlerOptions = {}
 ) => {
     const { wrapResponse = false, onError } = options;
 
-    return async (event: IpcMainInvokeEvent, ...args: any[]): Promise<IpcResponse<T> | T> => {
+    return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<IpcResponse<T> | T> => {
         try {
             // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
-            const result = await handler(event, ...args);
+            // Safe cast: at runtime args come as any[], but we trust the handler signature matches what is sent
+            const result = await handler(event, ...(args as unknown as Args));
             // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
 
             if (wrapResponse) {
@@ -102,14 +103,14 @@ export const createIpcHandler = <T = JsonValue>(
  * }, []))
  * ```
  */
-export const createSafeIpcHandler = <T = JsonValue>(
+export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
     handlerName: string,
-    handler: (event: IpcMainInvokeEvent, ...args: any[]) => Promise<T>,
+    handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     defaultValue: T
 ) => {
-    return async (event: IpcMainInvokeEvent, ...args: any[]): Promise<T> => {
+    return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<T> => {
         try {
-            return await handler(event, ...args);
+            return await handler(event, ...(args as unknown as Args));
         } catch (error) {
             appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(error as Error)}`);
             return defaultValue;

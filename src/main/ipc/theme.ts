@@ -1,4 +1,6 @@
-import * as fs from 'fs'
+import { promises as fs } from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 
 import { themeStore } from '@main/utils/theme-store.util'
 import { ipcMain, shell } from 'electron'
@@ -53,7 +55,7 @@ export function registerThemeIpc(): void {
     })
 
     ipcMain.handle('theme:clearHistory', async () => {
-        themeStore.clearHistory()
+        await themeStore.clearHistory()
         return true
     })
 
@@ -70,18 +72,22 @@ export function registerThemeIpc(): void {
     })
 
     ipcMain.handle('theme:clearPreset', async () => {
-        themeStore.clearPreset()
+        await themeStore.clearPreset()
         return true
     })
 
     ipcMain.handle('theme:export', async (_event, themeId: string) => {
         const json = themeStore.exportTheme(themeId)
-        if (!json) {return false}
+        if (!json) { return false }
 
-        const tempPath = `${themeId}-theme.json`
-        fs.writeFileSync(tempPath, json)
-        await shell.openPath(tempPath)
-        return true
+        try {
+            const tempPath = path.join(os.tmpdir(), `orbit-theme-${themeId}-${Date.now()}.json`)
+            await fs.writeFile(tempPath, json)
+            await shell.openPath(tempPath)
+            return true
+        } catch {
+            return false
+        }
     })
 
     ipcMain.handle('theme:import', async (_event, jsonString: string) => {

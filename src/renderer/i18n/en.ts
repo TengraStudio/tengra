@@ -22,6 +22,19 @@ export const en = {
         clear: 'Clear',
         add: 'Add'
     },
+    themeStore: {
+        title: 'Theme Store',
+        subtitle: 'Customize your workspace appearance',
+        searchPlaceholder: 'Search themes...',
+        filterAll: 'All',
+        filterInstalled: 'Installed',
+        filterDark: 'Dark',
+        filterLight: 'Light',
+        noThemes: 'No themes found',
+        apply: 'Apply Theme',
+        active: 'Active',
+        pro: 'PRO'
+    },
     modelSelector: {
         searchModels: 'Search Models...',
         image: 'Image',
@@ -49,6 +62,7 @@ export const en = {
         statistics: 'Statistics',
         gallery: 'Gallery',
         about: 'About',
+        personas: 'Personas',
         factoryResetConfirm: 'Are you sure you want to delete all data?'
     },
     projects: {
@@ -267,7 +281,70 @@ export const en = {
         fileName: 'Name',
         fileSize: 'Size',
         fileDate: 'Date',
-        fileActions: 'Actions'
+        fileActions: 'Actions',
+        placeholders: {
+            host: '192.168.1.1',
+            port: '22',
+            username: 'root'
+        },
+        nginx: {
+            title: 'Nginx Reverse Proxy Wizard',
+            subtitle: 'Easily expose your backend application through a domain.',
+            domain: 'Domain Name',
+            port: 'Internal Port',
+            preview: 'Preview Configuration',
+            apply: 'Apply & Reload Nginx',
+            configPreview: 'Configuration Preview',
+            placeholders: {
+                domain: 'api.myapp.com',
+                port: '3000'
+            },
+            status: {
+                domainRequired: 'Domain name is required',
+                connecting: 'Connecting to server...',
+                moving: 'Moving configuration to Nginx directory...',
+                success: 'Nginx reloaded successfully!',
+                error: 'Failed to apply: {{error}}. Make sure you have sudo privileges.'
+            }
+        },
+        presets: {
+            title: 'Parameter Presets',
+            creative: 'Creative',
+            precise: 'Precise',
+            coding: 'Coding',
+            balanced: 'Balanced',
+            custom: 'Custom',
+            labels: {
+                name: 'Preset Name',
+                temperature: 'Temperature',
+                topP: 'Top P'
+            },
+            placeholders: {
+                name: 'e.g. My Custom Preset'
+            }
+        },
+        promptManager: {
+            title: 'Prompt Library',
+            newPrompt: 'New Prompt',
+            labels: {
+                title: 'Title',
+                content: 'Content'
+            },
+            placeholders: {
+                title: 'e.g. Code Refactor',
+                content: 'Enter prompt content...'
+            },
+            empty: {
+                title: 'No prompts yet',
+                subtitle: 'Create one to get started'
+            }
+        },
+        editor: {
+            loading: 'Loading editor...',
+            initializing: 'Initializing Editor...',
+            error: 'Editor error: {{error}}',
+            aiRefactor: 'AI Refactor / Explain'
+        }
     },
     accounts: {
         title: 'Connected Accounts',
@@ -804,5 +881,24 @@ export const en = {
         showing: 'Showing',
         of: 'of',
         logs: 'logs'
+    },
+    personas: {
+        title: 'Personas',
+        description: 'Customization profiles that shape responses.',
+        namePlaceholder: 'Persona name',
+        descriptionPlaceholder: 'Short description',
+        promptPlaceholder: 'Prompt'
+    },
+    advancedTab: {
+        modelConfiguration: 'Model Configuration',
+        modelConfigurationDesc: 'Custom system commands and parameters for the selected model.',
+        customSystemMessage: 'Custom System Message',
+        systemPromptPlaceholder: 'Custom system command for this model...',
+        parameterPreset: 'Parameter Preset'
+    },
+    toolDisplay: {
+        markdownView: 'Markdown View',
+        text: 'Text',
+        markdown: 'Markdown'
     }
 }

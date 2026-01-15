@@ -1,6 +1,6 @@
-import { getContextWindowService } from '@main/services/context-window.service'
-import { getTokenEstimationService } from '@main/services/token-estimation.service'
-import { createIpcHandler,createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { getContextWindowService } from '@main/services/llm/context-window.service'
+import { getTokenEstimationService } from '@main/services/llm/token-estimation.service'
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { Message } from '@shared/types/chat'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 

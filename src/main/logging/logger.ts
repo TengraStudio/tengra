@@ -2,7 +2,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as zlib from 'zlib'
 
-import { AppError,JsonValue } from '@/types/common'
+import { AppError, JsonValue } from '@shared/types/common'
+import { app } from 'electron'
 
 export enum LogLevel {
     DEBUG = 0,
@@ -53,31 +54,13 @@ class AppLogger {
     private cleanupTimer: ReturnType<typeof setInterval> | null = null
 
     init(logDir?: string, config?: Partial<LoggerConfig>) {
-        if (this.initialized && !logDir && !config) {return}
+        if (this.initialized && !logDir && !config) { return }
 
         if (config) {
             this.config = { ...this.config, ...config }
         }
 
-        if (logDir) {
-            this.logDir = logDir
-        } else {
-            try {
-                // Try to get userData path, but don't crash if app is not ready
-                const electron = require('electron')
-                const appInstance = electron.app || electron.remote?.app
-
-                if (appInstance) {
-                    const base = appInstance.getPath('userData')
-                    this.logDir = path.join(base, 'logs')
-                } else {
-                    this.logDir = path.join(process.cwd(), 'logs')
-                }
-            } catch {
-                this.logDir = path.join(process.cwd(), 'logs')
-            }
-        }
-
+        this.logDir = logDir ?? this.determineLogDir()
         this.logPath = path.join(this.logDir, 'app.log')
         if (!fs.existsSync(this.logDir)) {
             fs.mkdirSync(this.logDir, { recursive: true })
@@ -89,6 +72,17 @@ class AppLogger {
         this.startCleanupScheduler()
 
         this.info('Logger', `Logger initialized at ${this.logPath}`)
+    }
+
+    private determineLogDir(): string {
+        try {
+            if (app) {
+                return path.join(app.getPath('userData'), 'logs')
+            }
+        } catch {
+            // ignore
+        }
+        return path.join(process.cwd(), 'logs')
     }
 
     configure(config: Partial<LoggerConfig>) {
@@ -112,7 +106,7 @@ class AppLogger {
     }
 
     installConsoleRedirect() {
-        if (this.originalConsole) {return}
+        if (this.originalConsole) { return }
         this.originalConsole = {
             debug: console.debug.bind(console),
             info: console.info.bind(console),
@@ -182,9 +176,9 @@ class AppLogger {
         const levelStr = LogLevel[payload.level].padEnd(5)
         if (this.originalConsole) {
             const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`
-            if (payload.level === LogLevel.ERROR) {this.originalConsole.error(consoleMsg)}
-            else if (payload.level === LogLevel.WARN) {this.originalConsole.warn(consoleMsg)}
-            else {this.originalConsole.log(consoleMsg)}
+            if (payload.level === LogLevel.ERROR) { this.originalConsole.error(consoleMsg) }
+            else if (payload.level === LogLevel.WARN) { this.originalConsole.warn(consoleMsg) }
+            else { this.originalConsole.log(consoleMsg) }
         }
 
         this.queue = this.queue.then(async () => {
@@ -192,7 +186,7 @@ class AppLogger {
             await fs.promises.appendFile(this.logPath, line, 'utf8')
             this.size += Buffer.byteLength(line, 'utf8')
         }).catch((err) => {
-            if (this.originalConsole) {this.originalConsole.error('Logger write failed', err)}
+            if (this.originalConsole) { this.originalConsole.error('Logger write failed', err) }
         })
     }
 
@@ -247,7 +241,7 @@ class AppLogger {
     }
 
     private startCleanupScheduler() {
-        if (this.cleanupTimer) {return}
+        if (this.cleanupTimer) { return }
 
         // Run cleanup every 24 hours
         const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -309,25 +303,27 @@ class AppLogger {
         try {
             const files = fs.readdirSync(this.logDir)
             for (const file of files) {
-                if (!file.endsWith('.log') && !file.endsWith('.gz')) {
-                    continue
-                }
-                const filePath = path.join(this.logDir, file)
-                const stat = fs.statSync(filePath)
+                if (!this.isLogFile(file)) { continue }
+
+                const stat = fs.statSync(path.join(this.logDir, file))
                 totalFiles++
                 totalSize += stat.size
-                if (!oldestLog || stat.mtime < oldestLog) {
+                if (!oldestLog || stat.mtime.getTime() < oldestLog.getTime()) {
                     oldestLog = stat.mtime
                 }
-                if (!newestLog || stat.mtime > newestLog) {
+                if (!newestLog || stat.mtime.getTime() > newestLog.getTime()) {
                     newestLog = stat.mtime
                 }
             }
         } catch {
-            // Ignore errors
+            // ignore
         }
 
         return { totalFiles, totalSize, oldestLog, newestLog }
+    }
+
+    private isLogFile(file: string): boolean {
+        return file.endsWith('.log') || file.endsWith('.gz')
     }
 
     /**
@@ -423,22 +419,29 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
     if (value instanceof Error) {
         return value.stack ? `${value.message} | ${value.stack}` : value.message
     }
-    if (value && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)) {
-        const ae = value as AppError
-        let res = ae.message
-        if (ae.code) {res = `[${ae.code}] ${res}`}
-        if (ae.stack) {res = `${res} | ${ae.stack}`}
+
+    if (isAppError(value)) {
+        let res = value.message
+        if (value.code) { res = `[${value.code}] ${res}` }
+        if (value.stack) { res = `${res} | ${value.stack}` }
         return res
     }
+
     if (typeof value === 'string') {
         return value
     }
+
     try {
         return JSON.stringify(value)
     } catch {
         return String(value)
     }
 }
+
+function isAppError(value: unknown): value is AppError {
+    return value !== null && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)
+}
+
 
 function sanitize(message: string): string {
     return String(message).replace(/\r?\n/g, '\\n')

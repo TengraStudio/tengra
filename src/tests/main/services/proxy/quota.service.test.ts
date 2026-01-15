@@ -1,103 +1,126 @@
+import * as fs from 'fs';
 
-import { vi } from 'vitest'
+import { QuotaService } from '@main/services/proxy/quota.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import axios from 'axios';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
-// Mock Electron modules
+const { mockRequest, mockCookiesGet } = vi.hoisted(() => {
+    return {
+        mockRequest: vi.fn(),
+        mockCookiesGet: vi.fn().mockResolvedValue([])
+    }
+});
+
 vi.mock('electron', () => {
     return {
+        app: { getPath: () => '/tmp' },
         net: {
-            request: vi.fn(),
+            request: mockRequest
         },
         session: {
             defaultSession: {
                 cookies: {
-                    get: vi.fn(),
-                },
-            },
-        },
-        app: {
-            getPath: vi.fn(),
-        }
-    }
-})
-
-vi.mock('fs', () => ({
-    default: {
-        existsSync: vi.fn(),
-        readdirSync: vi.fn(),
-        readFileSync: vi.fn(),
-        writeFileSync: vi.fn(),
-        mkdtempSync: vi.fn(),
-        rmSync: vi.fn(),
-        statSync: vi.fn(),
-    },
-    existsSync: vi.fn(),
-    readdirSync: vi.fn(),
-    readFileSync: vi.fn(),
-    writeFileSync: vi.fn(),
-    mkdtempSync: vi.fn(),
-    rmSync: vi.fn(),
-    statSync: vi.fn(),
-}))
-
-vi.mock('path', () => ({
-    default: {
-        join: (...args: string[]) => args.join('/'),
-        dirname: (p: string) => p.substring(0, p.lastIndexOf('/')),
-    },
-    join: (...args: string[]) => args.join('/'),
-    dirname: (p: string) => p.substring(0, p.lastIndexOf('/')),
-}))
-
-import { QuotaService } from '@main/services/proxy/quota.service'
-import { describe, expect,it } from 'vitest'
-
-const mockSettingsService = { getSettings: vi.fn(() => ({})) } as any
-const mockDataService = { getPath: vi.fn() } as any
-const mockSecurityService = { encryptSync: vi.fn(), decryptSync: vi.fn() } as any
-
-describe('QuotaService', () => {
-    const service = new QuotaService(mockSettingsService, mockDataService, mockSecurityService)
-
-    it('should extract usage from wham data correctly', () => {
-        const whamData = {
-            total_requests: 100,
-            requests_remaining: 50,
-            rate_limit: {
-                primary_window: {
-                    used_percent: 50,
-                    reset_at: 1234567890
+                    get: mockCookiesGet
                 }
             }
         }
+    };
+});
 
-        const usage = service.extractCodexUsageFromWham(whamData)
-        expect(usage).not.toBeNull()
-        expect(usage!.totalRequests).toBe(100)
-        expect(usage!.remainingRequests).toBe(50)
-        expect(usage!.dailyUsedPercent).toBe(50)
-        expect(usage!.dailyResetAt).toBe(new Date(1234567890 * 1000).toISOString())
-    })
+vi.mock('axios');
+vi.mock('fs', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('fs')>();
+    return {
+        ...actual,
+        promises: {
+            ...actual.promises,
+            readFile: vi.fn(),
+            readdir: vi.fn(),
+        },
+        existsSync: vi.fn()
+    };
+});
 
-    it('should handle nested wham structures', () => {
-        const whamData = {
-            items: [
-                {
-                    something: {
-                        limit_daily: 200,
-                        usage_daily: 10
+describe('QuotaService', () => {
+    let quotaService: QuotaService;
+    let mockSettingsService: SettingsService;
+    let mockAuthService: AuthService;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+
+        mockSettingsService = {
+            getSettings: vi.fn().mockReturnValue({
+                ai: {
+                    antigravity: {
+                        baseUrl: 'https://api.antigravity.ai'
                     }
                 }
-            ]
-        }
+            })
+        } as unknown as SettingsService;
 
-        const usage = service.extractCodexUsageFromWham(whamData)
-        expect(usage).not.toBeNull()
-        expect(usage!.dailyLimit).toBe(200)
-        expect(usage!.dailyUsage).toBe(10)
-    })
+        mockAuthService = {
+            getToken: vi.fn(),
+            getAuthToken: vi.fn()
+        } as unknown as AuthService;
 
-    it('should return null for empty/invalid data', () => {
-        expect(service.extractCodexUsageFromWham({})).toBeNull()
-        expect(service.extractCodexUsageFromWham(null)).toBeNull()
-    })
-})
+        quotaService = new QuotaService(mockSettingsService, mockAuthService);
+    });
+
+    describe('getQuota', () => {
+        it('should return null if no token is available', async () => {
+            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue(null);
+            const result = await quotaService.getQuota(8080, 'key');
+            expect(result).toBeNull();
+        });
+
+        it('should return quota data on successful API call', async () => {
+            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({
+                accessToken: 'mock-token',
+                id: 'antigravity',
+                provider: 'antigravity',
+                updatedAt: Date.now()
+            });
+
+            vi.mocked(axios.post).mockResolvedValue({
+                status: 200,
+                data: {
+                    models: {
+                        'gpt-4': {
+                            displayName: 'GPT-4',
+                            quotaInfo: {
+                                totalQuota: 100,
+                                remainingQuota: 50
+                            }
+                        }
+                    }
+                }
+            });
+
+            const result = await quotaService.getQuota(8080, 'key');
+
+            expect(result).not.toBeNull();
+            expect(result?.models).toHaveLength(1);
+            expect(result?.models[0].id).toBe('gpt-4');
+        });
+
+        it('should handle API errors gracefully', async () => {
+            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({ accessToken: 'mock-token' } as any);
+            vi.mocked(axios.post).mockRejectedValue(new Error('Network Error'));
+
+            const result = await quotaService.getQuota(8080, 'key');
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('getCopilotQuota', () => {
+        it('should return default structure if no token', async () => {
+            vi.mocked(fs.existsSync).mockReturnValue(false);
+
+            const result = await quotaService.getCopilotQuota();
+            expect(result.success).toBe(false);
+        });
+    });
+});
