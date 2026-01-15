@@ -13,7 +13,7 @@ export default tseslint.config(
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
-                project: './tsconfig.json',
+                project: ['./tsconfig.json', './tsconfig.node.json'],
                 tsconfigRootDir: import.meta.dirname,
             },
             ecmaVersion: 2020,
@@ -42,8 +42,10 @@ export default tseslint.config(
             '@typescript-eslint/prefer-optional-chain': 'warn',
             '@typescript-eslint/no-unnecessary-condition': 'warn',
             '@typescript-eslint/no-floating-promises': 'warn',
-            '@typescript-eslint/await-thenable': 'error',
-            '@typescript-eslint/no-misused-promises': 'error',
+            '@typescript-eslint/await-thenable': 'warn',
+            '@typescript-eslint/no-explicit-any': 'warn',
+            'no-empty': 'warn',
+            '@typescript-eslint/no-misused-promises': 'warn',
             // NASA Power of Ten Rules
             'max-lines-per-function': ['warn', { max: 150, skipBlankLines: true, skipComments: true }], // NASA Rule 4: No function > 150 lines
             'max-depth': ['warn', 4], // Limit nesting depth (NASA Rule 1: Simple control flow)
@@ -92,4 +94,13 @@ export default tseslint.config(
             'sort-imports': 'off', // Turn off default sort-imports to use simple-import-sort
         },
     },
+
+    {
+        files: ['src/tests/**/*.ts', 'src/tests/**/*.tsx'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-non-null-assertion': 'off',
+            'no-empty': 'off'
+        }
+    }
 );

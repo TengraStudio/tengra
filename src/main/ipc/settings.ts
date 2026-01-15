@@ -1,7 +1,7 @@
-import { AuditLogService } from '@main/services/audit-log.service'
+import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { LLMService } from '@main/services/llm/llm.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { AppSettings } from '@shared/types/settings'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
@@ -64,10 +64,10 @@ export function registerSettingsIpc(options: {
                 result.catch(error => console.error('[IPC] updateOllamaConnection failed:', error))
             }
         }
-        if (newSettings.openai) {llmService.setOpenAIApiKey(newSettings.openai.apiKey)}
-        if (newSettings.anthropic) {llmService.setAnthropicApiKey(newSettings.anthropic.apiKey)}
+        if (newSettings.openai) { llmService.setOpenAIApiKey(newSettings.openai.apiKey) }
+        if (newSettings.anthropic) { llmService.setAnthropicApiKey(newSettings.anthropic.apiKey) }
 
-        if (newSettings.groq) {llmService.setGroqApiKey(newSettings.groq.apiKey)}
+        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
 
         // Update Copilot Service - ONLY use copilot_token, no fallback
         const copilotToken = newSettings.copilot?.token

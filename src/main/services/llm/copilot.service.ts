@@ -94,7 +94,7 @@ export class CopilotService extends BaseService {
     private static readonly MIN_API_INTERVAL = 1000; // 1 second between API calls
 
     constructor(
-        private authService?: { getToken: (p: string) => string | undefined },
+        private authService?: { getToken: (p: string) => string | undefined | Promise<string | undefined> },
         private notificationService?: { showNotification: (t: string, b: string, silent?: boolean) => void }
     ) {
         super('CopilotService');
@@ -119,7 +119,8 @@ export class CopilotService extends BaseService {
             }
             // Ensure we have the basic token (this.githubToken)
             if (!this.githubToken && this.authService) {
-                this.githubToken = this.authService.getToken('copilot_token') ?? null;
+                const token = this.authService.getToken('copilot_token');
+                this.githubToken = (token instanceof Promise ? await token : token) ?? null;
             }
 
             if (!this.githubToken) {
@@ -225,7 +226,9 @@ export class CopilotService extends BaseService {
         }
         // deep check via AuthService - ONLY use copilot_token, no fallback
         if (this.authService) {
-            return !!this.authService.getToken('copilot_token');
+            const token = this.authService.getToken('copilot_token');
+            if (token instanceof Promise) {return true;} // Assume true if async check is needed, validation happens later
+            return !!token;
         }
         return false;
     }
@@ -235,7 +238,7 @@ export class CopilotService extends BaseService {
             return this.copilotSessionToken;
         }
 
-        if (this.tokenPromise) {return this.tokenPromise;}
+        if (this.tokenPromise) { return this.tokenPromise; }
 
         this.tokenPromise = (async () => {
             try {
@@ -244,7 +247,8 @@ export class CopilotService extends BaseService {
                     // Try to recover from AuthService if available - ONLY use copilot_token, no fallback
                     if (this.authService) {
                         this.logInfo('No token set, attempting to recover copilot_token from AuthService...');
-                        const copilotToken = this.authService.getToken('copilot_token');
+                        const tokenOrPromise = this.authService.getToken('copilot_token');
+                        const copilotToken = tokenOrPromise instanceof Promise ? await tokenOrPromise : tokenOrPromise;
                         this.logInfo(`copilot_token: ${copilotToken ? `found (length: ${copilotToken.length})` : 'NOT FOUND'}`);
                         if (copilotToken) {
                             this.logInfo('Recovered copilot_token from AuthService');
@@ -628,8 +632,8 @@ export class CopilotService extends BaseService {
     }
 
     private resolveCopilotModel(model: string): string {
-        if (model.startsWith('copilot-')) {return model.replace('copilot-', '');}
-        if (model.startsWith('github-')) {return model.replace('github-', '');}
+        if (model.startsWith('copilot-')) { return model.replace('copilot-', ''); }
+        if (model.startsWith('github-')) { return model.replace('github-', ''); }
         return model;
     }
 
@@ -687,13 +691,13 @@ export class CopilotService extends BaseService {
 
         if (errorBody?.error?.code === 'unsupported_api_for_model' || (response.status === 400 && finalModel.toLowerCase().includes('codex'))) {
             const result = await this.diagnosticCodexRequest(messages, finalModel, headers, stream, tools);
-            if (result) {return result;}
+            if (result) { return result; }
         }
 
         if (response.status === 404 && this.accountType === 'individual') {
             const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', { method: 'POST', headers, body: JSON.stringify(payload) });
             if (bizRes.ok) {
-                if (stream) {return bizRes.body;}
+                if (stream) { return bizRes.body; }
                 return ((await bizRes.json()) as CopilotChatResponse).choices[0].message;
             }
         }
@@ -772,7 +776,7 @@ export class CopilotService extends BaseService {
     }
 
     async getModels(): Promise<{ data: JsonValue[] }> {
-        if (!this.isConfigured()) {return { data: [] };}
+        if (!this.isConfigured()) { return { data: [] }; }
 
         // Return cached models if still valid
         if (this.modelsCache && Date.now() < this.modelsCacheExpiry) {
@@ -806,7 +810,7 @@ export class CopilotService extends BaseService {
     private handleError(error: Error | string | unknown, context: string): never {
         const message = getErrorMessage(error as Error);
         console.error(`[CopilotService] Error in ${context}:`, message);
-        if (error instanceof Error) {throw error;}
+        if (error instanceof Error) { throw error; }
         throw new Error(`Error in ${context}: ${message}`);
     }
 }

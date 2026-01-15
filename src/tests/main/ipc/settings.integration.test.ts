@@ -3,9 +3,9 @@
  */
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { SettingsService } from '@main/services/settings.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import { afterEach, beforeEach, describe, expect, it, Mock,vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { AppSettings } from '@/types/settings';
 

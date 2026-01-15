@@ -3,7 +3,7 @@ import { existsSync } from 'fs'
 import * as fsPromises from 'fs/promises'
 import { join } from 'path'
 
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { app } from 'electron'
 
 export interface LocalAIModel {

@@ -4,9 +4,10 @@
  */
 
 import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react'
-import React, { useMemo,useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n'
 
 interface Theme {
     id: string
@@ -122,12 +123,15 @@ interface ThemeStoreProps {
     onInstallTheme?: (themeId: string) => void
     onApplyTheme?: (themeId: string) => void
     currentThemeId?: string
+    language: Language
 }
 
 export const ThemeStore: React.FC<ThemeStoreProps> = ({
     onApplyTheme,
-    currentThemeId = 'dark-default'
+    currentThemeId = 'dark-default',
+    language
 }) => {
+    const { t } = useTranslation(language)
     const [searchQuery, setSearchQuery] = useState('')
     const [filter, setFilter] = useState<'all' | 'installed' | 'dark' | 'light'>('all')
     const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
@@ -175,11 +179,11 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 >
                     <div className="absolute top-2 right-2 flex gap-1">
                         {theme.isPremium && (
-                            <span className="px-2 py-0.5 bg-amber-500/90 text-white text-[10px] font-bold rounded-full">PRO</span>
+                            <span className="px-2 py-0.5 bg-amber-500/90 text-white text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>
                         )}
                         {isActive && (
                             <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center gap-1">
-                                <Check className="w-3 h-3" /> Active
+                                <Check className="w-3 h-3" /> {t('themeStore.active')}
                             </span>
                         )}
                     </div>
@@ -219,7 +223,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                                 }}
                                 className="px-2 py-1 text-[10px] font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
                             >
-                                Apply
+                                {t('themeStore.apply')}
                             </button>
                         )}
                     </div>
@@ -235,8 +239,8 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 <div className="flex items-center gap-3 mb-4">
                     <Palette className="w-6 h-6 text-primary" />
                     <div>
-                        <h1 className="text-lg font-bold">Theme Store</h1>
-                        <p className="text-xs text-muted-foreground">Customize your workspace appearance</p>
+                        <h1 className="text-lg font-bold">{t('themeStore.title')}</h1>
+                        <p className="text-xs text-muted-foreground">{t('themeStore.subtitle')}</p>
                     </div>
                 </div>
 
@@ -245,7 +249,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
-                        placeholder="Search themes..."
+                        placeholder={t('themeStore.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/30 border border-border/30 rounded-lg pl-9 pr-3 py-2 text-sm outline-none focus:border-primary/50"
@@ -255,10 +259,10 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 {/* Filters */}
                 <div className="flex gap-2">
                     {[
-                        { id: 'all', label: 'All', icon: Palette },
-                        { id: 'installed', label: 'Installed', icon: Check },
-                        { id: 'dark', label: 'Dark', icon: Moon },
-                        { id: 'light', label: 'Light', icon: Sun }
+                        { id: 'all', label: t('themeStore.filterAll'), icon: Palette },
+                        { id: 'installed', label: t('themeStore.filterInstalled'), icon: Check },
+                        { id: 'dark', label: t('themeStore.filterDark'), icon: Moon },
+                        { id: 'light', label: t('themeStore.filterLight'), icon: Sun }
                     ].map(({ id, label, icon: Icon }) => (
                         <button
                             key={id}
@@ -288,7 +292,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 {filteredThemes.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
                         <Palette className="w-12 h-12 mb-3 opacity-30" />
-                        <p className="text-sm">No themes found</p>
+                        <p className="text-sm">{t('themeStore.noThemes')}</p>
                     </div>
                 )}
             </div>
@@ -335,13 +339,13 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                                     }}
                                     className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90"
                                 >
-                                    Apply Theme
+                                    {t('themeStore.apply')}
                                 </button>
                                 <button
                                     onClick={() => setSelectedTheme(null)}
                                     className="px-4 py-2 bg-muted text-muted-foreground rounded-lg font-medium text-sm hover:bg-muted/80"
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </button>
                             </div>
                         </div>

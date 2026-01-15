@@ -4,16 +4,14 @@ import React from 'react'
 import { motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
-export interface SidebarItemProps {
+export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: LucideIcon
     label: string
     active?: boolean
-    onClick?: (e: React.MouseEvent) => void
+    // onClick, className, children are inherited
     badge?: number | string
     isCollapsed?: boolean
-    className?: string
     actions?: React.ReactNode
-    children?: React.ReactNode
     variant?: 'default' | 'ghost' | 'glass'
 }
 
@@ -27,11 +25,13 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     className,
     actions,
     children,
-    variant = 'default'
+    variant = 'default',
+    ...props
 }) => {
     return (
         <div className="group/item relative">
             <button
+                {...props}
                 onClick={onClick}
                 className={cn(
                     "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",

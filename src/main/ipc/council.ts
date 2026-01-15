@@ -1,5 +1,5 @@
-import { AgentCouncilService } from '@main/services/agent-council.service'
 import { DatabaseService } from '@main/services/data/database.service'
+import { AgentCouncilService } from '@main/services/llm/agent-council.service'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
@@ -17,8 +17,8 @@ export function registerCouncilIpc(agentCouncil: AgentCouncilService, _db: Datab
     }, null))
 
     ipcMain.handle('council:log', createSafeIpcHandler('council:log', async (_event: IpcMainInvokeEvent, sessionId: string, agentId: string, message: string, type: string) => {
-        const logType = (type === 'error' || type === 'info' || type === 'success' || type === 'plan' || type === 'action') 
-            ? type 
+        const logType = (type === 'error' || type === 'info' || type === 'success' || type === 'plan' || type === 'action')
+            ? type
             : 'info'
         return await agentCouncil.addLog(sessionId, agentId, message, logType)
     }, null))

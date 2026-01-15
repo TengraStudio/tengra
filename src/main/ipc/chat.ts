@@ -1,16 +1,16 @@
 import { chatQueueManager } from '@main/services/chat-queue.manager'
-import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { LLMService } from '@main/services/llm/llm.service'
+import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { parseAIResponseContent } from '@main/utils/response-parser'
 import { Message, ToolDefinition } from '@shared/types/chat'
 import { JsonObject, JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
-import { sanitizeObject,sanitizeString } from '@shared/utils/sanitize.util'
+import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util'
 import { ipcMain, WebContents } from 'electron'
 import { IpcMainInvokeEvent } from 'electron'
 
@@ -198,7 +198,7 @@ export function registerChatIpc(options: {
 
         // 3. Cliproxy Routing (Default for everything else)
         const proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1'
-        const proxyKey = proxyService.getProxyKey()
+        const proxyKey = await proxyService.getProxyKey()
 
         console.log(`[Main] Routing ${sanitizedModel} via Cliproxy/LLMService`)
         const res = await llmService.chatOpenAI(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey);
@@ -331,7 +331,7 @@ export function registerChatIpc(options: {
             try {
                 while (iterations < MAX_STREAM_ITERATIONS) {
                     const { done, value } = await reader.read();
-                    if (done) {break;}
+                    if (done) { break; }
                     iterations++;
 
                     const decoded = decoder.decode(value, { stream: true });
@@ -339,10 +339,10 @@ export function registerChatIpc(options: {
 
                     for (const line of lines) {
                         const trimmed = line.trim();
-                        if (!trimmed?.startsWith('data:')) {continue;}
+                        if (!trimmed?.startsWith('data:')) { continue; }
 
                         const data = trimmed.slice(5).trim();
-                        if (data === '[DONE]') {continue;}
+                        if (data === '[DONE]') { continue; }
 
                         try {
                             const json = JSON.parse(data) as JsonObject;
@@ -376,10 +376,10 @@ export function registerChatIpc(options: {
 
                 for (const line of lines) {
                     const trimmed = line.trim();
-                    if (!trimmed?.startsWith('data:')) {continue;}
+                    if (!trimmed?.startsWith('data:')) { continue; }
 
                     const data = trimmed.slice(5).trim();
-                    if (data === '[DONE]') {continue;}
+                    if (data === '[DONE]') { continue; }
 
                     try {
                         const json = JSON.parse(data) as JsonObject;
@@ -437,7 +437,7 @@ export function registerChatIpc(options: {
     ): Promise<void> {
         const settings = settingsService.getSettings();
         let proxyUrl = settings.proxy?.url || 'http://localhost:8317/v1';
-        let proxyKey = proxyService.getProxyKey();
+        let proxyKey = await proxyService.getProxyKey();
 
         if (provider === 'ollama') {
             const ollamaUrl = settings.ollama?.url || 'http://localhost:11434';
@@ -486,7 +486,7 @@ export function registerChatIpc(options: {
                         }
                     })) : undefined;
                     const body = await copilotService.streamChat(finalMessages, sanitizedModel, sanitizedTools);
-                    if (!body) {throw new Error('Failed to start Copilot stream');}
+                    if (!body) { throw new Error('Failed to start Copilot stream'); }
                     await handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitizedChatId, event);
                     return;
                 } else if (sanitizedProvider === 'opencode') {

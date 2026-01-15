@@ -1,4 +1,4 @@
-import { CodeIntelligenceService } from '@main/services/code-intelligence.service'
+import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 

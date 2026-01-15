@@ -1,4 +1,4 @@
-import { HealthCheckResult, HealthCheckService, HealthStatus } from '@main/services/health-check.service'
+import { HealthCheckResult, HealthCheckService, HealthStatus } from '@main/services/system/health-check.service'
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { ipcMain } from 'electron'
 

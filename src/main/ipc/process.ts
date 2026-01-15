@@ -1,4 +1,4 @@
-import { ProcessService } from '@main/services/process.service'
+import { ProcessService } from '@main/services/system/process.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 
@@ -74,10 +74,10 @@ export const setupProcessEvents = (processService: ProcessService) => {
     let timer: NodeJS.Timeout | null = null
 
     const flush = () => {
-        if (buffers.size === 0) {return}
+        if (buffers.size === 0) { return }
 
         BrowserWindow.getAllWindows().forEach(win => {
-            if (win.isDestroyed()) {return}
+            if (win.isDestroyed()) { return }
             buffers.forEach((data, id) => {
                 win.webContents.send('process:data', { id, data })
             })

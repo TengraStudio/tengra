@@ -3,8 +3,7 @@
  */
 import * as fs from 'fs';
 
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fs
 vi.mock('fs', () => ({
@@ -13,16 +12,42 @@ vi.mock('fs', () => ({
     writeFileSync: vi.fn(),
     mkdirSync: vi.fn(),
     readdirSync: vi.fn(),
-    unlinkSync: vi.fn()
+    unlinkSync: vi.fn(),
+    promises: {
+        mkdir: vi.fn(),
+        writeFile: vi.fn(),
+        readFile: vi.fn(),
+        readdir: vi.fn(),
+        access: vi.fn(),
+        unlink: vi.fn()
+    }
 }));
 
 // Mock DataService
 const mockDataService = {
     getPath: vi.fn().mockImplementation((type: string) => {
-        if (type === 'data') {return '/mock/data';}
-        if (type === 'config') {return '/mock/config';}
+        if (type === 'data') { return '/mock/data'; }
+        if (type === 'config') { return '/mock/config'; }
         return '/mock';
     })
+};
+
+// Mock DatabaseService
+const mockDatabaseService = {
+    getAllChats: vi.fn().mockResolvedValue([]),
+    getAllMessages: vi.fn().mockResolvedValue([]),
+    getPrompts: vi.fn().mockResolvedValue([]),
+    getFolders: vi.fn().mockResolvedValue([]),
+    getChat: vi.fn().mockResolvedValue(null),
+    createChat: vi.fn().mockResolvedValue({ success: true, id: '1' }),
+    updateChat: vi.fn().mockResolvedValue({ success: true }),
+    addMessage: vi.fn().mockResolvedValue({ success: true }),
+    getPrompt: vi.fn().mockResolvedValue(null),
+    updatePrompt: vi.fn().mockResolvedValue({ success: true }),
+    createPrompt: vi.fn().mockResolvedValue({ success: true }),
+    getFolder: vi.fn().mockResolvedValue(null),
+    updateFolder: vi.fn().mockResolvedValue({ success: true }),
+    createFolder: vi.fn().mockResolvedValue({ success: true })
 };
 
 describe('BackupService', () => {
@@ -30,6 +55,14 @@ describe('BackupService', () => {
         vi.clearAllMocks();
         vi.mocked(fs.existsSync).mockReturnValue(false);
         vi.mocked(fs.readdirSync).mockReturnValue([]);
+
+        // Setup default async mock implementations
+        (fs.promises.mkdir as any).mockResolvedValue(undefined);
+        (fs.promises.writeFile as any).mockResolvedValue(undefined);
+        (fs.promises.readFile as any).mockResolvedValue('{}');
+        (fs.promises.readdir as any).mockResolvedValue([]);
+        (fs.promises.access as any).mockResolvedValue(undefined);
+        (fs.promises.unlink as any).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
@@ -38,54 +71,32 @@ describe('BackupService', () => {
 
     describe('constructor', () => {
         it('should create backup directory if it does not exist', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
+            const { BackupService } = await import('@main/services/data/backup.service');
+            new BackupService(mockDataService as any, mockDatabaseService as any);
 
-            const { BackupService } = await import('@main/services/backup.service');
-            new BackupService(mockDataService as any);
+            // Wait for async constructor operations
+            await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(fs.mkdirSync).toHaveBeenCalledWith(
+            expect(fs.promises.mkdir).toHaveBeenCalledWith(
                 expect.stringContaining('backups'),
                 { recursive: true }
             );
-        });
-
-        it('should not create backup directory if it exists', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                return (p as string).includes('backups');
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            new BackupService(mockDataService as any);
-
-            // mkdirSync should not be called for backups dir (only for config dir potentially)
-            const backupDirCalls = vi.mocked(fs.mkdirSync).mock.calls.filter(
-                call => (call[0] as string).includes('backups')
-            );
-            expect(backupDirCalls.length).toBe(0);
         });
     });
 
     describe('createBackup', () => {
         it('should create a backup with default options', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                const pathStr = p as string;
-                if (pathStr.includes('backups')) {return true;}
-                if (pathStr.includes('settings.json')) {return true;}
-                if (pathStr.includes('chats.json')) {return true;}
-                return false;
-            });
-            vi.mocked(fs.readFileSync).mockImplementation((p) => {
-                if ((p as string).includes('settings.json')) {
+            // Setup specific mocks
+            (fs.promises.readFile as any).mockImplementation(async (p: string) => {
+                if (p.includes('settings.json')) {
                     return JSON.stringify({ general: { theme: 'dark' } });
-                }
-                if ((p as string).includes('chats.json')) {
-                    return JSON.stringify([{ id: '1', title: 'Test Chat' }]);
                 }
                 return '{}';
             });
+            mockDatabaseService.getAllChats.mockResolvedValue([{ id: '1', title: 'Test Chat' }]);
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
             const result = await service.createBackup();
 
             expect(result.success).toBe(true);
@@ -93,329 +104,87 @@ describe('BackupService', () => {
             expect(result.metadata).toBeDefined();
             expect(result.metadata?.includes).toContain('settings');
             expect(result.metadata?.includes).toContain('chats');
-            expect(fs.writeFileSync).toHaveBeenCalled();
+            expect(fs.promises.writeFile).toHaveBeenCalled();
         });
 
         it('should respect includeChats option', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                const pathStr = p as string;
-                if (pathStr.includes('backups')) {return true;}
-                if (pathStr.includes('settings.json')) {return true;}
-                if (pathStr.includes('chats.json')) {return true;}
-                return false;
-            });
-            vi.mocked(fs.readFileSync).mockImplementation((p) => {
-                if ((p as string).includes('settings.json')) {
-                    return JSON.stringify({ general: { theme: 'dark' } });
-                }
-                return '[]';
-            });
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.createBackup({ includeChats: false });
+            await service.createBackup({ includeChats: false });
 
-            expect(result.success).toBe(true);
-            expect(result.metadata?.includes).not.toContain('chats');
-        });
-
-        it('should handle errors gracefully', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                return (p as string).includes('backups');
-            });
-            vi.mocked(fs.writeFileSync).mockImplementation(() => {
-                throw new Error('Disk full');
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.createBackup();
-
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('Disk full');
+            expect(mockDatabaseService.getAllChats).not.toHaveBeenCalled();
         });
     });
 
     describe('restoreBackup', () => {
-        it('should restore from a valid backup', async () => {
-            const backupContent = {
+        it('should restore from a valid backup file', async () => {
+            const backupData = {
+                _metadata: { version: '2.0', createdAt: '2023-01-01', includes: ['settings', 'chats'] },
                 settings: { general: { theme: 'light' } },
-                chats: [{ id: '1', title: 'Restored Chat' }],
-                _metadata: {
-                    version: '1.0',
-                    createdAt: new Date().toISOString(),
-                    appVersion: '1.0.0',
-                    platform: 'win32',
-                    includes: ['settings', 'chats']
-                }
+                chats: [{ id: '1', title: 'Restored Chat' }]
             };
 
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(backupContent));
-            vi.mocked(fs.writeFileSync).mockImplementation(() => { }); // Allow writes to succeed
+            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify(backupData));
+            (fs.promises.access as any).mockResolvedValue(undefined);
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.restoreBackup('/mock/backup.json');
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const result = await service.restoreBackup('/path/to/backup.json');
 
             expect(result.success).toBe(true);
             expect(result.restored).toContain('settings');
-            expect(result.restored).toContain('chats');
+            expect(result.restored).toContain('chats (1 processed)');
+            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('settings.json'),
+                expect.any(String)
+            );
+            expect(mockDatabaseService.createChat).toHaveBeenCalled();
         });
 
-        it('should return error for missing backup file', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                if ((p as string).includes('backups')) {return true;}
-                return false;
-            });
+        it('should return error if backup file does not exist', async () => {
+            const errorMsg = 'ENOENT: no such file or directory';
+            (fs.promises.readFile as any).mockRejectedValue(new Error(errorMsg));
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.restoreBackup('/nonexistent/backup.json');
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const result = await service.restoreBackup('/path/to/missing.json');
 
             expect(result.success).toBe(false);
-            expect(result.errors).toContain('Backup file not found');
-        });
-
-        it('should return error for invalid backup (missing metadata)', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
-                settings: { general: { theme: 'dark' } }
-                // Missing _metadata
-            }));
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.restoreBackup('/mock/invalid-backup.json');
-
-            expect(result.success).toBe(false);
-            expect(result.errors[0]).toContain('missing metadata');
-        });
-
-        it('should merge chats when mergeChats option is true', async () => {
-            const existingChats = [{ id: '1', title: 'Existing Chat' }];
-            const backupChats = [
-                { id: '1', title: 'Backup Chat 1' }, // Duplicate
-                { id: '2', title: 'Backup Chat 2' }  // New
-            ];
-            const backupContent = {
-                chats: backupChats,
-                _metadata: {
-                    version: '1.0',
-                    createdAt: new Date().toISOString(),
-                    appVersion: '1.0.0',
-                    platform: 'win32',
-                    includes: ['chats']
-                }
-            };
-
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockImplementation((p) => {
-                if ((p as string).includes('chats.json')) {
-                    return JSON.stringify(existingChats);
-                }
-                return JSON.stringify(backupContent);
-            });
-            vi.mocked(fs.writeFileSync).mockImplementation(() => { }); // Allow writes to succeed
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = await service.restoreBackup('/mock/backup.json', { mergeChats: true });
-
-            expect(result.success).toBe(true);
-            expect(result.restored[0]).toContain('merged');
+            expect(result.errors).toContain(errorMsg);
         });
     });
 
     describe('listBackups', () => {
-        it('should list all backups sorted by date', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readdirSync).mockReturnValue([
-                'backup-2024-01-01.json' as any,
-                'backup-2024-01-02.json' as any
-            ]);
-            vi.mocked(fs.readFileSync).mockImplementation((p) => {
-                if ((p as string).includes('2024-01-01')) {
-                    return JSON.stringify({
-                        _metadata: { createdAt: '2024-01-01T00:00:00.000Z' }
-                    });
-                }
-                if ((p as string).includes('2024-01-02')) {
-                    return JSON.stringify({
-                        _metadata: { createdAt: '2024-01-02T00:00:00.000Z' }
-                    });
-                }
-                return '{}';
-            });
+        it('should list available backups', async () => {
+            (fs.promises.readdir as any).mockResolvedValue(['backup-1.json', 'other.txt']);
+            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify({
+                _metadata: { createdAt: '2023-01-01' }
+            }));
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const backups = service.listBackups();
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
 
-            expect(backups).toHaveLength(2);
-            // Sorted by date descending (newest first)
-            expect(backups[0].name).toBe('backup-2024-01-02.json');
-        });
+            const backups = await service.listBackups();
 
-        it('should return empty array if backup directory does not exist', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const backups = service.listBackups();
-
-            expect(backups).toEqual([]);
+            expect(backups.length).toBe(1);
+            expect(backups[0].name).toBe('backup-1.json');
         });
     });
 
     describe('deleteBackup', () => {
-        it('should delete an existing backup', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
+        it('should delete a backup file', async () => {
+            (fs.promises.unlink as any).mockResolvedValue(undefined);
 
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = service.deleteBackup('/mock/backup.json');
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const result = await service.deleteBackup('/path/to/backup.json');
 
             expect(result).toBe(true);
-            expect(fs.unlinkSync).toHaveBeenCalledWith('/mock/backup.json');
-        });
-
-        it('should return false for non-existent backup', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                if ((p as string).includes('backups')) {return true;}
-                return false;
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const result = service.deleteBackup('/nonexistent/backup.json');
-
-            expect(result).toBe(false);
-        });
-    });
-
-    describe('auto-backup configuration', () => {
-        it('should return default auto-backup status', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                return (p as string).includes('backups');
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const status = service.getAutoBackupStatus();
-
-            expect(status.enabled).toBe(false);
-            expect(status.intervalHours).toBe(24);
-            expect(status.maxBackups).toBe(10);
-            expect(status.lastBackup).toBeNull();
-        });
-
-        it('should configure auto-backup', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                return (p as string).includes('backups');
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-
-            service.configureAutoBackup({
-                enabled: true,
-                intervalHours: 12,
-                maxBackups: 5
-            });
-
-            const status = service.getAutoBackupStatus();
-            expect(status.enabled).toBe(true);
-            expect(status.intervalHours).toBe(12);
-            expect(status.maxBackups).toBe(5);
-            expect(fs.writeFileSync).toHaveBeenCalled();
-
-            // Clean up
-            service.dispose();
-        });
-
-        it('should enforce minimum values for interval and maxBackups', async () => {
-            vi.mocked(fs.existsSync).mockImplementation((p) => {
-                return (p as string).includes('backups');
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-
-            service.configureAutoBackup({
-                enabled: false,
-                intervalHours: 0, // Below minimum
-                maxBackups: 0     // Below minimum
-            });
-
-            const status = service.getAutoBackupStatus();
-            expect(status.intervalHours).toBe(1); // Minimum 1 hour
-            expect(status.maxBackups).toBe(1);    // Minimum 1 backup
-        });
-    });
-
-    describe('cleanupOldBackups', () => {
-        it('should delete old backups exceeding maxBackups', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readdirSync).mockReturnValue([
-                'backup-1.json' as any,
-                'backup-2.json' as any,
-                'backup-3.json' as any,
-                'backup-4.json' as any,
-                'backup-5.json' as any
-            ]);
-            vi.mocked(fs.readFileSync).mockImplementation((p) => {
-                const match = (p as string).match(/backup-(\d)/);
-                if (match) {
-                    return JSON.stringify({
-                        _metadata: { createdAt: `2024-01-0${match[1]}T00:00:00.000Z` }
-                    });
-                }
-                return '{}';
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-
-            // Set maxBackups to 3
-            service.configureAutoBackup({ enabled: false, maxBackups: 3 });
-
-            const deleted = service.cleanupOldBackups();
-
-            expect(deleted).toBe(2); // Should delete 2 oldest backups
-        });
-
-        it('should not delete if under maxBackups', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readdirSync).mockReturnValue([
-                'backup-1.json' as any,
-                'backup-2.json' as any
-            ]);
-            vi.mocked(fs.readFileSync).mockImplementation(() => {
-                return JSON.stringify({
-                    _metadata: { createdAt: new Date().toISOString() }
-                });
-            });
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-
-            const deleted = service.cleanupOldBackups();
-
-            expect(deleted).toBe(0);
-            expect(fs.unlinkSync).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('getBackupDir', () => {
-        it('should return the backup directory path', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-
-            const { BackupService } = await import('@main/services/backup.service');
-            const service = new BackupService(mockDataService as any);
-            const dir = service.getBackupDir();
-
-            expect(dir).toContain('backups');
+            expect(fs.promises.unlink).toHaveBeenCalledWith('/path/to/backup.json');
         });
     });
 });

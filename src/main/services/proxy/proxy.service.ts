@@ -4,16 +4,16 @@ import path from 'path'
 
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
-import { ProxyEmbedStatus,ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
+import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
 import { QuotaService } from '@main/services/proxy/quota.service'
-import { SecurityService } from '@main/services/security.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SecurityService } from '@main/services/security/security.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { AuthenticationError } from '@main/utils/error.util'
 import { LocalAuthServer } from '@main/utils/local-auth-server.util'
 import { JsonObject, JsonValue } from '@shared/types'
 import { ModelQuotaItem, QuotaResponse } from '@shared/types/quota'
 import { getErrorMessage } from '@shared/utils/error.util'
-import { app,net } from 'electron'
+import { net } from 'electron'
 
 export type QuotaInfo = {
   remainingQuota: number;
@@ -42,10 +42,6 @@ interface ProxyModelResponse {
 
 type ProxyRequestResponse = JsonObject | { success: boolean; error?: string; raw?: JsonValue }
 
-
-/**
- * Response from GitHub Device Code Flow initiation.
- */
 export interface DeviceCodeResponse {
   device_code: string;
   user_code: string;
@@ -54,9 +50,6 @@ export interface DeviceCodeResponse {
   interval: number;
 }
 
-/**
- * Response containing access token from OAuth flow.
- */
 export interface TokenResponse {
   access_token: string;
   token_type: string;
@@ -73,9 +66,6 @@ const GITHUB_CLIENTS = {
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 
-/**
- * Manages GitHub/Google authentication and local proxy process.
- */
 export class ProxyService extends BaseService {
   private currentPort: number = 8317
 
@@ -87,8 +77,12 @@ export class ProxyService extends BaseService {
     private quotaService: QuotaService
   ) {
     super('ProxyService')
-    this.ensureAuthStoreKey()
-    this.ensureProxyKey()
+  }
+
+  override async initialize(): Promise<void> {
+    await super.initialize()
+    await this.ensureAuthStoreKey()
+    await this.ensureProxyKey()
   }
 
   override async cleanup(): Promise<void> {
@@ -96,15 +90,13 @@ export class ProxyService extends BaseService {
       await this.stopEmbeddedProxy()
       this.logInfo('Proxy service stopped')
     } catch (e) {
-      this.logError('Failed to stop proxy during cleanup:', e)
+      this.logError('Failed to stop proxy during cleanup:', e as Error)
     }
   }
 
-  // --- Auth Flow Logic ---
-
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
     return new Promise((resolve, reject) => {
-      const client = GITHUB_CLIENTS[appId] || GITHUB_CLIENTS.profile
+      const client = GITHUB_CLIENTS[appId];
       const request = net.request({ method: 'POST', url: GITHUB_DEVICE_CODE_URL });
       request.setHeader('Accept', 'application/json');
       request.setHeader('Content-Type', 'application/json');
@@ -115,13 +107,14 @@ export class ProxyService extends BaseService {
         response.on('data', (chunk) => data += chunk);
         response.on('end', () => { try { resolve(JSON.parse(data)); } catch (error) { reject(error); } });
       });
+      request.on('error', (err) => reject(err));
       request.end();
     });
   }
 
   async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<string> {
     return new Promise((resolve, reject) => {
-      const client = GITHUB_CLIENTS[appId] || GITHUB_CLIENTS.profile
+      const client = GITHUB_CLIENTS[appId];
       const checkToken = () => {
         const request = net.request({ method: 'POST', url: GITHUB_ACCESS_TOKEN_URL });
         request.setHeader('Accept', 'application/json');
@@ -133,12 +126,17 @@ export class ProxyService extends BaseService {
           response.on('end', () => {
             try {
               const json: TokenResponse = JSON.parse(data);
-              if (json.access_token) {resolve(json.access_token);}
-              else if (json.error === 'authorization_pending') {setTimeout(checkToken, (interval + 1) * 1000);}
-              else {reject(new Error(json.error_description || json.error));}
+              if (json.access_token) {
+                resolve(json.access_token);
+              } else if (json.error === 'authorization_pending') {
+                setTimeout(checkToken, (interval + 1) * 1000);
+              } else {
+                reject(new Error(json.error_description ?? json.error));
+              }
             } catch (error) { reject(error); }
           });
         });
+        request.on('error', (err) => reject(err));
         request.end();
       };
       setTimeout(checkToken, interval * 1000);
@@ -146,14 +144,12 @@ export class ProxyService extends BaseService {
   }
 
   async getAntigravityAuthUrl(): Promise<{ url: string, state: string }> {
-    return this.startGoogleAuth('antigravity')
+    return this.startGoogleAuth('antigravity');
   }
-
-
 
   private async startGoogleAuth(prefix: string): Promise<{ url: string, state: string }> {
     return LocalAuthServer.startAntigravityAuth(
-      (data) => {
+      async (data) => {
         const now = Date.now()
         const authData = {
           ...data,
@@ -165,12 +161,12 @@ export class ProxyService extends BaseService {
           ? `${prefix}-${data.email.replace(/[@.]/g, '_')}.json`
           : `${prefix}.json`
 
-        this.updateAuthFile(filename, authData)
+        await this.updateAuthFile(filename, authData)
       },
       (err) => {
-        console.error(`[ProxyService] ${prefix} Auth failed:`, err)
+        this.logError(`${prefix} Auth failed:`, err as Error)
         if (err instanceof AuthenticationError) {
-          console.error('[ProxyService] Auth Error Detail:', err.context)
+          this.logError('Auth Error Detail:', err.context ?? {});
         }
       }
     )
@@ -186,31 +182,30 @@ export class ProxyService extends BaseService {
 
   async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
     const dir = this.getAuthWorkDir();
-    if (!fs.existsSync(dir)) {return { files: [] };}
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
-    const res = {
+    const exists = await fs.promises.access(dir).then(() => true).catch(() => false);
+    if (!exists) { return { files: [] }; }
+    const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
+    return {
       files: files.map(f => {
-        let provider = f.replace(/\.(json|enc)$/, '').split('-')[0].split('_')[0]; // Handle github-token, github_token, etc.
-        // Normalize common names
-        if (provider === 'github' || provider === 'github_token') {provider = 'github';}
-        if (provider === 'copilot' || provider === 'copilot_token') {provider = 'copilot';}
-        if (provider === 'antigravity' || provider === 'antigravity_token') {provider = 'antigravity';}
-        if (provider === 'gemini' || provider === 'gemini_key') {provider = 'gemini';}
-        if (provider === 'openai' || provider === 'openai_key') {provider = 'openai';}
-        if (provider === 'anthropic' || provider === 'anthropic_key') {provider = 'anthropic';}
-        if (provider === 'proxy' || provider === 'proxy_key') {provider = 'proxy';}
+        let provider = f.replace(/\.(json|enc)$/, '').split('-')[0].split('_')[0];
+        if (provider === 'github' || provider === 'github_token') { provider = 'github'; }
+        if (provider === 'copilot' || provider === 'copilot_token') { provider = 'copilot'; }
+        if (provider === 'antigravity' || provider === 'antigravity_token') { provider = 'antigravity'; }
+        if (provider === 'gemini' || provider === 'gemini_key') { provider = 'gemini'; }
+        if (provider === 'openai' || provider === 'openai_key') { provider = 'openai'; }
+        if (provider === 'anthropic' || provider === 'anthropic_key') { provider = 'anthropic'; }
+        if (provider === 'proxy' || provider === 'proxy_key') { provider = 'proxy'; }
 
         return { name: f, provider };
       })
     };
-    console.log(`[ProxyService] getAuthFiles: Found ${files.length} files. Providers:`, res.files.map(f => f.provider));
-    return res;
   }
 
   async deleteAuthFile(name: string): Promise<{ success: boolean }> {
     const filePath = path.join(this.getAuthWorkDir(), name);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+    if (exists) {
+      await fs.promises.unlink(filePath);
       return { success: true };
     }
     return { success: false };
@@ -218,14 +213,13 @@ export class ProxyService extends BaseService {
 
   async getAuthFileContent(name: string): Promise<JsonObject | null> {
     const filePath = path.join(this.getAuthWorkDir(), name)
-    if (!fs.existsSync(filePath)) {return null}
-    return this.readAuthFile(filePath)
+    const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+    if (!exists) { return null }
+    return await this.readAuthFile(name)
   }
 
-  // --- Proxy Embed Lifecycle ---
-
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
-    this.currentPort = options?.port || 8317
+    this.currentPort = options?.port ?? 8317
     return this.processManager.start(options)
   }
 
@@ -235,7 +229,7 @@ export class ProxyService extends BaseService {
 
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus()
-    if (status.running && status.port) {this.currentPort = status.port}
+    if (status.running && status.port) { this.currentPort = status.port }
     return status
   }
 
@@ -244,13 +238,11 @@ export class ProxyService extends BaseService {
   }
 
   async generateConfig(port?: number): Promise<void> {
-    return this.processManager.generateConfig(port || this.currentPort)
+    return this.processManager.generateConfig(port ?? this.currentPort)
   }
 
-  // --- Quota & Models ---
-
   async getQuota(): Promise<QuotaResponse | null> {
-    return this.quotaService.getQuota(this.currentPort, this.getProxyKey())
+    return this.quotaService.getQuota(this.currentPort, await this.getProxyKey())
   }
 
   async getCodexUsage(): Promise<Partial<QuotaResponse>> {
@@ -274,26 +266,8 @@ export class ProxyService extends BaseService {
   }
 
   async getModels(): Promise<ProxyModelResponse> {
-    const apiKey = this.getProxyKey()
-    let baseRes: ProxyModelResponse = { data: [] }
-    try {
-      console.log(`[ProxyService] getModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
-      const res = await this.makeRequest('/v1/models', apiKey)
-      console.log('[ProxyService] getModels: Raw response type:', typeof res);
-      console.log('[ProxyService] getModels: Has data?', res && 'data' in res);
-      if (res && 'data' in res && Array.isArray(res.data)) {
-        console.log('[ProxyService] getModels: Found', res.data.length, 'models from proxy');
-        const anthropicModels = res.data.filter((m: any) => m.owned_by === 'anthropic');
-        console.log('[ProxyService] getModels: Anthropic models:', anthropicModels.length);
-        baseRes = res as ProxyModelResponse;
-      } else if (res && 'success' in res && !res.success) {
-        console.warn('[ProxyService] getModels: Request failed:', res.error, res.raw);
-      } else {
-        console.warn('[ProxyService] getModels: Unexpected response structure:', JSON.stringify(res).slice(0, 500));
-      }
-    } catch (error) {
-      console.warn('[ProxyService] getModels: Primary proxy fetch failed.', getErrorMessage(error))
-    }
+    const apiKey = await this.getProxyKey();
+    const proxyData = await this.getProxyModels(apiKey);
 
     const [codexData, copilotData, claudeData] = await Promise.all([
       this.quotaService.fetchCodexUsage(),
@@ -301,159 +275,187 @@ export class ProxyService extends BaseService {
       this.quotaService.getClaudeQuota()
     ]);
 
-    let codexQuotaFn: QuotaInfo | undefined = undefined;
-    if (codexData) {
-      const usage = this.quotaService.extractCodexUsageFromWham(codexData);
-      if (usage) {
-        let fraction = 1.0;
-        if (usage.dailyUsedPercent !== undefined || usage.weeklyUsedPercent !== undefined) {
-          const dRemaining = usage.dailyUsedPercent !== undefined ? (100 - usage.dailyUsedPercent) / 100 : 1.0;
-          const wRemaining = usage.weeklyUsedPercent !== undefined ? (100 - usage.weeklyUsedPercent) / 100 : 1.0;
-          fraction = Math.max(0, Math.min(dRemaining, wRemaining));
-        } else {
-          const remaining = usage.remainingRequests ?? usage.remainingTokens ?? 0;
-          const limit = usage.dailyLimit ?? usage.weeklyLimit ?? usage.totalRequests ?? 0;
-          fraction = limit > 0 ? remaining / limit : 0;
-        }
+    const quotas = this.normalizeQuota(codexData, copilotData, claudeData);
 
-        codexQuotaFn = {
-          remainingQuota: usage.remainingRequests ?? 0,
-          totalQuota: usage.dailyLimit ?? usage.weeklyLimit ?? 0,
-          remainingFraction: fraction,
-          resetTime: usage.dailyResetAt || usage.weeklyResetAt || usage.resetAt
-        };
-      }
-    }
+    let extra: ModelQuotaItem[] = [];
+    let antigravityError: string | undefined;
 
-    let copilotQuotaFn: QuotaInfo | undefined = undefined;
-    if (copilotData && copilotData.success) {
-      copilotQuotaFn = {
-        remainingQuota: copilotData.remaining || 0,
-        totalQuota: copilotData.limit || 0,
-        remainingFraction: copilotData.percentage ? copilotData.percentage / 100 : 0,
-        resetTime: undefined
-      };
-    }
-
-    // Claude quota - uses utilization (100 = exhausted, 0 = full)
-    let claudeQuotaFn: QuotaInfo | undefined = undefined;
-    if (claudeData && claudeData.success) {
-      // Use 5-hour limit as primary (more restrictive), fall back to 7-day
-      const fiveHour = claudeData.fiveHour;
-      const sevenDay = claudeData.sevenDay;
-      const utilization = fiveHour?.utilization ?? sevenDay?.utilization ?? 0;
-      const resetTime = fiveHour?.resetsAt ?? sevenDay?.resetsAt;
-      claudeQuotaFn = {
-        remainingQuota: Math.round(100 - utilization),
-        totalQuota: 100,
-        remainingFraction: (100 - utilization) / 100,
-        resetTime: resetTime
-      };
-    }
-
-    let extra: ModelQuotaItem[] = []
-    let antigravityError: string | undefined
-
-    // Antigravity support restored
     try {
       extra = await this.quotaService.getAntigravityAvailableModels();
-      console.log(`[ProxyService] Fetched ${extra.length} Antigravity models`);
     } catch (error) {
-      console.warn('[ProxyService] Failed to fetch Antigravity models:', getErrorMessage(error));
       if (getErrorMessage(error) === 'AUTH_EXPIRED') {
-        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.'
+        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.';
       }
     }
 
-    const base = Array.isArray(baseRes?.data) ? baseRes.data.map((m: ModelItem) => {
-      const id = m.id.toLowerCase();
-      // Map owned_by to provider if provider is missing (common in OpenAI-compat APIs)
-      let provider = m.provider || (m['owned_by'] as string);
+    const merged = this.mergeModels(proxyData, extra);
+    const finalData = merged.map((m: ModelItem) => this.enrichModelWithQuota(m, quotas));
 
+    return { data: finalData, antigravityError };
+  }
+
+  private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
+    try {
+      this.logInfo(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
+      const res = await this.makeRequest('/v1/models', apiKey)
+      if (res && 'data' in res && Array.isArray(res.data)) {
+        return res.data as ModelItem[];
+      }
+    } catch (error) {
+      this.logWarn(`getProxyModels: Primary proxy fetch failed. ${getErrorMessage(error)}`)
+    }
+    return [];
+  }
+
+  private normalizeQuota(
+    codexData: JsonObject | null,
+    copilotData: { success: boolean; limit?: number; remaining?: number; percentage?: number | null } | null,
+    claudeData: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null
+  ) {
+    const codexQuotaFn = this.normalizeCodexQuota(codexData);
+    const copilotQuotaFn = this.normalizeCopilotQuota(copilotData);
+    const claudeQuotaFn = this.normalizeClaudeQuota(claudeData);
+
+    return { codexQuotaFn, copilotQuotaFn, claudeQuotaFn };
+  }
+
+  private normalizeCodexQuota(codexData: JsonObject | null): QuotaInfo | undefined {
+    if (!codexData) { return undefined; }
+    const usage = this.quotaService.extractCodexUsageFromWham(codexData);
+    if (!usage) { return undefined; }
+
+    const usageObj = usage as Record<string, unknown>;
+    const remaining = (usageObj.remainingRequests as number) || (usageObj.remainingTokens as number) || 0;
+    const limit = (usageObj.dailyLimit as number) || (usageObj.weeklyLimit as number) || (usageObj.totalRequests as number) || 0;
+    const fraction = this.determineCodexFraction(usage, remaining, limit);
+
+    return this.assembleQuotaFn(remaining, limit, fraction, usageObj as JsonObject);
+  }
+
+  private determineCodexFraction(usage: any, remaining: number, limit: number): number {
+    if (usage.dailyUsedPercent !== undefined || usage.weeklyUsedPercent !== undefined) {
+      return this.calculateFractionFromPercent(usage.dailyUsedPercent, usage.weeklyUsedPercent);
+    }
+    return limit > 0 ? remaining / limit : 0;
+  }
+
+  private assembleQuotaFn(remaining: number, limit: number, fraction: number, usage: JsonObject): QuotaInfo {
+    return {
+      remainingQuota: remaining,
+      totalQuota: limit,
+      remainingFraction: fraction,
+      resetTime: (usage.dailyResetAt as string) || (usage.weeklyResetAt as string) || (usage.resetAt as string)
+    };
+  }
+
+  private calculateFractionFromPercent(daily?: number, weekly?: number): number {
+    const dRemaining = daily !== undefined ? (100 - daily) / 100 : 1.0;
+    const wRemaining = weekly !== undefined ? (100 - weekly) / 100 : 1.0;
+    return Math.max(0, Math.min(dRemaining, wRemaining));
+  }
+
+  private normalizeCopilotQuota(copilotData: { success: boolean; limit?: number; remaining?: number; percentage?: number | null } | null): QuotaInfo | undefined {
+    if (!copilotData?.success) { return undefined; }
+    return {
+      remainingQuota: copilotData.remaining ?? 0,
+      totalQuota: copilotData.limit ?? 0,
+      remainingFraction: copilotData.percentage ? copilotData.percentage / 100 : 0,
+      resetTime: undefined
+    };
+  }
+
+  private normalizeClaudeQuota(claudeData: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null): QuotaInfo | undefined {
+    if (!claudeData?.success) { return undefined; }
+    const fiveHour = claudeData.fiveHour;
+    const sevenDay = claudeData.sevenDay;
+    const utilization = fiveHour?.utilization ?? sevenDay?.utilization ?? 0;
+    return {
+      remainingQuota: Math.round(100 - utilization),
+      totalQuota: 100,
+      remainingFraction: (100 - utilization) / 100,
+      resetTime: fiveHour?.resetsAt ?? sevenDay?.resetsAt
+    };
+  }
+
+  private mergeModels(base: ModelItem[], extra: ModelQuotaItem[]): ModelItem[] {
+    const merged: ModelItem[] = base.map(m => {
+      let provider = m.provider;
       if (!provider) {
-        if (id.includes('claude') || id.includes('anthropic')) {provider = 'anthropic';}
-        else if (id.includes('gemini-3')) {provider = 'copilot';}
-        else if (id.startsWith('gemini-') || id.includes('google') || m.id.startsWith('google/')) {provider = 'gemini';}
-        else {provider = 'antigravity';}
+        const idValue = m.id.toLowerCase();
+        if (idValue.includes('claude') || idValue.includes('anthropic')) { provider = 'anthropic'; }
+        else if (idValue.includes('gemini-3')) { provider = 'copilot'; }
+        else if (idValue.startsWith('gemini-') || idValue.includes('google')) { provider = 'gemini'; }
+        else { provider = 'antigravity'; }
       }
-
       return { ...m, provider };
-    }) : []
-
-    const merged = [...base]
-    const ids = new Set(base.map((m: ModelItem) => m.id))
-
-
-
-    for (const m of extra) {
-      if (ids.has(m.id)) {
-        merged.push({
-          ...m,
-          id: m.id + '-antigravity',
-          name: (m.name || m.id) + ' (Antigravity)',
-          provider: 'antigravity'
-        })
-      } else {
-        merged.push(m)
-      }
-    }
-
-    const finalData = merged.map((m: ModelItem) => {
-      const provider = (m.provider || 'custom').toLowerCase();
-      const model = { ...m };
-
-      // console.log(`[ProxyService] getModels: Processing model ${m.id} for provider ${provider}`);
-
-      if ((provider === 'codex' || provider === 'openai' || m.id.startsWith('gpt-')) && codexQuotaFn) {
-        model.quotaInfo = codexQuotaFn;
-      }
-      if (provider === 'copilot' && copilotQuotaFn) {
-        model.quotaInfo = copilotQuotaFn;
-      }
-      if ((provider === 'anthropic' || provider === 'claude' || m.id.startsWith('claude-')) && claudeQuotaFn) {
-        model.quotaInfo = claudeQuotaFn;
-      }
-
-      if (!model.quota && model.quotaInfo) {
-        const fraction = model.quotaInfo.remainingFraction;
-        const resetTime = model.quotaInfo.resetTime;
-
-        let resetStr = '-';
-        if (resetTime) {
-          try {
-            resetStr = new Date(resetTime).toLocaleString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-          } catch { /* Invalid date format */ }
-        }
-
-        model.quota = {
-          percentage: Math.round(fraction * 100),
-          reset: resetStr
-        };
-      }
-      if (!model.quota && typeof model.percentage === 'number') {
-        model.quota = {
-          percentage: model.percentage as number,
-          reset: (model.reset as string) || '-'
-        }
-      }
-
-      return model;
     });
 
-    console.log(`[ProxyService] getModels: Returning ${finalData.length} models. Providers: ${[...new Set(finalData.map(m => m.provider))].join(', ')}`);
+    const ids = new Set(merged.map(m => m.id));
+    for (const m of extra) {
+      if (ids.has(m.id)) {
+        merged.push({ ...m, id: m.id + '-antigravity', name: (m.name ?? m.id) + ' (Antigravity)', provider: 'antigravity' });
+      } else {
+        merged.push(m);
+      }
+    }
+    return merged;
+  }
 
-    return {
-      ...baseRes,
-      data: finalData,
-      claudeQuota: claudeData,
-      antigravityError
+  private enrichModelWithQuota(m: ModelItem, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }): ModelItem {
+    const provider = (m.provider ?? 'custom').toLowerCase();
+    const model = { ...m };
+
+    this.applyQuotaInfo(model, provider, quotas);
+
+    if (!model.quota && model.quotaInfo) {
+      this.calculateQuotaFromInfo(model);
+    }
+
+    if (!model.quota && typeof model.percentage === 'number') {
+      model.quota = { percentage: model.percentage, reset: (model.reset as string) || '-' };
+    }
+
+    return model;
+  }
+
+  private applyQuotaInfo(model: ModelItem, provider: string, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }) {
+    const { codexQuotaFn, copilotQuotaFn, claudeQuotaFn } = quotas;
+    const id = model.id.toLowerCase();
+
+    if (this.isCodexModel(id, provider) && codexQuotaFn) {
+      model.quotaInfo = codexQuotaFn;
+    } else if (provider === 'copilot' && copilotQuotaFn) {
+      model.quotaInfo = copilotQuotaFn;
+    } else if (this.isClaudeModel(id, provider) && claudeQuotaFn) {
+      model.quotaInfo = claudeQuotaFn;
     }
   }
 
-  // --- Auth Management ---
+  private isCodexModel(id: string, provider: string): boolean {
+    return provider === 'codex' || provider === 'openai' || id.startsWith('gpt-');
+  }
 
+  private isClaudeModel(id: string, provider: string): boolean {
+    return provider === 'anthropic' || provider === 'claude' || id.startsWith('claude-');
+  }
 
-  private updateAuthFile(nameOrPrefix: string, data: JsonObject) {
+  private calculateQuotaFromInfo(model: ModelItem) {
+    if (!model.quotaInfo) {
+      return;
+    }
+    const fraction = model.quotaInfo.remainingFraction;
+    let resetStr = '-';
+    if (model.quotaInfo.resetTime) {
+      try {
+        resetStr = new Date(model.quotaInfo.resetTime).toLocaleString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        this.logDebug('Failed to format reset time:', e as Error);
+      }
+    }
+    model.quota = { percentage: Math.round(fraction * 100), reset: resetStr };
+  }
+
+  private async updateAuthFile(nameOrPrefix: string, data: JsonObject) {
     try {
       const dir = this.getAuthWorkDir()
       let fileName: string
@@ -461,31 +463,26 @@ export class ProxyService extends BaseService {
       if (nameOrPrefix.endsWith('.json')) {
         fileName = nameOrPrefix
       } else {
-        const files = fs.readdirSync(dir).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
+        const files = (await fs.promises.readdir(dir)).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'))
         fileName = files.length > 0 ? files[0] : `${nameOrPrefix}.json`
       }
 
       const filePath = path.join(dir, fileName)
       const contentString = JSON.stringify(data, null, 2)
-      let persistedData = contentString
-      if (this.securityService) {
-        const encrypted = this.securityService.encryptSync(contentString)
-        persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 })
-      }
-      fs.writeFileSync(filePath, persistedData)
+      const encrypted = this.securityService.encryptSync(contentString)
+      const persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 })
+      await fs.promises.writeFile(filePath, persistedData)
 
     } catch (e) {
-      console.error('[ProxyService] Failed to update auth file:', nameOrPrefix, getErrorMessage(e as Error))
+      this.logError(`Failed to update auth file ${nameOrPrefix}:`, e as Error)
     }
   }
 
   getAuthWorkDir(): string {
-    if (this.dataService) {return this.dataService.getPath('auth')}
-    return path.join(app.getPath('userData'), 'auth')
+    return this.dataService.getPath('auth')
   }
 
   private makeRequest(path: string, apiKey?: string): Promise<ProxyRequestResponse> {
-    const key = apiKey || this.getProxyKey()
     return new Promise((resolve, reject) => {
       const options = {
         method: 'GET',
@@ -496,7 +493,9 @@ export class ProxyService extends BaseService {
       }
 
       const request = net.request(options)
-      request.setHeader('Authorization', `Bearer ${key}`)
+      if (apiKey) {
+        request.setHeader('Authorization', `Bearer ${apiKey}`)
+      }
 
       request.on('response', (res) => {
         let d = '';
@@ -524,53 +523,63 @@ export class ProxyService extends BaseService {
     })
   }
 
-  private ensureProxyKey(): string {
+  private async ensureProxyKey(): Promise<string> {
     const settings = this.settingsService.getSettings()
     let key = settings.proxy?.key?.trim() || ''
-    // bcrypt limitation: max 72 bytes. 50 chars base64 is safe (~37 bytes).
     if (!key || key.length > 72) {
       key = crypto.randomBytes(32).toString('base64')
-      const currentProxy = settings.proxy || { enabled: false, url: 'http://localhost:8317/v1' }
-      this.settingsService.saveSettings({ proxy: { ...currentProxy, key } })
+      const currentProxy = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1' }
+      await this.settingsService.saveSettings({ proxy: { ...currentProxy, key } })
     }
     return key
   }
 
-  getProxyKey(): string { return this.ensureProxyKey() }
+  async getProxyKey(): Promise<string> { return await this.ensureProxyKey() }
 
-  private ensureAuthStoreKey(): string {
+  private async ensureAuthStoreKey(): Promise<string> {
     const settings = this.settingsService.getSettings()
     let key = settings.proxy?.authStoreKey?.trim() || ''
     if (!key || key.length > 72) {
       key = crypto.randomBytes(32).toString('base64')
-      const currentProxy = settings.proxy || { enabled: false, url: 'http://localhost:8317/v1', key: '' }
-      this.settingsService.saveSettings({ proxy: { ...currentProxy, authStoreKey: key } })
+      const currentProxy = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1', key: '' }
+      await this.settingsService.saveSettings({ proxy: { ...currentProxy, authStoreKey: key } })
     }
     return key
   }
 
-
-
-  private readAuthFile(filePath: string): JsonObject | null {
+  async readAuthFile(fileName: string): Promise<JsonObject | null> {
+    const filePath = path.join(this.getAuthWorkDir(), fileName);
     try {
-      const content = fs.readFileSync(filePath, 'utf8')
-      let jsonValue = JSON.parse(content) as JsonValue
-      if (jsonValue && typeof jsonValue === 'object' && !Array.isArray(jsonValue)) {
-        const obj = jsonValue as JsonObject
-        if (typeof obj.encryptedPayload === 'string' && this.securityService) {
-          const decrypted = this.securityService.decryptSync(obj.encryptedPayload)
-          if (!decrypted) {
-            console.warn(`[ProxyService] Deleting corrupted auth file: ${path.basename(filePath)}`)
-            try { fs.unlinkSync(filePath) } catch { /* ignore */ }
-            return null
-          }
-          // jsonValue = JSON.parse(decrypted) as JsonValue // Removed debug write
-          jsonValue = JSON.parse(decrypted) as JsonValue
-        }
-      }
-      return jsonValue && typeof jsonValue === 'object' && !Array.isArray(jsonValue) ? (jsonValue as JsonObject) : null
-    } catch {
-      return null
+      const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+      if (!exists) { return null; }
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      return this.parseAuthContent(content, fileName);
+    } catch (error) {
+      this.logError(`Failed to read auth file ${fileName}:`, error as Error);
+      return null;
     }
+  }
+
+  private parseAuthContent(content: string, fileName: string): JsonObject | null {
+    if (!content) { return null; }
+    try {
+      const jsonValue = this.getInitialJson(content, fileName);
+      if (!jsonValue || typeof jsonValue !== 'object' || Array.isArray(jsonValue)) {
+        return null;
+      }
+      return jsonValue as JsonObject;
+    } catch (e) {
+      this.logDebug('Parse failed:', e as Error);
+      return null;
+    }
+  }
+
+  private getInitialJson(content: string, fileName: string): JsonValue | null {
+    if (fileName.endsWith('.enc')) {
+      const decrypted = this.securityService.decryptSync(content);
+      if (!decrypted) { return null; }
+      return JSON.parse(decrypted);
+    }
+    return JSON.parse(content);
   }
 }

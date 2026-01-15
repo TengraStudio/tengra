@@ -1,4 +1,4 @@
-import { PromptTemplatesService } from '@main/services/prompt-templates.service'
+import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { PromptTemplate } from '@main/utils/prompt-templates.util'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'

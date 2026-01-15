@@ -21,6 +21,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "lint": "eslint .",
+    "type-check": "tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "lint:boundaries": "node scripts/check-boundaries.js",
     "dead-code": "node scripts/dead-code-detection.js",

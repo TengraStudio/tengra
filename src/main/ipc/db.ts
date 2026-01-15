@@ -1,5 +1,5 @@
-import { AuditLogService } from '@main/services/audit-log.service'
-import { DatabaseService } from '@main/services/data/database.service'
+import { AuditLogService } from '@main/services/analysis/audit-log.service'
+import { Chat as DbChat, DatabaseService } from '@main/services/data/database.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat'
@@ -15,9 +15,10 @@ export function registerDbIpc(databaseService: DatabaseService, embeddingService
         const { messages: _messages, ...chatWithoutMessages } = chat
         const dbChat = {
             ...chatWithoutMessages,
-            createdAt: chat.createdAt instanceof Date ? chat.createdAt.getTime() : Date.now(),
-            updatedAt: chat.updatedAt instanceof Date ? chat.updatedAt.getTime() : Date.now()
-        } as JsonObject
+            messages: [],
+            createdAt: chat.createdAt instanceof Date ? chat.createdAt : new Date(),
+            updatedAt: chat.updatedAt instanceof Date ? chat.updatedAt : new Date()
+        } as DbChat
         return await databaseService.createChat(dbChat)
     }, { success: false, id: '' }))
 

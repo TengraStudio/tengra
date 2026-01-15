@@ -1,4 +1,4 @@
-import Editor, { Monaco,OnMount } from '@monaco-editor/react';
+import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
 import type * as monaco from 'monaco-editor';
 import React, { useRef } from 'react';
@@ -6,6 +6,7 @@ import React, { useRef } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { normalizeLanguage } from '@/utils/language-map';
 import { initTextMateSupport } from '@/utils/textmate-loader';
+import { Language, useTranslation } from '@/i18n';
 
 export interface CodeEditorProps {
     value?: string;
@@ -17,6 +18,7 @@ export interface CodeEditorProps {
     showMinimap?: boolean;
     fontSize?: number;
     initialLine?: number;
+    appLanguage?: Language; // UI language
 }
 
 // Track if TextMate has been initialized globally
@@ -31,9 +33,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     className,
     showMinimap = true,
     fontSize,
-    initialLine
+    initialLine,
+    appLanguage
 }) => {
     const { isLight } = useTheme();
+    const { t } = useTranslation(appLanguage);
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const decorationRef = useRef<string[]>([]);
     const monacoRef = useRef<Monaco | null>(null);
@@ -42,9 +46,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const normalizedLanguage = normalizeLanguage(language);
 
     const updateDecorations = (editor: monaco.editor.IStandaloneCodeEditor) => {
-        if (!editor) {return;}
+        if (!editor) { return; }
         const model = editor.getModel();
-        if (!model) {return;}
+        if (!model) { return; }
 
         const lineCount = model.getLineCount();
         const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
@@ -57,7 +61,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     options: {
                         isWholeLine: false,
                         glyphMarginClassName: 'ai-gutter-sparkle',
-                        glyphMarginHoverMessage: { value: 'AI Refactor / Explain' }
+                        glyphMarginHoverMessage: { value: t('ssh.editor.aiRefactor') }
                     }
                 });
             }
@@ -107,7 +111,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     // Inline Completions Provider registration
     React.useEffect(() => {
-        if (!monacoRef.current) {return;}
+        if (!monacoRef.current) { return; }
         const monaco = monacoRef.current;
 
         const provider = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
@@ -119,12 +123,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     endColumn: position.column
                 });
 
-                if (textBefore.trim().length === 0) {return { items: [] };}
+                if (textBefore.trim().length === 0) { return { items: [] }; }
 
                 try {
                     // Call backend for suggestion
                     const suggestion = await window.electron.project.getCompletion(textBefore);
-                    if (!suggestion) {return { items: [] };}
+                    if (!suggestion) { return { items: [] }; }
 
                     return {
                         items: [{
@@ -177,7 +181,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 loading={
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        Initializing Editor...
+                        {t('ssh.editor.initializing')}
                     </div>
                 }
                 options={{

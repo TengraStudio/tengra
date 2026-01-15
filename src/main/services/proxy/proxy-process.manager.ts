@@ -1,13 +1,13 @@
 
-import { ChildProcess,spawn } from 'child_process'
+import { ChildProcess, spawn } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
 import { appLogger } from '@main/logging/logger'
 import { DataService } from '@main/services/data/data.service'
-import { SecurityService } from '@main/services/security.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SecurityService } from '@main/services/security/security.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { JsonObject } from '@shared/types/common'
 import { app } from 'electron'
 
@@ -39,10 +39,11 @@ export class ProxyProcessManager {
         }
 
         const binaryPath = this.getBinaryPath()
-        console.log('[ProxyProcessManager] Binary path:', binaryPath)
+        appLogger.info('Proxy', `Binary path: ${binaryPath}`)
 
-        if (!fs.existsSync(binaryPath)) {
-            console.error('[ProxyProcessManager] Binary not found at:', binaryPath)
+        const exists = await fs.promises.access(binaryPath).then(() => true).catch(() => false)
+        if (!exists) {
+            appLogger.error('Proxy', `Binary not found at: ${binaryPath}`)
             return { running: false, error: `Binary not found at ${binaryPath}` }
         }
 
@@ -65,10 +66,9 @@ export class ProxyProcessManager {
         this.child.on('close', code => {
             this.child = null
             appLogger.warn('Proxy', `Proxy exited: ${code}`)
-            console.log('[ProxyProcessManager] Proxy process exited with code:', code)
         })
 
-        console.log('[ProxyProcessManager] Proxy started with PID:', this.child.pid)
+        appLogger.info('Proxy', `Proxy started with PID: ${this.child.pid}`)
         return this.getStatus()
     }
 
@@ -84,9 +84,9 @@ export class ProxyProcessManager {
         // Cleanup temp dir
         if (this.tempAuthDir) {
             try {
-                fs.rmSync(this.tempAuthDir, { recursive: true, force: true })
+                await fs.promises.rm(this.tempAuthDir, { recursive: true, force: true })
             } catch (e) {
-                console.error('[ProxyProcessManager] Failed to cleanup temp auth dir:', e)
+                appLogger.error('Proxy', `Failed to cleanup temp auth dir: ${this.tempAuthDir}. Error: ${e}`)
             }
             this.tempAuthDir = null
         }
@@ -99,34 +99,37 @@ export class ProxyProcessManager {
      * This ensures OAuth tokens saved by the proxy are persisted and encrypted correctly.
      */
     async syncAuthFilesFromTemp(force: boolean = false): Promise<void> {
-        if (!this.tempAuthDir || !fs.existsSync(this.tempAuthDir)) {return}
+        if (!this.tempAuthDir) { return }
+        const exists = await fs.promises.access(this.tempAuthDir).then(() => true).catch(() => false)
+        if (!exists) { return }
 
         const realAuthDir = this.getAuthWorkDir()
-        console.log('[ProxyProcessManager] Syncing auth files from temp to:', realAuthDir)
+        appLogger.info('Proxy', `Syncing auth files from temp to: ${realAuthDir}`)
 
         try {
-            const tempFiles = fs.readdirSync(this.tempAuthDir)
+            const tempFiles = await fs.promises.readdir(this.tempAuthDir)
 
             for (const file of tempFiles) {
-                if (!file.endsWith('.json')) {continue}
+                if (!file.endsWith('.json')) { continue }
 
                 const tempPath = path.join(this.tempAuthDir, file)
                 const realPath = path.join(realAuthDir, file)
 
                 try {
-                    const tempStat = fs.statSync(tempPath)
+                    const tempStat = await fs.promises.stat(tempPath)
 
                     // Check if the temp file is newer than the existing one
                     let shouldSync = true
-                    if (!force && fs.existsSync(realPath)) {
-                        const realStat = fs.statSync(realPath)
+                    const realExists = await fs.promises.access(realPath).then(() => true).catch(() => false)
+                    if (!force && realExists) {
+                        const realStat = await fs.promises.stat(realPath)
                         // Only sync if temp file is newer
                         shouldSync = tempStat.mtime > realStat.mtime
                     }
 
                     if (shouldSync) {
                         // Read the temp file (it's in plain format from proxy)
-                        const content = fs.readFileSync(tempPath, 'utf8')
+                        const content = await fs.promises.readFile(tempPath, 'utf8')
                         const data = JSON.parse(content) as JsonObject
 
                         // Encrypt and save to real auth dir using same format as AuthService
@@ -137,20 +140,20 @@ export class ProxyProcessManager {
                                 token: encrypted,
                                 updatedAt: Date.now()
                             }
-                            fs.writeFileSync(realPath, JSON.stringify(wrapper, null, 2), 'utf8')
-                            console.log(`[ProxyProcessManager] Synced and encrypted auth file: ${file}`)
+                            await fs.promises.writeFile(realPath, JSON.stringify(wrapper, null, 2), 'utf8')
+                            appLogger.info('Proxy', `Synced and encrypted auth file: ${file}`)
                         } else {
                             // Fallback: copy as-is
-                            fs.copyFileSync(tempPath, realPath)
-                            console.log(`[ProxyProcessManager] Synced auth file (no encryption): ${file}`)
+                            await fs.promises.copyFile(tempPath, realPath)
+                            appLogger.info('Proxy', `Synced auth file (no encryption): ${file}`)
                         }
                     }
                 } catch (e) {
-                    console.error(`[ProxyProcessManager] Failed to sync auth file ${file}:`, e)
+                    appLogger.error('Proxy', `Failed to sync auth file ${file}: ${e}`)
                 }
             }
         } catch (e) {
-            console.error('[ProxyProcessManager] Failed to sync auth files:', e)
+            appLogger.error('Proxy', `Failed to sync auth files: ${e}`)
         }
     }
 
@@ -182,13 +185,13 @@ export class ProxyProcessManager {
         const lines = buffer.split(/\r?\n/)
         const remainder = lines.pop() || ''
         for (const line of lines) {
-            if (!line.trim()) {continue}
+            if (!line.trim()) { continue }
 
             // Try to detect level from structured log
             let level: 'info' | 'warning' | 'error' = defaultLevel
-            if (line.includes('level=info') || line.includes('[INFO]')) {level = 'info'}
-            else if (line.includes('level=warning') || line.includes('level=warn') || line.includes('[WARN]')) {level = 'warning'}
-            else if (line.includes('level=error') || line.includes('level=fatal') || line.includes('[ERROR]')) {level = 'error'}
+            if (line.includes('level=info') || line.includes('[INFO]')) { level = 'info' }
+            else if (line.includes('level=warning') || line.includes('level=warn') || line.includes('[WARN]')) { level = 'warning' }
+            else if (line.includes('level=error') || line.includes('level=fatal') || line.includes('[ERROR]')) { level = 'error' }
 
             // Special case: Go logs often go to stderr but are just info
             if (defaultLevel === 'error' && (level === 'info' || level === 'warning')) {
@@ -198,16 +201,16 @@ export class ProxyProcessManager {
                 level = 'info'
             }
 
-            if (level === 'error') {appLogger.error('Proxy', line.trim())}
-            else if (level === 'warning') {appLogger.warn('Proxy', line.trim())}
-            else {appLogger.info('Proxy', line.trim())}
+            if (level === 'error') { appLogger.error('Proxy', line.trim()) }
+            else if (level === 'warning') { appLogger.warn('Proxy', line.trim()) }
+            else { appLogger.info('Proxy', line.trim()) }
 
             // Auto-sync triggering
             if (line.includes('auth file changed')) {
-                console.log('[ProxyProcessManager] Detected auth file change, triggering sync in 500ms...')
+                appLogger.info('Proxy', 'Detected auth file change, triggering sync in 500ms...')
                 // Run in background to not block logging loop, with a small delay to ensure disk flush
                 setTimeout(() => {
-                    this.syncAuthFilesFromTemp(true).catch(e => console.error('[ProxyProcessManager] Auto-sync failed:', e))
+                    this.syncAuthFilesFromTemp(true).catch(e => appLogger.error('Proxy', `Auto-sync failed: ${e}`))
                 }, 500)
             }
         }
@@ -216,33 +219,28 @@ export class ProxyProcessManager {
 
     async prepareTempAuthDir() {
         try {
-            this.tempAuthDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orbit-proxy-auth-'))
+            this.tempAuthDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'orbit-proxy-auth-'))
             const realAuthDir = this.getAuthWorkDir()
-            if (fs.existsSync(realAuthDir)) {
-                const files = fs.readdirSync(realAuthDir)
+            const exists = await fs.promises.access(realAuthDir).then(() => true).catch(() => false)
+            if (exists) {
+                const files = await fs.promises.readdir(realAuthDir)
                 for (const file of files) {
                     if (file.endsWith('.json')) {
                         try {
                             // Decrypt and copy
-                            const json = this.readAuthFile(path.join(realAuthDir, file))
-                            if (!json) {continue}
-
-                            // The proxy expects the internal "cliproxy format" (usually { access_token: ... })
-                            // Or the decrypted payload of our own format.
-                            // If we decrypted it and it's our format { provider, token, updatedAt },
-                            // we should probably just save the token itself if it's GitHub/Copilot, 
-                            // or keep the structure if it's already a complex object (like Gemini session).
+                            const json = await this.readAuthFile(path.join(realAuthDir, file))
+                            if (!json) { continue }
 
                             const textToSave = JSON.stringify(json)
-                            fs.writeFileSync(path.join(this.tempAuthDir, file), textToSave)
+                            await fs.promises.writeFile(path.join(this.tempAuthDir, file), textToSave)
                         } catch (e) {
-                            console.warn('[ProxyProcessManager] Failed to decrypt/copy auth file:', file, e)
+                            appLogger.warn('Proxy', `Failed to decrypt/copy auth file: ${file}. Error: ${e}`)
                         }
                     }
                 }
             }
         } catch (e) {
-            console.error('[ProxyProcessManager] Failed to create temp auth dir:', e)
+            appLogger.error('Proxy', `Failed to create temp auth dir: ${e}`)
         }
     }
 
@@ -253,9 +251,9 @@ export class ProxyProcessManager {
         return path.join(app.getPath('userData'), 'auth')
     }
 
-    private readAuthFile(filePath: string): JsonObject | null {
+    private async readAuthFile(filePath: string): Promise<JsonObject | null> {
         try {
-            const content = fs.readFileSync(filePath, 'utf8')
+            const content = await fs.promises.readFile(filePath, 'utf8')
             const json = JSON.parse(content) as JsonObject
 
             if (this.securityService) {
@@ -268,9 +266,6 @@ export class ProxyProcessManager {
                             return JSON.parse(decrypted) as JsonObject
                         } catch {
                             // Otherwise it's a raw string (like a GitHub token)
-                            // The proxy binary often expects { "access_token": "..." } or similar if it's a raw token file
-                            // But for simple "cliproxy" usage, it depends on the provider.
-                            // Let's return the string-as-token if it's not JSON.
                             return { access_token: decrypted } as JsonObject
                         }
                     }
@@ -281,8 +276,8 @@ export class ProxyProcessManager {
                     const encryptedPayload = typeof json.encryptedPayload === 'string' ? json.encryptedPayload : ''
                     const decrypted = this.securityService.decryptSync(encryptedPayload)
                     if (!decrypted) {
-                        console.warn(`[ProxyProcessManager] Deleting corrupted auth file: ${path.basename(filePath)}`)
-                        try { fs.unlinkSync(filePath) } catch (e) { /* ignore */ }
+                        appLogger.warn('Proxy', `Deleting corrupted auth file: ${path.basename(filePath)}`)
+                        try { await fs.promises.unlink(filePath) } catch (e) { /* ignore */ }
                         return null
                     }
                     return JSON.parse(decrypted) as JsonObject
@@ -290,7 +285,6 @@ export class ProxyProcessManager {
             }
             return json
         } catch {
-            // console.warn('[ProxyProcessManager] Failed to read/decrypt auth file:', filePath)
             return null
         }
     }
@@ -306,7 +300,7 @@ export class ProxyProcessManager {
 
         let proxyKey = settings.proxy?.key
         if (!proxyKey) {
-            console.warn('[ProxyProcessManager] Proxy Key missing in settings, process might not auth correctly.')
+            appLogger.warn('Proxy', 'Proxy Key missing in settings, process might not auth correctly.')
             proxyKey = ''
         }
 
@@ -326,11 +320,11 @@ logging-to-file: false
         const configDir = this.dataService.getPath('config')
         const configPath = path.join(configDir, 'proxy-config.yaml')
 
-        fs.writeFileSync(configPath, yamlConfig, 'utf8')
-        console.log('[ProxyProcessManager] Generated proxy config at:', configPath)
+        await fs.promises.writeFile(configPath, yamlConfig, 'utf8')
+        appLogger.info('Proxy', `Generated proxy config at: ${configPath}`)
 
         // Update settings with just the basic proxy info (no YAML-specific fields)
-        this.settingsService.saveSettings({
+        await this.settingsService.saveSettings({
             proxy: {
                 enabled: settings.proxy?.enabled ?? false,
                 url: settings.proxy?.url || `http://127.0.0.1:${port}/v1`,
