@@ -7,7 +7,8 @@
     Settings as SettingsIcon,
     Square,
     Users,
-    X} from 'lucide-react'
+    X
+} from 'lucide-react'
 import React from 'react'
 
 import { useAuth } from '@/context/AuthContext'
@@ -68,13 +69,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 <div className="h-4 w-[1px] bg-border/50 mx-2" />
 
                 <div className="flex items-center gap-1">
-                    <button onClick={handleMinimize} className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors">
+                    <button data-testid="window-minimize" onClick={handleMinimize} className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors">
                         <Minus className="w-4 h-4" />
                     </button>
-                    <button onClick={handleMaximize} className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors">
+                    <button data-testid="window-maximize" onClick={handleMaximize} className="p-2 hover:bg-accent/50 rounded-lg text-muted-foreground transition-colors">
                         <Square className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={handleClose} className="p-2 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg text-muted-foreground transition-colors">
+                    <button data-testid="window-close" onClick={handleClose} className="p-2 hover:bg-rose-500/20 hover:text-rose-500 rounded-lg text-muted-foreground transition-colors">
                         <X className="w-4 h-4" />
                     </button>
                 </div>

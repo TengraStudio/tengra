@@ -8,17 +8,16 @@ import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary'
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback'
 import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal'
 import { Modal } from '@renderer/components/ui/modal'
-import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay'
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput'
 import { ChatTemplate } from '@renderer/features/chat/types'
 import { SettingsCategory } from '@renderer/features/settings/types'
-import { SSHManager } from '@renderer/features/ssh/SSHManager'
+// import { SSHManager } from '@renderer/features/ssh/SSHManager' // Lazy loaded
 import { useAppState } from '@renderer/hooks/useAppState'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useTranslation } from '@renderer/i18n'
 import { ViewManager } from '@renderer/views/ViewManager'
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
@@ -30,6 +29,10 @@ import { cn } from '@/lib/utils'
 import { Chat } from '@/types'
 
 import '@renderer/App.css'
+
+// Lazy load heavy components
+const SSHManager = lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })))
+const AudioChatOverlay = lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })))
 
 
 export default function App() {
@@ -55,7 +58,7 @@ export default function App() {
 
     // Debug / Global Speak Handler
     useEffect(() => {
-        if (speakingMessageId) {console.log('🔊 Speaking Message:', speakingMessageId)}
+        if (speakingMessageId) { console.log('🔊 Speaking Message:', speakingMessageId) }
         window.orbitSpeak = handleSpeak
     }, [speakingMessageId, handleSpeak])
 
@@ -135,16 +138,18 @@ export default function App() {
 
                     <AnimatePresence>
                         {appState.isAudioOverlayOpen && (
-                            <AudioChatOverlay
-                                isOpen={appState.isAudioOverlayOpen}
-                                onClose={() => appState.setIsAudioOverlayOpen(false)}
-                                isListening={isListening}
-                                startListening={startListening}
-                                stopListening={stopListening}
-                                isSpeaking={isSpeaking}
-                                onStopSpeaking={() => handleStopSpeak()}
-                                language={language || 'en'}
-                            />
+                            <Suspense fallback={null}>
+                                <AudioChatOverlay
+                                    isOpen={appState.isAudioOverlayOpen}
+                                    onClose={() => appState.setIsAudioOverlayOpen(false)}
+                                    isListening={isListening}
+                                    startListening={startListening}
+                                    stopListening={stopListening}
+                                    isSpeaking={isSpeaking}
+                                    onStopSpeaking={() => handleStopSpeak()}
+                                    language={language || 'en'}
+                                />
+                            </Suspense>
                         )}
                     </AnimatePresence>
 
@@ -163,11 +168,13 @@ export default function App() {
 
                     <AnimatePresence>
                         {appState.showSSHManager && (
-                            <SSHManager
-                                isOpen={appState.showSSHManager}
-                                onClose={() => appState.setShowSSHManager(false)}
-                                language={language || 'en'}
-                            />
+                            <Suspense fallback={null}>
+                                <SSHManager
+                                    isOpen={appState.showSSHManager}
+                                    onClose={() => appState.setShowSSHManager(false)}
+                                    language={language || 'en'}
+                                />
+                            </Suspense>
                         )}
                     </AnimatePresence>
 
@@ -214,7 +221,7 @@ export default function App() {
                         }}
                         onOpenSettings={(cat?: SettingsCategory) => {
                             appState.setCurrentView('settings')
-                            if (cat) {setSettingsCategory(cat)}
+                            if (cat) { setSettingsCategory(cat) }
                         }}
                         onOpenSSHManager={() => appState.setShowSSHManager(true)}
                         onRefreshModels={loadModels}
@@ -245,7 +252,7 @@ export default function App() {
                                         toggleSidebar={() => appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed)}
                                         onOpenSettings={(cat?: SettingsCategory) => {
                                             appState.setCurrentView('settings')
-                                            if (cat) {setSettingsCategory(cat)}
+                                            if (cat) { setSettingsCategory(cat) }
                                         }}
                                         onSearch={() => { }}
                                     />
@@ -259,11 +266,11 @@ export default function App() {
                                         onDragEnter={(e) => {
                                             e.preventDefault()
                                             dragCounter.current++
-                                            if (!appState.isDragging) {appState.setIsDragging(true)}
+                                            if (!appState.isDragging) { appState.setIsDragging(true) }
                                         }}
                                         onDragOver={(e) => {
                                             e.preventDefault()
-                                            if (!appState.isDragging) {appState.setIsDragging(true)}
+                                            if (!appState.isDragging) { appState.setIsDragging(true) }
                                         }}
                                         onDragLeave={(e) => {
                                             e.preventDefault()

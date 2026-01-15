@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
 interface ChatViewProps {
     templates: ChatTemplate[];
@@ -52,6 +52,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-testid="chat-view"
             className="h-full flex flex-col overflow-hidden"
         >
             {displayMessages.length !== 0 && (
@@ -67,7 +68,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 onScroll={(e) => {
                     const el = e.currentTarget;
                     const show = el.scrollHeight - el.scrollTop - el.clientHeight > 200;
-                    if (setShowScrollButton) {setShowScrollButton(show);}
+                    if (setShowScrollButton) { setShowScrollButton(show); }
                 }}
             >
                 {displayMessages.length === 0 ? (

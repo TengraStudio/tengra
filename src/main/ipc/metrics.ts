@@ -1,4 +1,4 @@
-import { getMetricsService } from '@main/services/metrics.service';
+import { getMetricsService } from '@main/services/analysis/metrics.service';
 import { ipcMain } from 'electron';
 
 export function registerMetricsIpc(): void {

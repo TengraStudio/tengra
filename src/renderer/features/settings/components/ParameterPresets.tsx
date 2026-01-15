@@ -2,6 +2,7 @@
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n'
 
 export interface ParameterPreset {
     id: string
@@ -27,6 +28,7 @@ interface ParameterPresetsProps {
     onSaveCustomPreset?: (preset: ParameterPreset) => void
     onDeleteCustomPreset?: (id: string) => void
     compact?: boolean
+    language?: Language
 }
 
 const getPresetIcon = (icon: ParameterPreset['icon']) => {
@@ -39,7 +41,7 @@ const getPresetIcon = (icon: ParameterPreset['icon']) => {
 }
 
 const getPresetColor = (icon: ParameterPreset['icon'], isActive: boolean) => {
-    if (!isActive) {return 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'}
+    if (!isActive) { return 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10' }
     switch (icon) {
         case 'creative': return 'bg-orange-500/15 border-orange-500/30 text-orange-300'
         case 'precise': return 'bg-blue-500/15 border-blue-500/30 text-blue-300'
@@ -54,8 +56,10 @@ export function ParameterPresets({
     onSelectPreset,
     onSaveCustomPreset,
     onDeleteCustomPreset,
-    compact = false
+    compact = false,
+    language
 }: ParameterPresetsProps) {
+    const { t } = useTranslation(language)
     const [showCustom, setShowCustom] = useState(false)
     const [editingPreset, setEditingPreset] = useState<ParameterPreset | null>(null)
 
@@ -100,7 +104,9 @@ export function ParameterPresets({
                             title={`${preset.name}: temp=${preset.temperature}, top_p=${preset.topP}`}
                         >
                             <Icon size={12} />
-                            {preset.name}
+                            {preset.id === 'creative' ? t('ssh.presets.creative') :
+                                preset.id === 'precise' ? t('ssh.presets.precise') :
+                                    preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
                             {isActive && <Check size={10} />}
                         </button>
                     )
@@ -112,13 +118,13 @@ export function ParameterPresets({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-zinc-200">Parameter Presets</h3>
+                <h3 className="text-sm font-semibold text-zinc-200">{t('ssh.presets.title')}</h3>
                 <button
                     onClick={handleCreateCustom}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                     <Plus size={12} />
-                    Custom
+                    {t('ssh.presets.custom')}
                 </button>
             </div>
 
@@ -147,7 +153,11 @@ export function ParameterPresets({
                             )}
                             <div className="flex flex-col items-center gap-2">
                                 <Icon size={20} />
-                                <div className="text-xs font-medium">{preset.name}</div>
+                                <div className="text-xs font-medium">
+                                    {preset.id === 'creative' ? t('ssh.presets.creative') :
+                                        preset.id === 'precise' ? t('ssh.presets.precise') :
+                                            preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
+                                </div>
                                 <div className="text-[10px] opacity-60">
                                     T:{preset.temperature} P:{preset.topP}
                                 </div>
@@ -170,11 +180,11 @@ export function ParameterPresets({
                         value={editingPreset.name}
                         onChange={(e) => setEditingPreset({ ...editingPreset, name: e.target.value })}
                         className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-sm text-white"
-                        placeholder="Preset name"
+                        placeholder={t('ssh.presets.placeholders.name')}
                     />
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-xs text-zinc-500 mb-1 block">Temperature</label>
+                            <label className="text-xs text-zinc-500 mb-1 block">{t('ssh.presets.labels.temperature')}</label>
                             <input
                                 type="range"
                                 min="0"
@@ -187,7 +197,7 @@ export function ParameterPresets({
                             <div className="text-xs text-center">{editingPreset.temperature}</div>
                         </div>
                         <div>
-                            <label className="text-xs text-zinc-500 mb-1 block">Top P</label>
+                            <label className="text-xs text-zinc-500 mb-1 block">{t('ssh.presets.labels.topP')}</label>
                             <input
                                 type="range"
                                 min="0"
@@ -205,13 +215,13 @@ export function ParameterPresets({
                             onClick={() => { setShowCustom(false); setEditingPreset(null) }}
                             className="flex-1 py-2 rounded-lg bg-white/5 text-zinc-400 text-sm"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </button>
                         <button
                             onClick={handleSaveCustom}
                             className="flex-1 py-2 rounded-lg bg-purple-500/20 text-purple-300 text-sm font-medium"
                         >
-                            Save
+                            {t('common.save')}
                         </button>
                     </div>
                 </div>

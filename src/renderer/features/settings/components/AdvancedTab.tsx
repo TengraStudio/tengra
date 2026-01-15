@@ -1,6 +1,6 @@
 import { SERVICE_INTERVALS } from '@shared/constants'
 import { AppSettings } from '@shared/types/settings'
-import { Activity, Clock, MessageSquare, RefreshCw,Sliders, Thermometer, Zap } from 'lucide-react'
+import { Activity, Clock, MessageSquare, RefreshCw, Sliders, Thermometer, Zap } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
@@ -32,16 +32,16 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
     const currentModelId = selectedConfigModel || (availableModels[0]?.id || '')
     const modelSettings = settings?.modelSettings?.[currentModelId] || {}
     const modelPresets = settings?.presets || [
-        { id: 'creative', name: 'Yaratıcı', temperature: 0.9, topP: 0.95, frequencyPenalty: 0.1, presencePenalty: 0.1 },
-        { id: 'precise', name: 'Hassas', temperature: 0.2, topP: 0.1, frequencyPenalty: 0, presencePenalty: 0 },
-        { id: 'balanced', name: 'Dengeli', temperature: 0.7, topP: 0.9, frequencyPenalty: 0, presencePenalty: 0 }
+        { id: 'creative', name: t('ssh.presets.creative'), temperature: 0.9, topP: 0.95, frequencyPenalty: 0.1, presencePenalty: 0.1 },
+        { id: 'precise', name: t('ssh.presets.precise'), temperature: 0.2, topP: 0.1, frequencyPenalty: 0, presencePenalty: 0 },
+        { id: 'balanced', name: t('ssh.presets.balanced'), temperature: 0.7, topP: 0.9, frequencyPenalty: 0, presencePenalty: 0 }
     ]
 
     const modelOptions = availableModels.map(m => ({ value: m.id || '', label: m.id || '' }))
 
     type ModelSettingsPatch = Partial<NonNullable<AppSettings['modelSettings']>[string]>
     const updateModelSetting = (patch: ModelSettingsPatch) => {
-        if (!settings || !currentModelId) {return}
+        if (!settings || !currentModelId) { return }
         const updated = { ...settings, modelSettings: { ...settings.modelSettings, [currentModelId]: { ...(settings.modelSettings?.[currentModelId] || {}), ...patch } } }
         setSettings(updated)
         handleSave(updated)
@@ -51,7 +51,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
         <div className="space-y-6">
             <div className="bg-card p-6 rounded-xl border border-border space-y-6">
                 <div className="flex items-center justify-between">
-                    <div><h3 className="text-sm font-bold text-white uppercase tracking-wider">Model Yapılandırma</h3><p className="text-xs text-muted-foreground mt-1">Seçili modele özel sistem komutları ve parametreler.</p></div>
+                    <div><h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('advancedTab.modelConfiguration')}</h3><p className="text-xs text-muted-foreground mt-1">{t('advancedTab.modelConfigurationDesc')}</p></div>
                     <SelectDropdown
                         value={currentModelId}
                         options={modelOptions}
@@ -61,11 +61,11 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-white uppercase tracking-wider">Özel Sistem Mesajı</span></div>
-                        <textarea value={modelSettings.systemPrompt || ''} onChange={e => updateModelSetting({ systemPrompt: e.target.value })} placeholder="Bu modele özel sistem komutu..." className="w-full h-32 bg-muted/10 border border-border/50 rounded-xl p-3 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none resize-none font-medium leading-relaxed" />
+                        <div className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-white uppercase tracking-wider">{t('advancedTab.customSystemMessage')}</span></div>
+                        <textarea value={modelSettings.systemPrompt || ''} onChange={e => updateModelSetting({ systemPrompt: e.target.value })} placeholder={t('advancedTab.systemPromptPlaceholder')} className="w-full h-32 bg-muted/10 border border-border/50 rounded-xl p-3 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none resize-none font-medium leading-relaxed" />
                     </div>
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2"><Sliders className="w-4 h-4 text-emerald-400" /><span className="text-xs font-bold text-white uppercase tracking-wider">Parametre Seti</span></div>
+                        <div className="flex items-center gap-2"><Sliders className="w-4 h-4 text-emerald-400" /><span className="text-xs font-bold text-white uppercase tracking-wider">{t('advancedTab.parameterPreset')}</span></div>
                         <div className="grid grid-cols-1 gap-2">
                             {modelPresets.map(p => (
                                 <button key={p.id} onClick={() => updateModelSetting({ presetId: p.id })} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all text-left", modelSettings.presetId === p.id ? "bg-primary/10 border-primary/30 text-primary" : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10")}>
@@ -94,7 +94,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                             { value: 'parallel', label: t('advanced.orchestrationParallel') }
                         ]}
                         onChange={(val) => {
-                            if (!settings) {return}
+                            if (!settings) { return }
                             const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as 'auto' | 'fifo' | 'parallel' } }
                             setSettings(updated)
                             handleSave(updated)
@@ -137,7 +137,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.modelUpdateInterval ?? SERVICE_INTERVALS.MODEL_UPDATE}
                             onChange={(e) => {
-                                if (!settings) {return}
+                                if (!settings) { return }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, modelUpdateInterval: parseInt(e.target.value) }
@@ -166,7 +166,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.tokenRefreshInterval ?? SERVICE_INTERVALS.TOKEN_REFRESH}
                             onChange={(e) => {
-                                if (!settings) {return}
+                                if (!settings) { return }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, tokenRefreshInterval: parseInt(e.target.value) }
@@ -195,7 +195,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.copilotRefreshInterval ?? SERVICE_INTERVALS.COPILOT_REFRESH}
                             onChange={(e) => {
-                                if (!settings) {return}
+                                if (!settings) { return }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, copilotRefreshInterval: parseInt(e.target.value) }

@@ -4,7 +4,9 @@
  * Updated for Async/PGlite compatibility
  */
 
+import { appLogger } from '@main/logging/logger'
 import { DatabaseAdapter } from '@shared/types/database'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export type { DatabaseAdapter } // Re-export for convenience if needed
 
@@ -69,17 +71,17 @@ export class MigrationManager {
         const pending = this.migrations.filter(m => !appliedIds.has(m.id))
 
         if (pending.length === 0) {
-            console.log('[MigrationManager] No pending migrations')
+            appLogger.debug('MigrationManager', 'No pending migrations')
             return
         }
 
-        console.log(`[MigrationManager] Running ${pending.length} pending migration(s)`)
+        appLogger.info('MigrationManager', `Running ${pending.length} pending migration(s)`)
 
         for (const migration of pending) {
             await this.runMigration(migration)
         }
 
-        console.log('[MigrationManager] All migrations completed')
+        appLogger.info('MigrationManager', 'All migrations completed')
     }
 
     async rollback(): Promise<void> {
@@ -94,16 +96,18 @@ export class MigrationManager {
             throw new Error(`Migration ${lastMigration.id} does not support rollback`)
         }
 
-        console.log(`[MigrationManager] Rolling back migration ${lastMigration.id}: ${lastMigration.name}`)
+        appLogger.warn('MigrationManager', `Rolling back migration ${lastMigration.id}: ${lastMigration.name}`)
 
         try {
             await this.db.transaction(async (tx) => {
-                await migration.down!(tx)
+                if (migration.down) {
+                    await migration.down(tx)
+                }
                 await tx.prepare('DELETE FROM migrations WHERE id = $1').run(lastMigration.id)
             })
-            console.log(`[MigrationManager] Successfully rolled back migration ${lastMigration.id}`)
+            appLogger.info('MigrationManager', `Successfully rolled back migration ${lastMigration.id}`)
         } catch (error) {
-            console.error(`[MigrationManager] Failed to rollback migration ${lastMigration.id}:`, error)
+            appLogger.error('MigrationManager', `Failed to rollback migration ${lastMigration.id}:`, error as Error)
             throw error
         }
     }
@@ -122,17 +126,18 @@ export class MigrationManager {
             await this.db.exec('ALTER TABLE migrations ALTER COLUMN run_at TYPE BIGINT')
         } catch (e) {
             // Ignore error if it fails (e.g. column already BIGINT or type change not supported)
-            console.debug('[MigrationManager] migration table type fix skipped or failed:', e)
+            appLogger.debug('MigrationManager', `migration table type fix skipped: ${getErrorMessage(e as Error)}`)
         }
     }
 
     private async getAppliedMigrations(): Promise<Array<{ id: number; name: string; appliedAt: number }>> {
         const stmt = this.db.prepare('SELECT id, name, run_at as appliedAt FROM migrations ORDER BY id')
-        return (await stmt.all()) as Array<{ id: number; name: string; appliedAt: number }>
+        const rows = await stmt.all<{ id: number; name: string; appliedAt: number }>()
+        return rows
     }
 
     private async runMigration(migration: Migration): Promise<void> {
-        console.log(`[MigrationManager] Running migration ${migration.id}: ${migration.name}`)
+        appLogger.info('MigrationManager', `Running migration ${migration.id}: ${migration.name}`)
 
         try {
             // Transaction wrapper
@@ -144,9 +149,9 @@ export class MigrationManager {
                     Date.now()
                 )
             })
-            console.log(`[MigrationManager] Successfully applied migration ${migration.id}`)
+            appLogger.info('MigrationManager', `Successfully applied migration ${migration.id}`)
         } catch (error) {
-            console.error(`[MigrationManager] Migration ${migration.id} failed:`, error)
+            appLogger.error('MigrationManager', `Migration ${migration.id} failed:`, error as Error)
             throw error
         }
     }

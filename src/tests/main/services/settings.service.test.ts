@@ -3,7 +3,7 @@
  */
 import * as fs from 'fs';
 
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 
 // Mock electron
@@ -13,14 +13,22 @@ vi.mock('electron', () => ({
     }
 }));
 
-// Mock fs
+// Mock fs with both sync and promises API
 vi.mock('fs', () => ({
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
     mkdirSync: vi.fn(),
     renameSync: vi.fn(),
-    unlinkSync: vi.fn()
+    unlinkSync: vi.fn(),
+    promises: {
+        access: vi.fn(),
+        readFile: vi.fn(),
+        writeFile: vi.fn(),
+        rename: vi.fn(),
+        unlink: vi.fn(),
+        mkdir: vi.fn()
+    }
 }));
 
 // Mock DataService
@@ -38,7 +46,8 @@ const mockAuthService = {
 describe('SettingsService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(fs.existsSync).mockReturnValue(false);
+        // Default: file does not exist (access throws)
+        vi.mocked(fs.promises.access).mockRejectedValue(new Error('ENOENT'));
     });
 
     afterEach(() => {
@@ -47,19 +56,21 @@ describe('SettingsService', () => {
 
     describe('constructor and loadSettings', () => {
         it('should use DataService path when provided', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
+            vi.mocked(fs.promises.access).mockRejectedValue(new Error('ENOENT'));
 
-            const { SettingsService } = await import('@main/services/settings.service');
-            new SettingsService(mockDataService as any, mockAuthService as any);
+            const { SettingsService } = await import('@main/services/system/settings.service');
+            const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
 
             expect(mockDataService.getPath).toHaveBeenCalledWith('config');
         });
 
         it('should load default settings when file does not exist', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
+            vi.mocked(fs.promises.access).mockRejectedValue(new Error('ENOENT'));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             expect(settings.general.language).toBe('en');
@@ -68,8 +79,8 @@ describe('SettingsService', () => {
         });
 
         it('should load settings from file when it exists', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 general: {
                     language: 'tr',
                     theme: 'dark',
@@ -77,8 +88,9 @@ describe('SettingsService', () => {
                 }
             }));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             expect(settings.general.language).toBe('tr');
@@ -87,15 +99,16 @@ describe('SettingsService', () => {
         });
 
         it('should merge loaded settings with defaults', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 general: {
                     language: 'tr'
                 }
             }));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             // Custom value
@@ -105,11 +118,12 @@ describe('SettingsService', () => {
         });
 
         it('should handle empty settings file', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue('');
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue('');
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             // Should fall back to defaults
@@ -117,23 +131,26 @@ describe('SettingsService', () => {
         });
 
         it('should handle whitespace-only settings file', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue('   \n\t  ');
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue('   \n\t  ');
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             expect(settings.general.language).toBe('en');
         });
 
         it('should attempt recovery for corrupted JSON', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
             // Valid JSON with garbage appended
-            vi.mocked(fs.readFileSync).mockReturnValue('{"general":{"language":"fr"}}garbage');
+            vi.mocked(fs.promises.readFile).mockResolvedValue('{"general":{"language":"fr"}}garbage');
+            vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
             const settings = service.getSettings();
 
             // Should recover the valid JSON part
@@ -141,16 +158,17 @@ describe('SettingsService', () => {
         });
 
         it('should remove avatar fields from loaded settings', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 userAvatar: 'base64data',
                 aiAvatar: 'base64data',
                 general: { language: 'en' }
             }));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
-            const settings = service.getSettings() as any;
+            await service.initialize();
+            const settings = service.getSettings() as Record<string, unknown>;
 
             expect(settings.userAvatar).toBeUndefined();
             expect(settings.aiAvatar).toBeUndefined();
@@ -159,29 +177,35 @@ describe('SettingsService', () => {
 
     describe('saveSettings', () => {
         it('should save settings and return updated settings', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
+            vi.mocked(fs.promises.access).mockRejectedValue(new Error('ENOENT'));
+            vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.rename).mockResolvedValue(undefined);
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
 
-            const result = service.saveSettings({ general: { language: 'de' } as any });
+            const result = await service.saveSettings({ general: { language: 'de' } } as never);
 
             // saveSettings returns AppSettings, not boolean
             expect(result).toBeDefined();
             expect(result.general.language).toBe('de');
-            expect(fs.writeFileSync).toHaveBeenCalled();
+            expect(fs.promises.writeFile).toHaveBeenCalled();
         });
 
         it('should merge partial settings with existing', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 general: { language: 'en', theme: 'dark' }
             }));
+            vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.rename).mockResolvedValue(undefined);
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
 
-            service.saveSettings({ general: { language: 'fr' } as any });
+            await service.saveSettings({ general: { language: 'fr' } } as never);
             const settings = service.getSettings();
 
             expect(settings.general.language).toBe('fr');
@@ -190,20 +214,21 @@ describe('SettingsService', () => {
 
     describe('reloadSettings', () => {
         it('should reload settings from disk', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 general: { language: 'de', theme: 'custom' }
             }));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
+            await service.initialize();
 
             // Simulate external file change
-            vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({
                 general: { language: 'fr', theme: 'light' }
             }));
 
-            const reloaded = service.reloadSettings();
+            const reloaded = await service.reloadSettings();
 
             expect(reloaded.general.language).toBe('fr');
             expect(reloaded.general.theme).toBe('light');
@@ -212,9 +237,9 @@ describe('SettingsService', () => {
 
     describe('getSettingsPath', () => {
         it('should return the settings file path', async () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
+            vi.mocked(fs.promises.access).mockRejectedValue(new Error('ENOENT'));
 
-            const { SettingsService } = await import('@main/services/settings.service');
+            const { SettingsService } = await import('@main/services/system/settings.service');
             const service = new SettingsService(mockDataService as any, mockAuthService as any);
 
             const settingsPath = service.getSettingsPath();

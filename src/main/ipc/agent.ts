@@ -1,4 +1,4 @@
-import { AgentService } from '@main/services/agent.service'
+import { AgentService } from '@main/services/llm/agent.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 

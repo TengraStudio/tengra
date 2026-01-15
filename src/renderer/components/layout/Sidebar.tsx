@@ -1,10 +1,11 @@
 import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem'
 import {
-BarChart, ChevronLeft, ChevronRight, Code,     Edit2, Folder as FolderIcon,
-FolderOpen, FolderPlus, Image, MessageSquare,
-Mic, Palette, Pin,     Plus,     Rocket, Search, Server,
-Settings, Shield, Sparkles, Trash2, User, Users} from 'lucide-react'
-import React, { useCallback,useEffect, useMemo, useRef, useState } from 'react'
+    BarChart, ChevronLeft, ChevronRight, Code, Edit2, Folder as FolderIcon,
+    FolderOpen, FolderPlus, Image, MessageSquare,
+    Mic, Palette, Pin, Plus, Rocket, Search, Server,
+    Settings, Shield, Sparkles, Trash2, User, Users
+} from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
@@ -53,7 +54,7 @@ export const Sidebar = React.memo(({
     const activeFolders = useMemo(() => folders || [], [folders])
 
     const filteredChats = useMemo(() => {
-        if (!searchQuery) {return chats}
+        if (!searchQuery) { return chats }
         const q = searchQuery.toLowerCase()
         return chats.filter(c => c.title?.toLowerCase().includes(q))
     }, [chats, searchQuery])
@@ -145,7 +146,7 @@ export const Sidebar = React.memo(({
                             value={editValue}
                             onChange={e => setEditValue(e.target.value)}
                             onBlur={saveEdit}
-                            onKeyDown={e => { if (e.key === 'Enter') {saveEdit();} if (e.key === 'Escape') {cancelEdit()} }}
+                            onKeyDown={e => { if (e.key === 'Enter') { saveEdit(); } if (e.key === 'Escape') { cancelEdit() } }}
                             onClick={e => e.stopPropagation()}
                             className="absolute inset-0 bg-background border border-primary rounded-md px-2 text-xs outline-none z-10"
                         />
@@ -210,14 +211,17 @@ export const Sidebar = React.memo(({
 
     return (
         <>
-            <aside className={cn(
-                "flex flex-col h-full transition-all duration-300 ease-in-out",
-                "bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
-                isCollapsed ? "w-[70px]" : "w-full"
-            )}>
+            <aside
+                data-testid="sidebar"
+                className={cn(
+                    "flex flex-col h-full transition-all duration-300 ease-in-out",
+                    "bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+                    isCollapsed ? "w-[70px]" : "w-full"
+                )}>
                 {/* Header */}
                 <div className="p-3 space-y-2">
                     <button
+                        data-testid="new-chat-button"
                         onClick={() => { onChangeView('chat'); createNewChat() }}
                         className={cn(
                             "w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors",
@@ -326,8 +330,8 @@ export const Sidebar = React.memo(({
                                         isCollapsed={isCollapsed}
                                         toggleFolder={(id) => setExpandedFolders(prev => {
                                             const next = new Set(prev)
-                                            if (next.has(id)) {next.delete(id)}
-                                            else {next.add(id)}
+                                            if (next.has(id)) { next.delete(id) }
+                                            else { next.add(id) }
                                             return next
                                         })}
                                         deleteFolder={deleteFolder}
@@ -402,6 +406,7 @@ export const Sidebar = React.memo(({
                     {/* Settings Dropdown */}
                     <div className="relative">
                         <SidebarItem
+                            data-testid="settings-button"
                             icon={Settings}
                             label={t('sidebar.settings')}
                             active={currentView === 'settings' || showSettingsMenu}

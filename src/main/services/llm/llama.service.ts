@@ -48,9 +48,9 @@ export class LlamaService extends BaseService {
         // Get paths
         try {
             if (dataService) {
-                this.modelsDir = join(dataService.getPath('models'))
+                this.modelsDir = path.join(dataService.getPath('models'))
             } else {
-                this.modelsDir = join(app.getPath('userData'), 'models')
+                this.modelsDir = path.join(app.getPath('userData'), 'models')
             }
 
             fs.mkdirSync(this.modelsDir, { recursive: true })
@@ -60,11 +60,11 @@ export class LlamaService extends BaseService {
         }
 
         // llama-server binary path
-        this.binDir = join(process.cwd(), 'vendor/llama-bin')
+        this.binDir = path.join(process.cwd(), 'vendor/llama-bin')
 
         // Fallback to project root if not in dist
         if (!fs.existsSync(this.binDir)) {
-            this.binDir = join(process.cwd(), 'vendor', 'llama-bin')
+            this.binDir = path.join(process.cwd(), 'vendor', 'llama-bin')
         }
     }
 
@@ -74,7 +74,7 @@ export class LlamaService extends BaseService {
     }
 
     private getServerPath(): string {
-        return join(this.binDir, 'llama-server.exe')
+        return path.join(this.binDir, 'llama-server.exe')
     }
 
     async isServerRunning(): Promise<boolean> {
@@ -225,7 +225,7 @@ export class LlamaService extends BaseService {
         onToken?: (token: string) => void
     ): Promise<{ success: boolean; response?: string; error?: string }> {
         if (!await this.isServerRunning()) {
-            return { success: false, error: 'llama-server çalışmıyor' }
+            return { success: false, error: 'llama-server is not running' }
         }
 
         return new Promise((resolve) => {
@@ -305,7 +305,7 @@ export class LlamaService extends BaseService {
 
     async getEmbeddings(input: string): Promise<number[]> {
         if (!await this.isServerRunning()) {
-            throw new Error('llama-server çalışmıyor')
+            throw new Error('llama-server is not running')
         }
 
         return new Promise((resolve, reject) => {
@@ -369,7 +369,7 @@ export class LlamaService extends BaseService {
 
             for (const file of files) {
                 if (file.endsWith('.gguf')) {
-                    const fullPath = join(this.modelsDir, file)
+                    const fullPath = path.join(this.modelsDir, file)
                     const stats = await fs.promises.stat(fullPath)
                     models.push({
                         name: file.replace('.gguf', ''),
@@ -392,7 +392,7 @@ export class LlamaService extends BaseService {
         const { createWriteStream } = await import('fs')
 
         return new Promise((resolve) => {
-            const outputPath = join(this.modelsDir, filename)
+            const outputPath = path.join(this.modelsDir, filename)
             const file = createWriteStream(outputPath)
 
             const protocol = url.startsWith('https') ? https : httpModule
@@ -463,14 +463,14 @@ export class LlamaService extends BaseService {
         let detectedName = 'Generic GPU'
 
         // Check CUDA
-        const cudaDll = join(this.binDir, 'ggml-cuda.dll')
+        const cudaDll = path.join(this.binDir, 'ggml-cuda.dll')
         if (fs.existsSync(cudaDll)) {
             backends.push('cuda')
             detectedName = 'NVIDIA CUDA'
         }
 
         // Check Vulkan
-        const vulkanDll = join(this.binDir, 'ggml-vulkan.dll')
+        const vulkanDll = path.join(this.binDir, 'ggml-vulkan.dll')
         if (fs.existsSync(vulkanDll)) {
             backends.push('vulkan')
             if (backends.length === 1) {

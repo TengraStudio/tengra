@@ -1,4 +1,4 @@
-import { File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff,Paperclip, Send, Square, X } from 'lucide-react'
+import { File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff, Paperclip, Send, Square, X } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
@@ -54,8 +54,8 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     const [isDragging, setIsDragging] = React.useState(false)
 
     const filteredPrompts = React.useMemo(() => {
-        if (!prompts) {return []}
-        if (!commandQuery) {return prompts.slice(0, 5)}
+        if (!prompts) { return [] }
+        if (!commandQuery) { return prompts.slice(0, 5) }
         return prompts.filter(p => p.title.toLowerCase().includes(commandQuery.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(commandQuery.toLowerCase()))).slice(0, 5)
     }, [prompts, commandQuery])
 
@@ -149,14 +149,14 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     }
 
     const getFileIcon = (type: string) => {
-        if (type.startsWith('image/')) {return <ImageIcon size={14} />}
-        if (type.includes('text') || type.includes('json') || type.includes('md')) {return <FileText size={14} />}
-        if (type.includes('code') || type.includes('javascript') || type.includes('python')) {return <FileCode size={14} />}
+        if (type.startsWith('image/')) { return <ImageIcon size={14} /> }
+        if (type.includes('text') || type.includes('json') || type.includes('md')) { return <FileText size={14} /> }
+        if (type.includes('code') || type.includes('javascript') || type.includes('python')) { return <FileCode size={14} /> }
         return <FileIcon size={14} />
     }
 
     return (
-        <div 
+        <div
             className={cn(
                 "p-4 border-t border-white/5 bg-zinc-950/50 backdrop-blur-sm relative z-30",
                 isDragging && "ring-2 ring-purple-500/50 border-purple-500/50"
@@ -272,25 +272,28 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
 
                     <div className="h-8 w-px bg-white/5 mx-1" />
 
-                    <ModelSelector
-                        selectedProvider={selectedProvider}
-                        selectedModel={selectedModel}
-                        onSelect={(p, m) => {
-                            setSelectedProvider(p);
-                            setSelectedModel(m);
-                        }}
-                        settings={appSettings || undefined}
-                        groupedModels={groupedModels || undefined}
-                        quotas={quotas}
-                        codexUsage={codexUsage}
-                        onOpenChange={setIsModelMenuOpen}
-                        contextTokens={contextTokens}
-                        language={language || 'en'}
-                    />
+                    <div data-testid="model-selector">
+                        <ModelSelector
+                            selectedProvider={selectedProvider}
+                            selectedModel={selectedModel}
+                            onSelect={(p, m) => {
+                                setSelectedProvider(p);
+                                setSelectedModel(m);
+                            }}
+                            settings={appSettings || undefined}
+                            groupedModels={groupedModels || undefined}
+                            quotas={quotas}
+                            codexUsage={codexUsage}
+                            onOpenChange={setIsModelMenuOpen}
+                            contextTokens={contextTokens}
+                            language={language || 'en'}
+                        />
+                    </div>
                 </div>
 
                 {/* Text Input */}
                 <textarea
+                    data-testid="chat-textarea"
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}

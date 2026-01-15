@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import electron from 'vite-plugin-electron'
-
 import { resolve } from 'path'
+
+import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
+import electron from 'vite-plugin-electron'
 // import { reactGlobalPlugin } from './vite-plugin-react-global' // Removed causing errors
 
 export default defineConfig({
@@ -128,10 +128,15 @@ export default defineConfig({
                 // Better code splitting for faster builds
                 manualChunks: (id) => {
                     if (id.includes('node_modules')) {
-                        // Split large dependencies into separate chunks
-                        // if (id.includes('react') || id.includes('react-dom')) {
-                        //     return 'react-vendor';
-                        // }
+                        if (id.includes('monaco-editor') || id.includes('@monaco-editor')) {
+                            return 'monaco-editor';
+                        }
+                        if (id.includes('framer-motion')) {
+                            return 'framer-motion';
+                        }
+                        if (id.includes('ssh2') || id.includes('xterm')) {
+                            return 'ssh-vendor';
+                        }
                         if (id.includes('@codemirror') || id.includes('@lezer')) {
                             return 'codemirror';
                         }
@@ -187,4 +192,10 @@ export default defineConfig({
         legalComments: 'none',
         treeShaking: true
     },
+    test: {
+        globals: true,
+        environment: 'node',
+        include: ['src/tests/main/**/*.{test,spec}.{ts,tsx}'],
+        exclude: ['src/tests/e2e/**', 'node_modules', 'dist']
+    }
 })

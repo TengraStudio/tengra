@@ -5,10 +5,10 @@ import { LocalAIService } from '@main/services/llm/local-ai.service'
 import { OllamaService } from '@main/services/llm/ollama.service'
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow,ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 
 interface ModelDefinition {
     id: string;

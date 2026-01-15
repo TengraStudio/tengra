@@ -1,7 +1,7 @@
 /**
  * Unit tests for TokenEstimationService
  */
-import { TokenEstimationService } from '@main/services/token-estimation.service';
+import { TokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { beforeEach,describe, expect, it } from 'vitest';
 
 import { Message } from '@/types/chat';

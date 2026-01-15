@@ -27,7 +27,7 @@ export class StreamParser {
      * Supports both Web Streams (ReadableStream) and Node.js Streams (AsyncIterable).
      */
     static async *parseChatStream(response: Response): AsyncGenerator<StreamChunk> {
-        if (!response.body) {throw new Error('No response body');}
+        if (!response.body) { throw new Error('No response body'); }
 
         const decoder = new TextDecoder();
         let buffer = '';
@@ -81,9 +81,9 @@ export class StreamParser {
 
         for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed?.startsWith('data:')) {continue;}
+            if (!trimmed?.startsWith('data:')) { continue; }
             const data = trimmed.slice(5).trim();
-            if (data === '[DONE]') {continue;}
+            if (data === '[DONE]') { continue; }
 
             // Handle nested data: prefix issue
             let jsonData = data;
@@ -93,10 +93,27 @@ export class StreamParser {
                 jsonData = jsonData.slice(5).trim();
                 prefixIterations++;
             }
-            if (jsonData === '[DONE]') {continue;}
+            if (jsonData === '[DONE]') { continue; }
+
+
+            type StreamItemContent = {
+                type: string;
+                text?: string;
+            };
+
+            type StreamPayload = OpenAIStreamPayload & {
+                type?: string;
+                delta?: string | { text?: string };
+                message?: string;
+                item?: {
+                    content?: StreamItemContent[];
+                };
+                response_id?: string;
+                name?: string;
+            };
 
             try {
-                const json = JSON.parse(jsonData) as OpenAIStreamPayload & { type?: string; delta?: string | { text?: string }; message?: string };
+                const json = JSON.parse(jsonData) as StreamPayload;
 
                 // 1. OPENCODE /responses format
                 if (json.type === 'response.output_text.delta' && json.delta) {
@@ -115,10 +132,10 @@ export class StreamParser {
                     continue;
                 }
 
-                if (json.type === 'response.output_item.done' && (json as any).item?.content) {
-                    const contentValues = (json as any).item.content
-                        .filter((c: any) => c.type === 'output_text')
-                        .map((c: any) => c.text)
+                if (json.type === 'response.output_item.done' && json.item?.content) {
+                    const contentValues = json.item.content
+                        .filter((c) => c.type === 'output_text')
+                        .map((c) => c.text || '')
                         .join('');
                     if (contentValues) {
                         yield { content: contentValues };
@@ -131,10 +148,10 @@ export class StreamParser {
                     yield {
                         type: 'tool_calls',
                         tool_calls: [{
-                            id: 'opencode-tc-' + (json as any).response_id || 'unknown',
+                            id: 'opencode-tc-' + (json.response_id || 'unknown'),
                             type: 'function',
                             function: {
-                                name: (json as any).name || 'unknown',
+                                name: json.name || 'unknown',
                                 arguments: args
                             }
                         }]
@@ -149,7 +166,7 @@ export class StreamParser {
 
                 // 2. STANDARD OpenAI format
                 const delta = json.choices?.[0]?.delta;
-                if (!delta) {continue;}
+                if (!delta) { continue; }
 
                 const content = delta.content || '';
                 const reasoning = delta.reasoning_content || delta.reasoning || '';

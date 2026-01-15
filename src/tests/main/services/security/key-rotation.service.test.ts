@@ -1,6 +1,6 @@
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-// import { SettingsService } from '@main/services/settings.service';
+// import { SettingsService } from '@main/services/system/settings.service';
 
 // Mock the logger to avoid side effects
 vi.mock('@main/logging/logger', () => ({

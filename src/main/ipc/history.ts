@@ -1,4 +1,4 @@
-import { HistoryImportService } from '@main/services/history-import.service'
+import { HistoryImportService } from '@main/services/external/history-import.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 

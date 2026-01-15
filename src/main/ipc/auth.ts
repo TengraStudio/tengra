@@ -1,6 +1,6 @@
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { SettingsService } from '@main/services/settings.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 

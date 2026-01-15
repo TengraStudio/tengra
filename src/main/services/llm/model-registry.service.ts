@@ -1,8 +1,8 @@
 import { appLogger } from '@main/logging/logger'
-import { JobSchedulerService } from '@main/services/job-scheduler.service'
 import { HuggingFaceService } from '@main/services/llm/huggingface.service'
 import { OllamaService } from '@main/services/llm/ollama.service'
-import { SettingsService } from '@main/services/settings.service'
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface ModelProviderInfo {
@@ -121,9 +121,9 @@ export class ModelRegistryService {
     private parseCount(str: string): number {
         const lower = str.toLowerCase().trim()
         let multiplier = 1
-        if (lower.endsWith('k')) {multiplier = 1000}
-        if (lower.endsWith('m')) {multiplier = 1000000}
-        if (lower.endsWith('b')) {multiplier = 1000000000}
+        if (lower.endsWith('k')) { multiplier = 1000 }
+        if (lower.endsWith('m')) { multiplier = 1000000 }
+        if (lower.endsWith('b')) { multiplier = 1000000000 }
 
         const num = parseFloat(lower.replace(/[kmb]/g, ''))
         return Math.floor(num * multiplier)

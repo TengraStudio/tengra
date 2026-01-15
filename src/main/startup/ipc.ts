@@ -27,10 +27,11 @@ import { registerTerminalIpc } from '@main/ipc/terminal'
 import { registerToolsIpc } from '@main/ipc/tools'
 import { registerUsageIpc } from '@main/ipc/usage'
 import { registerWindowIpc } from '@main/ipc/window'
+import { appLogger } from '@main/logging/logger'
 import { McpDispatcher } from '@main/mcp/dispatcher'
 import { Services } from '@main/startup/services'
 import { ToolExecutor } from '@main/tools/tool-executor'
-import { BrowserWindow, IpcMainEvent } from 'electron'
+import { BrowserWindow } from 'electron'
 
 export function registerIpcHandlers(
     services: Services,
@@ -93,7 +94,7 @@ export function registerIpcHandlers(
                     const status = await services.ollamaHealthService.checkHealth()
                     mainWindow.webContents.send('ollama:connection-status', status.online)
                 } catch (error) {
-                    console.error('[IPC] Failed to check Ollama connection:', error)
+                    appLogger.error('IPC', `Failed to check Ollama connection: ${error}`)
                     mainWindow.webContents.send('ollama:connection-status', false)
                 }
             }

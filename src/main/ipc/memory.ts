@@ -1,4 +1,4 @@
-import { MemoryService } from '@main/services/memory.service'
+import { MemoryService } from '@main/services/llm/memory.service'
 import { ipcMain } from 'electron'
 
 

@@ -1,7 +1,7 @@
 /**
  * Unit tests for SecurityService
  */
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron safeStorage
 vi.mock('electron', () => ({
@@ -23,7 +23,7 @@ vi.mock('fs/promises', () => ({
     copyFile: vi.fn().mockResolvedValue(undefined)
 }));
 
-import { SecurityService } from '@main/services/security.service';
+import { SecurityService } from '@main/services/security/security.service';
 
 describe('SecurityService', () => {
     let service: SecurityService;

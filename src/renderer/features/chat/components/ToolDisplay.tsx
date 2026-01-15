@@ -107,9 +107,9 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
                                         setShowMarkdown(!showMarkdown)
                                     }}
                                     className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors uppercase tracking-wider font-bold mr-2"
-                                    title="Markdown Gorunumu"
+                                    title={t('toolDisplay.markdownView')}
                                 >
-                                    {showMarkdown ? t('tools.text') : t('tools.markdown')}
+                                    {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
                                 </button>
                             )}
                             {/* KILL BUTTON */}

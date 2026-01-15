@@ -3,7 +3,7 @@
  * Exposes backup and restore functionality to the renderer process
  */
 
-import { BackupMetadata,BackupResult, BackupService, RestoreResult } from '@main/services/backup.service'
+import { BackupMetadata, BackupResult, BackupService, RestoreResult } from '@main/services/data/backup.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 

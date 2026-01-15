@@ -4,27 +4,44 @@ import * as path from 'path'
 import { PGlite } from '@electric-sql/pglite'
 import { vector } from '@electric-sql/pglite/vector'
 import { appLogger } from '@main/logging/logger'
+import { AuditLogEntry } from '@main/services/analysis/audit-log.service'
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { Migration, MigrationManager } from '@main/services/data/migration-manager'
-import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database'
+import { JobState } from '@main/services/system/job-scheduler.service'
+import { PromptTemplate } from '@main/utils/prompt-templates.util'
 import { JsonObject, JsonValue } from '@shared/types/common'
+import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { v4 as uuidv4 } from 'uuid'
+
+export interface AuthToken {
+    id: string
+    provider: string
+    accessToken?: string
+    refreshToken?: string
+    sessionToken?: string
+    idToken?: string
+    email?: string
+    expiresAt?: number
+    scope?: string
+    metadata?: JsonObject
+    updatedAt: number
+}
 
 // Re-export interfaces from previous implementation (copy-pasted for clarity/continuity)
 export interface Folder { id: string; name: string; color?: string; createdAt: number; updatedAt: number }
 export interface Prompt { id: string; title: string; content: string; tags: string[]; createdAt: number; updatedAt: number }
 export interface ChatMessage { role: string; content: string; timestamp?: number; vector?: number[];[key: string]: JsonValue | undefined }
-export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectId?: string; createdAt: number; updatedAt: number;[key: string]: any }
+export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectId?: string; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
 export interface EpisodicMemory { id: string; title: string; summary: string; embedding: number[]; startDate: number; endDate: number; chatId: string; participants: string[]; createdAt: number }
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
 export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' }
 export interface AgentProfile { id: string; name: string; role: string; description: string }
-export interface CouncilSession { id: string; goal: string; status: 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string; solution?: string; createdAt: number; updatedAt: number }
-export interface WorkspaceMount { path: string; name: string; type: 'local' | 'ssh'; } // Simplified
+export interface CouncilSession { id: string; goal: string; status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string; solution?: string; createdAt: number; updatedAt: number }
+export interface WorkspaceMount { path: string; name: string; type: 'local' | 'ssh'; }
 export interface Project { id: string; title: string; description: string; path: string; mounts: WorkspaceMount[]; chatIds: string[]; councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }; status: 'active' | 'archived' | 'draft'; logo?: string; metadata?: JsonObject; createdAt: number; updatedAt: number }
-export interface Chat { id: string; title: string; model: string; messages: any[]; createdAt: Date; updatedAt: Date; isPinned?: boolean; isFavorite?: boolean; folderId?: string; isGenerating?: boolean; backend?: string; metadata?: JsonObject }
+export interface Chat { id: string; title: string; model?: string; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean; isFavorite?: boolean; folderId?: string; projectId?: string; isGenerating?: boolean; backend?: string; metadata?: JsonObject }
 // Need to import WorkspaceMount properly or redefine it matching shared/types/workspace
 // Assuming local redefinition or import if accessible. Importing 'WorkspaceMount' was in original.
 
@@ -33,18 +50,29 @@ export interface CodeSymbolRecord { id: string; project_path?: string; projectId
 
 
 
+export interface SearchChatsOptions {
+    query?: string;
+    folderId?: string;
+    isPinned?: boolean;
+    isFavorite?: boolean;
+    isArchived?: boolean;
+    startDate?: number;
+    endDate?: number;
+    limit?: number;
+}
+
 export class DatabaseService extends BaseService {
     private db: PGlite | null = null
     private dbPath: string
     private initPromise: Promise<void> | null = null
     private initError: Error | null = null
     private isTest: boolean = false
-
-    // Cache legacy JSON paths for migration
     private foldersPath: string
     private promptsPath: string
     private councilPath: string
     private projectsPath: string
+    private chatsPath: string
+    private messagesPath: string
 
     constructor(private dataService: DataService) {
         super('DatabaseService')
@@ -52,11 +80,13 @@ export class DatabaseService extends BaseService {
         // Use a subdirectory 'pg_data' to keep Postgres files separate
         this.dbPath = path.join(this.dataService.getPath('db'), 'pg_data')
 
-        // Legacy paths
+        // Legacy paths for migration
         this.foldersPath = path.join(this.dataService.getPath('db'), 'folders.json')
         this.promptsPath = path.join(this.dataService.getPath('db'), 'prompts.json')
         this.councilPath = path.join(this.dataService.getPath('db'), 'council.json')
         this.projectsPath = path.join(this.dataService.getPath('db'), 'projects.json')
+        this.chatsPath = path.join(this.dataService.getPath('db'), 'chats.json')
+        this.messagesPath = path.join(this.dataService.getPath('db'), 'messages.json')
     }
 
     override async initialize(): Promise<void> {
@@ -70,17 +100,20 @@ export class DatabaseService extends BaseService {
     private async initDatabase() {
         try {
             const effectivePath = this.isTest ? undefined : this.dbPath
-            const extensions = this.isTest ? {} : { vector }
 
-            appLogger.info('DatabaseService', `Initializing at ${effectivePath || 'memory'}`)
+            appLogger.info('DatabaseService', `Initializing at ${effectivePath ?? 'memory'}`)
 
             // Ensure directory exists only if not in-memory
-            if (effectivePath && !fs.existsSync(effectivePath)) {
-                fs.mkdirSync(effectivePath, { recursive: true })
+            if (effectivePath) {
+                try {
+                    await fs.promises.access(effectivePath)
+                } catch {
+                    await fs.promises.mkdir(effectivePath, { recursive: true })
+                }
             }
 
             this.db = new PGlite(effectivePath, {
-                extensions: extensions as any
+                extensions: this.isTest ? undefined : { vector }
             })
             await this.db.waitReady
 
@@ -111,9 +144,9 @@ export class DatabaseService extends BaseService {
             appLogger.info('DatabaseService', `Init promise resolved, db: ${!!this.db}`)
         }
         if (!this.db) {
-            appLogger.error('DatabaseService', `Database not initialized after waiting! InitError: ${this.initError?.message || 'unknown'}`)
+            appLogger.error('DatabaseService', `Database not initialized after waiting! InitError: ${this.initError?.message ?? 'unknown'}`)
             appLogger.error('DatabaseService', `InitPromise state: ${!!this.initPromise}`)
-            throw new Error(`Database not initialized. Reason: ${this.initError?.message || 'unknown'}`)
+            throw new Error(`Database not initialized. Reason: ${this.initError?.message ?? 'unknown'}`)
         }
         return this.createAdapter()
     }
@@ -159,17 +192,21 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    private createAdapterFromTx(tx: any): DatabaseAdapter {
+    private createAdapterFromTx(tx: {
+        query: (sql: string, params?: any[], options?: any) => Promise<any>;
+        exec: (sql: string) => Promise<any>;
+    }): DatabaseAdapter {
+        // Reuse the tx object directly as it matches the shape we need mostly,
+        // but we need to wrap it to match DatabaseAdapter exactly.
+        const txObj = tx;
         return {
             query: async <T = unknown>(sql: string, params?: SqlParams) => {
                 const safeParams = params?.map(p => p === undefined ? null : p)
-                const res = await tx.query(sql, safeParams)
+                const res = await txObj.query(sql, safeParams) as { rows: T[]; fields: { name: string; dataTypeID: number }[]; affectedRows?: number }
                 return { rows: res.rows, fields: res.fields }
             },
-            exec: async (sql) => { await tx.exec(sql); },
+            exec: async (sql) => { await txObj.exec(sql); },
             transaction: <T>(fn: (nestedTx: DatabaseAdapter) => Promise<T>) => {
-                // PGlite might support nested transactions or savepoints?
-                // For now just execute function directly with current tx to avoid complexity
                 return fn(this.createAdapterFromTx(tx))
             },
             prepare: (sql: string) => {
@@ -177,17 +214,17 @@ export class DatabaseService extends BaseService {
                 return {
                     run: async (...params: SqlValue[]) => {
                         const safeParams = params.map(p => p === undefined ? null : p)
-                        const res = await tx.query(normalized, safeParams)
+                        const res = await txObj.query(normalized, safeParams)
                         return { rowsAffected: res.affectedRows, insertId: undefined }
                     },
                     all: async <T = unknown>(...params: SqlValue[]) => {
                         const safeParams = params.map(p => p === undefined ? null : p)
-                        const res = await tx.query(normalized, safeParams)
+                        const res = await txObj.query(normalized, safeParams) as { rows: T[] }
                         return res.rows
                     },
                     get: async <T = unknown>(...params: SqlValue[]) => {
                         const safeParams = params.map(p => p === undefined ? null : p)
-                        const res = await tx.query(normalized, safeParams)
+                        const res = await txObj.query(normalized, safeParams) as { rows: T[] }
                         return res.rows[0]
                     }
                 }
@@ -202,7 +239,7 @@ export class DatabaseService extends BaseService {
         return sql.replace(/\?/g, () => `$${i++}`)
     }
 
-    getDatabase() {
+    getDatabase(): DatabaseAdapter {
         // Return the adapter, not raw PGlite, to maintain API compatibility
         if (!this.db) { throw new Error('DB not initialized') }
         return this.createAdapter()
@@ -224,10 +261,26 @@ export class DatabaseService extends BaseService {
 
     private getMigrationDefinitions(): Migration[] {
         return [
+            ...this.getCoreSchemaMigrations(),
+            ...this.getCodeIntelligenceMigrations(),
+            ...this.getUtilitySchemaMigrations()
+        ];
+    }
+
+    private getCoreSchemaMigrations(): Migration[] {
+        return [
+            ...this.getProjectMigrations(),
+            ...this.getChatMigrations(),
+            ...this.getFolderPromptCouncilMigrations()
+        ];
+    }
+
+    private getProjectMigrations(): Migration[] {
+        return [
             {
                 id: 1,
                 name: 'Initial Schema (Postgres)',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     await db.exec(`
                         CREATE TABLE IF NOT EXISTS projects (
                             id TEXT PRIMARY KEY,
@@ -258,7 +311,7 @@ export class DatabaseService extends BaseService {
             {
                 id: 2,
                 name: 'Time Tracking',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     await db.exec(`
                         CREATE TABLE IF NOT EXISTS time_tracking (
                             id TEXT PRIMARY KEY,
@@ -273,11 +326,16 @@ export class DatabaseService extends BaseService {
                         CREATE INDEX IF NOT EXISTS idx_time_tracking_type ON time_tracking(type);
                     `)
                 }
-            },
+            }
+        ];
+    }
+
+    private getChatMigrations(): Migration[] {
+        return [
             {
                 id: 3,
                 name: 'Chats and Messages',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     await db.exec(`
                         CREATE TABLE IF NOT EXISTS chats (
                             id TEXT PRIMARY KEY,
@@ -309,11 +367,16 @@ export class DatabaseService extends BaseService {
                         CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
                     `)
                 }
-            },
+            }
+        ];
+    }
+
+    private getFolderPromptCouncilMigrations(): Migration[] {
+        return [
             {
                 id: 4,
                 name: 'Folders, Prompts, Council',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     await db.exec(`
                         CREATE TABLE IF NOT EXISTS folders (
                             id TEXT PRIMARY KEY,
@@ -343,11 +406,16 @@ export class DatabaseService extends BaseService {
                         );
                     `)
                 }
-            },
+            }
+        ];
+    }
+
+    private getCodeIntelligenceMigrations(): Migration[] {
+        return [
             {
                 id: 5,
                 name: 'Code Intelligence & Vectors',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     await db.exec(`
                         CREATE TABLE IF NOT EXISTS semantic_fragments (
                             id TEXT PRIMARY KEY,
@@ -414,11 +482,23 @@ export class DatabaseService extends BaseService {
                         );
                     `)
                 }
-            },
+            }
+        ];
+    }
+
+    private getUtilitySchemaMigrations(): Migration[] {
+        return [
+            ...this.getTimestampAndIndexMigrations(),
+            ...this.getTokenAndUsageMigrations()
+        ];
+    }
+
+    private getTimestampAndIndexMigrations(): Migration[] {
+        return [
             {
                 id: 6,
                 name: 'Fix Timestamp Types',
-                up: async (db) => {
+                up: async (db: DatabaseAdapter) => {
                     const queries = [
                         'ALTER TABLE projects ALTER COLUMN created_at TYPE BIGINT',
                         'ALTER TABLE projects ALTER COLUMN updated_at TYPE BIGINT',
@@ -441,8 +521,7 @@ export class DatabaseService extends BaseService {
                     for (const query of queries) {
                         try {
                             await db.exec(query);
-                        } catch (e) {
-                            // Likely already bigint
+                        } catch {
                             appLogger.debug('DatabaseService', `Type fix skipped: ${query}`);
                         }
                     }
@@ -451,122 +530,310 @@ export class DatabaseService extends BaseService {
             {
                 id: 7,
                 name: 'Add Performance Indexes',
-                up: async (db) => {
-                    // Indexes for frequently queried fields
+                up: async (db: DatabaseAdapter) => {
                     const indexQueries = [
-                        // Chats table indexes
                         'CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id)',
                         'CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id)',
                         'CREATE INDEX IF NOT EXISTS idx_chats_created_at ON chats(created_at DESC)',
                         'CREATE INDEX IF NOT EXISTS idx_chats_is_pinned ON chats(is_pinned) WHERE is_pinned = 1',
                         'CREATE INDEX IF NOT EXISTS idx_chats_is_favorite ON chats(is_favorite) WHERE is_favorite = 1',
-
-                        // Messages table indexes
                         'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC)',
                         'CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role)',
-
-                        // Projects table indexes
                         'CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)',
                         'CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)',
                         'CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at DESC)',
-
-                        // Time tracking indexes
                         'CREATE INDEX IF NOT EXISTS idx_time_tracking_project_id ON time_tracking(project_id)',
                         'CREATE INDEX IF NOT EXISTS idx_time_tracking_start_time ON time_tracking(start_time DESC)',
-
-                        // Council sessions indexes
                         'CREATE INDEX IF NOT EXISTS idx_council_sessions_status ON council_sessions(status)',
                         'CREATE INDEX IF NOT EXISTS idx_council_sessions_created_at ON council_sessions(created_at DESC)',
-
-                        // Semantic fragments indexes for search
                         'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_id ON semantic_fragments(project_id)',
                         'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_source ON semantic_fragments(source)',
-
-                        // Entity knowledge indexes
                         'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_type ON entity_knowledge(entity_type)',
                         'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_name ON entity_knowledge(entity_name)'
                     ];
-
                     for (const query of indexQueries) {
                         try {
                             await db.exec(query);
-                        } catch (e) {
+                        } catch {
                             appLogger.debug('DatabaseService', `Index creation skipped: ${query}`);
                         }
                     }
                 }
             }
-        ]
+        ];
+    }
+
+    private getTokenAndUsageMigrations(): Migration[] {
+        return [
+            {
+                id: 8,
+                name: 'Usage Tracking Schema',
+                up: async (db: DatabaseAdapter) => {
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS usage_tracking (
+                            id TEXT PRIMARY KEY,
+                            timestamp BIGINT NOT NULL,
+                            provider TEXT NOT NULL,
+                            model TEXT NOT NULL
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_usage_tracking_timestamp ON usage_tracking(timestamp);
+                        CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider ON usage_tracking(provider);
+                    `)
+                }
+            },
+            {
+                id: 9,
+                name: 'Prompt Templates Schema',
+                up: async (db: DatabaseAdapter) => {
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS prompt_templates (
+                            id TEXT PRIMARY KEY,
+                            name TEXT NOT NULL,
+                            description TEXT,
+                            template TEXT NOT NULL,
+                            variables TEXT NOT NULL,
+                            category TEXT,
+                            tags TEXT,
+                            created_at BIGINT NOT NULL,
+                            updated_at BIGINT NOT NULL
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_prompt_templates_category ON prompt_templates(category);
+                    `)
+                }
+            },
+            {
+                id: 10,
+                name: 'Audit Logs Schema',
+                up: async (db: DatabaseAdapter) => {
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS audit_logs (
+                            id TEXT PRIMARY KEY,
+                            timestamp BIGINT NOT NULL,
+                            action TEXT NOT NULL,
+                            category TEXT NOT NULL,
+                            user_id TEXT,
+                            details TEXT,
+                            ip_address TEXT,
+                            user_agent TEXT,
+                            success BOOLEAN NOT NULL,
+                            error TEXT
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+                        CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category);
+                    `)
+                }
+            },
+            {
+                id: 11,
+                name: 'Job Scheduler State Schema',
+                up: async (db: DatabaseAdapter) => {
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS scheduler_state (
+                            id TEXT PRIMARY KEY,
+                            last_run BIGINT NOT NULL,
+                            updated_at BIGINT NOT NULL
+                        );
+                    `)
+                }
+            },
+            {
+                id: 12,
+                name: 'Auth Tokens Schema',
+                up: async (db: DatabaseAdapter) => {
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS auth_tokens (
+                            id TEXT PRIMARY KEY,
+                            provider TEXT NOT NULL,
+                            access_token TEXT,
+                            refresh_token TEXT,
+                            session_token TEXT,
+                            expires_at BIGINT,
+                            scope TEXT,
+                            metadata TEXT,
+                            updated_at BIGINT NOT NULL
+                        );
+                    `);
+                }
+            }
+        ];
     }
 
     private async migrateLegacyJsonData() {
-        // IMPORTANT: Don't use ensureDb here - same deadlock issue as runMigrations
         if (!this.db) {
-            console.warn('[DatabaseService] Cannot migrate legacy data: db not ready')
+            appLogger.warn('DatabaseService', 'Cannot migrate legacy data: db not ready')
             return
         }
         const db = this.createAdapter()
 
-        // Migrate Folders
-        if (fs.existsSync(this.foldersPath)) {
-            try {
-                const folders = JSON.parse(await fs.promises.readFile(this.foldersPath, 'utf-8')) as Folder[];
-                if (Array.isArray(folders) && folders.length > 0) {
-                    const count = await db.prepare('SELECT COUNT(*) as c FROM folders').get() as { c: number };
-                    if (Number(count.c) === 0) {
-                        for (const f of folders) {
-                            await db.prepare('INSERT INTO folders (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
-                                f.id, f.name, f.color || null, f.createdAt || Date.now(), f.updatedAt || Date.now()
-                            )
-                        }
-                        await fs.promises.rename(this.foldersPath, this.foldersPath + '.migrated');
-                    }
-                }
-            } catch (e) { appLogger.error('DatabaseService', 'Failed migration folders', e as Error) }
-        }
+        await this.handleFolderMigration(db)
+        await this.handlePromptMigration(db)
+        await this.handleCouncilMigration(db)
+        await this.handleProjectMigration(db)
+        await this.handleChatMigration(db)
+        await this.handleMessageMigration(db)
+    }
 
-        // Migrate Prompts
-        if (fs.existsSync(this.promptsPath)) {
-            try {
-                const prompts = JSON.parse(await fs.promises.readFile(this.promptsPath, 'utf-8')) as Prompt[];
-                if (Array.isArray(prompts) && prompts.length > 0) {
-                    const count = await db.prepare('SELECT COUNT(*) as c FROM prompts').get() as { c: number };
-                    if (Number(count.c) === 0) {
-                        for (const p of prompts) {
-                            await db.prepare('INSERT INTO prompts (id, title, content, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-                                p.id, p.title, p.content, JSON.stringify(p.tags || []), p.createdAt || Date.now(), p.updatedAt || Date.now()
-                            )
-                        }
-                        await fs.promises.rename(this.promptsPath, this.promptsPath + '.migrated');
-                    }
-                }
-            } catch (e) { appLogger.error('DatabaseService', 'Failed migration prompts', e as Error) }
-        }
+    private async handleFolderMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.foldersPath)) { return }
+        try {
+            const content = await fs.promises.readFile(this.foldersPath, 'utf-8')
+            const folders = JSON.parse(content) as Folder[]
+            if (!Array.isArray(folders) || folders.length === 0) { return }
 
-        // Migrate Council
-        if (fs.existsSync(this.councilPath)) {
-            try {
-                const sessions = JSON.parse(await fs.promises.readFile(this.councilPath, 'utf-8')) as CouncilSession[];
-                if (Array.isArray(sessions) && sessions.length > 0) {
-                    const count = await db.prepare('SELECT COUNT(*) as c FROM council_sessions').get() as { c: number };
-                    if (Number(count.c) === 0) {
-                        for (const s of sessions) {
-                            await db.prepare('INSERT INTO council_sessions (id, goal, status, logs, agents, plan, solution, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-                                s.id, s.goal, s.status, JSON.stringify(s.logs), JSON.stringify(s.agents), s.plan || null, s.solution || null, s.createdAt, s.updatedAt
-                            )
-                        }
-                        await fs.promises.rename(this.councilPath, this.councilPath + '.migrated');
-                    }
-                }
-            } catch (e) { appLogger.error('DatabaseService', 'Failed migration council', e as Error) }
-        }
+            const count = await db.prepare('SELECT COUNT(*) as c FROM folders').get() as { c: number }
+            if (Number(count.c) !== 0) { return }
 
-        // Projects JSON migration logic similar to existing one but creating 'projects' table entries
-        // Check if projects table is empty
-        const countP = await db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number };
-        if (Number(countP.c) === 0 && fs.existsSync(this.projectsPath)) {
-            // ... Logic same as existing migrateProjectsFromJson but adapted ...
-            // Skipping verbose impl here for brevity, standard migration pattern.
+            for (const f of folders) {
+                await db.prepare('INSERT INTO folders (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
+                    f.id, f.name, f.color ?? null, f.createdAt, f.updatedAt
+                )
+            }
+            await fs.promises.rename(this.foldersPath, `${this.foldersPath}.migrated`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration folders', error as Error)
+        }
+    }
+
+    private async handlePromptMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.promptsPath)) { return }
+        try {
+            const content = await fs.promises.readFile(this.promptsPath, 'utf-8')
+            const prompts = JSON.parse(content) as Prompt[]
+            if (!Array.isArray(prompts) || prompts.length === 0) { return }
+
+            const count = await db.prepare('SELECT COUNT(*) as c FROM prompts').get() as { c: number }
+            if (Number(count.c) !== 0) { return }
+
+            for (const p of prompts) {
+                await db.prepare('INSERT INTO prompts (id, title, content, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+                    p.id, p.title, p.content, JSON.stringify(p.tags), p.createdAt, p.updatedAt
+                )
+            }
+            await fs.promises.rename(this.promptsPath, `${this.promptsPath}.migrated`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration prompts', error as Error)
+        }
+    }
+
+    private async handleCouncilMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.councilPath)) { return }
+        try {
+            const content = await fs.promises.readFile(this.councilPath, 'utf-8')
+            const sessions = JSON.parse(content) as CouncilSession[]
+            if (!Array.isArray(sessions) || sessions.length === 0) { return }
+
+            const count = await db.prepare('SELECT COUNT(*) as c FROM council_sessions').get() as { c: number }
+            if (Number(count.c) !== 0) { return }
+
+            for (const s of sessions) {
+                await db.prepare('INSERT INTO council_sessions (id, goal, status, logs, agents, plan, solution, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+                    s.id, s.goal, s.status, JSON.stringify(s.logs), JSON.stringify(s.agents), s.plan ?? null, s.solution ?? null, s.createdAt, s.updatedAt
+                )
+            }
+            await fs.promises.rename(this.councilPath, `${this.councilPath}.migrated`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration council', error as Error)
+        }
+    }
+
+    private async handleProjectMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.projectsPath)) { return }
+        try {
+            const countP = await db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number }
+            if (Number(countP.c) !== 0) { return }
+
+            const content = await fs.promises.readFile(this.projectsPath, 'utf-8')
+            const projects = JSON.parse(content) as Project[]
+            if (!Array.isArray(projects) || projects.length === 0) { return }
+
+            for (const p of projects) {
+                await db.prepare(`
+                    INSERT INTO projects(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                    p.id, p.title, p.description, p.path,
+                    JSON.stringify(p.mounts), JSON.stringify(p.chatIds), JSON.stringify(p.councilConfig),
+                    p.status, JSON.stringify(p.metadata), p.createdAt, p.updatedAt
+                )
+            }
+            await fs.promises.rename(this.projectsPath, `${this.projectsPath}.migrated`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration projects', error as Error)
+        }
+    }
+
+    private async handleChatMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.chatsPath)) { return }
+        try {
+            const count = await db.prepare('SELECT COUNT(*) as c FROM chats').get() as { c: number }
+            if (Number(count.c) !== 0) { return }
+
+            appLogger.info('DatabaseService', 'Migrating legacy chats...')
+            const content = await fs.promises.readFile(this.chatsPath, 'utf-8')
+            const chats = JSON.parse(content) as JsonObject[]
+            if (!Array.isArray(chats) || chats.length === 0) { return }
+
+            for (const c of chats) {
+                const id = String(c.id ?? '')
+                if (!id) { continue }
+                await db.prepare(`
+                    INSERT INTO chats (id, title, model, backend, folder_id, project_id, is_pinned, is_favorite, is_archived, metadata, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                    id,
+                    String(c.title ?? 'Imported Chat'),
+                    String(c.model ?? ''),
+                    String(c.backend ?? 'unknown'),
+                    c.folderId as string ?? null,
+                    c.projectId as string ?? null,
+                    Number(c.isPinned ?? c.is_pinned ?? 0),
+                    Number(c.isFavorite ?? c.is_favorite ?? 0),
+                    Number(c.isArchived ?? c.is_archived ?? 0),
+                    JSON.stringify(c.metadata ?? {}),
+                    Number(c.createdAt ?? c.created_at ?? Date.now()),
+                    Number(c.updatedAt ?? c.updated_at ?? Date.now())
+                )
+            }
+            await fs.promises.rename(this.chatsPath, `${this.chatsPath}.migrated`)
+            appLogger.info('DatabaseService', `Migrated ${chats.length} chats.`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration chats', error as Error)
+        }
+    }
+
+    private async handleMessageMigration(db: DatabaseAdapter) {
+        if (!fs.existsSync(this.messagesPath)) { return }
+        try {
+            const count = await db.prepare('SELECT COUNT(*) as c FROM messages').get() as { c: number }
+            if (Number(count.c) !== 0) { return }
+
+            appLogger.info('DatabaseService', 'Migrating legacy messages...')
+            const content = await fs.promises.readFile(this.messagesPath, 'utf-8')
+            const messages = JSON.parse(content) as JsonObject[]
+            if (!Array.isArray(messages) || messages.length === 0) { return }
+
+            for (const m of messages) {
+                const id = String(m.id ?? '')
+                const chatId = String(m.chatId ?? m.chat_id ?? '')
+                if (!id || !chatId) { continue }
+                await db.prepare(`
+                    INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                    id,
+                    chatId,
+                    String(m.role ?? 'user'),
+                    String(m.content ?? ''),
+                    Number(m.timestamp ?? Date.now()),
+                    m.provider as string ?? null,
+                    m.model as string ?? null,
+                    JSON.stringify(m.metadata ?? {})
+                )
+            }
+            await fs.promises.rename(this.messagesPath, `${this.messagesPath}.migrated`)
+            appLogger.info('DatabaseService', `Migrated ${messages.length} messages.`)
+        } catch (error) {
+            appLogger.error('DatabaseService', 'Failed migration messages', error as Error)
         }
     }
 
@@ -580,11 +847,11 @@ export class DatabaseService extends BaseService {
     // Folders
     async getFolders(): Promise<Folder[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM folders ORDER BY name').all() as any[]
+        const rows = await db.prepare('SELECT * FROM folders ORDER BY name').all<JsonObject>()
         return rows.map(row => ({
-            id: row.id,
-            name: row.name,
-            color: row.color,
+            id: String(row.id),
+            name: String(row.name),
+            color: row.color as string | undefined,
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }))
@@ -592,12 +859,12 @@ export class DatabaseService extends BaseService {
 
     async getFolder(id: string): Promise<Folder | undefined> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT * FROM folders WHERE id = ?').get(id) as any
+        const row = await db.prepare('SELECT * FROM folders WHERE id = ?').get<JsonObject>(id)
         if (!row) { return undefined }
         return {
-            id: row.id,
-            name: row.name,
-            color: row.color,
+            id: String(row.id),
+            name: String(row.name),
+            color: row.color as string | undefined,
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
@@ -607,7 +874,7 @@ export class DatabaseService extends BaseService {
         const db = await this.ensureDb()
         const id = uuidv4()
         const now = Date.now()
-        await db.prepare('INSERT INTO folders (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(id, name, color || null, now, now)
+        await db.prepare('INSERT INTO folders (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(id, name, color ?? null, now, now)
         return { id, name, color, createdAt: now, updatedAt: now }
     }
 
@@ -627,12 +894,12 @@ export class DatabaseService extends BaseService {
     // ... Repeat for Prompts, Council ...
     async getPrompts(): Promise<Prompt[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM prompts ORDER BY created_at DESC').all() as any[]
+        const rows = await db.prepare('SELECT * FROM prompts ORDER BY created_at DESC').all<JsonObject>()
         return rows.map(r => ({
-            id: r.id,
-            title: r.title,
-            content: r.content,
-            tags: JSON.parse(r.tags || '[]'),
+            id: String(r.id),
+            title: String(r.title),
+            content: String(r.content),
+            tags: JSON.parse((r.tags as string | null) ?? '[]') as string[],
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at)
         }))
@@ -640,19 +907,19 @@ export class DatabaseService extends BaseService {
 
     async getPrompt(id: string): Promise<Prompt | undefined> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT * FROM prompts WHERE id = ?').get(id) as any
+        const row = await db.prepare('SELECT * FROM prompts WHERE id = ?').get<JsonObject>(id)
         if (!row) { return undefined }
         return {
-            id: row.id,
-            title: row.title,
-            content: row.content,
-            tags: JSON.parse(row.tags || '[]'),
+            id: String(row.id),
+            title: String(row.title),
+            content: String(row.content),
+            tags: JSON.parse((row.tags as string | null) ?? '[]') as string[],
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
     }
 
-    async createPrompt(title: string, content: string, tags: string[] = []) {
+    async createPrompt(title: string, content: string, tags: string[] = []): Promise<Prompt> {
         const db = await this.ensureDb()
         const id = uuidv4()
         const now = Date.now()
@@ -675,19 +942,19 @@ export class DatabaseService extends BaseService {
     }
 
     // ... Projects (Adapt mapRowToProject) ...
-    private mapRowToProject(row: any): Project {
+    private mapRowToProject(row: JsonObject): Project {
         return {
-            id: row.id,
-            title: row.title,
-            description: row.description || '',
-            path: row.path,
-            mounts: this.parseJsonField(row.mounts, []),
-            chatIds: this.parseJsonField(row.chat_ids, []),
-            councilConfig: this.parseJsonField(row.council_config, { enabled: false, members: [], consensusThreshold: 0.7 }),
-            status: row.status,
-            logo: row.logo,
-            metadata: this.parseJsonField(row.metadata, {}),
-            createdAt: Number(row.created_at), // BigInt to number
+            id: String(row.id),
+            title: String(row.title),
+            description: (row.description as string | null) ?? '',
+            path: String(row.path),
+            mounts: this.parseJsonField(row.mounts as string, []),
+            chatIds: this.parseJsonField(row.chat_ids as string, []),
+            councilConfig: this.parseJsonField(row.council_config as string, { enabled: false, members: [], consensusThreshold: 0.7 }),
+            status: String(row.status) as 'active' | 'archived' | 'draft',
+            logo: row.logo as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string, {}),
+            createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
     }
@@ -697,15 +964,15 @@ export class DatabaseService extends BaseService {
         try { return JSON.parse(json) as T } catch { return defaultValue }
     }
 
-    async getProjects() {
+    async getProjects(): Promise<Project[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all()
+        const rows = await db.prepare('SELECT * FROM projects ORDER BY updated_at DESC').all<JsonObject>()
         return rows.map(r => this.mapRowToProject(r))
     }
 
-    async getProject(id: string) {
+    async getProject(id: string): Promise<Project | undefined> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+        const row = await db.prepare('SELECT * FROM projects WHERE id = ?').get<JsonObject>(id)
         return row ? this.mapRowToProject(row) : undefined
     }
 
@@ -715,16 +982,16 @@ export class DatabaseService extends BaseService {
         const now = Date.now()
 
         // Default values
-        const mounts = mountsJson || '[]'
+        const mounts = mountsJson ?? '[]'
         const chatIds = '[]'
-        const councilConfig = councilConfigJson || JSON.stringify({ enabled: false, members: [], consensusThreshold: 0.7 })
+        const councilConfig = councilConfigJson ?? JSON.stringify({ enabled: false, members: [], consensusThreshold: 0.7 })
         const status = 'active'
         const metadata = '{}'
 
         await db.prepare(`
-            INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+            INSERT INTO projects(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at) 
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `).run(
             id, title, description, projectPath, mounts, chatIds, councilConfig, status, metadata, now, now
         )
 
@@ -735,7 +1002,7 @@ export class DatabaseService extends BaseService {
             path: projectPath,
             mounts: this.parseJsonField(mounts, []),
             chatIds: [],
-            councilConfig: this.parseJsonField(councilConfig, { enabled: false, members: [], consensusThreshold: 0.7 }),
+            councilConfig: this.parseJsonField(councilConfig, { enabled: false, members: [], consensusThreshold: 0.7 }) as Project['councilConfig'],
             status: 'active',
             metadata: {},
             createdAt: now,
@@ -745,34 +1012,33 @@ export class DatabaseService extends BaseService {
 
     async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
         const db = await this.ensureDb()
-
         const fields: string[] = []
-        const values: any[] = []
+        const values: unknown[] = []
 
+        this.collectProjectUpdates(updates, fields, values)
+
+        if (fields.length === 0) {
+            return this.getProject(id)
+        }
+
+        fields.push('updated_at = ?')
+        values.push(Date.now())
+        values.push(id)
+
+        await db.prepare(`UPDATE projects SET ${fields.join(', ')} WHERE id = ? `).run(...(values as SqlValue[]))
+        return this.getProject(id)
+    }
+
+    private collectProjectUpdates(updates: Partial<Project>, fields: string[], values: unknown[]) {
         if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title) }
         if (updates.description !== undefined) { fields.push('description = ?'); values.push(updates.description) }
-        if (updates.path !== undefined) { fields.push('path = ?'); values.push(updates.path) } // Careful updating path
+        if (updates.path !== undefined) { fields.push('path = ?'); values.push(updates.path) }
         if (updates.status !== undefined) { fields.push('status = ?'); values.push(updates.status) }
         if (updates.logo !== undefined) { fields.push('logo = ?'); values.push(updates.logo) }
-
-        // JSON fields need stringify
         if (updates.mounts !== undefined) { fields.push('mounts = ?'); values.push(JSON.stringify(updates.mounts)) }
         if (updates.chatIds !== undefined) { fields.push('chat_ids = ?'); values.push(JSON.stringify(updates.chatIds)) }
         if (updates.councilConfig !== undefined) { fields.push('council_config = ?'); values.push(JSON.stringify(updates.councilConfig)) }
         if (updates.metadata !== undefined) { fields.push('metadata = ?'); values.push(JSON.stringify(updates.metadata)) }
-
-        fields.push('updated_at = ?')
-        values.push(Date.now())
-
-        values.push(id)
-
-        if (fields.length > 1) {
-            await db.prepare(`UPDATE projects SET ${fields.join(', ')} WHERE id = ?`).run(...values)
-            // Postgres update returning? Or fetch again.
-            // Our adapter result isn't rich, so just fetch again.
-        }
-
-        return this.getProject(id)
     }
 
     async deleteProject(id: string): Promise<void> {
@@ -786,73 +1052,75 @@ export class DatabaseService extends BaseService {
     }
 
     // ... Chats ...
-    async createChat(chat: Chat) {
+    async createChat(chat: Chat): Promise<{ success: boolean; id: string; error?: string }> {
         try {
             const db = await this.ensureDb()
-            const id = (chat.id as string) || uuidv4()
+            const chatId = chat.id
             const now = Date.now()
+            const chatData = this.prepareChatInsertData(chat, chatId, now)
             await db.prepare(`
-                INSERT INTO chats (
-                    id, title, is_Generating, backend, model,
-                    folder_id, project_id, is_pinned, is_favorite,
-                    metadata, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             `).run(
-                id, (chat.title as string) || 'New Chat', chat.isGenerating ? 1 : 0, (chat.backend as string) || null, (chat.model as string) || null,
-                (chat.folderId as string) || null, (chat.projectId as string) || null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
-                JSON.stringify(chat.metadata || {}), now, now
-            )
-            appLogger.info('DatabaseService', `Created chat: ${id}`)
-            return { success: true, id }
+                INSERT INTO chats(
+                        id, title, is_Generating, backend, model,
+                        folder_id, project_id, is_pinned, is_favorite,
+                        metadata, created_at, updated_at
+                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `).run(...chatData)
+            appLogger.info('DatabaseService', `Created chat: ${chatId} `)
+            return { success: true, id: chatId }
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to create chat:', error as Error)
             return { success: false, id: '', error: getErrorMessage(error as Error) }
         }
     }
 
-    async getAllChats() {
-        const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM chats ORDER BY updated_at DESC').all() as any[]
-        return rows.map(row => ({
-            id: row.id,
-            title: row.title,
-            isGenerating: Boolean(row.is_Generating),
-            backend: row.backend,
-            model: row.model,
-            folderId: row.folder_id,
-            projectId: row.project_id,
-            isPinned: Boolean(row.is_pinned),
-            isFavorite: Boolean(row.is_favorite),
-            metadata: this.parseJsonField(row.metadata, {}),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
-        }))
+    private prepareChatInsertData(chat: Partial<Chat>, id: string, now: number): SqlValue[] {
+        return [
+            id,
+            chat.title ?? 'New Chat',
+            chat.isGenerating ? 1 : 0,
+            chat.backend ?? null,
+            chat.model ?? null,
+            chat.folderId ?? null,
+            chat.projectId ?? null,
+            chat.isPinned ? 1 : 0,
+            chat.isFavorite ? 1 : 0,
+            JSON.stringify(chat.metadata ?? {}),
+            now,
+            now
+        ]
     }
 
-    async getChat(id: string) {
+    async getAllChats(): Promise<Chat[]> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT * FROM chats WHERE id = ?').get(id) as any
+        const rows = await db.prepare('SELECT * FROM chats ORDER BY updated_at DESC').all<JsonObject>()
+        return rows.map(row => this.mapRowToChat(row))
+    }
+
+    async getChat(id: string): Promise<Chat | undefined> {
+        const db = await this.ensureDb()
+        const row = await db.prepare('SELECT * FROM chats WHERE id = ?').get<JsonObject>(id)
         if (!row) { return undefined }
         return {
-            id: row.id,
-            title: row.title,
+            id: String(row.id),
+            title: String(row.title),
             isGenerating: Boolean(row.is_Generating),
-            backend: row.backend,
-            model: row.model,
-            folderId: row.folder_id,
-            projectId: row.project_id,
+            backend: row.backend as string | undefined,
+            model: row.model as string | undefined,
+            folderId: row.folder_id as string | undefined,
+            projectId: row.project_id as string | undefined,
             isPinned: Boolean(row.is_pinned),
             isFavorite: Boolean(row.is_favorite),
-            metadata: this.parseJsonField(row.metadata, {}),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
+            metadata: this.parseJsonField(row.metadata as string | null, {}),
+            messages: [],
+            createdAt: new Date(Number(row.created_at)),
+            updatedAt: new Date(Number(row.updated_at))
         }
     }
 
-    async getChats(projectId?: string) {
+    async getChats(projectId?: string): Promise<Chat[]> {
         const db = await this.ensureDb()
         let sql = 'SELECT * FROM chats'
-        const params: any[] = []
+        const params: SqlValue[] = []
 
         if (projectId) {
             sql += ' WHERE project_id = ?'
@@ -861,51 +1129,61 @@ export class DatabaseService extends BaseService {
 
         sql += ' ORDER BY updated_at DESC'
 
-        const rows = await db.prepare(sql).all(...params) as any[]
+        const rows = await db.prepare(sql).all<JsonObject>(...params)
         return rows.map(row => ({
-            id: row.id,
-            title: row.title,
+            id: String(row.id),
+            title: String(row.title),
             isGenerating: Boolean(row.is_Generating),
-            backend: row.backend,
-            model: row.model,
-            folderId: row.folder_id,
-            projectId: row.project_id,
+            backend: row.backend as string | undefined,
+            model: row.model as string | undefined,
+            folderId: row.folder_id as string | undefined,
+            projectId: row.project_id as string | undefined,
             isPinned: Boolean(row.is_pinned),
             isFavorite: Boolean(row.is_favorite),
-            metadata: this.parseJsonField(row.metadata, {}),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
+            metadata: this.parseJsonField(row.metadata as string | null, {}),
+            messages: [],
+            createdAt: new Date(Number(row.created_at)),
+            updatedAt: new Date(Number(row.updated_at))
         }))
     }
 
     // Vectors (Code Symbols)
-    async findCodeSymbolsByName(projectId: string, name: string) {
+    async findCodeSymbolsByName(projectId: string, name: string): Promise<CodeSymbolSearchResult[]> {
         const db = await this.ensureDb()
-        // Postgres ILIKE
-        const rows = await db.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name ILIKE ? LIMIT 50").all(projectId, `%${name}%`) as any[]
+        const rows = await db.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name ILIKE ? LIMIT 50").all<JsonObject>(projectId, `% ${name}% `)
         return rows.map(r => ({
-            id: r.id, name: r.name, path: r.file_path, line: r.line, kind: r.kind, signature: r.signature, docstring: r.docstring, score: 1
+            id: String(r.id),
+            name: String(r.name),
+            path: String(r.file_path ?? ''),
+            line: Number(r.line ?? 0),
+            kind: String(r.kind ?? ''),
+            signature: String(r.signature ?? ''),
+            docstring: String(r.docstring ?? ''),
+            score: 1
         }))
     }
 
-    async searchCodeSymbols(vector: number[]) {
+    async searchCodeSymbols(vector: number[]): Promise<CodeSymbolSearchResult[]> {
         const db = await this.ensureDb()
-        // Postgres vector search
-        // vector <=> embedding
         const k = 10
-        // Need to format vector as string '[1,2,3]'
         const vecStr = `[${vector.join(',')}]`
 
         const rows = await db.prepare(`
-            SELECT *, embedding <-> $1 as distance 
+        SELECT *, embedding < -> $1 as distance 
             FROM code_symbols 
-            ORDER BY embedding <-> $1 
+            ORDER BY embedding < -> $1 
             LIMIT ${k}
-        `).all(vecStr) as any[]
+        `).all<JsonObject & { distance?: number }>(vecStr)
 
         return rows.map(r => ({
-            id: r.id, name: r.name, path: r.file_path, line: r.line, kind: r.kind, signature: r.signature, docstring: r.docstring,
-            score: 1 - (r.distance || 0)
+            id: String(r.id),
+            name: String(r.name),
+            path: String(r.file_path ?? ''),
+            line: Number(r.line ?? 0),
+            kind: String(r.kind ?? ''),
+            signature: String(r.signature ?? ''),
+            docstring: String(r.docstring ?? ''),
+            score: 1 - (r.distance ?? 0)
         }))
     }
 
@@ -917,31 +1195,46 @@ export class DatabaseService extends BaseService {
         try {
             const db = await this.ensureDb()
             const fields: string[] = []
-            const values: SqlValue[] = []
+            const values: unknown[] = []
 
-            if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title) }
-            if (updates.isGenerating !== undefined) { fields.push('is_Generating = ?'); values.push(updates.isGenerating ? 1 : 0) }
-            if (updates.backend !== undefined) { fields.push('backend = ?'); values.push(updates.backend) }
-            if (updates.model !== undefined) { fields.push('model = ?'); values.push(updates.model) }
-            if (updates.folderId !== undefined) { fields.push('folder_id = ?'); values.push(updates.folderId) }
-            if (updates.projectId !== undefined) { fields.push('project_id = ?'); values.push(updates.projectId) }
-            if (updates.isPinned !== undefined) { fields.push('is_pinned = ?'); values.push(updates.isPinned ? 1 : 0) }
-            if (updates.isFavorite !== undefined) { fields.push('is_favorite = ?'); values.push(updates.isFavorite ? 1 : 0) }
-            if (updates.metadata !== undefined) { fields.push('metadata = ?'); values.push(JSON.stringify(updates.metadata)) }
+            this.collectChatUpdates(updates, fields, values)
 
-            fields.push('updated_at = ?')
-            values.push(Date.now())
-
-            values.push(id)
-
-            if (fields.length > 1) { // Ensure there's something to update besides failure cases
-                await db.prepare(`UPDATE chats SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+            if (fields.length > 0) {
+                values.push(id)
+                await db.prepare(`UPDATE chats SET ${fields.join(', ')} WHERE id = ? `).run(...(values as SqlValue[]))
             }
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to update chat:', error)
+            appLogger.error('DatabaseService', `Failed to update chat: ${getErrorMessage(error)} `)
             return { success: false, error: getErrorMessage(error as Error) }
         }
+    }
+
+    private collectChatUpdates(updates: Partial<Chat>, fields: string[], values: unknown[]) {
+        if (updates.title !== undefined) {
+            fields.push('title = ?')
+            values.push(updates.title)
+        }
+        this.collectChatStateUpdates(updates, fields, values)
+        this.collectChatContextUpdates(updates, fields, values)
+
+        if (updates.metadata !== undefined) {
+            fields.push('metadata = ?')
+            values.push(JSON.stringify(updates.metadata))
+        }
+    }
+
+    private collectChatStateUpdates(updates: Partial<Chat>, fields: string[], values: unknown[]) {
+        if (updates.isGenerating !== undefined) { fields.push('is_Generating = ?'); values.push(updates.isGenerating ? 1 : 0) }
+        if (updates.backend !== undefined) { fields.push('backend = ?'); values.push(updates.backend) }
+        if (updates.model !== undefined) { fields.push('model = ?'); values.push(updates.model) }
+    }
+
+    private collectChatContextUpdates(updates: Partial<Chat>, fields: string[], values: unknown[]) {
+        if (updates.folderId !== undefined) { fields.push('folder_id = ?'); values.push(updates.folderId) }
+        if (updates.projectId !== undefined) { fields.push('project_id = ?'); values.push(updates.projectId) }
+        if (updates.isPinned !== undefined) { fields.push('is_pinned = ?'); values.push(updates.isPinned ? 1 : 0) }
+        if (updates.isFavorite !== undefined) { fields.push('is_favorite = ?'); values.push(updates.isFavorite ? 1 : 0) }
     }
 
     async deleteChat(id: string) {
@@ -953,7 +1246,7 @@ export class DatabaseService extends BaseService {
             })
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete chat:', error)
+            appLogger.error('DatabaseService', `Failed to delete chat: ${getErrorMessage(error)} `)
             return { success: false, error: getErrorMessage(error as Error) }
         }
     }
@@ -961,21 +1254,21 @@ export class DatabaseService extends BaseService {
     async addMessage(msg: JsonObject) {
         try {
             const db = await this.ensureDb()
-            const id = (msg.id as string) || uuidv4()
+            const msgId = (msg.id as string | undefined) ?? uuidv4()
             const vec = Array.isArray(msg.vector) && msg.vector.length > 0 ? `[${msg.vector.join(',')}]` : null
 
             await db.prepare(`
-                INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata, vector) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO messages(id, chat_id, role, content, timestamp, provider, model, metadata, vector)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
              `).run(
-                id, msg.chatId as string, msg.role as string, msg.content as string, (msg.timestamp as number) || Date.now(),
-                (msg.provider as string) || null, (msg.model as string) || null, JSON.stringify(msg.metadata || {}), vec
+                msgId, msg.chatId as string, msg.role as string, msg.content as string, (msg.timestamp as number | undefined) ?? Date.now(),
+                (msg.provider as string | undefined) ?? null, (msg.model as string | undefined) ?? null, JSON.stringify(msg.metadata ?? {}), vec
             )
 
             await db.prepare('UPDATE chats SET updated_at = ? WHERE id = ?').run(Date.now(), msg.chatId as string)
-            return { success: true, id }
+            return { success: true, id: msgId }
         } catch (error) {
-            console.error('[DatabaseService] Failed to add message:', error)
+            appLogger.error('DatabaseService', `Failed to add message: ${getErrorMessage(error)} `)
             throw error
         }
     }
@@ -983,30 +1276,56 @@ export class DatabaseService extends BaseService {
     async getMessages(chatId: string) {
         try {
             const db = await this.ensureDb()
-            const rows = await db.prepare('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp ASC').all(chatId) as any[]
-            return rows.map((row: any) => ({
-                id: row.id,
-                chatId: row.chat_id,
-                role: row.role,
-                content: row.content,
+            const rows = await db.prepare('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp ASC').all<JsonObject>(chatId)
+            return rows.map((row) => ({
+                id: String(row.id),
+                chatId: String(row.chat_id),
+                role: String(row.role),
+                content: String(row.content),
                 timestamp: Number(row.timestamp),
-                provider: row.provider,
-                model: row.model,
-                metadata: this.parseJsonField(row.metadata, {})
+                provider: row.provider as string | undefined,
+                model: row.model as string | undefined,
+                metadata: this.parseJsonField(row.metadata as string | null, {})
             }))
         } catch (error) {
-            console.error('[DatabaseService] Failed to get messages:', error)
+            appLogger.error('DatabaseService', `Failed to get messages: ${getErrorMessage(error)} `)
+            return []
+        }
+    }
+
+    async getAllMessages() {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT * FROM messages ORDER BY timestamp ASC').all<JsonObject>()
+            return rows.map((row) => ({
+                id: String(row.id),
+                chatId: String(row.chat_id),
+                role: String(row.role),
+                content: String(row.content),
+                timestamp: Number(row.timestamp),
+                provider: row.provider as string | undefined,
+                model: row.model as string | undefined,
+                metadata: this.parseJsonField(row.metadata as string | null, {})
+            }))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get all messages: ${getErrorMessage(error)} `)
             return []
         }
     }
 
     async getCouncilSessions(): Promise<CouncilSession[]> {
         const db = await this.ensureDb();
-        const rows = await db.prepare('SELECT * FROM council_sessions ORDER BY updated_at DESC').all() as any[];
+        const rows = await db.prepare('SELECT * FROM council_sessions ORDER BY updated_at DESC').all<JsonObject>();
         return rows.map(r => ({
-            ...r,
-            logs: this.parseJsonField<CouncilLog[]>(r.logs, []),
-            agents: this.parseJsonField<AgentProfile[]>(r.agents, [])
+            id: String(r.id),
+            goal: String(r.goal),
+            status: String(r.status) as CouncilSession['status'],
+            plan: r.plan as string | undefined,
+            solution: r.solution as string | undefined,
+            createdAt: Number(r.created_at),
+            updatedAt: Number(r.updated_at),
+            logs: this.parseJsonField<CouncilLog[]>(r.logs as string | null, []),
+            agents: this.parseJsonField<AgentProfile[]>(r.agents as string | null, [])
         }))
     }
 
@@ -1025,12 +1344,16 @@ export class DatabaseService extends BaseService {
 
     async getCouncilSession(id: string): Promise<CouncilSession | null> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT * FROM council_sessions WHERE id = ?').get(id) as any
+        const row = await db.prepare('SELECT * FROM council_sessions WHERE id = ?').get<JsonObject>(id)
         if (!row) { return null }
         return {
-            ...row,
-            logs: this.parseJsonField<CouncilLog[]>(row.logs, []),
-            agents: this.parseJsonField<AgentProfile[]>(row.agents, []),
+            id: String(row.id),
+            goal: String(row.goal),
+            status: String(row.status) as CouncilSession['status'],
+            plan: row.plan as string | undefined,
+            solution: row.solution as string | undefined,
+            logs: this.parseJsonField<CouncilLog[]>(row.logs as string | null, []),
+            agents: this.parseJsonField<AgentProfile[]>(row.agents as string | null, []),
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
@@ -1038,7 +1361,7 @@ export class DatabaseService extends BaseService {
 
     async updateCouncilStatus(id: string, status: string, plan?: string, solution?: string) {
         const db = await this.ensureDb()
-        const updates: any[] = [status, Date.now()]
+        const updates: SqlValue[] = [status, Date.now()]
         let sql = 'UPDATE council_sessions SET status = ?, updated_at = ?'
 
         if (plan !== undefined) { sql += ', plan = ?'; updates.push(plan) }
@@ -1071,7 +1394,7 @@ export class DatabaseService extends BaseService {
             agentId,
             message,
             timestamp: Date.now(),
-            type: type as any
+            type: type as CouncilLog['type']
         }
         const logs = [...session.logs, newLog]
 
@@ -1090,9 +1413,9 @@ export class DatabaseService extends BaseService {
         const vec = symbol.vector ? `[${symbol.vector.join(',')}]` : null
 
         await db.prepare(`
-            INSERT INTO code_symbols (id, name, project_path, file_path, line, kind, signature, docstring, embedding)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+            INSERT INTO code_symbols(id, name, project_path, file_path, line, kind, signature, docstring, embedding)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
             symbol.id, symbol.name, symbol.project_path, symbol.file_path, symbol.line, symbol.kind, symbol.signature, symbol.docstring, vec
         )
     }
@@ -1109,14 +1432,14 @@ export class DatabaseService extends BaseService {
 
     async storeSemanticFragment(fragment: SemanticFragment) {
         const db = await this.ensureDb()
-        const vec = fragment.embedding ? `[${fragment.embedding.join(',')}]` : null
+        const vec = fragment.embedding.length > 0 ? `[${fragment.embedding.join(',')}]` : null
 
         await db.prepare(`
-            INSERT INTO semantic_fragments (id, content, embedding, source, source_id, tags, importance, project_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+            INSERT INTO semantic_fragments(id, content, embedding, source, source_id, tags, importance, project_id, created_at, updated_at)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
             fragment.id, fragment.content, vec, fragment.source, fragment.sourceId,
-            JSON.stringify(fragment.tags || []), fragment.importance, fragment.projectId, fragment.createdAt, fragment.updatedAt
+            JSON.stringify(fragment.tags), fragment.importance, fragment.projectId, fragment.createdAt, fragment.updatedAt
         )
     }
 
@@ -1130,38 +1453,38 @@ export class DatabaseService extends BaseService {
         const vecStr = `[${vector.join(',')}]`
 
         const rows = await db.prepare(`
-            SELECT *, embedding <-> $1 as distance 
+        SELECT *, embedding < -> $1 as distance 
             FROM semantic_fragments 
-            ORDER BY embedding <-> $1 
+            ORDER BY embedding < -> $1 
             LIMIT ${limit}
-        `).all(vecStr) as any[]
+        `).all<JsonObject & { distance?: number }>(vecStr)
 
         return rows.map(r => ({
-            id: r.id,
-            content: r.content,
+            id: String(r.id),
+            content: String(r.content),
             embedding: [], // Don't return embedding to save bandwidth unless needed
-            source: r.source,
-            sourceId: r.source_id,
-            tags: this.parseJsonField(r.tags, []),
-            importance: r.importance,
-            projectId: r.project_id,
+            source: String(r.source),
+            sourceId: String(r.source_id),
+            tags: this.parseJsonField(r.tags as string | null, []),
+            importance: Number(r.importance ?? 0),
+            projectId: r.project_id as string | undefined,
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at),
-            score: 1 - (r.distance || 0)
+            score: 1 - (r.distance ?? 0)
         }))
     }
 
     async storeMemory(key: string, value: string) {
         const db = await this.ensureDb()
         await db.prepare(`
-            INSERT INTO memories (key, value, updated_at) VALUES (?, ?, ?)
+            INSERT INTO memories(key, value, updated_at) VALUES(?, ?, ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-        `).run(key, value, Date.now())
+            `).run(key, value, Date.now())
     }
 
     async recallMemory(key: string): Promise<string | null> {
         const db = await this.ensureDb()
-        const row = await db.prepare('SELECT value FROM memories WHERE key = ?').get(key)
+        const row = await db.prepare('SELECT value FROM memories WHERE key = ?').get(key) as { value: string } | undefined
         return row ? row.value : null
     }
 
@@ -1169,16 +1492,16 @@ export class DatabaseService extends BaseService {
 
     async getAllSemanticFragments(): Promise<SemanticFragment[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM semantic_fragments ORDER BY created_at DESC').all() as any[]
+        const rows = await db.prepare('SELECT * FROM semantic_fragments ORDER BY created_at DESC').all<JsonObject>()
         return rows.map(r => ({
-            id: r.id,
-            content: r.content,
+            id: String(r.id),
+            content: String(r.content),
             embedding: [],
-            source: r.source,
-            sourceId: r.source_id,
-            tags: this.parseJsonField(r.tags, []),
-            importance: r.importance,
-            projectId: r.project_id,
+            source: String(r.source),
+            sourceId: String(r.source_id),
+            tags: this.parseJsonField(r.tags as string | null, []),
+            importance: Number(r.importance ?? 0),
+            projectId: r.project_id as string | undefined,
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at)
         }))
@@ -1187,17 +1510,17 @@ export class DatabaseService extends BaseService {
     async searchSemanticFragmentsByText(query: string, limit: number): Promise<SemanticFragment[]> {
         const db = await this.ensureDb()
         const rows = await db.prepare(`
-             SELECT * FROM semantic_fragments WHERE content ILIKE $1 LIMIT ${limit}
-        `).all(`%${query}%`) as any[]
+        SELECT * FROM semantic_fragments WHERE content ILIKE $1 LIMIT ${limit}
+        `).all<JsonObject>(` % ${query}% `)
         return rows.map(r => ({
-            id: r.id,
-            content: r.content,
+            id: String(r.id),
+            content: String(r.content),
             embedding: [],
-            source: r.source,
-            sourceId: r.source_id,
-            tags: this.parseJsonField(r.tags, []),
-            importance: r.importance,
-            projectId: r.project_id,
+            source: String(r.source),
+            sourceId: String(r.source_id),
+            tags: this.parseJsonField(r.tags as string | null, []),
+            importance: Number(r.importance ?? 0),
+            projectId: r.project_id as string | undefined,
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at)
         }))
@@ -1213,9 +1536,9 @@ export class DatabaseService extends BaseService {
         const db = await this.ensureDb()
         const vec = memory.embedding ? `[${memory.embedding.join(',')}]` : null
         await db.prepare(`
-            INSERT INTO episodic_memories (id, title, summary, embedding, start_date, end_date, chat_id, participants, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+            INSERT INTO episodic_memories(id, title, summary, embedding, start_date, end_date, chat_id, participants, created_at)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
             memory.id, memory.title, memory.summary, vec,
             memory.startDate, memory.endDate, memory.chatId,
             JSON.stringify(memory.participants), memory.createdAt
@@ -1226,21 +1549,21 @@ export class DatabaseService extends BaseService {
         const db = await this.ensureDb()
         const vecStr = `[${embedding.join(',')}]`
         const rows = await db.prepare(`
-            SELECT *, embedding <-> $1 as distance 
+        SELECT *, embedding < -> $1 as distance 
             FROM episodic_memories 
-            ORDER BY embedding <-> $1 
+            ORDER BY embedding < -> $1 
             LIMIT ${limit}
-        `).all(vecStr) as any[]
+        `).all<JsonObject & { distance?: number }>(vecStr)
 
         return rows.map(r => ({
-            id: r.id,
-            title: r.title,
-            summary: r.summary,
+            id: String(r.id),
+            title: String(r.title),
+            summary: String(r.summary),
             embedding: [],
             startDate: Number(r.start_date),
             endDate: Number(r.end_date),
-            chatId: r.chat_id,
-            participants: this.parseJsonField(r.participants, []),
+            chatId: String(r.chat_id),
+            participants: this.parseJsonField(r.participants as string | null, []),
             createdAt: Number(r.created_at)
         }))
     }
@@ -1249,36 +1572,36 @@ export class DatabaseService extends BaseService {
         const db = await this.ensureDb()
         // Simple ILIKE search
         const rows = await db.prepare(`
-            SELECT * FROM episodic_memories 
+        SELECT * FROM episodic_memories 
             WHERE summary ILIKE $1 OR title ILIKE $1 
             ORDER BY created_at DESC LIMIT ${limit}
-        `).all(`%${query}%`) as any[]
+        `).all<JsonObject>(` % ${query}% `)
 
         return rows.map(r => ({
-            id: r.id,
-            title: r.title,
-            summary: r.summary,
+            id: String(r.id),
+            title: String(r.title),
+            summary: String(r.summary),
             embedding: [],
             startDate: Number(r.start_date),
             endDate: Number(r.end_date),
-            chatId: r.chat_id,
-            participants: this.parseJsonField(r.participants, []),
+            chatId: String(r.chat_id),
+            participants: this.parseJsonField(r.participants as string | null, []),
             createdAt: Number(r.created_at)
         }))
     }
 
     async getAllEpisodicMemories(): Promise<EpisodicMemory[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM episodic_memories ORDER BY created_at DESC').all() as any[]
+        const rows = await db.prepare('SELECT * FROM episodic_memories ORDER BY created_at DESC').all<JsonObject>()
         return rows.map(r => ({
-            id: r.id,
-            title: r.title,
-            summary: r.summary,
+            id: String(r.id),
+            title: String(r.title),
+            summary: String(r.summary),
             embedding: [],
             startDate: Number(r.start_date),
             endDate: Number(r.end_date),
-            chatId: r.chat_id,
-            participants: this.parseJsonField(r.participants, []),
+            chatId: String(r.chat_id),
+            participants: this.parseJsonField(r.participants as string | null, []),
             createdAt: Number(r.created_at)
         }))
     }
@@ -1286,13 +1609,13 @@ export class DatabaseService extends BaseService {
     async storeEntityKnowledge(knowledge: EntityKnowledge) {
         const db = await this.ensureDb()
         await db.prepare(`
-            INSERT INTO entity_knowledge (id, entity_type, entity_name, key, value, confidence, source, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET 
-                value = excluded.value, 
-                confidence = excluded.confidence, 
-                updated_at = excluded.updated_at
-        `).run(
+            INSERT INTO entity_knowledge(id, entity_type, entity_name, key, value, confidence, source, updated_at)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+        value = excluded.value,
+            confidence = excluded.confidence,
+            updated_at = excluded.updated_at
+                `).run(
             knowledge.id, knowledge.entityType, knowledge.entityName,
             knowledge.key, knowledge.value, knowledge.confidence,
             knowledge.source, knowledge.updatedAt
@@ -1301,15 +1624,15 @@ export class DatabaseService extends BaseService {
 
     async getEntityKnowledge(entityName: string): Promise<EntityKnowledge[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM entity_knowledge WHERE entity_name = ?').all(entityName) as any[]
+        const rows = await db.prepare('SELECT * FROM entity_knowledge WHERE entity_name = ?').all<JsonObject>(entityName)
         return rows.map(r => ({
-            id: r.id,
-            entityType: r.entity_type,
-            entityName: r.entity_name,
-            key: r.key,
-            value: r.value,
-            confidence: r.confidence,
-            source: r.source,
+            id: String(r.id),
+            entityType: String(r.entity_type),
+            entityName: String(r.entity_name),
+            key: String(r.key),
+            value: String(r.value),
+            confidence: Number(r.confidence ?? 0),
+            source: String(r.source),
             updatedAt: Number(r.updated_at)
         }))
     }
@@ -1322,15 +1645,15 @@ export class DatabaseService extends BaseService {
 
     async getAllEntityKnowledge(): Promise<EntityKnowledge[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare('SELECT * FROM entity_knowledge ORDER BY updated_at DESC').all() as any[]
+        const rows = await db.prepare('SELECT * FROM entity_knowledge ORDER BY updated_at DESC').all<JsonObject>()
         return rows.map(r => ({
-            id: r.id,
-            entityType: r.entity_type,
-            entityName: r.entity_name,
-            key: r.key,
-            value: r.value,
-            confidence: r.confidence,
-            source: r.source,
+            id: String(r.id),
+            entityType: String(r.entity_type),
+            entityName: String(r.entity_name),
+            key: String(r.key),
+            value: String(r.value),
+            confidence: Number(r.confidence ?? 0),
+            source: String(r.source),
             updatedAt: Number(r.updated_at)
         }))
     }
@@ -1344,12 +1667,12 @@ export class DatabaseService extends BaseService {
             const db = await this.ensureDb()
 
             // Get current message to merge metadata
-            const row = await db.prepare('SELECT metadata FROM messages WHERE id = ?').get(id) as any
+            const row = await db.prepare('SELECT metadata FROM messages WHERE id = ?').get<JsonObject>(id)
             if (!row) {
                 return { success: false }
             }
 
-            const currentMetadata = this.parseJsonField<JsonObject>(row.metadata, {})
+            const currentMetadata = this.parseJsonField<JsonObject>(row.metadata as string | null, {})
             const newMetadata: JsonObject = { ...currentMetadata }
 
             // Handle special fields that go into metadata
@@ -1360,20 +1683,20 @@ export class DatabaseService extends BaseService {
 
             // Build update query for direct columns
             const fields: string[] = ['metadata = ?']
-            const values: unknown[] = [JSON.stringify(newMetadata)]
+            const values: SqlValue[] = [JSON.stringify(newMetadata)]
 
             if ('content' in updates) {
                 fields.push('content = ?')
-                values.push(updates.content)
+                values.push(updates.content as string)
             }
 
             values.push(id)
 
-            await db.prepare(`UPDATE messages SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+            await db.prepare(`UPDATE messages SET ${fields.join(', ')} WHERE id = ? `).run(...values)
 
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to update message:', error)
+            appLogger.error('DatabaseService', `Failed to update message: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1388,19 +1711,19 @@ export class DatabaseService extends BaseService {
                 SELECT m.id, m.chat_id, m.content, m.timestamp, m.metadata, c.title as chat_title
                 FROM messages m
                 LEFT JOIN chats c ON m.chat_id = c.id
-                WHERE (m.metadata::json->>'isBookmarked') = 'true'
+        WHERE(m.metadata:: json ->> 'isBookmarked') = 'true'
                 ORDER BY m.timestamp DESC
-            `).all() as any[]
+            `).all<JsonObject>()
 
             return rows.map(r => ({
-                id: r.id,
-                chatId: r.chat_id,
-                content: r.content,
+                id: String(r.id),
+                chatId: String(r.chat_id),
+                content: String(r.content),
                 timestamp: Number(r.timestamp),
-                chatTitle: r.chat_title
+                chatTitle: r.chat_title as string | undefined
             }))
         } catch (error) {
-            console.error('[DatabaseService] Failed to get bookmarked messages:', error)
+            appLogger.error('DatabaseService', `Failed to get bookmarked messages: ${getErrorMessage(error)} `)
             return []
         }
     }
@@ -1408,77 +1731,81 @@ export class DatabaseService extends BaseService {
     /**
      * Search chats with various filters
      */
-    async searchChats(options: {
-        query?: string;
-        folderId?: string;
-        isPinned?: boolean;
-        isFavorite?: boolean;
-        isArchived?: boolean;
-        startDate?: number;
-        endDate?: number;
-        limit?: number;
-    }): Promise<Chat[]> {
+    async searchChats(options: SearchChatsOptions): Promise<Chat[]> {
         try {
             const db = await this.ensureDb()
-            const conditions: string[] = []
-            const params: unknown[] = []
+            const { sql, params } = this.buildAdvancedSearchQuery(options)
+            const rows = await db.prepare(sql).all<JsonObject>(...params)
 
-            if (options.query) {
-                conditions.push('(c.title ILIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content ILIKE ?))')
-                params.push(`%${options.query}%`, `%${options.query}%`)
-            }
-            if (options.folderId) {
-                conditions.push('c.folder_id = ?')
-                params.push(options.folderId)
-            }
-            if (options.isPinned !== undefined) {
-                conditions.push('c.is_pinned = ?')
-                params.push(options.isPinned ? 1 : 0)
-            }
-            if (options.isFavorite !== undefined) {
-                conditions.push('c.is_favorite = ?')
-                params.push(options.isFavorite ? 1 : 0)
-            }
-            if (options.isArchived !== undefined) {
-                // Archived chats might be stored in metadata or a separate column
-                conditions.push("json_extract(c.metadata, '$.isArchived') = ?")
-                params.push(options.isArchived)
-            }
-            if (options.startDate) {
-                conditions.push('c.created_at >= ?')
-                params.push(options.startDate)
-            }
-            if (options.endDate) {
-                conditions.push('c.created_at <= ?')
-                params.push(options.endDate)
-            }
-
-            const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-            const limitClause = options.limit ? `LIMIT ${options.limit}` : ''
-
-            const rows = await db.prepare(`
-                SELECT c.* FROM chats c
-                ${whereClause}
-                ORDER BY c.updated_at DESC
-                ${limitClause}
-            `).all(...params) as any[]
-
-            return rows.map(row => ({
-                id: row.id,
-                title: row.title,
-                model: row.model,
-                backend: row.backend,
-                messages: [],
-                createdAt: new Date(Number(row.created_at)),
-                updatedAt: new Date(Number(row.updated_at)),
-                isPinned: Boolean(row.is_pinned),
-                isFavorite: Boolean(row.is_favorite),
-                folderId: row.folder_id,
-                isGenerating: Boolean(row.is_Generating)
-            }))
+            return rows.map(row => this.mapRowToChat(row))
         } catch (error) {
-            console.error('[DatabaseService] Failed to search chats:', error)
+            appLogger.error('DatabaseService', `Failed to search chats: ${getErrorMessage(error)} `)
             return []
+        }
+    }
+
+    private buildAdvancedSearchQuery(options: SearchChatsOptions) {
+        const conditions: string[] = []
+        const params: SqlValue[] = []
+
+        if (options.query) {
+            conditions.push('(c.title ILIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content ILIKE ?))')
+            params.push(`%${options.query}%`, `%${options.query}%`)
+        }
+        this.addBasicSearchFilters(options, conditions, params)
+        this.addDateSearchFilters(options, conditions, params)
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+        const limitClause = options.limit ? `LIMIT ${options.limit}` : ''
+        const sql = `SELECT c.* FROM chats c ${whereClause} ORDER BY c.updated_at DESC ${limitClause}`
+
+        return { sql, params }
+    }
+
+    private addBasicSearchFilters(options: SearchChatsOptions, conditions: string[], params: SqlValue[]) {
+        if (options.folderId) {
+            conditions.push('c.folder_id = ?')
+            params.push(options.folderId)
+        }
+        if (options.isPinned !== undefined) {
+            conditions.push('c.is_pinned = ?')
+            params.push(options.isPinned ? 1 : 0)
+        }
+        if (options.isFavorite !== undefined) {
+            conditions.push('c.is_favorite = ?')
+            params.push(options.isFavorite ? 1 : 0)
+        }
+        if (options.isArchived !== undefined) {
+            conditions.push("json_extract(c.metadata, '$.isArchived') = ?")
+            params.push(options.isArchived ? 1 : 0)
+        }
+    }
+
+    private addDateSearchFilters(options: SearchChatsOptions, conditions: string[], params: SqlValue[]) {
+        if (options.startDate) {
+            conditions.push('c.created_at >= ?')
+            params.push(options.startDate)
+        }
+        if (options.endDate) {
+            conditions.push('c.created_at <= ?')
+            params.push(options.endDate)
+        }
+    }
+
+    private mapRowToChat(row: JsonObject): Chat {
+        return {
+            id: String(row.id),
+            title: String(row.title),
+            model: row.model as string | undefined,
+            backend: row.backend as string | undefined,
+            messages: [],
+            createdAt: new Date(Number(row.created_at)),
+            updatedAt: new Date(Number(row.updated_at)),
+            isPinned: Boolean(row.is_pinned),
+            isFavorite: Boolean(row.is_favorite),
+            folderId: row.folder_id as string | undefined,
+            isGenerating: Boolean(row.is_Generating),
+            metadata: this.parseJsonField(row.metadata as string, {})
         }
     }
 
@@ -1492,16 +1819,16 @@ export class DatabaseService extends BaseService {
     async getStats() {
         try {
             const db = await this.ensureDb()
-            const chats = (await db.prepare('SELECT count(*) as count FROM chats').get()).count
-            const messages = (await db.prepare('SELECT count(*) as count FROM messages').get()).count
+            const chatRow = await db.prepare('SELECT count(*) as count FROM chats').get<{ count: number }>()
+            const messageRow = await db.prepare('SELECT count(*) as count FROM messages').get<{ count: number }>()
 
             return {
-                chatCount: Number(chats || 0),
-                messageCount: Number(messages || 0),
+                chatCount: chatRow?.count ?? 0,
+                messageCount: messageRow?.count ?? 0,
                 dbSize: 0
             }
         } catch (error) {
-            console.error('[DatabaseService] Failed to get stats:', error)
+            appLogger.error('DatabaseService', `Failed to get stats: ${getErrorMessage(error)} `)
             return { chatCount: 0, messageCount: 0, dbSize: 0 }
         }
     }
@@ -1509,78 +1836,82 @@ export class DatabaseService extends BaseService {
     async getDetailedStats(_period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') {
         try {
             const db = await this.ensureDb()
+            const stats = await this.getCoreCountStats(db)
+            const messages = await db.prepare('SELECT metadata, timestamp FROM messages').all<JsonObject>()
 
-            // 1. Basic counts
-            const chatsRow = await db.prepare('SELECT count(*) as c FROM chats').get() as any
-            const messagesRow = await db.prepare('SELECT count(*) as c FROM messages').get() as any
-            const chatCount = Number(chatsRow?.c || 0)
-            const messageCount = Number(messagesRow?.c || 0)
-
-            // 2. Token counts and timeline
-            const messages = await db.prepare('SELECT metadata, timestamp FROM messages').all() as any[]
-
-            let totalPromptTokens = 0
-            let totalCompletionTokens = 0
-            const tokenTimelineMap = new Map<number, { prompt: number; completion: number }>()
-
-            const activity = new Array(30).fill(0)
-            const now = Date.now()
-            const dayMs = 86400000
-
-            for (const msg of messages) {
-                const metadata = this.parseJsonField<any>(msg.metadata, {})
-                const p = Number(metadata.promptTokens || metadata.usage?.prompt_tokens || 0)
-                const c = Number(metadata.completionTokens || metadata.usage?.completion_tokens || 0)
-
-                totalPromptTokens += p
-                totalCompletionTokens += c
-
-                if (p > 0 || c > 0) {
-                    // Group by day for the timeline
-                    const dayTimestamp = new Date(Number(msg.timestamp)).setHours(0, 0, 0, 0)
-                    const existing = tokenTimelineMap.get(dayTimestamp) || { prompt: 0, completion: 0 }
-                    tokenTimelineMap.set(dayTimestamp, {
-                        prompt: existing.prompt + p,
-                        completion: existing.completion + c
-                    })
-                }
-
-                const daysAgo = Math.floor((now - Number(msg.timestamp)) / dayMs)
-                if (daysAgo >= 0 && daysAgo < 30) {
-                    activity[29 - daysAgo]++
-                }
-            }
-
-            const tokenTimeline = Array.from(tokenTimelineMap.entries())
-                .map(([timestamp, tokens]) => ({
-                    timestamp,
-                    promptTokens: tokens.prompt,
-                    completionTokens: tokens.completion
-                }))
-                .sort((a, b) => a.timestamp - b.timestamp)
+            const usage = this.calculateTokenAndTimelineStats(messages)
 
             return {
-                chatCount,
-                messageCount,
-                dbSize: 0,
-                totalTokens: totalPromptTokens + totalCompletionTokens,
-                promptTokens: totalPromptTokens,
-                completionTokens: totalCompletionTokens,
-                tokenTimeline,
-                activity
+                ...stats,
+                totalPromptTokens: usage.totalPromptTokens,
+                totalCompletionTokens: usage.totalCompletionTokens,
+                tokenTimeline: usage.tokenTimeline,
+                activity: usage.activity
             }
         } catch (error) {
-            console.error('[DatabaseService] Failed to get detailed stats:', error)
-            return {
-                chatCount: 0,
-                messageCount: 0,
-                dbSize: 0,
-                totalTokens: 0,
-                promptTokens: 0,
-                completionTokens: 0,
-                tokenTimeline: [],
-                activity: []
-            }
+            appLogger.error('DatabaseService', `Failed to get detailed stats: ${getErrorMessage(error)} `)
+            return { chatCount: 0, messageCount: 0, dbSize: 0, totalPromptTokens: 0, totalCompletionTokens: 0, tokenTimeline: [], activity: [] }
+        }
+    }
+
+    private async getCoreCountStats(db: DatabaseAdapter) {
+        const chatsRow = await db.prepare('SELECT count(*) as c FROM chats').get<{ c: number }>()
+        const messagesRow = await db.prepare('SELECT count(*) as c FROM messages').get<{ c: number }>()
+        return {
+            chatCount: chatsRow?.c ?? 0,
+            messageCount: messagesRow?.c ?? 0,
+            dbSize: 0
+        }
+    }
+
+    private calculateTokenAndTimelineStats(messages: JsonObject[]) {
+        let totalPromptTokens = 0
+        let totalCompletionTokens = 0
+        const tokenTimelineMap = new Map<number, { prompt: number; completion: number }>()
+        const activity = new Array(30).fill(0)
+        const now = Date.now()
+        const dayMs = 86400000
+
+        for (const msg of messages) {
+            const usage = this.extractUsageFromMessage(msg)
+            totalPromptTokens += usage.p
+            totalCompletionTokens += usage.c
+
+            this.updateTokenTimeline(tokenTimelineMap, Number(msg.timestamp), usage.p, usage.c)
+            this.updateActivity(activity, Number(msg.timestamp), now, dayMs)
+        }
+
+        const tokenTimeline = Array.from(tokenTimelineMap.entries())
+            .map(([timestamp, tokens]) => ({ timestamp, promptTokens: tokens.prompt, completionTokens: tokens.completion }))
+            .sort((a, b) => a.timestamp - b.timestamp)
+
+        return { totalPromptTokens, totalCompletionTokens, tokenTimeline, activity }
+    }
+
+    private extractUsageFromMessage(msg: JsonObject) {
+        const metadata = this.parseJsonField<JsonObject>(msg.metadata as string | null, {})
+        const usage = (metadata.usage ?? {}) as JsonObject
+        return {
+            p: Number(metadata.promptTokens ?? usage.prompt_tokens ?? 0),
+            c: Number(metadata.completionTokens ?? usage.completion_tokens ?? 0)
+        }
+    }
+
+    private updateTokenTimeline(map: Map<number, { prompt: number; completion: number }>, timestamp: number, p: number, c: number) {
+        if (p > 0 || c > 0) {
+            const dayTimestamp = new Date(timestamp).setHours(0, 0, 0, 0)
+            const existing = map.get(dayTimestamp) ?? { prompt: 0, completion: 0 }
+            map.set(dayTimestamp, {
+                prompt: existing.prompt + p,
+                completion: existing.completion + c
+            })
+        }
+    }
+
+    private updateActivity(activity: number[], timestamp: number, now: number, dayMs: number) {
+        const daysAgo = Math.floor((now - timestamp) / dayMs)
+        if (daysAgo >= 0 && daysAgo < 30) {
+            activity[29 - daysAgo]++
         }
     }
 
@@ -1590,7 +1921,7 @@ export class DatabaseService extends BaseService {
             await db.prepare('DELETE FROM messages WHERE id = ?').run(id)
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete message:', error)
+            appLogger.error('DatabaseService', `Failed to delete message: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1603,7 +1934,7 @@ export class DatabaseService extends BaseService {
             }
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete messages:', error)
+            appLogger.error('DatabaseService', `Failed to delete messages: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1614,7 +1945,7 @@ export class DatabaseService extends BaseService {
             await db.exec('DELETE FROM chats')
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete all chats:', error)
+            appLogger.error('DatabaseService', `Failed to delete all chats: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1625,7 +1956,7 @@ export class DatabaseService extends BaseService {
             await db.prepare('DELETE FROM chats WHERE title = ?').run(title)
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete chats by title:', error)
+            appLogger.error('DatabaseService', `Failed to delete chats by title: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1633,9 +1964,9 @@ export class DatabaseService extends BaseService {
     async getTimeStats() {
         try {
             const db = await this.ensureDb()
-            const totalOnlineTimeRow = await db.prepare("SELECT sum(duration_ms) as total FROM time_tracking WHERE type = 'app_online'").get() as any
-            const totalCodingTimeRow = await db.prepare("SELECT sum(duration_ms) as total FROM time_tracking WHERE type = 'coding'").get() as any
-            const projectCodingTimeRows = await db.prepare("SELECT project_id, sum(duration_ms) as total FROM time_tracking WHERE type = 'project_coding' GROUP BY project_id").all() as any[]
+            const totalOnlineTimeRow = await db.prepare("SELECT sum(duration_ms) as total FROM time_tracking WHERE type = 'app_online'").get() as { total: number } | undefined
+            const totalCodingTimeRow = await db.prepare("SELECT sum(duration_ms) as total FROM time_tracking WHERE type = 'coding'").get() as { total: number } | undefined
+            const projectCodingTimeRows = await db.prepare("SELECT project_id, sum(duration_ms) as total FROM time_tracking WHERE type = 'project_coding' GROUP BY project_id").all() as Array<{ project_id: string; total: number }>
 
             const projectCodingTime: Record<string, number> = {}
             for (const row of projectCodingTimeRows) {
@@ -1643,12 +1974,12 @@ export class DatabaseService extends BaseService {
             }
 
             return {
-                totalOnlineTime: Number(totalOnlineTimeRow?.total || 0),
-                totalCodingTime: Number(totalCodingTimeRow?.total || 0),
+                totalOnlineTime: Number(totalOnlineTimeRow?.total ?? 0),
+                totalCodingTime: Number(totalCodingTimeRow?.total ?? 0),
                 projectCodingTime
             }
         } catch (error) {
-            console.error('[DatabaseService] Failed to get time stats:', error)
+            appLogger.error('DatabaseService', `Failed to get time stats: ${getErrorMessage(error)} `)
             return { totalOnlineTime: 0, totalCodingTime: 0, projectCodingTime: {} }
         }
     }
@@ -1665,7 +1996,7 @@ export class DatabaseService extends BaseService {
 
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to archive chat:', error)
+            appLogger.error('DatabaseService', `Failed to archive chat: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
@@ -1680,33 +2011,44 @@ export class DatabaseService extends BaseService {
             const now = Date.now()
 
             await db.transaction(async (tx) => {
-                const txAdapter = this.createAdapterFromTx(tx)
-                // Insert chat
-                await txAdapter.prepare(`
-                    INSERT INTO chats (id, title, is_Generating, backend, model, folder_id, project_id, is_pinned, is_favorite, metadata, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).run(
-                    newId, `Copy of ${chat.title}`, 0, chat.backend || null, chat.model || null,
-                    chat.folderId || null, chat.projectId || null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
-                    JSON.stringify(chat.metadata || {}), now, now
-                )
-
-                // Copy messages
-                const messages = await txAdapter.prepare('SELECT * FROM messages WHERE chat_id = ?').all(id)
-                for (const msg of messages) {
-                    await txAdapter.prepare(`
-                        INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    `).run(
-                        uuidv4(), newId, msg.role, msg.content, msg.timestamp, msg.provider || null, msg.model || null, msg.metadata || '{}'
-                    )
-                }
+                await this.performChatDuplication(tx, chat, newId, now)
             })
 
             return newId
         } catch (error) {
-            console.error('[DatabaseService] Failed to duplicate chat:', error)
+            appLogger.error('DatabaseService', `Failed to duplicate chat: ${getErrorMessage(error)} `)
             return null
+        }
+    }
+
+    private async performChatDuplication(tx: any, chat: Chat, newId: string, now: number) {
+        const txAdapter = this.createAdapterFromTx(tx)
+        await this.insertDuplicatedChat(txAdapter, chat, newId, now)
+        await this.duplicateChatMessages(txAdapter, chat.id, newId)
+    }
+
+    private async insertDuplicatedChat(txAdapter: DatabaseAdapter, chat: Chat, newId: string, now: number) {
+        await txAdapter.prepare(`
+            INSERT INTO chats(id, title, is_Generating, backend, model, folder_id, project_id, is_pinned, is_favorite, metadata, created_at, updated_at)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            newId, `Copy of ${chat.title}`, 0, chat.backend ?? null, chat.model ?? null,
+            chat.folderId ?? null, chat.projectId ?? null, chat.isPinned ? 1 : 0, chat.isFavorite ? 1 : 0,
+            JSON.stringify(chat.metadata ?? {}), now, now
+        )
+    }
+
+    private async duplicateChatMessages(txAdapter: DatabaseAdapter, oldChatId: string, newChatId: string) {
+        const messages = await txAdapter.prepare('SELECT * FROM messages WHERE chat_id = ?').all<JsonObject>(oldChatId)
+        for (const msg of messages) {
+            await txAdapter.prepare(`
+                INSERT INTO messages(id, chat_id, role, content, timestamp, provider, model, metadata)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                uuidv4(), newChatId, msg.role as SqlValue, msg.content as SqlValue, msg.timestamp as SqlValue,
+                (msg.provider as SqlValue) ?? null, (msg.model as SqlValue) ?? null,
+                (msg.metadata as SqlValue) ?? '{}'
+            )
         }
     }
 
@@ -1716,10 +2058,364 @@ export class DatabaseService extends BaseService {
             await db.prepare('DELETE FROM messages WHERE chat_id = ?').run(chatId)
             return { success: true }
         } catch (error) {
-            console.error('[DatabaseService] Failed to delete messages by chat id:', error)
+            appLogger.error('DatabaseService', `Failed to delete messages by chat id: ${getErrorMessage(error)} `)
             return { success: false }
         }
     }
+    // --- Usage Tracking Methods ---
+
+    async addUsageRecord(record: { provider: string; model: string; timestamp: number }) {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('INSERT INTO usage_tracking (id, timestamp, provider, model) VALUES (?, ?, ?, ?)').run(
+                uuidv4(), record.timestamp, record.provider, record.model
+            )
+            return { success: true }
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to add usage record: ${getErrorMessage(error)} `)
+            return { success: false }
+        }
+    }
+
+    async getUsageCount(since: number, provider?: string, model?: string): Promise<number> {
+        try {
+            const db = await this.ensureDb()
+            let sql = 'SELECT count(*) as count FROM usage_tracking WHERE timestamp >= ?'
+            const params: SqlValue[] = [since]
+
+            if (provider) {
+                sql += ' AND provider = ?'
+                params.push(provider)
+            }
+            if (model) {
+                sql += ' AND model = ?'
+                params.push(model)
+            }
+
+            const rows = await db.prepare(sql).all<JsonObject>(...params)
+            const row = rows[0]
+            return Number(row.count ?? 0)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get usage count: ${getErrorMessage(error)} `)
+            return 0
+        }
+    }
+
+    async cleanupUsageRecords(before: number): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('DELETE FROM usage_tracking WHERE timestamp < ?').run(before)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to cleanup usage records: ${getErrorMessage(error)} `)
+        }
+    }
+
+    // --- Prompt Templates Methods ---
+
+    async getCustomTemplates(): Promise<PromptTemplate[]> {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT * FROM prompt_templates').all<JsonObject>()
+            return rows.map(row => ({
+                id: String(row.id),
+                name: String(row.name),
+                description: String(row.description ?? ''),
+                template: String(row.template),
+                variables: JSON.parse((row.variables as string | null) ?? '[]'),
+                category: String(row.category ?? ''),
+                tags: row.tags ? JSON.parse(row.tags as string) : undefined,
+                createdAt: Number(row.created_at),
+                updatedAt: Number(row.updated_at)
+            }))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get custom templates: ${getErrorMessage(error)} `)
+            return []
+        }
+    }
+
+    async addCustomTemplate(template: PromptTemplate): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO prompt_templates(id, name, description, template, variables, category, tags, created_at, updated_at)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                template.id,
+                template.name,
+                template.description,
+                template.template,
+                JSON.stringify(template.variables),
+                template.category,
+                template.tags ? JSON.stringify(template.tags) : null,
+                template.createdAt,
+                template.updatedAt
+            )
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to add custom template: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    async updateCustomTemplate(id: string, template: Partial<PromptTemplate>): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+
+            // Build dynamic update query
+            const updates: string[] = []
+            const params: SqlValue[] = []
+
+            if (template.name !== undefined) { updates.push('name = ?'); params.push(template.name) }
+            if (template.description !== undefined) { updates.push('description = ?'); params.push(template.description) }
+            if (template.template !== undefined) { updates.push('template = ?'); params.push(template.template) }
+            if (template.variables !== undefined) { updates.push('variables = ?'); params.push(JSON.stringify(template.variables)) }
+            if (template.category !== undefined) { updates.push('category = ?'); params.push(template.category) }
+            if (template.tags !== undefined) {
+                updates.push('tags = ?')
+                params.push(JSON.stringify(template.tags))
+            }
+
+            updates.push('updated_at = ?')
+            params.push(Date.now())
+
+            params.push(id)
+
+            await db.prepare(`
+                UPDATE prompt_templates
+                SET ${updates.join(', ')}
+                WHERE id = ?
+            `).run(...params)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to update custom template: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    async deleteCustomTemplate(id: string): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('DELETE FROM prompt_templates WHERE id = ?').run(id)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to delete custom template: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+
+    // --- Audit Log Methods ---
+
+    async addAuditLog(entry: AuditLogEntry): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO audit_logs(id, timestamp, action, category, user_id, details, ip_address, user_agent, success, error)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                uuidv4(),
+                entry.timestamp,
+                entry.action,
+                entry.category,
+                entry.userId ?? null,
+                entry.details ? JSON.stringify(entry.details) : null,
+                entry.ipAddress ?? null,
+                entry.userAgent ?? null,
+                entry.success ? 1 : 0,
+                entry.error ?? null
+            )
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to add audit log: ${getErrorMessage(error)} `)
+            // Don't throw here to ensure audit logging failure doesn't break the app flow usually, 
+            // but for critical systems maybe we should. Keeping consistent with previous catch blocks.
+        }
+    }
+
+    async getAuditLogs(options: {
+        category?: string
+        startDate?: number
+        endDate?: number
+        limit?: number
+    } = {}): Promise<AuditLogEntry[]> {
+        try {
+            const db = await this.ensureDb()
+            let sql = 'SELECT * FROM audit_logs WHERE 1=1'
+            const params: SqlValue[] = []
+
+            if (options.category) {
+                sql += ' AND category = ?'
+                params.push(options.category)
+            }
+            if (options.startDate) {
+                sql += ' AND timestamp >= ?'
+                params.push(options.startDate)
+            }
+            if (options.endDate) {
+                sql += ' AND timestamp <= ?'
+                params.push(options.endDate)
+            }
+
+            sql += ' ORDER BY timestamp DESC'
+
+            if (options.limit) {
+                sql += ' LIMIT ?'
+                params.push(options.limit)
+            }
+
+            const rows = await db.prepare(sql).all<JsonObject>(...params)
+            return rows.map(row => ({
+                timestamp: Number(row.timestamp),
+                action: String(row.action),
+                category: String(row.category) as AuditLogEntry['category'],
+                userId: row.user_id as string | undefined,
+                details: row.details ? JSON.parse(row.details as string) : undefined,
+                ipAddress: row.ip_address as string | undefined,
+                userAgent: row.user_agent as string | undefined,
+                success: Boolean(row.success),
+                error: row.error as string | undefined
+            }))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get audit logs: ${getErrorMessage(error)} `)
+            return []
+        }
+    }
+
+    async clearAuditLogs(): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('DELETE FROM audit_logs').run()
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to clear audit logs: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    // --- Job Scheduler Methods ---
+
+    async getJobState(id: string): Promise<JobState | null> {
+        try {
+            const db = await this.ensureDb()
+            const row = await db.prepare('SELECT last_run FROM scheduler_state WHERE id = ?').get<JsonObject>(id)
+            if (!row) { return null }
+            return {
+                lastRun: Number(row.last_run)
+            }
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get job state: ${getErrorMessage(error)} `)
+            return null
+        }
+    }
+
+    async getAllJobStates(): Promise<Record<string, JobState>> {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT id, last_run FROM scheduler_state').all<JsonObject>()
+            const states: Record<string, JobState> = {}
+            for (const row of rows) {
+                states[String(row.id)] = { lastRun: Number(row.last_run) }
+            }
+            return states
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get all job states: ${getErrorMessage(error)} `)
+            return {}
+        }
+    }
+
+    async updateJobLastRun(id: string, lastRun: number): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO scheduler_state(id, last_run, updated_at)
+        VALUES(?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET last_run = ?, updated_at = ?
+            `).run(id, lastRun, Date.now(), lastRun, Date.now())
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to update job last run: ${getErrorMessage(error)} `)
+        }
+    }
+    // --- Auth Token Methods ---
+
+    // --- Auth Token Methods ---
+
+    async getAuthToken(id: string): Promise<AuthToken | null> {
+        try {
+            const db = await this.ensureDb()
+            const row = await db.prepare('SELECT * FROM auth_tokens WHERE id = ?').get<JsonObject>(id)
+            if (!row) { return null }
+            return {
+                id: String(row.id),
+                provider: String(row.provider),
+                accessToken: row.access_token as string | undefined,
+                refreshToken: row.refresh_token as string | undefined,
+                sessionToken: row.session_token as string | undefined,
+                expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
+                scope: row.scope as string | undefined,
+                metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
+                updatedAt: Number(row.updated_at)
+            }
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get auth token ${id}: ${getErrorMessage(error)} `)
+            return null
+        }
+    }
+
+    async saveAuthToken(token: AuthToken): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO auth_tokens(id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+        provider = excluded.provider,
+            access_token = excluded.access_token,
+            refresh_token = excluded.refresh_token,
+            session_token = excluded.session_token,
+            expires_at = excluded.expires_at,
+            scope = excluded.scope,
+            metadata = excluded.metadata,
+            updated_at = excluded.updated_at
+                `).run(
+                token.id,
+                token.provider,
+                token.accessToken ?? null,
+                token.refreshToken ?? null,
+                token.sessionToken ?? null,
+                token.expiresAt ?? null,
+                token.scope ?? null,
+                token.metadata ? JSON.stringify(token.metadata) : null,
+                token.updatedAt
+            )
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to save auth token ${token.id}: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    async deleteAuthToken(id: string): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('DELETE FROM auth_tokens WHERE id = ?').run(id)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to delete auth token ${id}: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    async getAllAuthTokens(): Promise<AuthToken[]> {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT * FROM auth_tokens').all<JsonObject>()
+            return rows.map(row => ({
+                id: String(row.id),
+                provider: String(row.provider),
+                accessToken: row.access_token as string | undefined,
+                refreshToken: row.refresh_token as string | undefined,
+                sessionToken: row.session_token as string | undefined,
+                expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
+                scope: row.scope as string | undefined,
+                metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
+                updatedAt: Number(row.updated_at)
+            }))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get all auth tokens: ${getErrorMessage(error)} `)
+            return []
+        }
+    }
 }
-
-

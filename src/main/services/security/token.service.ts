@@ -1,19 +1,17 @@
-import * as fs from 'fs'
-import * as path from 'path'
-
-import { DataService } from '@main/services/data/data.service'
+import { appLogger } from '@main/logging/logger'
+import { BaseService } from '@main/services/base.service'
+import { AuthToken } from '@main/services/data/database.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
-import { SecurityService } from '@main/services/security.service'
-import { SettingsService } from '@main/services/settings.service'
+import { AuthService } from '@main/services/security/auth.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
 import axios from 'axios'
-import { app } from 'electron'
 
 // OAuth Client IDs and Secrets
 // Client IDs are public, but secrets should be in environment variables
 const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
-const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET || ''
+const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET // No fallback - required env var
 
 const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann' // OpenAI OAuth Client ID
 const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token'
@@ -33,7 +31,7 @@ const CLAUDE_TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
  * 
  * Only refreshes tokens for providers that are actually logged in.
  */
-export class TokenService {
+export class TokenService extends BaseService {
     private readonly DEFAULT_REFRESH_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
     private readonly DEFAULT_COPILOT_REFRESH_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
     private legacyIntervals: NodeJS.Timeout[] = []
@@ -41,10 +39,11 @@ export class TokenService {
     constructor(
         private settingsService: SettingsService,
         private copilotService: CopilotService,
-        private dataService: DataService,
-        private securityService: SecurityService,
-        private jobScheduler?: import('@main/services/job-scheduler.service').JobSchedulerService
-    ) { }
+        private authService: AuthService,
+        private jobScheduler?: import('@main/services/system/job-scheduler.service').JobSchedulerService
+    ) {
+        super('TokenService')
+    }
 
     async cleanup() {
         this.stop()
@@ -54,7 +53,7 @@ export class TokenService {
      * Start the token refresh service
      */
     start() {
-        console.log('[TokenService] Starting unified token refresh service...')
+        appLogger.info('TokenService', 'Starting unified token refresh service...')
 
         if (this.jobScheduler) {
             // Use JobScheduler for persistent, configurable intervals
@@ -65,7 +64,7 @@ export class TokenService {
                 },
                 () => {
                     const settings = this.settingsService.getSettings()
-                    return settings.ai?.tokenRefreshInterval || this.DEFAULT_REFRESH_INTERVAL_MS
+                    return settings.ai?.tokenRefreshInterval ?? this.DEFAULT_REFRESH_INTERVAL_MS
                 }
             )
 
@@ -76,45 +75,42 @@ export class TokenService {
                 },
                 () => {
                     const settings = this.settingsService.getSettings()
-                    return settings.ai?.copilotRefreshInterval || this.DEFAULT_COPILOT_REFRESH_INTERVAL_MS
+                    return settings.ai?.copilotRefreshInterval ?? this.DEFAULT_COPILOT_REFRESH_INTERVAL_MS
                 }
             )
 
-            console.log('[TokenService] Registered with JobScheduler for persistent scheduling')
+            appLogger.info('TokenService', 'Registered with JobScheduler for persistent scheduling')
         } else {
             // Fallback to simple setInterval (for backward compatibility)
-            console.warn('[TokenService] No JobScheduler provided, using simple intervals')
+            appLogger.warn('TokenService', 'No JobScheduler provided, using simple intervals')
             this.startLegacyIntervals()
         }
 
         // Initial check
         this.refreshAllTokens().catch(err => {
-            console.error('[TokenService] Initial token refresh failed:', getErrorMessage(err))
+            appLogger.error('TokenService', `Initial token refresh failed: ${getErrorMessage(err)}`)
         })
 
-        console.log('[TokenService] Token refresh service started successfully')
+        appLogger.info('TokenService', 'Token refresh service started successfully')
     }
 
     private startLegacyIntervals() {
         // Legacy interval-based refresh (not persisted across restarts)
         const oauthInterval = setInterval(() => {
             this.refreshAllTokens().catch(err => {
-                console.error('[TokenService] Periodic token refresh failed:', getErrorMessage(err))
+                appLogger.error('TokenService', `Periodic token refresh failed: ${getErrorMessage(err)}`)
             })
         }, this.DEFAULT_REFRESH_INTERVAL_MS)
         this.legacyIntervals.push(oauthInterval)
 
         const copilotInterval = setInterval(() => {
             this.refreshCopilotToken().catch(err => {
-                console.error('[TokenService] Copilot token refresh failed:', getErrorMessage(err))
+                appLogger.error('TokenService', `Copilot token refresh failed: ${getErrorMessage(err)}`)
             })
         }, this.DEFAULT_COPILOT_REFRESH_INTERVAL_MS)
         this.legacyIntervals.push(copilotInterval)
     }
 
-    /**
-     * Stop the token refresh service
-     */
     /**
      * Stop the token refresh service
      */
@@ -125,285 +121,171 @@ export class TokenService {
         this.legacyIntervals.forEach(interval => clearInterval(interval))
         this.legacyIntervals = []
 
-        console.log('[TokenService] Token refresh service stopped')
+        appLogger.info('TokenService', 'Token refresh service stopped')
     }
 
-    /**
-     * Check which providers are logged in
-     */
-    private async getLoggedInProviders(): Promise<{
-        google: boolean
-        codex: boolean
-        claude: boolean
-        copilot: boolean
-    }> {
-        const settings = this.settingsService.getSettings()
-        const authDir = this.getAuthDir()
-
-        // Check Google/Antigravity
-        let hasGoogle = false
-        if (settings.antigravity?.connected && settings.antigravity?.token) {
-            hasGoogle = true
-        }
-        if (!hasGoogle && fs.existsSync(authDir)) {
-            try {
-                const files = await fs.promises.readdir(authDir)
-                hasGoogle = files.some(f => {
-                    const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-                    return name.startsWith('antigravity') || name.startsWith('google')
-                })
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        // Check Codex
-        let hasCodex = false
-        if (settings.codex?.connected && settings.codex?.token) {
-            hasCodex = true
-        }
-        if (!hasCodex && fs.existsSync(authDir)) {
-            try {
-                const files = await fs.promises.readdir(authDir)
-                hasCodex = files.some(f => {
-                    const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-                    return name.startsWith('codex') || name.startsWith('openai')
-                })
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        // Check Claude
-        let hasClaude = false
-        if (settings.claude?.apiKey && settings.claude.apiKey.length > 0) {
-            hasClaude = true
-        }
-        if (!hasClaude && fs.existsSync(authDir)) {
-            try {
-                const files = await fs.promises.readdir(authDir)
-                hasClaude = files.some(f => {
-                    const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-                    return name.startsWith('claude') || name.startsWith('anthropic')
-                })
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        // Check Copilot - ONLY use copilot_token, no fallback to github_token
-        const hasCopilot = this.copilotService.isConfigured() ||
-            !!(settings.copilot?.connected && settings.copilot?.token && settings.copilot.token.length > 0)
-
-        return { google: hasGoogle, codex: hasCodex, claude: hasClaude, copilot: hasCopilot }
-    }
-
-    /**
-     * Refresh all OAuth tokens
-     */
     private async refreshAllTokens() {
-        const providers = await this.getLoggedInProviders()
+        const tokens = await this.authService.getAllFullTokens()
 
-        const tasks: Promise<void>[] = []
-
-        if (providers.google) {
-            tasks.push(this.refreshGoogleToken().catch(err => {
-                console.error('[TokenService] Google token refresh failed:', getErrorMessage(err))
-            }))
-        }
-
-        if (providers.codex) {
-            tasks.push(this.refreshCodexToken().catch(err => {
-                console.error('[TokenService] Codex token refresh failed:', getErrorMessage(err))
-            }))
-        }
-
-        if (providers.claude) {
-            tasks.push(this.refreshClaudeToken().catch(err => {
-                console.error('[TokenService] Claude token refresh failed:', getErrorMessage(err))
-            }))
-        }
-
-        if (tasks.length > 0) {
-            await Promise.all(tasks)
-            console.log(`[TokenService] Token refresh completed for ${tasks.length} provider(s)`)
+        for (const token of tokens) {
+            await this.refreshSingleToken(token)
         }
     }
 
-    /**
-     * Refresh Google/Antigravity token
-     */
-    private async refreshGoogleToken(): Promise<void> {
-        const authDir = this.getAuthDir()
-        if (!fs.existsSync(authDir)) { return }
+    private async refreshSingleToken(token: AuthToken) {
+        if (this.isGoogleProvider(token)) {
+            await this.refreshGoogleToken(token)
+        } else if (this.isCodexProvider(token)) {
+            await this.refreshCodexToken(token)
+        } else if (this.isClaudeProvider(token)) {
+            await this.refreshClaudeToken(token)
+        }
+    }
 
-        const files = (await fs.promises.readdir(authDir)).filter(f => {
-            const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-            return name.startsWith('antigravity') || name.startsWith('google')
+    private isGoogleProvider(token: AuthToken): boolean {
+        const id = token.id.toLowerCase()
+        const provider = (token.provider || id).toLowerCase()
+        return provider.startsWith('google') || provider.startsWith('antigravity') || id.startsWith('google') || id.startsWith('antigravity')
+    }
+
+    private isCodexProvider(token: AuthToken): boolean {
+        const id = token.id.toLowerCase()
+        const provider = (token.provider || id).toLowerCase()
+        return provider.startsWith('codex') || provider.startsWith('openai') || id.startsWith('codex') || id.startsWith('openai')
+    }
+
+    private isClaudeProvider(token: AuthToken): boolean {
+        const id = token.id.toLowerCase()
+        const provider = (token.provider || id).toLowerCase()
+        return provider.startsWith('claude') || provider.startsWith('anthropic') || id.startsWith('claude') || id.startsWith('anthropic')
+    }
+
+    private async refreshGoogleToken(token: AuthToken): Promise<void> {
+        try {
+            const refreshToken = token.refreshToken
+            if (!refreshToken) { return }
+
+            const expiry = token.expiresAt ?? 0
+            if (Date.now() < expiry - 5 * 60 * 1000) { return }
+
+            if (!ANTIGRAVITY_CLIENT_SECRET) {
+                appLogger.error('TokenService', 'ANTIGRAVITY_CLIENT_SECRET environment variable is not set')
+                return
+            }
+
+            appLogger.info('TokenService', `Refreshing Google/Antigravity token for ${token.id}...`)
+            await this.performGoogleRefresh(token, refreshToken)
+        } catch (error: unknown) {
+            this.handleRefreshError('Google', token.id, error)
+        }
+    }
+
+    private async performGoogleRefresh(token: AuthToken, refreshToken: string) {
+        const params = new URLSearchParams({
+            client_id: ANTIGRAVITY_CLIENT_ID,
+            client_secret: ANTIGRAVITY_CLIENT_SECRET ?? '',
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token'
         })
 
-        for (const file of files) {
-            try {
-                const filePath = path.join(authDir, file)
-                const authData = await this.readAuthFile(filePath)
-                if (!authData) { continue }
-
-                const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
-                if (!refreshToken) { continue }
-
-                const expiresIn = typeof authData.expires_in === 'number' ? authData.expires_in : 0
-                const timestamp = typeof authData.timestamp === 'number' ? authData.timestamp : 0
-
-                // Check if token is expired or will expire soon (within 5 minutes)
-                const expiry = timestamp + (expiresIn * 1000)
-                if (Date.now() < expiry - 5 * 60 * 1000) {
-                    continue // Token still valid
-                }
-
-                console.log('[TokenService] Refreshing Google/Antigravity token...')
-
-                const params = new URLSearchParams({
-                    client_id: ANTIGRAVITY_CLIENT_ID,
-                    client_secret: ANTIGRAVITY_CLIENT_SECRET,
-                    refresh_token: refreshToken,
-                    grant_type: 'refresh_token'
-                })
-
-                const response = await axios.post('https://oauth2.googleapis.com/token', params.toString(), {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    timeout: 10000
-                })
-
-                const newAccessToken = response.data.access_token
-                const newExpiresIn = response.data.expires_in || 3600
-                const newRefreshToken = response.data.refresh_token || refreshToken
-
-                // Update token data
-                const updatedData: JsonObject = {
-                    ...authData,
-                    access_token: newAccessToken,
-                    refresh_token: newRefreshToken,
-                    expires_in: newExpiresIn,
-                    timestamp: Date.now()
-                }
-
-                // Save updated token
-                await this.saveAuthFile(filePath, updatedData)
-
-                console.log('[TokenService] Google/Antigravity token refreshed successfully')
-            } catch (error: unknown) {
-                const errorMsg = getErrorMessage(error)
-                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
-                const statusCode = axiosError?.response?.status
-                const errorCode = axiosError?.response?.data?.error
-
-                // Check if refresh token is invalid/expired (OAuth error codes)
-                if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
-                    console.warn(`[TokenService] Refresh token expired or invalid for ${file}. User needs to re-authenticate.`)
-                    // Optionally: delete the expired token file to force re-authentication
-                    // fs.unlinkSync(filePath).catch(() => {})
-                }
-
-                console.error(`[TokenService] Failed to refresh Google token from ${file}:`, errorMsg)
-            }
-        }
-    }
-
-    /**
-     * Refresh Codex token
-     */
-    private async refreshCodexToken(): Promise<void> {
-        const authDir = this.getAuthDir()
-        if (!fs.existsSync(authDir)) { return }
-
-        const files = (await fs.promises.readdir(authDir)).filter(f => {
-            const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-            return name.startsWith('codex') || name.startsWith('openai')
+        const response = await axios.post('https://oauth2.googleapis.com/token', params.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 10000
         })
 
-        for (const file of files) {
-            try {
-                const filePath = path.join(authDir, file)
-                const authData = await this.readAuthFile(filePath)
-                if (!authData) { continue }
+        await this.authService.saveToken(token.id, {
+            ...token,
+            accessToken: response.data.access_token,
+            refreshToken: response.data.refresh_token ?? refreshToken,
+            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
+            updatedAt: Date.now()
+        })
+        appLogger.info('TokenService', `Google/Antigravity token for ${token.id} refreshed successfully`)
+    }
 
-                const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
-                if (!refreshToken) { continue }
+    private async refreshCodexToken(token: AuthToken): Promise<void> {
+        try {
+            const refreshToken = token.refreshToken
+            if (!refreshToken) { return }
 
-                const expire = typeof authData.expired === 'string' ? authData.expired : ''
-                if (expire) {
-                    const expiryDate = new Date(expire)
-                    if (Date.now() < expiryDate.getTime() - 5 * 60 * 1000) {
-                        continue // Token still valid
-                    }
-                }
-                console.log('[TokenService] Refreshing Codex token...')
+            const expiry = token.expiresAt ?? 0
+            if (Date.now() < expiry - 5 * 60 * 1000) { return }
 
-                // Codex uses OpenAI OAuth flow (form-encoded)
-                const params = new URLSearchParams({
-                    client_id: CODEX_CLIENT_ID,
-                    grant_type: 'refresh_token',
-                    refresh_token: refreshToken,
-                    scope: 'openid profile email'
-                })
-                const response = await axios.post(CODEX_TOKEN_URL, params.toString(), {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    },
-                    timeout: 10000
-                })
-
-                const newAccessToken = response.data.access_token
-                const newRefreshToken = response.data.refresh_token || refreshToken
-                const newIdToken = response.data.id_token || authData.id_token
-                const expiresIn = response.data.expires_in || 3600
-                const expiryDate = new Date(Date.now() + expiresIn * 1000).toISOString()
-
-                // Update token data
-                const updatedData: JsonObject = {
-                    ...authData,
-                    access_token: newAccessToken,
-                    refresh_token: newRefreshToken,
-                    id_token: newIdToken,
-                    expired: expiryDate,
-                    last_refresh: new Date().toISOString()
-                }
-
-                // Save updated token
-                await this.saveAuthFile(filePath, updatedData)
-                console.log('[TokenService] Codex token refreshed successfully')
-            } catch (error: unknown) {
-                const errorMsg = getErrorMessage(error)
-                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
-                const statusCode = axiosError?.response?.status
-                const errorCode = axiosError?.response?.data?.error
-
-                // Check if refresh token is invalid/expired
-                if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
-                    console.warn(`[TokenService] Refresh token expired or invalid for ${file}. User needs to re-authenticate.`)
-                }
-
-                console.error(`[TokenService] Failed to refresh Codex token from ${file}:`, errorMsg)
-            }
+            appLogger.info('TokenService', `Refreshing Codex token for ${token.id}...`)
+            await this.performCodexRefresh(token, refreshToken)
+        } catch (error: unknown) {
+            this.handleRefreshError('Codex', token.id, error)
         }
     }
 
-    /**
-     * Refresh Claude token
-     * 
-     * Claude doesn't use traditional OAuth refresh tokens.
-     * Instead, it uses session cookies from claude.ai.
-     * We capture the sessionKey cookie from Electron's session.
-     * 
-     * For OAuth-based flow (if available), we attempt standard refresh.
-     */
-    private async refreshClaudeToken(): Promise<void> {
-        const authDir = this.getAuthDir()
+    private async performCodexRefresh(token: AuthToken, refreshToken: string) {
+        const params = new URLSearchParams({
+            client_id: CODEX_CLIENT_ID,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            scope: 'openid profile email'
+        })
+        const response = await axios.post(CODEX_TOKEN_URL, params.toString(), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            timeout: 10000
+        })
 
-        // 1. First, try to capture sessionKey from Electron browser session
+        await this.authService.saveToken(token.id, {
+            ...token,
+            accessToken: response.data.access_token,
+            refreshToken: response.data.refresh_token ?? refreshToken,
+            idToken: response.data.id_token ?? token.idToken,
+            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
+            updatedAt: Date.now()
+        })
+        appLogger.info('TokenService', `Codex token for ${token.id} refreshed successfully`)
+    }
+
+    private handleRefreshError(provider: string, id: string, error: unknown) {
+        const errorMsg = getErrorMessage(error)
+        const axiosError = error as { response?: { status: number; data?: JsonObject } }
+
+        if (axiosError.response) {
+            const statusCode = axiosError.response.status
+            const data = axiosError.response.data
+            const errorCode = data ? String(data.error ?? '') : ''
+
+            if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
+                appLogger.warn('TokenService', `Refresh token expired or invalid for ${id}. User needs to re-authenticate.`)
+            }
+        }
+
+        appLogger.error('TokenService', `Failed to refresh ${provider} token for ${id}: ${errorMsg}`)
+    }
+
+    private async refreshClaudeToken(token: AuthToken): Promise<void> {
+        try {
+            await this.captureClaudeElectronSession(token)
+
+            const refreshToken = token.refreshToken
+            if (!refreshToken) {
+                await this.checkClaudeSessionValidity(token)
+                return
+            }
+
+            const expiry = token.expiresAt ?? 0
+            if (Date.now() < expiry - 5 * 60 * 1000) { return }
+
+            appLogger.info('TokenService', `Refreshing Claude OAuth token for ${token.id}...`)
+            await this.performClaudeRefresh(token, refreshToken)
+        } catch (error: unknown) {
+            this.handleRefreshError('Claude', token.id, error)
+        }
+    }
+
+    private async captureClaudeElectronSession(token: AuthToken) {
         try {
             const { session } = await import('electron')
+            if (!session) { return }
+
             const cookies = await session.defaultSession.cookies.get({
                 url: 'https://claude.ai',
                 name: 'sessionKey'
@@ -411,106 +293,47 @@ export class TokenService {
 
             if (cookies.length > 0 && cookies[0].value) {
                 const sessionKey = cookies[0].value
-                console.log('[TokenService] Captured Claude sessionKey from Electron cookies')
-
-                // Save to auth file
-                await this.updateClaudeAuthFile(authDir, {
-                    session_key: sessionKey,
-                    captured_at: Date.now()
-                })
-                return // Session key captured successfully
+                const existing = token.id.includes('claude') ? token : null
+                if (existing && existing.sessionToken !== sessionKey) {
+                    appLogger.info('TokenService', 'Captured new Claude sessionKey from Electron cookies')
+                    await this.authService.saveToken(existing.id, { ...existing, sessionToken: sessionKey, updatedAt: Date.now() })
+                }
             }
-        } catch (e) {
-            console.debug('[TokenService] Could not capture Claude sessionKey from cookies:', getErrorMessage(e))
+        } catch { /* ignore capture errors */ }
+    }
+
+    private async checkClaudeSessionValidity(token: AuthToken) {
+        const sessionKey = token.sessionToken
+        if (!sessionKey) { return }
+
+        const isValid = await this.validateClaudeSessionKey(sessionKey)
+        if (!isValid) {
+            appLogger.warn('TokenService', `Claude session_key for ${token.id} expired. User needs to re-authenticate via browser.`)
         }
+    }
 
-        // 2. If we have a refresh_token in file, try OAuth refresh
-        if (!fs.existsSync(authDir)) { return }
-
-        const files = (await fs.promises.readdir(authDir)).filter(f => {
-            const name = f.toLowerCase().replace(/\.(json|enc)$/, '')
-            return name.startsWith('claude') || name.startsWith('anthropic')
+    private async performClaudeRefresh(token: AuthToken, refreshToken: string) {
+        const response = await axios.post(CLAUDE_TOKEN_URL, {
+            client_id: CLAUDE_CLIENT_ID,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            timeout: 10000
         })
 
-        for (const file of files) {
-            try {
-                const filePath = path.join(authDir, file)
-                const authData = await this.readAuthFile(filePath)
-                if (!authData) { continue }
-
-                const refreshToken = typeof authData.refresh_token === 'string' ? authData.refresh_token : ''
-                if (!refreshToken) {
-                    // No refresh token - check if we have a valid session_key
-                    const sessionKey = typeof authData.session_key === 'string' ? authData.session_key : ''
-                    if (sessionKey) {
-                        // Validate session key by making a test request
-                        const isValid = await this.validateClaudeSessionKey(sessionKey)
-                        if (isValid) {
-                            console.log('[TokenService] Claude session_key is still valid')
-                            continue
-                        } else {
-                            console.warn('[TokenService] Claude session_key expired. User needs to re-authenticate via browser.')
-                        }
-                    }
-                    continue
-                }
-
-                const expire = typeof authData.expired === 'string' ? authData.expired : ''
-                if (expire) {
-                    const expiryDate = new Date(expire)
-                    if (Date.now() < expiryDate.getTime() - 5 * 60 * 1000) {
-                        continue // Token still valid
-                    }
-                }
-
-                console.log('[TokenService] Refreshing Claude OAuth token...')
-
-                // Claude OAuth refresh (standard flow)
-                const response = await axios.post(CLAUDE_TOKEN_URL, {
-                    client_id: CLAUDE_CLIENT_ID,
-                    grant_type: 'refresh_token',
-                    refresh_token: refreshToken
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    timeout: 10000
-                })
-
-                const newAccessToken = response.data.access_token
-                const newRefreshToken = response.data.refresh_token || refreshToken
-                const expiresIn = response.data.expires_in || 3600
-                const expiryDate = new Date(Date.now() + expiresIn * 1000).toISOString()
-                const email = response.data.account?.email_address || authData.email
-
-                // Update token data
-                const updatedData: JsonObject = {
-                    ...authData,
-                    access_token: newAccessToken,
-                    refresh_token: newRefreshToken,
-                    expired: expiryDate,
-                    email: email,
-                    last_refresh: new Date().toISOString()
-                }
-
-                // Save updated token
-                await this.saveAuthFile(filePath, updatedData)
-                console.log('[TokenService] Claude OAuth token refreshed successfully')
-            } catch (error: unknown) {
-                const errorMsg = getErrorMessage(error)
-                const axiosError = error as { response?: { status?: number; data?: { error?: string } } }
-                const statusCode = axiosError?.response?.status
-                const errorCode = axiosError?.response?.data?.error
-
-                // Check if refresh token is invalid/expired
-                if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
-                    console.warn(`[TokenService] Refresh token expired or invalid for ${file}. User needs to re-authenticate.`)
-                }
-
-                console.error(`[TokenService] Failed to refresh Claude token from ${file}:`, errorMsg)
-            }
-        }
+        await this.authService.saveToken(token.id, {
+            ...token,
+            accessToken: response.data.access_token,
+            refreshToken: response.data.refresh_token ?? refreshToken,
+            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
+            email: response.data.account?.email_address ?? token.email,
+            updatedAt: Date.now()
+        })
+        appLogger.info('TokenService', `Claude OAuth token for ${token.id} refreshed successfully`)
     }
 
     /**
@@ -532,150 +355,23 @@ export class TokenService {
     }
 
     /**
-     * Update Claude auth file with new data
-     */
-    private async updateClaudeAuthFile(authDir: string, updates: JsonObject): Promise<void> {
-        if (!fs.existsSync(authDir)) {
-            fs.mkdirSync(authDir, { recursive: true })
-        }
-
-        let targetFile = 'claude-session.json'
-        let existingContent: JsonObject = {}
-
-        const files = (await fs.promises.readdir(authDir)).filter(f => {
-            const n = f.toLowerCase()
-            return (n.startsWith('claude') || n.startsWith('anthropic')) && n.endsWith('.json')
-        })
-
-        if (files.length > 0) {
-            targetFile = files[0]
-            existingContent = await this.readAuthFile(path.join(authDir, targetFile)) || {}
-        }
-
-        const updatedContent: JsonObject = {
-            ...existingContent,
-            ...updates,
-            provider: 'claude',
-            updated_at: Date.now()
-        }
-
-        await this.saveAuthFile(path.join(authDir, targetFile), updatedContent)
-    }
-
-    /**
-     * Refresh Copilot session token (GitHub token -> Copilot session token)
-     * Note: GitHub PATs cannot be refreshed - they must be manually regenerated.
-     * This only refreshes the Copilot session token (which expires every ~20 minutes).
+     * Refresh Copilot session token
      */
     private async refreshCopilotToken(): Promise<void> {
-        const providers = await this.getLoggedInProviders()
-
-        if (!providers.copilot) {
-            return // Copilot not logged in, skip
-        }
-
         try {
-            console.log('[TokenService] Checking Copilot session token...')
+            appLogger.debug('TokenService', 'Checking Copilot session token...')
 
-            // The CopilotService handles token refresh internally via ensureCopilotToken()
-            // We need to ensure the copilot token is loaded from AuthService if not in settings
-            // ONLY use copilot_token, no fallback to github_token
             const settings = this.settingsService.getSettings()
-            let copilotToken = settings.copilot?.token
-
-            // If token not in settings, try to load from AuthService
-            if (!copilotToken && this.dataService) {
-                const authDir = this.getAuthDir()
-                const copilotTokenFile = path.join(authDir, 'copilot_token.json')
-
-                // ONLY use copilot_token, no fallback
-                if (fs.existsSync(copilotTokenFile)) {
-                    const authData = await this.readAuthFile(copilotTokenFile)
-                    if (authData && typeof authData.token === 'string') {
-                        copilotToken = authData.token
-                    } else if (authData && typeof authData.access_token === 'string') {
-                        copilotToken = authData.access_token
-                    }
-                }
-            }
+            const copilotToken = settings.copilot?.token ?? await this.authService.getToken('copilot_token')
 
             if (copilotToken) {
                 this.copilotService.setGithubToken(copilotToken)
-                console.log('[TokenService] Copilot token loaded, session token will refresh on next use')
+                appLogger.info('TokenService', 'Copilot token loaded, session token will refresh on next use')
             } else {
-                console.warn('[TokenService] No copilot_token found - user needs to re-login')
+                appLogger.warn('TokenService', 'No copilot_token found - user needs to re-login')
             }
         } catch (error) {
-            console.error('[TokenService] Failed to refresh Copilot token:', getErrorMessage(error))
+            appLogger.error('TokenService', `Failed to refresh Copilot token: ${getErrorMessage(error)}`)
         }
-    }
-
-    /**
-     * Read and decrypt auth file
-     */
-    private async readAuthFile(filePath: string): Promise<JsonObject | null> {
-        try {
-            const content = await fs.promises.readFile(filePath, 'utf8')
-            let json: JsonObject
-
-            try {
-                json = JSON.parse(content)
-            } catch {
-                return null
-            }
-
-            // Handle encrypted format
-            if (this.securityService && json.token && typeof json.token === 'string') {
-                const decrypted = this.securityService.decryptSync(json.token)
-                if (decrypted) {
-                    try {
-                        return JSON.parse(decrypted) as JsonObject
-                    } catch {
-                        return { access_token: decrypted } as JsonObject
-                    }
-                }
-            }
-
-            // Handle old encrypted format
-            if (this.securityService && json.encryptedPayload && typeof json.encryptedPayload === 'string') {
-                const decrypted = this.securityService.decryptSync(json.encryptedPayload)
-                if (decrypted) {
-                    return JSON.parse(decrypted) as JsonObject
-                }
-            }
-
-            return json
-        } catch (error) {
-            console.error(`[TokenService] Failed to read auth file ${filePath}:`, getErrorMessage(error))
-            return null
-        }
-    }
-
-    /**
-     * Save and encrypt auth file
-     */
-    private async saveAuthFile(filePath: string, data: JsonObject): Promise<void> {
-        try {
-            if (this.securityService) {
-                // Encrypt the token data
-                const encrypted = this.securityService.encryptSync(JSON.stringify(data))
-                const wrapper = {
-                    provider: path.basename(filePath, path.extname(filePath)),
-                    token: encrypted,
-                    updatedAt: Date.now()
-                }
-                await fs.promises.writeFile(filePath, JSON.stringify(wrapper, null, 2), 'utf8')
-            } else {
-                // Save as plain JSON (not recommended but fallback)
-                await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
-            }
-        } catch (error) {
-            console.error(`[TokenService] Failed to save auth file ${filePath}:`, getErrorMessage(error))
-        }
-    }
-
-    private getAuthDir(): string {
-        if (this.dataService) { return this.dataService.getPath('auth') }
-        return path.join(app.getPath('userData'), 'auth')
     }
 }

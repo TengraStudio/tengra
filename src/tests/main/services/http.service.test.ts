@@ -1,4 +1,4 @@
-import { HttpService } from '@main/services/http.service';
+import { HttpService } from '@main/services/external/http.service';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mock global fetch
