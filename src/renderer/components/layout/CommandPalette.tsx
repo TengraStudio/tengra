@@ -2,13 +2,13 @@ import { CommandFooter } from '@renderer/components/layout/command-palette/Comma
 import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader'
 import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel'
 import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList'
-import { Cpu,Folder, MessageSquare, MessageSquarePlus, RefreshCw, Server, Settings, Trash2 } from 'lucide-react'
-import React, { useEffect,useMemo, useRef, useState } from 'react'
+import { Cpu, Folder, MessageSquare, MessageSquarePlus, RefreshCw, Server, Settings, Trash2 } from 'lucide-react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { SettingsCategory } from '@/features/settings/types'
 import { useDebounce } from '@/hooks/useDebounce'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { Chat, Project } from '@/types'
 
 export interface CommandItem {
@@ -103,7 +103,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const grouped = useMemo(() => {
         const groups: Record<string, CommandItem[]> = {}
-        filtered.forEach(c => { if (!groups[c.category]) { groups[c.category] = []; } groups[c.category].push(c); })
+        filtered.forEach(c => {
+            if (!groups[c.category]) {
+                groups[c.category] = []
+            }
+            groups[c.category]!.push(c)
+        })
         return groups
     }, [filtered])
 

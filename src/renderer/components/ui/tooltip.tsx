@@ -1,4 +1,4 @@
-import React, { useEffect,useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/utils'
@@ -12,13 +12,13 @@ export interface TooltipProps {
     className?: string
 }
 
-export function Tooltip({ 
-    children, 
-    content, 
-    side = 'top', 
+export function Tooltip({
+    children,
+    content,
+    side = 'top',
     delay = 300,
     disabled = false,
-    className 
+    className
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false)
     const [position, setPosition] = useState({ top: 0, left: 0 })
@@ -27,7 +27,7 @@ export function Tooltip({
     const tooltipRef = useRef<HTMLDivElement | null>(null)
 
     const showTooltip = () => {
-        if (disabled) {return}
+        if (disabled) { return }
         timeoutRef.current = setTimeout(() => {
             setIsVisible(true)
             updatePosition()
@@ -43,7 +43,7 @@ export function Tooltip({
     }
 
     const updatePosition = () => {
-        if (!triggerRef.current || !tooltipRef.current) {return}
+        if (!triggerRef.current || !tooltipRef.current) { return }
 
         const triggerRect = triggerRef.current.getBoundingClientRect()
         const tooltipRect = tooltipRef.current.getBoundingClientRect()
@@ -75,11 +75,11 @@ export function Tooltip({
         const viewportWidth = window.innerWidth
         const viewportHeight = window.innerHeight
 
-        if (left < 0) {left = gap}
+        if (left < 0) { left = gap }
         if (left + tooltipRect.width > viewportWidth) {
             left = viewportWidth - tooltipRect.width - gap
         }
-        if (top < 0) {top = gap}
+        if (top < 0) { top = gap }
         if (top + tooltipRect.height > viewportHeight) {
             top = viewportHeight - tooltipRect.height - gap
         }
@@ -99,6 +99,7 @@ export function Tooltip({
                 window.removeEventListener('scroll', handleScroll, true)
             }
         }
+        return undefined
     }, [isVisible, side])
 
     useEffect(() => {

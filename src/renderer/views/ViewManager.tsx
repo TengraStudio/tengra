@@ -1,22 +1,26 @@
+import { useAuth } from '@renderer/context/AuthContext'
+import { useChat } from '@renderer/context/ChatContext'
+import { useModel } from '@renderer/context/ModelContext'
+import { useProject } from '@renderer/context/ProjectContext'
 import { ChatTemplate } from '@renderer/features/chat/types'
-import React, { lazy,Suspense } from 'react'
+import { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
+import React, { lazy, Suspense } from 'react'
 
 import { LoadingState } from '@/components/ui/LoadingState'
-import { useAuth } from '@/context/AuthContext'
-import { useChat } from '@/context/ChatContext'
-import { useModel } from '@/context/ModelContext'
-import { useProject } from '@/context/ProjectContext'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 
 // Lazy load feature modules for better performance
-const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })))
-const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
 const AgentDashboard = lazy(() => import('@/features/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })))
-const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })))
+const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })))
+
+import { ChatViewWrapper } from './ViewManager/ChatViewWrapper'
+import { ProjectsView } from './ViewManager/ProjectsView'
+import { SettingsView } from './ViewManager/SettingsView'
 
 interface ViewManagerProps {
-    currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp'
+    currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp' | 'memory'
     messagesEndRef: React.RefObject<HTMLDivElement>
     fileInputRef: React.RefObject<HTMLInputElement>
     textareaRef: React.RefObject<HTMLTextAreaElement>
@@ -49,7 +53,11 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     } = useModel()
 
     // Fix: extract models array from grouped result if it exists (using .models), otherwise filter models array
-    const installedModels = groupedModels?.ollama?.models || models.filter(m => m.provider === 'ollama')
+    const group = groupedModels && (groupedModels as GroupedModels)['ollama']
+    const ollamaModels = group ? group.models : undefined
+    const installedModels = Array.isArray(ollamaModels) && ollamaModels.length > 0
+        ? ollamaModels
+        : models.filter(m => m.provider === 'ollama')
 
     const {
         projects, selectedProject, setSelectedProject, loadProjects,
@@ -74,88 +82,99 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [setIsModelMenuOpen])
 
-    return (
-        <AnimatePresence mode="wait">
-            {currentView === 'chat' && (
-                <motion.div key="chat" className="h-full overflow-hidden">
-                    <Suspense fallback={<LoadingState size="md" />}>
-                        <ChatView
-                            templates={templates}
-                            messagesEndRef={messagesEndRef}
-                            fileInputRef={fileInputRef}
-                            textareaRef={textareaRef}
-                            onScrollToBottom={onScrollToBottom}
-                            showScrollButton={showScrollButton}
-                            setShowScrollButton={setShowScrollButton}
-                            showFileMenu={showFileMenu}
-                            setShowFileMenu={setShowFileMenu}
-                        />
-                    </Suspense>
-                </motion.div>
-            )}
-            {currentView === 'projects' && (
-                <motion.div key="projects" className="h-full overflow-hidden">
-                    <Suspense fallback={<LoadingState size="md" />}>
-                        <ProjectsPage
-                            projects={projects || []}
-                            onRefresh={loadProjects}
-                            selectedProject={selectedProject}
-                            onSelectProject={setSelectedProject}
-                            language={language || 'en'}
-                            tabs={terminalTabs}
-                            activeTabId={activeTerminalId}
-                            setTabs={setTerminalTabs}
-                            setActiveTabId={setActiveTerminalId}
-                            selectedProvider={selectedProvider}
-                            selectedModel={selectedModel}
-                            onSelectModel={(p, m) => {
-                                setSelectedProvider(p)
-                                setSelectedModel(m)
-                                persistLastSelection(p, m)
-                            }}
-                            groupedModels={groupedModels || undefined}
-                            quotas={quotas}
-                            codexUsage={codexUsage}
-                            settings={appSettings || undefined}
-                            sendMessage={(text) => {
-                                setInput(text || '')
-                                sendMessage(text || '')
-                            }}
-                            messages={displayMessages}
-                            isLoading={isLoading}
-                        />
-                    </Suspense>
-                </motion.div>
-            )}
-            {currentView === 'council' && (
-                <motion.div key="council" className="h-full overflow-hidden">
-                    <Suspense fallback={<LoadingState size="md" />}>
-                        <AgentDashboard />
-                    </Suspense>
-                </motion.div>
-            )}
-            {currentView === 'settings' && (
-                <motion.div key="settings" className="h-full overflow-hidden">
-                    <Suspense fallback={<LoadingState size="md" />}>
-                        <SettingsPage
-                            installedModels={installedModels}
-                            proxyModels={proxyModels}
-                            onRefreshModels={loadModels}
-                            activeTab={settingsCategory}
-                            groupedModels={groupedModels}
-                        />
-                    </Suspense>
-                </motion.div>
-            )}
-            {currentView === 'mcp' && (
-                <motion.div key="mcp" className="h-full overflow-hidden">
+    const renderView = () => {
+        switch (currentView) {
+            case 'chat':
+                return (
+                    <ChatViewWrapper
+                        templates={templates}
+                        messagesEndRef={messagesEndRef}
+                        fileInputRef={fileInputRef}
+                        textareaRef={textareaRef}
+                        onScrollToBottom={onScrollToBottom}
+                        showScrollButton={showScrollButton}
+                        setShowScrollButton={setShowScrollButton}
+                        showFileMenu={showFileMenu}
+                        setShowFileMenu={setShowFileMenu}
+                    />
+                )
+            case 'projects':
+                return (
+                    <ProjectsView
+                        projects={projects}
+                        loadProjects={() => { void loadProjects() }}
+                        selectedProject={selectedProject}
+                        setSelectedProject={setSelectedProject}
+                        language={language}
+                        terminalTabs={terminalTabs}
+                        activeTerminalId={activeTerminalId}
+                        setTerminalTabs={setTerminalTabs}
+                        setActiveTabId={setActiveTerminalId}
+                        selectedProvider={selectedProvider}
+                        selectedModel={selectedModel}
+                        onSelectModel={(p, m) => {
+                            setSelectedProvider(p)
+                            setSelectedModel(m)
+                            void persistLastSelection(p, m)
+                        }}
+                        groupedModels={groupedModels}
+                        quotas={quotas}
+                        codexUsage={codexUsage}
+                        appSettings={appSettings}
+                        onSendMessage={(text) => {
+                            setInput(text ?? '')
+                            void sendMessage(text ?? '')
+                        }}
+                        displayMessages={displayMessages}
+                        isLoading={isLoading}
+                    />
+                )
+            case 'council':
+                return <AgentDashboard language={language} />
+            case 'settings':
+                return (
+                    <SettingsView
+                        installedModels={installedModels}
+                        proxyModels={proxyModels}
+                        loadModels={() => { void loadModels() }}
+                        settingsCategory={settingsCategory}
+                        groupedModels={groupedModels}
+                    />
+                )
+            case 'mcp':
+                return (
                     <div className="h-full p-6 overflow-y-auto">
                         <Suspense fallback={<LoadingState size="md" />}>
-                            <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language || 'en'} />
+                            <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} />
                         </Suspense>
                     </div>
-                </motion.div>
-            )}
+                )
+            case 'memory':
+                return (
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <MemoryInspector />
+                    </Suspense>
+                )
+            default:
+                return null
+        }
+    }
+
+    return (
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={currentView}
+                className={cn(
+                    "h-full overflow-hidden",
+                    currentView === 'memory' && "h-[calc(100vh-64px)]"
+                )}
+            >
+                <Suspense fallback={<LoadingState size="md" />}>
+                    {renderView()}
+                </Suspense>
+            </motion.div>
+
+            {/* Global Mic Indicator */}
 
             {/* Global Mic Indicator */}
             {isListening && (

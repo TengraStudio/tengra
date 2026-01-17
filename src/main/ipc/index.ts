@@ -98,7 +98,7 @@ export function registerAllIpc(
     registerMetricsIpc();
 
     // AI & LLM
-    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService);
+    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService, services.authService);
     registerProxyIpc(services.proxyService);
     registerProxyEmbedIpc(services.proxyService);
     registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService);
@@ -116,9 +116,7 @@ export function registerAllIpc(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
-        proxyService: services.proxyService,
-        copilotService: services.copilotService,
-        llamaService: services.llamaService
+        proxyService: services.proxyService
     });
     registerLlamaIpc(services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);

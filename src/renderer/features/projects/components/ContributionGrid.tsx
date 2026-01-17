@@ -12,30 +12,30 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
     const { gridData, maxCommits } = useMemo(() => {
         const today = new Date()
         const dates: Date[] = []
-        
+
         // Generate 365 days
         for (let i = 364; i >= 0; i--) {
             const date = new Date(today)
             date.setDate(date.getDate() - i)
             dates.push(date)
         }
-        
+
         // Get commit counts per date
         const data = dates.map(date => {
             const dateStr = date.toISOString().split('T')[0]
             return {
                 date: dateStr,
                 dateObj: date,
-                count: commitCounts[dateStr] || 0
+                count: (commitCounts[dateStr] ?? 0) as number
             }
         })
-        
+
         // Find max commits for color intensity
         const max = Math.max(...data.map(d => d.count), 1)
-        
+
         return { gridData: data, maxCommits: max }
     }, [commitCounts])
-    
+
     // Group by weeks (7 days per row)
     const weeks = useMemo(() => {
         type DayData = { date: string; dateObj: Date; count: number }
@@ -45,13 +45,13 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
         }
         return weeksArray
     }, [gridData])
-    
+
     // Get month labels
     const monthLabels = useMemo(() => {
         const labels: { month: string; index: number }[] = []
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         let lastMonth = -1
-        
+
         weeks.forEach((week, weekIndex) => {
             if (week.length > 0) {
                 const firstDay = week[0].dateObj
@@ -62,24 +62,24 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                 }
             }
         })
-        
+
         return labels
     }, [weeks])
-    
+
     // Get color intensity based on commit count
     const getColorIntensity = (count: number): string => {
-        if (count === 0) {return 'bg-muted/10 border border-muted/20'}
-        
+        if (count === 0) { return 'bg-muted/10 border border-muted/20' }
+
         const intensity = Math.min(count / maxCommits, 1)
-        
-        if (intensity < 0.25) {return 'bg-emerald-500/20 border border-emerald-500/30'}
-        if (intensity < 0.5) {return 'bg-emerald-500/40 border border-emerald-500/50'}
-        if (intensity < 0.75) {return 'bg-emerald-500/60 border border-emerald-500/70'}
+
+        if (intensity < 0.25) { return 'bg-emerald-500/20 border border-emerald-500/30' }
+        if (intensity < 0.5) { return 'bg-emerald-500/40 border border-emerald-500/50' }
+        if (intensity < 0.75) { return 'bg-emerald-500/60 border border-emerald-500/70' }
         return 'bg-emerald-500 border border-emerald-400'
     }
-    
+
     const totalContributions = Object.values(commitCounts).reduce((sum, count) => sum + count, 0)
-    
+
     return (
         <div className={cn("space-y-4", className)}>
             <div className="flex items-center justify-between">
@@ -87,7 +87,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                     {totalContributions} contributions in the last year
                 </div>
             </div>
-            
+
             <div className="flex gap-1 items-start">
                 {/* Day labels */}
                 <div className="flex flex-col gap-1 pt-2.5 pr-2">
@@ -98,7 +98,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                         </div>
                     ))}
                 </div>
-                
+
                 {/* Grid */}
                 <div className="flex-1 overflow-x-auto">
                     <div className="flex gap-1">
@@ -128,7 +128,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                     </div>
                 </div>
             </div>
-            
+
             {/* Legend */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Less</span>

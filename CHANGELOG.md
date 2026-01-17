@@ -6,6 +6,45 @@ Track the evolution of Orbit.
 
 ## Recent Updates
 
+### 2026-01-17: Antigravity Model Fetching Refinement
+- **Antigravity Executor**:
+    - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.
+    - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.
+    - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application.
+
+### 2026-01-16: Phase 20 - Independent Microservices Architecture
+- **Microservices Refactoring**:
+    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.
+    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\Orbit\services\{service}.port` for discovery.
+    - Services can run **completely independently** of the main Electron application.
+- **ProcessManagerService**:
+    - Updated to use **HTTP requests** via axios instead of stdin pipes.
+    - Implemented **port discovery** mechanism - checks for already-running services before spawning new ones.
+    - Services are now started with `detached: true` to allow independent lifecycle.
+- **Windows Startup Integration**:
+    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.
+    - Services start automatically at Windows login, even before Orbit app is launched.
+    - Supports `-Status`, `-Uninstall` flags for management.
+- **Default Settings**:
+    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.
+    - Orbit now minimizes to **System Tray** by default instead of closing.
+
+### 2026-01-16: Phase 19 - Technical Debt & Security (Current)
+- **Security**:
+    - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.
+    - Implemented robust command argument handling for Windows platforms.
+- **Refactoring**:
+    - **SSHManager**: Reduced complexity by extracting `SSHConnectionList`, `SSHTerminal`, and `AddConnectionModal` components and `useSSHConnections` hook.
+    - **WorkspaceToolbar**: Extracted `DashboardTabs`.
+    - **Settings**: Implemented `SettingsContext` and refactored `useSettingsLogic` into sub-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).
+- **Internationalization**:
+    - Completed hardcoded string replacements in `SSHManager`, `WorkspaceToolbar`, `ModelComparison`, and others.
+    - Fixed Turkish translation quality issues.
+    - Added Turkish translations for `modelExplorer`, `docker`, `onboarding`, and missing `workspace` keys.
+- **Type Safety**:
+    - Resolved `exactOptionalPropertyTypes` violations and `any` usage.
+    - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`.
+
 ### 2026-01-16: Phase 18 - Internationalization (Prioritized)
 - **Hardcoded String Fixes**:
     - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).
@@ -224,7 +263,7 @@ Track the evolution of Orbit.
 - **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).
 - **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.
 - **Chat**: Resolved "placeholder ghosting" when API generation fails.
-- Replaced silent error catches and console calls with `appLogger` across core services.
+- - Replaced silent error catches and console calls with `appLogger` across core services.
 - **Docs**: Consolidated 19 markdown files into 6 themed documents.
 - **Audit**: Completed initial small cleanup tasks from `TODO.md`.
 

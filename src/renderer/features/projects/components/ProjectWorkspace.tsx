@@ -7,14 +7,14 @@ import { WorkspaceEditor } from '@renderer/features/projects/components/workspac
 import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar'
 import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer'
 import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager'
-import { Activity,X } from 'lucide-react'
-import React, { useCallback,useEffect, useState } from 'react'
+import { Activity, X } from 'lucide-react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { TerminalPanel } from '@/features/terminal/TerminalPanel'
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, CouncilSession,Message, Project, ProjectDashboardTab, QuotaResponse, TerminalTab, WorkspaceEntry } from '@/types'
+import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, CouncilSession, Message, Project, ProjectDashboardTab, QuotaResponse, TerminalTab, WorkspaceEntry } from '@/types'
 
 // Types are now shared from @/types
 
@@ -109,17 +109,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
     // WebSocket Connection for Council
     useEffect(() => {
-        if (!councilSession?.id) {return}
+        if (!councilSession?.id) { return }
 
         // Get WebSocket URL from environment or use default
         // In production, this should use wss:// for secure connections
         // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
-        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) || 'ws://localhost:3001'
-        
+        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) ?? 'ws://localhost:3001'
+
         // Validate WebSocket URL
         if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
             console.error('[ProjectWorkspace] Invalid WebSocket URL:', wsUrl)
-            notify('error', 'Invalid WebSocket configuration')
+            setTimeout(() => notify('error', 'Invalid WebSocket configuration'), 0)
             return
         }
 
@@ -149,7 +149,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
         ws.onerror = (error) => {
             console.error('[ProjectWorkspace] WebSocket error:', error)
-            notify('error', 'WebSocket connection error')
+            setTimeout(() => notify('error', 'WebSocket connection error'), 0)
         }
 
         ws.onclose = () => {
@@ -166,7 +166,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const [agentChatMessage, setAgentChatMessage] = useState('')
 
     const runCouncil = async () => {
-        if (!agentChatMessage.trim()) {return;}
+        if (!agentChatMessage.trim()) { return; }
         try {
             notify('info', 'Initializing Council Session...')
             const session = await window.electron.council.createSession(agentChatMessage)
@@ -189,6 +189,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             const timer = setTimeout(() => setViewTab('editor'), 0)
             return () => clearTimeout(timer)
         }
+        return undefined
     }, [wm.dashboardTab])
 
 
@@ -209,13 +210,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             {/* Top Toolbar */}
             <WorkspaceToolbar
                 project={project}
-                onBack={onBack}
-                onUpdate={handleUpdateProject}
+                projectName={project.title}
+                description={project.description || ''}
+                onNameChange={(title) => handleUpdateProject({ title })}
+                onDescriptionChange={(description) => handleUpdateProject({ description })}
                 handleRunProject={() => wm.setDashboardTab('terminal')}
-                showTerminal={showTerminal} // deprecated
-                toggleTerminal={() => setShowTerminal(!showTerminal)} // deprecated
-                showAgentPanel={showAgentPanel}
-                toggleAgentPanel={() => setShowAgentPanel(!showAgentPanel)}
+                onBack={onBack}
+
                 language={language}
                 dashboardTab={wm.dashboardTab}
                 onDashboardTabChange={wm.setDashboardTab}
@@ -242,7 +243,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                             onEnsureMount={wm.ensureMountReady}
                             onContextAction={(action) => {
                                 setEntryModal({ type: action.type, entry: action.entry })
-                                if (action.type !== 'delete') {setEntryName(action.entry.name)}
+                                if (action.type !== 'delete') { setEntryName(action.entry.name) }
                             }}
                             variant="panel"
                             language={language}

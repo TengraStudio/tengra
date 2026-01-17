@@ -299,8 +299,7 @@ class ThemeStore {
 const themeStoreProxy = new Proxy({} as ThemeStore, {
     get: (_target, prop: string | symbol) => {
         const instance = ThemeStore.getInstance()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (instance as any)[prop]
+        return Reflect.get(instance as object, prop)
     }
 })
 

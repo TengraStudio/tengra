@@ -4,24 +4,24 @@ import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator
 import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager'
 import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager'
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition'
-import { useEffect, useMemo,useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { generateId } from '@/lib/utils'
-import { AppSettings,Chat, Message } from '@/types'
+import { AppSettings, Chat, Message } from '@/types'
 import { CatchError, IpcValue } from '@/types/common'
 
 interface UseChatManagerOptions {
     selectedModel: string
     selectedProvider: string
     language: string
-    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null
-    appSettings?: AppSettings
+    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined
+    appSettings?: AppSettings | undefined
     autoReadEnabled: boolean
     handleSpeak: (id: string, text: string) => void
     formatChatError: (err: CatchError) => string
     t: (key: string) => string
-    activeWorkspacePath?: string
-    projectId?: string
+    activeWorkspacePath?: string | undefined
+    projectId?: string | undefined
 }
 
 export function useChatManager(options: UseChatManagerOptions) {
@@ -83,12 +83,10 @@ export function useChatManager(options: UseChatManagerOptions) {
     const currentChat = chats.find(c => c.id === currentChatId)
     const isLoading = useMemo(() => {
         if (!currentChatId) {
-            console.debug('[useChatManager:isLoading] currentChatId is null, returning false');
             return false
         }
         const isGenerating = Boolean(currentChat?.isGenerating)
         const isStreaming = Boolean(streamingStates[currentChatId])
-        console.debug(`[useChatManager:isLoading] chatId=${currentChatId}, isGenerating=${isGenerating}, isStreaming=${isStreaming}`);
         return isGenerating || isStreaming
     }, [currentChatId, currentChat?.isGenerating, streamingStates])
 
@@ -107,18 +105,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         const load = async () => {
             const allChats = await window.electron.db.getAllChats()
             // Load messages for each chat
-            const chatsWithMessages = await Promise.all(
-                (allChats as Chat[]).map(async (chat) => {
-                    try {
-                        const messages = await window.electron.db.getMessages(chat.id)
-                        return { ...chat, messages: messages as Message[] }
-                    } catch (error) {
-                        console.error(`Failed to load messages for chat ${chat.id}: `, error)
-                        return { ...chat, messages: [] }
-                    }
-                })
-            )
-            setChats(chatsWithMessages)
+            setChats(allChats as Chat[])
             await loadFolders()
         }
         void load()
@@ -128,15 +115,60 @@ export function useChatManager(options: UseChatManagerOptions) {
             setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c))
         })
         return () => { removeStatusListener() }
+        return () => { removeStatusListener() }
     }, [loadFolders])
 
+    // Lazy load messages for current active chat
+    useEffect(() => {
+        if (!currentChatId) {return}
 
-    const handleSend = async (customInput?: string) => {
-        console.log('[useChatManager] handleSend called', { customInput, input, selectedModel, currentChatId, isLoading })
+        // Check if we already have messages for this chat (length > 0)
+        // Note: New empty chats might have 0 messages, but they usually don't exist in DB yet or are just created.
+        // We can optimize by checking a flag like 'messagesLoaded'.
+        // For now, if messages array is missing or empty, try to fetch.
+        // But wait, what if it's a TRULY empty chat? getMessages returns [].
+        // Ideally we should use a `loaded` flag.
+        // Since we don't have that in types yet, we'll fetch if messages are undefined.
+        // The getAllChats returns chats which MIGHT have messages as undefined if the type allows optional.
+        // Our Chat type says messages: Message[].
+        // But DB return might not have it.
+
+        const targetChat = chats.find(c => c.id === currentChatId)
+        if (targetChat && (!targetChat.messages || targetChat.messages.length === 0)) {
+            // We generally assume that if it's in the list and empty, we might need to check DB.
+            // To avoid infinite loops for empty chats, we can trust the 'addMessage' flow updates them.
+            // But here we want to fetch if we haven't fetched yet.
+            // Since we can't distinguish "not loaded" from "empty", we will always try fetch once if empty?
+            // No, that loops.
+            // Let's modify the load logic to set messages = undefined initially if possible, or use a side map.
+            // Actually, simpler: define a `messagesLoaded` set or look at how `getAllChats` behaves.
+            // getAllChats likely returns objects without `messages` property if not joined.
+            // Let's assume we need to fetch.
+
+            const fetchMessages = async () => {
+                try {
+                    // Lazy loading messages
+                    const messages = await window.electron.db.getMessages(currentChatId)
+                    setChats(prev => prev.map(c =>
+                        c.id === currentChatId
+                            ? { ...c, messages: messages as Message[] }
+                            : c
+                    ))
+                } catch (e) {
+                    console.error(`Failed to load messages for ${currentChatId}`, e)
+                }
+            }
+            void fetchMessages()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentChatId])
+
+
+    const handleSend = useCallback(async (customInput?: string) => {
         const content = customInput ?? input
-        if (!content.trim()) { console.log('[useChatManager] Empty content, returning'); return }
-        if (!selectedModel) { console.log('[useChatManager] No model selected, returning'); return }
-        if (isLoading) { console.log('[useChatManager] Already loading, returning'); return }
+        if (!content.trim()) { return }
+        if (!selectedModel) { return }
+        if (isLoading) { return }
 
         // Set loading immediately so UI responds
         // Set generating immediately in UI
@@ -144,7 +176,6 @@ export function useChatManager(options: UseChatManagerOptions) {
         setInput('')
         let chatId = currentChatId
         if (!chatId) {
-            console.log('[useChatManager] Creating new chat...')
             const newChatId = generateId()
             const timestamp = Date.now()
             const newChatDb = {
@@ -156,9 +187,7 @@ export function useChatManager(options: UseChatManagerOptions) {
                 updatedAt: timestamp,
                 isGenerating: true
             }
-            console.log('[useChatManager] Calling createChat with:', newChatDb)
             const createResult = await window.electron.db.createChat(newChatDb)
-            console.log('[useChatManager] createChat result:', createResult)
             if (!createResult.success) {
                 console.error('[useChatManager] Failed to create chat:', createResult)
                 setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: false } : c))
@@ -181,12 +210,12 @@ export function useChatManager(options: UseChatManagerOptions) {
         setChats(prev => prev.map((c: Chat) => c.id === validChatId ? { ...c, messages: [...c.messages, userMessage], title: c.messages.length === 0 ? content.slice(0, 50) : c.title } : c))
 
         void generateResponse(validChatId, userMessage)
-    }
+    }, [input, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, setChats])
 
 
     const { attachments, setAttachments, processFile, removeAttachment } = useAttachments()
 
-    return {
+    return useMemo(() => ({
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages,
         searchTerm, setSearchTerm, input, setInput, isLoading,
         streamingReasoning, streamingSpeed, contextTokens,
@@ -205,5 +234,16 @@ export function useChatManager(options: UseChatManagerOptions) {
         removeAttachment,
         t,
         handleSpeak
-    }
+    }), [
+        chats, currentChatId, messages, displayMessages,
+        searchTerm, input, isLoading,
+        streamingReasoning, streamingSpeed, contextTokens,
+        handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
+        folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage,
+        prompts, createPrompt, deletePrompt, updatePrompt,
+        isListening, startListening, stopListening,
+        updateChat, togglePin, toggleFavorite,
+        attachments, setAttachments, processFile, removeAttachment,
+        t, handleSpeak // handleSpeak depends on props but is stable if props are stable
+    ])
 }

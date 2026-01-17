@@ -1,6 +1,6 @@
 import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ChatEventService', () => {
     let service: ChatEventService;
@@ -54,7 +54,7 @@ describe('ChatEventService', () => {
         const events = await service.getEvents('thread-123');
 
         expect(events).toHaveLength(1);
-        expect(events[0].payload).toEqual({ text: 'Hello' });
+        expect(events[0]!.payload).toEqual({ text: 'Hello' });
         expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM chat_events'));
     });
 
@@ -89,8 +89,8 @@ describe('ChatEventService', () => {
         const state = await service.rebuildThreadState('1');
 
         expect(state.messages).toHaveLength(2); // m1 and m2 remain
-        expect(state.messages[0].content).toBe('Hi updated'); // m1 edited
-        expect(state.messages[1].content).toBe('Hello there'); // m2 unchanged
+        expect(state.messages[0]!.content).toBe('Hi updated'); // m1 edited
+        expect(state.messages[1]!.content).toBe('Hello there'); // m2 unchanged
         // m3 was added then deleted
     });
 });

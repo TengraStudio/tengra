@@ -83,7 +83,7 @@ export class ModelAnalyticsService extends BaseService {
      */
     getModelStats(model: string): ModelStats | null {
         const modelRecords = this.records.filter(r => r.model === model);
-        if (modelRecords.length === 0) {return null;}
+        if (modelRecords.length === 0) { return null; }
 
         return this.calculateStats(modelRecords, model);
     }
@@ -137,7 +137,7 @@ export class ModelAnalyticsService extends BaseService {
         // Daily usage
         const dailyMap = new Map<string, { requests: number; tokens: number; cost: number }>();
         filteredRecords.forEach(r => {
-            const date = new Date(r.timestamp).toISOString().split('T')[0];
+            const date = new Date(r.timestamp).toISOString().split('T')[0]!;
             const existing = dailyMap.get(date) || { requests: 0, tokens: 0, cost: 0 };
             dailyMap.set(date, {
                 requests: existing.requests + 1,
@@ -201,7 +201,7 @@ export class ModelAnalyticsService extends BaseService {
             modelLower.includes(key.toLowerCase())
         );
 
-        if (!matchedPricing) {return 0;}
+        if (!matchedPricing) { return 0; }
 
         const [, price] = matchedPricing;
         return (inputTokens * price.input + outputTokens * price.output) / 1_000_000;

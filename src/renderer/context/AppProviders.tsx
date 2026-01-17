@@ -1,22 +1,26 @@
-import { AuthProvider } from '@renderer/context/AuthContext'
-import { ChatProvider } from '@renderer/context/ChatContext'
-import { ModelProvider } from '@renderer/context/ModelContext'
-import { ProjectProvider } from '@renderer/context/ProjectContext'
-import { ThemeProvider } from '@renderer/context/ThemeContext'
 import { ReactNode } from 'react'
+
+import { AuthProvider } from '@/context/AuthContext'
+import { ChatProvider } from '@/context/ChatContext'
+import { ModelProvider } from '@/context/ModelContext'
+import { ProjectProvider } from '@/context/ProjectContext'
+import { SettingsProvider } from '@/context/SettingsContext'
+import { ThemeProvider } from '@/context/ThemeContext'
 
 export function AppProviders({ children }: { children: ReactNode }) {
     return (
-        <AuthProvider>
-            <ThemeProvider>
-                <ModelProvider>
-                    <ProjectProvider>
-                        <ChatProvider>
-                            {children}
-                        </ChatProvider>
-                    </ProjectProvider>
-                </ModelProvider>
-            </ThemeProvider>
-        </AuthProvider>
+        <SettingsProvider>
+            <AuthProvider>
+                <ThemeProvider>
+                    <ModelProvider>
+                        <ProjectProvider>
+                            <ChatProvider>
+                                {children}
+                            </ChatProvider>
+                        </ProjectProvider>
+                    </ModelProvider>
+                </ThemeProvider>
+            </AuthProvider>
+        </SettingsProvider>
     )
 }

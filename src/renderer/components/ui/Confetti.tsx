@@ -6,6 +6,8 @@ interface ConfettiPiece {
     color: string
     delay: number
     duration: number
+    size: number
+    isRound: boolean
 }
 
 interface ConfettiProps {
@@ -35,7 +37,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
 
     useEffect(() => {
         if (!active) {
-            setPieces([])
+            setTimeout(() => setPieces([]), 0)
             return
         }
 
@@ -45,10 +47,12 @@ export const Confetti: React.FC<ConfettiProps> = ({
             x: Math.random() * 100,
             color: colors[Math.floor(Math.random() * colors.length)],
             delay: Math.random() * 0.5,
-            duration: 2 + Math.random() * 2
+            duration: 2 + Math.random() * 2,
+            size: 8 + Math.random() * 8,
+            isRound: Math.random() > 0.5
         }))
 
-        setPieces(newPieces)
+        setTimeout(() => setPieces(newPieces), 0)
 
         // Clean up after animation
         const timer = setTimeout(() => {
@@ -58,7 +62,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
         return () => clearTimeout(timer)
     }, [active, particleCount, colors, duration])
 
-    if (!active || pieces.length === 0) {return null}
+    if (!active || pieces.length === 0) { return null }
 
     return (
         <>
@@ -71,9 +75,9 @@ export const Confetti: React.FC<ConfettiProps> = ({
                         backgroundColor: piece.color,
                         animationDelay: `${piece.delay}s`,
                         animationDuration: `${piece.duration}s`,
-                        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-                        width: `${8 + Math.random() * 8}px`,
-                        height: `${8 + Math.random() * 8}px`
+                        borderRadius: piece.isRound ? '50%' : '2px',
+                        width: `${piece.size}px`,
+                        height: `${piece.size}px`
                     }}
                 />
             ))}

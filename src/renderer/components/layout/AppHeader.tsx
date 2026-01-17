@@ -28,22 +28,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     const currentChat = chats.find(c => c.id === currentChatId)
 
-    const viewIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+    const viewIcons = {
         chat: MessageSquare,
         projects: LayoutGrid,
         settings: SettingsIcon,
         council: Users,
         mcp: Container
-    }
+    } as Record<string, React.ElementType>
 
     const Icon = viewIcons[currentView] || MessageSquare
 
-    const handleMinimize = () => window.electron.minimize()
-    const handleMaximize = () => window.electron.maximize()
-    const handleClose = () => window.electron.close()
+    const handleMinimize = () => { void window.electron.minimize() }
+    const handleMaximize = () => { void window.electron.maximize() }
+    const handleClose = () => { void window.electron.close() }
 
     return (
-        <header className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-background/50 backdrop-blur-xl z-50 app-drag-region">
+        <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/95 z-50 app-drag-region">
             <div className="flex items-center gap-4 no-drag">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
                     <Icon className="w-5 h-5" />

@@ -3,8 +3,8 @@ export type SqlValue = string | number | boolean | null | undefined | Uint8Array
 export type SqlParams = SqlValue[]
 
 export interface RunResult {
-    rowsAffected?: number
-    insertId?: number | bigint
+    rowsAffected?: number | undefined
+    insertId?: number | bigint | undefined
 }
 
 export interface PreparedStatement {

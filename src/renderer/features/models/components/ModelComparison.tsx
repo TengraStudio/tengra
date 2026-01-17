@@ -4,10 +4,12 @@
  */
 
 import {
-BarChart3, Check,
-    ChevronDown, Clock, Copy, Loader2,     Play, Plus, X, Zap} from 'lucide-react'
-import React, { useCallback,useState } from 'react'
+    BarChart3, Check,
+    ChevronDown, Clock, Copy, Loader2, Play, Plus, X, Zap
+} from 'lucide-react'
+import React, { useCallback, useState } from 'react'
 
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 interface ModelResponse {
@@ -24,19 +26,22 @@ interface ComparisonSlot {
     id: string
     provider: string
     model: string
-    response?: ModelResponse
+    response?: ModelResponse | undefined
     isLoading: boolean
 }
 
 interface ModelComparisonProps {
     availableModels: { provider: string; model: string; name: string }[]
     onCompare: (prompt: string, models: { provider: string; model: string }[]) => Promise<ModelResponse[]>
+    language?: Language
 }
 
 export const ModelComparison: React.FC<ModelComparisonProps> = ({
     availableModels,
-    onCompare
+    onCompare,
+    language = 'en'
 }) => {
+    const { t } = useTranslation(language)
     const [prompt, setPrompt] = useState('')
     const [slots, setSlots] = useState<ComparisonSlot[]>([
         { id: '1', provider: 'openai', model: 'gpt-4o', isLoading: false },
@@ -46,7 +51,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     const [copiedId, setCopiedId] = useState<string | null>(null)
 
     const addSlot = useCallback(() => {
-        if (slots.length >= 4) {return}
+        if (slots.length >= 4) { return }
         const unusedModel = availableModels.find(m =>
             !slots.some(s => s.provider === m.provider && s.model === m.model)
         ) || availableModels[0]
@@ -60,7 +65,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     }, [slots, availableModels])
 
     const removeSlot = useCallback((id: string) => {
-        if (slots.length <= 2) {return}
+        if (slots.length <= 2) { return }
         setSlots(prev => prev.filter(s => s.id !== id))
     }, [slots])
 
@@ -71,7 +76,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
     }, [])
 
     const runComparison = useCallback(async () => {
-        if (!prompt.trim() || isComparing) {return}
+        if (!prompt.trim() || isComparing) { return }
 
         setIsComparing(true)
         setSlots(prev => prev.map(s => ({ ...s, isLoading: true, response: undefined })))
@@ -83,7 +88,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
             setSlots(prev => prev.map((slot, i) => ({
                 ...slot,
                 isLoading: false,
-                response: responses[i]
+                response: responses[i] || undefined
             })))
         } catch (error) {
             setSlots(prev => prev.map(s => ({
@@ -156,7 +161,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                         <button
                             onClick={() => copyResponse(slot.id, slot.response!.content)}
                             className="p-1.5 hover:bg-muted rounded-md transition-colors"
-                            title="Copy response"
+                            title={t('modelComparison.copyResponse')}
                         >
                             {copiedId === slot.id ? (
                                 <Check className="w-4 h-4 text-green-500" />
@@ -227,7 +232,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Enter your prompt to compare across models..."
+                        placeholder={t('modelComparison.promptPlaceholder')}
                         className="w-full h-24 bg-muted/30 border border-border/30 rounded-xl p-3 pr-24 text-sm resize-none outline-none focus:border-primary/50 transition-colors"
                     />
                     <div className="absolute right-2 bottom-2 flex gap-2">

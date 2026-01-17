@@ -1,6 +1,7 @@
 import { CircuitBreaker } from '@main/core/circuit-breaker';
+import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
-import { HttpService } from '@main/services/external/http.service';
+import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { ConfigService } from '@main/services/system/config.service';
@@ -170,8 +171,8 @@ export class LLMService {
 
         try {
             const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
-
-            let finalModel = model;
+            let finalModel = this.normalizeModelName(model, provider);
+            appLogger.info('LLMService', `chatOpenAI: model=${model}, provider=${provider}, finalModel=${finalModel}, baseUrl=${effectiveBaseUrl}`);
             if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
                 // Proxy Routing Logic: Prefix models based on provider and model type
                 const lowerModel = finalModel.toLowerCase();
@@ -224,9 +225,9 @@ export class LLMService {
             const response = await this.breakers.openai.execute(() =>
                 this.httpService.fetch(endpoint, {
                     ...requestInit,
-                    retryCount: 2, // HttpService handles retries
+                    retryCount: 2,
                     timeoutMs: 60000
-                })
+                } as HttpRequestOptions)
             );
 
             if (!response.ok) {
@@ -240,7 +241,7 @@ export class LLMService {
 
             const json = await response.json() as OpenAIChatCompletion;
             if (json.choices && json.choices.length > 0) {
-                const choice = json.choices[0];
+                const choice = json.choices[0]!;
                 const message = choice.message;
                 // Handle images from message content if present
                 const contentParts = Array.isArray(message.content) ? message.content : [];
@@ -271,9 +272,9 @@ export class LLMService {
                 return {
                     content: messageContent || '',
                     role: message.role || 'assistant',
-                    tool_calls: message.tool_calls || [],
-                    completionTokens: json.usage?.completion_tokens,
-                    reasoning_content: message.reasoning_content || message.reasoning || '',
+                    ...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
+                    ...(json.usage?.completion_tokens !== undefined ? { completionTokens: json.usage.completion_tokens } : {}),
+                    ...(message.reasoning_content || message.reasoning ? { reasoning_content: message.reasoning_content || message.reasoning } : {}),
                     images: savedImages
                 };
             }
@@ -297,7 +298,8 @@ export class LLMService {
         // Rate Limiting
         await this.rateLimitService.waitForToken('openai');
 
-        let finalModel = model;
+        let finalModel = this.normalizeModelName(model, provider);
+        appLogger.info('LLMService', `chatOpenAIStream: model=${model}, provider=${provider}, finalModel=${finalModel}, baseUrl=${effectiveBaseUrl}`);
         if (effectiveBaseUrl.includes(':8317') && !finalModel.includes('/')) {
             // Proxy Routing Logic: Prefix models based on provider and model type
             const lowerModel = finalModel.toLowerCase();
@@ -392,7 +394,13 @@ export class LLMService {
                     }));
                 }
 
-                yield { content, reasoning, images: savedImages, type, tool_calls };
+                yield {
+                    ...(content ? { content } : {}),
+                    ...(reasoning ? { reasoning } : {}),
+                    images: savedImages,
+                    ...(type ? { type } : {}),
+                    ...(tool_calls ? { tool_calls } : {})
+                };
             }
         } catch (e) {
             console.error('[LLMService] Stream Loop Error:', e);
@@ -465,11 +473,11 @@ export class LLMService {
                 }
 
                 return {
-                    content: content || (output.text || ''),
+                    content: content || output.text || '',
                     role: 'assistant',
                     reasoning_content: reasoning || undefined,
                     tool_calls: tool_calls.length > 0 ? tool_calls : undefined
-                };
+                } as OpenAIResponse;
             }
             throw new ApiError('Unexpected response format from OpenCode', 'opencode', 200);
         } else {
@@ -502,11 +510,11 @@ export class LLMService {
             try {
                 for await (const chunk of StreamParser.parseChatStream(response)) {
                     yield {
-                        content: chunk.content,
-                        reasoning: chunk.reasoning,
-                        type: chunk.type,
-                        tool_calls: chunk.tool_calls,
-                        images: chunk.images?.map(img => typeof img === 'string' ? img : img.image_url.url)
+                        ...(chunk.content ? { content: chunk.content } : {}),
+                        ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
+                        ...(chunk.type ? { type: chunk.type } : {}),
+                        ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
+                        ...(chunk.images ? { images: chunk.images.map(img => typeof img === 'string' ? img : img.image_url.url) } : {})
                     };
                 }
             } catch (e) {
@@ -554,7 +562,7 @@ export class LLMService {
                 throw new ApiError(data.error.message, 'anthropic', response.status, false, { type: data.error.type });
             }
 
-            return { content: data.content[0].text || '', role: 'assistant' };
+            return { content: data.content[0]?.text || '', role: 'assistant' };
         } catch (error) {
             if (error instanceof ApiError || error instanceof AuthenticationError) { throw error; }
             throw new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
@@ -585,7 +593,7 @@ export class LLMService {
             const data = await response.json() as { choices: Array<{ message: { content: string } }>; error?: { message: string } };
             if (data.error) { throw new ApiError(data.error.message, 'groq', response.status, false); }
 
-            return { content: data.choices[0].message.content || '', role: 'assistant' };
+            return { content: data.choices[0]?.message.content || '', role: 'assistant' };
         } catch (error) {
             if (error instanceof ApiError || error instanceof AuthenticationError) { throw error; }
             throw new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'groq' });
@@ -672,7 +680,10 @@ export class LLMService {
             }
 
             const json = await response.json() as { data: Array<{ embedding: number[] }> };
-            return json.data[0].embedding;
+            if (json.data && json.data.length > 0) {
+                return json.data[0]!.embedding;
+            }
+            throw new ApiError('No embedding data returned', 'openai-embeddings', 200);
         } catch (error) {
             console.error('[LLMService] Embedding Error:', error);
             if (error instanceof ApiError || error instanceof AuthenticationError) { throw error; }
@@ -689,5 +700,29 @@ export class LLMService {
             const json = await response.json() as { data: OpenAIModelDefinition[] };
             return json.data || [];
         } catch { return []; }
+    }
+
+    /**
+     * Normalizes a model name by stripping provider prefixes (e.g., 'ollama/')
+     * when hitting direct provider endpoints.
+     */
+    private normalizeModelName(model: string, provider?: string): string {
+        const lowerProvider = (provider || '').toLowerCase();
+
+        // Strip prefixes if provider matches
+        if (lowerProvider === 'ollama' && model.startsWith('ollama/')) {
+            return model.replace(/^ollama\//, '');
+        }
+        if (lowerProvider === 'anthropic' && model.startsWith('anthropic/')) {
+            return model.replace(/^anthropic\//, '');
+        }
+        if (lowerProvider === 'openai' && model.startsWith('openai/')) {
+            return model.replace(/^openai\//, '');
+        }
+        if (lowerProvider === 'google' && model.startsWith('google/')) {
+            return model.replace(/^google\//, '');
+        }
+
+        return model;
     }
 }

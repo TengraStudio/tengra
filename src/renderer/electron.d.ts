@@ -1,11 +1,12 @@
 import { IpcRendererEvent } from 'electron'
 
 import {
-    AgentDefinition,     AppSettings, AuthStatus, Chat, CopilotQuota, CouncilSession,
-FileSearchResult, Folder, IpcValue, Message, Project,
-ProjectAnalysis, ProjectStats, QuotaResponse,
+    AgentDefinition, AppSettings, AuthStatus, Chat, CopilotQuota, CouncilSession,
+    EntityKnowledge, EpisodicMemory,     FileSearchResult, Folder, IpcValue, Message, Project,
+    ProjectAnalysis, ProjectStats, QuotaResponse,
+SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
-SSHPackageInfo,     SSHSystemStats, ToolCall, ToolDefinition, ToolResult} from '@/shared/types'
+    SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult} from '@/shared/types'
 
 export interface TodoItem {
     file: string
@@ -37,6 +38,34 @@ export interface ModelDefinition {
     percentage?: number
     reset?: string
     [key: string]: IpcValue | undefined
+}
+
+/**
+ * Linked account info returned from auth service.
+ */
+export interface LinkedAccountInfo {
+    id: string
+    provider: string
+    email?: string
+    displayName?: string
+    avatarUrl?: string
+    isActive: boolean
+    createdAt: number
+}
+
+/**
+ * Token data for linking accounts.
+ */
+export interface TokenData {
+    accessToken?: string
+    refreshToken?: string
+    sessionToken?: string
+    email?: string
+    displayName?: string
+    avatarUrl?: string
+    expiresAt?: number
+    scope?: string
+    metadata?: Record<string, IpcValue>
 }
 
 /**
@@ -108,6 +137,43 @@ export interface ElectronAPI {
 
     checkAuthStatus: () => Promise<AuthStatus>
     deleteProxyAuthFile: (name: string) => Promise<{ success: boolean }>
+
+    // --- Linked Accounts (New Multi-Account API) ---
+
+    /**
+     * Get all linked accounts, optionally filtered by provider.
+     */
+    getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>
+
+    /**
+     * Get the active linked account for a provider.
+     */
+    getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>
+
+    /**
+     * Set which account should be active for a provider.
+     */
+    setActiveLinkedAccount: (provider: string, accountId: string) => Promise<{ success: boolean; error?: string }>
+
+    /**
+     * Link a new account for a provider.
+     */
+    linkAccount: (provider: string, tokenData: TokenData) => Promise<{ success: boolean; account?: LinkedAccountInfo; error?: string }>
+
+    /**
+     * Unlink (remove) a specific account.
+     */
+    unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>
+
+    /**
+     * Unlink all accounts for a provider.
+     */
+    unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>
+
+    /**
+     * Check if a provider has any linked accounts.
+     */
+    hasLinkedAccount: (provider: string) => Promise<boolean>
 
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>
@@ -306,6 +372,12 @@ export interface ElectronAPI {
         get: (id: string) => Promise<AgentDefinition | null>
     }
 
+    modelRegistry: {
+        getAllModels: () => Promise<ModelDefinition[]>
+        getRemoteModels: () => Promise<ModelDefinition[]>
+        getInstalledModels: () => Promise<ModelDefinition[]>
+    }
+
     // SSH
     ssh: {
         connect: (connection: SSHConnection) => Promise<{ success: boolean; error?: string; id?: string }>
@@ -432,6 +504,15 @@ export interface ElectronAPI {
 
     audit: {
         getLogs: (startDate?: string, endDate?: string, category?: string) => Promise<Array<{ timestamp: number; action: string; category: string; details?: Record<string, IpcValue>; success: boolean; error?: string }>>
+    }
+
+    memory: {
+        getAll: () => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[]; entities: EntityKnowledge[] }>
+        addFact: (content: string, tags?: string[]) => Promise<{ success: boolean; id?: string; error?: string }>
+        deleteFact: (id: string) => Promise<{ success: boolean; error?: string }>
+        deleteEntity: (id: string) => Promise<{ success: boolean; error?: string }>
+        setEntityFact: (entityType: string, entityName: string, key: string, value: string) => Promise<{ success: boolean; id?: string; error?: string }>
+        search: (query: string) => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[] }>
     }
 
     // Explicit ipcRenderer exposure for flexible components

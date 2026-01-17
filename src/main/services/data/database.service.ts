@@ -15,33 +15,65 @@ import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { v4 as uuidv4 } from 'uuid'
 
+
+
+export interface AuthAccount {
+    id: string
+    name: string
+    avatar?: string
+    createdAt: number
+    updatedAt: number
+}
+
 export interface AuthToken {
     id: string
+    accountId: string
     provider: string
-    accessToken?: string
-    refreshToken?: string
-    sessionToken?: string
-    idToken?: string
-    email?: string
-    expiresAt?: number
-    scope?: string
-    metadata?: JsonObject
+    accessToken?: string | undefined
+    refreshToken?: string | undefined
+    sessionToken?: string | undefined
+    idToken?: string | undefined
+    email?: string | undefined
+    expiresAt?: number | undefined
+    scope?: string | undefined
+    metadata?: JsonObject | undefined
+    updatedAt: number
+}
+
+/**
+ * LinkedAccount represents a single authenticated account for a provider.
+ * This is the new simplified schema that replaces the auth_accounts + auth_tokens dual-table structure.
+ */
+export interface LinkedAccount {
+    id: string
+    provider: string
+    email?: string | undefined
+    displayName?: string | undefined
+    avatarUrl?: string | undefined
+    accessToken?: string | undefined
+    refreshToken?: string | undefined
+    sessionToken?: string | undefined
+    expiresAt?: number | undefined
+    scope?: string | undefined
+    isActive: boolean
+    metadata?: JsonObject | undefined
+    createdAt: number
     updatedAt: number
 }
 
 // Re-export interfaces from previous implementation (copy-pasted for clarity/continuity)
-export interface Folder { id: string; name: string; color?: string; createdAt: number; updatedAt: number }
+export interface Folder { id: string; name: string; color?: string | undefined; createdAt: number; updatedAt: number }
 export interface Prompt { id: string; title: string; content: string; tags: string[]; createdAt: number; updatedAt: number }
 export interface ChatMessage { role: string; content: string; timestamp?: number; vector?: number[];[key: string]: JsonValue | undefined }
-export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectId?: string; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
+export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectId?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
 export interface EpisodicMemory { id: string; title: string; summary: string; embedding: number[]; startDate: number; endDate: number; chatId: string; participants: string[]; createdAt: number }
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
 export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' }
 export interface AgentProfile { id: string; name: string; role: string; description: string }
-export interface CouncilSession { id: string; goal: string; status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string; solution?: string; createdAt: number; updatedAt: number }
+export interface CouncilSession { id: string; goal: string; status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string | undefined; solution?: string | undefined; createdAt: number; updatedAt: number }
 export interface WorkspaceMount { path: string; name: string; type: 'local' | 'ssh'; }
-export interface Project { id: string; title: string; description: string; path: string; mounts: WorkspaceMount[]; chatIds: string[]; councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }; status: 'active' | 'archived' | 'draft'; logo?: string; metadata?: JsonObject; createdAt: number; updatedAt: number }
-export interface Chat { id: string; title: string; model?: string; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean; isFavorite?: boolean; folderId?: string; projectId?: string; isGenerating?: boolean; backend?: string; metadata?: JsonObject }
+export interface Project { id: string; title: string; description: string; path: string; mounts: WorkspaceMount[]; chatIds: string[]; councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }; status: 'active' | 'archived' | 'draft'; logo?: string | undefined; metadata?: JsonObject | undefined; createdAt: number; updatedAt: number }
+export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined }
 // Need to import WorkspaceMount properly or redefine it matching shared/types/workspace
 // Assuming local redefinition or import if accessible. Importing 'WorkspaceMount' was in original.
 
@@ -113,7 +145,7 @@ export class DatabaseService extends BaseService {
             }
 
             this.db = new PGlite(effectivePath, {
-                extensions: this.isTest ? undefined : { vector }
+                ...(this.isTest ? {} : { extensions: { vector } })
             })
             await this.db.waitReady
 
@@ -137,15 +169,11 @@ export class DatabaseService extends BaseService {
     }
 
     private async ensureDb(): Promise<DatabaseAdapter> {
-        appLogger.info('DatabaseService', `ensureDb called, initPromise: ${!!this.initPromise}, db: ${!!this.db}`)
         if (this.initPromise) {
-            appLogger.info('DatabaseService', 'Waiting for init promise...')
             await this.initPromise
-            appLogger.info('DatabaseService', `Init promise resolved, db: ${!!this.db}`)
         }
         if (!this.db) {
-            appLogger.error('DatabaseService', `Database not initialized after waiting! InitError: ${this.initError?.message ?? 'unknown'}`)
-            appLogger.error('DatabaseService', `InitPromise state: ${!!this.initPromise}`)
+            appLogger.error('DatabaseService', `Database not initialized. Reason: ${this.initError?.message ?? 'unknown'}`)
             throw new Error(`Database not initialized. Reason: ${this.initError?.message ?? 'unknown'}`)
         }
         return this.createAdapter()
@@ -489,7 +517,8 @@ export class DatabaseService extends BaseService {
     private getUtilitySchemaMigrations(): Migration[] {
         return [
             ...this.getTimestampAndIndexMigrations(),
-            ...this.getTokenAndUsageMigrations()
+            ...this.getTokenAndUsageMigrations(),
+            ...this.getMultiAccountMigrations()
         ];
     }
 
@@ -653,6 +682,180 @@ export class DatabaseService extends BaseService {
                             updated_at BIGINT NOT NULL
                         );
                     `);
+                }
+            }
+        ];
+    }
+
+    private getMultiAccountMigrations(): Migration[] {
+        return [
+            {
+                id: 13,
+                name: 'Multi-Account Auth Schema',
+                up: async (db: DatabaseAdapter) => {
+                    const now = Date.now();
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS auth_accounts (
+                            id TEXT PRIMARY KEY,
+                            name TEXT NOT NULL,
+                            avatar TEXT,
+                            created_at BIGINT NOT NULL,
+                            updated_at BIGINT NOT NULL
+                        );
+                        INSERT INTO auth_accounts (id, name, created_at, updated_at)
+                        VALUES ('default', 'Default Account', ${now}, ${now})
+                        ON CONFLICT(id) DO NOTHING;
+                    `);
+
+                    // Rebuild auth_tokens with correct schema and relationships
+                    // We assume migration 12 ran, so we rename/copy/drop pattern
+
+                    // 1. Create new table
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS auth_tokens_new (
+                            id TEXT PRIMARY KEY,
+                            account_id TEXT NOT NULL,
+                            provider TEXT NOT NULL,
+                            access_token TEXT,
+                            refresh_token TEXT,
+                            session_token TEXT,
+                            expires_at BIGINT,
+                            scope TEXT,
+                            metadata TEXT,
+                            updated_at BIGINT NOT NULL,
+                            UNIQUE(account_id, provider),
+                            FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
+                        );
+                    `);
+
+                    // 2. Migrate data (if any exists in old table)
+                    // We try to migrate from 'auth_tokens' if it exists. 
+                    // Note: 'auth_tokens' might not have account_id yet.
+                    try {
+                        const existing = await db.query('SELECT count(*) as c FROM auth_tokens').then(r => r.rows[0] as { c: number });
+                        if (Number(existing.c) > 0) {
+                            await db.exec(`
+                                INSERT INTO auth_tokens_new (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+                                SELECT id, 'default', provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
+                                FROM auth_tokens;
+                            `);
+                        }
+                    } catch (e) {
+                        // Ignore if auth_tokens doesn't exist or query fails
+                    }
+
+                    // 3. Swap tables
+                    await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
+                    await db.exec(`ALTER TABLE auth_tokens_new RENAME TO auth_tokens;`);
+                }
+            },
+            {
+                id: 14,
+                name: 'Add email to auth_tokens and fix multi-account constraint',
+                up: async (db: DatabaseAdapter) => {
+                    // 1. Create the new table with the email column and the correct UNIQUE constraint
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS auth_tokens_v14 (
+                            id TEXT PRIMARY KEY,
+                            account_id TEXT NOT NULL,
+                            provider TEXT NOT NULL,
+                            email TEXT,
+                            access_token TEXT,
+                            refresh_token TEXT,
+                            session_token TEXT,
+                            expires_at BIGINT,
+                            scope TEXT,
+                            metadata TEXT,
+                            updated_at BIGINT NOT NULL,
+                            UNIQUE(account_id, provider, email),
+                            FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
+                        );
+                    `);
+
+                    // 2. Migrate data from auth_tokens
+                    try {
+                        await db.exec(`
+                            INSERT INTO auth_tokens_v14 (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+                            SELECT id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
+                            FROM auth_tokens;
+                        `);
+                    } catch (e) {
+                        appLogger.warn('DatabaseService', 'Migration 14: Failed to migrate existing tokens or table missing.');
+                    }
+
+                    // 3. Replace old table
+                    await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
+                    await db.exec(`ALTER TABLE auth_tokens_v14 RENAME TO auth_tokens;`);
+                }
+            },
+            {
+                id: 15,
+                name: 'Create linked_accounts table for provider-centric multi-account',
+                up: async (db: DatabaseAdapter) => {
+                    const now = Date.now();
+
+                    // Create the new linked_accounts table
+                    await db.exec(`
+                        CREATE TABLE IF NOT EXISTS linked_accounts (
+                            id TEXT PRIMARY KEY,
+                            provider TEXT NOT NULL,
+                            email TEXT,
+                            display_name TEXT,
+                            avatar_url TEXT,
+                            access_token TEXT,
+                            refresh_token TEXT,
+                            session_token TEXT,
+                            expires_at BIGINT,
+                            scope TEXT,
+                            is_active BOOLEAN DEFAULT FALSE,
+                            metadata TEXT,
+                            created_at BIGINT NOT NULL,
+                            updated_at BIGINT NOT NULL,
+                            UNIQUE(provider, email)
+                        );
+                    `);
+
+                    // Create indices for fast lookup
+                    await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider);`);
+                    await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_active ON linked_accounts(provider, is_active);`);
+
+                    // Migrate existing tokens from auth_tokens to linked_accounts
+                    try {
+                        const existingTokens = await db.query('SELECT * FROM auth_tokens');
+                        for (const row of existingTokens.rows) {
+                            const token = row as JsonObject;
+                            // Check if already migrated
+                            const email = token.email as string || null;
+                            const provider = token.provider as string;
+                            const existing = await db.query(
+                                'SELECT id FROM linked_accounts WHERE provider = $1 AND (email = $2 OR (email IS NULL AND $2 IS NULL))',
+                                [provider, email]
+                            );
+
+                            if (existing.rows.length === 0) {
+                                const metadataStr = token.metadata ? JSON.stringify(token.metadata) : null;
+                                await db.prepare(`
+                                    INSERT INTO linked_accounts (id, provider, email, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                `).run(
+                                    token.id as string,
+                                    provider,
+                                    email,
+                                    token.access_token as string | null,
+                                    token.refresh_token as string | null,
+                                    token.session_token as string | null,
+                                    token.expires_at as number | null,
+                                    token.scope as string | null,
+                                    true,  // First account per provider is active
+                                    metadataStr,
+                                    now,
+                                    (token.updated_at as number | undefined) ?? now
+                                );
+                            }
+                        }
+                    } catch {
+                        appLogger.warn('DatabaseService', 'Migration 15: No existing tokens to migrate or migration failed.');
+                    }
                 }
             }
         ];
@@ -1065,7 +1268,7 @@ export class DatabaseService extends BaseService {
                         metadata, created_at, updated_at
                     ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).run(...chatData)
-            appLogger.info('DatabaseService', `Created chat: ${chatId} `)
+            appLogger.info('DatabaseService', `Created chat: ${chatId} (${chat.title || 'New Chat'})`)
             return { success: true, id: chatId }
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to create chat:', error as Error)
@@ -1202,6 +1405,7 @@ export class DatabaseService extends BaseService {
             if (fields.length > 0) {
                 values.push(id)
                 await db.prepare(`UPDATE chats SET ${fields.join(', ')} WHERE id = ? `).run(...(values as SqlValue[]))
+                appLogger.info('DatabaseService', `Updated chat: ${id} with ${fields.join(', ')}`)
             }
             return { success: true }
         } catch (error) {
@@ -1240,10 +1444,11 @@ export class DatabaseService extends BaseService {
     async deleteChat(id: string) {
         try {
             const db = await this.ensureDb()
-            await db.transaction(async () => {
-                await db.prepare('DELETE FROM messages WHERE chat_id = ?').run(id)
-                await db.prepare('DELETE FROM chats WHERE id = ?').run(id)
+            await db.transaction(async (tx) => {
+                await tx.prepare('DELETE FROM messages WHERE chat_id = ?').run(id)
+                await tx.prepare('DELETE FROM chats WHERE id = ?').run(id)
             })
+            appLogger.info('DatabaseService', `Deleted chat: ${id}`)
             return { success: true }
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to delete chat: ${getErrorMessage(error)} `)
@@ -1502,9 +1707,29 @@ export class DatabaseService extends BaseService {
             tags: this.parseJsonField(r.tags as string | null, []),
             importance: Number(r.importance ?? 0),
             projectId: r.project_id as string | undefined,
-            createdAt: Number(r.created_at),
-            updatedAt: Number(r.updated_at)
+            createdAt: Number(r.createdAt || r.created_at),
+            updatedAt: Number(r.updatedAt || r.updated_at)
         }))
+    }
+
+    async getSemanticFragmentsByIds(ids: string[]): Promise<SemanticFragment[]> {
+        if (ids.length === 0) { return []; }
+        const db = await this.ensureDb();
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = await db.prepare(`SELECT * FROM semantic_fragments WHERE id IN (${placeholders})`).all<JsonObject>(...ids);
+
+        return rows.map(r => ({
+            id: String(r.id),
+            content: String(r.content),
+            embedding: [],
+            source: String(r.source),
+            sourceId: String(r.source_id),
+            tags: this.parseJsonField(r.tags as string | null, []),
+            importance: Number(r.importance ?? 0),
+            projectId: r.project_id as string | undefined,
+            createdAt: Number(r.createdAt || r.created_at),
+            updatedAt: Number(r.updatedAt || r.updated_at)
+        }));
     }
 
     async searchSemanticFragmentsByText(query: string, limit: number): Promise<SemanticFragment[]> {
@@ -1606,6 +1831,25 @@ export class DatabaseService extends BaseService {
         }))
     }
 
+    async getEpisodicMemoriesByIds(ids: string[]): Promise<EpisodicMemory[]> {
+        if (ids.length === 0) { return []; }
+        const db = await this.ensureDb();
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = await db.prepare(`SELECT * FROM episodic_memories WHERE id IN (${placeholders})`).all<JsonObject>(...ids);
+
+        return rows.map(r => ({
+            id: String(r.id),
+            title: String(r.title),
+            summary: String(r.summary),
+            embedding: [],
+            startDate: Number(r.start_date),
+            endDate: Number(r.end_date),
+            chatId: String(r.chat_id),
+            participants: this.parseJsonField(r.participants as string | null, []),
+            createdAt: Number(r.created_at)
+        }));
+    }
+
     async storeEntityKnowledge(knowledge: EntityKnowledge) {
         const db = await this.ensureDb()
         await db.prepare(`
@@ -1704,7 +1948,7 @@ export class DatabaseService extends BaseService {
     /**
      * Get bookmarked messages across all chats
      */
-    async getBookmarkedMessages(): Promise<Array<{ id: string; chatId: string; content: string; timestamp: number; chatTitle?: string }>> {
+    async getBookmarkedMessages(): Promise<Array<{ id: string; chatId: string; content: string; timestamp: number; chatTitle?: string | undefined }>> {
         try {
             const db = await this.ensureDb()
             const rows = await db.prepare(`
@@ -1720,7 +1964,7 @@ export class DatabaseService extends BaseService {
                 chatId: String(r.chat_id),
                 content: String(r.content),
                 timestamp: Number(r.timestamp),
-                chatTitle: r.chat_title as string | undefined
+                ...(r.chat_title ? { chatTitle: String(r.chat_title) } : {})
             }))
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to get bookmarked messages: ${getErrorMessage(error)} `)
@@ -2339,20 +2583,33 @@ export class DatabaseService extends BaseService {
             const db = await this.ensureDb()
             const row = await db.prepare('SELECT * FROM auth_tokens WHERE id = ?').get<JsonObject>(id)
             if (!row) { return null }
-            return {
-                id: String(row.id),
-                provider: String(row.provider),
-                accessToken: row.access_token as string | undefined,
-                refreshToken: row.refresh_token as string | undefined,
-                sessionToken: row.session_token as string | undefined,
-                expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
-                scope: row.scope as string | undefined,
-                metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
-                updatedAt: Number(row.updated_at)
-            }
+            return this.mapAuthTokenRow(row)
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to get auth token ${id}: ${getErrorMessage(error)} `)
             return null
+        }
+    }
+
+    async getAuthTokenByProvider(accountId: string, provider: string): Promise<AuthToken | null> {
+        try {
+            const db = await this.ensureDb()
+            const row = await db.prepare('SELECT * FROM auth_tokens WHERE account_id = ? AND provider = ?').get<JsonObject>(accountId, provider)
+            if (!row) { return null }
+            return this.mapAuthTokenRow(row)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get auth token for ${provider}: ${getErrorMessage(error)} `)
+            return null
+        }
+    }
+
+    async getAuthTokensByProvider(accountId: string, provider: string): Promise<AuthToken[]> {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT * FROM auth_tokens WHERE account_id = ? AND provider = ?').all<JsonObject>(accountId, provider)
+            return rows.map(row => this.mapAuthTokenRow(row))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get auth tokens for ${provider}: ${getErrorMessage(error)} `)
+            return []
         }
     }
 
@@ -2360,20 +2617,24 @@ export class DatabaseService extends BaseService {
         try {
             const db = await this.ensureDb()
             await db.prepare(`
-                INSERT INTO auth_tokens(id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO auth_tokens(id, account_id, provider, email, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
-        provider = excluded.provider,
-            access_token = excluded.access_token,
-            refresh_token = excluded.refresh_token,
-            session_token = excluded.session_token,
-            expires_at = excluded.expires_at,
-            scope = excluded.scope,
-            metadata = excluded.metadata,
-            updated_at = excluded.updated_at
-                `).run(
+                    account_id = excluded.account_id,
+                    provider = excluded.provider,
+                    email = excluded.email,
+                    access_token = excluded.access_token,
+                    refresh_token = excluded.refresh_token,
+                    session_token = excluded.session_token,
+                    expires_at = excluded.expires_at,
+                    scope = excluded.scope,
+                    metadata = excluded.metadata,
+                    updated_at = excluded.updated_at
+            `).run(
                 token.id,
+                token.accountId,
                 token.provider,
+                token.email ?? null,
                 token.accessToken ?? null,
                 token.refreshToken ?? null,
                 token.sessionToken ?? null,
@@ -2398,24 +2659,184 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    async getAllAuthTokens(): Promise<AuthToken[]> {
+    async getAllAuthTokens(accountId?: string): Promise<AuthToken[]> {
         try {
             const db = await this.ensureDb()
-            const rows = await db.prepare('SELECT * FROM auth_tokens').all<JsonObject>()
-            return rows.map(row => ({
-                id: String(row.id),
-                provider: String(row.provider),
-                accessToken: row.access_token as string | undefined,
-                refreshToken: row.refresh_token as string | undefined,
-                sessionToken: row.session_token as string | undefined,
-                expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
-                scope: row.scope as string | undefined,
-                metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
-                updatedAt: Number(row.updated_at)
-            }))
+            let sql = 'SELECT * FROM auth_tokens'
+            const params: SqlValue[] = []
+            if (accountId) {
+                sql += ' WHERE account_id = ?'
+                params.push(accountId)
+            }
+            const rows = await db.prepare(sql).all<JsonObject>(...params)
+            return rows.map(row => this.mapAuthTokenRow(row))
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to get all auth tokens: ${getErrorMessage(error)} `)
             return []
+        }
+    }
+
+    // --- Auth Account Methods ---
+
+    async createAuthAccount(account: AuthAccount): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO auth_accounts(id, name, avatar, created_at, updated_at)
+                VALUES(?, ?, ?, ?, ?)
+            `).run(account.id, account.name, account.avatar ?? null, account.createdAt, account.updatedAt)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to create auth account: ${getErrorMessage(error)} `)
+            throw error
+        }
+    }
+
+    async getAuthAccounts(): Promise<AuthAccount[]> {
+        try {
+            const db = await this.ensureDb()
+            const rows = await db.prepare('SELECT * FROM auth_accounts ORDER BY created_at ASC').all<JsonObject>()
+            return rows.map(row => ({
+                id: String(row.id),
+                name: String(row.name),
+                avatar: row.avatar as string | undefined,
+                createdAt: Number(row.created_at),
+                updatedAt: Number(row.updated_at)
+            }))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get auth accounts: ${getErrorMessage(error)} `)
+            return []
+        }
+    }
+
+    private mapAuthTokenRow(row: JsonObject): AuthToken {
+        return {
+            id: String(row.id),
+            accountId: String(row.account_id),
+            provider: String(row.provider),
+            email: row.email as string | undefined,
+            accessToken: row.access_token as string | undefined,
+            refreshToken: row.refresh_token as string | undefined,
+            sessionToken: row.session_token as string | undefined,
+            expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
+            scope: row.scope as string | undefined,
+            metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
+            updatedAt: Number(row.updated_at)
+        }
+    }
+
+    // --- Linked Account Methods (New Multi-Account System) ---
+
+    async getLinkedAccounts(provider?: string): Promise<LinkedAccount[]> {
+        try {
+            const db = await this.ensureDb()
+            let sql = 'SELECT * FROM linked_accounts'
+            const params: SqlValue[] = []
+            if (provider) {
+                sql += ' WHERE provider = ?'
+                params.push(provider)
+            }
+            sql += ' ORDER BY created_at ASC'
+            const rows = await db.prepare(sql).all<JsonObject>(...params)
+            return rows.map(row => this.mapLinkedAccountRow(row))
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get linked accounts: ${getErrorMessage(error)}`)
+            return []
+        }
+    }
+
+    async getActiveLinkedAccount(provider: string): Promise<LinkedAccount | null> {
+        try {
+            const db = await this.ensureDb()
+            const row = await db.prepare(
+                'SELECT * FROM linked_accounts WHERE provider = ? AND is_active = true LIMIT 1'
+            ).get<JsonObject>(provider)
+            return row ? this.mapLinkedAccountRow(row) : null
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get active linked account for ${provider}: ${getErrorMessage(error)}`)
+            return null
+        }
+    }
+
+    async saveLinkedAccount(account: LinkedAccount): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare(`
+                INSERT INTO linked_accounts(id, provider, email, display_name, avatar_url, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    provider = excluded.provider,
+                    email = excluded.email,
+                    display_name = excluded.display_name,
+                    avatar_url = excluded.avatar_url,
+                    access_token = excluded.access_token,
+                    refresh_token = excluded.refresh_token,
+                    session_token = excluded.session_token,
+                    expires_at = excluded.expires_at,
+                    scope = excluded.scope,
+                    is_active = excluded.is_active,
+                    metadata = excluded.metadata,
+                    updated_at = excluded.updated_at
+            `).run(
+                account.id,
+                account.provider,
+                account.email ?? null,
+                account.displayName ?? null,
+                account.avatarUrl ?? null,
+                account.accessToken ?? null,
+                account.refreshToken ?? null,
+                account.sessionToken ?? null,
+                account.expiresAt ?? null,
+                account.scope ?? null,
+                account.isActive,
+                account.metadata ? JSON.stringify(account.metadata) : null,
+                account.createdAt,
+                account.updatedAt
+            )
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to save linked account ${account.id}: ${getErrorMessage(error)}`)
+            throw error
+        }
+    }
+
+    async deleteLinkedAccount(id: string): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            await db.prepare('DELETE FROM linked_accounts WHERE id = ?').run(id)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to delete linked account ${id}: ${getErrorMessage(error)}`)
+            throw error
+        }
+    }
+
+    async setActiveLinkedAccount(provider: string, accountId: string): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            // Deactivate all accounts for this provider
+            await db.prepare('UPDATE linked_accounts SET is_active = false WHERE provider = ?').run(provider)
+            // Activate the specified account
+            await db.prepare('UPDATE linked_accounts SET is_active = true WHERE id = ? AND provider = ?').run(accountId, provider)
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to set active linked account: ${getErrorMessage(error)}`)
+            throw error
+        }
+    }
+
+    private mapLinkedAccountRow(row: JsonObject): LinkedAccount {
+        return {
+            id: String(row.id),
+            provider: String(row.provider),
+            email: row.email as string | undefined,
+            displayName: row.display_name as string | undefined,
+            avatarUrl: row.avatar_url as string | undefined,
+            accessToken: row.access_token as string | undefined,
+            refreshToken: row.refresh_token as string | undefined,
+            sessionToken: row.session_token as string | undefined,
+            expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
+            scope: row.scope as string | undefined,
+            isActive: Boolean(row.is_active),
+            metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
+            createdAt: Number(row.created_at),
+            updatedAt: Number(row.updated_at)
         }
     }
 }

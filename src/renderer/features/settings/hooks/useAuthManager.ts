@@ -1,13 +1,13 @@
 ﻿import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
 import { SettingsCategory } from '@renderer/features/settings/types'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 export function useAuthManager() {
     const logic = useSettingsLogic()
     const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('general')
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
-    return {
+    return useMemo(() => ({
         ...logic,
         language: logic.settings?.general?.language || 'en',
         settingsCategory,
@@ -20,5 +20,7 @@ export function useAuthManager() {
         quotas: logic.quotaData,
         codexUsage: logic.codexUsage,
         refresh: logic.refreshAuthStatus
-    }
+    }), [
+        logic, settingsCategory, isAuthModalOpen
+    ])
 }

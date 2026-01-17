@@ -4,7 +4,7 @@ import * as path from 'path'
 
 import { DataService } from '@main/services/data/data.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetPath } = vi.hoisted(() => {
     return { mockGetPath: vi.fn() }
@@ -20,6 +20,7 @@ const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSet
 const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as any
 const mockProcessManager = { prepareTempAuthDir: vi.fn() } as any
 const mockQuotaService = {} as any
+const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any
 
 describe('Proxy-Data Integration', () => {
     let tempDir: string
@@ -35,7 +36,8 @@ describe('Proxy-Data Integration', () => {
             dataService,
             mockSecurityService,
             mockProcessManager,
-            mockQuotaService
+            mockQuotaService,
+            mockAuthService
         )
     })
 

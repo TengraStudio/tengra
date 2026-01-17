@@ -45,9 +45,9 @@ export class ProjectService {
 
             // Recursive native watcher
             const watcher = watch(rootPath, { recursive: true }, (event, filename) => {
-                if (!filename) {return}
+                if (!filename) { return }
                 // Simple debounce/filter could be added here
-                if (filename.includes('node_modules') || filename.includes('.git')) {return}
+                if (filename.includes('node_modules') || filename.includes('.git')) { return }
                 onChange(event, path.join(rootPath, filename.toString()))
             })
 
@@ -133,10 +133,12 @@ export class ProjectService {
                 const moduleMatches = content.matchAll(/include\s*\(?([\s\S]*?)\)?(?:\n|$)/g)
                 const packages: string[] = []
                 for (const m of moduleMatches) {
-                    const block = m[1]
+                    const block = m[1] || ''
                     const names = block.matchAll(/['"]:?([^'"]+)['"]/g)
                     for (const n of names) {
-                        packages.push(n[1])
+                        if (n[1]) {
+                            packages.push(n[1])
+                        }
                     }
                 }
                 if (packages.length > 0) {
@@ -172,7 +174,7 @@ export class ProjectService {
                     .filter(l => /^[-*+]\s*\[[ xX]?\]/.test(l) || /^[-*+]\s+/.test(l))
                     .map(l => l.replace(/^[-*+]\s*\[[ xX]?\]\s*/, '').replace(/^[-*+]\s+/, ''))
 
-                if (tasks.length > 0) {return tasks}
+                if (tasks.length > 0) { return tasks }
 
                 // If no checklist, just return first non-empty 10 lines
                 return lines.filter(l => l.trim().length > 0).slice(0, 10)
@@ -190,12 +192,17 @@ export class ProjectService {
                 const lines = content.split('\n')
                 for (const line of lines) {
                     if (line.includes('TODO:') || line.includes('FIXME:')) {
-                        todoComments.push(line.split('TODO:')[1]?.trim() || line.split('FIXME:')[1]?.trim())
-                        if (todoComments.length >= 10) {break}
+                        const todoParts = line.split('TODO:')
+                        const fixmeParts = line.split('FIXME:')
+                        const comment = (todoParts.length > 1 ? todoParts[1]! : fixmeParts.length > 1 ? fixmeParts[1]! : undefined)?.trim()
+                        if (comment) {
+                            todoComments.push(comment)
+                        }
+                        if (todoComments.length >= 10) { break }
                     }
                 }
             } catch { /* ignore */ }
-            if (todoComments.length >= 10) {break}
+            if (todoComments.length >= 10) { break }
         }
 
         return todoComments
@@ -327,7 +334,7 @@ export class ProjectService {
 
         for (const file of files) {
             const ext = path.extname(file).slice(1).toLowerCase()
-            if (!ext) {continue}
+            if (!ext) { continue }
 
             const lang = commonExts[ext] || ext.toUpperCase()
             langMap[lang] = (langMap[lang] || 0) + 1
@@ -345,7 +352,7 @@ export class ProjectService {
                 const fullPath = path.join(dir, entry.name)
 
                 // Basic ignore list
-                if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'build' || entry.name === '.orbit' || entry.name === '.vscode' || entry.name === 'coverage') {continue}
+                if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'build' || entry.name === '.orbit' || entry.name === '.vscode' || entry.name === 'coverage') { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanFiles(fullPath, rootPath, fileList)
@@ -365,15 +372,15 @@ export class ProjectService {
     private async detectType(files: string[]): Promise<ProjectAnalysis['type'] | string> {
         // Check for specific indicator files
         const fileNames = files.map(f => path.basename(f).toLowerCase())
-        if (fileNames.includes('package.json')) {return 'node'}
-        if (fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'))) {return 'python'}
-        if (fileNames.includes('cargo.toml')) {return 'rust'}
-        if (fileNames.includes('go.mod')) {return 'go'}
-        if (fileNames.includes('pom.xml') || fileNames.includes('build.gradle') || fileNames.includes('build.gradle.kts')) {return 'java'}
-        if (fileNames.includes('cmakelists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc') || f.endsWith('.h') || f.endsWith('.hpp'))) {return 'cpp'}
-        if (fileNames.some(f => f.endsWith('.php'))) {return 'php'}
-        if (fileNames.some(f => f.endsWith('.cs')) || fileNames.some(f => f.endsWith('.csproj'))) {return 'csharp'}
-        if (fileNames.some(f => f.endsWith('.kt')) || fileNames.some(f => f.endsWith('.kts'))) {return 'java'} // Map Kotlin to Java for now as they share the ecosystem
+        if (fileNames.includes('package.json')) { return 'node' }
+        if (fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'))) { return 'python' }
+        if (fileNames.includes('cargo.toml')) { return 'rust' }
+        if (fileNames.includes('go.mod')) { return 'go' }
+        if (fileNames.includes('pom.xml') || fileNames.includes('build.gradle') || fileNames.includes('build.gradle.kts')) { return 'java' }
+        if (fileNames.includes('cmakelists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc') || f.endsWith('.h') || f.endsWith('.hpp'))) { return 'cpp' }
+        if (fileNames.some(f => f.endsWith('.php'))) { return 'php' }
+        if (fileNames.some(f => f.endsWith('.cs')) || fileNames.some(f => f.endsWith('.csproj'))) { return 'csharp' }
+        if (fileNames.some(f => f.endsWith('.kt')) || fileNames.some(f => f.endsWith('.kts'))) { return 'java' } // Map Kotlin to Java for now as they share the ecosystem
 
         return 'unknown'
     }
@@ -398,14 +405,14 @@ export class ProjectService {
                 const depKeys = Object.keys(allDeps)
 
                 // Framework detection logic
-                if (depKeys.includes('react')) {result.frameworks.push('React')}
-                if (depKeys.includes('next')) {result.frameworks.push('Next.js')}
-                if (depKeys.includes('vue')) {result.frameworks.push('Vue')}
-                if (depKeys.includes('svelte')) {result.frameworks.push('Svelte')}
-                if (depKeys.includes('express')) {result.frameworks.push('Express')}
-                if (depKeys.includes('electron')) {result.frameworks.push('Electron')}
-                if (depKeys.includes('tailwindcss')) {result.frameworks.push('TailwindCSS')}
-                if (depKeys.includes('typescript')) {result.frameworks.push('TypeScript')}
+                if (depKeys.includes('react')) { result.frameworks.push('React') }
+                if (depKeys.includes('next')) { result.frameworks.push('Next.js') }
+                if (depKeys.includes('vue')) { result.frameworks.push('Vue') }
+                if (depKeys.includes('svelte')) { result.frameworks.push('Svelte') }
+                if (depKeys.includes('express')) { result.frameworks.push('Express') }
+                if (depKeys.includes('electron')) { result.frameworks.push('Electron') }
+                if (depKeys.includes('tailwindcss')) { result.frameworks.push('TailwindCSS') }
+                if (depKeys.includes('typescript')) { result.frameworks.push('TypeScript') }
             } catch (error) {
                 console.warn('[ProjectService] Failed to parse package.json:', getErrorMessage(error as Error))
             }
@@ -418,11 +425,11 @@ export class ProjectService {
 
                 for (const line of lines) {
                     const trimmed = line.trim()
-                    if (!trimmed || trimmed.startsWith('#')) {continue}
+                    if (!trimmed || trimmed.startsWith('#')) { continue }
 
                     // Parse package==version, package>=version, etc.
                     const match = trimmed.match(/^([a-zA-Z0-9_-]+)(?:[=<>!~]+(.+))?/)
-                    if (match) {
+                    if (match?.[1]) {
                         result.dependencies[match[1]] = match[2] || '*'
                     }
                 }
@@ -442,7 +449,7 @@ export class ProjectService {
                     const depLines = depMatch[1].split('\n')
                     for (const line of depLines) {
                         const match = line.match(/^([a-zA-Z0-9_-]+)\s*=/)
-                        if (match) {
+                        if (match?.[1]) {
                             result.dependencies[match[1]] = '*'
                         }
                     }
@@ -454,7 +461,7 @@ export class ProjectService {
                     const depLines = poetryMatch[1].split('\n')
                     for (const line of depLines) {
                         const match = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"?([^"]+)"?/)
-                        if (match && match[1] !== 'python') {
+                        if (match?.[1] && match[1] !== 'python') {
                             result.dependencies[match[1]] = match[2] || '*'
                         }
                     }
@@ -466,14 +473,14 @@ export class ProjectService {
 
             // Python framework detection
             const allDeps = Object.keys(result.dependencies)
-            if (allDeps.includes('django')) {result.frameworks.push('Django')}
-            if (allDeps.includes('flask')) {result.frameworks.push('Flask')}
-            if (allDeps.includes('fastapi')) {result.frameworks.push('FastAPI')}
-            if (allDeps.includes('pytorch') || allDeps.includes('torch')) {result.frameworks.push('PyTorch')}
-            if (allDeps.includes('tensorflow')) {result.frameworks.push('TensorFlow')}
-            if (allDeps.includes('numpy')) {result.frameworks.push('NumPy')}
-            if (allDeps.includes('pandas')) {result.frameworks.push('Pandas')}
-            if (allDeps.includes('pytest')) {result.frameworks.push('Pytest')}
+            if (allDeps.includes('django')) { result.frameworks.push('Django') }
+            if (allDeps.includes('flask')) { result.frameworks.push('Flask') }
+            if (allDeps.includes('fastapi')) { result.frameworks.push('FastAPI') }
+            if (allDeps.includes('pytorch') || allDeps.includes('torch')) { result.frameworks.push('PyTorch') }
+            if (allDeps.includes('tensorflow')) { result.frameworks.push('TensorFlow') }
+            if (allDeps.includes('numpy')) { result.frameworks.push('NumPy') }
+            if (allDeps.includes('pandas')) { result.frameworks.push('Pandas') }
+            if (allDeps.includes('pytest')) { result.frameworks.push('Pytest') }
 
         } else if (type === 'go') {
             // Parse go.mod
@@ -487,7 +494,7 @@ export class ProjectService {
                     const lines = requireMatch[1].split('\n')
                     for (const line of lines) {
                         const match = line.trim().match(/^([^\s]+)\s+v?(.+)/)
-                        if (match) {
+                        if (match?.[1] && match[2]) {
                             result.dependencies[match[1]] = match[2]
                         }
                     }
@@ -496,7 +503,9 @@ export class ProjectService {
                 // Also handle single-line requires
                 const singleReqs = content.matchAll(/require\s+([^\s]+)\s+v?([^\s\n]+)/g)
                 for (const match of singleReqs) {
-                    result.dependencies[match[1]] = match[2]
+                    if (match[1] && match[2]) {
+                        result.dependencies[match[1]] = match[2]
+                    }
                 }
             } catch (error) {
                 /* go.mod not found */
@@ -505,11 +514,11 @@ export class ProjectService {
 
             // Go framework detection
             const allDeps = Object.keys(result.dependencies)
-            if (allDeps.some(d => d.includes('gin-gonic'))) {result.frameworks.push('Gin')}
-            if (allDeps.some(d => d.includes('echo'))) {result.frameworks.push('Echo')}
-            if (allDeps.some(d => d.includes('fiber'))) {result.frameworks.push('Fiber')}
-            if (allDeps.some(d => d.includes('gorilla/mux'))) {result.frameworks.push('Gorilla Mux')}
-            if (allDeps.some(d => d.includes('gorm'))) {result.frameworks.push('GORM')}
+            if (allDeps.some(d => d.includes('gin-gonic'))) { result.frameworks.push('Gin') }
+            if (allDeps.some(d => d.includes('echo'))) { result.frameworks.push('Echo') }
+            if (allDeps.some(d => d.includes('fiber'))) { result.frameworks.push('Fiber') }
+            if (allDeps.some(d => d.includes('gorilla/mux'))) { result.frameworks.push('Gorilla Mux') }
+            if (allDeps.some(d => d.includes('gorm'))) { result.frameworks.push('GORM') }
 
         } else if (type === 'rust') {
             // Parse Cargo.toml
@@ -523,18 +532,18 @@ export class ProjectService {
                     const lines = depMatch[1].split('\n')
                     for (const line of lines) {
                         const trimmed = line.trim()
-                        if (!trimmed || trimmed.startsWith('#')) {continue}
+                        if (!trimmed || trimmed.startsWith('#')) { continue }
 
                         // Handle both `package = "version"` and `package = { version = "x" }`
                         const simpleMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/)
                         const complexMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*\{/)
 
-                        if (simpleMatch) {
+                        if (simpleMatch?.[1] && simpleMatch[2]) {
                             result.dependencies[simpleMatch[1]] = simpleMatch[2]
-                        } else if (complexMatch) {
+                        } else if (complexMatch?.[1]) {
                             // Extract version from complex declaration
                             const versionMatch = trimmed.match(/version\s*=\s*"([^"]+)"/)
-                            result.dependencies[complexMatch[1]] = versionMatch ? versionMatch[1] : '*'
+                            result.dependencies[complexMatch[1]] = versionMatch?.[1] ? versionMatch[1] : '*'
                         }
                     }
                 }
@@ -545,10 +554,10 @@ export class ProjectService {
                     const lines = devDepMatch[1].split('\n')
                     for (const line of lines) {
                         const trimmed = line.trim()
-                        if (!trimmed || trimmed.startsWith('#')) {continue}
+                        if (!trimmed || trimmed.startsWith('#')) { continue }
 
                         const simpleMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/)
-                        if (simpleMatch) {
+                        if (simpleMatch?.[1] && simpleMatch[2]) {
                             result.devDependencies[simpleMatch[1]] = simpleMatch[2]
                         }
                     }
@@ -560,13 +569,13 @@ export class ProjectService {
 
             // Rust framework detection
             const allDeps = Object.keys(result.dependencies)
-            if (allDeps.includes('actix-web')) {result.frameworks.push('Actix Web')}
-            if (allDeps.includes('axum')) {result.frameworks.push('Axum')}
-            if (allDeps.includes('rocket')) {result.frameworks.push('Rocket')}
-            if (allDeps.includes('tokio')) {result.frameworks.push('Tokio')}
-            if (allDeps.includes('serde')) {result.frameworks.push('Serde')}
-            if (allDeps.includes('diesel')) {result.frameworks.push('Diesel')}
-            if (allDeps.includes('sqlx')) {result.frameworks.push('SQLx')}
+            if (allDeps.includes('actix-web')) { result.frameworks.push('Actix Web') }
+            if (allDeps.includes('axum')) { result.frameworks.push('Axum') }
+            if (allDeps.includes('rocket')) { result.frameworks.push('Rocket') }
+            if (allDeps.includes('tokio')) { result.frameworks.push('Tokio') }
+            if (allDeps.includes('serde')) { result.frameworks.push('Serde') }
+            if (allDeps.includes('diesel')) { result.frameworks.push('Diesel') }
+            if (allDeps.includes('sqlx')) { result.frameworks.push('SQLx') }
         } else if (type === 'java') {
             // Find ALL build.gradle / build.gradle.kts files
             const gradleFiles = allFiles.filter(f => f.endsWith('build.gradle') || f.endsWith('build.gradle.kts'))
@@ -579,20 +588,20 @@ export class ProjectService {
                     const depRegex = /(?:implementation|api|compile|runtimeOnly|compileOnly|testImplementation|classpath)\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g
                     let match
                     while ((match = depRegex.exec(content)) !== null) {
-                        const dep = match[1]
+                        const dep = match[1]!
                         const parts = dep.split(':')
-                        const name = parts.length > 1 ? parts[1] : dep
-                        result.dependencies[name] = parts.length > 2 ? parts[2] : '*'
+                        const name = parts.length > 1 ? parts[1]! : dep
+                        result.dependencies[name] = parts.length > 2 ? parts[2]! : '*'
                     }
 
                     // Framework detection from content
-                    if (content.includes('org.springframework.boot')) {result.frameworks.push('Spring Boot')}
-                    if (content.includes('com.android.application') || content.includes('com.android.library')) {result.frameworks.push('Android')}
-                    if (content.includes('androidx.compose')) {result.frameworks.push('Jetpack Compose')}
-                    if (content.includes('io.quarkus')) {result.frameworks.push('Quarkus')}
-                    if (content.includes('io.micronaut')) {result.frameworks.push('Micronaut')}
-                    if (content.includes('kotlin("jvm")') || content.includes('id "org.jetbrains.kotlin.jvm"')) {result.frameworks.push('Kotlin JVM')}
-                    if (content.includes('kotlin("android")') || content.includes('id "org.jetbrains.kotlin.android"')) {result.frameworks.push('Kotlin Android')}
+                    if (content.includes('org.springframework.boot')) { result.frameworks.push('Spring Boot') }
+                    if (content.includes('com.android.application') || content.includes('com.android.library')) { result.frameworks.push('Android') }
+                    if (content.includes('androidx.compose')) { result.frameworks.push('Jetpack Compose') }
+                    if (content.includes('io.quarkus')) { result.frameworks.push('Quarkus') }
+                    if (content.includes('io.micronaut')) { result.frameworks.push('Micronaut') }
+                    if (content.includes('kotlin("jvm")') || content.includes('id "org.jetbrains.kotlin.jvm"')) { result.frameworks.push('Kotlin JVM') }
+                    if (content.includes('kotlin("android")') || content.includes('id "org.jetbrains.kotlin.android"')) { result.frameworks.push('Kotlin Android') }
                 } catch (error) {
                     console.debug(`[ProjectService] Failed to read gradle file ${file}:`, getErrorMessage(error as Error))
                 }
@@ -600,11 +609,11 @@ export class ProjectService {
 
             // Framework detection from aggregated dependencies
             const depKeys = Object.keys(result.dependencies)
-            if (depKeys.some(d => d.includes('junit'))) {result.frameworks.push('JUnit')}
-            if (depKeys.some(d => d.includes('hibernate'))) {result.frameworks.push('Hibernate')}
-            if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) {result.frameworks.push('Dagger/Hilt')}
-            if (depKeys.some(d => d.includes('retrofit'))) {result.frameworks.push('Retrofit')}
-            if (depKeys.some(d => d.includes('base09'))) {result.frameworks.push('Base09')} // Custom?
+            if (depKeys.some(d => d.includes('junit'))) { result.frameworks.push('JUnit') }
+            if (depKeys.some(d => d.includes('hibernate'))) { result.frameworks.push('Hibernate') }
+            if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) { result.frameworks.push('Dagger/Hilt') }
+            if (depKeys.some(d => d.includes('retrofit'))) { result.frameworks.push('Retrofit') }
+            if (depKeys.some(d => d.includes('base09'))) { result.frameworks.push('Base09') } // Custom?
 
             // Parse all pom.xml files
             const pomFiles = allFiles.filter(f => f.endsWith('pom.xml'))
@@ -614,9 +623,11 @@ export class ProjectService {
                     const depRegex = /<dependency>[\s\S]*?<artifactId>([^<]+)<\/artifactId>[\s\S]*?(?:<version>([^<]+)<\/version>)?[\s\S]*?<\/dependency>/g
                     let match
                     while ((match = depRegex.exec(content)) !== null) {
-                        result.dependencies[match[1]] = match[2] || '*'
+                        if (match[1]) {
+                            result.dependencies[match[1]] = match[2] || '*'
+                        }
                     }
-                    if (content.includes('spring-boot')) {result.frameworks.push('Spring Boot')}
+                    if (content.includes('spring-boot')) { result.frameworks.push('Spring Boot') }
                 } catch (error) {
                     console.debug(`[ProjectService] Failed to read pom file ${file}:`, getErrorMessage(error as Error))
                 }

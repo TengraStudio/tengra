@@ -1,5 +1,5 @@
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { ipcMain } from 'electron'
 
 export function registerProxyIpc(proxyService: ProxyService, processManager?: ProxyProcessManager) {

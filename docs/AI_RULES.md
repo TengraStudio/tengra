@@ -951,6 +951,7 @@ After:
 ### 13.3 CHANGELOG.md Updates
 
 Every code change MUST be logged in `docs/CHANGELOG.md`:
+ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW ONE.
 
 ```markdown
 ## [Unreleased]

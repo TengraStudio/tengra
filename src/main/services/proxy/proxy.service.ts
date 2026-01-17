@@ -4,8 +4,9 @@ import path from 'path'
 
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
-import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
+import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { QuotaService } from '@main/services/proxy/quota.service'
+import { AuthService } from '@main/services/security/auth.service'
 import { SecurityService } from '@main/services/security/security.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { AuthenticationError } from '@main/utils/error.util'
@@ -54,12 +55,15 @@ export interface TokenResponse {
   access_token: string;
   token_type: string;
   scope: string;
+  refresh_token?: string;
+  expires_in?: number;
+  refresh_token_expires_in?: number;
   error?: string;
   error_description?: string;
 }
 
 const GITHUB_CLIENTS = {
-  profile: { id: 'Ov23liBw1MLMHGdYxtUV', scope: 'read:user user:email' },
+  profile: { id: '01ab8ac9400c4e429b23', scope: 'read:user user:email repo' }, // Use Copilot ID for universal access
   copilot: { id: '01ab8ac9400c4e429b23', scope: 'read:user' }
 }
 
@@ -74,7 +78,8 @@ export class ProxyService extends BaseService {
     private dataService: DataService,
     private securityService: SecurityService,
     private processManager: ProxyProcessManager,
-    private quotaService: QuotaService
+    private quotaService: QuotaService,
+    private authService: AuthService
   ) {
     super('ProxyService')
   }
@@ -112,7 +117,7 @@ export class ProxyService extends BaseService {
     });
   }
 
-  async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<string> {
+  async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<TokenResponse> {
     return new Promise((resolve, reject) => {
       const client = GITHUB_CLIENTS[appId];
       const checkToken = () => {
@@ -127,7 +132,7 @@ export class ProxyService extends BaseService {
             try {
               const json: TokenResponse = JSON.parse(data);
               if (json.access_token) {
-                resolve(json.access_token);
+                resolve(json);
               } else if (json.error === 'authorization_pending') {
                 setTimeout(checkToken, (interval + 1) * 1000);
               } else {
@@ -151,17 +156,26 @@ export class ProxyService extends BaseService {
     return LocalAuthServer.startAntigravityAuth(
       async (data) => {
         const now = Date.now()
-        const authData = {
-          ...data,
-          timestamp: now,
-          expired: new Date(now + data.expires_in * 1000).toISOString()
+
+        let projectId: string | undefined
+        try {
+          projectId = await this.fetchAntigravityProjectID(data.access_token)
+          if (projectId) {
+            this.logInfo(`Discovered Antigravity project ID: ${projectId}`)
+          }
+        } catch (e) {
+          this.logWarn('Failed to discover Antigravity project ID:', e as Error)
         }
 
-        const filename = data.email
-          ? `${prefix}-${data.email.replace(/[@.]/g, '_')}.json`
-          : `${prefix}.json`
-
-        await this.updateAuthFile(filename, authData)
+        // Link account using individual fields
+        await this.authService.linkAccount(prefix, {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: now + (data.expires_in * 1000),
+          scope: data.scope,
+          email: data.email,
+          metadata: { ...data, project_id: projectId } as any
+        })
       },
       (err) => {
         this.logError(`${prefix} Auth failed:`, err as Error)
@@ -173,35 +187,72 @@ export class ProxyService extends BaseService {
   }
 
   async getAnthropicAuthUrl(): Promise<ProxyRequestResponse> {
-    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true')
+    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true', await this.getProxyKey())
   }
 
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
-    return this.makeRequest('/v0/management/codex-auth-url?is_webui=true')
+    return this.makeRequest('/v0/management/codex-auth-url?is_webui=true', await this.getProxyKey())
   }
 
   async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
     const dir = this.getAuthWorkDir();
     const exists = await fs.promises.access(dir).then(() => true).catch(() => false);
-    if (!exists) { return { files: [] }; }
-    const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
-    return {
-      files: files.map(f => {
-        let provider = f.replace(/\.(json|enc)$/, '').split('-')[0].split('_')[0];
-        if (provider === 'github' || provider === 'github_token') { provider = 'github'; }
-        if (provider === 'copilot' || provider === 'copilot_token') { provider = 'copilot'; }
-        if (provider === 'antigravity' || provider === 'antigravity_token') { provider = 'antigravity'; }
-        if (provider === 'gemini' || provider === 'gemini_key') { provider = 'gemini'; }
-        if (provider === 'openai' || provider === 'openai_key') { provider = 'openai'; }
-        if (provider === 'anthropic' || provider === 'anthropic_key') { provider = 'anthropic'; }
-        if (provider === 'proxy' || provider === 'proxy_key') { provider = 'proxy'; }
+    const filesMap = new Map<string, { name: string, provider: string }>();
 
-        return { name: f, provider };
-      })
+    if (exists) {
+      const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
+      files.forEach(f => {
+        const raw = f.replace(/\.(json|enc)$/, '');
+        const provider = this.normalizeProviderName(raw);
+        filesMap.set(provider, { name: f, provider });
+      });
+    }
+
+    // Include tokens from Database - These take precedence and ensure uniqueness by provider
+    const dbTokens = await this.authService.getAllFullTokens();
+    for (const token of dbTokens) {
+      const normalized = this.normalizeProviderName(token.provider);
+      // Always add database tokens with db: prefix
+      filesMap.set(normalized, {
+        name: `db:${normalized}`,
+        provider: normalized
+      });
+    }
+
+    return { files: Array.from(filesMap.values()) };
+  }
+
+  private normalizeProviderName(provider: string): string {
+    let p = provider.toLowerCase();
+
+    // Strip emails (e.g. claude-user@gmail.com -> claude)
+    if (p.includes('@')) {
+      p = p.split('-')[0].split('_')[0];
+    }
+
+    // Strip common suffixes
+    p = p.replace(/(_token|_key|_auth)$/, '');
+
+    const mappings: Record<string, string> = {
+      'proxy': 'proxy_key', 'proxy_key': 'proxy_key',
+      'github': 'github', 'github_token': 'github',
+      'copilot': 'copilot', 'copilot_token': 'copilot',
+      'antigravity': 'antigravity', 'antigravity_token': 'antigravity',
+      'anthropic': 'claude', 'anthropic_key': 'claude', 'claude': 'claude',
+      'openai': 'codex', 'openai_key': 'codex', 'codex': 'codex',
+      'gemini': 'gemini', 'gemini_key': 'gemini'
     };
+
+    return mappings[p] ?? p;
   }
 
   async deleteAuthFile(name: string): Promise<{ success: boolean }> {
+    if (name.startsWith('db:')) {
+      const provider = name.substring(3);
+      await this.authService.deleteToken(provider);
+      return { success: true };
+    }
+
     const filePath = path.join(this.getAuthWorkDir(), name);
     const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
     if (exists) {
@@ -332,7 +383,7 @@ export class ProxyService extends BaseService {
     return this.assembleQuotaFn(remaining, limit, fraction, usageObj as JsonObject);
   }
 
-  private determineCodexFraction(usage: any, remaining: number, limit: number): number {
+  private determineCodexFraction(usage: { dailyUsedPercent?: number; weeklyUsedPercent?: number }, remaining: number, limit: number): number {
     if (usage.dailyUsedPercent !== undefined || usage.weeklyUsedPercent !== undefined) {
       return this.calculateFractionFromPercent(usage.dailyUsedPercent, usage.weeklyUsedPercent);
     }
@@ -581,5 +632,50 @@ export class ProxyService extends BaseService {
       return JSON.parse(decrypted);
     }
     return JSON.parse(content);
+  }
+
+  private async fetchAntigravityProjectID(accessToken: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const body = JSON.stringify({
+        metadata: {
+          ideType: 'IDE_UNSPECIFIED',
+          platform: 'PLATFORM_UNSPECIFIED',
+          pluginType: 'GEMINI'
+        }
+      })
+
+      const request = net.request({
+        method: 'POST',
+        url: 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist'
+      })
+
+      request.setHeader('Authorization', `Bearer ${accessToken}`)
+      request.setHeader('Content-Type', 'application/json')
+      request.setHeader('User-Agent', 'google-api-nodejs-client/9.15.1')
+      request.setHeader('X-Goog-Api-Client', 'google-cloud-sdk vscode_cloudshelleditor/0.1')
+      request.setHeader('Client-Metadata', '{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}')
+
+      request.on('response', (response) => {
+        let data = ''
+        response.on('data', chunk => data += chunk)
+        response.on('end', () => {
+          if (response.statusCode && response.statusCode >= 400) {
+            resolve(undefined)
+            return
+          }
+          try {
+            const json = JSON.parse(data)
+            const projectID = json.cloudaicompanionProject?.id || json.cloudaicompanionProject
+            resolve(typeof projectID === 'string' ? projectID.trim() : undefined)
+          } catch {
+            resolve(undefined)
+          }
+        })
+      })
+
+      request.on('error', () => resolve(undefined))
+      request.write(body)
+      request.end()
+    })
   }
 }

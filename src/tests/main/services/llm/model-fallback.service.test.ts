@@ -1,9 +1,9 @@
 /**
  * Unit tests for ModelFallbackService
  */
-import { ChatHandler,FallbackModelConfig, ModelFallbackService } from '@main/services/llm/model-fallback.service';
+import { ChatHandler, FallbackModelConfig, ModelFallbackService } from '@main/services/llm/model-fallback.service';
 import { Message } from '@shared/types';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock logger
 vi.mock('@main/logging/logger', () => ({
@@ -33,8 +33,8 @@ describe('ModelFallbackService', () => {
 
             const chain = service.getChain();
             expect(chain).toHaveLength(2);
-            expect(chain[0].provider).toBe('openai');
-            expect(chain[1].provider).toBe('anthropic');
+            expect(chain[0]!.provider).toBe('openai');
+            expect(chain[1]!.provider).toBe('anthropic');
         });
 
         it('should sort models by priority', () => {
@@ -47,9 +47,9 @@ describe('ModelFallbackService', () => {
             service.configure({ models });
 
             const chain = service.getChain();
-            expect(chain[0].priority).toBe(1);
-            expect(chain[1].priority).toBe(2);
-            expect(chain[2].priority).toBe(3);
+            expect(chain[0]!.priority).toBe(1);
+            expect(chain[1]!.priority).toBe(2);
+            expect(chain[2]!.priority).toBe(3);
         });
     });
 
@@ -59,7 +59,7 @@ describe('ModelFallbackService', () => {
 
             const chain = service.getChain();
             expect(chain).toHaveLength(1);
-            expect(chain[0].provider).toBe('openai');
+            expect(chain[0]!.provider).toBe('openai');
         });
 
         it('should update existing model if already present', () => {
@@ -68,8 +68,8 @@ describe('ModelFallbackService', () => {
 
             const chain = service.getChain();
             expect(chain).toHaveLength(1);
-            expect(chain[0].priority).toBe(2);
-            expect(chain[0].enabled).toBe(false);
+            expect(chain[0]!.priority).toBe(2);
+            expect(chain[0]!.enabled).toBe(false);
         });
     });
 
@@ -107,6 +107,7 @@ describe('ModelFallbackService', () => {
             expect(result.finalProvider).toBe('openai');
             expect(result.finalModel).toBe('gpt-4');
             expect(result.attempts).toHaveLength(1);
+            expect(result.attempts[0]!.success).toBe(true);
             expect(chatHandler).toHaveBeenCalledTimes(1);
         });
 
@@ -133,8 +134,8 @@ describe('ModelFallbackService', () => {
             expect(result.data).toEqual(mockMessage);
             expect(result.finalProvider).toBe('anthropic');
             expect(result.attempts).toHaveLength(2);
-            expect(result.attempts[0].success).toBe(false);
-            expect(result.attempts[1].success).toBe(true);
+            expect(result.attempts[0]!.success).toBe(false);
+            expect(result.attempts[1]!.success).toBe(true);
         });
 
         it('should return error if all models fail', async () => {
@@ -239,8 +240,8 @@ describe('ModelFallbackService', () => {
 
             // The circuit breaker should have opened for openai after 3 failures
             const stats = service.getStatistics();
-            expect(stats.circuitBreakerStatus['openai:gpt-4']?.isOpen).toBe(true);
-            expect(stats.circuitBreakerStatus['openai:gpt-4']?.failures).toBe(3);
+            expect(stats.circuitBreakerStatus['openai:gpt-4']!.isOpen).toBe(true);
+            expect(stats.circuitBreakerStatus['openai:gpt-4']!.failures).toBe(3);
         });
 
         it('should reset circuit breaker on success', async () => {
@@ -267,7 +268,7 @@ describe('ModelFallbackService', () => {
             await service.executeWithFallback([{ id: 'u4', role: 'user', content: 'Hi', timestamp: new Date() }], chatHandler);
 
             const stats = service.getStatistics();
-            expect(stats.circuitBreakerStatus['openai:gpt-4']?.failures).toBe(0);
+            expect(stats.circuitBreakerStatus['openai:gpt-4']!.failures).toBe(0);
         });
 
         it('should allow manual reset of all circuit breakers', () => {
@@ -303,8 +304,8 @@ describe('ModelFallbackService', () => {
             const stats = service.getStatistics();
             expect(stats.totalAttempts).toBe(2);
             expect(stats.successRate).toBe(1);
-            expect(stats.byModel['openai:gpt-4'].attempts).toBe(2);
-            expect(stats.byModel['openai:gpt-4'].successes).toBe(2);
+            expect(stats.byModel['openai:gpt-4']!.attempts).toBe(2);
+            expect(stats.byModel['openai:gpt-4']!.successes).toBe(2);
         });
 
         it('should calculate average latency', async () => {
@@ -319,7 +320,7 @@ describe('ModelFallbackService', () => {
             await service.executeWithFallback([{ id: 'u5', role: 'user', content: 'Hi', timestamp: new Date() }], chatHandler);
 
             const stats = service.getStatistics();
-            expect(stats.byModel['openai:gpt-4'].avgLatencyMs).toBeGreaterThan(0);
+            expect(stats.byModel['openai:gpt-4']!.avgLatencyMs).toBeGreaterThan(0);
         });
     });
 
@@ -334,8 +335,8 @@ describe('ModelFallbackService', () => {
 
             const history = service.getAttemptHistory();
             expect(history).toHaveLength(1);
-            expect(history[0].provider).toBe('openai');
-            expect(history[0].success).toBe(true);
+            expect(history[0]!.provider).toBe('openai');
+            expect(history[0]!.success).toBe(true);
         });
 
         it('should limit history retrieval', async () => {

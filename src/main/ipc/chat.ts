@@ -127,7 +127,7 @@ export function registerChatIpc(options: {
         // --- RAG: Context retrieval ---
         // --- RAG: Context retrieval ---
         if (sanitizedProjectId && sanitizedMessages.length > 0) {
-            const lastMessage = sanitizedMessages[sanitizedMessages.length - 1];
+            const lastMessage = sanitizedMessages[sanitizedMessages.length - 1]!;
             if (lastMessage.role === 'user') {
                 try {
                     console.log(`[RAG] Querying context for projectId: ${sanitizedProjectId}`);
@@ -145,8 +145,8 @@ export function registerChatIpc(options: {
                             // Inject into system prompt or as a new context message
                             const systemIdx = sanitizedMessages.findIndex((m) => m.role === 'system');
                             if (systemIdx !== -1) {
-                                const currentContent = typeof sanitizedMessages[systemIdx].content === 'string' ? sanitizedMessages[systemIdx].content : '';
-                                sanitizedMessages[systemIdx].content = currentContent + ragPrompt;
+                                const currentContent = typeof sanitizedMessages[systemIdx]!.content === 'string' ? sanitizedMessages[systemIdx]!.content : '';
+                                sanitizedMessages[systemIdx]!.content = currentContent + ragPrompt;
                             } else {
                                 sanitizedMessages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
                             }
@@ -201,7 +201,7 @@ export function registerChatIpc(options: {
         const proxyKey = await proxyService.getProxyKey()
 
         console.log(`[Main] Routing ${sanitizedModel} via Cliproxy/LLMService`)
-        const res = await llmService.chatOpenAI(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey);
+        const res = await llmService.chatOpenAI(finalMessages, sanitizedModel, sanitizedTools, proxyUrl, proxyKey, sanitizedProvider);
         const content = res.content || '';
         const reasoning = res.reasoning_content || '';
         const images = res.images || [];
@@ -270,7 +270,7 @@ export function registerChatIpc(options: {
             return messages;
         }
 
-        const lastMessage = messages[messages.length - 1];
+        const lastMessage = messages[messages.length - 1]!;
         if (lastMessage.role !== 'user') {
             return messages;
         }
@@ -301,8 +301,8 @@ export function registerChatIpc(options: {
 
             const systemIdx = messages.findIndex((m) => m.role === 'system');
             if (systemIdx !== -1) {
-                const currentContent = typeof messages[systemIdx].content === 'string' ? messages[systemIdx].content : '';
-                messages[systemIdx].content = currentContent + ragPrompt;
+                const currentContent = typeof messages[systemIdx]!.content === 'string' ? messages[systemIdx]!.content : '';
+                messages[systemIdx]!.content = currentContent + ragPrompt;
             } else {
                 messages.unshift({ id: 'rag-context', role: 'system', content: ragPrompt, timestamp: new Date() } as Message);
             }
@@ -454,7 +454,7 @@ export function registerChatIpc(options: {
             }
         })) : undefined;
 
-        for await (const chunk of llmService.chatOpenAIStream(messages, model, sanitizedTools, proxyUrl, proxyKey)) {
+        for await (const chunk of llmService.chatOpenAIStream(messages, model, sanitizedTools, proxyUrl, proxyKey, provider)) {
             console.log(`[Main:Chat:handleProxyStream] Sending chunk to ${chatId}:`, chunk);
             if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId })) {
                 console.warn(`[Main:Chat:handleProxyStream] Failed to send chunk to ${chatId}, stopping stream`);

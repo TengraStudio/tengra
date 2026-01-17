@@ -5,12 +5,12 @@ ipcRenderer.setMaxListeners(50)
 import {
     AgentDefinition, AppSettings, AuthStatus,
     Chat, CopilotQuota, CouncilSession,
-    FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
+    EntityKnowledge, EpisodicMemory,     FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
     Message, OllamaLibraryModel,
     ProcessInfo,
     Project, ProjectAnalysis, Prompt,
-    QuotaResponse, SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
-} from '@shared/types'
+    QuotaResponse, SemanticFragment,
+SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult} from '@shared/types'
 
 interface ModelDefinition {
     id: string
@@ -32,6 +32,28 @@ interface LlamaModel {
     name: string
     path: string
     size: number
+}
+
+export interface LinkedAccountInfo {
+    id: string
+    provider: string
+    email?: string
+    displayName?: string
+    avatarUrl?: string
+    isActive: boolean
+    createdAt: number
+}
+
+export interface TokenData {
+    accessToken?: string
+    refreshToken?: string
+    sessionToken?: string
+    email?: string
+    displayName?: string
+    avatarUrl?: string
+    expiresAt?: number
+    scope?: string
+    metadata?: Record<string, IpcValue>
 }
 
 export interface ElectronAPI {
@@ -185,6 +207,15 @@ export interface ElectronAPI {
         deleteFolder: (id: string) => Promise<void>
         updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>
         getFolders: () => Promise<Folder[]>
+    }
+
+    memory: {
+        getAll: () => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[]; entities: EntityKnowledge[] }>
+        addFact: (content: string, tags?: string[]) => Promise<{ success: boolean; id?: string; error?: string }>
+        deleteFact: (id: string) => Promise<{ success: boolean; error?: string }>
+        deleteEntity: (id: string) => Promise<{ success: boolean; error?: string }>
+        setEntityFact: (entityType: string, entityName: string, key: string, value: string) => Promise<{ success: boolean; id?: string; error?: string }>
+        search: (query: string) => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[] }>
     }
 
     collaboration: {
@@ -412,6 +443,12 @@ export interface ElectronAPI {
         installUpdate: () => Promise<void>
     }
 
+    modelRegistry: {
+        getAllModels: () => Promise<ModelDefinition[]>
+        getRemoteModels: () => Promise<ModelDefinition[]>
+        getInstalledModels: () => Promise<ModelDefinition[]>
+    }
+
     ipcRenderer: {
         on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => () => void
         off: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => void
@@ -419,6 +456,15 @@ export interface ElectronAPI {
         invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>
         removeAllListeners: (channel: string) => void
     }
+
+    // --- Linked Accounts (New Multi-Account API) ---
+    getLinkedAccounts: (provider?: string) => Promise<LinkedAccountInfo[]>
+    getActiveLinkedAccount: (provider: string) => Promise<LinkedAccountInfo | null>
+    setActiveLinkedAccount: (provider: string, accountId: string) => Promise<{ success: boolean; error?: string }>
+    linkAccount: (provider: string, tokenData: TokenData) => Promise<{ success: boolean; account?: LinkedAccountInfo; error?: string }>
+    unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>
+    unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>
+    hasLinkedAccount: (provider: string) => Promise<boolean>
 
     // IPC Batching for performance
     batch: {
@@ -473,6 +519,15 @@ const api: ElectronAPI = {
     codexLogin: () => ipcRenderer.invoke('proxy:codexLogin'),
     checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
     deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
+
+    // --- Linked Accounts (New Multi-Account API) ---
+    getLinkedAccounts: (provider) => ipcRenderer.invoke('auth:get-linked-accounts', provider),
+    getActiveLinkedAccount: (provider) => ipcRenderer.invoke('auth:get-active-linked-account', provider),
+    setActiveLinkedAccount: (provider, accountId) => ipcRenderer.invoke('auth:set-active-linked-account', provider, accountId),
+    linkAccount: (provider, tokenData) => ipcRenderer.invoke('auth:link-account', provider, tokenData),
+    unlinkAccount: (accountId) => ipcRenderer.invoke('auth:unlink-account', accountId),
+    unlinkProvider: (provider) => ipcRenderer.invoke('auth:unlink-provider', provider),
+    hasLinkedAccount: (provider) => ipcRenderer.invoke('auth:has-linked-account', provider),
 
     code: {
         scanTodos: (rootPath) => ipcRenderer.invoke('code:scanTodos', rootPath),
@@ -591,6 +646,15 @@ const api: ElectronAPI = {
         createPrompt: (title: string, content: string, tags?: string[]) => ipcRenderer.invoke('db:createPrompt', title, content, tags),
         updatePrompt: (id: string, updates: Partial<Prompt>) => ipcRenderer.invoke('db:updatePrompt', id, updates),
         deletePrompt: (id: string) => ipcRenderer.invoke('db:deletePrompt', id)
+    },
+    memory: {
+        getAll: () => ipcRenderer.invoke('memory:getAll'),
+        addFact: (content: string, tags?: string[]) => ipcRenderer.invoke('memory:addFact', content, tags),
+        deleteFact: (id: string) => ipcRenderer.invoke('memory:deleteFact', id),
+        deleteEntity: (id: string) => ipcRenderer.invoke('memory:deleteEntity', id),
+        setEntityFact: (entityType: string, entityName: string, key: string, value: string) =>
+            ipcRenderer.invoke('memory:setEntityFact', entityType, entityName, key, value),
+        search: (query: string) => ipcRenderer.invoke('memory:search', query)
     },
     audit: {
         getLogs: (startDate?: string, endDate?: string, category?: string) => ipcRenderer.invoke('audit:getLogs', startDate, endDate, category),
@@ -746,6 +810,12 @@ const api: ElectronAPI = {
         }
     },
     saveFile: (content, filename) => ipcRenderer.invoke('dialog:saveFile', { content, filename }),
+
+    modelRegistry: {
+        getAllModels: () => ipcRenderer.invoke('model-registry:getAllModels'),
+        getRemoteModels: () => ipcRenderer.invoke('model-registry:getRemoteModels'),
+        getInstalledModels: () => ipcRenderer.invoke('model-registry:getInstalledModels')
+    },
 
     files: {
         listDirectory: (path: string) => ipcRenderer.invoke('files:listDirectory', path).then(r => r.data),

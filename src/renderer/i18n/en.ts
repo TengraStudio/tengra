@@ -110,7 +110,8 @@ export const en = {
         preview: 'PREVIEW',
         generate: 'GENERATE LOGO',
         changeLogo: 'Change Logo',
-        noDescription: 'No description provided'
+        noDescription: 'No description provided',
+        todoPlaceholder: 'What needs to be done? (Press Enter)'
     },
     projectWizard: {
         title: 'Project Wizard',
@@ -122,6 +123,9 @@ export const en = {
         importDesc: 'Add an existing project or folder to the workspace.',
         projectName: 'PROJECT NAME',
         namePlaceholder: 'Ex: CRM Dashboard',
+        placeholder: {
+            example: 'example.com'
+        },
         description: 'DESCRIPTION (OPTIONAL)',
         descPlaceholder: 'What is the goal of this project?',
         host: 'HOST',
@@ -161,6 +165,7 @@ export const en = {
     projectDashboard: {
         title: 'Project Dashboard',
         description: 'Overview of project details and statistics',
+        commitMessage: 'Commit message...',
         analyzing: 'Analyzing Project...',
         noProject: 'No project to display.',
         overview: 'Overview',
@@ -169,6 +174,7 @@ export const en = {
         tasks: 'Tasks',
         search: 'Search',
         council: 'Council',
+        git: 'Git',
         fileCount: 'FILE COUNT',
         loc: 'LINES OF CODE',
         modules: 'MODULES',
@@ -251,6 +257,7 @@ export const en = {
         password: 'Password',
         saveProfile: 'Save Connection Profile',
         confirmDelete: 'Are you sure you want to delete this profile?',
+        deleteProfile: 'Delete Profile',
         loadingStats: 'Loading system stats...',
         failedStats: 'Failed to fetch stats',
         systemDashboard: 'System Dashboard',
@@ -349,31 +356,82 @@ export const en = {
     accounts: {
         title: 'Connected Accounts',
         subtitle: 'Manage external services and API connections.',
+
+        // Categories
+        categories: {
+            aiProviders: 'AI Providers',
+            developerTools: 'Developer Tools',
+            localModels: 'Local Models'
+        },
+
+        // Provider descriptions
+        providers: {
+            github: {
+                name: 'GitHub',
+                description: 'Source code hosting and collaboration'
+            },
+            copilot: {
+                name: 'GitHub Copilot',
+                description: 'AI-powered code completion'
+            },
+            antigravity: {
+                name: 'Antigravity',
+                description: 'Cloud AI services and web access'
+            },
+            codex: {
+                name: 'OpenAI / ChatGPT',
+                description: 'GPT-4 and advanced language models'
+            },
+            claude: {
+                name: 'Claude',
+                description: 'Anthropic Claude reasoning models'
+            },
+            ollama: {
+                name: 'Ollama',
+                description: 'Run AI models locally on your machine'
+            }
+        },
+
+        // Status labels
+        connected: 'CONNECTED',
+        disconnected: 'DISCONNECTED',
+        running: 'RUNNING',
+        notRunning: 'STOPPED',
+        active: 'Active',
+
+        // Actions
+        connect: 'Connect',
+        disconnect: 'Disconnect',
+        switchAccount: 'Switch Account',
+        addAnotherAccount: 'Add Another Account',
+        setActive: 'Set Active',
+        removeAccount: 'Remove',
+
+        // Account count
+        accountCount: '{{count}} account',
+        accountCountPlural: '{{count}} accounts',
+        noAccounts: 'No accounts linked',
+
+        // Ollama settings
+        serverAddress: 'SERVER ADDRESS',
+        contextLimit: 'CONTEXT LIMIT',
+        check: 'Check',
+        start: 'Start',
+
+        // Legacy (for backward compat)
+        apiKey: 'API Keys',
+        enterApiKey: 'Enter API key...',
         githubDesc: 'GitHub profile and repositories.',
         copilotDesc: 'GitHub Copilot integration.',
         antigravityDesc: 'Antigravity cloud services.',
         codexDesc: 'OpenAI Codex API access.',
         claudeDesc: 'Anthropic Claude models.',
-
-        connected: 'CONNECTED',
-        disconnected: 'DISCONNECTED',
-        connect: 'Connect',
-        disconnect: 'Disconnect',
-        running: 'RUNNING',
-        notRunning: 'STOPPED',
-        serverAddress: 'SERVER ADDRESS',
-        contextLimit: 'CONTEXT LIMIT',
-        check: 'Check',
-        start: 'Start',
-        apiKey: 'API Keys',
-        enterApiKey: 'Enter API key...',
         services: {
             github: 'GitHub Profile',
             copilot: 'GitHub Copilot',
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
             claude: 'Claude',
-
         }
     },
     speech: {
@@ -475,6 +533,7 @@ export const en = {
         discoverMarket: 'Discover Market',
         marketplaceSubtitle: 'Discover thousands of servers to empower your platform.',
         searchPlaceholder: 'Search for servers or tools...',
+        searchTools: 'Search tools...',
     },
     workspace: {
         editor: 'Editor',
@@ -506,7 +565,16 @@ export const en = {
         uploadManualImage: 'Upload Manual Image',
         crafting: 'Crafting...',
         previewArea: 'Preview Area',
-        convertToCode: 'Convert to Code'
+        convertToCode: 'Convert to Code',
+        placeholders: {
+            rootPath: 'C:\\Users\\Project',
+            name: 'Name...'
+        },
+        run: 'Run Project',
+        toggleSidebar: 'Toggle Sidebar',
+        aiAssistant: 'AI Assistant',
+        online: 'Online',
+        dev: 'DEV'
     },
     chat: {
         placeholder: 'Type a message...',
@@ -760,6 +828,7 @@ export const en = {
         addAgent: 'Add agent',
         goal: 'Goal',
         describeObjective: 'Describe the council\'s objective...',
+        complexGoalPlaceholder: 'Describe a complex goal for the council...',
         runCouncil: 'Run council',
         thoughtStream: 'Thought Stream',
         clear: 'Clear',
@@ -780,6 +849,13 @@ export const en = {
         off: 'Off',
         local: 'local',
         cloud: 'cloud'
+    },
+    modelComparison: {
+        promptPlaceholder: 'Enter your prompt to compare across models...',
+        copyResponse: 'Copy response'
+    },
+    council: {
+        taskPlaceholder: 'Describe a task for the council...'
     },
     shortcuts: {
         title: 'Keyboard Shortcuts',
@@ -900,5 +976,29 @@ export const en = {
         markdownView: 'Markdown View',
         text: 'Text',
         markdown: 'Markdown'
+    },
+    modelExplorer: {
+        title: 'Model Explorer',
+        search: 'Search models...',
+        install: 'Install',
+        installed: 'Installed'
+    },
+    docker: {
+        title: 'Docker Management',
+        stop: 'Stop',
+        start: 'Start',
+        remove: 'Remove',
+        shell: 'Shell',
+        logs: 'Logs',
+        stats: 'Stats'
+    },
+    onboarding: {
+        welcome: 'Welcome to Orbit',
+        step1: 'Connect AI Providers',
+        step2: 'Setup Workspace',
+        step3: 'Start Coding',
+        skip: 'Skip',
+        next: 'Next',
+        finish: 'Finish'
     }
 }

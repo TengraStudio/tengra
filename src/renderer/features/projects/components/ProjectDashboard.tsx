@@ -4,8 +4,8 @@ import { FileExplorer } from '@renderer/features/projects/components/ide/FileExp
 import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector'
 import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal'
 import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab'
-import { ArrowDown, ArrowUp, Camera, Check, Download, FileCode, GitBranch, GitCommit, Globe,Minus, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
-import { useCallback,useEffect, useState } from 'react'
+import { ArrowDown, ArrowUp, Camera, Check, Download, FileCode, GitBranch, GitCommit, Globe, Minus, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { DiffViewer } from '@/components/ui/DiffViewer'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -21,7 +21,7 @@ interface OpenFile {
     isDirty: boolean
 }
 
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 
 interface ProjectDashboardProps {
     project: Project
@@ -87,7 +87,7 @@ export const ProjectDashboard = ({
     const [selectedFile, setSelectedFile] = useState<{ path: string; staged: boolean } | null>(null)
     const [fileDiff, setFileDiff] = useState<{ original: string; modified: string } | null>(null)
     const [loadingDiff, setLoadingDiff] = useState(false)
-    
+
     // Additional Git State
     const [branches, setBranches] = useState<string[]>([])
     const [remotes, setRemotes] = useState<Array<{ name: string; url: string; fetch: boolean; push: boolean }>>([])
@@ -101,7 +101,7 @@ export const ProjectDashboard = ({
     const [isCheckingOut, setIsCheckingOut] = useState(false)
 
     const fetchGitData = useCallback(async () => {
-        if (!project.path) {return}
+        if (!project.path) { return }
 
         setGitData(prev => ({ ...prev, loading: true }))
         try {
@@ -154,7 +154,7 @@ export const ProjectDashboard = ({
                 stagedFiles: detailedStatus.success ? (detailedStatus.stagedFiles || []) : [],
                 unstagedFiles: detailedStatus.success ? (detailedStatus.unstagedFiles || []) : []
             })
-            
+
             setBranches(branchesResult.success ? (branchesResult.branches || []) : [])
             setRemotes(remotesResult.success ? (remotesResult.remotes || []) : [])
             setTrackingInfo(trackingResult.success ? { tracking: trackingResult.tracking || null, ahead: trackingResult.ahead || 0, behind: trackingResult.behind || 0 } : null)
@@ -178,7 +178,7 @@ export const ProjectDashboard = ({
     }, [activeTab, project.path, fetchGitData])
 
     const loadFileDiff = useCallback(async (filePath: string, staged: boolean) => {
-        if (!project.path) {return}
+        if (!project.path) { return }
 
         setLoadingDiff(true)
         try {
@@ -202,7 +202,7 @@ export const ProjectDashboard = ({
     }, [loadFileDiff])
 
     const handleStageFile = useCallback(async (filePath: string) => {
-        if (!project.path) {return}
+        if (!project.path) { return }
 
         try {
             const result = await window.electron.git.stageFile(project.path, filePath)
@@ -220,7 +220,7 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData, selectedFile, loadFileDiff])
 
     const handleUnstageFile = useCallback(async (filePath: string) => {
-        if (!project.path) {return}
+        if (!project.path) { return }
 
         try {
             const result = await window.electron.git.unstageFile(project.path, filePath)
@@ -238,24 +238,24 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData, selectedFile, loadFileDiff])
 
     const getStatusIcon = (status: string) => {
-        if (status.startsWith('A')) {return <Plus className="w-3.5 h-3.5 text-emerald-400" />}
-        if (status.startsWith('D')) {return <Minus className="w-3.5 h-3.5 text-red-400" />}
-        if (status.startsWith('M')) {return <FileCode className="w-3.5 h-3.5 text-amber-400" />}
-        if (status.startsWith('R')) {return <FileCode className="w-3.5 h-3.5 text-blue-400" />}
+        if (status.startsWith('A')) { return <Plus className="w-3.5 h-3.5 text-emerald-400" /> }
+        if (status.startsWith('D')) { return <Minus className="w-3.5 h-3.5 text-red-400" /> }
+        if (status.startsWith('M')) { return <FileCode className="w-3.5 h-3.5 text-amber-400" /> }
+        if (status.startsWith('R')) { return <FileCode className="w-3.5 h-3.5 text-blue-400" /> }
         return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />
     }
 
     const getStatusLabel = (status: string) => {
-        if (status.startsWith('A')) {return t('projectDashboard.added')}
-        if (status.startsWith('D')) {return t('projectDashboard.deleted')}
-        if (status.startsWith('M')) {return t('projectDashboard.modified')}
-        if (status.startsWith('R')) {return t('projectDashboard.renamed')}
+        if (status.startsWith('A')) { return t('projectDashboard.added') }
+        if (status.startsWith('D')) { return t('projectDashboard.deleted') }
+        if (status.startsWith('M')) { return t('projectDashboard.modified') }
+        if (status.startsWith('R')) { return t('projectDashboard.renamed') }
         return status
     }
 
     const handleCheckout = useCallback(async (branch: string) => {
-        if (!project.path) {return}
-        
+        if (!project.path) { return }
+
         setIsCheckingOut(true)
         try {
             const result = await window.electron.git.checkout(project.path, branch)
@@ -272,8 +272,8 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData])
 
     const handleCommit = useCallback(async () => {
-        if (!project.path || !commitMessage.trim()) {return}
-        
+        if (!project.path || !commitMessage.trim()) { return }
+
         setIsCommitting(true)
         try {
             const result = await window.electron.git.commit(project.path, commitMessage.trim())
@@ -291,8 +291,8 @@ export const ProjectDashboard = ({
     }, [project.path, commitMessage, fetchGitData])
 
     const handlePush = useCallback(async () => {
-        if (!project.path) {return}
-        
+        if (!project.path) { return }
+
         setIsPushing(true)
         try {
             const result = await window.electron.git.push(project.path, 'origin')
@@ -309,8 +309,8 @@ export const ProjectDashboard = ({
     }, [project.path, fetchGitData])
 
     const handlePull = useCallback(async () => {
-        if (!project.path) {return}
-        
+        if (!project.path) { return }
+
         setIsPulling(true)
         try {
             const result = await window.electron.git.pull(project.path)
@@ -446,8 +446,8 @@ export const ProjectDashboard = ({
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => {
-                                                    if (e.key === 'Enter') {handleSaveName()}
-                                                    if (e.key === 'Escape') {setIsEditingName(false)}
+                                                    if (e.key === 'Enter') { handleSaveName() }
+                                                    if (e.key === 'Escape') { setIsEditingName(false) }
                                                 }}
                                                 onBlur={handleSaveName}
                                                 className="text-3xl font-black bg-black/40 border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight"
@@ -665,7 +665,7 @@ export const ProjectDashboard = ({
 
                 {activeTab === 'council' && (
                     <div className="h-full">
-                        <AgentCouncil />
+                        <AgentCouncil language={language} />
                     </div>
                 )}
 
@@ -701,7 +701,7 @@ export const ProjectDashboard = ({
                                             <RefreshCw className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                         <div className="bg-white/5 rounded-xl p-4">
                                             <div className="text-xs text-muted-foreground mb-2">{t('projectDashboard.branch')}</div>
@@ -816,7 +816,7 @@ export const ProjectDashboard = ({
                                                             handleCommit()
                                                         }
                                                     }}
-                                                    placeholder="Commit message..."
+                                                    placeholder={t('projectDashboard.commitMessage')}
                                                     className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                                                 />
                                                 <button
@@ -897,14 +897,14 @@ export const ProjectDashboard = ({
                                             <RefreshCw className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    
+
                                     {/* Contribution Chart */}
                                     {Object.keys(commitStats).length > 0 && (
                                         <div className="mb-6">
                                             <ContributionGrid commitCounts={commitStats} />
                                         </div>
                                     )}
-                                    
+
                                     {gitData.recentCommits.length === 0 ? (
                                         <div className="text-center py-8 text-muted-foreground text-sm">
                                             {t('projectDashboard.noCommits')}
@@ -945,7 +945,7 @@ export const ProjectDashboard = ({
                                                     <RefreshCw className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
-                                            
+
                                             {/* Staged Files */}
                                             {gitData.stagedFiles.length > 0 && (
                                                 <div className="mb-4">
@@ -1136,7 +1136,7 @@ export const ProjectDashboard = ({
 }
 
 const formatBytes = (bytes: number) => {
-    if (bytes === 0) {return '0 B'}
+    if (bytes === 0) { return '0 B' }
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -1155,7 +1155,7 @@ const SearchResults = ({ projectRoot, onSelect, t }: { projectRoot: string, onSe
         return () => window.removeEventListener('search-results', handler)
     }, [])
 
-    if (results.length === 0) {return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>}
+    if (results.length === 0) { return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div> }
 
     return (
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 space-y-2">

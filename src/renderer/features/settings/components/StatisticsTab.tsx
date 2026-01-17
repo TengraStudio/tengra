@@ -1,10 +1,10 @@
-import { Activity, Clock, Loader2, MessageSquare, RefreshCw, TrendingDown,TrendingUp } from 'lucide-react'
+import { Activity, Clock, Loader2, MessageSquare, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
-import { Card, CardContent,CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { AppSettings, CodexUsage, CopilotQuota, ModelQuotaItem,QuotaResponse } from '@/types'
+import { AppSettings, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaResponse } from '@/types'
 
 type DetailedStats = {
     chatCount: number
@@ -26,10 +26,10 @@ interface TimeStats {
 interface StatisticsTabProps {
     statsLoading: boolean
     statsData: DetailedStats | null
-    quotaData: QuotaResponse | null
-    copilotQuota: CopilotQuota | null
-    codexUsage: CodexUsage | null
-    claudeQuota: { success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } } | null
+    quotaData: any | null
+    copilotQuota: any | null
+    codexUsage: any | null
+    claudeQuota: any | null
     statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly'
     setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => void
     settings: AppSettings | null
@@ -43,9 +43,9 @@ const formatTime = (ms: number): string => {
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
 
-    if (days > 0) {return `${days}d ${hours % 24}h`}
-    if (hours > 0) {return `${hours}h ${minutes % 60}m`}
-    if (minutes > 0) {return `${minutes}m ${seconds % 60}s`}
+    if (days > 0) { return `${days}d ${hours % 24}h` }
+    if (hours > 0) { return `${hours}h ${minutes % 60}m` }
+    if (minutes > 0) { return `${minutes}m ${seconds % 60}s` }
     return `${seconds}s`
 }
 
@@ -63,15 +63,15 @@ const renderRing = (value: number, color: string, size: 'sm' | 'md' = 'md') => {
 }
 
 const getQuotaColor = (p: number) => {
-    if (p === 0) {return 'rgb(239 68 68)'}
-    if (p < 25) {return 'rgb(249 115 22)'}
-    if (p < 50) {return 'rgb(234 179 8)'}
+    if (p === 0) { return 'rgb(239 68 68)' }
+    if (p < 25) { return 'rgb(249 115 22)' }
+    if (p < 50) { return 'rgb(234 179 8)' }
     return 'rgb(34 197 94)'
 }
 
 const formatNumber = (num: number): string => {
-    if (num >= 1000000) {return (num / 1000000).toFixed(1) + 'M'}
-    if (num >= 1000) {return (num / 1000).toFixed(1) + 'K'}
+    if (num >= 1000000) { return (num / 1000000).toFixed(1) + 'M' }
+    if (num >= 1000) { return (num / 1000).toFixed(1) + 'K' }
     return num.toLocaleString()
 }
 
@@ -153,11 +153,11 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
     }, [])
 
     const formatReset = (value?: string) => {
-        if (!value || value === '-') {return '-'}
+        if (!value || value === '-') { return '-' }
         try {
             const date = new Date(value)
             const locale = settings?.general?.language === 'tr' ? 'tr-TR' : 'en-US'
-            if (Number.isNaN(date.getTime())) {return String(value)}
+            if (Number.isNaN(date.getTime())) { return String(value) }
             return date.toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
         } catch {
             return value
@@ -276,139 +276,150 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                 </Card>
             </div>
 
-            {/* Codex and Copilot Quotas */}
-            {(authStatus.codex || copilotQuota) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {authStatus.codex && codexUsage && (
-                        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-bold text-foreground">ChatGPT Codex</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-3">
-                                        {renderRing(100 - dailyUsedPercent, 'hsl(var(--primary))')}
-                                        <div>
-                                            <div className="text-xs font-bold uppercase text-muted-foreground">{t('statistics.dailyRemaining')}</div>
-                                            <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(codex.dailyResetAt)}</div>
-                                        </div>
+            {/* Multi-Account Quotas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Antigravity Accounts */}
+                {quotaData?.accounts && quotaData.accounts.length > 0 && (
+                    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-sm font-bold text-foreground">{t('statistics.antigravityQuotas')}</CardTitle>
+                                <p className="text-xs text-muted-foreground mt-1">Multi-account status</p>
+                            </div>
+                            {setReloadTrigger && (
+                                <button onClick={() => setReloadTrigger((p: number) => p + 1)} className="p-1.5 hover:bg-muted/20 rounded-full text-muted-foreground transition-colors">
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {quotaData.accounts.map((acc: any, idx: number) => (
+                                <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/20")}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-xs font-bold text-primary truncate max-w-[200px]">{acc.email || 'Default Account'}</div>
+                                        <div className="text-[10px] py-0.5 px-2 rounded-full bg-primary/10 text-primary border border-primary/20">Active</div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        {renderRing(100 - weeklyUsedPercent, 'hsl(280 100% 60%)')}
-                                        <div>
-                                            <div className="text-xs font-bold uppercase text-muted-foreground">{t('statistics.weeklyRemaining')}</div>
-                                            <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(codex.weeklyResetAt)}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {copilotQuota && copilotSuccess && copilotLimit > 0 && (
-                        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle className="text-sm font-bold text-foreground">GitHub Copilot</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {copilotPercent !== null && typeof copilotPercent === 'number' ? (
-                                    <div className="flex items-center gap-3">
-                                        {renderRing(copilotPercent, 'hsl(142 76% 45%)')}
-                                        <div>
-                                            <div className="text-xs font-bold uppercase text-muted-foreground">{t('statistics.quotaStatus')}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {copilotRemaining} / {copilotLimit} remaining
-                                            </div>
-                                            {copilotQuota && typeof copilotQuota === 'object' && 'plan' in copilotQuota && typeof copilotQuota.plan === 'string' && copilotQuota.plan && (
-                                                <div className="text-xs text-muted-foreground/70 mt-0.5">
-                                                    Plan: {copilotQuota.plan}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {acc.models?.slice(0, 4).map((m: ModelQuotaItem) => (
+                                            <div key={m.id} className="flex items-center justify-between p-2 rounded-md bg-muted/5 border border-border/20">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-[10px] font-medium truncate">{m.name || m.id}</div>
+                                                    <div className="text-[9px] text-muted-foreground mt-0.5">{formatReset(m.reset)}</div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-3">
-                                        {renderRing(0, 'hsl(var(--muted))')}
-                                        <div>
-                                            <div className="text-xs font-bold uppercase text-muted-foreground">{t('statistics.quotaStatus')}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {copilotRemaining} / {copilotLimit} remaining
+                                                <div className="ml-2">
+                                                    {renderRing(m.percentage || 0, getQuotaColor(m.percentage || 0), 'sm')}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            )}
-
-            {/* Claude Quota */}
-            {authStatus.claude && claudeQuota && claudeQuota.success && (
-                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-bold text-foreground">Anthropic Claude</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-4">
-                            {claudeQuota.fiveHour && (
-                                <div className="flex items-center gap-3">
-                                    {renderRing(100 - claudeQuota.fiveHour.utilization, 'hsl(280 70% 60%)')}
-                                    <div>
-                                        <div className="text-xs font-bold uppercase text-muted-foreground">5-Hour Limit</div>
-                                        <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(claudeQuota.fiveHour.resetsAt)}</div>
-                                    </div>
-                                </div>
-                            )}
-                            {claudeQuota.sevenDay && (
-                                <div className="flex items-center gap-3">
-                                    {renderRing(100 - claudeQuota.sevenDay.utilization, 'hsl(260 70% 60%)')}
-                                    <div>
-                                        <div className="text-xs font-bold uppercase text-muted-foreground">7-Day Limit</div>
-                                        <div className="text-xs text-muted-foreground">{t('statistics.reset')}: {formatReset(claudeQuota.sevenDay.resetsAt)}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-
-            {/* Antigravity Model Quotas - Grid Layout */}
-            {authStatus.antigravity && antigravityModels.length > 0 && (
-                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-sm font-bold text-foreground">{t('statistics.antigravityQuotas')}</CardTitle>
-                            <p className="text-xs text-muted-foreground mt-1">Per-model quota information</p>
-                        </div>
-                        {setReloadTrigger && (
-                            <button
-                                onClick={() => setReloadTrigger((p: number) => p + 1)}
-                                className="p-1.5 hover:bg-muted/20 rounded-full text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </button>
-                        )}
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {antigravityModels.map((m: ModelQuotaItem) => (
-                                <div key={m.id || m.name} className="flex items-center justify-between p-4 rounded-lg border border-border/40 bg-muted/10">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-bold text-foreground truncate">{m.name || m.id}</div>
-                                        <div className="text-xs text-muted-foreground mt-1">{t('statistics.reset')}: {formatReset(m.reset)}</div>
-                                    </div>
-                                    <div className="ml-4 flex-shrink-0">
-                                        {renderRing(m.percentage || 0, getQuotaColor(m.percentage || 0), 'sm')}
+                                        ))}
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Claude Accounts */}
+                {claudeQuota?.accounts && claudeQuota.accounts.length > 0 && (
+                    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-bold text-foreground">Anthropic Claude</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {claudeQuota.accounts.map((acc: any, idx: number) => (
+                                <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/20")}>
+                                    <div className="text-xs font-bold text-orange-400 truncate">{acc.email || 'Claude Account'}</div>
+                                    <div className="flex items-center gap-6">
+                                        {acc.fiveHour && (
+                                            <div className="flex items-center gap-3">
+                                                {renderRing(100 - acc.fiveHour.utilization, 'hsl(280 70% 60%)', 'sm')}
+                                                <div>
+                                                    <div className="text-[10px] font-bold uppercase text-muted-foreground line-clamp-1">5hr Limit</div>
+                                                    <div className="text-[9px] text-muted-foreground">{formatReset(acc.fiveHour.resetsAt)}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {acc.sevenDay && (
+                                            <div className="flex items-center gap-3">
+                                                {renderRing(100 - acc.sevenDay.utilization, 'hsl(260 70% 60%)', 'sm')}
+                                                <div>
+                                                    <div className="text-[10px] font-bold uppercase text-muted-foreground line-clamp-1">7d Limit</div>
+                                                    <div className="text-[9px] text-muted-foreground">{formatReset(acc.sevenDay.resetsAt)}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Copilot Accounts */}
+                {copilotQuota?.accounts && copilotQuota.accounts.length > 0 && (
+                    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-bold text-foreground">GitHub Copilot</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {copilotQuota.accounts.map((acc: any, idx: number) => {
+                                const limit = acc.seat_breakdown?.total_seats || 0
+                                const active_seats = acc.seat_breakdown?.active_seats || 0
+                                const remaining = limit - active_seats
+                                const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 100
+
+                                return (
+                                    <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/20")}>
+                                        <div className="text-xs font-bold text-emerald-400 truncate">{acc.email || 'Copilot Account'}</div>
+                                        <div className="flex items-center gap-3">
+                                            {renderRing(percent, 'hsl(142 76% 45%)', 'sm')}
+                                            <div>
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground">Seats Status</div>
+                                                <div className="text-[9px] text-muted-foreground">{remaining} / {limit} left</div>
+                                                <div className="text-[9px] text-muted-foreground/60">{acc.seat_breakdown?.plan_type || 'Individual'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Codex Accounts */}
+                {codexUsage?.accounts && codexUsage.accounts.length > 0 && (
+                    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-bold text-foreground">ChatGPT Codex</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {codexUsage.accounts.map((acc: any, idx: number) => {
+                                const usage = acc.usage || {}
+                                return (
+                                    <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/20")}>
+                                        <div className="text-xs font-bold text-blue-400 truncate">{acc.email || 'Codex Account'}</div>
+                                        <div className="flex items-center gap-6">
+                                            <div className="flex items-center gap-3">
+                                                {renderRing(100 - (usage.dailyUsedPercent || 0), 'hsl(var(--primary))', 'sm')}
+                                                <div>
+                                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">Daily</div>
+                                                    <div className="text-[9px] text-muted-foreground">{formatReset(usage.dailyResetAt)}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {renderRing(100 - (usage.weeklyUsedPercent || 0), 'hsl(280 100% 60%)', 'sm')}
+                                                <div>
+                                                    <div className="text-[10px] font-bold uppercase text-muted-foreground">Weekly</div>
+                                                    <div className="text-[9px] text-muted-foreground">{formatReset(usage.weeklyResetAt)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
 
             {/* Project Coding Time Chart */}
             {timeStats && Object.keys(timeStats.projectCodingTime).length > 0 && (

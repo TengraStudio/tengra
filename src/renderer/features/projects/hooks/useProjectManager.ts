@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect,useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { Folder, Project, TerminalTab } from '@/types'
@@ -18,7 +18,7 @@ export function useProjectManager() {
             type: 'bash',
             status: 'idle',
             history: [],
-            command: command || ''
+            command: command ?? ''
         }
         setTerminalTabs(prev => [...prev, newTab])
         setActiveTerminalId(id)
@@ -27,7 +27,7 @@ export function useProjectManager() {
     const loadFolders = useCallback(async () => {
         try {
             const data = await window.electron.db.getFolders()
-            setFolders(data || [])
+            setFolders(data)
         } catch (e) {
             console.error('Failed to load folders:', e)
         }
@@ -42,7 +42,7 @@ export function useProjectManager() {
                 ...project,
                 createdAt: project.createdAt instanceof Date
                     ? project.createdAt
-                    : new Date(project.createdAt || Date.now()),
+                    : new Date(project.createdAt ?? Date.now()),
                 // Ensure mounts has a default local mount if empty
                 mounts: Array.isArray(project.mounts) && project.mounts.length > 0
                     ? project.mounts
@@ -56,32 +56,35 @@ export function useProjectManager() {
         }
     }, [])
 
-    const handleCreateFolder = async (name: string) => {
+    const handleCreateFolder = useCallback(async (name: string) => {
         try {
             await window.electron.db.createFolder(name)
             await loadFolders()
         } catch (e) {
             console.error('Failed to create folder:', e)
         }
-    }
+    }, [loadFolders])
 
-    const handleDeleteFolder = async (id: string, onFolderDeleted?: () => void) => {
-        if (!confirm('Klasörü silmek istediğinize emin misiniz?')) {return}
+    const handleDeleteFolder = useCallback(async (id: string, onFolderDeleted?: () => void) => {
+        if (!window.confirm('Klasörü silmek istediğinize emin misiniz?')) { return }
         try {
             await window.electron.db.deleteFolder(id)
             await loadFolders()
-            if (onFolderDeleted) {onFolderDeleted()}
+            if (onFolderDeleted) { onFolderDeleted() }
         } catch (e) {
             console.error('Failed to delete folder:', e)
         }
-    }
+    }, [loadFolders])
 
     useEffect(() => {
-        loadFolders()
-        loadProjects()
+        const fetchInitialData = async () => {
+            await loadFolders()
+            await loadProjects()
+        }
+        void fetchInitialData()
     }, [loadFolders, loadProjects])
 
-    return {
+    return useMemo(() => ({
         projects,
         setProjects,
         folders,
@@ -97,5 +100,8 @@ export function useProjectManager() {
         handleCreateFolder,
         handleDeleteFolder,
         handleOpenTerminal
-    }
+    }), [
+        projects, folders, selectedProject, terminalTabs, activeTerminalId,
+        loadFolders, loadProjects, handleCreateFolder, handleDeleteFolder, handleOpenTerminal
+    ])
 }

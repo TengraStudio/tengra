@@ -139,7 +139,7 @@ export class MemoryProfilingService extends BaseService {
      * Calculate memory trend
      */
     private calculateTrend(values: number[]): 'stable' | 'increasing' | 'decreasing' {
-        if (values.length < 3) {return 'stable';}
+        if (values.length < 3) { return 'stable'; }
 
         // Simple linear regression
         const n = values.length;
@@ -154,8 +154,8 @@ export class MemoryProfilingService extends BaseService {
         const avgValue = sumY / n;
         const normalizedSlope = slope / avgValue;
 
-        if (normalizedSlope > 0.01) {return 'increasing';}
-        if (normalizedSlope < -0.01) {return 'decreasing';}
+        if (normalizedSlope > 0.01) { return 'increasing'; }
+        if (normalizedSlope < -0.01) { return 'decreasing'; }
         return 'stable';
     }
 
@@ -168,8 +168,8 @@ export class MemoryProfilingService extends BaseService {
         // Check for continuous heap growth
         if (this.snapshots.length >= 10) {
             const recent = this.snapshots.slice(-10);
-            const first = recent[0].heapUsed;
-            const last = recent[recent.length - 1].heapUsed;
+            const first = recent[0]!.heapUsed;
+            const last = recent[recent.length - 1]!.heapUsed;
             const growth = ((last - first) / first) * 100;
 
             if (growth > 20) {
@@ -185,8 +185,8 @@ export class MemoryProfilingService extends BaseService {
         // Check for external memory growth (native bindings)
         if (this.snapshots.length >= 5) {
             const recent = this.snapshots.slice(-5);
-            const firstExternal = recent[0].external;
-            const lastExternal = recent[recent.length - 1].external;
+            const firstExternal = recent[0]!.external;
+            const lastExternal = recent[recent.length - 1]!.external;
 
             if (lastExternal > firstExternal * 1.5) {
                 suspects.push({

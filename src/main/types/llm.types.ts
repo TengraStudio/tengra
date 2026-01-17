@@ -60,8 +60,8 @@ export interface ChatOptions {
 export interface OpenAIResponse {
     content: string;
     role: string;
-    tool_calls?: ToolCall[];
-    completionTokens?: number;
-    reasoning_content?: string;
-    images?: string[];
+    tool_calls?: ToolCall[] | undefined;
+    completionTokens?: number | undefined;
+    reasoning_content?: string | undefined;
+    images?: string[] | undefined;
 }

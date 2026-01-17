@@ -3,12 +3,12 @@
  * Centralizes UI state management for the App component
  */
 
-import { useRef,useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { Toast } from '@/types'
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'projects' | 'council' | 'settings' | 'mcp'
+export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory'
 
 export interface AppState {
     // View state
@@ -71,7 +71,7 @@ export function useAppState(): AppState {
     const addToast = (toast: Omit<Toast, 'id'>) => {
         const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         setToasts(prev => [...prev, { ...toast, id }])
-        
+
         // Auto-remove after 5 seconds
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id))

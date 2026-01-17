@@ -1,9 +1,9 @@
 import { registerProjectIpc } from '@main/ipc/project';
 import { IpcMainInvokeEvent } from 'electron';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, Function>();
+const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -16,7 +16,7 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: Function) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => {
         try {
             const result = await handler(...args);
             return { success: true, data: result };

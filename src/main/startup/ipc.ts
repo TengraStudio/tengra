@@ -15,6 +15,7 @@ import { registerLlamaIpc } from '@main/ipc/llama'
 import { registerLoggingIpc } from '@main/ipc/logging'
 import { registerMcpIpc } from '@main/ipc/mcp'
 import { registerMemoryIpc } from '@main/ipc/memory'
+import { registerModelRegistryIpc } from '@main/ipc/model-registry'
 import { registerOllamaIpc } from '@main/ipc/ollama'
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process'
 import { registerProjectIpc } from '@main/ipc/project'
@@ -41,8 +42,9 @@ export function registerIpcHandlers(
     mcpDispatcher: McpDispatcher
 ) {
     registerWindowIpc(getMainWindow)
+    registerModelRegistryIpc(services.modelRegistryService)
 
-    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService)
+    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService, services.authService)
     registerProxyIpc(services.proxyService)
     registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService)
 
@@ -61,9 +63,7 @@ export function registerIpcHandlers(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
-        proxyService: services.proxyService,
-        copilotService: services.copilotService,
-        llamaService: services.llamaService
+        proxyService: services.proxyService
     })
 
     registerProjectIpc(getMainWindow, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService)
