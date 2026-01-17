@@ -1,5 +1,5 @@
 import { FEEDBACK_TIMEOUTS } from '@shared/constants'
-import { Bookmark, Check, Code2, Copy, RotateCcw,Smile, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { Bookmark, Check, Code2, Copy, RotateCcw, Smile, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { useTranslation } from '@/i18n'
@@ -9,8 +9,8 @@ interface ActionButtonProps {
     label: string
     onClick: () => void
     children: React.ReactNode
-    active?: boolean
-    activeClassName?: string
+    active?: boolean | undefined
+    activeClassName?: string | undefined
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({ label, onClick, children, active, activeClassName }) => (
@@ -58,7 +58,7 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
     )
 }
 
-export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void }) => {
+export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefined; onRate: (val: 1 | -1 | 0) => void }) => {
     const { t } = useTranslation()
     return (
         <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1" role="group" aria-label={t('messageBubble.rating') || 'Rate response'}>
@@ -152,7 +152,7 @@ export const MessageActionsGroup = ({
         >
             <ActionButton
                 label={isSpeaking ? t('messageBubble.stop') : t('messageBubble.speakAloud')}
-                onClick={isSpeaking ? (onStop || (() => { })) : () => onSpeak?.(displayContent)}
+                onClick={isSpeaking ? (onStop || (() => { })) : () => { if (onSpeak) {onSpeak(displayContent);} }}
                 active={isSpeaking}
             >
                 {isSpeaking ? <VolumeX className="w-3.5 h-3.5" aria-hidden="true" /> : <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />}

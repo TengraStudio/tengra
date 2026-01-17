@@ -97,7 +97,7 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
                 return false
             }
 
-            spawn('cmd', ['/k', sanitized], { shell: true })
+            spawn('cmd', ['/k', sanitized], { shell: false })
         } else {
             // Basic fallback for Linux/Mac
             appLogger.warn('WindowIPC', `Open terminal not fully supported on non-windows yet: ${command}`)

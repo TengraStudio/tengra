@@ -1,5 +1,5 @@
 import { StreamParser } from '@main/utils/stream-parser.util';
-import { describe, expect,it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('StreamParser', () => {
     it('should parse simple chunks', async () => {
@@ -19,8 +19,8 @@ describe('StreamParser', () => {
         }
 
         expect(chunks).toHaveLength(2);
-        expect(chunks[0].content).toBe('Hello');
-        expect(chunks[1].content).toBe(' World');
+        expect(chunks[0]?.content).toBe('Hello');
+        expect(chunks[1]?.content).toBe(' World');
     });
 
     it('should handle split lines', async () => {
@@ -39,7 +39,7 @@ describe('StreamParser', () => {
         }
 
         expect(chunks).toHaveLength(1);
-        expect(chunks[0].content).toBe('Split');
+        expect(chunks[0]?.content).toBe('Split');
     });
 
     it('should pass through images', async () => {
@@ -57,6 +57,6 @@ describe('StreamParser', () => {
         }
 
         expect(chunks).toHaveLength(1);
-        expect(chunks[0].images).toEqual(['img1']);
+        expect(chunks[0]?.images).toEqual(['img1']);
     });
 });

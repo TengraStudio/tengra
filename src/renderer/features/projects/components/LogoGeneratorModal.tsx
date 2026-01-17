@@ -1,8 +1,8 @@
-import { Check, ImageIcon, Loader2,Sparkles, Wand2 } from 'lucide-react'
+import { Check, ImageIcon, Loader2, Sparkles, Wand2 } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { Modal } from '@/components/ui/modal'
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { Project } from '@/types'
 
@@ -32,8 +32,8 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
             const result = await window.electron.project.analyzeIdentity(project.path)
             setSuggestions(result.suggestedPrompts || [])
             setPalette(result.colors || [])
-            if (result.suggestedPrompts?.length > 0 && !prompt) {
-                setPrompt(result.suggestedPrompts[0])
+            if (result.suggestedPrompts && result.suggestedPrompts.length > 0 && !prompt) {
+                setPrompt(result.suggestedPrompts[0]!)
             }
         } catch (error) {
             console.error('Analysis failed', error)
@@ -43,7 +43,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleGenerate = async () => {
-        if (!prompt) {return}
+        if (!prompt) { return }
         setIsGenerating(true)
         try {
             // Include palette colors in prompt if available
@@ -59,7 +59,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleImprovePrompt = async () => {
-        if (!prompt || isAnalyzing) {return}
+        if (!prompt || isAnalyzing) { return }
         setIsAnalyzing(true)
         try {
             const improved = await window.electron.project.improveLogoPrompt(prompt)
@@ -84,7 +84,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     }
 
     const handleApply = async () => {
-        if (!generatedLogo) {return}
+        if (!generatedLogo) { return }
         setIsGenerating(true)
         try {
             const finalPath = await window.electron.project.applyLogo(project.path, generatedLogo)

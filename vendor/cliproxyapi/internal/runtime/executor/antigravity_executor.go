@@ -1098,6 +1098,17 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 				cfg = modelConfig[aliasName]
 			}
 
+			displayName := id
+			description := id
+			if v, ok := modelMap[originalName]; ok {
+				if d := v.Get("displayName").String(); d != "" {
+					displayName = d
+				}
+				if d := v.Get("description").String(); d != "" {
+					description = d
+				}
+			}
+
 			modelName := id
 			if cfg != nil && cfg.Name != "" {
 				modelName = cfg.Name
@@ -1105,8 +1116,8 @@ func FetchAntigravityModels(ctx context.Context, auth *cliproxyauth.Auth, cfg *c
 			modelInfo := &registry.ModelInfo{
 				ID:          id,
 				Name:        modelName,
-				Description: id,
-				DisplayName: id,
+				Description: description,
+				DisplayName: displayName,
 				Version:     id,
 				Object:      "model",
 				Created:     now,
@@ -1549,14 +1560,13 @@ func modelName2Alias(modelName string) string {
 	case "rev19-uic3-1p":
 		return "gemini-2.5-computer-use-preview-10-2025"
 	case "gemini-3-pro-image":
-		// return "gemini-3-pro-image-preview" // Incorrect alias
-		return "gemini-3-pro-image"
+		return "gemini-3-pro-image-preview"
 	case "gemini-3-pro-high":
-		return "gemini-3-pro-high"
+		return "gemini-3-pro-preview"
 	case "gemini-3-pro-low":
 		return "gemini-3-pro-low"
 	case "gemini-3-flash":
-		return "gemini-3-flash"
+		return "gemini-3-flash-preview"
 	case "claude-sonnet-4-5":
 		return "gemini-claude-sonnet-4-5"
 	case "claude-sonnet-4-5-thinking":

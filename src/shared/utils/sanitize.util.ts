@@ -22,7 +22,6 @@ export function sanitizeString(
     const {
         maxLength = 1000000, // Default 1MB of text
         allowNewlines = true,
-        allowSpecialChars: _allowSpecialChars = true,
         trimWhitespace = true
     } = options
 
@@ -40,9 +39,11 @@ export function sanitizeString(
     // Remove null bytes and control characters (except newlines if allowed)
     if (allowNewlines) {
         // Keep newlines, tabs, and carriage returns, but remove other control chars
+        // eslint-disable-next-line no-control-regex
         sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     } else {
         // Remove all control characters including newlines
+        // eslint-disable-next-line no-control-regex
         sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '')
     }
 
@@ -71,12 +72,13 @@ export function sanitizeFilename(filename: string): string {
 
     // Remove path separators and dangerous characters
     let sanitized = filename
-        .replace(/[\/\\\?\*\|"<>:]/g, '') // Remove path separators and invalid chars
+        .replace(/[/\\?*|"<>:]/g, '') // Remove path separators and invalid chars
         .replace(/^\.+/, '') // Remove leading dots
         .replace(/\.+$/, '') // Remove trailing dots
         .trim()
 
     // Remove control characters
+    // eslint-disable-next-line no-control-regex
     sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '')
 
     // Limit length
@@ -103,7 +105,7 @@ export function sanitizeUrl(url: string): string {
     // Basic URL validation
     try {
         const parsed = new URL(trimmed)
-        
+
         // Only allow http, https, and data URLs
         if (!['http:', 'https:', 'data:'].includes(parsed.protocol)) {
             return ''
@@ -168,7 +170,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(
     obj: T,
     options: Parameters<typeof sanitizeString>[1] = {}
 ): T {
-    if (obj === null || obj === undefined) {
+    if (!obj) {
         return obj
     }
 
@@ -184,13 +186,13 @@ export function sanitizeObject<T extends Record<string, unknown>>(
 
     for (const [key, value] of Object.entries(obj)) {
         const sanitizedKey = sanitizeString(key, { maxLength: 100, allowNewlines: false })
-        
+
         if (typeof value === 'string') {
-            ;(sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options)
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options)
         } else if (typeof value === 'object' && value !== null) {
-            ;(sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options)
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options)
         } else {
-            ;(sanitized as Record<string, unknown>)[sanitizedKey] = value
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = value
         }
     }
 

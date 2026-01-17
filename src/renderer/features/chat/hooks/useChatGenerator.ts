@@ -10,12 +10,12 @@ import { CatchError } from '@/types/common'
 interface UseChatGeneratorProps {
     chats: Chat[]
     setChats: React.Dispatch<React.SetStateAction<Chat[]>>
-    appSettings?: AppSettings
+    appSettings?: AppSettings | undefined
     selectedModel: string
     selectedProvider: string
     language: string
-    activeWorkspacePath?: string
-    projectId?: string
+    activeWorkspacePath?: string | undefined
+    projectId?: string | undefined
     t: (key: string) => string
     handleSpeak: (id: string, content: string) => void
     autoReadEnabled: boolean
@@ -30,7 +30,7 @@ interface PrepareMessagesOptions {
     selectedModel: string
     selectedProvider: string
     language: string
-    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null
+    selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined
 }
 
 const prepareMessages = (options: PrepareMessagesOptions) => {
@@ -54,14 +54,14 @@ const prepareMessages = (options: PrepareMessagesOptions) => {
     return { allMessages: [systemMessage, ...chatMessages], presetOptions }
 }
 
-export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPersona?: { id: string, name: string, description: string, prompt: string } | null }) => {
+export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined }) => {
     const {
         chats, setChats, appSettings, selectedModel, selectedProvider, language,
         selectedPersona, activeWorkspacePath, projectId, t, handleSpeak,
         autoReadEnabled, formatChatError
     } = props
 
-    const [streamingStates, setStreamingStates] = useState<Record<string, { content: string, reasoning: string, speed: number | null }>>({})
+    const [streamingStates, setStreamingStates] = useState<Record<string, { content?: string, reasoning?: string, speed?: number | null, sources?: string[] | undefined }>>({})
 
     const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string) => {
         setStreamingStates(prev => ({ ...prev, [chatId]: { content: '', reasoning: '', speed: null } }))
@@ -98,7 +98,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                 stream: AsyncGenerator<unknown, void, unknown>,
                 chatId: string,
                 assistantId: string,
-                setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, { content: string, reasoning: string, speed: number | null, sources?: string[] }>>>,
+                setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, { content?: string, reasoning?: string, speed?: number | null, sources?: string[] | undefined }>>>,
                 streamStartTime: number
             ): Promise<StreamResult> => {
                 let finalContent = ''
@@ -125,7 +125,18 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                         }
                         if (result.newContent !== undefined) {
                             finalContent = result.newContent
-                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], content: finalContent, speed: result.speed ?? null } }))
+                            setStreamingStates(prev => {
+                                const state = prev[chatId]
+                                if (!state) { return prev }
+                                return {
+                                    ...prev,
+                                    [chatId]: {
+                                        ...state,
+                                        content: finalContent,
+                                        speed: result.speed ?? null
+                                    }
+                                }
+                            })
 
                             // Update the main chats state so all UI components see the live progress
                             const now = Date.now()
@@ -173,7 +184,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             const errText = formatChatError(e as CatchError)
             const errMsg: Message = { id: assistantId, role: 'assistant', content: `${t('common.error')}: ${errText}`, timestamp: new Date(), provider: selectedProvider, model: activeModel }
             setChats(prev => prev.map(c => {
-                if (c.id !== chatId) {return c}
+                if (c.id !== chatId) { return c }
                 return {
                     ...c,
                     messages: c.messages.map(m => m.id === assistantId ? errMsg : m),

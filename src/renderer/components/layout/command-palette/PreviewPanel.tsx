@@ -3,7 +3,7 @@ import { Command } from 'lucide-react'
 import React from 'react'
 
 interface PreviewPanelProps {
-    selectedItem?: CommandItem;
+    selectedItem?: CommandItem | undefined;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {

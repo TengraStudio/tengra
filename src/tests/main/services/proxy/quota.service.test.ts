@@ -2,9 +2,10 @@ import * as fs from 'fs';
 
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import axios from 'axios';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockRequest, mockCookiesGet } = vi.hoisted(() => {
     return {
@@ -47,6 +48,7 @@ describe('QuotaService', () => {
     let quotaService: QuotaService;
     let mockSettingsService: SettingsService;
     let mockAuthService: AuthService;
+    let mockProcessManager: ProcessManagerService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -66,7 +68,12 @@ describe('QuotaService', () => {
             getAuthToken: vi.fn()
         } as unknown as AuthService;
 
-        quotaService = new QuotaService(mockSettingsService, mockAuthService);
+        mockProcessManager = {
+            startService: vi.fn(),
+            sendRequest: vi.fn()
+        } as unknown as ProcessManagerService;
+
+        quotaService = new QuotaService(mockSettingsService, mockAuthService, mockProcessManager);
     });
 
     describe('getQuota', () => {
@@ -80,35 +87,35 @@ describe('QuotaService', () => {
             vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({
                 accessToken: 'mock-token',
                 id: 'antigravity',
+                accountId: 'mock-account',
                 provider: 'antigravity',
                 updatedAt: Date.now()
             });
 
-            vi.mocked(axios.post).mockResolvedValue({
-                status: 200,
-                data: {
-                    models: {
-                        'gpt-4': {
-                            displayName: 'GPT-4',
-                            quotaInfo: {
-                                totalQuota: 100,
-                                remainingQuota: 50
-                            }
-                        }
-                    }
+            vi.mocked(mockProcessManager.sendRequest).mockResolvedValue({
+                success: true,
+                quota: {
+                    total: 100,
+                    remaining: 50,
+                    reset_at: 'tomorrow'
                 }
             });
 
             const result = await quotaService.getQuota(8080, 'key');
 
             expect(result).not.toBeNull();
-            expect(result?.models).toHaveLength(1);
-            expect(result?.models[0].id).toBe('gpt-4');
+            expect(result?.status).toBe('50%');
         });
 
         it('should handle API errors gracefully', async () => {
-            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({ accessToken: 'mock-token' } as any);
-            vi.mocked(axios.post).mockRejectedValue(new Error('Network Error'));
+            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({
+                accessToken: 'mock-token',
+                id: 'antigravity',
+                accountId: 'mock-account',
+                provider: 'antigravity',
+                updatedAt: Date.now()
+            });
+            vi.mocked(mockProcessManager.sendRequest).mockResolvedValue({ success: false, error: 'Failed' });
 
             const result = await quotaService.getQuota(8080, 'key');
             expect(result).toBeNull();

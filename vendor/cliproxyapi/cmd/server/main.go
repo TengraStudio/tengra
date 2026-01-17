@@ -120,6 +120,8 @@ func main() {
 		pgStoreDSN           string
 		pgStoreSchema        string
 		pgStoreLocalPath     string
+		pgStoreConfigTable   string
+		pgStoreAuthTable     string
 		pgStoreInst          *store.PostgresStore
 		useGitStore          bool
 		gitStoreRemoteURL    string
@@ -220,7 +222,34 @@ func main() {
 
 	// Determine and load the configuration file.
 	// Prefer the Postgres store when configured, otherwise fallback to git or local files.
+	// Determine and load the configuration file.
+	// Prefer the Postgres store when configured, otherwise fallback to git or local files.
 	var configFilePath string
+
+	// Check if Postgres is enabled in local config if not set by env
+	if !usePostgresStore && !useGitStore && !useObjectStore {
+		pathToCheck := configPath
+		if pathToCheck == "" {
+			if w, e := os.Getwd(); e == nil {
+				pathToCheck = filepath.Join(w, "config.yaml")
+			}
+		}
+		if pathToCheck != "" {
+			if localCfg, errLoad := config.LoadConfigOptional(pathToCheck, true); errLoad == nil && localCfg != nil {
+				if localCfg.Postgres.Enable {
+					usePostgresStore = true
+					pgStoreDSN = localCfg.Postgres.DSN
+					pgStoreSchema = localCfg.Postgres.Schema
+					if localCfg.Postgres.ConfigTable != "" {
+						pgStoreConfigTable = localCfg.Postgres.ConfigTable
+					}
+					if localCfg.Postgres.AuthTable != "" {
+						pgStoreAuthTable = localCfg.Postgres.AuthTable
+					}
+				}
+			}
+		}
+	}
 	if usePostgresStore {
 		if pgStoreLocalPath == "" {
 			pgStoreLocalPath = wd
@@ -228,9 +257,11 @@ func main() {
 		pgStoreLocalPath = filepath.Join(pgStoreLocalPath, "pgstore")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		pgStoreInst, err = store.NewPostgresStore(ctx, store.PostgresStoreConfig{
-			DSN:      pgStoreDSN,
-			Schema:   pgStoreSchema,
-			SpoolDir: pgStoreLocalPath,
+			DSN:         pgStoreDSN,
+			Schema:      pgStoreSchema,
+			SpoolDir:    pgStoreLocalPath,
+			ConfigTable: pgStoreConfigTable,
+			AuthTable:   pgStoreAuthTable,
 		})
 		cancel()
 		if err != nil {

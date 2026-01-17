@@ -368,7 +368,7 @@ export class AgentCouncilService {
             const jsonRegex = /```json\n([\s\S]*?)\n```/g
             let match
             while ((match = jsonRegex.exec(content)) !== null) {
-                if (match && match[1]) {
+                if (match?.[1]) {
                     try {
                         const parsed = JSON.parse(match[1])
                         if (parsed.tool && parsed.args) { results.push(parsed) }

@@ -6,8 +6,8 @@
 import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 
-import { cn } from '@/lib/utils'
 import { Language, useTranslation } from '@/i18n'
+import { cn } from '@/lib/utils'
 
 interface Theme {
     id: string

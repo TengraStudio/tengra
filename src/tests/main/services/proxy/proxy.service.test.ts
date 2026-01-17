@@ -2,7 +2,7 @@
 
 import { DataService } from '@main/services/data/data.service';
 import { DeviceCodeResponse, ProxyService } from '@main/services/proxy/proxy.service';
-import { ProxyProcessManager } from '@main/services/proxy/proxy-process.manager';
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -72,12 +72,15 @@ describe('ProxyService', () => {
             getClaudeQuota: vi.fn().mockResolvedValue({ success: false }),
         } as unknown as QuotaService;
 
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any
+
         proxyService = new ProxyService(
             mockSettingsService,
             mockDataService,
             mockSecurityService,
             mockProcessManager,
-            mockQuotaService
+            mockQuotaService,
+            mockAuthService
         );
     });
 

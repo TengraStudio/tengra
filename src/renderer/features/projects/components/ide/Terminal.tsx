@@ -1,4 +1,4 @@
-import { useCallback,useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 
@@ -7,8 +7,8 @@ import { useTranslation } from '@/i18n'
 import 'xterm/css/xterm.css'
 
 interface TerminalComponentProps {
-    cwd?: string
-    projectId?: string  // For persistent command history
+    cwd?: string | undefined
+    projectId?: string | undefined  // For persistent command history
 }
 
 // Terminal history persistence keys
@@ -157,7 +157,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         // Initialize backend process
         const initTerminal = async () => {
             const finalTerminalId = terminalIdRef.current!
-            
+
             // Final check before creating
             if (initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {
                 console.warn(`[TerminalComponent] Terminal ${finalTerminalId} already exists, skipping`)
@@ -180,7 +180,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                     initializingTerminals.delete(finalTerminalId)
                     throw new Error(errorMsg)
                 }
-                
+
                 pidRef.current = finalTerminalId
                 initializedTerminals.add(finalTerminalId)
                 initializingTerminals.delete(finalTerminalId)
@@ -212,7 +212,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
                 // Enhanced data handler with history support
                 term.onData(data => {
-                    if (!pidRef.current) {return}
+                    if (!pidRef.current) { return }
 
                     // Handle special key sequences for history navigation
                     if (data === '\x1b[A') {
@@ -227,9 +227,11 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                             }
 
                             // Clear current line and show history item
-                            const historyItem = historyRef.current[historyIndexRef.current]
-                            window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
-                            window.electron.terminal.write(pidRef.current, historyItem)
+                            const historyItem = historyRef.current[historyIndexRef.current] || ''
+                            if (pidRef.current) {
+                                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
+                                void window.electron.terminal.write(pidRef.current, historyItem)
+                            }
                             lineBuffer = historyItem
                         }
                         return
@@ -240,9 +242,11 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                         if (historyIndexRef.current !== -1) {
                             if (historyIndexRef.current < historyRef.current.length - 1) {
                                 historyIndexRef.current++
-                                const historyItem = historyRef.current[historyIndexRef.current]
-                                window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
-                                window.electron.terminal.write(pidRef.current, historyItem)
+                                const historyItem = historyRef.current[historyIndexRef.current] || ''
+                                if (pidRef.current) {
+                                    void window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
+                                    void window.electron.terminal.write(pidRef.current, historyItem)
+                                }
                                 lineBuffer = historyItem
                             } else {
                                 // Restore original input
@@ -309,13 +313,13 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         return () => {
             isInitializedRef.current = false
             window.removeEventListener('resize', handleResize)
-            
+
             const terminalId = pidRef.current || terminalIdRef.current
             if (terminalId) {
                 // Remove from registry
                 initializedTerminals.delete(terminalId)
                 initializingTerminals.delete(terminalId)
-                
+
                 // Kill the terminal session
                 window.electron.terminal.kill(terminalId).catch(err => {
                     console.error('[TerminalComponent] Failed to kill terminal on cleanup:', err)
@@ -325,8 +329,8 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
             // Call individual cleanups
             const cleanups = (term as any)._cleanups
             if (cleanups) {
-                if (typeof cleanups.data === 'function') {cleanups.data()}
-                if (typeof cleanups.exit === 'function') {cleanups.exit()}
+                if (typeof cleanups.data === 'function') { cleanups.data() }
+                if (typeof cleanups.exit === 'function') { cleanups.exit() }
             }
 
             try {

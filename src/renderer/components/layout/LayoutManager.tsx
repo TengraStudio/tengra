@@ -1,4 +1,4 @@
-import React, { useCallback,useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -22,25 +22,21 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 }) => {
     const { theme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
-    const [sidebarWidth, setSidebarWidth] = useState(isSidebarCollapsed ? 60 : 280);
+    const [sidebarWidth, setSidebarWidth] = useState(() => {
+        if (isSidebarCollapsed) { return 60; }
+        const savedWidth = localStorage.getItem('sidebarWidth');
+        return savedWidth ? parseInt(savedWidth, 10) || 280 : 280;
+    });
     const [isDragging, setIsDragging] = useState(false);
     const startXRef = useRef(0);
     const startWidthRef = useRef(0);
 
-    // Load saved width on mount
-    useEffect(() => {
-        const savedWidth = localStorage.getItem('sidebarWidth');
-        if (savedWidth && !isSidebarCollapsed) {
-            const width = parseInt(savedWidth, 10);
-            if (!isNaN(width)) {
-                setSidebarWidth(width);
-            }
+    React.useLayoutEffect(() => {
+        const targetWidth = isSidebarCollapsed ? 60 : (parseInt(localStorage.getItem('sidebarWidth') ?? '280', 10));
+        if (sidebarWidth !== targetWidth) {
+            setSidebarWidth(targetWidth);
         }
-    }, []);
-
-    useEffect(() => {
-        setSidebarWidth(isSidebarCollapsed ? 60 : (parseInt(localStorage.getItem('sidebarWidth') || '280', 10)));
-    }, [isSidebarCollapsed]);
+    }, [isSidebarCollapsed, sidebarWidth]);
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -50,7 +46,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     }, [sidebarWidth]);
 
     useEffect(() => {
-        if (!isDragging) {return;}
+        if (!isDragging) { return; }
 
         const handleMouseMove = (e: MouseEvent) => {
             const SNAP_POINTS = [280, 400, 600];
@@ -102,7 +98,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         >
             {/* Sidebar */}
             <div
-                className="h-full flex-shrink-0 z-20 bg-card/10 backdrop-blur-md border-r border-border/40"
+                className="h-full flex-shrink-0 z-20 bg-background border-r border-border"
                 style={{ width: sidebarWidth }}
             >
                 {sidebarContent}
@@ -160,7 +156,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                             {mainContent}
                         </div>
                         <div className="h-px bg-border/50" />
-                        <div className="h-1/4 min-h-[100px] bg-card/5 backdrop-blur-sm overflow-hidden">
+                        <div className="h-1/4 min-h-[100px] bg-card border-t border-border overflow-hidden">
                             {panelContent}
                         </div>
                     </>

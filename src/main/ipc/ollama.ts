@@ -1,12 +1,10 @@
-import { CopilotService } from '@main/services/llm/copilot.service';
-import { LlamaService } from '@main/services/llm/llama.service'
-import { LLMService } from '@main/services/llm/llm.service'
 import { LocalAIService } from '@main/services/llm/local-ai.service'
+import { LLMService } from '@main/services/llm/llm.service'
 import { OllamaService } from '@main/services/llm/ollama.service'
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { SettingsService } from '@main/services/system/settings.service'
-import { JsonValue } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain } from 'electron'
 
@@ -37,86 +35,14 @@ export function registerOllamaIpc(options: {
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
     proxyService?: ProxyService
-    copilotService?: CopilotService
-    llamaService?: LlamaService
 }) {
-    const { localAIService, ollamaService, ollamaHealthService, copilotService, proxyService, llamaService } = options
+    const { localAIService, ollamaService, ollamaHealthService } = options
 
-    ipcMain.handle('ollama:tags', async () => localAIService.getOllamaModels())
+    ipcMain.handle('ollama:tags', async () => []) // Moved to ModelRegistryService via Rust
 
-    const fetchLocalModels = async (service: LocalAIService): Promise<ModelDefinition[]> => {
-        try {
-            const models = await service.getOllamaModels()
-            return models.map((m) => m.name ? { ...m, id: m.name, provider: 'ollama' } as ModelDefinition : null)
-                .filter((m): m is ModelDefinition => m !== null)
-        } catch { return [] }
-    }
-
-    const fetchCopilotModels = async (service?: CopilotService): Promise<ModelDefinition[]> => {
-        if (!service?.isConfigured()) { return [] }
-        try {
-            const res = await service.getModels()
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-condition
-            const data: any[] = Array.isArray(res) ? res : (res.data || [])
-            return data.map((m) => m.id ? { ...m, provider: 'copilot' } as ModelDefinition : null)
-                .filter((m): m is ModelDefinition => m !== null)
-        } catch { return [] }
-    }
-
-    const fetchAntigravityInfo = async (service?: ProxyService): Promise<{ codex: ModelDefinition[], antigravity: ModelDefinition[] }> => {
-        const result = { codex: [] as ModelDefinition[], antigravity: [] as ModelDefinition[] }
-        if (!service) { return result }
-        try {
-            const usage = await service.getCodexUsage() as { usageSource?: string } | null
-            if (usage?.usageSource === 'chatgpt') {
-                result.codex = [
-                    { id: 'gpt-5-codex', name: 'GPT-5 Codex', provider: 'codex' },
-                    { id: 'gpt-5-codex-mini', name: 'GPT-5 Codex Mini', provider: 'codex' },
-                    { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'codex' }
-                ]
-            }
-            const ag = await service.getAntigravityAvailableModels()
-            result.antigravity = ag.map(m => ({ ...m, provider: 'antigravity' } as ModelDefinition))
-        } catch { /* empty */ }
-        return result
-    }
-
-    const fetchLlamaModels = async (service?: LlamaService): Promise<ModelDefinition[]> => {
-        if (!service) { return [] }
-        try {
-            const lm = await service.getModels()
-            return lm.map(m => m.name ? { ...m, provider: 'llama-cpp' } as ModelDefinition : null)
-                .filter((m): m is ModelDefinition => m !== null)
-        } catch { return [] }
-    }
-
-    const getAllModels = async (
-        localAIService: LocalAIService,
-        copilotService: CopilotService | undefined,
-        proxyService: ProxyService | undefined,
-        llamaService: LlamaService | undefined
-    ): Promise<ModelDefinition[]> => {
-        const [local, copilot, agInfo, llama] = await Promise.all([
-            fetchLocalModels(localAIService),
-            fetchCopilotModels(copilotService),
-            fetchAntigravityInfo(proxyService),
-            fetchLlamaModels(llamaService)
-        ])
-
-        const openCodeModels: ModelDefinition[] = [
-            { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'opencode' },
-            { id: 'grok-code', name: 'Grok Code Fast 1', provider: 'opencode' },
-            { id: 'glm-4.7-free', name: 'GLM 4.7', provider: 'opencode' },
-            { id: 'minimax-m2.1-free', name: 'MiniMax M2.1', provider: 'opencode' },
-            { id: 'big-pickle', name: 'Big Pickle', provider: 'opencode' },
-        ]
-
-        return [...local, ...copilot, ...agInfo.codex, ...agInfo.antigravity, ...llama, ...openCodeModels]
-    }
-
-    // ... inside registerOllamaIpc
+    // deleted unused functions
     ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
-        return getAllModels(localAIService, copilotService, proxyService, llamaService)
+        return [] // Moved to ModelRegistryService via Rust
     })
 
     // Use health service for isRunning check

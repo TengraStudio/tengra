@@ -5,7 +5,7 @@
 - [ ] Remove `any` type usage (Target: 0)
     - [x] `database.service.ts`: ~10 instances left
     - [x] `migration-manager.ts`: Transaction types
-    - [ ] Global audit
+    - [x] Global audit
 - [ ] Enable `noImplicitAny` in tsconfig
 - [ ] Strict null checks
 

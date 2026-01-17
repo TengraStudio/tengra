@@ -2,7 +2,7 @@
  * Unit tests for TokenEstimationService
  */
 import { TokenEstimationService } from '@main/services/llm/token-estimation.service';
-import { beforeEach,describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { Message } from '@/types/chat';
 
@@ -248,7 +248,7 @@ describe('TokenEstimationService', () => {
 
             // Should have fewer messages and include the last ones
             expect(result.length).toBeLessThan(messages.length);
-            expect(result[result.length - 1].content).toContain('Message 19');
+            expect(result[result.length - 1]!.content).toContain('Message 19');
         });
 
         it('should handle empty messages array', () => {

@@ -1,5 +1,9 @@
 import { AppErrorCode, getErrorMessage, OrbitError } from '@shared/utils/error.util'
 
+interface CustomWindow extends Window {
+    showToast?: (options: { type: string; message: string }) => void
+}
+
 /**
  * Standardized error handling utilities for the renderer process.
  * Provides consistent error handling patterns matching the main process.
@@ -78,11 +82,14 @@ export function handleError(
         }
     }
 
-    if (showToast && typeof window !== 'undefined' && (window as any).showToast) {
-        ; (window as any).showToast({
-            type: 'error',
-            message: userMessage
-        })
+    if (showToast && typeof window !== 'undefined') {
+        const customWindow = window as unknown as CustomWindow
+        if (customWindow.showToast) {
+            customWindow.showToast({
+                type: 'error',
+                message: userMessage
+            })
+        }
     }
 
     return userMessage
@@ -105,7 +112,7 @@ export function handleError(
  * )
  * ```
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
+export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
     fn: T,
     context: string,
     options: ErrorDisplayOptions = {}
@@ -137,12 +144,12 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
  * )
  * ```
  */
-export function createSafeHandler<T extends (...args: any[]) => Promise<any>>(
-    fn: T,
-    defaultValue: Awaited<ReturnType<T>>,
+export function createSafeHandler<TArgs extends unknown[], TReturn>(
+    fn: (...args: TArgs) => Promise<TReturn>,
+    defaultValue: TReturn,
     context: string
-): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>> {
-    return async (...args: Parameters<T>) => {
+): (...args: TArgs) => Promise<TReturn> {
+    return async (...args: TArgs) => {
         try {
             return await fn(...args)
         } catch (error) {

@@ -16,6 +16,7 @@ export type AppSettings = {
         downloadAutomatically: boolean
         notifyOnly: boolean
     }
+    activeAccountId?: string
     crashReporting?: {
         enabled: boolean
     }
@@ -77,7 +78,6 @@ export type AppSettings = {
     }
     codex?: {
         connected: boolean
-        token?: string
     }
     copilot?: {
         connected: boolean

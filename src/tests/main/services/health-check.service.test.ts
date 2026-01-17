@@ -2,7 +2,7 @@
  * Unit tests for HealthCheckService
  */
 import { HealthCheckService } from '@main/services/system/health-check.service';
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('HealthCheckService', () => {
     let service: HealthCheckService;
@@ -23,15 +23,15 @@ describe('HealthCheckService', () => {
 
             const status = service.getStatus();
             expect(status.services).toHaveLength(1);
-            expect(status.services[0].name).toBe('test-service');
-            expect(status.services[0].status).toBe('unknown');
+            expect(status.services[0]!.name).toBe('test-service');
+            expect(status.services[0]!.status).toBe('unknown');
         });
 
         it('should register with default options', () => {
             service.register('test-service', async () => true);
 
             const status = service.getStatus();
-            expect(status.services[0].status).toBe('unknown');
+            expect(status.services[0]!.status).toBe('unknown');
         });
 
         it('should register multiple checks', () => {
@@ -126,7 +126,7 @@ describe('HealthCheckService', () => {
             await vi.advanceTimersByTimeAsync(100);
 
             const status = service.getStatus();
-            expect(status.services[0].latencyMs).toBeDefined();
+            expect(status.services[0]!.latencyMs).toBeDefined();
         });
     });
 
@@ -150,11 +150,11 @@ describe('HealthCheckService', () => {
             service.register('test-service', async () => shouldPass);
 
             await service.checkNow('test-service');
-            expect(service.getStatus().services[0].status).toBe('unhealthy');
+            expect(service.getStatus().services[0]!.status).toBe('unhealthy');
 
             shouldPass = true;
             await service.checkNow('test-service');
-            expect(service.getStatus().services[0].status).toBe('healthy');
+            expect(service.getStatus().services[0]!.status).toBe('healthy');
         });
     });
 
@@ -171,7 +171,7 @@ describe('HealthCheckService', () => {
 
             // First check - unknown to healthy
             expect(listener).toHaveBeenCalled();
-            expect(listener.mock.calls[0][0].status).toBe('healthy');
+            expect(listener.mock.calls[0]![0].status).toBe('healthy');
 
             listener.mockClear();
             shouldPass = false;
@@ -179,7 +179,7 @@ describe('HealthCheckService', () => {
 
             // Second check - healthy to unhealthy
             expect(listener).toHaveBeenCalled();
-            expect(listener.mock.calls[0][0].status).toBe('unhealthy');
+            expect(listener.mock.calls[0]![0].status).toBe('unhealthy');
         });
 
         it('should not emit when status unchanged', async () => {
@@ -214,8 +214,8 @@ describe('HealthCheckService', () => {
             await vi.advanceTimersByTimeAsync(200);
 
             const status = service.getStatus();
-            expect(status.services[0].status).toBe('unhealthy');
-            expect(status.services[0].error).toContain('Timeout');
+            expect(status.services[0]!.status).toBe('unhealthy');
+            expect(status.services[0]!.error).toContain('Timeout');
         });
     });
 
@@ -229,8 +229,8 @@ describe('HealthCheckService', () => {
             await vi.advanceTimersByTimeAsync(100);
 
             const status = service.getStatus();
-            expect(status.services[0].status).toBe('unhealthy');
-            expect(status.services[0].error).toContain('Service unavailable');
+            expect(status.services[0]!.status).toBe('unhealthy');
+            expect(status.services[0]!.error).toContain('Service unavailable');
         });
     });
 });

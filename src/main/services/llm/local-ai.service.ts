@@ -44,24 +44,6 @@ export class LocalAIService {
 
     // --- Ollama Ops ---
 
-    async getOllamaModels(): Promise<OllamaModel[]> {
-        try {
-            console.log('[LocalAI] Fetching Ollama models from http://127.0.0.1:11434/api/tags...');
-            const res = await this.ollamaRequest<OllamaResponse>('/api/tags')
-            if (res?.models && Array.isArray(res.models)) {
-                console.log(`[LocalAI] Found ${res.models.length} models in Ollama`);
-                return res.models;
-            }
-            return []
-        } catch (error) {
-            const msg = error instanceof Error ? error.message : String(error)
-            console.error('[LocalAI] Failed to fetch Ollama models (Ollama might be closed):', msg);
-            // Attempt auto-start on connection failure
-            this.maybeStartOllama();
-            return []
-        }
-    }
-
     async maybeStartOllama() {
         if (process.platform !== 'win32') { return; }
 
@@ -139,24 +121,7 @@ export class LocalAIService {
         }
     }
 
-    async getLlamaStyles(): Promise<string[]> {
-        const dir = join(app.getPath('userData'), 'models')
-        if (!existsSync(dir)) { return [] }
-        const files = await fsPromises.readdir(dir)
-        return files.filter(f => f.endsWith('.gguf'))
-    }
-
-    // --- Unified API ---
-
-    async getAllModels(): Promise<LocalAIModel[]> {
-        const ollama = await this.getOllamaModels()
-        const llama = await this.getLlamaStyles()
-
-        return [
-            ...ollama.map(m => ({ id: m.name, name: m.name, size: m.size, provider: 'ollama' as const, loaded: true })),
-            ...llama.map(f => ({ id: f, name: f, size: 0, provider: 'llama-cpp' as const, loaded: f === this.llamaModelPath }))
-        ]
-    }
+    // --- Llama.cpp Ops ---
 
     async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
         return new Promise((resolve) => {

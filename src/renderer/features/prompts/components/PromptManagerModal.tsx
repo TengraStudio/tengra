@@ -3,8 +3,8 @@ import React, { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
-import { Prompt } from '@/types'
 import { Language, useTranslation } from '@/i18n'
+import { Prompt } from '@/types'
 
 interface PromptManagerModalProps {
     isOpen: boolean
@@ -114,6 +114,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                                                     size="icon"
                                                     className="h-6 w-6 hover:text-primary"
                                                     onClick={() => handleStartEdit(prompt)}
+                                                    aria-label={t('common.edit')}
                                                 >
                                                     <Edit2 className="w-3.5 h-3.5" />
                                                 </Button>
@@ -122,6 +123,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                                                     size="icon"
                                                     className="h-6 w-6 hover:text-destructive"
                                                     onClick={() => onDeletePrompt(prompt.id)}
+                                                    aria-label={t('common.delete')}
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </Button>

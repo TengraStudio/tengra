@@ -4,7 +4,8 @@ import { MessageList } from '@renderer/features/chat/components/MessageList';
 import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { ChevronDown } from 'lucide-react';
-import React from 'react';
+import React, { useRef } from 'react';
+import { VirtuosoHandle } from 'react-virtuoso';
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
@@ -28,8 +29,8 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     templates,
     showScrollButton,
     setShowScrollButton,
-    messagesEndRef,
-    onScrollToBottom,
+    messagesEndRef: _messagesEndRef, // Kept for prop compatibility, but unused for scrolling now
+    onScrollToBottom: _onScrollToBottom, // Kept for prop compatibility, but we use internal ref
     fileInputRef,
     textareaRef,
     showFileMenu,
@@ -45,6 +46,16 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     const { language } = useAuth();
     const { selectedProvider, selectedModel } = useModel();
     const { t } = useTranslation(language || 'en');
+
+    const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+    const handleScrollToBottom = () => {
+        virtuosoRef.current?.scrollToIndex({
+            index: displayMessages.length - 1,
+            align: 'end',
+            behavior: 'smooth'
+        });
+    };
 
     return (
         <motion.div
@@ -63,25 +74,20 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 />
             )}
 
-            <div
-                className="flex-1 overflow-y-auto w-full p-0 flex flex-col scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent relative"
-                onScroll={(e) => {
-                    const el = e.currentTarget;
-                    const show = el.scrollHeight - el.scrollTop - el.clientHeight > 200;
-                    if (setShowScrollButton) { setShowScrollButton(show); }
-                }}
-            >
+            <div className="flex-1 w-full p-0 flex flex-col relative overflow-hidden">
                 {displayMessages.length === 0 ? (
-                    <WelcomeScreen
-                        t={t}
-                        templates={templates}
-                        onSelectTemplate={(prompt) => setInput(prompt)}
-                    />
+                    <div className="flex-1 overflow-y-auto">
+                        <WelcomeScreen
+                            t={t}
+                            templates={templates}
+                            onSelectTemplate={(prompt) => setInput(prompt)}
+                        />
+                    </div>
                 ) : (
                     <MessageList
                         messages={displayMessages}
                         streamingReasoning={streamingReasoning}
-                        streamingSpeed={streamingSpeed}
+                        streamingSpeed={streamingSpeed ?? null}
                         isLoading={isLoading}
                         language={language || 'en'}
                         selectedProvider={selectedProvider}
@@ -89,7 +95,12 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         onSpeak={(text, id) => handleSpeak(id, text)}
                         onStopSpeak={handleStopSpeak}
                         speakingMessageId={speakingMessageId}
-                        messagesEndRef={messagesEndRef}
+                        onAtBottomStateChange={(atBottom) => {
+                            if (setShowScrollButton) {
+                                setShowScrollButton(!atBottom)
+                            }
+                        }}
+                        virtuosoRef={virtuosoRef}
                     />
                 )}
             </div>
@@ -100,7 +111,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        onClick={onScrollToBottom}
+                        onClick={handleScrollToBottom}
                         className="absolute bottom-32 right-8 p-3 rounded-full bg-primary text-primary-foreground shadow-2xl hover:scale-110 active:scale-95 transition-all z-20"
                     >
                         <ChevronDown className="w-5 h-5" />
@@ -117,3 +128,5 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
         </motion.div>
     );
 });
+
+ChatView.displayName = 'ChatView';

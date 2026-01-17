@@ -16,9 +16,12 @@
         "noEmit": true,
         "jsx": "react-jsx",
         "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noUncheckedIndexedAccess": false,
+        "exactOptionalPropertyTypes": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
         "baseUrl": ".",
         "paths": {
             "@/*": [

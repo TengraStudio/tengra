@@ -89,7 +89,7 @@ export class MigrationManager {
         const applied = await this.getAppliedMigrations()
         if (applied.length === 0) { return }
 
-        const lastMigration = applied[applied.length - 1]
+        const lastMigration = applied[applied.length - 1]!
         const migration = this.migrations.find(m => m.id === lastMigration.id)
 
         if (!migration?.down) {

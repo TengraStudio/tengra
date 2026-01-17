@@ -87,6 +87,6 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
             return null
         }
 
-        return await logoService.applyLogo(projectPath, result.filePaths[0])
+        return await logoService.applyLogo(projectPath, result.filePaths[0]!)
     }))
 }

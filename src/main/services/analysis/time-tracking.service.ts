@@ -5,6 +5,7 @@
 
 import { BaseService } from '@main/services/base.service'
 import { DatabaseService } from '@main/services/data/database.service'
+import { v4 as uuidv4 } from 'uuid'
 
 export interface TimeTrackingRecord {
     id: string
@@ -64,7 +65,7 @@ export class TimeTrackingService extends BaseService {
      * Start tracking app online time
      */
     startAppTracking(): void {
-        if (this.isTracking) {return}
+        if (this.isTracking) { return }
         this.isTracking = true
         this.appStartTime = Date.now()
         this.logInfo('Started app tracking')
@@ -74,7 +75,7 @@ export class TimeTrackingService extends BaseService {
      * Stop tracking app online time and save
      */
     async stopAppTracking(): Promise<void> {
-        if (!this.isTracking || !this.appStartTime) {return}
+        if (!this.isTracking || !this.appStartTime) { return }
         const endTime = Date.now()
         const duration = endTime - this.appStartTime
 
@@ -140,7 +141,7 @@ export class TimeTrackingService extends BaseService {
     private async recordTime(record: Omit<TimeTrackingRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
         try {
             const db = this.databaseService.getDatabase()
-            const id = require('uuid').v4()
+            const id = uuidv4()
             const now = Date.now()
 
             await db.prepare(`

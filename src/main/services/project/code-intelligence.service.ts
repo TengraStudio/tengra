@@ -96,7 +96,7 @@ export class CodeIntelligenceService {
             await this.db.clearSemanticFragments(projectId);
 
             for (let i = 0; i < total; i++) {
-                const filePath = files[i]
+                const filePath = files[i]!
                 const relativeName = path.basename(filePath)
 
                 sendProgress(i + 1, total, `Indexing ${relativeName}...`)
@@ -179,7 +179,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) {continue}
+                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanDirRecursively(fullPath, fileList)
@@ -262,19 +262,20 @@ export class CodeIntelligenceService {
             }
 
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim()
+                const line = lines[i]?.trim()
+                if (!line) {continue}
                 for (const { kind, regex } of regexes) {
                     const match = line.match(regex)
-                    if (match) {
+                    if (match?.[1]) {
                         const name = match[1]
                         const signature = match[0] // approximation
 
                         // Extract docstring (look back)
                         let docstring = ''
-                        if (i > 0 && (lines[i - 1].trim().startsWith('//') || lines[i - 1].trim().startsWith('#') || lines[i - 1].trim().endsWith('*/'))) {
+                        const prevLine = i > 0 ? lines[i - 1]?.trim() : null
+                        if (prevLine && (prevLine.startsWith('//') || prevLine.startsWith('#') || prevLine.endsWith('*/'))) {
                             // Simple 1-line lookback for now, recursion too complex for regex parser
-                            const prev = lines[i - 1].trim()
-                            docstring = prev.replace(/^\/\/\s*/, '').replace(/^#\s*/, '').replace(/\*\/$/, '').replace(/^\/\*\*\s*/, '')
+                            docstring = prevLine.replace(/^\/\/\s*/, '').replace(/^#\s*/, '').replace(/\*\/$/, '').replace(/^\/\*\*\s*/, '')
                         }
 
                         results.push({
@@ -369,7 +370,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') {continue}
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanDirForTodos(fullPath, results)
@@ -397,7 +398,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') {continue}
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanDirForSymbols(fullPath, query, results)
@@ -408,7 +409,7 @@ export class CodeIntelligenceService {
 
                     lines.forEach((line, index) => {
                         const match = line.match(symbolRegex)
-                        if (match) {
+                        if (match?.[1] && match[2]) {
                             results.push({
                                 file: fullPath,
                                 line: index + 1,
@@ -430,7 +431,7 @@ export class CodeIntelligenceService {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') {continue}
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanDirForText(fullPath, query, isRegex, results)
@@ -442,10 +443,10 @@ export class CodeIntelligenceService {
                         let match = false
                         if (isRegex) {
                             try {
-                                if (new RegExp(query).test(line)) {match = true}
+                                if (new RegExp(query).test(line)) { match = true }
                             } catch { /* ignore invalid regex */ }
                         } else {
-                            if (line.includes(query)) {match = true}
+                            if (line.includes(query)) { match = true }
                         }
 
                         if (match) {

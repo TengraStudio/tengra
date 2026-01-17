@@ -1,12 +1,12 @@
-﻿import { FileNode,WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem'
+﻿import { FileNode, WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem'
 import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
-import { ChevronDown, ChevronRight, FilePlus, Folder, FolderPlus, Pencil, Plus, Server, Trash2,X } from 'lucide-react'
+import { ChevronDown, ChevronRight, FilePlus, Folder, FolderPlus, Pencil, Plus, Server, Trash2, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { WorkspaceEntry,WorkspaceMount } from '@/types'
+import { WorkspaceEntry, WorkspaceMount } from '@/types'
 
 export interface ContextMenuAction {
     type: 'createFile' | 'createFolder' | 'rename' | 'delete'
@@ -109,6 +109,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             document.addEventListener('click', handleClick)
             return () => document.removeEventListener('click', handleClick)
         }
+        return undefined
     }, [contextMenu])
 
     const toggleMount = (mount: WorkspaceMount) => {

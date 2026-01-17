@@ -7,7 +7,7 @@ export function registerScreenshotIpc() {
                 types: ['screen'],
                 thumbnailSize: { width: 1920, height: 1080 }
             })
-            const primarySource = sources[0]
+            const primarySource = sources[0]!
             return primarySource.thumbnail.toDataURL()
         } catch (error) {
             console.error('Screenshot error:', error)

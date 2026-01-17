@@ -1,5 +1,5 @@
-﻿import { fetchModels, GroupedModels, groupModels,ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import { useCallback,useEffect, useState } from 'react'
+﻿import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
+import { useCallback, useEffect, useState } from 'react'
 
 import { AppSettings } from '@/types'
 
@@ -20,7 +20,9 @@ export function useModelManager(
         try {
             const fetched = await fetchModels()
             setModels(fetched)
-            setProxyModels(fetched.filter(m => (m.provider as string) === 'proxy'))
+            // Proxy models are those that are NOT local (ollama) or copilot (usually treated separately but can be considered proxy-like here depending on UI needs)
+            // For now, let's include everything that isn't 'ollama' or 'local'
+            setProxyModels(fetched.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'))
             setGroupedModels(groupModels(fetched))
         } catch (error) {
             console.error('Failed to refresh models:', error)
@@ -30,7 +32,7 @@ export function useModelManager(
     }, [])
 
     useEffect(() => {
-        refreshModels()
+        void refreshModels()
     }, [refreshModels])
 
     useEffect(() => {
@@ -42,7 +44,7 @@ export function useModelManager(
     }, [appSettings])
 
     const handleSelectModel = (provider: string, model: string) => {
-        if (!appSettings) {return}
+        if (!appSettings) { return }
         setSelectedModel(model)
         setSelectedProvider(provider)
         setAppSettings({
@@ -57,7 +59,7 @@ export function useModelManager(
     }
 
     const persistLastSelection = (provider: string, model: string) => {
-        if (!appSettings) {return}
+        if (!appSettings) { return }
         setAppSettings({
             ...appSettings,
             general: {
@@ -66,6 +68,31 @@ export function useModelManager(
                 lastProvider: provider
             }
         })
+    }
+
+    const toggleFavorite = (modelId: string) => {
+        if (!appSettings) { return }
+        const currentFavorites = appSettings.general.favoriteModels || []
+        const isFav = currentFavorites.includes(modelId)
+
+        let newFavorites: string[]
+        if (isFav) {
+            newFavorites = currentFavorites.filter(id => id !== modelId)
+        } else {
+            newFavorites = [...currentFavorites, modelId]
+        }
+
+        setAppSettings({
+            ...appSettings,
+            general: {
+                ...appSettings.general,
+                favoriteModels: newFavorites
+            }
+        })
+    }
+
+    const isFavorite = (modelId: string) => {
+        return appSettings?.general.favoriteModels?.includes(modelId) ?? false
     }
 
     return {
@@ -82,6 +109,8 @@ export function useModelManager(
         refreshModels,
         loadModels: refreshModels,
         handleSelectModel,
-        persistLastSelection
+        persistLastSelection,
+        toggleFavorite,
+        isFavorite
     }
 }

@@ -37,14 +37,15 @@ export function registerGitIpc(gitService: GitService) {
         try {
             const result = await gitService.executeRaw(cwd, 'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"')
             if (result.success && result.stdout) {
-                const [hash, message, author, relativeTime, date] = result.stdout.trim().split('|')
+                const parts = result.stdout.trim().split('|')
+                const [hash, message, author, relativeTime, date] = parts
                 return {
                     success: true,
-                    hash,
-                    message,
-                    author,
-                    relativeTime,
-                    date
+                    hash: hash ?? '',
+                    message: message ?? '',
+                    author: author ?? '',
+                    relativeTime: relativeTime ?? '',
+                    date: date ?? ''
                 }
             }
             return { success: false, error: 'No commits found' }
@@ -139,15 +140,17 @@ export function registerGitIpc(gitService: GitService) {
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --name-status')
 
             const parseStatus = (output: string): Array<{ status: string; path: string; staged: boolean }> => {
-                if (!output) {return []}
+                if (!output) { return [] }
                 return output.split('\n')
                     .filter(line => line.trim())
                     .map(line => {
                         const parts = line.trim().split('\t')
-                        if (parts.length >= 2) {
+                        const p0 = parts[0]
+                        const p1 = parts[1]
+                        if (p0 && p1) {
                             return {
-                                status: parts[0],
-                                path: parts[1],
+                                status: p0,
+                                path: p1,
                                 staged: false
                             }
                         }
@@ -225,19 +228,19 @@ export function registerGitIpc(gitService: GitService) {
 
                 lines.forEach(line => {
                     const parts = line.trim().split(/\s+/)
-                    if (parts.length >= 3) {
-                        const name = parts[0]
-                        const url = parts[1]
-                        const type = parts[2]
+                    const name = parts[0]
+                    const url = parts[1]
+                    const type = parts[2]
 
+                    if (name && url && type) {
                         if (!remoteMap.has(name)) {
                             remoteMap.set(name, { url, fetch: false, push: false })
                         }
 
                         const remote = remoteMap.get(name)!
                         remote.url = url
-                        if (type === '(fetch)') {remote.fetch = true}
-                        if (type === '(push)') {remote.push = true}
+                        if (type === '(fetch)') { remote.fetch = true }
+                        if (type === '(push)') { remote.push = true }
                     }
                 })
 
@@ -274,7 +277,9 @@ export function registerGitIpc(gitService: GitService) {
             const countsResult = await gitService.executeRaw(cwd, `rev-list --left-right --count ${branch}...${tracking}`)
 
             if (countsResult.success && countsResult.stdout) {
-                const [ahead, behind] = countsResult.stdout.trim().split('\t').map(Number)
+                const parts = countsResult.stdout.trim().split('\t')
+                const ahead = parseInt(parts[0] || '0')
+                const behind = parseInt(parts[1] || '0')
                 return { success: true, tracking, ahead: ahead || 0, behind: behind || 0 }
             }
 
@@ -311,16 +316,18 @@ export function registerGitIpc(gitService: GitService) {
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --numstat')
 
             const parseStats = (output: string): { added: number; deleted: number; files: number } => {
-                if (!output) {return { added: 0, deleted: 0, files: 0 }}
+                if (!output) { return { added: 0, deleted: 0, files: 0 } }
                 const lines = output.split('\n').filter(line => line.trim())
                 let added = 0
                 let deleted = 0
 
                 lines.forEach(line => {
                     const parts = line.trim().split(/\s+/)
-                    if (parts.length >= 2) {
-                        const add = parseInt(parts[0]) || 0
-                        const del = parseInt(parts[1]) || 0
+                    const p0 = parts[0]
+                    const p1 = parts[1]
+                    if (p0 && p1) {
+                        const add = parseInt(p0) || 0
+                        const del = parseInt(p1) || 0
                         added += add
                         deleted += del
                     }

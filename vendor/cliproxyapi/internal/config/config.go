@@ -33,6 +33,9 @@ type Config struct {
 	// RemoteManagement nests management-related options under 'remote-management'.
 	RemoteManagement RemoteManagement `yaml:"remote-management" json:"remote-management"`
 
+	// Postgres holds configuration for the PostgreSQL backend.
+	Postgres PostgresConfig `yaml:"postgres" json:"postgres"`
+
 	// AuthDir is the directory where authentication token files are stored.
 	AuthDir string `yaml:"auth-dir" json:"auth-dir"`
 
@@ -113,6 +116,20 @@ type TLSConfig struct {
 	Cert string `yaml:"cert" json:"cert"`
 	// Key is the path to the TLS private key file.
 	Key string `yaml:"key" json:"key"`
+}
+
+// PostgresConfig holds configuration for the PostgreSQL database connection.
+type PostgresConfig struct {
+	// Enable toggles the PostgreSQL token store.
+	Enable bool `yaml:"enable" json:"enable"`
+	// DSN is the connection string (Data Source Name) for the PostgreSQL database.
+	DSN string `yaml:"dsn" json:"dsn"`
+	// Schema is the database schema to use (optional).
+	Schema string `yaml:"schema" json:"schema"`
+	// ConfigTable is the name of the table to store configuration (optional, defaults to config_store).
+	ConfigTable string `yaml:"config-table" json:"config-table"`
+	// AuthTable is the name of the table to store auth tokens (optional, defaults to auth_store).
+	AuthTable string `yaml:"auth-table" json:"auth-table"`
 }
 
 // RemoteManagement holds management API configuration under 'remote-management'.

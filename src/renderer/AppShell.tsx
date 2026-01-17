@@ -9,9 +9,11 @@ import { Modal } from '@renderer/components/ui/modal'
 import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay'
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput'
+import { ModelInfo } from '@renderer/features/models/utils/model-fetcher'
 import { OnboardingFlow } from '@renderer/features/onboarding/OnboardingFlow'
 import { SettingsCategory } from '@renderer/features/settings/types'
 import { useAppState } from '@renderer/hooks/useAppState'
+import { AppView } from '@renderer/hooks/useAppState'
 import { useTranslation } from '@renderer/i18n'
 import { ViewManager } from '@renderer/views/ViewManager'
 import { useState } from 'react'
@@ -22,6 +24,7 @@ import { useModel } from '@/context/ModelContext'
 import { useProject } from '@/context/ProjectContext'
 import { useTheme } from '@/context/ThemeContext'
 import { AnimatePresence } from '@/lib/framer-motion-compat'
+import { Chat, Project } from '@/types'
 
 export function AppShell() {
     const { theme } = useTheme()
@@ -172,24 +175,24 @@ interface AppOverlaysProps {
     language: string;
     showCommandPalette: boolean;
     setShowCommandPalette: (show: boolean) => void;
-    chats: any[];
-    projects: any[];
+    chats: Chat[];
+    projects: Project[];
     onSelectChat: (id: string) => void;
     onNewChat: () => void;
     onSelectProject: (id: string) => void;
     onOpenSettings: (cat?: SettingsCategory) => void;
     onOpenSSHManager: () => void;
     onRefreshModels: () => void;
-    models: any[];
+    models: ModelInfo[];
     onSelectModel: (model: string) => void;
     selectedModel: string;
     onClearChat: () => void;
-    t: any;
+    t: (key: string) => string;
     isAuthModalOpen: boolean;
     setIsAuthModalOpen: (show: boolean) => void;
     handleAntigravityLogout: () => Promise<void>;
     setSettingsCategory: (cat: SettingsCategory) => void;
-    setCurrentView: (view: any) => void;
+    setCurrentView: (view: AppView) => void;
     showShortcuts: boolean;
     setShowShortcuts: (show: boolean) => void;
     isOnboardingOpen: boolean;

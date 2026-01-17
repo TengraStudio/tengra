@@ -1,8 +1,10 @@
 /* eslint-disable complexity, max-depth, no-console */
+import { appLogger } from '@main/logging/logger'
+import { AuthToken } from '@main/services/data/database.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { JsonObject, JsonValue } from '@shared/types/common'
-import { CodexUsage, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota'
+import { CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota'
 import { getErrorMessage } from '@shared/utils/error.util'
 import axios from 'axios'
 import { net, session } from 'electron'
@@ -11,8 +13,14 @@ export class QuotaService {
 
     constructor(
         private settingsService: SettingsService,
-        private authService: AuthService
-    ) { }
+        private authService: AuthService,
+        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService
+    ) {
+        this.processManager.startService({
+            name: 'quota-service',
+            executable: 'orbit-quota-service'
+        })
+    }
 
     private fetchWithNet(url: string, headers: Record<string, string>): Promise<JsonValue | null> {
         return new Promise((resolve, reject) => {
@@ -72,67 +80,54 @@ export class QuotaService {
         })
     }
 
-    async getQuota(_proxyPort: number, _proxyKey: string): Promise<QuotaResponse | null> {
-        // 1. Try Antigravity (Direct Upstream) - official API
+    async getQuota(_proxyPort: number, _proxyKey: string): Promise<any | null> {
         try {
-            const antigravity = await this.fetchAntigravityQuota()
-            if (antigravity && !antigravity.authExpired) {
-                return antigravity
-            }
-            if (antigravity?.authExpired) {
-                // Auth expired
-                return antigravity
-            }
-        } catch {
-            // ignore
-        }
+            const allTokens = await this.authService.getAllFullTokens()
+            const antigravityTokens = allTokens.filter(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google'))
 
-        // 2. Try Legacy Fallback
+            if (antigravityTokens.length === 0) { return null }
+
+            const results = []
+            for (const token of antigravityTokens) {
+                if (token.accessToken) {
+                    const quota = await this.fetchAntigravityQuotaForToken(token)
+                    if (quota) {
+                        results.push({
+                            ...quota,
+                            accountId: token.accountId,
+                            email: token.email
+                        })
+                    }
+                }
+            }
+
+            return { accounts: results }
+        } catch (e) {
+            appLogger.error('QuotaService', `Failed to get quota: ${e}`)
+            return null
+        }
+    }
+
+    private async fetchAntigravityQuotaForToken(token: AuthToken): Promise<QuotaResponse | null> {
         try {
-            const legacy = await this.fetchLegacyQuota()
-            if (legacy?.success) {
-                return legacy
+            const data = await this.fetchAntigravityUpstreamForToken(token)
+            if (data) {
+                return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
             }
-        } catch {
-            // ignore
-        }
-
-        // 3. Try Codex
-        try {
-            const codex = await this.fetchCodexQuota()
-            if (codex?.success) {
-                return codex
+        } catch (error) {
+            if (error instanceof Error && error.message === 'AUTH_EXPIRED') {
+                return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
             }
-        } catch {
-            // ignore
         }
-
         return null
     }
 
     // --- Antigravity ---
 
 
-    async fetchAntigravityUpstream(): Promise<JsonObject | null> {
-        let authToken = await this.authService.getAuthToken('antigravity')
-        if (!authToken) {
-            // Fallback to google
-            authToken = await this.authService.getAuthToken('google')
-        }
-
-        if (!authToken) { return null }
-
+    async fetchAntigravityUpstreamForToken(authToken: AuthToken): Promise<JsonObject | null> {
         const accessToken = authToken.accessToken
-
         if (!accessToken) { return null }
-
-        // Token expiry check could be handled here or rely on upstream failure
-        // For simplicity, if we have access token, we try. If it fails with 401, we might need refresh via TokenService?
-        // TokenService runs in background to keep tokens fresh.
-        // But if we need to force refresh:
-        // QuotaService shouldn't be responsible for refreshing generally if TokenService exists.
-        // However, the original code had expiry check logic.
-        // We will assume TokenService keeps it fresh.
 
         const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
         try {
@@ -146,30 +141,24 @@ export class QuotaService {
             })
             if (response.status === 200 && response.data) { return response.data as JsonObject }
         } catch {
-            // If 401, maybe trigger refresh?
+            // handle error
         }
         return null
     }
 
 
     async fetchAntigravityQuota(): Promise<QuotaResponse | null> {
-        try {
-            const data = await this.fetchAntigravityUpstream()
-            if (data) {
-                return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'AUTH_EXPIRED') {
-                return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] }
-            }
-        }
-        return null
+        const fullToken = await this.authService.getAllFullTokens().then(ts => ts.find(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google')))
+        if (!fullToken) { return null }
+        return this.fetchAntigravityQuotaForToken(fullToken)
     }
 
 
     async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
         try {
-            const data = await this.fetchAntigravityUpstream() as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
+            const token = await this.authService.getAllFullTokens().then(ts => ts.find(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google')))
+            if (!token) { return [] }
+            const data = await this.fetchAntigravityUpstreamForToken(token) as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
             if (data?.models) {
                 const models: ModelQuotaItem[] = []
                 const nameMap: Record<string, string> = {
@@ -275,23 +264,39 @@ export class QuotaService {
         return null
     }
 
-    async getCodexUsage(): Promise<Partial<QuotaResponse>> {
-        const result: Partial<QuotaResponse> & { usageSource: 'none' | 'chatgpt' } = { usageSource: 'none' }
-        const whamData = await this.fetchCodexUsage()
-        if (whamData) {
-            const usage = this.extractCodexUsageFromWham(whamData)
-            if (usage) {
-                result.usage = usage
-                result.usageSource = 'chatgpt'
-            }
+    async getCodexUsage(): Promise<any> {
+        const allTokens = await this.authService.getAllFullTokens()
+        const codexTokens = allTokens.filter(t => t.provider === 'codex' || t.provider === 'openai')
 
-            const rawPlan = String(whamData.plan_type ?? (whamData.rate_limit as JsonObject)?.plan_type ?? usage?.planType ?? 'free')
-            result.planType = rawPlan.charAt(0).toUpperCase() + rawPlan.slice(1)
-            if (result.usage) { (result.usage as CodexUsage).planType = result.planType }
-            result.accountId = (whamData.account_id as string) ?? (whamData.user_id as string) ?? 'unknown'
-            if (whamData.email) { result.email = whamData.email as string }
+        const results = []
+        for (const token of codexTokens) {
+            const usage = await this.fetchCodexUsageForToken(token)
+            if (usage) {
+                results.push({
+                    usage,
+                    accountId: token.accountId,
+                    email: token.email
+                })
+            }
         }
-        return result
+        return { accounts: results }
+    }
+
+    private async fetchCodexUsageForToken(token: AuthToken): Promise<any | null> {
+        const accessToken = token.accessToken
+        if (!accessToken) { return null }
+
+        try {
+            const response = await axios.get('https://api.openai.com/dashboard/billing/usage', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'OpenAI-Organization': token.metadata?.organizationId as string
+                }
+            })
+            return response.data
+        } catch (e) {
+            return null
+        }
     }
 
     async fetchCodexUsage(): Promise<JsonObject | null> {
@@ -337,36 +342,49 @@ export class QuotaService {
 
     // --- Claude/Anthropic ---
 
-    async getClaudeQuota(): Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }> {
-        try {
-            const authData = await this.authService.getAuthToken('claude')
-            if (!authData) { return { success: false } }
+    async getClaudeQuota(): Promise<any> {
+        const allTokens = await this.authService.getAllFullTokens()
+        const claudeTokens = allTokens.filter(t => t.provider === 'claude' || t.provider === 'anthropic')
 
-            const accessToken = authData.accessToken
-            const sessionKey = authData.sessionToken
-
-            if (!accessToken && !sessionKey) { return { success: false } }
-
-            const orgId = await this.fetchClaudeOrganizationId(accessToken ?? '', sessionKey ?? null)
-            if (!orgId) { return { success: false } }
-
-            const usage = await this.fetchClaudeUsage(accessToken ?? '', orgId, sessionKey ?? null)
-            if (!usage) { return { success: false } }
-
-            return {
-                success: true,
-                fiveHour: usage.five_hour ? {
-                    utilization: usage.five_hour.utilization,
-                    resetsAt: usage.five_hour.resets_at
-                } : undefined,
-                sevenDay: usage.seven_day ? {
-                    utilization: usage.seven_day.utilization,
-                    resetsAt: usage.seven_day.resets_at
-                } : undefined
+        const results = []
+        for (const token of claudeTokens) {
+            const quota = await this.fetchClaudeQuotaForToken(token)
+            if (quota) {
+                results.push({
+                    ...quota,
+                    accountId: token.accountId,
+                    email: token.email
+                })
             }
-        } catch (error) {
-            console.debug('[QuotaService] getClaudeQuota failed:', getErrorMessage(error))
-            return { success: false }
+        }
+        return { accounts: results }
+    }
+
+    private async fetchClaudeQuotaForToken(token: AuthToken): Promise<any | null> {
+        const accessToken = token.accessToken
+        const sessionKey = token.sessionToken
+        if (!accessToken && !sessionKey) { return null }
+
+        const orgId = await this.fetchClaudeOrganizationId(accessToken || '', sessionKey || null)
+        if (!orgId) { return null }
+
+        const usage = await this.fetchClaudeUsage(accessToken || '', orgId, sessionKey || null)
+        if (!usage) { return null }
+
+        return this.formatClaudeUsage(usage)
+    }
+
+    private formatClaudeUsage(usage: any) {
+        return {
+            success: true,
+            fiveHour: usage.five_hour ? {
+                utilization: usage.five_hour.utilization,
+                resetsAt: usage.five_hour.resets_at
+            } : undefined,
+            sevenDay: usage.seven_day ? {
+                utilization: usage.seven_day.utilization,
+                resetsAt: usage.seven_day.resets_at
+            } : undefined
         }
     }
 
@@ -409,7 +427,7 @@ export class QuotaService {
         return null
     }
 
-    private async fetchClaudeUsage(accessToken: string, orgId: string, sessionKey: string | null): Promise<{ five_hour?: { utilization: number; resets_at: string }; seven_day?: { utilization: number; resets_at: string } } | null> {
+    private async fetchClaudeUsage(accessToken: string, orgId: string, sessionKey: string | null): Promise<any | null> {
         const endpoints = [
             `https://claude.ai/api/organizations/${orgId}/usage`,
             `https://console.anthropic.com/api/organizations/${orgId}/usage`,
@@ -423,44 +441,65 @@ export class QuotaService {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Anthropic-Version': '2023-06-01'
                 }
-                if (sessionKey) { headers['Cookie'] = `sessionKey=${sessionKey}` }
-                else { headers['Authorization'] = `Bearer ${accessToken}` }
+
+                if (sessionKey) {
+                    headers['Cookie'] = `sessionKey=${sessionKey}`
+                }
+                if (accessToken && accessToken.length > 20) {
+                    headers['Authorization'] = `Bearer ${accessToken}`
+                }
+                if (!headers['Cookie'] && !headers['Authorization']) { continue }
 
                 const data = await this.fetchWithNet(url, headers)
-                return data as { five_hour?: { utilization: number; resets_at: string }; seven_day?: { utilization: number; resets_at: string } }
+                if (data && typeof data === 'object') {
+                    const usage = data as any
+                    if (usage.five_hour || usage.seven_day || usage.utilization !== undefined) {
+                        return usage
+                    }
+                }
             } catch { /* ignore */ }
         }
         return null
     }
 
-    async getCopilotQuota(): Promise<{ success: boolean; plan?: string; limit?: number; remaining?: number; used?: number; percentage?: number | null }> {
-        const rawData = await this.fetchCopilotBilling()
-        if (!rawData) { return { success: false } }
-        const data = rawData as { copilot_plan?: string; quota_snapshots?: { premium_interactions?: { entitlement: number; remaining: number; percent_remaining: number } } }
-        const premium = data.quota_snapshots?.premium_interactions
-        return {
-            success: true,
-            plan: data.copilot_plan ?? 'unknown',
-            limit: premium?.entitlement ?? 0,
-            remaining: premium?.remaining ?? 0,
-            used: (premium?.entitlement ?? 0) - (premium?.remaining ?? 0),
-            percentage: premium?.percent_remaining ?? (premium?.entitlement ? (premium.remaining / premium.entitlement * 100) : null)
+
+    async getCopilotQuota(): Promise<any> {
+        const allTokens = await this.authService.getAllFullTokens()
+        const copilotTokens = allTokens.filter(t => t.provider === 'copilot')
+
+        const results = []
+        for (const token of copilotTokens) {
+            const quota = await this.fetchCopilotQuotaForToken(token)
+            if (quota) {
+                results.push({
+                    ...quota,
+                    accountId: token.accountId,
+                    email: token.email
+                })
+            }
+        }
+        return { accounts: results }
+    }
+
+    private async fetchCopilotQuotaForToken(token: AuthToken): Promise<CopilotQuota | null> {
+        const githubToken = token.accessToken
+        if (!githubToken) { return null }
+
+        try {
+            const response = await axios.get('https://api.github.com/user/copilot_billing', {
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github+json'
+                }
+            })
+            return response.data
+        } catch (e) {
+            return null
         }
     }
 
     private async fetchCopilotBilling(): Promise<JsonObject | null> {
-        const settings = this.settingsService.getSettings()
-        let token = settings.copilot?.token
-
-        // If no token in settings, check auth files
-        if (!token || token === 'connected') {
-            try {
-                const dbToken = await this.authService.getToken('copilot')
-                if (dbToken) { token = dbToken }
-            } catch {
-                // ignore
-            }
-        }
+        const token = await this.authService.getToken('copilot')
 
         if (!token || token === 'connected') { return null }
 

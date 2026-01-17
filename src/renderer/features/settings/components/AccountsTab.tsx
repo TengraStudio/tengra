@@ -1,5 +1,8 @@
-import { ExternalLink,RefreshCw } from 'lucide-react'
-import React from 'react'
+import { LinkedAccountInfo } from '@renderer/electron.d'
+import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal'
+import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts'
+import { Check, ChevronDown, ExternalLink, Plus, RefreshCw, Trash2, User } from 'lucide-react'
+import React, { useState } from 'react'
 
 import antigravityLogo from '@/assets/antigravity.svg'
 import chatgptLogo from '@/assets/chatgpt.svg'
@@ -9,9 +12,29 @@ import ollamaLogo from '@/assets/ollama.svg'
 import { cn } from '@/lib/utils'
 import { AppSettings } from '@/types'
 
+type ProviderCategory = 'ai' | 'developer' | 'local'
+
+interface ProviderConfig {
+    id: string
+    name: string
+    description: string
+    logo: string
+    category: ProviderCategory
+}
+
+const PROVIDERS: ProviderConfig[] = [
+    // AI Providers
+    { id: 'claude', name: 'accounts.providers.claude.name', description: 'accounts.providers.claude.description', logo: claudeLogo, category: 'ai' },
+    { id: 'codex', name: 'accounts.providers.codex.name', description: 'accounts.providers.codex.description', logo: chatgptLogo, category: 'ai' },
+    { id: 'antigravity', name: 'accounts.providers.antigravity.name', description: 'accounts.providers.antigravity.description', logo: antigravityLogo, category: 'ai' },
+    // Developer Tools
+    { id: 'github', name: 'accounts.providers.github.name', description: 'accounts.providers.github.description', logo: copilotLogo, category: 'developer' },
+    { id: 'copilot', name: 'accounts.providers.copilot.name', description: 'accounts.providers.copilot.description', logo: copilotLogo, category: 'developer' },
+]
+
 interface AccountsTabProps {
     settings: AppSettings | null
-    authStatus: { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }
+    linkedAccounts: UseLinkedAccountsResult
     authBusy: string | null
     authMessage: string
     isOllamaRunning: boolean
@@ -19,156 +42,394 @@ interface AccountsTabProps {
     connectGitHubProfile: () => void
     connectCopilot: () => void
     connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity') => void
-    disconnectProvider: (p: 'copilot' | 'codex' | 'claude' | 'antigravity') => void
     startOllama: () => void
     checkOllama: () => void
     handleSave: (s?: AppSettings) => void
     setSettings: (s: AppSettings) => void
+    deviceCodeModal?: DeviceCodeModalState
+    closeDeviceCodeModal?: () => void
     t: (key: string) => string
 }
 
-export const AccountsTab: React.FC<AccountsTabProps> = ({
-    settings, authStatus, authBusy, authMessage, isOllamaRunning, refreshAuthStatus,
-    connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
-    startOllama, checkOllama, handleSave, setSettings, t
+interface ProviderCardProps {
+    provider: ProviderConfig
+    accounts: LinkedAccountInfo[]
+    authBusy: string | null
+    onConnect: (providerId: string) => void
+    onUnlink: (accountId: string) => Promise<void>
+    onSetActive: (providerId: string, accountId: string) => Promise<void>
+    t: (key: string) => string
+}
+
+const ProviderCard = React.memo<ProviderCardProps>(({
+    provider, accounts, authBusy, onConnect, onUnlink, onSetActive, t
 }) => {
-    if (!settings) {return null}
+    const [expanded, setExpanded] = useState(accounts.length > 0)
+    const isBusy = authBusy === provider.id
+    const hasAccounts = accounts.length > 0
+    const accountCount = accounts.length
 
-    // Check Copilot connection: either from settings OR from auth file
-    const isCopilotConnected = Boolean(
-        settings.copilot?.connected || 
-        settings.copilot?.token || 
-        authStatus.copilot
-    )
-    const isGitHubConnected = Boolean(settings.github?.token)
-    const isCodexConnected = authStatus.codex
-    const isClaudeConnected = authStatus.claude
-
-    const isAntigravityConnected = authStatus.antigravity
-
-    const accountCards = [
-        { id: 'github', title: t('accounts.services.github'), description: t('accounts.githubDesc'), logo: copilotLogo, connected: isGitHubConnected, onConnect: connectGitHubProfile, onDisconnect: () => { const updated = { ...settings, github: { ...settings.github, token: '' } }; setSettings(updated); handleSave(updated); } },
-        { id: 'copilot', title: t('accounts.services.copilot'), description: t('accounts.copilotDesc'), logo: copilotLogo, connected: isCopilotConnected, onConnect: connectCopilot, onDisconnect: () => disconnectProvider('copilot') },
-        { id: 'antigravity', title: t('accounts.services.antigravity'), description: t('accounts.antigravityDesc'), logo: antigravityLogo, connected: isAntigravityConnected, onConnect: () => connectBrowserProvider('antigravity'), onDisconnect: () => disconnectProvider('antigravity') },
-        { id: 'codex', title: t('accounts.services.codex'), description: t('accounts.codexDesc'), logo: chatgptLogo, connected: isCodexConnected, onConnect: () => connectBrowserProvider('codex'), onDisconnect: () => disconnectProvider('codex') },
-        { id: 'claude', title: t('accounts.services.claude'), description: t('accounts.claudeDesc'), logo: claudeLogo, connected: isClaudeConnected, onConnect: () => connectBrowserProvider('claude'), onDisconnect: () => disconnectProvider('claude') }
-    ]
-
-    const normalizeKeyValue = (value?: string) => (value === 'connected' ? '' : (value || ''))
-    const apiKeyProviders = ['openai', 'anthropic', 'groq', 'huggingface'] as const
-    type ApiKeyProvider = typeof apiKeyProviders[number]
-
-    const getProviderApiKey = (provider: ApiKeyProvider): string => {
-        if (provider === 'huggingface') {return normalizeKeyValue(settings.huggingface?.apiKey)}
-        if (provider === 'openai') {return normalizeKeyValue(settings.openai?.apiKey)}
-        if (provider === 'anthropic') {return normalizeKeyValue(settings.anthropic?.apiKey)}
-
-        if (provider === 'groq') {return normalizeKeyValue(settings.groq?.apiKey)}
-        return ''
-    }
-
-    const updateProviderApiKey = (provider: ApiKeyProvider, apiKey: string) => {
-        const updated = { ...settings }
-        if (provider === 'huggingface') {
-            updated.huggingface = { apiKey }
-        } else if (provider === 'openai') {
-            updated.openai = { apiKey, model: updated.openai?.model || '' }
-        } else if (provider === 'anthropic') {
-            updated.anthropic = { apiKey, model: updated.anthropic?.model || '' }
-
-        } else if (provider === 'groq') {
-            updated.groq = { apiKey, model: updated.groq?.model || '' }
+    // Update expanded state when accounts change (e.g. first account added)
+    React.useEffect(() => {
+        if (accounts.length > 0 && !expanded) {
+            setExpanded(true)
         }
-        setSettings(updated)
-        handleSave(updated)
-    }
+    }, [accounts.length])
+
+    return (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {/* Provider Header */}
+            <div
+                className={cn(
+                    "p-4 flex items-center gap-4 transition-colors",
+                    hasAccounts && "cursor-pointer hover:bg-muted/30"
+                )}
+                onClick={() => hasAccounts && setExpanded(!expanded)}
+            >
+                <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                        src={provider.logo}
+                        alt=""
+                        className={cn(
+                            "h-7 w-7 object-contain",
+                            ["anthropic", "github", "ollama", "deepseek", "claude", "antigravity"].includes(provider.id) && "dark:invert"
+                        )}
+                    />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-foreground">{t(provider.name)}</div>
+                    <div className="text-xs text-muted-foreground truncate">{t(provider.description)}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                    {hasAccounts ? (
+                        <>
+                            <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-xs font-bold">
+                                {accountCount} {t('accounts.accountCount').replace('{{count}}', '').trim()}
+                            </span>
+                            <ChevronDown className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                expanded && "rotate-180"
+                            )} />
+                        </>
+                    ) : (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onConnect(provider.id); }}
+                            disabled={!!authBusy}
+                            className={cn(
+                                "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5",
+                                isBusy ? "bg-muted/50 text-muted-foreground border-border" :
+                                    authBusy ? "opacity-50 cursor-not-allowed text-muted-foreground border-border" :
+                                        "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                            )}
+                        >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            {t('accounts.connect')}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Expanded Account List */}
+            {hasAccounts && expanded && (
+                <div className="border-t border-border">
+                    {accounts.map((account, index) => (
+                        <div
+                            key={account.id}
+                            className={cn(
+                                "px-4 py-3 flex items-center gap-3 transition-colors",
+                                index !== accounts.length - 1 && "border-b border-border/50",
+                                account.isActive && "bg-primary/5"
+                            )}
+                        >
+                            {/* Avatar */}
+                            <div className={cn(
+                                "h-9 w-9 rounded-full flex items-center justify-center overflow-hidden shrink-0",
+                                account.isActive ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background" : "bg-muted"
+                            )}>
+                                {account.avatarUrl ? (
+                                    <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                )}
+                            </div>
+
+                            {/* Account Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">
+                                    {account.displayName ?? account.email ?? 'Account'}
+                                </div>
+                                {account.email && account.displayName && (
+                                    <div className="text-xs text-muted-foreground truncate">{account.email}</div>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
+                                {account.isActive ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-xs font-bold">
+                                        <Check className="h-3 w-3" />
+                                        {t('accounts.active')}
+                                    </span>
+                                ) : (
+                                    <button
+                                        onClick={() => onSetActive(provider.id, account.id)}
+                                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
+                                    >
+                                        {t('accounts.setActive')}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => onUnlink(account.id)}
+                                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                    title={t('accounts.removeAccount')}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Add Another Account Button */}
+                    <div className="p-3 border-t border-border/50">
+                        <button
+                            onClick={() => onConnect(provider.id)}
+                            disabled={!!authBusy}
+                            className={cn(
+                                "w-full px-3 py-2.5 rounded-lg text-xs font-medium border border-dashed flex items-center justify-center gap-2 transition-colors",
+                                authBusy ? "opacity-50 cursor-not-allowed text-muted-foreground border-border" :
+                                    "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30 hover:bg-muted/30"
+                            )}
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            {t('accounts.addAnotherAccount')}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+})
+
+const ProviderList = React.memo(({
+    title,
+    providers,
+    accounts,
+    authBusy,
+    onConnect,
+    onUnlink,
+    onSetActive,
+    t
+}: {
+    title: string
+    providers: ProviderConfig[]
+    accounts: LinkedAccountInfo[]
+    authBusy: string | null
+    onConnect: (id: string) => void
+    onUnlink: (id: string) => Promise<void>
+    onSetActive: (pid: string, aid: string) => Promise<void>
+    t: (k: string) => string
+}) => {
+    return (
+        <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {title}
+            </h3>
+            <div className="space-y-3">
+                {providers.map(provider => (
+                    <ProviderCard
+                        key={provider.id}
+                        provider={provider}
+                        accounts={accounts.filter(a => a.provider === provider.id)}
+                        authBusy={authBusy}
+                        onConnect={onConnect}
+                        onUnlink={onUnlink}
+                        onSetActive={onSetActive}
+                        t={t}
+                    />
+                ))}
+            </div>
+        </section>
+    )
+})
+ProviderList.displayName = 'ProviderList'
+
+const OllamaSection = React.memo(({
+    isRunning,
+    settings,
+    setSettings,
+    handleSave,
+    startOllama,
+    checkOllama,
+    t
+}: {
+    isRunning: boolean
+    settings: AppSettings
+    setSettings: (s: AppSettings) => void
+    handleSave: (s?: AppSettings) => void
+    startOllama: () => void
+    checkOllama: () => void
+    t: (k: string) => string
+}) => {
+    return (
+        <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('accounts.categories.localModels')}
+            </h3>
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="p-4 flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
+                        <img src={ollamaLogo} alt="Ollama" className="h-7 w-7 object-contain" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-foreground">{t('accounts.providers.ollama.name')}</div>
+                        <div className="text-xs text-muted-foreground">{t('accounts.providers.ollama.description')}</div>
+                    </div>
+                    <span className={cn(
+                        "px-2.5 py-1 rounded-md text-xs font-bold",
+                        isRunning
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "bg-muted text-muted-foreground"
+                    )}>
+                        {isRunning ? t('accounts.running') : t('accounts.notRunning')}
+                    </span>
+                </div>
+
+                <div className="border-t border-border p-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.serverAddress')}</label>
+                            <input
+                                type="text"
+                                value={settings.ollama?.url ?? ''}
+                                onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, url: e.target.value } })}
+                                onBlur={() => handleSave()}
+                                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 font-mono text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.contextLimit')}</label>
+                            <input
+                                type="number"
+                                value={settings.ollama?.numCtx ?? 16384}
+                                onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, numCtx: Number(e.target.value) } })}
+                                onBlur={() => handleSave()}
+                                className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 font-mono text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={checkOllama}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-muted/50 text-muted-foreground border border-border hover:bg-muted hover:text-foreground transition-colors"
+                        >
+                            {t('accounts.check')}
+                        </button>
+                        {!isRunning && (
+                            <button
+                                onClick={startOllama}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                            >
+                                {t('accounts.start')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+    )
+})
+OllamaSection.displayName = 'OllamaSection'
+
+export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
+    settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
+    connectGitHubProfile, connectCopilot, connectBrowserProvider,
+    startOllama, checkOllama, handleSave, setSettings, deviceCodeModal, closeDeviceCodeModal, t
+}) => {
+    const handleConnect = React.useCallback((providerId: string) => {
+        switch (providerId) {
+            case 'github': connectGitHubProfile(); break
+            case 'copilot': connectCopilot(); break
+            case 'codex': connectBrowserProvider('codex'); break
+            case 'claude': connectBrowserProvider('claude'); break
+            case 'antigravity': connectBrowserProvider('antigravity'); break
+        }
+    }, [connectGitHubProfile, connectCopilot, connectBrowserProvider])
+
+    const handleRefresh = React.useCallback(() => {
+        void linkedAccounts.refreshAccounts()
+    }, [linkedAccounts])
+
+    const aiProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'ai'), [])
+    const developerProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'developer'), [])
+
+    if (!settings) { return null }
 
     return (
         <div className="space-y-8">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-bold text-white">{t('accounts.title')}</h3>
-                    <p className="text-xs text-muted-foreground">{t('accounts.subtitle')}</p>
+                    <h2 className="text-xl font-bold text-foreground">{t('accounts.title')}</h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">{t('accounts.subtitle')}</p>
                 </div>
-                <button onClick={refreshAuthStatus} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
-                    <RefreshCw className="h-3.5 w-3.5" /> {t('common.refresh')}
+                <button
+                    onClick={handleRefresh}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                    <RefreshCw className={cn("h-3.5 w-3.5", linkedAccounts.loading && "animate-spin")} />
+                    {t('common.refresh')}
                 </button>
             </div>
+
+            {/* Auth Message */}
             {authMessage && (
-                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-muted-foreground">
+                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-2">
                     {authMessage}
                 </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {accountCards.map(card => {
-                    const isBusy = authBusy === card.id
-                    return (
-                        <div key={card.id} className="bg-card p-4 rounded-xl border border-border flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
-                                <img src={card.logo} alt={card.title} className="h-6 w-6 object-contain" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-sm font-bold text-white">{card.title}</div>
-                                <div className="text-xs text-muted-foreground">{card.description}</div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className={cn("text-xs font-bold uppercase tracking-wider", card.connected ? "text-emerald-400" : "text-muted-foreground")}>
-                                    {card.connected ? t('accounts.connected') : t('accounts.disconnected')}
-                                </span>
-                                {card.connected ? (
-                                    <button onClick={card.onDisconnect} className="px-2.5 py-1 rounded-md text-xs font-bold bg-white/5 text-muted-foreground hover:text-foreground hover:bg-white/10 border border-white/10">{t('accounts.disconnect')}</button>
-                                ) : (
-                                    <button onClick={card.onConnect} disabled={!!authBusy} className={cn("px-2.5 py-1 rounded-md text-xs font-bold border border-white/10 flex items-center gap-1", isBusy ? "bg-white/5 text-muted-foreground" : authBusy ? "opacity-50 cursor-not-allowed text-muted-foreground" : "bg-primary/20 text-primary hover:bg-primary/30")}>
-                                        <ExternalLink className="h-3 w-3" /> {t('accounts.connect')}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
 
-            <div className="bg-card p-4 rounded-xl border border-border space-y-4">
-                <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
-                        <img src={ollamaLogo} alt="Ollama" className="h-6 w-6 object-contain" />
-                    </div>
-                    <div className="flex-1 text-sm font-bold text-white">Ollama</div>
-                    <span className={cn("text-xs font-bold uppercase tracking-wider", isOllamaRunning ? "text-emerald-400" : "text-muted-foreground")}>{isOllamaRunning ? t('accounts.running') : t('accounts.notRunning')}</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.serverAddress')}</label>
-                        <input type="text" value={settings?.ollama?.url} onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, url: e.target.value } })} onBlur={() => handleSave()} className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.contextLimit')}</label>
-                        <input type="number" value={settings?.ollama?.numCtx} onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, numCtx: Number(e.target.value) } })} onBlur={() => handleSave()} className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-primary" />
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={checkOllama} className="px-2.5 py-1 rounded-md text-xs font-bold bg-white/5 text-muted-foreground border border-white/10">{t('accounts.check')}</button>
-                    {!isOllamaRunning && <button onClick={startOllama} className="px-2.5 py-1 rounded-md text-xs font-bold bg-primary/20 text-primary border border-white/10">{t('accounts.start')}</button>}
-                </div>
-            </div>
+            <ProviderList
+                title={t('accounts.categories.aiProviders')}
+                providers={aiProviders}
+                accounts={linkedAccounts.accounts}
+                authBusy={authBusy}
+                onConnect={handleConnect}
+                onUnlink={linkedAccounts.unlinkAccount}
+                onSetActive={linkedAccounts.setActiveAccount}
+                t={t}
+            />
 
-            <div className="space-y-4">
-                <h3 className="text-lg font-bold text-white">{t('accounts.apiKey')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {apiKeyProviders.map(p => (
-                        <div key={p} className="bg-card p-4 rounded-xl border border-border space-y-2">
-                            <label className="text-xs font-bold uppercase text-muted-foreground">{p}</label>
-                            <input
-                                type="password"
-                                value={getProviderApiKey(p)}
-                                onChange={e => updateProviderApiKey(p, e.target.value)}
-                                className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-primary"
-                                placeholder={t('accounts.enterApiKey')}
-                            />
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ProviderList
+                title={t('accounts.categories.developerTools')}
+                providers={developerProviders}
+                accounts={linkedAccounts.accounts}
+                authBusy={authBusy}
+                onConnect={handleConnect}
+                onUnlink={linkedAccounts.unlinkAccount}
+                onSetActive={linkedAccounts.setActiveAccount}
+                t={t}
+            />
+
+            <OllamaSection
+                isRunning={isOllamaRunning}
+                settings={settings}
+                setSettings={setSettings}
+                handleSave={handleSave}
+                startOllama={startOllama}
+                checkOllama={checkOllama}
+                t={t}
+            />
+
+            {/* Device Code Modal */}
+            {deviceCodeModal && closeDeviceCodeModal && (
+                <DeviceCodeModal
+                    {...deviceCodeModal}
+                    onClose={closeDeviceCodeModal}
+                />
+            )}
         </div>
     )
-}
+})
+
+ProviderCard.displayName = 'ProviderCard'
+AccountsTab.displayName = 'AccountsTab'

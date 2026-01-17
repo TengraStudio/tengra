@@ -1,7 +1,7 @@
-import { AlertCircle, CheckSquare, ChevronDown, ChevronRight,FileText, Plus, RefreshCw, Square } from 'lucide-react'
-import React, { useCallback, useEffect, useMemo,useState } from 'react'
+import { AlertCircle, CheckSquare, ChevronDown, ChevronRight, FileText, Plus, RefreshCw, Square } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 interface ProjectTodoTabProps {
@@ -41,8 +41,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             const entryList = Array.isArray(entries) ? entries : []
 
             for (const entry of entryList) {
-                if (IGNORED_FOLDERS.includes(entry.name)) {continue}
-                if (entry.name.startsWith('.')) {continue}
+                if (IGNORED_FOLDERS.includes(entry.name)) { continue }
+                if (entry.name.startsWith('.')) { continue }
 
                 const fullPath = `${dirPath}/${entry.name}`
 
@@ -59,7 +59,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
         return foundFiles
     }, [])
 
-    const parseTodoFile = async (filePath: string): Promise<TodoFile | null> => {
+    const parseTodoFile = useCallback(async (filePath: string): Promise<TodoFile | null> => {
         try {
             const content = await window.electron.files.readFile(filePath)
             const lines = content.split('\n')
@@ -94,10 +94,10 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             console.error(`Failed to parse ${filePath}`, e)
             return null
         }
-    }
+    }, [projectRoot])
 
-    const fetchTodos = async () => {
-        if (!projectRoot) {return}
+    const fetchTodos = useCallback(async () => {
+        if (!projectRoot) { return }
         setLoading(true)
         setError(null)
         try {
@@ -118,7 +118,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
         } finally {
             setLoading(false)
         }
-    }
+    }, [projectRoot, scanDirectory, parseTodoFile])
 
     const handleToggle = async (item: TodoItem) => {
         try {
@@ -140,7 +140,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
 
             // Optimistic update
             setTodoFiles(prev => prev.map(f => {
-                if (f.path !== item.filePath) {return f}
+                if (f.path !== item.filePath) { return f }
                 return {
                     ...f,
                     items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
@@ -148,12 +148,12 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             }))
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e))
-            fetchTodos() // Revert/Refresh on error
+            void fetchTodos() // Revert/Refresh on error
         }
     }
 
     const handleAddTask = async () => {
-        if (!newTaskText.trim()) {return}
+        if (!newTaskText.trim()) { return }
 
         try {
             // Default to root TODO.md
@@ -163,7 +163,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             // Check if file exists
             if (await window.electron.files.exists(targetPath)) {
                 content = await window.electron.files.readFile(targetPath)
-                if (content && !content.endsWith('\n')) {content += '\n'}
+                if (content && !content.endsWith('\n')) { content += '\n' }
             } else {
                 content = '# Project Tasks\n\n'
             }
@@ -182,15 +182,15 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
     }
 
     useEffect(() => {
-        fetchTodos()
-    }, [projectRoot])
+        void fetchTodos()
+    }, [fetchTodos])
 
     const totalStats = useMemo(() => {
         let total = 0
         let completed = 0
         todoFiles.forEach(f => {
             total += f.items.length
-            f.items.forEach(i => { if (i.completed) {completed++} })
+            f.items.forEach(i => { if (i.completed) { completed++ } })
         })
         return { total, completed, pending: total - completed }
     }, [todoFiles])
@@ -233,7 +233,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                         <Plus className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={fetchTodos}
+                        onClick={() => void fetchTodos()}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white"
                         title={t('common.refresh') || 'Refresh'}
                     >
@@ -266,12 +266,12 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                         autoFocus
                                         value={newTaskText}
                                         onChange={e => setNewTaskText(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleAddTask()}
-                                        placeholder="What needs to be done? (Press Enter)"
+                                        onKeyDown={e => { if (e.key === 'Enter') { void handleAddTask() } }}
+                                        placeholder={t('projects.todoPlaceholder')}
                                         className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-muted-foreground/50"
                                     />
                                     <button
-                                        onClick={handleAddTask}
+                                        onClick={() => void handleAddTask()}
                                         disabled={!newTaskText.trim()}
                                         className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-md disabled:opacity-50"
                                     >
@@ -330,7 +330,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                                                 ? "bg-card/30 border-white/5 hover:bg-card/50 opacity-60 hover:opacity-100"
                                                                 : "bg-card border-white/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
                                                         )}
-                                                        onClick={() => handleToggle(todo)}
+                                                        onClick={() => void handleToggle(todo)}
                                                     >
                                                         {todo.completed ? (
                                                             <CheckSquare className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />

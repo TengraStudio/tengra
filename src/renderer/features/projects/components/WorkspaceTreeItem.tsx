@@ -1,10 +1,10 @@
 import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import React, { useEffect,useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { FileIcon, FolderIcon } from '@/lib/file-icons'
 import { cn } from '@/lib/utils'
-import { WorkspaceEntry,WorkspaceMount } from '@/types'
+import { WorkspaceEntry, WorkspaceMount } from '@/types'
 
 export interface FileNode {
     name: string
@@ -21,9 +21,9 @@ interface WorkspaceTreeItemProps {
     refreshSignal: number
     onOpenFile: (entry: WorkspaceEntry) => void
     onSelectEntry: (entry: WorkspaceEntry) => void
-    selectedEntry?: WorkspaceEntry | null
-    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean
-    onContextMenu?: (e: React.MouseEvent, entry: WorkspaceEntry) => void
+    selectedEntry?: WorkspaceEntry | null | undefined
+    onEnsureMount?: ((mount: WorkspaceMount) => Promise<boolean> | boolean) | undefined
+    onContextMenu?: ((e: React.MouseEvent, entry: WorkspaceEntry) => void) | undefined
     t: (key: string) => string
 }
 
@@ -38,7 +38,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const loadChildren = async () => {
-        if (!node.isDirectory) {return}
+        if (!node.isDirectory) { return }
         setLoading(true)
         const isReady = onEnsureMount ? await onEnsureMount(mount) : true
         if (!isReady) {
@@ -71,7 +71,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     }
 
     useEffect(() => {
-        if (expanded) {loadChildren()}
+        if (expanded) { loadChildren() }
     }, [expanded, refreshSignal, loadChildren])
 
     const handleClick = (e: React.MouseEvent) => {

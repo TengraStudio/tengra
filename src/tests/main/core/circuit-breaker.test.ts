@@ -1,5 +1,5 @@
 import { CircuitBreaker, CircuitState } from '@main/core/circuit-breaker';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('CircuitBreaker', () => {
     let breaker: CircuitBreaker;
@@ -39,7 +39,7 @@ describe('CircuitBreaker', () => {
         const action = vi.fn().mockResolvedValue('success');
 
         // Force open
-        // @ts-ignore - access private for setup
+        // @ts-expect-error - transitionTo is private
         breaker.transitionTo(CircuitState.OPEN);
 
         await expect(breaker.execute(action)).rejects.toThrow(/OPEN/);
@@ -50,7 +50,7 @@ describe('CircuitBreaker', () => {
         const action = vi.fn().mockResolvedValue('success');
 
         // Force open
-        // @ts-ignore
+        // @ts-expect-error - transitionTo is private
         breaker.transitionTo(CircuitState.OPEN);
 
         // Wait for timeout
@@ -67,7 +67,7 @@ describe('CircuitBreaker', () => {
         const action = vi.fn().mockRejectedValue(new Error('fail'));
 
         // Force open then wait
-        // @ts-ignore
+        // @ts-expect-error - transitionTo is private
         breaker.transitionTo(CircuitState.OPEN);
         await new Promise(r => setTimeout(r, 110));
 

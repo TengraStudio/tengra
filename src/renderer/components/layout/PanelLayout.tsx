@@ -3,8 +3,8 @@
  * Supports draggable, resizable panels with docking zones.
  */
 
-import { ChevronDown, ChevronRight,Maximize2, X } from 'lucide-react'
-import React, { createContext, useCallback, useContext,useEffect, useRef, useState } from 'react'
+import { ChevronDown, ChevronRight, Maximize2, X } from 'lucide-react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -55,7 +55,7 @@ const PanelLayoutContext = createContext<PanelLayoutContextType | null>(null)
 
 export const usePanelLayout = () => {
     const context = useContext(PanelLayoutContext)
-    if (!context) {throw new Error('usePanelLayout must be used within PanelLayoutProvider')}
+    if (!context) { throw new Error('usePanelLayout must be used within PanelLayoutProvider') }
     return context
 }
 
@@ -72,7 +72,7 @@ const PanelTab: React.FC<{
     panel: Panel
     isActive: boolean
     onClick: () => void
-    onClose?: () => void
+    onClose?: (() => void) | undefined
 }> = ({ panel, isActive, onClick, onClose }) => (
     <div
         onClick={onClick}
@@ -104,7 +104,7 @@ const PanelHeader: React.FC<{
 }> = ({ group, onToggleCollapse, onMaximize }) => {
     const { removePanel, setActivePanel } = usePanelLayout()
 
-    if (group.panels.length === 0) {return null}
+    if (group.panels.length === 0) { return null }
 
     return (
         <div className="flex items-center justify-between border-b border-border/30 bg-card/50">
@@ -115,7 +115,7 @@ const PanelHeader: React.FC<{
                         panel={panel}
                         isActive={panel.id === group.activePanel}
                         onClick={() => setActivePanel(group.id, panel.id)}
-                        onClose={panel.closable !== false ? () => removePanel(panel.id) : undefined}
+                        {...(panel.closable !== false ? { onClose: () => removePanel(panel.id) } : {})}
                     />
                 ))}
             </div>
@@ -158,7 +158,7 @@ const Resizer: React.FC<{
     }
 
     useEffect(() => {
-        if (!isDragging) {return}
+        if (!isDragging) { return }
 
         const handleMouseMove = (e: MouseEvent) => {
             const currentPos = direction === 'horizontal' ? e.clientX : e.clientY
@@ -203,7 +203,7 @@ const PanelGroupView: React.FC<{
     const { toggleCollapse } = usePanelLayout()
     const activePanel = group.panels.find(p => p.id === group.activePanel) || group.panels[0]
 
-    if (group.panels.length === 0) {return null}
+    if (group.panels.length === 0) { return null }
 
     return (
         <div
@@ -246,7 +246,7 @@ export const PanelLayoutProvider: React.FC<{
             const group = groups[panel.position]
             if (group) {
                 group.panels.push(panel)
-                if (!group.activePanel) {group.activePanel = panel.id}
+                if (!group.activePanel) { group.activePanel = panel.id }
             }
         }
 
@@ -273,7 +273,7 @@ export const PanelLayoutProvider: React.FC<{
                 if (index >= 0) {
                     group.panels = group.panels.filter(p => p.id !== panelId)
                     if (group.activePanel === panelId) {
-                        group.activePanel = group.panels[0]?.id
+                        group.activePanel = group.panels[0]?.id || ''
                     }
                     break
                 }
@@ -291,10 +291,10 @@ export const PanelLayoutProvider: React.FC<{
             for (const group of Object.values(newGroups)) {
                 const index = group.panels.findIndex(p => p.id === panelId)
                 if (index >= 0) {
-                    movedPanel = { ...group.panels[index], position: newPosition }
+                    movedPanel = { ...group.panels[index]!, position: newPosition }
                     group.panels = group.panels.filter(p => p.id !== panelId)
                     if (group.activePanel === panelId) {
-                        group.activePanel = group.panels[0]?.id
+                        group.activePanel = group.panels[0]?.id || ''
                     }
                     break
                 }
@@ -369,7 +369,10 @@ export const PanelLayout: React.FC<{
     className?: string
 }> = ({ children, className }) => {
     const { state, resizeGroup } = usePanelLayout()
-    const { left, right, bottom, center } = state.groups
+    const left = state.groups.left!
+    const right = state.groups.right!
+    const bottom = state.groups.bottom!
+    const center = state.groups.center!
 
     const handleLeftResize = useCallback((delta: number) => {
         resizeGroup('left', (left.size || DEFAULT_SIZES.left) + delta)

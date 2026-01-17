@@ -110,7 +110,8 @@ export const tr = {
         preview: 'ÖNİZLEME',
         generate: 'LOGO OLUŞTUR',
         changeLogo: 'Logoyu Değiştir',
-        noDescription: 'Açıklama belirtilmedi'
+        noDescription: 'Açıklama belirtilmedi',
+        todoPlaceholder: 'Yapılması gereken nedir? (Enter\'a basın)'
     },
     projectWizard: {
         title: 'Proje Sihirbazı',
@@ -122,6 +123,9 @@ export const tr = {
         importDesc: 'Mevcut bir projeyi veya klasörü çalışma alanına ekleyin.',
         projectName: 'PROJE ADI',
         namePlaceholder: 'Örn: CRM Dashboard',
+        placeholder: {
+            example: 'ornek.com'
+        },
         description: 'AÇIKLAMA (OPSİYONEL)',
         descPlaceholder: 'Projenin amacı nedir?',
         host: 'SUNUCU (HOST)',
@@ -161,6 +165,7 @@ export const tr = {
     projectDashboard: {
         title: 'Proje Panosu',
         description: 'Proje detayları ve istatistiklerine genel bakış',
+        commitMessage: 'Commit mesajı...',
         analyzing: 'Proje Analiz Ediliyor...',
         noProject: 'Görüntülenecek proje yok.',
         overview: 'Genel Bakış',
@@ -169,6 +174,7 @@ export const tr = {
         tasks: 'Görevler',
         search: 'Ara',
         council: 'Konsey',
+        git: 'Git',
         fileCount: 'DOSYA SAYISI',
         loc: 'SATIR SAYISI',
         modules: 'MODÜLLER',
@@ -251,13 +257,14 @@ export const tr = {
         password: 'Şifre',
         saveProfile: 'Bağlantı Profilini Kaydet',
         confirmDelete: 'Bu profili silmek istediğinize emin misiniz?',
+        deleteProfile: 'Profili Sil',
         loadingStats: 'Sistem istatistikleri yükleniyor...',
         failedStats: 'İstatistikler alınamadı',
         systemDashboard: 'Sistem Paneli',
         cpuUsage: 'CPU Kullanımı',
         memoryUsage: 'Bellek Kullanımı',
         diskUsage: 'Disk Kullanımı',
-        load: 'yük',
+        load: 'yükleme',
         rootPartition: 'Kök Bölümü',
         uptime: 'Çalışma Süresi',
         unknown: 'Bilinmiyor',
@@ -350,31 +357,82 @@ export const tr = {
     accounts: {
         title: 'Bağlı Hesaplar',
         subtitle: 'Harici servis ve API bağlantılarını yönetin.',
+
+        // Categories
+        categories: {
+            aiProviders: 'AI Sağlayıcılar',
+            developerTools: 'Geliştirici Araçları',
+            localModels: 'Yerel Modeller'
+        },
+
+        // Provider descriptions
+        providers: {
+            github: {
+                name: 'GitHub',
+                description: 'Kaynak kod barındırma ve işbirliği'
+            },
+            copilot: {
+                name: 'GitHub Copilot',
+                description: 'Yapay zeka destekli kod tamamlama'
+            },
+            antigravity: {
+                name: 'Antigravity',
+                description: 'Bulut AI servisleri ve web erişimi'
+            },
+            codex: {
+                name: 'OpenAI / ChatGPT',
+                description: 'GPT-4 ve gelişmiş dil modelleri'
+            },
+            claude: {
+                name: 'Claude',
+                description: 'Anthropic Claude muhakeme modelleri'
+            },
+            ollama: {
+                name: 'Ollama',
+                description: 'AI modellerini yerel olarak çalıştırın'
+            }
+        },
+
+        // Status labels
+        connected: 'BAĞLI',
+        disconnected: 'BAĞLI DEĞİL',
+        running: 'ÇALIŞIYOR',
+        notRunning: 'DURDURULDU',
+        active: 'Aktif',
+
+        // Actions
+        connect: 'Bağla',
+        disconnect: 'Bağlantıyı Kes',
+        switchAccount: 'Hesap Değiştir',
+        addAnotherAccount: 'Başka Hesap Ekle',
+        setActive: 'Aktif Yap',
+        removeAccount: 'Kaldır',
+
+        // Account count
+        accountCount: '{{count}} hesap',
+        accountCountPlural: '{{count}} hesap',
+        noAccounts: 'Bağlı hesap yok',
+
+        // Ollama settings
+        serverAddress: 'SUNUCU ADRESİ',
+        contextLimit: 'BAĞLAM LİMİTİ',
+        check: 'Kontrol Et',
+        start: 'Başlat',
+
+        // Legacy (for backward compat)
+        apiKey: 'API Anahtarları',
+        enterApiKey: 'API anahtarını girin...',
         githubDesc: 'GitHub profiliniz ve depolarınız.',
         copilotDesc: 'GitHub Copilot entegrasyonu.',
         antigravityDesc: 'Antigravity bulut servisleri.',
         codexDesc: 'OpenAI Codex API erişimi.',
         claudeDesc: 'Anthropic Claude modelleri.',
-
-        connected: 'BAĞLI',
-        disconnected: 'BAĞLI DEĞİL',
-        connect: 'Bağla',
-        disconnect: 'Bağlantıyı Kes',
-        running: 'ÇALIŞIYOR',
-        notRunning: 'DURDURULDU',
-        serverAddress: 'SUNUCU ADRESİ',
-        contextLimit: 'BAĞLAM LİMİTİ',
-        check: 'Kontrol Et',
-        start: 'Başlat',
-        apiKey: 'API Anahtarları',
-        enterApiKey: 'API anahtarını girin...',
         services: {
             github: 'GitHub Profili',
             copilot: 'GitHub Copilot',
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
             claude: 'Claude',
-
         }
     },
     speech: {
@@ -476,6 +534,7 @@ export const tr = {
         discoverMarket: 'Market Keşfet',
         marketplaceSubtitle: 'Platforma yeni yetenekler kazandıracak binlerce servisi keşfedin.',
         searchPlaceholder: 'Servis veya araç keşfet...',
+        searchTools: 'Araçları ara...',
     },
     workspace: {
         editor: 'Editör',
@@ -507,7 +566,16 @@ export const tr = {
         uploadManualImage: 'Manuel Görsel Yükle',
         crafting: 'Oluşturuluyor...',
         previewArea: 'Önizleme Alanı',
-        convertToCode: 'Koda Çevir'
+        convertToCode: 'Koda Çevir',
+        placeholders: {
+            rootPath: 'C:\\Kullanıcılar\\Proje',
+            name: 'İsim...'
+        },
+        run: 'Projeyi Çalıştır',
+        toggleSidebar: 'Kenar Çubuğunu Aç/Kapat',
+        aiAssistant: 'AI Asistan',
+        online: 'Çevrimiçi',
+        dev: 'GELİŞTİRME'
     },
     chat: {
         placeholder: 'Bir mesaj yazın...',
@@ -526,6 +594,8 @@ export const tr = {
     },
     input: {
         placeholder: {
+            copilot: 'Copilot\'a kod yazdırmasını iste...',
+            ollama: 'Yerel LLM\'e sor...',
             default: 'Bir mesaj yazın...'
         },
         attachFile: 'Dosya ekle'
@@ -759,6 +829,7 @@ export const tr = {
         addAgent: 'Ajan Ekle',
         goal: 'Hedef',
         describeObjective: 'Konseyin hedefini tanımlayın...',
+        complexGoalPlaceholder: 'Konsey için karmaşık bir hedef tanımlayın...',
         runCouncil: 'Konseyi Çalıştır',
         thoughtStream: 'Düşünce Akışı',
         clear: 'Temizle',
@@ -766,7 +837,7 @@ export const tr = {
         system: 'SİSTEM',
         taskRouting: 'Görev Yönlendirme',
         strategy: 'Strateji',
-        roundRobin: 'Round robin',
+        roundRobin: 'Sıralı Dağıtım',
         softDeadline: 'Yumuşak son tarih',
         hardDeadline: 'Sert son tarih',
         decisionRules: 'Karar Kuralları',
@@ -779,6 +850,13 @@ export const tr = {
         off: 'Kapalı',
         local: 'yerel',
         cloud: 'bulut'
+    },
+    modelComparison: {
+        promptPlaceholder: 'Modelleri karşılaştırmak için isteminizi girin...',
+        copyResponse: 'Yanıtı kopyala'
+    },
+    council: {
+        taskPlaceholder: 'Konsey için bir görev tanımlayın...'
     },
     shortcuts: {
         title: 'Klavye Kısayolları',
@@ -878,7 +956,7 @@ export const tr = {
         entries: 'girdi',
         lastUpdated: 'Son güncelleme',
         showing: 'Gösteriliyor',
-        of: '/',
+        of: 'toplam',
         logs: 'günlük'
     },
     personas: {
@@ -899,5 +977,29 @@ export const tr = {
         markdownView: 'Markdown Görünümü',
         text: 'Metin',
         markdown: 'Markdown'
+    },
+    modelExplorer: {
+        title: 'Model Gezgini',
+        search: 'Model ara...',
+        install: 'Yükle',
+        installed: 'Yüklü'
+    },
+    docker: {
+        title: 'Docker Yönetimi',
+        stop: 'Durdur',
+        start: 'Başlat',
+        remove: 'Kaldır',
+        shell: 'Kabuk',
+        logs: 'Günlükler',
+        stats: 'İstatistikler'
+    },
+    onboarding: {
+        welcome: 'Orbit\'e Hoş Geldiniz',
+        step1: 'AI Sağlayıcılarını Bağlayın',
+        step2: 'Çalışma Alanını Hazırlayın',
+        step3: 'Kodlamaya Başlayın',
+        skip: 'Atla',
+        next: 'İleri',
+        finish: 'Bitir'
     }
 }

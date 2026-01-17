@@ -152,7 +152,7 @@ export class SSHService extends EventEmitter {
             }
 
             if (index >= 0) {
-                profiles[index] = safeProfile
+                profiles[index]! = safeProfile
             } else {
                 profiles.push(safeProfile)
             }
@@ -192,7 +192,7 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id)
         if (index === -1) { return false }
 
-        profiles[index].isFavorite = !profiles[index].isFavorite
+        profiles[index]!.isFavorite = !profiles[index]!.isFavorite
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
         return true
     }
@@ -224,7 +224,7 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id)
         if (index === -1) { return false }
 
-        profiles[index].tags = tags
+        profiles[index]!.tags = tags
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
         return true
     }
@@ -299,8 +299,9 @@ export class SSHService extends EventEmitter {
                         const profiles = await this.getSavedProfiles()
                         const profileIndex = profiles.findIndex(p => p.id === config.id)
                         if (profileIndex >= 0) {
-                            profiles[profileIndex].lastConnected = Date.now()
-                            profiles[profileIndex].connectionCount = (profiles[profileIndex].connectionCount ?? 0) + 1
+                            const profile = profiles[profileIndex]!;
+                            profile.lastConnected = Date.now();
+                            profile.connectionCount = (profile.connectionCount ?? 0) + 1;
                             await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
                         }
                     } catch {

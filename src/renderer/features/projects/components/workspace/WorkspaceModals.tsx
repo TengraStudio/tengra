@@ -1,8 +1,9 @@
 import { X } from 'lucide-react';
 import React, { Dispatch, SetStateAction } from 'react';
 
+import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { MountForm,WorkspaceEntry } from '@/types';
+import { MountForm, WorkspaceEntry } from '@/types';
 
 interface WorkspaceModalsProps {
     showMountModal: boolean;
@@ -17,6 +18,7 @@ interface WorkspaceModalsProps {
     setEntryName: (val: string) => void;
     submitEntryModal: () => void;
     entryBusy: boolean;
+    language?: Language;
 }
 
 /**
@@ -39,8 +41,10 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
     entryName,
     setEntryName,
     submitEntryModal,
-    entryBusy
+    entryBusy,
+    language = 'en'
 }) => {
+    const { t } = useTranslation(language);
     return (
         <>
             {/* Mount Modal */}
@@ -76,7 +80,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                             value={mountForm.rootPath || ''}
                                             onChange={e => setMountForm((prev) => ({ ...prev, rootPath: e.target.value }))}
                                             className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50"
-                                            placeholder="C:\Users\Project"
+                                            placeholder={t('workspace.placeholders.rootPath')}
                                         />
                                         <button onClick={pickLocalFolder} className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-medium">Seç</button>
                                     </div>
@@ -116,7 +120,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
 
             {/* Entry Actions Modal (Rename/Delete/Create/Search) */}
             {entryModal && (
-                <div 
+                <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
                     role="dialog"
                     aria-modal="true"
@@ -125,8 +129,8 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                     <div className="bg-[#121214] border border-white/10 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center">
                             <h3 id="workspace-modal-title" className="text-sm font-bold text-white capitalize">{entryModal.type}</h3>
-                            <button 
-                                onClick={closeEntryModal} 
+                            <button
+                                onClick={closeEntryModal}
                                 className="text-zinc-500 hover:text-white"
                                 aria-label="Close modal"
                             >
@@ -148,7 +152,7 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                         }
                                     }}
                                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50"
-                                    placeholder="Name..."
+                                    placeholder={t('workspace.placeholders.name')}
                                     aria-label={`${entryModal.type} name`}
                                 />
                             )}
@@ -156,8 +160,8 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                 <p className="text-sm text-zinc-400">Are you sure you want to delete <span className="text-white font-medium">{entryModal.entry?.name}</span>?</p>
                             )}
                             <div className="flex justify-end gap-2">
-                                <button 
-                                    onClick={closeEntryModal} 
+                                <button
+                                    onClick={closeEntryModal}
                                     className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5"
                                     aria-label="Cancel"
                                 >

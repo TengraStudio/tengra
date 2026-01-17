@@ -4,12 +4,14 @@
  */
 
 import {
-Check, Code, Database, Download, FileText, Globe, Plug,
-    Search,     Server, Settings,
-Shield, Star, Terminal,
-    Zap} from 'lucide-react'
-import React, { useMemo,useState } from 'react'
+    Check, Code, Database, Download, FileText, Globe, Plug,
+    Search, Server, Settings,
+    Shield, Star, Terminal,
+    Zap
+} from 'lucide-react'
+import React, { useMemo, useState } from 'react'
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils'
 
 interface MCPTool {
@@ -165,7 +167,8 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
     onConfigure
 }) => {
     const [searchQuery, setSearchQuery] = useState('')
-    const [selectedCategory, setSelectedCategory] = useState('all')
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const { t } = useTranslation();
     const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null)
 
     const filteredTools = useMemo(() => {
@@ -282,7 +285,7 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                     <input
                         type="text"
-                        placeholder="Search tools..."
+                        placeholder={t('mcp.searchTools')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/30 border border-border/30 rounded-lg pl-9 pr-3 py-2 text-sm outline-none focus:border-primary/50"

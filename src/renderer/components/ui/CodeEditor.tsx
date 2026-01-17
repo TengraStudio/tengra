@@ -1,24 +1,24 @@
-import Editor, { Monaco, OnMount } from '@monaco-editor/react';
+import Editor, { Monaco, OnChange,OnMount } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
 import type * as monaco from 'monaco-editor';
 import React, { useRef } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+import { Language, useTranslation } from '@/i18n';
 import { normalizeLanguage } from '@/utils/language-map';
 import { initTextMateSupport } from '@/utils/textmate-loader';
-import { Language, useTranslation } from '@/i18n';
 
 export interface CodeEditorProps {
-    value?: string;
-    language?: string;
-    onChange?: (value: string | undefined) => void;
-    theme?: string;
-    readOnly?: boolean;
-    className?: string;
-    showMinimap?: boolean;
-    fontSize?: number;
-    initialLine?: number;
-    appLanguage?: Language; // UI language
+    value?: string | undefined;
+    language?: string | undefined;
+    onChange?: OnChange | undefined;
+    theme?: string | undefined;
+    readOnly?: boolean | undefined;
+    className?: string | undefined;
+    showMinimap?: boolean | undefined;
+    fontSize?: number | undefined;
+    initialLine?: number | undefined;
+    appLanguage?: Language | undefined; // UI language
 }
 
 // Track if TextMate has been initialized globally
@@ -174,8 +174,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 height="100%"
                 defaultLanguage={normalizedLanguage}
                 language={normalizedLanguage}
-                value={value}
-                onChange={onChange}
+                value={value || ''}
+                onChange={onChange as any}
                 theme={monacoTheme}
                 onMount={handleEditorDidMount}
                 loading={

@@ -1,13 +1,14 @@
 import {
-ChevronDown,
-    Maximize2, Minimize2, Plus,     Terminal, TerminalSquare,
-X} from 'lucide-react'
-import { memo, useCallback,useEffect, useRef, useState } from 'react'
+    ChevronDown,
+    Maximize2, Minimize2, Plus, Terminal, TerminalSquare,
+    X
+} from 'lucide-react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal as XTerm } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 
 import { useTheme } from '@/hooks/useTheme'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { TerminalTab } from '@/types'
 
@@ -171,7 +172,7 @@ const TerminalSession = memo(({
                 const result = await window.electron.terminal.create({
                     id: tab.id,
                     shell: tab.type,
-                    cwd: projectPath,
+                    ...(projectPath ? { cwd: projectPath } : {}),
                     cols,
                     rows
                 })
@@ -253,7 +254,7 @@ const TerminalSession = memo(({
 
     // Helper to safely fit terminal
     const safeFit = useCallback(() => {
-        if (!fitAddonRef.current || !containerRef.current || !isActive) {return}
+        if (!fitAddonRef.current || !containerRef.current || !isActive) { return }
         try {
             // Check if element is actually visible and has dimensions
             const rect = containerRef.current.getBoundingClientRect()
@@ -267,7 +268,7 @@ const TerminalSession = memo(({
 
     // Handle incoming data via global multiplexer
     useEffect(() => {
-        if (!isReady || !xtermRef.current) {return}
+        if (!isReady || !xtermRef.current) { return }
 
         const handleData = (e: Event) => {
             try {
@@ -315,7 +316,7 @@ const TerminalSession = memo(({
 
     // Resize observer for container
     useEffect(() => {
-        if (!containerRef.current) {return}
+        if (!containerRef.current) { return }
 
         const observer = new ResizeObserver(() => {
             if (isActive) {
@@ -429,7 +430,7 @@ export function TerminalPanel({
                     hasAutoCreatedRef.current = true
                     setTimeout(() => {
                         // Final check before creating
-                        if (tabs.length === 0) {
+                        if (tabs.length === 0 && shells[0]) {
                             createTerminal(shells[0].id)
                         } else {
                             console.log('[TerminalPanel] Tabs appeared before creation, cancelling')
@@ -456,16 +457,16 @@ export function TerminalPanel({
         // Clean up from global registry
         initializedTerminals.delete(id)
         initializingTerminals.delete(id)
-        
+
         // Kill the terminal session on close
         window.electron.terminal.kill(id).catch(err => {
             console.error('[TerminalPanel] Failed to kill terminal session:', err)
         })
-        
+
         setTabs(prev => {
             const newTabs = prev.filter(t => t.id !== id)
             if (activeTabId === id && newTabs.length > 0) {
-                setActiveTabId(newTabs[newTabs.length - 1].id)
+                setActiveTabId(newTabs[newTabs.length - 1]!.id)
             } else if (newTabs.length === 0) {
                 setActiveTabId(null)
             }
@@ -483,15 +484,15 @@ export function TerminalPanel({
         })
 
         return () => {
-            if (cleanupData) {cleanupData()}
-            if (cleanupExit) {cleanupExit()}
+            if (cleanupData) { cleanupData() }
+            if (cleanupExit) { cleanupExit() }
         }
     }, [])
 
     // Resize logic
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) {return}
+            if (!isResizing) { return }
             const newHeight = window.innerHeight - e.clientY
             onHeightChange(Math.min(Math.max(150, newHeight), window.innerHeight * 0.8))
         }
@@ -599,7 +600,7 @@ export function TerminalPanel({
                         tab={tab}
                         isActive={activeTabId === tab.id}
                         onClose={() => closeTab(tab.id)}
-                        projectPath={projectPath}
+                        {...(projectPath ? { projectPath } : {})}
                     />
                 ))}
 
@@ -608,7 +609,7 @@ export function TerminalPanel({
                         <Terminal className="w-12 h-12 mb-4 opacity-20" />
                         <p className="text-sm">No active terminal sessions</p>
                         <button
-                            onClick={() => createTerminal(availableShells[0]?.id || 'powershell')}
+                            onClick={() => createTerminal(availableShells[0]!.id || 'powershell')}
                             className="mt-4 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors"
                         >
                             Start New Session

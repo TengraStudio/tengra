@@ -7,30 +7,32 @@ import {
     useFloating,
 } from '@floating-ui/react'
 import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
-import { Box, BrainCircuit, Check, ChevronDown, Code2,ImageIcon, Info, LayoutGrid, Search, Server, Sparkles, Zap } from 'lucide-react'
-import { useCallback,useEffect, useMemo, useState } from 'react'
+import { Box, BrainCircuit, Check, ChevronDown, Code2, ImageIcon, Info, LayoutGrid, Pin, Search, Server, Sparkles, Zap } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/useDebounce'
-import { Language,useTranslation } from '@/i18n'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { Language, useTranslation } from '@/i18n'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import type { AppSettings, CodexUsage,QuotaResponse } from '@/types'
+import type { AppSettings, CodexUsage, QuotaResponse } from '@/types'
 
 interface ModelSelectorProps {
     selectedProvider: string
     selectedModel: string
     onSelect: (provider: string, model: string) => void
-    settings?: AppSettings
-    groupedModels?: GroupedModels
-    quotas?: QuotaResponse | null
-    codexUsage?: CodexUsage | null
-    onOpenChange?: (isOpen: boolean) => void
-    contextTokens?: number
-    language?: Language
+    settings?: AppSettings | undefined
+    groupedModels?: GroupedModels | undefined
+    quotas?: QuotaResponse | null | undefined
+    codexUsage?: CodexUsage | null | undefined
+    onOpenChange?: ((isOpen: boolean) => void) | undefined
+    contextTokens?: number | undefined
+    language?: Language | undefined
+    toggleFavorite?: (modelId: string) => void
+    isFavorite?: (modelId: string) => boolean
 }
 
-export function ModelSelector({ selectedProvider, selectedModel, onSelect, settings, groupedModels, quotas = null, codexUsage = null, onOpenChange, contextTokens = 0, language = 'en' }: ModelSelectorProps) {
+export function ModelSelector({ selectedProvider, selectedModel, onSelect, settings, groupedModels, quotas = null, codexUsage = null, onOpenChange, contextTokens = 0, language = 'en', toggleFavorite, isFavorite }: ModelSelectorProps) {
     const { t } = useTranslation(language)
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
@@ -63,7 +65,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [isOpen, onOpenChange])
 
     useEffect(() => {
-        if (!isOpen) {return;}
+        if (!isOpen) { return; }
 
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
             const target = event.target as Node
@@ -108,7 +110,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
     // Check usage limits for all models
     useEffect(() => {
-        if (!settings?.modelUsageLimits) {return}
+        if (!settings?.modelUsageLimits) { return }
 
         const checkLimits = async () => {
             const checks: Record<string, { allowed: boolean; reason?: string }> = {}
@@ -118,7 +120,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 for (const [provider, group] of Object.entries(groupedModels)) {
                     for (const model of group.models) {
                         const modelId = model.id || ''
-                        if (!modelId) {continue}
+                        if (!modelId) { continue }
                         const key = `${provider}:${modelId}`
                         try {
                             const result = await window.electron.checkUsageLimit(provider, modelId)
@@ -137,7 +139,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [settings?.modelUsageLimits, groupedModels])
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
-        if (!quotas && !codexUsage && !settings?.modelUsageLimits) {return false;}
+        if (!quotas && !codexUsage && !settings?.modelUsageLimits) { return false; }
         const lowerModelId = modelId.toLowerCase();
 
         // Check usage limits first
@@ -262,12 +264,13 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 for (const [, groupModels] of Object.entries(ANTIGRAVITY_QUOTA_GROUPS)) {
                     if (groupModels.some(m => m.toLowerCase() === lowerModelId)) {
                         for (const groupModel of groupModels) {
-                            const gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
+                            let gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
                             if (gQuota) {
-                                if (gQuota.percentage !== undefined && gQuota.percentage <= 5) {
+                                (gQuota as any) = gQuota
+                                if ((gQuota as any).percentage !== undefined && (gQuota as any).percentage <= 5) {
                                     return true;
                                 }
-                                if (gQuota.exhausted || gQuota.remaining <= 0) {
+                                if (gQuota.exhausted || (gQuota as any).remaining <= 0) {
                                     return true;
                                 }
                             }
@@ -282,7 +285,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
     }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS, settings, usageLimitChecks]);
 
     const categories = useMemo(() => {
-        if (!groupedModels) {return []}
+        if (!groupedModels) { return [] }
 
         interface ModelItem {
             id: string;
@@ -290,6 +293,8 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             disabled: boolean;
             provider: string;
             type: string;
+            contextWindow?: number;
+            pinned?: boolean;
         }
 
         interface Category {
@@ -303,6 +308,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         }
 
         const cats: Category[] = [
+            { id: 'favorites', name: t('common.favorites') || 'Favorites', icon: Zap, color: 'text-yellow-400', bg: 'bg-yellow-500/10', providerId: 'favorites', models: [] },
             { id: 'copilot', name: 'GitHub Copilot', icon: Zap, color: 'text-indigo-400', bg: 'bg-indigo-500/10', providerId: 'copilot', models: [] },
             { id: 'openai', name: 'OpenAI', icon: Sparkles, color: 'text-green-400', bg: 'bg-green-500/10', providerId: 'openai', models: [] },
             { id: 'claude', name: 'Anthropic', icon: BrainCircuit, color: 'text-purple-400', bg: 'bg-pink-500/10', providerId: 'anthropic', models: [] },
@@ -324,12 +330,14 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
         const hidden = new Set<string>(settings?.general?.hiddenModels || [])
         const searchLower = debouncedSearchQuery.toLowerCase()
+        const favorites = new Set(settings?.general?.favoriteModels || [])
 
         for (const mapping of brandsMapping) {
             const group = groupedModels[mapping.key]
             const models = group?.models || []
             const cat = cats.find(c => c.id === mapping.catId)
-            if (!cat) {continue}
+            if (!cat) { continue }
+            const favCat = cats.find(c => c.id === 'favorites')
 
             interface RawModel {
                 id?: string
@@ -338,6 +346,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 provider?: string
                 quota?: { percentage?: number }
                 type?: string
+                contextWindow?: number
             }
 
             for (const mRaw of models) {
@@ -347,21 +356,40 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                     (m.name || '').toLowerCase().includes(searchLower) ||
                     id.toLowerCase().includes(searchLower);
 
-                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) {continue}
+                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) { continue }
 
                 let label = m.label || m.name || id;
                 label = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
-                if (label.startsWith('gpt-')) {label = label.toUpperCase();}
+                if (label.startsWith('gpt-')) { label = label.toUpperCase(); }
 
-                cat.models.push({
+                const modelItem: ModelItem = {
                     id: id,
                     label: label,
                     disabled: isModelDisabled(id, m.provider || '') || (m.quota?.percentage !== undefined && m.quota.percentage <= 1) || false,
                     provider: m.provider || '',
-                    type: m.type || 'text'
-                });
+                    type: m.type || 'text',
+                    contextWindow: m.contextWindow,
+                    pinned: favorites.has(id)
+                }
+
+                cat.models.push(modelItem);
+
+                if (modelItem.pinned && favCat) {
+                    // Add a copy to favorites, but keep provider branding/colors? 
+                    // Or just list them in favorites category. 
+                    // The requirement is "Pinned category to the top".
+                    favCat.models.push({
+                        ...modelItem,
+                        // Keep original provider info for selection logic
+                    })
+                }
             }
             cat.models.sort((a, b) => a.label.localeCompare(b.label))
+        }
+
+        // Sort favorites
+        if (cats[0].id === 'favorites') {
+            cats[0].models.sort((a, b) => a.label.localeCompare(b.label))
         }
 
         return cats.filter(cat => cat.models.length > 0)
@@ -373,7 +401,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             const match = cat.models.find(m => m.id === selectedModel)
                 || cat.models.find(m => m.id.toLowerCase() === normalizedSelectedModel)
                 || cat.models.find(m => m.id.replace(/\./g, '-').toLowerCase() === normalizedSelectedModel.replace(/\./g, '-'))
-            if (match) {return match}
+            if (match) { return match }
         }
         return null
     }, [categories, selectedModel])
@@ -383,16 +411,17 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         || categories.find(c => c.id === selectedProvider);
 
     const contextLimit = useMemo(() => {
+        if (currentModelInfo?.contextWindow) { return currentModelInfo.contextWindow }
         const id = selectedModel.toLowerCase()
-        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) {return 128000}
-        if (id.includes('claude-3-5') || id.includes('claude-3')) {return 200000}
-        if (id.includes('gemini-1.5')) {return 1000000}
-        if (id.includes('gemini-3')) {return 2000000}
-        if (id.includes('gpt-3.5')) {return 160000}
+        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) { return 128000 }
+        if (id.includes('claude-3-5') || id.includes('claude-3')) { return 200000 }
+        if (id.includes('gemini-1.5')) { return 1000000 }
+        if (id.includes('gemini-3')) { return 2000000 }
+        if (id.includes('gpt-3.5')) { return 160000 }
         return 32000
-    }, [selectedModel]);
+    }, [selectedModel, currentModelInfo]);
 
-    const contextUsagePercent = Math.min(100, (contextTokens / contextLimit) * 100)
+    const contextUsagePercent = Math.min(100, ((contextTokens || 0) / (contextLimit || 32000)) * 100)
 
     // Callback refs to satisfy aggressive linting
     const setReferenceNode = useCallback((node: HTMLElement | null) => {
@@ -530,6 +559,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                                                         <span className="truncate flex-1 flex items-center gap-2">
                                                             {model.label}
                                                             {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
+                                                            {(model.contextWindow ?? 0) > 0 && (
+                                                                <span className="text-[9px] text-zinc-600 bg-zinc-800/50 px-1 rounded border border-white/5">
+                                                                    {(model.contextWindow!) >= 1000000 ? `${(model.contextWindow!) / 1000000}m` : `${(model.contextWindow!) / 1000}k`}
+                                                                </span>
+                                                            )}
                                                         </span>
                                                         {model.type === 'image' && (
                                                             <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded leading-none mr-1">
@@ -541,6 +575,20 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                                                                 <Info className="w-2.5 h-2.5" />
                                                                 {t('modelSelector.limit')}
                                                             </span>
+                                                        )}
+                                                        {toggleFavorite && (
+                                                            <div
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    toggleFavorite(model.id)
+                                                                }}
+                                                                className={cn(
+                                                                    "p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1",
+                                                                    model.pinned ? "text-yellow-400 opacity-100" : "text-zinc-600 opacity-0 group-hover:opacity-100"
+                                                                )}
+                                                            >
+                                                                <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />
+                                                            </div>
                                                         )}
                                                         {(selectedModel === model.id && selectedProvider === model.provider) && (
                                                             <Check className="w-3.5 h-3.5 text-primary shrink-0" />

@@ -119,7 +119,7 @@ export class McpDispatcher {
         }
 
         userServers.push({ ...config })
-        this.settingsService.saveSettings({ mcpUserServers: userServers })
+        this.settingsService.saveSettings({ mcpUserServers: userServers }).catch(e => appLogger.error('MCP', `Failed to save settings: ${e}`))
         return { success: true }
     }
 
@@ -127,7 +127,7 @@ export class McpDispatcher {
         this.killServer(name)
         const settings = this.settingsService.getSettings()
         const userServers = (settings.mcpUserServers ?? []).filter(s => s.name !== name)
-        this.settingsService.saveSettings({ mcpUserServers: userServers })
+        this.settingsService.saveSettings({ mcpUserServers: userServers }).catch(e => appLogger.error('MCP', `Failed to save settings: ${e}`))
         return { success: true }
     }
 
@@ -146,7 +146,7 @@ export class McpDispatcher {
             }
         }
 
-        this.settingsService.saveSettings({ mcpDisabledServers: disabledServers })
+        this.settingsService.saveSettings({ mcpDisabledServers: disabledServers }).catch(e => appLogger.error('MCP', `Failed to save settings: ${e}`))
         return { success: true, isEnabled: enabled }
     }
 
@@ -211,7 +211,7 @@ export class McpDispatcher {
                         } else {
                             // Extract content from MCP tool result
                             const text = result.content?.map((c) => c.text).join('\n')
-                            resolve({ success: true, data: text, service: serverConfig.name, action: toolName })
+                            resolve({ success: true, data: text ?? null, service: serverConfig.name, action: toolName })
                         }
                     },
                     reject: (err) => {
@@ -241,20 +241,29 @@ export class McpDispatcher {
         }
 
         appLogger.info('MCP', `Starting server: ${config.name} (${config.command})`)
-        const args = config.args ?? []
+        const args = config.args || []
         const env = { ...process.env, ...config.env } // Merge process env with config env
-        // Use shell: true for npx on windows compatibility
-        const server = spawn(config.command, args, {
-            shell: true,
+        const isWindows = process.platform === 'win32'
+        let command = config.command
+
+        // Resolve .cmd extension for Windows scripts if needed
+        if (isWindows && !command.endsWith('.exe') && !command.endsWith('.cmd') && !command.endsWith('.bat')) {
+            if (['npm', 'npx', 'pnpm', 'yarn'].includes(command)) {
+                command = `${command}.cmd`
+            }
+        }
+
+        const server = spawn(command, args, {
+            shell: false,
             stdio: ['pipe', 'pipe', 'pipe'],
             env
         })
 
-        server.stdout?.setEncoding('utf8')
-        server.stderr?.setEncoding('utf8')
+        server.stdout.setEncoding('utf8')
+        server.stderr.setEncoding('utf8')
 
-        server.stdout?.on('data', (chunk) => this.handleServerOutput(config.name, chunk))
-        server.stderr?.on('data', (chunk) => appLogger.debug('MCP', `${config.name} ERR: ${chunk}`))
+        server.stdout.on('data', (chunk) => this.handleServerOutput(config.name, chunk))
+        server.stderr.on('data', (chunk) => appLogger.debug('MCP', `${config.name} ERR: ${chunk}`))
 
         server.on('error', (err) => {
             appLogger.error('MCP', `${config.name} Process error: ${getErrorMessage(err)}`)

@@ -41,8 +41,8 @@
 ## 🟢 LOW - Infrastructure
 
 ### 4.1 Background Services
-- [ ] Design Token Refresh Daemon (Windows Service/Task)
-- [ ] Design Model Registry Daemon
+- [x] Design Token Refresh Daemon (Windows Service/Task) ✅ Phase 20
+- [x] Design Model Registry Daemon ✅ Phase 20
 
 ### 4.2 Linux Support
 - [ ] Plan Linux packaging (AppImage, Deb)
