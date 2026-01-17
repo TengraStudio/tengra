@@ -1,9 +1,11 @@
 import { randomUUID } from 'crypto'
 
 import { BaseService } from '@main/services/base.service'
+import { AuthService } from '@main/services/security/auth.service'
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat'
 import { JsonObject, JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
 const API_VERSION = '2023-07-07';
@@ -77,6 +79,7 @@ interface DiagnosticResponse {
 
 export class CopilotService extends BaseService {
     private githubToken: string | null = null;
+    private copilotAuthToken: string | null = null;
     private copilotSessionToken: string | null = null;
     private tokenExpiresAt: number = 0;
     private vsCodeVersion: string = FALLBACK_VSCODE_VERSION;
@@ -119,11 +122,15 @@ export class CopilotService extends BaseService {
             }
             // Ensure we have the basic token (this.githubToken)
             if (!this.githubToken && this.authService) {
-                const token = this.authService.getToken('copilot_token');
+                const token = this.authService.getToken('github_token');
                 this.githubToken = (token instanceof Promise ? await token : token) ?? null;
             }
 
-            if (!this.githubToken) {
+            // If we don't have a github_token, we can try using the copilot_token for rate limit checks
+            // as it is technically a GitHub token with specific scopes
+            const tokenToCheck = this.githubToken;
+
+            if (!tokenToCheck) {
                 this.logWarn('Cannot check rate limit: No github_token available.');
                 return;
             }
@@ -178,11 +185,15 @@ export class CopilotService extends BaseService {
 
     setGithubToken(token: string) {
         this.githubToken = token;
-        this.copilotSessionToken = null;
-        // Clear caches when token changes
+        // Don't clear session token here, as github_token might be unrelated to copilot session
         this.modelsCache = null;
         this.modelsCacheExpiry = 0;
-        this.hasNotifiedExhaustion = false; // Reset notification flag on new token
+    }
+
+    setCopilotToken(token: string) {
+        this.copilotAuthToken = token;
+        this.copilotSessionToken = null; // Clear session if auth token changes
+        this.hasNotifiedExhaustion = false;
     }
 
     private startRateLimitMonitoring() {
@@ -221,51 +232,75 @@ export class CopilotService extends BaseService {
 
     isConfigured(): boolean {
         // fast check
-        if (this.githubToken || this.copilotSessionToken) {
+        if (this.copilotAuthToken || this.copilotSessionToken) {
             return true;
         }
         // deep check via AuthService - ONLY use copilot_token, no fallback
         if (this.authService) {
             const token = this.authService.getToken('copilot_token');
-            if (token instanceof Promise) {return true;} // Assume true if async check is needed, validation happens later
+            if (token instanceof Promise) { return true; } // Assume true if async check is needed, validation happens later
             return !!token;
         }
         return false;
     }
 
-    private async ensureCopilotToken(): Promise<string> {
-        if (this.copilotSessionToken && Date.now() < this.tokenExpiresAt - 60000) {
+    private async recoverTokenFromAuthService(): Promise<void> {
+        if (!this.authService) { return; }
+
+        this.logInfo('No token set, attempting to recover from AuthService...');
+
+        // 1. Recover Copilot Token
+        let copilotTokenOrPromise = this.authService.getToken('copilot_token');
+        let copilotToken = copilotTokenOrPromise instanceof Promise ? await copilotTokenOrPromise : copilotTokenOrPromise;
+        if (copilotToken) {
+            this.copilotAuthToken = copilotToken;
+            this.logInfo(`Recovered copilot_token from AuthService (length: ${copilotToken.length})`);
+        }
+
+        // 2. Recover GitHub Token
+        let githubTokenOrPromise = this.authService.getToken('github_token');
+        let githubToken = githubTokenOrPromise instanceof Promise ? await githubTokenOrPromise : githubTokenOrPromise;
+        if (githubToken) {
+            this.githubToken = githubToken;
+            this.logInfo(`Recovered github_token from AuthService (length: ${githubToken.length})`);
+        } else {
+            this.logInfo('github_token not found in AuthService');
+        }
+
+        this.logInfo(`Token recovery result: Copilot=${!!this.copilotAuthToken}, GitHub=${!!this.githubToken}`);
+    }
+    public async ensureCopilotToken(): Promise<string> {
+        if (this.copilotSessionToken && this.tokenExpiresAt > Date.now()) {
             return this.copilotSessionToken;
         }
 
-        if (this.tokenPromise) { return this.tokenPromise; }
+        if (this.tokenPromise) {
+            return this.tokenPromise;
+        }
 
         this.tokenPromise = (async () => {
             try {
                 await this.waitForRateLimit();
-                if (!this.githubToken) {
-                    // Try to recover from AuthService if available - ONLY use copilot_token, no fallback
-                    if (this.authService) {
-                        this.logInfo('No token set, attempting to recover copilot_token from AuthService...');
-                        const tokenOrPromise = this.authService.getToken('copilot_token');
-                        const copilotToken = tokenOrPromise instanceof Promise ? await tokenOrPromise : tokenOrPromise;
-                        this.logInfo(`copilot_token: ${copilotToken ? `found (length: ${copilotToken.length})` : 'NOT FOUND'}`);
-                        if (copilotToken) {
-                            this.logInfo('Recovered copilot_token from AuthService');
-                            this.githubToken = copilotToken;
-                        }
-                    }
-                    if (!this.githubToken) {
-                        throw new Error('Copilot Authentication failed: No copilot_token found. Please login via Settings.');
-                    }
+
+                // Ensure we have tokens loaded
+                if (!this.copilotAuthToken) {
+                    await this.recoverTokenFromAuthService();
+                }
+
+                // If still no copilot token, we can try to fallback to githubToken IF it's valid for Copilot 
+                // (sometimes users put the same token in both places effectively)
+                const authHeaderToken = this.copilotAuthToken || this.githubToken;
+
+                if (!authHeaderToken) {
+                    throw new Error('Copilot Authentication failed: No copilot_token or github_token found. Please login via Settings.');
                 } else {
-                    this.logInfo(`Using existing token, length: ${this.githubToken.length}`);
+                    this.logInfo(`Using ${this.copilotAuthToken ? 'copilot_token' : 'github_token'} for auth, length: ${authHeaderToken.length}`);
                 }
 
                 try {
                     const usageRes = await fetch('https://api.github.com/copilot_internal/user', {
                         headers: {
-                            'Authorization': `token ${this.githubToken}`,
+                            'Authorization': `token ${authHeaderToken}`,
                             'Accept': 'application/json',
                             'User-Agent': USER_AGENT
                         }
@@ -281,7 +316,7 @@ export class CopilotService extends BaseService {
 
                 const response = await fetch('https://api.github.com/copilot_internal/v2/token', {
                     headers: {
-                        'Authorization': `token ${this.githubToken}`,
+                        'Authorization': `token ${authHeaderToken}`,
                         'Accept': 'application/json',
                         'Editor-Version': `vscode/${this.vsCodeVersion}`,
                         'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
@@ -295,7 +330,7 @@ export class CopilotService extends BaseService {
                         this.logWarn('v2/token 404, attempting fallback to v1/token');
                         const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
                             headers: {
-                                'Authorization': `token ${this.githubToken}`,
+                                'Authorization': `token ${authHeaderToken}`,
                                 'Accept': 'application/json',
                                 'Editor-Version': `vscode/${this.vsCodeVersion}`,
                                 'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
@@ -330,10 +365,14 @@ export class CopilotService extends BaseService {
                     // For 403 (Forbidden) or 404 (Not Found), it might be plan-related or API changes, don't delete yet.
                     if (response.status === 401) {
                         this.logWarn('Token unauthorized (401). Clearing token.');
-                        this.githubToken = null;
+                        if (authHeaderToken === this.copilotAuthToken) {
+                            this.copilotAuthToken = null;
+                        } else {
+                            this.githubToken = null;
+                        }
                         this.copilotSessionToken = null;
                         if (this.authService && 'deleteToken' in this.authService) {
-                            (this.authService as any).deleteToken?.('github_token');
+                            (this.authService as any).deleteToken?.('copilot_token');
                         }
                     } else if (response.status === 404) {
                         this.logError('Token not found (404). This usually means:');
@@ -452,7 +491,7 @@ export class CopilotService extends BaseService {
     }
 
     private parseChatResponse(json: CopilotChatResponse): Message {
-        if (json.choices && json.choices[0]?.message) {
+        if (json.choices?.[0]?.message) {
             return json.choices[0].message;
         }
 
@@ -775,37 +814,6 @@ export class CopilotService extends BaseService {
         }
     }
 
-    async getModels(): Promise<{ data: JsonValue[] }> {
-        if (!this.isConfigured()) { return { data: [] }; }
-
-        // Return cached models if still valid
-        if (this.modelsCache && Date.now() < this.modelsCacheExpiry) {
-            return this.modelsCache;
-        }
-
-        try {
-            await this.waitForRateLimit();
-            const token = await this.ensureCopilotToken();
-            const response = await fetch(`${this.getBaseUrl()}/models`, { headers: this.getHeaders(token) });
-            if (!response.ok) {
-                // On rate limit, return cached data if available, otherwise empty
-                if (response.status === 403 || response.status === 429) {
-                    console.warn('[CopilotService] Rate limited, using cached models or empty');
-                    return this.modelsCache || { data: [] };
-                }
-                return { data: [] };
-            }
-            const models = await response.json() as { data: JsonValue[] };
-            // Cache the result
-            this.modelsCache = models;
-            this.modelsCacheExpiry = Date.now() + CopilotService.MODELS_CACHE_TTL;
-            return models;
-        } catch (error) {
-            console.error('[CopilotService] Failed to get models:', getErrorMessage(error as Error));
-            // Return cached data on error if available
-            return this.modelsCache || { data: [] };
-        }
-    }
 
     private handleError(error: Error | string | unknown, context: string): never {
         const message = getErrorMessage(error as Error);

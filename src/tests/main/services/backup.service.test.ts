@@ -170,7 +170,7 @@ describe('BackupService', () => {
             const backups = await service.listBackups();
 
             expect(backups.length).toBe(1);
-            expect(backups[0].name).toBe('backup-1.json');
+            expect(backups[0]!.name).toBe('backup-1.json');
         });
     });
 

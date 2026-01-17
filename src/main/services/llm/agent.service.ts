@@ -64,7 +64,7 @@ export class AgentService {
             result = await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName) as AgentRow | undefined
         }
 
-        if (!result) {return null}
+        if (!result) { return null }
 
         return {
             id: result.id,
@@ -78,9 +78,8 @@ export class AgentService {
 
     async getAllAgents(): Promise<AgentDefinition[]> {
         const db = this.dbService.getDatabase()
-        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all()
-
-        return results.map((result: any) => ({
+        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all<AgentRow>()
+        return results.map(result => ({
             id: result.id,
             name: result.name,
             description: 'Agent',

@@ -11,12 +11,12 @@ export interface AuditLogEntry {
     timestamp: number
     action: string
     category: 'security' | 'settings' | 'authentication' | 'data' | 'system'
-    userId?: string
-    details?: Record<string, unknown>
-    ipAddress?: string
-    userAgent?: string
+    userId?: string | undefined
+    details?: Record<string, unknown> | undefined
+    ipAddress?: string | undefined
+    userAgent?: string | undefined
     success: boolean
-    error?: string
+    error?: string | undefined
 }
 
 export class AuditLogService extends BaseService {

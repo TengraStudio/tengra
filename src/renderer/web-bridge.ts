@@ -1,13 +1,13 @@
 import type { ElectronAPI } from '@renderer/electron.d'
 import type { CouncilSession } from '@shared/types/agent'
-import type { Chat, Folder,Message, ToolCall, ToolDefinition, ToolResult } from '@shared/types/chat'
-import type { AuthStatus,IpcValue } from '@shared/types/common'
+import type { Chat, Folder, Message, ToolCall, ToolDefinition, ToolResult } from '@shared/types/chat'
+import type { AuthStatus, IpcValue } from '@shared/types/common'
 import type { Project, ProjectAnalysis } from '@shared/types/project'
-import type { CopilotQuota,QuotaResponse } from '@shared/types/quota'
+import type { CopilotQuota, QuotaResponse } from '@shared/types/quota'
 import type { AppSettings } from '@shared/types/settings'
 import type { IpcRendererEvent } from 'electron'
 
-import type { SSHConfig,SSHConnection, SSHSystemStats } from '@/types/ssh'
+import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh'
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
@@ -37,6 +37,15 @@ export const webElectronMock: ElectronAPI = {
         codex: false
     } as AuthStatus),
     deleteProxyAuthFile: async (_name: string) => ({ success: true }),
+
+    // Linked Accounts API (New Multi-Account System)
+    getLinkedAccounts: async (_provider?: string) => [],
+    getActiveLinkedAccount: async (_provider: string) => null,
+    setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
+    linkAccount: async (_provider: string, _tokenData) => ({ success: true }),
+    unlinkAccount: async (_accountId: string) => ({ success: true }),
+    unlinkProvider: async (_provider: string) => ({ success: true }),
+    hasLinkedAccount: async (_provider: string) => false,
 
     code: {
         scanTodos: async (_rootPath: string) => [],
@@ -213,6 +222,12 @@ export const webElectronMock: ElectronAPI = {
     agent: {
         getAll: async () => [],
         get: async (_id: string) => null
+    },
+
+    modelRegistry: {
+        getAllModels: async () => [],
+        getRemoteModels: async () => [],
+        getInstalledModels: async () => []
     },
 
     terminal: {
@@ -403,6 +418,14 @@ export const webElectronMock: ElectronAPI = {
         getLogs: async (_startDate?: string, _endDate?: string, _category?: string) => []
     },
 
+    memory: {
+        getAll: async () => ({ facts: [], episodes: [], entities: [] }),
+        addFact: async (_content: string, _tags?: string[]) => ({ success: true, id: '1' }),
+        deleteFact: async (_id: string) => ({ success: true }),
+        deleteEntity: async (_id: string) => ({ success: true }),
+        setEntityFact: async (_entityType: string, _entityName: string, _key: string, _value: string) => ({ success: true, id: '1' }),
+        search: async (_query: string) => ({ facts: [], episodes: [] })
+    },
     ipcRenderer: {
         on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },
         off: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => { },

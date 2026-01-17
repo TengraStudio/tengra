@@ -1,8 +1,8 @@
 import DOMPurify from 'dompurify'
-import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronUp, Clock, Code2, Copy, Eye, FileCode,ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronUp, Clock, Code2, Copy, Eye, FileCode, ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import mermaid from 'mermaid'
 import { Highlight, themes } from 'prism-react-renderer'
-import { isValidElement, memo, useEffect, useId,useMemo, useState } from 'react'
+import { isValidElement, memo, useEffect, useId, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
@@ -13,7 +13,7 @@ import LogoOpenAI from '@/assets/chatgpt.svg'
 import LogoClaude from '@/assets/claude.svg'
 import LogoCopilot from '@/assets/copilot.png'
 import LogoOllama from '@/assets/ollama.svg'
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { Message } from '@/types'
 
@@ -53,7 +53,7 @@ const BookmarkButton = memo(({ active, onClick, t }: { active: boolean; onClick:
     )
 })
 
-const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void, t: (key: string) => string }) => {
+const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0 | undefined; onRate: (val: 1 | -1 | 0) => void, t: (key: string) => string }) => {
     return (
         <div className="flex items-center gap-1 border-l border-border/50 pl-2 ml-1">
             <button
@@ -146,7 +146,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         render()
     }, [code, id])
 
-    if (error) {return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>}
+    if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />
 })
 
@@ -188,22 +188,22 @@ const ImageSkeleton = ({ t }: { t: (key: string) => string }) => (
 interface MessageProps {
     message: Message
     isLast: boolean
-    backend?: string
-    isStreaming?: boolean
+    backend?: string | undefined
+    isStreaming?: boolean | undefined
     language: Language
-    onSpeak?: (text: string) => void
-    onStop?: () => void
-    isSpeaking?: boolean
-    onCodeConvert?: (imageUrl: string) => void
-    onReact?: (emoji: string) => void
-    onBookmark?: (isBookmarked: boolean) => void
-    onRate?: (rating: 1 | -1 | 0) => void
-    onApprovePlan?: () => void
-    streamingSpeed?: number | null
-    streamingReasoning?: string
-    id?: string
-    isFocused?: boolean
-    onSourceClick?: (path: string) => void
+    onSpeak?: ((text: string) => void) | undefined
+    onStop?: (() => void) | undefined
+    isSpeaking?: boolean | undefined
+    onCodeConvert?: ((imageUrl: string) => void) | undefined
+    onReact?: ((emoji: string) => void) | undefined
+    onBookmark?: ((isBookmarked: boolean) => void) | undefined
+    onRate?: ((rating: 1 | -1 | 0) => void) | undefined
+    onApprovePlan?: (() => void) | undefined
+    streamingSpeed?: number | null | undefined
+    streamingReasoning?: string | undefined
+    id?: string | undefined
+    isFocused?: boolean | undefined
+    onSourceClick?: ((path: string) => void) | undefined
 }
 
 export const MessageBubble = memo(({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) => {
@@ -216,7 +216,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
     const COLLAPSE_THRESHOLD = 30
 
     const getAssistantLogo = () => {
-        if (isUser) {return null}
+        if (isUser) { return null }
         const modelName = (message.model || '').toString().toLowerCase()
         const inferredProvider = modelName.startsWith('gpt-') || modelName.startsWith('o1-')
             ? 'openai'
@@ -319,7 +319,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
             ? message.content
             : Array.isArray(message.content)
                 ? message.content.map((c) => {
-                    if (typeof c === 'string') {return c}
+                    if (typeof c === 'string') { return c }
                     return typeof c.text === 'string' ? c.text : ''
                 }).join('')
                 : ''
@@ -330,14 +330,14 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
         if (!thought) {
             const thinkMatch = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content)
             if (thinkMatch) {
-                thought = thinkMatch[1]
+                thought = thinkMatch[1] || null
                 content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, '')
             }
         }
 
         const planMatch = /<plan>([\s\S]*?)(?:<\/plan>|$)/.exec(content)
         if (planMatch) {
-            plan = planMatch[1]
+            plan = planMatch[1] || null
             content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, '')
         }
         return {
@@ -355,6 +355,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
             const timer = setTimeout(() => setIsThoughtExpanded(true), 0)
             return () => clearTimeout(timer)
         }
+        return undefined
     }, [shouldAutoExpand])
 
     const lineCount = displayContent?.split('\n').length || 0
@@ -487,7 +488,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                                                 const match = /language-(\w+)/.exec(className || '')
                                                 const isInline = !match
                                                 const codeString = String(children).replace(/\n$/, '')
-                                                if (match?.[1] === 'mermaid') {return <MermaidDiagram code={codeString} />}
+                                                if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} /> }
                                                 return (isInline || !match) ? (
                                                     <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80" {...props}>
                                                         {children}
@@ -545,18 +546,18 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                                                 </span>
                                             ),
                                             a: ({ href, children }) => (
-                                                <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) {window.electron.openExternal(href)} }}>{children}</a>
+                                                <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) { window.electron.openExternal(href) } }}>{children}</a>
                                             ),
                                             li: ({ children }) => {
                                                 const isCheckbox = Array.isArray(children) && children.some(c => {
-                                                    if (!isValidElement(c)) {return false}
+                                                    if (!isValidElement(c)) { return false }
                                                     const element = c as React.ReactElement<{ type?: string }>
                                                     return element.props?.type === 'checkbox'
                                                 })
                                                 return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
                                             },
                                             input: ({ type, checked, ...props }) => {
-                                                if (type === 'checkbox') {return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />}
+                                                if (type === 'checkbox') { return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} /> }
                                                 return <input {...props} />
                                             },
                                             ul: ({ children }) => <ul className="pl-4 my-2 space-y-1">{children}</ul>,

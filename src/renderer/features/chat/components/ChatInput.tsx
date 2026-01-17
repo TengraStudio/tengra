@@ -33,7 +33,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
 
     const {
         selectedModel, selectedProvider, setSelectedModel, setSelectedProvider,
-        groupedModels, setIsModelMenuOpen
+        groupedModels, setIsModelMenuOpen, toggleFavorite, isFavorite
     } = useModel()
 
     const {
@@ -118,7 +118,10 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            processFile(e.target.files[0])
+            const file = e.target.files[0]
+            if (file) {
+                processFile(file)
+            }
             // Reset value so same file can be selected again
             e.target.value = ''
         }
@@ -144,7 +147,10 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
         const files = e.dataTransfer.files
         if (files && files.length > 0) {
             // Process the first file (can be extended to support multiple files)
-            processFile(files[0])
+            const file = files[0]
+            if (file) {
+                processFile(file)
+            }
         }
     }
 
@@ -287,6 +293,8 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
                             onOpenChange={setIsModelMenuOpen}
                             contextTokens={contextTokens}
                             language={language || 'en'}
+                            toggleFavorite={toggleFavorite}
+                            isFavorite={isFavorite}
                         />
                     </div>
                 </div>

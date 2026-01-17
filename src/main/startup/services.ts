@@ -47,7 +47,7 @@ import { GitService } from '@main/services/project/git.service'
 import { ProjectService } from '@main/services/project/project.service'
 import { SSHService } from '@main/services/project/ssh.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
-import { ProxyProcessManager } from '@main/services/proxy/proxy-process.manager'
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { QuotaService } from '@main/services/proxy/quota.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { KeyRotationService } from '@main/services/security/key-rotation.service'
@@ -56,10 +56,12 @@ import { SecurityService } from '@main/services/security/security.service'
 import { TokenService } from '@main/services/security/token.service'
 import { CommandService } from '@main/services/system/command.service'
 import { ConfigService } from '@main/services/system/config.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { getHealthCheckService, HealthCheckService } from '@main/services/system/health-check.service'
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
 import { NetworkService } from '@main/services/system/network.service'
 import { ProcessService } from '@main/services/system/process.service'
+import { ProcessManagerService } from '@main/services/system/process-manager.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { SystemService } from '@main/services/system/system.service'
 import { UpdateService } from '@main/services/system/update.service'
@@ -74,6 +76,7 @@ export const container = new Container();
 // Define Services interface
 export interface Services {
     settingsService: SettingsService;
+    authService: AuthService;
     localAIService: LocalAIService;
     ollamaService: OllamaService;
     llmService: LLMService;
@@ -131,7 +134,10 @@ export interface Services {
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
     multiModelComparisonService: MultiModelComparisonService;
+    processManagerService: ProcessManagerService;
     backupService: BackupService;
+    modelRegistryService: ModelRegistryService;
+    eventBusService: EventBusService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>) {
@@ -152,6 +158,7 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('commandService', () => new CommandService());
     container.register('systemService', () => new SystemService());
     container.register('networkService', () => new NetworkService());
+    container.register('eventBusService', () => new EventBusService());
     container.register('notificationService', () => new NotificationService());
     container.register('clipboardService', () => new ClipboardService());
     container.register('gitService', () => new GitService());
@@ -166,14 +173,15 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('huggingFaceService', () => new HuggingFaceService());
     container.register('projectService', () => new ProjectService());
     container.register('processService', () => new ProcessService());
+    container.register('processManagerService', () => new ProcessManagerService());
     container.register('webService', () => new WebService());
     container.register('collaborationService', () => new CollaborationService());
 
     container.register('fileSystemService', () => new FileSystemService(Array.from(allowedFileRoots)));
 
     // 3. Services with Dependencies
-    container.register('authService', (ds, ss, dbs) => new AuthService(ds as DataService, ss as SecurityService, dbs as DatabaseService), ['dataService', 'securityService', 'databaseService']);
-    container.register('settingsService', (ds, as) => new SettingsService(ds as DataService, as as AuthService), ['dataService', 'authService']);
+    container.register('settingsService', (ds) => new SettingsService(ds as DataService), ['dataService']);
+    container.register('authService', (dbs, ss) => new AuthService(dbs as DatabaseService, ss as SecurityService), ['databaseService', 'securityService']);
     container.register('localAIService', (ss) => new LocalAIService(ss as SettingsService), ['settingsService']);
     container.register('llamaService', (ds) => new LlamaService(ds as DataService), ['dataService']);
     container.register('ollamaService', (ss) => new OllamaService(ss as SettingsService), ['settingsService']);
@@ -185,30 +193,43 @@ export async function createServices(allowedFileRoots: Set<string>) {
     ), ['httpService', 'configService', 'keyRotationService', 'rateLimitService']);
     // Database depends on Data
     container.register('databaseService', (ds) => new DatabaseService(ds as DataService), ['dataService']);
+    // Initialize Database immediately as it is a core dependency for almost all other services
+    const databaseService = container.resolve<DatabaseService>('databaseService');
+    try {
+        await databaseService.initialize();
+        appLogger.info('Startup', 'DatabaseService initialized early');
+    } catch (e) {
+        appLogger.error('Startup', `CRITICAL: Failed to initialize DatabaseService: ${e}`);
+        throw e;
+    }
+
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
 
     container.register('sshService', (ds) => new SSHService((ds as DataService).getPath('config')), ['dataService']);
-    container.register('proxyProcessManager', (ss, ds, sec) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService), ['settingsService', 'dataService', 'securityService']);
-    container.register('quotaService', (ss, as) => new QuotaService(ss as SettingsService, as as AuthService), ['settingsService', 'authService']);
+
+    container.register('proxyProcessManager', (ss, ds, sec, as) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService), ['settingsService', 'dataService', 'securityService', 'authService']);
+    container.register('quotaService', (ss, as, pm) => new QuotaService(ss as SettingsService, as as AuthService, pm as ProcessManagerService), ['settingsService', 'authService', 'processManagerService']);
 
     // Proxy Service
-    container.register('proxyService', (ss, ds, sec, ppm, qs) => new ProxyService(
+    container.register('proxyService', (ss, ds, sec, ppm, qs, as) => new ProxyService(
         ss as SettingsService,
         ds as DataService,
         sec as SecurityService,
         ppm as ProxyProcessManager,
-        qs as QuotaService
-    ), ['settingsService', 'dataService', 'securityService', 'proxyProcessManager', 'quotaService']);
+        qs as QuotaService,
+        as as AuthService
+    ), ['settingsService', 'dataService', 'securityService', 'proxyProcessManager', 'quotaService', 'authService']);
 
     container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
 
     // Token Refresh Service
-    container.register('tokenService', (ss, cs, as, js) => new TokenService(
+    container.register('tokenService', (ss, cs, as, pm, js) => new TokenService(
         ss as SettingsService,
         cs as CopilotService,
         as as AuthService,
+        pm as ProcessManagerService,
         js as JobSchedulerService
-    ), ['settingsService', 'copilotService', 'authService', 'jobSchedulerService']);
+    ), ['settingsService', 'copilotService', 'authService', 'processManagerService', 'jobSchedulerService']);
 
     // Complex Helpers
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(
@@ -226,11 +247,12 @@ export async function createServices(allowedFileRoots: Set<string>) {
 
     container.register('dockerService', (cs, ssh) => new DockerService(cs as CommandService, ssh as SSHService), ['commandService', 'sshService']);
 
-    container.register('memoryService', (dbs, es, ls) => new MemoryService(
+    container.register('memoryService', (dbs, es, ls, pm) => new MemoryService(
         dbs as DatabaseService,
         es as EmbeddingService,
-        ls as LLMService
-    ), ['databaseService', 'embeddingService', 'llmService']);
+        ls as LLMService,
+        pm as ProcessManagerService
+    ), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
 
     container.register('agentService', (dbs) => new AgentService(dbs as DatabaseService), ['databaseService']);
 
@@ -252,12 +274,15 @@ export async function createServices(allowedFileRoots: Set<string>) {
     container.register('backupService', (ds, dbs) => new BackupService(ds as DataService, dbs as DatabaseService), ['dataService', 'databaseService']);
     container.register('multiModelComparisonService', (ls, mo) => new MultiModelComparisonService(ls as LLMService, mo as MultiLLMOrchestrator), ['llmService', 'multiLLMOrchestrator']);
 
-    container.register('modelRegistryService', (os, hf, js, ss) => new ModelRegistryService(
-        os as OllamaService,
-        hf as HuggingFaceService,
+    // eslint-disable-next-line max-params
+    container.register('modelRegistryService', (pm, js, ss, ps, ebs, as) => new ModelRegistryService(
+        pm as ProcessManagerService,
         js as JobSchedulerService,
-        ss as SettingsService
-    ), ['ollamaService', 'huggingFaceService', 'jobSchedulerService', 'settingsService']);
+        ss as SettingsService,
+        ps as ProxyService,
+        ebs as EventBusService,
+        as as AuthService
+    ), ['processManagerService', 'jobSchedulerService', 'settingsService', 'proxyService', 'eventBusService', 'authService']);
 
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
     container.register('contextRetrievalService', (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
@@ -292,6 +317,13 @@ export async function createServices(allowedFileRoots: Set<string>) {
     }
 
     // Start Ollama health monitoring
+    const memoryService = container.resolve<MemoryService>('memoryService');
+    try {
+        await memoryService.initialize();
+    } catch (error) {
+        appLogger.warn('Startup', `Failed to initialize MemoryService: ${error}`);
+    }
+
     const settingsService = container.resolve<SettingsService>('settingsService');
     let ollamaHealthService;
     try {
@@ -313,6 +345,7 @@ export async function createServices(allowedFileRoots: Set<string>) {
     // 6. Return Map for IPC registration
     const services: Services = {
         settingsService,
+        authService: container.resolve<AuthService>('authService'),
         localAIService: container.resolve<LocalAIService>('localAIService'),
         ollamaService: container.resolve<OllamaService>('ollamaService'),
         llmService: container.resolve<LLMService>('llmService'),
@@ -341,7 +374,9 @@ export async function createServices(allowedFileRoots: Set<string>) {
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
         logoService: container.resolve<LogoService>('logoService'),
+
         processService: container.resolve<ProcessService>('processService'),
+        processManagerService: container.resolve<ProcessManagerService>('processManagerService'),
         codeIntelligenceService: container.resolve<CodeIntelligenceService>('codeIntelligenceService'),
         contextRetrievalService: container.resolve<ContextRetrievalService>('contextRetrievalService'),
         jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
@@ -370,7 +405,9 @@ export async function createServices(allowedFileRoots: Set<string>) {
         modelCollaborationService: container.resolve<ModelCollaborationService>('modelCollaborationService'),
         performanceService: container.resolve<PerformanceService>('performanceService'),
         multiModelComparisonService: container.resolve<MultiModelComparisonService>('multiModelComparisonService'),
-        backupService: container.resolve<BackupService>('backupService')
+        backupService: container.resolve<BackupService>('backupService'),
+        modelRegistryService: container.resolve<ModelRegistryService>('modelRegistryService'),
+        eventBusService: container.resolve<EventBusService>('eventBusService')
     };
 
     healthCheckService.registerCriticalChecks({
@@ -381,6 +418,13 @@ export async function createServices(allowedFileRoots: Set<string>) {
 
     // Start token refresh service
     services.tokenService.start();
+
+    // Initialize Model Registry (starts native service)
+    try {
+        await services.modelRegistryService.init();
+    } catch (e) {
+        appLogger.error('Startup', `Failed to initialize ModelRegistryService: ${e}`);
+    }
 
     return services;
 }

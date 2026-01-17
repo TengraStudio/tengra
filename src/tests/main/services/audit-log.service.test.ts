@@ -86,7 +86,7 @@ describe('AuditLogService', () => {
             });
 
             expect(mockDbService.addAuditLog).toHaveBeenCalled();
-            const logEntry = vi.mocked(mockDbService.addAuditLog).mock.calls[0][0];
+            const logEntry = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0];
 
             expect(logEntry.action).toBe('test_action');
             expect(logEntry.category).toBe('security');
@@ -114,7 +114,7 @@ describe('AuditLogService', () => {
                 details: { attemptNumber: 3 }
             });
 
-            const logEntry = vi.mocked(mockDbService.addAuditLog).mock.calls[0][0];
+            const logEntry = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0];
             expect(logEntry.error).toBe('Invalid credentials');
             expect(logEntry.userId).toBe('user123');
             expect(logEntry.ipAddress).toBe('192.168.1.1');

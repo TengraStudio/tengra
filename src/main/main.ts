@@ -10,6 +10,11 @@ import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell,
 // Set the application name early - this affects Task Manager display on Windows
 app.setName('Orbit')
 
+// Increase memory limits for the Renderer process (Chromium/V8) to prevent "Oilpan: Normal allocation failed"
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
+app.commandLine.appendSwitch('disable-site-isolation-trials') // Can save memory in some cases
+
+
 // On Windows, set the AppUserModelId for taskbar grouping and display name
 if (process.platform === 'win32') {
     app.setAppUserModelId('com.orbit.app')
@@ -58,7 +63,13 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     }
 
     win.on('ready-to-show', () => {
-        win.show()
+        const isHidden = process.argv.includes('--hidden') ||
+            process.argv.includes('/hidden') ||
+            settings?.window?.workAtBackground === true && app.getLoginItemSettings().wasOpenedAtLogin;
+
+        if (!isHidden) {
+            win.show()
+        }
         win.setTitle('ORBIT')
     })
 
@@ -244,9 +255,18 @@ app.whenReady().then(async () => {
         throw e;
     }
 
-    // Debug: Check what tokens are available
-    if (services.settingsService['authService']) {
-        const tokens = await services.settingsService['authService'].getAllTokens();
+    appLogger.info('Main', 'Starting Database initialization...')
+    await services.databaseService.initialize()
+        .then(() => appLogger.info('Main', 'Database initialization completed'))
+        .catch(e => {
+            appLogger.error('Main', `Failed to initialize database service: ${e}`)
+            throw e // Critical failure
+        })
+
+    // Debug: Check what tokens are available (Now safe to call)
+    if (services.authService) {
+
+        const tokens = await services.authService.getAllTokens();
         appLogger.debug('Main', `AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`)
         if (tokens['copilot_token']) {
             appLogger.debug('Main', `copilot_token found in AuthService, length: ${tokens['copilot_token'].length}`)
@@ -257,11 +277,6 @@ app.whenReady().then(async () => {
     } else {
         appLogger.warn('Main', 'AuthService not available in settingsService')
     }
-
-    appLogger.info('Main', 'Starting Database initialization...')
-    services.databaseService.initialize()
-        .then(() => appLogger.info('Main', 'Database initialization completed'))
-        .catch(e => appLogger.error('Main', `Failed to initialize database service: ${e}`))
 
     appLogger.info('Main', 'Starting Proxy initialization...')
     services.proxyService.startEmbeddedProxy()
@@ -301,45 +316,7 @@ app.whenReady().then(async () => {
     // registerWindowIpc(() => mainWindow) // This will be handled by registerIpcHandlers
     appLogger.info('Main', 'Window IPC registered')
 
-    // Initialize Copilot Token
-    // Tokens are stored in data/auth folder, NOT in settings.json
-    // We ONLY use copilot_token - NO fallback to github_token
-    const initialSettings = services.settingsService.getSettings()
-    appLogger.debug('Main', `settings.copilot.token length: ${initialSettings.copilot?.token?.length ?? 0}`)
 
-    // Load token directly from AuthService (tokens are in data/auth folder)
-    // ONLY use copilot_token, no fallback
-    let copilotToken = initialSettings.copilot?.token
-
-    // If not in settings, try AuthService directly
-    if (!copilotToken) {
-        appLogger.debug('Main', 'Token not in settings, trying AuthService directly...')
-        if (services.settingsService['authService']) {
-            const authService = services.settingsService['authService'] as { getToken: (key: string) => Promise<string | undefined> }
-            appLogger.debug('Main', 'Attempting to get copilot_token from AuthService...')
-            copilotToken = await authService.getToken('copilot_token')
-            appLogger.debug('Main', `authService.getToken('copilot_token') result: ${copilotToken ? `found, length: ${copilotToken.length}` : 'NOT FOUND'}`)
-
-            if (copilotToken) {
-                appLogger.debug('Main', `Loaded copilot_token from AuthService, length: ${copilotToken.length}`)
-            } else {
-                appLogger.warn('Main', 'copilot_token not found in AuthService')
-            }
-        } else {
-            appLogger.error('Main', 'AuthService not available in settingsService')
-        }
-    } else {
-        appLogger.debug('Main', `Token found in settings, length: ${copilotToken.length}`)
-    }
-
-    if (copilotToken) {
-        services.copilotService.setGithubToken(copilotToken)
-        appLogger.debug('Main', `Set copilot_token to CopilotService, length: ${copilotToken.length}`)
-        // Verify it was set
-        appLogger.debug('Main', `CopilotService.isConfigured(): ${services.copilotService.isConfigured()}`)
-    } else {
-        appLogger.warn('Main', 'No copilot_token found - CopilotService will try to recover from AuthService when needed')
-    }
 
 
 

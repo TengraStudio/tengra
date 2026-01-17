@@ -2,6 +2,7 @@ export * from '@/types/agent'
 export * from '@/types/ai'
 export * from '@/types/chat'
 export * from '@/types/llm-provider-types'
+export * from '@/types/memory';
 export * from '@/types/project'
 export * from '@/types/quota'
 export * from '@/types/renderer'

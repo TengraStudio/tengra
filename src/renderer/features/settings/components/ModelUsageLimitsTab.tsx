@@ -1,4 +1,4 @@
-import { Calendar, Clock, Hash,Percent, Settings, TrendingUp } from 'lucide-react'
+import { Calendar, Clock, Hash, Percent, Settings, TrendingUp } from 'lucide-react'
 import React, { useMemo } from 'react'
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
@@ -22,21 +22,21 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     copilotQuota,
     t: _t
 }) => {
-    if (!settings) {return null}
-
-    const limits = settings.modelUsageLimits || {}
-    const copilotLimits = limits.copilot || {}
-    const antigravityLimits = limits.antigravity || {}
-    const codexLimits = limits.codex || {}
-
     // Get Antigravity models
     const antigravityModels = useMemo(() => {
-        if (!groupedModels) {return []}
+        if (!groupedModels) { return [] }
         const agGroup = groupedModels['antigravity']
         return agGroup?.models || []
     }, [groupedModels])
 
-    const updateCopilotLimit = (period: 'hourly' | 'daily' | 'weekly', field: 'enabled' | 'type' | 'value', value: any) => {
+    if (!settings) { return null }
+
+    const limits = settings.modelUsageLimits ?? {}
+    const copilotLimits = limits.copilot ?? {}
+    const antigravityLimits = limits.antigravity ?? {}
+    const codexLimits = limits.codex ?? {}
+
+    const updateCopilotLimit = (period: 'hourly' | 'daily' | 'weekly', field: 'enabled' | 'type' | 'value', value: boolean | string | number) => {
         const updated = {
             ...settings,
             modelUsageLimits: {
@@ -72,7 +72,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
         handleSave(updated)
     }
 
-    const updateCodexLimit = (period: 'daily' | 'weekly', field: 'enabled' | 'percentage', value: any) => {
+    const updateCodexLimit = (period: 'daily' | 'weekly', field: 'enabled' | 'percentage', value: boolean | number) => {
         const updated = {
             ...settings,
             modelUsageLimits: {

@@ -6,10 +6,10 @@ export interface Attachment {
     type: 'image' | 'video' | 'file' | 'text' | 'application'
     size: number
     status: 'uploading' | 'ready' | 'error'
-    preview?: string
-    file?: File
-    content?: string
-    error?: string
+    preview?: string | undefined
+    file?: File | undefined
+    content?: string | undefined
+    error?: string | undefined
 }
 
 export interface ToolCall {
@@ -25,8 +25,8 @@ export interface ToolDefinition {
     type: 'function';
     function: {
         name: string;
-        description?: string;
-        parameters?: JsonObject;
+        description?: string | undefined;
+        parameters?: JsonObject | undefined;
     };
 }
 
@@ -34,46 +34,46 @@ export interface ToolResult {
     toolCallId: string
     name: string
     result: JsonValue
-    isImage?: boolean
-    success?: boolean
-    error?: string
+    isImage?: boolean | undefined
+    success?: boolean | undefined
+    error?: string | undefined
 }
 
 export interface Message {
     id: string
-    chatId?: string // Reference to parent chat
+    chatId?: string | undefined // Reference to parent chat
     role: 'user' | 'assistant' | 'system'
     content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
     timestamp: Date
-    images?: string[]
-    reasoning?: string
-    toolCalls?: ToolCall[]
-    toolResults?: ToolResult[] | string // Can be string in DB
-    isPinned?: boolean
-    isBookmarked?: boolean
-    provider?: string
-    model?: string
-    responseTime?: number
-    rating?: 1 | -1 | 0
-    reactions?: string[]
-    sources?: string[]
+    images?: string[] | undefined
+    reasoning?: string | undefined
+    toolCalls?: ToolCall[] | undefined
+    toolResults?: ToolResult[] | string | undefined // Can be string in DB
+    isPinned?: boolean | undefined
+    isBookmarked?: boolean | undefined
+    provider?: string | undefined
+    model?: string | undefined
+    responseTime?: number | undefined
+    rating?: 1 | -1 | 0 | undefined
+    reactions?: string[] | undefined
+    sources?: string[] | undefined
 }
 
 export interface Chat {
     id: string
     title: string
     model: string
-    backend?: string // Added for compatibility
+    backend?: string | undefined // Added for compatibility
     messages: Message[]
     createdAt: Date
     updatedAt: Date
-    isPinned?: boolean
-    isArchived?: boolean
-    isFavorite?: boolean
-    folderId?: string
-    projectId?: string
-    metadata?: JsonObject
-    isGenerating?: boolean // Transient state for UI
+    isPinned?: boolean | undefined
+    isArchived?: boolean | undefined
+    isFavorite?: boolean | undefined
+    folderId?: string | undefined
+    projectId?: string | undefined
+    metadata?: JsonObject | undefined
+    isGenerating?: boolean | undefined // Transient state for UI
 }
 
 export interface Folder {

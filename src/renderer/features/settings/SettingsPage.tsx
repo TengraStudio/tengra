@@ -1,13 +1,13 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
 import { SettingsCategory } from '@renderer/features/settings/types'
 import { Search, X } from 'lucide-react'
-import { memo, useMemo,useState } from 'react'
+import { memo, useCallback,useMemo, useState } from 'react'
 
 import { GalleryView } from '@/features/chat/components/GalleryView'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 // Tab Components
-import { AboutTab, AccountsTab, AdvancedTab, AppearanceTab, DeveloperTab, GeneralTab, MCPSettingsTab,ModelsTab, ModelUsageLimitsTab, PersonasTab, SpeechTab, StatisticsTab } from '@/features/settings/components'
+import { AboutTab, AccountsTab, AdvancedTab, AppearanceTab, DeveloperTab, GeneralTab, MCPSettingsTab, ModelsTab, ModelUsageLimitsTab, PersonasTab, SpeechTab, StatisticsTab } from '@/features/settings/components'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 
@@ -35,7 +35,7 @@ export function SettingsPage({
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
-        setSettings
+        setSettings, linkedAccounts, deviceCodeModal, closeDeviceCodeModal
     } = useSettingsLogic(onRefreshModels)
 
     const { t } = useTranslation(settings?.general?.language || 'tr')
@@ -58,13 +58,13 @@ export function SettingsPage({
     ], [t])
 
     const filteredTabs = useMemo(() => {
-        if (!searchQuery) {return allTabs}
+        if (!searchQuery) { return allTabs }
         return allTabs.filter(tab =>
             tab.label.toLowerCase().includes(searchQuery.toLowerCase())
         )
     }, [searchQuery, allTabs])
 
-    const handleFactoryReset = async () => {
+    const handleFactoryReset = useCallback(async () => {
         if (confirm(t('settings.factoryResetConfirm'))) {
             await window.electron.saveSettings({
                 ollama: { url: 'http://localhost:11434' },
@@ -73,29 +73,39 @@ export function SettingsPage({
             })
             window.location.reload()
         }
-    }
+    }, [t])
 
-    const loadSettings = async () => {
+    const loadSettings = useCallback(async () => {
         const data = await window.electron.getSettings()
         setSettings(data)
-    }
+    }, [setSettings])
 
-    const sharedProps = {
+    const sharedProps = useMemo(() => ({
         settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
+        linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         t, onRefreshModels, loadSettings, setIsLoading: (_v: boolean) => { }, onReset: handleFactoryReset
-    }
+    }), [
+        settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
+        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
+        benchmarkResult, isBenchmarking, handleRunBenchmark,
+        editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
+        linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
+        t, onRefreshModels, loadSettings, handleFactoryReset
+    ])
 
     return (
         <div className="settings-container">
             <div className="settings-content flex h-full gap-6">
                 <main className="settings-main flex-1 overflow-y-auto">
                     {/* Search Bar */}
-                    <div className="mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur-sm pb-4">
+                    <div className="mb-6 sticky top-0 z-10 bg-background pb-4 border-b border-white/5">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input

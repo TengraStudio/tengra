@@ -9,13 +9,10 @@
 
 ### 1.2 Injection Risks
 - [x] **XSS**: Sanitized `dangerouslySetInnerHTML` with DOMPurify
-- [ ] **Shell Injection**: Audit `shell: true` usage
-    - `src/main/services/llm/local-ai.service.ts`
-    - `src/main/mcp/dispatcher.ts`
-    - `src/main/ipc/window.ts`
+- [x] **Shell Injection**: Enforced `shell: false` ✅ Phase 19/21
 
 ### 1.3 Path Traversal
-- [ ] Audit all file system access for `../` blocking
+- [x] FileSystemService: `isPathAllowed`/`validatePath` protects paths ✅ Phase 21
 - [ ] Verify `SSHService` path validation
 
 ### 1.4 JSON Safety

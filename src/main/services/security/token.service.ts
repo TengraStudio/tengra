@@ -4,20 +4,7 @@ import { AuthToken } from '@main/services/data/database.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { SettingsService } from '@main/services/system/settings.service'
-import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
-import axios from 'axios'
-
-// OAuth Client IDs and Secrets
-// Client IDs are public, but secrets should be in environment variables
-const ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'
-const ANTIGRAVITY_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET // No fallback - required env var
-
-const CODEX_CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann' // OpenAI OAuth Client ID
-const CODEX_TOKEN_URL = 'https://auth.openai.com/oauth/token'
-
-const CLAUDE_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e' // Anthropic OAuth Client ID
-const CLAUDE_TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 
 /**
  * Unified Token Refresh Service
@@ -40,6 +27,7 @@ export class TokenService extends BaseService {
         private settingsService: SettingsService,
         private copilotService: CopilotService,
         private authService: AuthService,
+        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService,
         private jobScheduler?: import('@main/services/system/job-scheduler.service').JobSchedulerService
     ) {
         super('TokenService')
@@ -54,6 +42,22 @@ export class TokenService extends BaseService {
      */
     start() {
         appLogger.info('TokenService', 'Starting unified token refresh service...')
+
+        // Start the native service process
+        void this.processManager.startService({
+            name: 'token-service',
+            executable: 'orbit-token-service'
+        })
+
+        // Listen for responses (if we were using the old EventEmitter method)
+        // With HTTP-based services, this is handled in the sendRequest .then() callback
+        this.processManager.on('token-service:ready', (port: number) => {
+            appLogger.info('TokenService', `Token service ready on port ${port}`)
+            // Trigger initial refresh only when service is ready
+            this.refreshAllTokens().catch(err => {
+                appLogger.error('TokenService', `Initial token refresh failed: ${getErrorMessage(err)}`)
+            })
+        })
 
         if (this.jobScheduler) {
             // Use JobScheduler for persistent, configurable intervals
@@ -85,11 +89,6 @@ export class TokenService extends BaseService {
             appLogger.warn('TokenService', 'No JobScheduler provided, using simple intervals')
             this.startLegacyIntervals()
         }
-
-        // Initial check
-        this.refreshAllTokens().catch(err => {
-            appLogger.error('TokenService', `Initial token refresh failed: ${getErrorMessage(err)}`)
-        })
 
         appLogger.info('TokenService', 'Token refresh service started successfully')
     }
@@ -133,13 +132,116 @@ export class TokenService extends BaseService {
     }
 
     private async refreshSingleToken(token: AuthToken) {
-        if (this.isGoogleProvider(token)) {
-            await this.refreshGoogleToken(token)
-        } else if (this.isCodexProvider(token)) {
-            await this.refreshCodexToken(token)
-        } else if (this.isClaudeProvider(token)) {
-            await this.refreshClaudeToken(token)
+        if (this.isGoogleProvider(token) || this.isCodexProvider(token) || this.isClaudeProvider(token)) {
+            // Send to native service
+            const clientId = this.getClientId(token)
+            const clientSecret = this.getClientSecret(token)
+
+            if (!clientId) { return }
+
+            try {
+                const response = await this.processManager.sendRequest<{ success: boolean; token?: { access_token?: string; refresh_token?: string; expires_at?: number }; error?: string }>('token-service', {
+                    type: 'Refresh',
+                    token,
+                    client_id: clientId,
+                    client_secret: clientSecret
+                })
+
+                if (response.success && response.token) {
+                    // Save the refreshed token to database
+                    await this.authService.updateToken(token.id, {
+                        accessToken: response.token.access_token,
+                        refreshToken: response.token.refresh_token,
+                        expiresAt: response.token.expires_at
+                    })
+                    appLogger.info('TokenService', `Token refreshed and saved for ${token.provider}`)
+                } else if (response.error) {
+                    appLogger.warn('TokenService', `Token refresh failed for ${token.provider}: ${response.error}`)
+                }
+            } catch (error) {
+                appLogger.error('TokenService', `Failed to refresh token for ${token.provider}: ${getErrorMessage(error as Error)}`)
+            }
+        } else if (this.isGithubProvider(token)) {
+            await this.refreshGithubToken(token)
         }
+    }
+
+    private isGithubProvider(token: AuthToken): boolean {
+        const p = token.provider.toLowerCase()
+        return p === 'github' || p === 'copilot'
+    }
+
+    private async refreshGithubToken(token: AuthToken) {
+        // Only refresh if we have a refresh token and it's expired or close to expiring (e.g. within 5 mins)
+        // Or if we just want to force refresh on startup.
+        // GitHub tokens expire in 8 hours usually.
+        if (!token.refreshToken) { return }
+
+        // Check expiry if possible, but for now we might just try to exchange if we suspect it's old
+        // or rely on the fact that this method is called by the scheduler.
+
+        try {
+            const clientId = token.provider === 'copilot' ? '01ab8ac9400c4e429b23' : 'Ov23liBw1MLMHGdYxtUV'
+
+            const response = await fetch('https://github.com/login/oauth/access_token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_id: clientId,
+                    grant_type: 'refresh_token',
+                    refresh_token: this.authService.decryptToken(token.refreshToken)
+                })
+            })
+
+            if (!response.ok) {
+                const text = await response.text()
+                throw new Error(`GitHub API error: ${response.status} ${text}`)
+            }
+
+            const data = await response.json() as {
+                access_token?: string,
+                refresh_token?: string,
+                expires_in?: number,
+                refresh_token_expires_in?: number,
+                error?: string
+            }
+
+            if (data.error) {
+                throw new Error(`Refresh failed: ${data.error}`)
+            }
+
+            if (data.access_token) {
+                await this.authService.updateToken(token.id, {
+                    accessToken: data.access_token,
+                    refreshToken: data.refresh_token, // Rotation
+                    expiresAt: data.expires_in ? Date.now() + (data.expires_in * 1000) : undefined
+                })
+
+                appLogger.info('TokenService', `Refreshed token for ${token.provider}`)
+
+                // If copilot, notify service
+                if (token.provider === 'copilot') {
+                    this.copilotService.setGithubToken(data.access_token)
+                }
+            }
+        } catch (error) {
+            appLogger.error('TokenService', `Failed to refresh GitHub token: ${getErrorMessage(error as Error)}`)
+        }
+    }
+
+    private getClientId(token: AuthToken): string | undefined {
+        if (this.isGoogleProvider(token)) { return '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com' }
+        if (this.isCodexProvider(token)) { return 'app_EMoamEEZ73f0CkXaXp7hrann' }
+        if (this.isClaudeProvider(token)) { return '9d1c250a-e61b-44d9-88ed-5944d1962f5e' }
+        return undefined
+    }
+
+    private getClientSecret(token: AuthToken): string | undefined {
+        if (this.isGoogleProvider(token)) { return process.env.ANTIGRAVITY_CLIENT_SECRET }
+        return undefined
     }
 
     private isGoogleProvider(token: AuthToken): boolean {
@@ -160,203 +262,14 @@ export class TokenService extends BaseService {
         return provider.startsWith('claude') || provider.startsWith('anthropic') || id.startsWith('claude') || id.startsWith('anthropic')
     }
 
-    private async refreshGoogleToken(token: AuthToken): Promise<void> {
-        try {
-            const refreshToken = token.refreshToken
-            if (!refreshToken) { return }
 
-            const expiry = token.expiresAt ?? 0
-            if (Date.now() < expiry - 5 * 60 * 1000) { return }
 
-            if (!ANTIGRAVITY_CLIENT_SECRET) {
-                appLogger.error('TokenService', 'ANTIGRAVITY_CLIENT_SECRET environment variable is not set')
-                return
-            }
-
-            appLogger.info('TokenService', `Refreshing Google/Antigravity token for ${token.id}...`)
-            await this.performGoogleRefresh(token, refreshToken)
-        } catch (error: unknown) {
-            this.handleRefreshError('Google', token.id, error)
-        }
-    }
-
-    private async performGoogleRefresh(token: AuthToken, refreshToken: string) {
-        const params = new URLSearchParams({
-            client_id: ANTIGRAVITY_CLIENT_ID,
-            client_secret: ANTIGRAVITY_CLIENT_SECRET ?? '',
-            refresh_token: refreshToken,
-            grant_type: 'refresh_token'
-        })
-
-        const response = await axios.post('https://oauth2.googleapis.com/token', params.toString(), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            timeout: 10000
-        })
-
-        await this.authService.saveToken(token.id, {
-            ...token,
-            accessToken: response.data.access_token,
-            refreshToken: response.data.refresh_token ?? refreshToken,
-            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
-            updatedAt: Date.now()
-        })
-        appLogger.info('TokenService', `Google/Antigravity token for ${token.id} refreshed successfully`)
-    }
-
-    private async refreshCodexToken(token: AuthToken): Promise<void> {
-        try {
-            const refreshToken = token.refreshToken
-            if (!refreshToken) { return }
-
-            const expiry = token.expiresAt ?? 0
-            if (Date.now() < expiry - 5 * 60 * 1000) { return }
-
-            appLogger.info('TokenService', `Refreshing Codex token for ${token.id}...`)
-            await this.performCodexRefresh(token, refreshToken)
-        } catch (error: unknown) {
-            this.handleRefreshError('Codex', token.id, error)
-        }
-    }
-
-    private async performCodexRefresh(token: AuthToken, refreshToken: string) {
-        const params = new URLSearchParams({
-            client_id: CODEX_CLIENT_ID,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-            scope: 'openid profile email'
-        })
-        const response = await axios.post(CODEX_TOKEN_URL, params.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json'
-            },
-            timeout: 10000
-        })
-
-        await this.authService.saveToken(token.id, {
-            ...token,
-            accessToken: response.data.access_token,
-            refreshToken: response.data.refresh_token ?? refreshToken,
-            idToken: response.data.id_token ?? token.idToken,
-            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
-            updatedAt: Date.now()
-        })
-        appLogger.info('TokenService', `Codex token for ${token.id} refreshed successfully`)
-    }
-
-    private handleRefreshError(provider: string, id: string, error: unknown) {
-        const errorMsg = getErrorMessage(error)
-        const axiosError = error as { response?: { status: number; data?: JsonObject } }
-
-        if (axiosError.response) {
-            const statusCode = axiosError.response.status
-            const data = axiosError.response.data
-            const errorCode = data ? String(data.error ?? '') : ''
-
-            if (statusCode === 400 && (errorCode === 'invalid_grant' || errorCode === 'invalid_request')) {
-                appLogger.warn('TokenService', `Refresh token expired or invalid for ${id}. User needs to re-authenticate.`)
-            }
-        }
-
-        appLogger.error('TokenService', `Failed to refresh ${provider} token for ${id}: ${errorMsg}`)
-    }
-
-    private async refreshClaudeToken(token: AuthToken): Promise<void> {
-        try {
-            await this.captureClaudeElectronSession(token)
-
-            const refreshToken = token.refreshToken
-            if (!refreshToken) {
-                await this.checkClaudeSessionValidity(token)
-                return
-            }
-
-            const expiry = token.expiresAt ?? 0
-            if (Date.now() < expiry - 5 * 60 * 1000) { return }
-
-            appLogger.info('TokenService', `Refreshing Claude OAuth token for ${token.id}...`)
-            await this.performClaudeRefresh(token, refreshToken)
-        } catch (error: unknown) {
-            this.handleRefreshError('Claude', token.id, error)
-        }
-    }
-
-    private async captureClaudeElectronSession(token: AuthToken) {
-        try {
-            const { session } = await import('electron')
-            if (!session) { return }
-
-            const cookies = await session.defaultSession.cookies.get({
-                url: 'https://claude.ai',
-                name: 'sessionKey'
-            })
-
-            if (cookies.length > 0 && cookies[0].value) {
-                const sessionKey = cookies[0].value
-                const existing = token.id.includes('claude') ? token : null
-                if (existing && existing.sessionToken !== sessionKey) {
-                    appLogger.info('TokenService', 'Captured new Claude sessionKey from Electron cookies')
-                    await this.authService.saveToken(existing.id, { ...existing, sessionToken: sessionKey, updatedAt: Date.now() })
-                }
-            }
-        } catch { /* ignore capture errors */ }
-    }
-
-    private async checkClaudeSessionValidity(token: AuthToken) {
-        const sessionKey = token.sessionToken
-        if (!sessionKey) { return }
-
-        const isValid = await this.validateClaudeSessionKey(sessionKey)
-        if (!isValid) {
-            appLogger.warn('TokenService', `Claude session_key for ${token.id} expired. User needs to re-authenticate via browser.`)
-        }
-    }
-
-    private async performClaudeRefresh(token: AuthToken, refreshToken: string) {
-        const response = await axios.post(CLAUDE_TOKEN_URL, {
-            client_id: CLAUDE_CLIENT_ID,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            timeout: 10000
-        })
-
-        await this.authService.saveToken(token.id, {
-            ...token,
-            accessToken: response.data.access_token,
-            refreshToken: response.data.refresh_token ?? refreshToken,
-            expiresAt: Date.now() + ((response.data.expires_in ?? 3600) * 1000),
-            email: response.data.account?.email_address ?? token.email,
-            updatedAt: Date.now()
-        })
-        appLogger.info('TokenService', `Claude OAuth token for ${token.id} refreshed successfully`)
-    }
-
-    /**
-     * Validate Claude session key by making a test request
-     */
-    private async validateClaudeSessionKey(sessionKey: string): Promise<boolean> {
-        try {
-            const response = await axios.get('https://claude.ai/api/organizations', {
-                headers: {
-                    'Cookie': `sessionKey=${sessionKey}`,
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                timeout: 5000
-            })
-            return response.status === 200
-        } catch {
-            return false
-        }
-    }
-
-    /**
-     * Refresh Copilot session token
-     */
+    // Copilot remains internal logic for now as it interacts with local Github state complexly
+    // or we can move it later. Keeping it here for safety as it wasn't requested explicitly?
+    // User asked for "process names like...". Copilot refresh logic is simple HTTP but also
+    // session state. The native service doesn't have Copilot logic implemented yet.
+    // I will keep Copilot logic here but methods are unused by refreshSingleToken.
+    // Wait, Copilot is refreshed via refreshCopilotToken which is separate loop.
     private async refreshCopilotToken(): Promise<void> {
         try {
             appLogger.debug('TokenService', 'Checking Copilot session token...')

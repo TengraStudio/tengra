@@ -1,6 +1,7 @@
 // Defer Sentry import to handle Electron's readiness
 let Sentry: typeof import('@sentry/electron/main') | null = null;
 
+import { appLogger } from '@main/logging/logger'
 import { SettingsService } from '@main/services/system/settings.service'
 import { JsonValue } from '@shared/types/common'
 import { app } from 'electron'
@@ -16,49 +17,48 @@ export class SentryService {
         this.settingsService = settingsService
     }
 
-    init() {
+    async init() {
         const settings = this.settingsService.getSettings()
 
         // Respect user privacy settings
         if (!settings.crashReporting?.enabled) {
-            console.log('[SentryService] Crash reporting is disabled by user.')
+            appLogger.info('SentryService', 'Crash reporting is disabled by user.')
             return
         }
 
         // Don't initialize in development unless forced
         if (!app.isPackaged && !process.env.FORCE_SENTRY_DEV) {
-            console.log('[SentryService] Skipping Sentry in development mode.')
+            appLogger.info('SentryService', 'Skiing Sentry in development mode.')
             return
         }
 
         if (this.isInitialized) {
-            console.log('[SentryService] Already initialized.')
+            appLogger.info('SentryService', 'Already initialized.')
             return
         }
 
         try {
             // Lazy load Sentry only when needed and app is ready
             if (!Sentry) {
-                Sentry = require('@sentry/electron/main');
+                const SentryModule = await import('@sentry/electron/main')
+                Sentry = SentryModule
             }
 
-            if (Sentry) {
-                Sentry.init({
-                    dsn: SENTRY_DSN,
-                    release: `orbit@${app.getVersion()}`,
-                    environment: app.isPackaged ? 'production' : 'development',
-                    // User-centric data is stripped by default
-                    beforeSend(event) {
-                        // Optionally strip PII or sensitive data here
-                        return event
-                    },
-                    // integrations: [Sentry.mainProcessIntegration()]
-                })
-                this.isInitialized = true
-                console.log('[SentryService] Initialized for main process.')
-            }
+            Sentry.init({
+                dsn: SENTRY_DSN,
+                release: `orbit@${app.getVersion()}`,
+                environment: app.isPackaged ? 'production' : 'development',
+                // User-centric data is stripped by default
+                beforeSend(event) {
+                    // Optionally strip PII or sensitive data here
+                    return event
+                },
+                // integrations: [Sentry.mainProcessIntegration()]
+            })
+            this.isInitialized = true
+            appLogger.info('SentryService', 'Initialized for main process.')
         } catch (error) {
-            console.error('[SentryService] Failed to initialize:', error)
+            appLogger.error('SentryService', 'Failed to initialize:', error as Error)
         }
     }
 

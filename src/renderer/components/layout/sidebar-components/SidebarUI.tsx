@@ -1,13 +1,14 @@
-import { PanelLeft,PanelLeftClose, Plus, Search } from 'lucide-react'
+import { PanelLeft, PanelLeftClose, Plus, Search } from 'lucide-react'
 import React from 'react'
 
 import { Button } from '@/components/ui/button'
+import { AppView } from '@/hooks/useAppState'
 import { cn } from '@/lib/utils'
 
 interface SidebarHeaderProps {
     isCollapsed: boolean
     toggleSidebar: () => void
-    onChangeView: (view: any) => void
+    onChangeView: (view: AppView) => void
 }
 
 export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggleSidebar, onChangeView }) => (
@@ -26,6 +27,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggl
             onClick={toggleSidebar}
             className="h-8 w-8 hover:bg-muted/10 text-muted-foreground hover:text-foreground transition-colors"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
             {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </Button>
@@ -47,6 +49,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({ isCo
                 isCollapsed ? "p-0 rounded-xl" : "rounded-xl px-4"
             )}
             title={t('sidebar.newChat')}
+            aria-label={t('sidebar.newChat')}
         >
             <Plus className={cn("w-4 h-4 transition-transform group-hover:rotate-90", !isCollapsed && "mr-2")} />
             {!isCollapsed && <span className="animate-in fade-in slide-in-from-left-2">{t('sidebar.newChat')}</span>}
@@ -63,7 +66,7 @@ interface SidebarFooterProps {
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSearch }) => {
-    if (isCollapsed) {return null}
+    if (isCollapsed) { return null }
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest px-1">

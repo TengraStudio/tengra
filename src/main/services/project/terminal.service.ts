@@ -25,7 +25,7 @@ interface IPtyModule {
 // Dynamic import for node-pty (native module)
 let pty: IPtyModule | null = null
 try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line
     pty = require('node-pty') as IPtyModule
 } catch {
     appLogger.warn('TerminalService', 'node-pty not available, terminal features disabled')

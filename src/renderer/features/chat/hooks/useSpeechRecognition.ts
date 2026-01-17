@@ -1,4 +1,4 @@
-import { useCallback,useState } from 'react'
+import { useCallback, useState } from 'react'
 
 type SpeechRecognitionResultLike = { isFinal: boolean; 0: { transcript: string } }
 type SpeechRecognitionResultListLike = { length: number;[index: number]: SpeechRecognitionResultLike }
@@ -47,8 +47,9 @@ export const useSpeechRecognition = (
         recognition.onresult = (event: SpeechRecognitionEventLike) => {
             let finalTranscript = ''
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript
+                const result = event.results[i]
+                if (result?.isFinal) {
+                    finalTranscript += result[0]?.transcript || ''
                 }
             }
             if (finalTranscript) {

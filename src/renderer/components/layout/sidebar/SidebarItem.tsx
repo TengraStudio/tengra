@@ -75,7 +75,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 
             {/* Hover Actions */}
             {!isCollapsed && actions && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center gap-1 transition-opacity bg-background/50 backdrop-blur-sm rounded-md px-1">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center gap-1 transition-opacity bg-card border border-border/50 shadow-sm rounded-md px-1 py-0.5">
                     {actions}
                 </div>
             )}

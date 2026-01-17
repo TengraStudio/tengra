@@ -1,7 +1,8 @@
 import { getErrorMessage } from '@shared/utils/error.util'
-import { AlertCircle,Brain, Loader2, Play, Terminal, User } from 'lucide-react'
-import { useEffect,useState } from 'react'
+import { AlertCircle, Brain, Loader2, Play, Terminal, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { JsonValue } from '@/types/common'
 
@@ -110,7 +111,12 @@ const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) =
     )
 }
 
-export const AgentCouncil = () => {
+interface AgentCouncilProps {
+    language?: Language
+}
+
+export const AgentCouncil: React.FC<AgentCouncilProps> = ({ language = 'en' }) => {
+    const { t } = useTranslation(language)
     const [session, setSession] = useState<LocalCouncilSession | null>(null)
     const [taskInput, setTaskInput] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
@@ -126,7 +132,7 @@ export const AgentCouncil = () => {
     }, [])
 
     const handleStart = async () => {
-        if (!taskInput.trim()) {return}
+        if (!taskInput.trim()) { return }
         setIsGenerating(true)
         try {
             const newSession = await window.electron.council.createSession(taskInput)
@@ -140,7 +146,8 @@ export const AgentCouncil = () => {
         }
     }
 
-    const activeAgentName = session?.logs && session.logs.length > 0 ? session.logs[session.logs.length - 1].agent : null
+    const lastLog = session?.logs ? session.logs[session.logs.length - 1] : undefined
+    const activeAgentName = lastLog?.agent ?? null
     const statusInfo = session ? statusConfig[session.status] : null
 
     return (
@@ -163,7 +170,7 @@ export const AgentCouncil = () => {
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:min-w-[400px]">
                         <input
                             type="text"
-                            placeholder="Describe a task for the council..."
+                            placeholder={t('council.taskPlaceholder')}
                             className="flex-1 px-4 py-2.5 bg-background/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                             value={taskInput}
                             onChange={(e) => setTaskInput(e.target.value)}
@@ -244,7 +251,7 @@ export const AgentCouncil = () => {
                     {session?.logs && session.logs.length > 0 ? (
                         session.logs.map((log, i) => {
                             const logType = log.type || 'chat'
-                            
+
                             const typeConfig = {
                                 thought: { icon: Brain, color: 'text-blue-400', bg: 'bg-blue-500/5' },
                                 tool: { icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/5' },

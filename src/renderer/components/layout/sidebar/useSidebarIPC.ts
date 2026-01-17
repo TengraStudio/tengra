@@ -1,18 +1,19 @@
-import { useEffect,useState } from 'react'
+import { IpcRendererEvent } from 'electron'
+import { useEffect, useState } from 'react'
 
 export function useSidebarIPC() {
     const [localGeneratingMap, setLocalGeneratingMap] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
-        const handleStarted = (_: any, data: { chatId: string }) => {
+        const handleStarted = (_: IpcRendererEvent, data: { chatId: string }) => {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: true }))
         }
 
-        const handleUpdate = (_: any, data: { chatId: string }) => {
+        const handleUpdate = (_: IpcRendererEvent, data: { chatId: string }) => {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: true }))
         }
 
-        const handleStatus = (_: any, data: { chatId: string, isGenerating: boolean }) => {
+        const handleStatus = (_: IpcRendererEvent, data: { chatId: string, isGenerating: boolean }) => {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: data.isGenerating }))
         }
 

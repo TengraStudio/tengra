@@ -1,19 +1,19 @@
-import { Check, Copy, ExternalLink,Play, Save, Square, Volume2, VolumeX } from 'lucide-react'
+import { Check, Copy, ExternalLink, Play, Save, Square, Volume2, VolumeX } from 'lucide-react'
 import React, { useState } from 'react'
 
 import { CodeEditor } from '@/components/ui/CodeEditor'
-import { Language,useTranslation } from '@/i18n'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { Language, useTranslation } from '@/i18n'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { normalizeLanguage } from '@/utils/language-map'
 
 interface MonacoBlockProps {
     language: string
     code: string
-    isSpeaking?: boolean
-    onSpeak?: () => void
-    onStop?: () => void
-    i18nLanguage?: Language
+    isSpeaking?: boolean | undefined
+    onSpeak?: (() => void) | undefined
+    onStop?: (() => void) | undefined
+    i18nLanguage?: Language | undefined
 }
 
 export const MonacoBlock: React.FC<MonacoBlockProps> = ({
@@ -57,9 +57,9 @@ export const MonacoBlock: React.FC<MonacoBlockProps> = ({
 
 const BlockHeader: React.FC<{
     language: string
-    isSpeaking?: boolean
-    onSpeak?: () => void
-    onStop?: () => void
+    isSpeaking?: boolean | undefined
+    onSpeak?: (() => void) | undefined
+    onStop?: (() => void) | undefined
     handleCopy: () => void
     copied: boolean
     t: (key: string) => string

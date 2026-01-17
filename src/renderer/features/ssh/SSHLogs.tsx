@@ -21,7 +21,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         const files = await window.electron.ssh.getLogFiles(connectionId)
         setLogFiles(files)
         if (files.length > 0 && !selectedLog) {
-            selectLog(files[0])
+            selectLog(files[0]!)
         }
     }
 
@@ -38,7 +38,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         }
     }
 
-    if (!active) {return null}
+    if (!active) { return null }
 
     return (
         <div className="flex h-full">

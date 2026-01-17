@@ -18,13 +18,13 @@ export function registerSettingsIpc(options: {
 
     ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
         const settings = settingsService.getSettings()
-        console.log(`[IPC] settings:get returning settings. GitHub token length: ${settings.github?.token?.length || 0}, Copilot token length: ${settings.copilot?.token?.length || 0}`);
         return settings
     }))
 
     ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
         const oldSettings = settingsService.getSettings()
-        const saved = settingsService.saveSettings(newSettings)
+        // Await the save to get the final merged settings (with preserved secrets)
+        const finalSettings = await settingsService.saveSettings(newSettings)
 
         // Audit log for sensitive settings changes
         if (auditLogService) {
@@ -40,9 +40,6 @@ export function registerSettingsIpc(options: {
             }
             if (newSettings.proxy?.key && newSettings.proxy.key !== oldSettings.proxy?.key) {
                 sensitiveChanges.push('Proxy key updated')
-            }
-            if (newSettings.copilot?.token && newSettings.copilot.token !== oldSettings.copilot?.token) {
-                sensitiveChanges.push('Copilot token updated')
             }
 
             if (sensitiveChanges.length > 0) {
@@ -64,16 +61,18 @@ export function registerSettingsIpc(options: {
                 result.catch(error => console.error('[IPC] updateOllamaConnection failed:', error))
             }
         }
-        if (newSettings.openai) { llmService.setOpenAIApiKey(newSettings.openai.apiKey) }
-        if (newSettings.anthropic) { llmService.setAnthropicApiKey(newSettings.anthropic.apiKey) }
+        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey) }
+        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey) }
+
+        // Update Copilot Service with split tokens
+        if (finalSettings.copilot?.token) {
+            copilotService.setCopilotToken(finalSettings.copilot.token)
+        }
+        if (finalSettings.github?.token) {
+            copilotService.setGithubToken(finalSettings.github.token)
+        }
 
         if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
-
-        // Update Copilot Service - ONLY use copilot_token, no fallback
-        const copilotToken = newSettings.copilot?.token
-        if (copilotToken) {
-            copilotService.setGithubToken(copilotToken)
-        }
 
         // Update Antigravity proxy settings in LLMService
         const proxyUrl = newSettings.proxy?.url || 'http://localhost:8317/v1'
@@ -81,6 +80,6 @@ export function registerSettingsIpc(options: {
         llmService.setProxySettings(proxyUrl, proxyKey)
 
         updateOpenAIConnection()
-        return saved
+        return finalSettings
     }))
 }

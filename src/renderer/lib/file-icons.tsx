@@ -31,8 +31,9 @@ import {
     type LucideIcon,
     Palette,
     Settings,
-    TestTube2} from 'lucide-react';
-import { DefaultExtensionType,defaultStyles, FileIcon as ReactFileIcon } from 'react-file-icon';
+    TestTube2
+} from 'lucide-react';
+import { DefaultExtensionType, defaultStyles, FileIcon as ReactFileIcon } from 'react-file-icon';
 
 export interface IconProps {
     size?: number;
@@ -259,9 +260,8 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
                     labelColor={color}
                     glyphColor="rgba(255,255,255,0.8)"
                     {...(defaultStyle || {})}
-                    // @ts-ignore
+                    // @ts-expect-error - ReactFileIcon width prop typing
                     width={size}
-                    // @ts-ignore
                     height={size}
                 />
             </div>

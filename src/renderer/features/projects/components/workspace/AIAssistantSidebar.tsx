@@ -2,12 +2,12 @@ import { MessageBubble } from '@renderer/features/chat/components/MessageBubble'
 import { ModelSelector } from '@renderer/features/models/components/ModelSelector';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { CouncilPanel } from '@renderer/features/projects/components/workspace/CouncilPanel';
-import { ArrowLeft,Users } from 'lucide-react';
+import { ArrowLeft, Users } from 'lucide-react';
 import React from 'react';
 
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
-import { ActivityEntry, AppSettings, CodexUsage,CouncilAgent, Message, QuotaResponse } from '@/types';
+import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, Message, QuotaResponse } from '@/types';
 
 interface AIAssistantSidebarProps {
     viewTab: 'editor' | 'council' | 'logs';
@@ -30,10 +30,10 @@ interface AIAssistantSidebarProps {
     activityLog: ActivityEntry[];
     clearLogs: () => void;
     t: (key: string) => string;
-    messages?: Message[];
-    isLoading?: boolean;
+    messages?: Message[] | undefined;
+    isLoading?: boolean | undefined;
     language: string;
-    onSourceClick?: (path: string) => void;
+    onSourceClick?: ((path: string) => void) | undefined;
 }
 
 /**
@@ -130,7 +130,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                         message={m}
                                         isLast={idx === messages.length - 1}
                                         language={language as Language}
-                                        isStreaming={isLoading && idx === messages.length - 1 && m.role === 'assistant'}
+                                        isStreaming={Boolean(isLoading && idx === messages.length - 1 && m.role === 'assistant')}
                                         onSourceClick={onSourceClick}
                                     />
                                 ))

@@ -23,7 +23,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     updateTabContent,
     emptyState
 }) => {
-    if (!activeTab) {return <>{emptyState}</>;}
+    if (!activeTab) { return <>{emptyState}</>; }
 
     if (activeTab.type === 'image') {
         return (

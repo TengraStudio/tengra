@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 interface OnboardingFlowProps {
@@ -55,6 +55,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
     };
 
     const step = STEPS[currentStep];
+    if (!step) { return null; }
 
     return (
         <Modal

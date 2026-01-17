@@ -1,13 +1,19 @@
 import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom'
-import { AgentDefinition,CouncilSession } from '@shared/types/agent'
-import { Bot, CheckCircle2, Clock, Pause,Play, RefreshCw, Sparkles } from 'lucide-react'
-import React, { useCallback,useEffect, useRef, useState } from 'react'
+import { AgentDefinition, CouncilSession } from '@shared/types/agent'
+import { Bot, CheckCircle2, Clock, Pause, Play, RefreshCw, Sparkles } from 'lucide-react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-export const AgentDashboard: React.FC = () => {
+interface AgentDashboardProps {
+    language?: Language
+}
+
+export const AgentDashboard: React.FC<AgentDashboardProps> = ({ language = 'en' }) => {
+    const { t } = useTranslation(language)
     const [goal, setGoal] = useState('')
     const [sessions, setSessions] = useState<CouncilSession[]>([])
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
@@ -63,7 +69,7 @@ export const AgentDashboard: React.FC = () => {
     }, [activeSession?.logs?.length])
 
     const handleCreateSession = async () => {
-        if (!goal.trim()) {return}
+        if (!goal.trim()) { return }
         setIsLoading(true)
         try {
             const session = await window.electron.council.createSession(goal)
@@ -87,7 +93,7 @@ export const AgentDashboard: React.FC = () => {
     }
 
     const toggleAutoRun = () => {
-        if (!activeSessionId) {return}
+        if (!activeSessionId) { return }
 
         if (isRunning) {
             window.electron.council.stopLoop(activeSessionId)
@@ -148,7 +154,7 @@ export const AgentDashboard: React.FC = () => {
                             <Textarea
                                 value={goal}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGoal(e.target.value)}
-                                placeholder="Describe a complex goal for the council..."
+                                placeholder={t('agents.complexGoalPlaceholder')}
                                 className="min-h-[60px] resize-none text-sm"
                                 onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {

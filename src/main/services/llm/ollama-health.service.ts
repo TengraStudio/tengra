@@ -20,7 +20,7 @@ export class OllamaHealthService extends BaseService {
 
     constructor(baseUrl?: string) {
         super('OllamaHealthService')
-        if (baseUrl) {this.baseUrl = baseUrl}
+        if (baseUrl) { this.baseUrl = baseUrl }
         this.logInfo('Service initialized')
     }
 
@@ -90,7 +90,7 @@ export class OllamaHealthService extends BaseService {
             clearTimeout(timeoutId)
 
             if (response.ok) {
-                const data = await response.json()
+                const data = await response.json() as { models?: unknown[] }
                 const modelsCount = data.models?.length || 0
 
                 this.status = {

@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import React, { useCallback,useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 
 export interface SidebarSectionProps {
@@ -204,6 +204,7 @@ const SidebarCollapsedSection: React.FC<{
             document.addEventListener('mousedown', handleClickOutside)
             return () => document.removeEventListener('mousedown', handleClickOutside)
         }
+        return undefined
     }, [isOpen])
 
     return (

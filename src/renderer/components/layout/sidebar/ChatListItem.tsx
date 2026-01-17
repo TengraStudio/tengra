@@ -1,4 +1,4 @@
-import { CornerUpRight, Folder as FolderIcon,MessageSquare, Pin, Trash2 } from 'lucide-react'
+import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react'
 import React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -40,28 +40,28 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
                     )}
                 </div>
                 <span className="truncate text-xs flex-1 font-medium">{chat.title || t('sidebar.newChat')}</span>
-
-                <div className="opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 absolute right-2 bg-gradient-to-l from-background to-transparent pl-2">
-                    {onMoveToFolder && folders && folders.length > 0 && (
-                        <div className="relative group/folder">
-                            <div className="p-1 hover:text-primary rounded-md"><CornerUpRight className="w-3 h-3" /></div>
-                            <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
-                                {folders.map(f => (
-                                    <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2">
-                                        <FolderIcon className="w-3 h-3 opacity-50" /> {f.name}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    <div onClick={(e) => { e.stopPropagation(); onTogglePin(chat.id, !chat.isPinned); }} className="p-1 hover:text-primary rounded-md">
-                        <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
-                    </div>
-                    <div onClick={(e) => { e.stopPropagation(); onDelete(chat.id); }} className="p-1 hover:text-destructive rounded-md">
-                        <Trash2 className="w-3 h-3" />
-                    </div>
-                </div>
             </button>
+
+            <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent pl-2">
+                {onMoveToFolder && folders && folders.length > 0 && (
+                    <div className="relative group/folder pointer-events-auto">
+                        <div className="p-1 hover:text-primary rounded-md cursor-pointer"><CornerUpRight className="w-3 h-3" /></div>
+                        <div className="hidden group-hover/folder:block absolute right-0 top-full z-50 w-32 py-1 bg-card border border-border/40 rounded-md shadow-xl -mt-1">
+                            {folders.map(f => (
+                                <div key={f.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(chat.id, f.id); }} className="px-2 py-1.5 hover:bg-primary/20 hover:text-primary cursor-pointer text-xs truncate flex items-center gap-2">
+                                    <FolderIcon className="w-3 h-3 opacity-50" /> {f.name}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <div onClick={(e) => { e.stopPropagation(); onTogglePin(chat.id, !chat.isPinned); }} className="p-1 hover:text-primary rounded-md cursor-pointer pointer-events-auto">
+                    <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
+                </div>
+                <div onClick={(e) => { e.stopPropagation(); onDelete(chat.id); }} className="p-1 hover:text-destructive rounded-md cursor-pointer pointer-events-auto">
+                    <Trash2 className="w-3 h-3" />
+                </div>
+            </div>
         </div>
     )
 }

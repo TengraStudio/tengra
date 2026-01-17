@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         downloadAutomatically: true,
         notifyOnly: false
     },
+    activeAccountId: 'default',
     general: {
         language: 'en',
         theme: 'graphite',
@@ -76,7 +77,15 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpUserServers: [],
     mcpSecurityAllowedHosts: [],
     mcpReviewPolicy: 'elevated',
-    mcpAutoExecuteSafe: true
+    mcpAutoExecuteSafe: true,
+    window: {
+        width: 1280,
+        height: 800,
+        x: 0,
+        y: 0,
+        startOnStartup: true,
+        workAtBackground: true
+    }
 }
 
 import { BaseService } from '@main/services/base.service'
@@ -401,21 +410,33 @@ export class SettingsService extends BaseService {
             this.preserveSensitiveTokens(newSettings);
         }
 
+        const currentSettings = this.settings
+
         this.settings = this.deepMergeSettings(this.settings, newSettings) as AppSettings;
 
         // Secure Storage Logic
         if (this.authService) {
             appLogger.info('SettingsService', 'saveSettings: Processing secure storage.');
-            const tokens: Record<string, string | undefined> = {
-                github_token: newSettings.github?.token,
-                copilot_token: newSettings.copilot?.token,
-                antigravity_token: newSettings.antigravity?.token,
-                openai_key: newSettings.openai?.apiKey,
-                anthropic_key: newSettings.anthropic?.apiKey,
+            const tokens: Record<string, string | undefined> = {};
 
-                groq_key: newSettings.groq?.apiKey,
-                proxy_key: (newSettings.proxy?.key && newSettings.proxy.key !== 'connected') ? newSettings.proxy.key : undefined
+            // Helper to check if changed
+            const addIfChanged = (key: string, newValue: string | undefined, oldValue: string | undefined) => {
+                if (newValue && newValue !== oldValue) {
+                    tokens[key] = newValue;
+                }
             };
+
+            addIfChanged('github_token', newSettings.github?.token, currentSettings.github?.token);
+            addIfChanged('copilot_token', newSettings.copilot?.token, currentSettings.copilot?.token);
+            addIfChanged('antigravity_token', newSettings.antigravity?.token, currentSettings.antigravity?.token);
+            addIfChanged('openai_key', newSettings.openai?.apiKey, currentSettings.openai?.apiKey);
+            addIfChanged('anthropic_key', newSettings.anthropic?.apiKey, currentSettings.anthropic?.apiKey);
+            addIfChanged('groq_key', newSettings.groq?.apiKey, currentSettings.groq?.apiKey);
+
+            // Proxy key logic
+            const newProxyKey = (newSettings.proxy?.key && newSettings.proxy.key !== 'connected') ? newSettings.proxy.key : undefined;
+            const oldProxyKey = (currentSettings.proxy?.key && currentSettings.proxy.key !== 'connected') ? currentSettings.proxy.key : undefined;
+            addIfChanged('proxy_key', newProxyKey, oldProxyKey);
 
             for (const [key, val] of Object.entries(tokens)) {
                 if (val) {
