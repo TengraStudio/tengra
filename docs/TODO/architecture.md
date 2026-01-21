@@ -4,9 +4,9 @@
 
 ### 1.1 Service Categorization
 - [x] Move services to domain folders (`services/system`, `services/data`, etc.)
-- [ ] Standardize Service Naming (`.service.ts` vs `.manager.ts`)
-    - Rename `chat-queue.manager.ts` -> `chat-queue.service.ts`
-    - Rename `migration-manager.ts` -> `migration.service.ts`
+- [x] Standardize Service Naming (`.service.ts` convention)
+    - Renamed `chat-queue.manager.ts` -> `chat-queue.service.ts` ✅
+    - Renamed `migration-manager.ts` -> `db-migration.service.ts` ✅
 
 ### 1.2 BaseService Adoption
 - [x] Extend `BaseService` for all services (30+ verified)

@@ -33,7 +33,41 @@ export const tr = {
         noThemes: 'Tema bulunamadı',
         apply: 'Temayı Uygula',
         active: 'Aktif',
-        pro: 'PRO'
+        pro: 'PRO',
+        themes: {
+            'dark-default': {
+                name: 'Koyu Varsayılan',
+                description: 'Mor vurgulara sahip varsayılan koyu tema'
+            },
+            'light-default': {
+                name: 'Açık Varsayılan',
+                description: 'Gündüz kullanımı için temiz bir açık tema'
+            },
+            'nord': {
+                name: 'Nord',
+                description: 'Arktik, kuzey-mavisi renk paleti'
+            },
+            'dracula': {
+                name: 'Dracula',
+                description: 'Canlı renklere sahip koyu bir tema'
+            },
+            'monokai': {
+                name: 'Monokai Pro',
+                description: 'Sıcak vurgulara sahip profesyonel koyu tema'
+            },
+            'github-dark': {
+                name: 'GitHub Koyu',
+                description: 'Resmi GitHub koyu teması'
+            },
+            'solarized-dark': {
+                name: 'Solarized Dark',
+                description: 'Makineler ve insanlar için hassas renkler'
+            },
+            'tokyo-night': {
+                name: 'Tokyo Gece',
+                description: 'Tokyo ışıklarını yansıtan temiz bir tema'
+            }
+        }
     },
     modelSelector: {
         searchModels: 'Model Ara...',
@@ -111,7 +145,8 @@ export const tr = {
         generate: 'LOGO OLUŞTUR',
         changeLogo: 'Logoyu Değiştir',
         noDescription: 'Açıklama belirtilmedi',
-        todoPlaceholder: 'Yapılması gereken nedir? (Enter\'a basın)'
+        todoPlaceholder: 'Yapılması gereken nedir? (Enter\'a basın)',
+        willActOn: 'Hedef:'
     },
     projectWizard: {
         title: 'Proje Sihirbazı',
@@ -217,7 +252,16 @@ export const tr = {
         added: 'Eklendi',
         deleted: 'Silindi',
         modified: 'Değiştirildi',
-        renamed: 'Yeniden Adlandırıldı'
+        renamed: 'Yeniden Adlandırıldı',
+        tracking: 'Takip',
+        upToDate: 'Güncel',
+        noRemote: 'Uzak sunucu yok',
+        pull: 'Çek',
+        push: 'İt',
+        gitStatus: {
+            pulling: 'Çekiliyor...',
+            pushing: 'İtiliyor...'
+        }
     },
     git: {
         commitGenerator: 'Git Commit Oluşturucu',
@@ -239,6 +283,7 @@ export const tr = {
         disconnect: 'Bağlantıyı Kes',
         connecting: 'Bağlanıyor...',
         connected: '{host} adresine başarıyla bağlanıldı',
+        disconnected: 'Bağlantı kesildi',
         connectionError: 'Hata: {error}',
         terminal: 'Terminal',
         files: 'Dosyalar',
@@ -246,6 +291,8 @@ export const tr = {
         packages: 'Paketler',
         logs: 'Günlükler',
         logsComingSoon: 'Günlükler yakında eklenecek...',
+        utils: 'Araçlar',
+        management: 'Yönetim',
         terminalOutput: 'Terminal çıktısı burada görünecek...',
         runCommand: 'Bir komut çalıştır...',
         noServerConnected: 'Sunucu bağlı değil.',
@@ -293,8 +340,12 @@ export const tr = {
         placeholders: {
             host: '192.168.1.1',
             port: '22',
-            username: 'root'
+            username: 'root',
+            passwordOptional: 'Anahtar kullanılıyorsa opsiyonel',
+            privateKey: '-----BEGIN RSA PRIVATE KEY-----',
+            profileName: 'Sunucum'
         },
+        profileName: 'Profil Adı',
         nginx: {
             title: 'Nginx Ters Proxy Sihirbazı',
             subtitle: 'Backend uygulamanızı bir alan adı üzerinden kolayca yayınlayın.',
@@ -450,7 +501,7 @@ export const tr = {
         voiceCloning: 'Ses Klonlama',
         voiceCloningDesc: 'Kendi sesinizi orbit ekosistemine entegre edin.',
         voiceCloningTitle: 'Kendi Sesinizi Kullanın!',
-        voiceCloningTeaser: '1 dakika boyunca konuşun ve yapay zeka sizin sesinizi taklit etsin! Bu özellik artık aktif!',
+        voiceCloningTeaser: '1 dakika boyunca konuşun ve yapay zeka sizin sesinizi taklit etsin Bu özellik artık aktif!',
         record: 'Kaydı Başlat',
         stopRecord: 'Kaydı Durdur',
         recording: 'Kaydediliyor...',
@@ -535,6 +586,24 @@ export const tr = {
         marketplaceSubtitle: 'Platforma yeni yetenekler kazandıracak binlerce servisi keşfedin.',
         searchPlaceholder: 'Servis veya araç keşfet...',
         searchTools: 'Araçları ara...',
+        storeTitle: 'MCP Araç Mağazası',
+        toolsInstalled: '{{count}} araç yüklü • Model Bağlam Protokolü sunucularına göz atın',
+        noTools: 'Araç bulunamadı',
+        features: 'ÖZELLİKLER',
+        rating: 'puan',
+        downloads: 'indirme',
+        configure: 'Yapılandır',
+        uninstall: 'Kaldır',
+        install: 'Aracı Yükle',
+        close: 'Kapat',
+        categories: {
+            all: 'Tüm Araçlar',
+            filesystem: 'Dosya Sistemi',
+            database: 'Veritabanı',
+            api: 'API\'ler',
+            development: 'Geliştirme',
+            ai: 'Yapay Zeka'
+        }
     },
     workspace: {
         editor: 'Editör',
@@ -599,6 +668,20 @@ export const tr = {
             default: 'Bir mesaj yazın...'
         },
         attachFile: 'Dosya ekle'
+    },
+    workspaceModals: {
+        mountTitle: 'Mevcut Klasör veya Sunucu Ekle',
+        existingFolder: 'Mevcut Klasör',
+        sshServer: 'SSH Sunucu',
+        folderPath: 'Klasör Yolu',
+        pick: 'Seç',
+        host: 'Host',
+        port: 'Port',
+        username: 'Kullanıcı Adı',
+        cancel: 'İptal',
+        add: 'Ekle',
+        deleteConfirm: '{name} öğesini silmek istediğinize emin misiniz?',
+        confirm: 'Onayla'
     },
     templates: {
         code: {
@@ -818,7 +901,7 @@ export const tr = {
         reviewer: 'Denetleyici',
         reviewerRole: 'Kod Kalitesi Denetçisi',
         refactorPrompt: 'Bu kod satırını iyileştir (Satır {{line}}): {{content}}',
-        welcomeMessage: 'Merhaba! Ben AI asistanın. Kodunda sana nasıl yardımcı olabilirim?',
+        welcomeMessage: 'Merhaba Ben AI asistanın. Kodunda sana nasıl yardımcı olabilirim?',
         council: 'Konsey',
         enabled: 'Aktif',
         disabled: 'Devre Dışı',
@@ -852,11 +935,33 @@ export const tr = {
         cloud: 'bulut'
     },
     modelComparison: {
-        promptPlaceholder: 'Modelleri karşılaştırmak için isteminizi girin...',
+        title: 'Model Karşılaştırma',
+        subtitle: 'Birden fazla AI modelinden gelen yanıtları yan yana karşılaştırın',
+        promptPlaceholder: 'Modelleri karşılaştırmak için bir istem girin...',
+        compare: 'Karşılaştır',
+        addModel: 'Model Ekle',
+        responsePlaceholder: 'Yanıt burada görünecek',
         copyResponse: 'Yanıtı kopyala'
     },
     council: {
-        taskPlaceholder: 'Konsey için bir görev tanımlayın...'
+        title: 'Ajan Konseyi',
+        subtitle: 'Birlikte çalışan işbirlikçi yapay zeka ajanları',
+        taskPlaceholder: 'Konsey için bir görev tanımlayın...',
+        starting: 'Başlatılıyor...',
+        start: 'Başlat',
+        liveActivity: 'Canlı Aktivite',
+        entry: 'girdi',
+        entries: 'girdi',
+        noActiveSession: 'Aktif oturum yok',
+        noActiveSessionDesc: 'Konsey ajanlarını iş başında görmek için bir görev başlatın. Aktivite günlükleri burada görünecektir.',
+        status: {
+            planning: 'Planlanıyor',
+            working: 'Çalışılıyor',
+            reviewing: 'İnceleniyor',
+            waiting_for_approval: 'Onay Bekleniyor',
+            completed: 'Tamamlandı',
+            failed: 'Başarısız'
+        }
     },
     shortcuts: {
         title: 'Klavye Kısayolları',
@@ -1001,5 +1106,31 @@ export const tr = {
         skip: 'Atla',
         next: 'İleri',
         finish: 'Bitir'
+    },
+    agentDashboard: {
+        title: 'Ajan Konseyi',
+        subtitle: 'Otonom Görev Yürütme Sistemi',
+        sessions: 'Oturumlar',
+        start: 'Başlat',
+        status: 'Durum',
+        activeAgents: 'Aktif Ajanlar',
+        stopAuto: 'Oto. Durdur',
+        autoRun: 'Oto. Çalıştır',
+        step: 'Adım',
+        currentPlan: 'Mevcut Plan',
+        selectSession: 'Başlamak için bir oturum seçin veya yeni bir oturum oluşturun.'
+    },
+    tools: {
+        usingTool: 'Araç Kullanılıyor',
+        searching: 'Web\'de Aranıyor...',
+        readingFiles: 'Dosyalar Okunuyor...',
+        executingCmd: 'Komut Yürütülüyor...',
+        screenshotting: 'Ekran Görüntüsü Alınıyor...',
+        failed: 'Başarısız',
+        completed: 'Tamamlandı',
+        input: 'GİRDİ',
+        output: 'ÇIKTI',
+        filePreview: 'Dosya Önizleme',
+        path: 'Yol:'
     }
 }

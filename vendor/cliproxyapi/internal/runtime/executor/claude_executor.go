@@ -114,7 +114,15 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	}
 	recordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		b, _ := io.ReadAll(httpResp.Body)
+		// Decode error response body (may be gzip compressed)
+		errBody, decodeErr := decodeResponseBody(httpResp.Body, httpResp.Header.Get("Content-Encoding"))
+		var b []byte
+		if decodeErr != nil {
+			b, _ = io.ReadAll(httpResp.Body)
+		} else {
+			b, _ = io.ReadAll(errBody)
+			_ = errBody.Close()
+		}
 		appendAPIResponseChunk(ctx, e.cfg, b)
 		log.Debugf("request error, error status: %d, error body: %s", httpResp.StatusCode, summarizeErrorBody(httpResp.Header.Get("Content-Type"), b))
 		err = statusErr{code: httpResp.StatusCode, msg: string(b)}
@@ -226,7 +234,15 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 	}
 	recordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		b, _ := io.ReadAll(httpResp.Body)
+		// Decode error response body (may be gzip compressed)
+		errBody, decodeErr := decodeResponseBody(httpResp.Body, httpResp.Header.Get("Content-Encoding"))
+		var b []byte
+		if decodeErr != nil {
+			b, _ = io.ReadAll(httpResp.Body)
+		} else {
+			b, _ = io.ReadAll(errBody)
+			_ = errBody.Close()
+		}
 		appendAPIResponseChunk(ctx, e.cfg, b)
 		log.Debugf("request error, error status: %d, error body: %s", httpResp.StatusCode, summarizeErrorBody(httpResp.Header.Get("Content-Type"), b))
 		if errClose := httpResp.Body.Close(); errClose != nil {

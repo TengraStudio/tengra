@@ -18,8 +18,9 @@ vi.mock('electron', () => ({
 // Mock dependencies
 const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSettings: vi.fn() } as any
 const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as any
-const mockProcessManager = { prepareTempAuthDir: vi.fn() } as any
+const mockProcessManager = {} as any
 const mockQuotaService = {} as any
+const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn() } as any
 const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any
 
 describe('Proxy-Data Integration', () => {
@@ -31,14 +32,15 @@ describe('Proxy-Data Integration', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orbit-integration-test-wiring-'))
         mockGetPath.mockReturnValue(tempDir)
         dataService = new DataService()
-        proxyService = new ProxyService(
-            mockSettingsService,
+        proxyService = new ProxyService({
+            settingsService: mockSettingsService,
             dataService,
-            mockSecurityService,
-            mockProcessManager,
-            mockQuotaService,
-            mockAuthService
-        )
+            securityService: mockSecurityService,
+            processManager: mockProcessManager,
+            quotaService: mockQuotaService,
+            authService: mockAuthService,
+            eventBus: mockEventBus
+        })
     })
 
     afterEach(() => {

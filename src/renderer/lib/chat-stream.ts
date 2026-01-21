@@ -33,7 +33,7 @@ export async function* chatStream(
     const listener = (chunk: JsonValue) => {
         const typedChunk = chunk as ChatStreamChunk;
         if (isDone) {
-            console.log(`[ChatStream] Received chunk after isDone=true for chatId: ${chatId}. Ignoring.`);
+            console.warn(`[ChatStream] Received chunk after isDone=true for chatId: ${chatId}. Ignoring.`);
             return;
         }
 
@@ -43,13 +43,13 @@ export async function* chatStream(
             return;
         }
 
-        console.log(`[ChatStream] Received chunk for ${chatId}:`, typedChunk);
+        console.warn(`[ChatStream] Received chunk for ${chatId}:`, typedChunk);
 
         if (typedChunk.done) {
-            console.log(`[ChatStream] Received DONE signal for chatId: ${chatId}`);
+            console.warn(`[ChatStream] Received DONE signal for chatId: ${chatId}`);
             isDone = true;
             if (currentResolver) {
-                console.log(`[ChatStream] Resolving currentResolver (DONE) for chatId: ${chatId}`);
+                console.warn(`[ChatStream] Resolving currentResolver (DONE) for chatId: ${chatId}`);
                 currentResolver();
                 currentResolver = null;
             }
@@ -57,10 +57,10 @@ export async function* chatStream(
         }
 
         queue.push(typedChunk);
-        console.log(`[ChatStream] Pushed chunk to queue. Queue size: ${queue.length}`);
+        console.warn(`[ChatStream] Pushed chunk to queue. Queue size: ${queue.length}`);
 
         if (currentResolver) {
-            console.log(`[ChatStream] Resolving currentResolver for chatId: ${chatId}`);
+            console.warn(`[ChatStream] Resolving currentResolver for chatId: ${chatId}`);
             currentResolver(); // Signal that data is available
             currentResolver = null;
         }
@@ -68,7 +68,7 @@ export async function* chatStream(
 
     // Subscribe using the exposed bridge method
     const unsubscribe = window.electron.onStreamChunk(listener);
-    console.log(`[ChatStream] Subscribed to streams for chatId: ${chatId}`);
+    console.warn(`[ChatStream] Subscribed to streams for chatId: ${chatId}`);
 
     // Start the stream via IPC
     window.electron.chatStream(messages, model, tools, provider, options, chatId, projectId)
@@ -96,7 +96,7 @@ export async function* chatStream(
                 if (!chunk) {continue;}
                 queueIterations++;
 
-                console.log(`[ChatStream] Yielding chunk from queue:`, chunk);
+                console.warn(`[ChatStream] Yielding chunk from queue:`, chunk);
 
                 // Inspect chunk structure and normalize keys
                 if (chunk.content !== undefined && chunk.content !== null) {
@@ -134,7 +134,7 @@ export async function* chatStream(
         // Clean up listener using the unsubscribe function
         if (typeof unsubscribe === 'function') {
             (unsubscribe as () => void)();
-            console.log(`[ChatStream] Unsubscribed from streams for chatId: ${chatId}`);
+            console.warn(`[ChatStream] Unsubscribed from streams for chatId: ${chatId}`);
         } else {
             // Fallback for older versions of the bridge
             window.electron.removeStreamChunkListener(listener);

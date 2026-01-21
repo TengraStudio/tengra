@@ -49,7 +49,7 @@ export const SidebarChatItem = React.memo(({
             {!isEditing && (
                 <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-card border border-border/50 shadow-sm rounded-md px-1 py-0.5">
                     <button
-                        onClick={e => { e.stopPropagation(); startEdit(chat.id, chat.title || '') }}
+                        onClick={e => { e.stopPropagation(); startEdit(chat.id, chat.title ?? '') }}
                         className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground pointer-events-auto"
                     >
                         <Edit2 className="w-3 h-3" />
@@ -73,7 +73,7 @@ export const SidebarChatItem = React.memo(({
                 <SidebarItem icon={MessageSquare} label="" isCollapsed={isCollapsed}>
                     <input
                         ref={editRef}
-                        defaultValue={chat.title || ''} // Uncontrolled
+                        defaultValue={chat.title ?? ''} // Uncontrolled
                         onBlur={saveEdit}
                         onKeyDown={e => {
                             if (e.key === 'Enter') { saveEdit() }

@@ -8,6 +8,7 @@ import { ToolDefinition } from '@shared/types/chat'
 import { CatchError, JsonObject } from '@shared/types/common'
 import { MCPServerConfig } from '@shared/types/settings'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 type McpToolContent = {
     type?: string
@@ -241,7 +242,7 @@ export class McpDispatcher {
         }
 
         appLogger.info('MCP', `Starting server: ${config.name} (${config.command})`)
-        const args = config.args || []
+        const args = config.args
         const env = { ...process.env, ...config.env } // Merge process env with config env
         const isWindows = process.platform === 'win32'
         let command = config.command
@@ -275,11 +276,6 @@ export class McpDispatcher {
             this.activeServers.delete(config.name)
         })
 
-        // Wait for server to potentially emit initialization messages?
-        // Basic MCP servers might not need init handshake for simple tool calls,
-        // but robust implementation would do 'initialize'.
-        // For now we assume ready-to-use stdio.
-
         this.activeServers.set(config.name, server)
         return server
     }
@@ -292,29 +288,22 @@ export class McpDispatcher {
 
         for (const line of lines) {
             if (!line.trim()) { continue }
-            try {
-                const msg = JSON.parse(line) as JsonObject
-                if (msg.jsonrpc === '2.0' && msg.id) {
-                    const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
-                    if (!msgId) { continue }
-                    const handler = this.requestQueue.get(msgId)
-                    if (handler) {
-                        this.requestQueue.delete(msgId)
-                        if (msg.error && typeof msg.error === 'object') {
-                            const message = typeof (msg.error as JsonObject).message === 'string'
-                                ? (msg.error as JsonObject).message as string
-                                : 'Unknown MCP error'
-                            handler.reject(new Error(message))
-                        } else {
-                            handler.resolve((msg.result as McpToolResult) || {})
-                        }
+            const msg = safeJsonParse<JsonObject>(line, {})
+            if (msg.jsonrpc === '2.0' && msg.id) {
+                const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
+                if (!msgId) { continue }
+                const handler = this.requestQueue.get(msgId)
+                if (handler) {
+                    this.requestQueue.delete(msgId)
+                    if (msg.error && typeof msg.error === 'object') {
+                        const message = typeof (msg.error as JsonObject).message === 'string'
+                            ? (msg.error as JsonObject).message as string
+                            : 'Unknown MCP error'
+                        handler.reject(new Error(message))
+                    } else {
+                        handler.resolve((msg.result as McpToolResult | undefined) ?? {})
                     }
-                } else {
-                    // console.log(`[MCP:${serverName}] Log:`, line)
                 }
-            } catch {
-                // Not JSON, maybe raw output
-                // console.log(`[MCP:${serverName}] Raw:`, line)
             }
         }
     }

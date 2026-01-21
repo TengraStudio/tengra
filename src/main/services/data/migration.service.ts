@@ -9,6 +9,7 @@ import * as path from 'path'
 import { appLogger } from '@main/logging/logger'
 import { DataService } from '@main/services/data/data.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 export interface Migration {
     version: number
@@ -60,7 +61,7 @@ export class MigrationService {
             }
 
             const content = await fs.promises.readFile(this.migrationsPath, 'utf8')
-            this.applied = JSON.parse(content)
+            this.applied = safeJsonParse<MigrationRecord[]>(content, [])
         } catch (error) {
             appLogger.error('MigrationService', `Failed to load migration history: ${getErrorMessage(error as Error)}`)
             this.applied = []

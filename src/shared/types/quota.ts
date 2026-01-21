@@ -47,11 +47,16 @@ export interface QuotaResponse {
     email?: string;
     usageSource?: 'openai' | 'anthropic' | 'copilot' | 'local' | 'none' | 'chatgpt';
     copilot?: CopilotQuota;
-    claudeQuota?: {
-        success: boolean;
-        fiveHour?: { utilization: number; resetsAt: string };
-        sevenDay?: { utilization: number; resetsAt: string };
-    };
+    claudeQuota?: ClaudeQuota;
+}
+
+export interface ClaudeQuota {
+    success: boolean;
+    fiveHour?: { utilization: number; resetsAt: string };
+    sevenDay?: { utilization: number; resetsAt: string };
+    accountId?: string;
+    email?: string;
+    error?: string;
 }
 
 export interface CopilotQuota {
@@ -61,6 +66,20 @@ export interface CopilotQuota {
     chat_enabled?: boolean;
     code_search_enabled?: boolean;
     copilot_plan?: string;
+    seat_breakdown?: {
+        total_seats: number;
+        active_seats: number;
+        inactive_seats: number;
+        unassigned_seats: number;
+        pending_invitations: number;
+        plan_type?: string;
+    };
+    rate_limit?: {
+        limit: number;
+        remaining: number;
+        reset: string;
+    };
+    error?: string;
 }
 
 export interface CodexUsage {
@@ -78,6 +97,7 @@ export interface CodexUsage {
     weeklyResetAt?: string;
     resetAt?: string;
     planType?: string;
+    error?: string;
 }
 
 export interface ModelGroup {

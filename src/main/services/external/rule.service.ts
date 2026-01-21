@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { appLogger } from '@main/logging/logger'
 import { isNodeError } from '@shared/utils/error.util';
 
 export interface WorkspaceRules {
@@ -30,7 +31,7 @@ export class RuleService {
             }
 
             // Read fresh content
-            console.log(`[RuleService] Loading rules from ${rulesPath}`);
+            appLogger.info('rule.service', `[RuleService] Loading rules from ${rulesPath}`);
             const content = await fs.readFile(rulesPath, 'utf-8');
 
             // Basic sanitization or parsing could happen here

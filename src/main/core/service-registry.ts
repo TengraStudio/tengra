@@ -16,17 +16,14 @@ export class ServiceRegistry extends EventEmitter {
     private services: Map<string, unknown> = new Map();
     private metadata: Map<string, ServiceMetadata> = new Map();
 
-    private static instance: ServiceRegistry;
+    private static instance?: ServiceRegistry;
 
     private constructor() {
         super();
     }
 
     public static getInstance(): ServiceRegistry {
-        if (!ServiceRegistry.instance) {
-            ServiceRegistry.instance = new ServiceRegistry();
-        }
-        return ServiceRegistry.instance;
+        return ServiceRegistry.instance ??= new ServiceRegistry();
     }
 
     /**
@@ -43,8 +40,8 @@ export class ServiceRegistry extends EventEmitter {
         this.services.set(id, instance);
         this.metadata.set(id, {
             id,
-            version: metadata?.version || '1.0.0',
-            tags: metadata?.tags || [],
+            version: metadata?.version ?? '1.0.0',
+            tags: metadata?.tags ?? [],
             description: metadata?.description
         });
 

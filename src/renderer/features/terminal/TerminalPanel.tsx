@@ -86,27 +86,27 @@ const TerminalSession = memo(({
     useEffect(() => {
         // Use global registry to prevent duplicate sessions even across remounts
         if (initializedTerminals.has(tab.id)) {
-            console.log(`[TerminalSession] Terminal ${tab.id} already initialized globally, skipping`)
+            console.warn(`[TerminalSession] Terminal ${tab.id} already initialized globally, skipping`)
             return
         }
 
         if (initializingTerminals.has(tab.id)) {
-            console.log(`[TerminalSession] Terminal ${tab.id} is already initializing, skipping`)
+            console.warn(`[TerminalSession] Terminal ${tab.id} is already initializing, skipping`)
             return
         }
 
         if (!containerRef.current) {
-            console.log(`[TerminalSession] No container for tab ${tab.id}, skipping`)
+            console.warn(`[TerminalSession] No container for tab ${tab.id}, skipping`)
             return
         }
 
         // Prevent multiple initializations for the same tab
         if (isInitializedRef.current) {
-            console.log(`[TerminalSession] Already initialized locally for tab ${tab.id}, skipping`)
+            console.warn(`[TerminalSession] Already initialized locally for tab ${tab.id}, skipping`)
             return
         }
 
-        console.log(`[TerminalSession] Initializing terminal for tab ${tab.id}`)
+        console.warn(`[TerminalSession] Initializing terminal for tab ${tab.id}`)
         isInitializedRef.current = true
         initializingTerminals.add(tab.id)
 
@@ -168,7 +168,7 @@ const TerminalSession = memo(({
                 }
 
                 // Create the terminal session
-                console.log(`[TerminalSession] Creating terminal session: ${tab.id}`)
+                console.warn(`[TerminalSession] Creating terminal session: ${tab.id}`)
                 const result = await window.electron.terminal.create({
                     id: tab.id,
                     shell: tab.type,
@@ -230,7 +230,7 @@ const TerminalSession = memo(({
             }
         }
 
-        initSession()
+        void initSession()
 
         // Cleanup
         return () => {
@@ -287,7 +287,7 @@ const TerminalSession = memo(({
                 if (detail?.id === tab.id) {
                     // Write exit message to terminal
                     if (xtermRef.current) {
-                        xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code || 0}]\x1b[0m\r\n`)
+                        xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code ?? 0}]\x1b[0m\r\n`)
                     }
                     onClose()
                 }
@@ -402,13 +402,13 @@ export function TerminalPanel({
         const loadShells = async () => {
             // Prevent multiple simultaneous terminal creations
             if (isCreatingRef.current || hasAutoCreatedRef.current) {
-                console.log('[TerminalPanel] Already creating or has created, skipping')
+                console.warn('[TerminalPanel] Already creating or has created, skipping')
                 return
             }
 
             // Double-check tabs length to prevent race conditions
             if (tabs.length > 0) {
-                console.log(`[TerminalPanel] Tabs already exist (${tabs.length}), skipping auto-create`)
+                console.warn(`[TerminalPanel] Tabs already exist (${tabs.length}), skipping auto-create`)
                 return
             }
 
@@ -425,7 +425,7 @@ export function TerminalPanel({
 
                 // Only auto-create if panel is open, no tabs exist, and we have shells
                 if (isOpen && tabs.length === 0 && shells.length > 0) {
-                    console.log('[TerminalPanel] Auto-creating terminal')
+                    console.warn('[TerminalPanel] Auto-creating terminal')
                     isCreatingRef.current = true
                     hasAutoCreatedRef.current = true
                     setTimeout(() => {
@@ -433,7 +433,7 @@ export function TerminalPanel({
                         if (tabs.length === 0 && shells[0]) {
                             createTerminal(shells[0].id)
                         } else {
-                            console.log('[TerminalPanel] Tabs appeared before creation, cancelling')
+                            console.warn('[TerminalPanel] Tabs appeared before creation, cancelling')
                             hasAutoCreatedRef.current = false
                         }
                         // Reset creating flag after a delay to allow state to update
@@ -449,7 +449,7 @@ export function TerminalPanel({
             }
         }
         if (isOpen) {
-            loadShells()
+            void loadShells()
         }
     }, [isOpen, tabs.length]) // Removed createTerminal from dependencies to prevent infinite loop
 
@@ -466,7 +466,7 @@ export function TerminalPanel({
         setTabs(prev => {
             const newTabs = prev.filter(t => t.id !== id)
             if (activeTabId === id && newTabs.length > 0) {
-                setActiveTabId(newTabs[newTabs.length - 1]!.id)
+                setActiveTabId(newTabs[newTabs.length - 1]?.id)
             } else if (newTabs.length === 0) {
                 setActiveTabId(null)
             }
@@ -609,7 +609,7 @@ export function TerminalPanel({
                         <Terminal className="w-12 h-12 mb-4 opacity-20" />
                         <p className="text-sm">No active terminal sessions</p>
                         <button
-                            onClick={() => createTerminal(availableShells[0]!.id || 'powershell')}
+                            onClick={() => createTerminal(availableShells[0]?.id || 'powershell')}
                             className="mt-4 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors"
                         >
                             Start New Session

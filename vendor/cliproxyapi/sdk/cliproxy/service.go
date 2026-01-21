@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/api"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/runtime/executor"
@@ -105,6 +106,8 @@ func newDefaultAuthManager() *sdkAuth.Manager {
 		sdkAuth.NewCodexAuthenticator(),
 		sdkAuth.NewClaudeAuthenticator(),
 		sdkAuth.NewQwenAuthenticator(),
+		sdkAuth.NewIFlowAuthenticator(),
+		sdkAuth.NewAntigravityAuthenticator(),
 	)
 }
 
@@ -371,7 +374,7 @@ func (s *Service) ensureExecutorsForAuth(a *coreauth.Auth) {
 		return
 	case "antigravity":
 		s.coreManager.RegisterExecutor(executor.NewAntigravityExecutor(s.cfg))
-	case "claude":
+	case "claude", "anthropic":
 		s.coreManager.RegisterExecutor(executor.NewClaudeExecutor(s.cfg))
 	case "codex":
 		s.coreManager.RegisterExecutor(executor.NewCodexExecutor(s.cfg))
@@ -393,6 +396,7 @@ func (s *Service) rebindExecutors() {
 	if s == nil || s.coreManager == nil {
 		return
 	}
+	s.coreManager.RegisterExecutor(executor.NewAntigravityExecutor(s.cfg))
 	auths := s.coreManager.List()
 	for _, auth := range auths {
 		s.ensureExecutorsForAuth(auth)
@@ -426,8 +430,11 @@ func (s *Service) Run(ctx context.Context) error {
 		}
 	}()
 
-	if err := s.ensureAuthDir(); err != nil {
-		return err
+	// Only ensure auth directory exists if not using HTTP auth store
+	if s.cfg.AuthDir != "" {
+		if err := s.ensureAuthDir(); err != nil {
+			return err
+		}
 	}
 
 	s.applyRetryConfig(s.cfg)
@@ -436,6 +443,7 @@ func (s *Service) Run(ctx context.Context) error {
 		if errLoad := s.coreManager.Load(ctx); errLoad != nil {
 			log.Warnf("failed to load auth store: %v", errLoad)
 		}
+		s.ensureAntigravityAuth(ctx)
 	}
 
 	tokenResult, err := s.tokenProvider.Load(ctx, s.cfg)
@@ -581,6 +589,25 @@ func (s *Service) Run(ctx context.Context) error {
 		interval := 15 * time.Minute
 		s.coreManager.StartAutoRefresh(context.Background(), interval)
 		log.Infof("core auth auto-refresh started (interval=%s)", interval)
+
+		// Periodic reload to pick up new accounts from HTTP store or Disk during runtime.
+		// Watcher handles files, but for HTTP store we need a pull for new accounts.
+		go func() {
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					if errLoad := s.coreManager.Load(ctx); errLoad != nil {
+						log.Warnf("periodic auth reload failed: %v", errLoad)
+					} else {
+						s.rebindExecutors()
+					}
+				}
+			}
+		}()
 	}
 
 	select {
@@ -737,8 +764,24 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		models = executor.FetchAntigravityModels(ctx, a, s.cfg)
 		cancel()
+		if len(models) == 0 {
+			// Fallback for when ADC is missing or fails
+			now := time.Now().Unix()
+			models = []*ModelInfo{
+				{ID: "gemini-3-flash", Object: "model", Created: now, OwnedBy: "antigravity", Type: "antigravity", DisplayName: "Gemini 3 Flash"},
+				{ID: "gemini-3-pro-high", Object: "model", Created: now, OwnedBy: "antigravity", Type: "antigravity", DisplayName: "Gemini 3 Pro High"},
+				{ID: "gemini-3-pro-mid", Object: "model", Created: now, OwnedBy: "antigravity", Type: "antigravity", DisplayName: "Gemini 3 Pro Mid"},
+			}
+			log.Infof("Antigravity: using fallback models (count=%d)", len(models))
+		} else {
+			log.Infof("Antigravity: using fetched models (count=%d)", len(models))
+		}
 		models = applyExcludedModels(models, excluded)
-	case "claude":
+		log.Infof("Antigravity: after exclusions, count=%d, authID=%s, prefix=%s", len(models), a.ID, a.Prefix)
+		for _, m := range models {
+			log.Infof("Antigravity: model %s will be registered (prefix=%s)", m.ID, a.Prefix)
+		}
+	case "claude", "anthropic":
 		models = registry.GetClaudeModels()
 		if entry := s.resolveConfigClaudeKey(a); entry != nil {
 			if len(entry.Models) > 0 {
@@ -853,7 +896,12 @@ func (s *Service) registerModelsForAuth(a *coreauth.Auth) {
 		if key == "" {
 			key = strings.ToLower(strings.TrimSpace(a.Provider))
 		}
-		GlobalModelRegistry().RegisterClient(a.ID, key, applyModelPrefixes(models, a.Prefix, s.cfg != nil && s.cfg.ForceModelPrefix))
+		prefixedModels := applyModelPrefixes(models, a.Prefix, s.cfg != nil && s.cfg.ForceModelPrefix)
+		log.Debugf("RegisterModels: clientID=%s, provider=%s, prefix=%s, modelCount=%d", a.ID, key, a.Prefix, len(prefixedModels))
+		for _, m := range prefixedModels {
+			log.Debugf("RegisterModels: registering modelID=%s for clientID=%s", m.ID, a.ID)
+		}
+		GlobalModelRegistry().RegisterClient(a.ID, key, prefixedModels)
 		return
 	}
 
@@ -1281,4 +1329,38 @@ func applyOAuthModelMappings(cfg *config.Config, provider, authKind string, mode
 		out = append(out, &clone)
 	}
 	return out
+}
+
+func (s *Service) ensureAntigravityAuth(ctx context.Context) {
+	if s == nil || s.coreManager == nil {
+		return
+	}
+
+	// Check if any Antigravity auth exists
+	auths := s.coreManager.List()
+	for _, a := range auths {
+		if strings.EqualFold(a.Provider, "antigravity") && !a.Disabled {
+			return
+		}
+	}
+
+	// Create default auth
+	now := time.Now().UTC()
+	defaultAuth := &coreauth.Auth{
+		ID:        uuid.NewString(),
+		Provider:  "antigravity",
+		Label:     "Antigravity (Default)",
+		Status:    coreauth.StatusActive,
+		CreatedAt: now,
+		UpdatedAt: now,
+		Prefix:    "antigravity", // Ensure models are registered with antigravity/ prefix
+		// AccountType: "adc", // Not direct field in Auth struct, usually inferred from metadata/attributes or missing means default
+		Metadata: map[string]any{
+			"account_type": "adc",
+		},
+	}
+
+	log.Infof("registering default Antigravity auth: %s", defaultAuth.ID)
+	// Use applyCoreAuthAddOrUpdate to ensure executor and models are also registered
+	s.applyCoreAuthAddOrUpdate(ctx, defaultAuth)
 }

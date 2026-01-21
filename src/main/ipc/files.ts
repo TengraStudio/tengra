@@ -10,11 +10,11 @@ export function registerFilesIpc(
 ) {
     ipcMain.handle('files:selectDirectory', async () => {
         const win = getMainWindow()
-        if (!win) {return { success: false }}
+        if (!win) { return { success: false } }
         const result = await dialog.showOpenDialog(win, {
             properties: ['openDirectory']
         })
-        if (result.canceled) {return { success: false }}
+        if (result.canceled) { return { success: false } }
         const chosenPath = result.filePaths[0]
         if (chosenPath) {
             allowedRoots.add(resolve(chosenPath))
@@ -61,14 +61,14 @@ export function registerFilesIpc(
 
     ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
         const win = getMainWindow()
-        if (!win) {return { success: false }}
+        if (!win) { return { success: false } }
 
         // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
         // Actually for a stream we should probably just return 'started' and emit events
         // But handling the promise ensures strictly sequential if needed.
         // Better: fire and forget the search, let generic events handle results.
 
-        fileSystemService.searchFilesStream(rootPath, pattern, (filePath) => {
+        void fileSystemService.searchFilesStream(rootPath, pattern, (filePath) => {
             if (!win.isDestroyed()) {
                 win.webContents.send(`files:search-result:${jobId}`, filePath)
             }
@@ -76,6 +76,8 @@ export function registerFilesIpc(
             if (!win.isDestroyed()) {
                 win.webContents.send(`files:search-complete:${jobId}`)
             }
+        }).catch((err: Error) => {
+            console.error('File search failed:', err)
         })
 
         return { success: true, jobId }

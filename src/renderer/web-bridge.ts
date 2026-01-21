@@ -3,7 +3,7 @@ import type { CouncilSession } from '@shared/types/agent'
 import type { Chat, Folder, Message, ToolCall, ToolDefinition, ToolResult } from '@shared/types/chat'
 import type { AuthStatus, IpcValue } from '@shared/types/common'
 import type { Project, ProjectAnalysis } from '@shared/types/project'
-import type { CopilotQuota, QuotaResponse } from '@shared/types/quota'
+import type { ClaudeQuota, CodexUsage } from '@shared/types/quota'
 import type { AppSettings } from '@shared/types/settings'
 import type { IpcRendererEvent } from 'electron'
 
@@ -11,17 +11,18 @@ import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh'
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
-    minimize: () => console.log('minimize'),
-    maximize: () => console.log('maximize'),
-    close: () => console.log('close'),
-    resizeWindow: (res: string) => console.log('resize', res),
-    toggleCompact: (enabled: boolean) => console.log('compact', enabled),
+    minimize: () => console.warn('minimize'),
+    maximize: () => console.warn('maximize'),
+    close: () => console.warn('close'),
+    resizeWindow: (res: string) => console.warn('resize', res),
+    toggleCompact: (enabled: boolean) => console.warn('compact', enabled),
 
     githubLogin: async (_appId?: 'profile' | 'copilot') => ({ device_code: '123', user_code: 'ABC', verification_uri: 'http://locahost', expires_in: 900, interval: 5 }),
     pollToken: async (_deviceCode: string, _interval: number, _appId?: 'profile' | 'copilot') => ({ success: true, token: 'mock-token' }),
     antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
     claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    claudeBrowserLogin: async () => ({ sessionKey: 'mock-key', status: 'success' }),
     anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
     codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
@@ -37,6 +38,9 @@ export const webElectronMock: ElectronAPI = {
         codex: false
     } as AuthStatus),
     deleteProxyAuthFile: async (_name: string) => ({ success: true }),
+    syncAuthFiles: async () => ({ success: true }),
+    saveClaudeSession: async () => ({ success: true }),
+    triggerClaudeSessionCapture: async () => ({ success: true }),
 
     // Linked Accounts API (New Multi-Account System)
     getLinkedAccounts: async (_provider?: string) => [],
@@ -46,6 +50,7 @@ export const webElectronMock: ElectronAPI = {
     unlinkAccount: async (_accountId: string) => ({ success: true }),
     unlinkProvider: async (_provider: string) => ({ success: true }),
     hasLinkedAccount: async (_provider: string) => false,
+    getAccountsByProvider: async (_provider: string) => [],
 
     code: {
         scanTodos: async (_rootPath: string) => [],
@@ -108,26 +113,48 @@ export const webElectronMock: ElectronAPI = {
 
     getProxyModels: async () => [],
     getQuota: async (_provider?: string) => ({
-        status: 'ok',
-        next_reset: new Date().toISOString(),
-        models: [],
-        limit: 100,
-        remaining: 100,
-        reset: new Date().toISOString()
-    } as QuotaResponse),
+        accounts: [{
+            status: 'ok',
+            next_reset: new Date().toISOString(),
+            models: [],
+            accountId: 'mock-account',
+            email: 'mock@example.com'
+        }]
+    }),
     getClaudeQuota: async () => ({
-        success: true,
-        fiveHour: { utilization: 0, resetsAt: new Date().toISOString() },
-        sevenDay: { utilization: 0, resetsAt: new Date().toISOString() }
+        accounts: [{
+            success: true,
+            fiveHour: { utilization: 0, resetsAt: new Date().toISOString() },
+            sevenDay: { utilization: 0, resetsAt: new Date().toISOString() },
+            accountId: 'mock-claude',
+            email: 'mock@claude.ai'
+        } as ClaudeQuota]
     }),
     getCopilotQuota: async () => ({
-        remaining: 100,
-        limit: 100,
-        chat_enabled: true,
-        code_search_enabled: true,
-        copilot_plan: 'business'
-    } as CopilotQuota),
-    getCodexUsage: async () => ({}),
+        accounts: [{
+            remaining: 100,
+            limit: 100,
+            chat_enabled: true,
+            code_search_enabled: true,
+            copilot_plan: 'business',
+            accountId: 'mock-copilot',
+            email: 'mock@github.com'
+        }]
+    }),
+    getCodexUsage: async () => ({
+        accounts: [{
+            usage: {
+                dailyUsage: 0,
+                weeklyUsage: 0,
+                dailyLimit: 100,
+                weeklyLimit: 500,
+                remainingRequests: 100,
+                remainingTokens: 100000
+            } as CodexUsage,
+            accountId: 'mock-codex',
+            email: 'mock@openai.com'
+        }]
+    }),
     checkUsageLimit: async (_provider: string, _model: string) => ({ allowed: true }),
     getUsageCount: async (_period: 'hourly' | 'daily' | 'weekly', _provider?: string, _model?: string) => 0,
     importChatHistory: async (_provider: string) => ({ success: true }),
@@ -209,7 +236,7 @@ export const webElectronMock: ElectronAPI = {
         updateProject: async (_id: string, _updates: Partial<Project>) => { },
         deleteProject: async (_id: string) => { },
         archiveProject: async (_id: string, _isArchived: boolean) => { },
-        createFolder: async (_name: string, _color?: string) => ({ id: '1', name: _name, color: _color || 'blue', createdAt: new Date(), updatedAt: new Date() } as Folder),
+        createFolder: async (_name: string, _color?: string) => ({ id: '1', name: _name, color: _color ?? 'blue', createdAt: new Date(), updatedAt: new Date() } as Folder),
         deleteFolder: async (_id: string) => { },
         updateFolder: async (_id: string, _updates: Partial<Folder>) => { },
 
@@ -329,7 +356,7 @@ export const webElectronMock: ElectronAPI = {
     },
 
     executeTools: async (_toolName: string, _args: Record<string, IpcValue>, _toolCallId?: string) => ({
-        toolCallId: _toolCallId || 'mock',
+        toolCallId: _toolCallId ?? 'mock',
         name: _toolName,
         success: true,
         result: null
@@ -354,6 +381,7 @@ export const webElectronMock: ElectronAPI = {
     },
 
     captureScreenshot: async () => ({ success: true }),
+    captureCookies: async (_url: string, _timeoutMs?: number) => ({ success: true }),
     openExternal: (_url: string) => { },
     openTerminal: async (_command: string) => true,
     runCommand: async (_command: string, _args: string[], _cwd?: string) => ({ stdout: '', stderr: '', code: 0 }),
@@ -407,7 +435,8 @@ export const webElectronMock: ElectronAPI = {
     collaboration: {
         run: async (_request: { messages: Message[]; models: Array<{ provider: string; model: string }>; strategy?: string }) => ({
             response: 'Mock collaboration response',
-            modelContributions: []
+            modelContributions: [],
+            responses: []
         }),
         getProviderStats: async () => [],
         getActiveTaskCount: async () => 0,
@@ -436,8 +465,8 @@ export const webElectronMock: ElectronAPI = {
     on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { }
 }
 
-if (typeof window !== 'undefined' && !(window as any).electron) {
-    (window as any).electron = webElectronMock
+if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).electron) {
+    (window as unknown as Record<string, unknown>).electron = webElectronMock
 }
 
 export default webElectronMock

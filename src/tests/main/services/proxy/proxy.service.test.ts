@@ -5,6 +5,7 @@ import { DeviceCodeResponse, ProxyService } from '@main/services/proxy/proxy.ser
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { SecurityService } from '@main/services/security/security.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { net } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -42,6 +43,7 @@ describe('ProxyService', () => {
     let mockSecurityService: SecurityService;
     let mockProcessManager: ProxyProcessManager;
     let mockQuotaService: QuotaService;
+    let mockEventBus: EventBusService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -61,27 +63,35 @@ describe('ProxyService', () => {
             start: vi.fn().mockResolvedValue({ running: true }),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockReturnValue({ running: false }),
-            prepareTempAuthDir: vi.fn().mockResolvedValue(undefined),
             generateConfig: vi.fn().mockResolvedValue(undefined),
         } as unknown as ProxyProcessManager;
 
         mockQuotaService = {
             getQuota: vi.fn(),
             getAntigravityAvailableModels: vi.fn().mockResolvedValue([]),
-            getCopilotQuota: vi.fn().mockResolvedValue({ success: false }),
-            getClaudeQuota: vi.fn().mockResolvedValue({ success: false }),
+            getCopilotQuota: vi.fn().mockResolvedValue({ accounts: [] }),
+            getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
+            fetchCodexUsage: vi.fn().mockResolvedValue({}),
+            extractCodexUsageFromWham: vi.fn().mockReturnValue({}),
         } as unknown as QuotaService;
+
+        mockEventBus = {
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+        } as unknown as EventBusService;
 
         const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any
 
-        proxyService = new ProxyService(
-            mockSettingsService,
-            mockDataService,
-            mockSecurityService,
-            mockProcessManager,
-            mockQuotaService,
-            mockAuthService
-        );
+        proxyService = new ProxyService({
+            settingsService: mockSettingsService,
+            dataService: mockDataService,
+            securityService: mockSecurityService,
+            processManager: mockProcessManager,
+            quotaService: mockQuotaService,
+            authService: mockAuthService,
+            eventBus: mockEventBus
+        });
     });
 
     it('should initialize correctly', () => {
@@ -93,6 +103,7 @@ describe('ProxyService', () => {
             const mockReq = {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
                 end: vi.fn().mockReturnThis()
             } as any;
 
@@ -120,6 +131,7 @@ describe('ProxyService', () => {
             const mockReq = {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
                 end: vi.fn().mockReturnThis()
             } as any;
 

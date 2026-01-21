@@ -6,6 +6,7 @@ import * as https from 'https';
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger'
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -78,7 +79,7 @@ export class FileManagementService {
     watchFolder(dir: string): ServiceResponse {
         try {
             watch(dir, (eventType, filename) => {
-                console.log(`Folder changed: ${eventType} on ${filename}`);
+                appLogger.info('file.service', `Folder changed: ${eventType} on ${filename}`);
             });
             return { success: true, message: `Watching ${dir} for changes...` };
         } catch (e) {

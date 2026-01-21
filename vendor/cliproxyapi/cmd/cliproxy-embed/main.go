@@ -29,12 +29,16 @@ func main() {
 	var healthRoute bool
 	var authStorePath string
 	var authDir string
+	var authAPIPort int
+	var authAPIKey string
 
 	flag.StringVar(&configPath, "config", "config.yaml", "Path to CLIProxyAPI config file")
 	flag.IntVar(&listenPort, "port", 0, "Override listen port (optional)")
 	flag.BoolVar(&healthRoute, "health", true, "Expose /healthz route")
 	flag.StringVar(&authStorePath, "auth-store", "", "Path to encrypted auth store file")
 	flag.StringVar(&authDir, "auth-dir", "", "Path to auth working directory (optional)")
+	flag.IntVar(&authAPIPort, "auth-api-port", 0, "Port of Auth API HTTP server (for database auth)")
+	flag.StringVar(&authAPIKey, "auth-api-key", "", "API key for Auth API HTTP server")
 	flag.Parse()
 
 	// Try to load .env from project root (4 levels up) or current dir
@@ -60,7 +64,15 @@ func main() {
 		cfg.Port = listenPort
 	}
 
-	if authStorePath != "" {
+	// Use HTTP auth store if auth API port is provided
+	if authAPIPort > 0 {
+		store, errStore := NewHTTPAuthStore(authAPIPort, authAPIKey)
+		if errStore != nil {
+			log.Fatalf("failed to initialize HTTP auth store: %v", errStore)
+		}
+		sdkAuth.RegisterTokenStore(store)
+		log.Printf("Using HTTP auth store on port %d", authAPIPort)
+	} else if authStorePath != "" {
 		rawKey := strings.TrimSpace(os.Getenv("CLIPROXY_AUTH_KEY"))
 		if rawKey == "" {
 			log.Printf("auth store configured but CLIPROXY_AUTH_KEY is empty; falling back to default token store")

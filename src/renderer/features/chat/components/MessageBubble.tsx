@@ -1,5 +1,6 @@
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import DOMPurify from 'dompurify'
-import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronUp, Clock, Code2, Copy, Eye, FileCode, ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
+import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Code2, Copy, Eye, FileCode, ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import mermaid from 'mermaid'
 import { Highlight, themes } from 'prism-react-renderer'
 import { isValidElement, memo, useEffect, useId, useMemo, useState } from 'react'
@@ -143,7 +144,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
                 setError(message)
             }
         }
-        render()
+        void render()
     }, [code, id])
 
     if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
@@ -212,12 +213,23 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
     const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
     const [showRawMarkdown, setShowRawMarkdown] = useState(false)
     const [isContentExpanded, setIsContentExpanded] = useState(false)
+    const [variantIndex, setVariantIndex] = useState(0)
+
+    const variants = message.variants ?? []
+    const hasVariants = variants.length > 1
+    const activeVariant = hasVariants ? variants[variantIndex] : null
+
+    // Determine content to display logic
+    // If we have an active variant, use its content (string).
+    // Otherwise use message.content (string or array)
+    const rawContent = activeVariant ? activeVariant.content : message.content
+    const displayModel = activeVariant?.model || message.model
 
     const COLLAPSE_THRESHOLD = 30
 
     const getAssistantLogo = () => {
         if (isUser) { return null }
-        const modelName = (message.model || '').toString().toLowerCase()
+        const modelName = (displayModel ?? '').toString().toLowerCase()
         const inferredProvider = modelName.startsWith('gpt-') || modelName.startsWith('o1-')
             ? 'openai'
             : modelName.startsWith('claude-')
@@ -315,29 +327,29 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
     }
 
     const { thought, plan, displayContent } = useMemo(() => {
-        let content = typeof message.content === 'string'
-            ? message.content
-            : Array.isArray(message.content)
-                ? message.content.map((c) => {
+        let content = typeof rawContent === 'string'
+            ? rawContent
+            : Array.isArray(rawContent)
+                ? rawContent.map((c) => {
                     if (typeof c === 'string') { return c }
                     return typeof c.text === 'string' ? c.text : ''
                 }).join('')
                 : ''
-        let thought = message.reasoning || null
+        let thought = message.reasoning ?? null
         let plan = null
 
         // If no structured reasoning, try to extract from content (Ollama fallback)
         if (!thought) {
             const thinkMatch = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content)
             if (thinkMatch) {
-                thought = thinkMatch[1] || null
+                thought = thinkMatch[1] ?? null
                 content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, '')
             }
         }
 
         const planMatch = /<plan>([\s\S]*?)(?:<\/plan>|$)/.exec(content)
         if (planMatch) {
-            plan = planMatch[1] || null
+            plan = planMatch[1] ?? null
             content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, '')
         }
         return {
@@ -345,7 +357,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
             plan,
             displayContent: content.trim()
         }
-    }, [message.content, message.reasoning, streamingReasoning])
+    }, [rawContent, message.content, message.reasoning, streamingReasoning])
 
     // During render, determine if thought should be auto-expanded
     const shouldAutoExpand = isLast && thought && !displayContent && !isThoughtExpanded
@@ -358,7 +370,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
         return undefined
     }, [shouldAutoExpand])
 
-    const lineCount = displayContent?.split('\n').length || 0
+    const lineCount = displayContent?.split('\n').length ?? 0
     const isLongContent = lineCount > COLLAPSE_THRESHOLD
     const shouldShowCollapsed = isLongContent && !isContentExpanded && !isUser
     const visibleContent = shouldShowCollapsed
@@ -382,11 +394,13 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
             // Try parsing JSON from error
             const jsonMatch = displayContent.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                const errData = JSON.parse(jsonMatch[0]);
+                const errData = safeJsonParse<Record<string, unknown>>(jsonMatch[0], {})
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const errorObj = (errData.error || errData) as any
                 return {
-                    message: errData.error?.message || errData.message || t('messageBubble.quotaExceeded'),
-                    resets_at: errData.error?.resets_at || errData.resets_at,
-                    model: errData.error?.model || errData.model
+                    message: errorObj.message || t('messageBubble.quotaExceeded'),
+                    resets_at: errorObj.resets_at,
+                    model: errorObj.model
                 };
             }
         } catch { /* JSON parse failed */ }
@@ -485,7 +499,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                                         rehypePlugins={[rehypeKatex]}
                                         components={{
                                             code({ className, children, ...props }) {
-                                                const match = /language-(\w+)/.exec(className || '')
+                                                const match = /language-(\w+)/.exec(className ?? '')
                                                 const isInline = !match
                                                 const codeString = String(children).replace(/\n$/, '')
                                                 if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} /> }
@@ -773,6 +787,29 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                                     <span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span>
                                 </>
                             )}
+                        </div>
+                    )}
+
+                    {/* Variant Navigation (#multi-response) */}
+                    {hasVariants && !isUser && (
+                        <div className="flex items-center gap-2 mt-2 select-none justify-start">
+                            <button
+                                onClick={() => setVariantIndex(prev => Math.max(0, prev - 1))}
+                                disabled={variantIndex === 0}
+                                className="p-1 rounded-md hover:bg-muted/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                            <span className="text-[10px] bg-muted/20 px-2 py-0.5 rounded-md font-mono text-muted-foreground">
+                                {variantIndex + 1} / {variants.length}
+                            </span>
+                            <button
+                                onClick={() => setVariantIndex(prev => Math.min(variants.length - 1, prev + 1))}
+                                disabled={variantIndex === variants.length - 1}
+                                className="p-1 rounded-md hover:bg-muted/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                            >
+                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
                         </div>
                     )}
                 </div>

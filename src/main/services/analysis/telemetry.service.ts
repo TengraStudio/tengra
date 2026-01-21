@@ -1,12 +1,13 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { JsonObject } from '@shared/types/common';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface TelemetryEvent {
     id: string;
     name: string;
-    properties?: Record<string, any>;
+    properties?: Record<string, unknown>;
     timestamp: number;
     sessionId: string;
 }
@@ -42,7 +43,7 @@ export class TelemetryService extends BaseService {
     /**
      * Tracks a telemetry event if the user has opted in.
      */
-    track(name: string, properties?: Record<string, any>) {
+    track(name: string, properties?: Record<string, unknown>) {
         if (!this.isTelemetryEnabled()) {
             return;
         }
@@ -58,7 +59,7 @@ export class TelemetryService extends BaseService {
         this.queue.push(event);
 
         // Use logger for debug visibility
-        appLogger.debug('Telemetry', `Tracked event: ${name}`, properties);
+        appLogger.debug('Telemetry', `Tracked event: ${name}`, properties as JsonObject);
     }
 
     private startFlushing() {

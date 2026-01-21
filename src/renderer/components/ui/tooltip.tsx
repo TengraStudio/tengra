@@ -120,6 +120,7 @@ export function Tooltip({
             if (typeof originalRef === 'function') {
                 originalRef(node)
             } else if (originalRef && typeof originalRef === 'object') {
+                // eslint-disable-next-line react-hooks/immutability
                 (originalRef as React.MutableRefObject<HTMLElement | null>).current = node
             }
         },

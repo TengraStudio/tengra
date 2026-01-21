@@ -64,7 +64,7 @@ export class MessageNormalizer {
                     return { type: 'image_url' as const, image_url: { url: part.image_url.url } }
                 }
                 if (part.type === 'image' && part.source?.data) {
-                    const mediaType = part.source.media_type || 'image/png'
+                    const mediaType = part.source.media_type ?? 'image/png'
                     return { type: 'image_url' as const, image_url: { url: `data:${mediaType};base64,${part.source.data}` } }
                 }
                 return null

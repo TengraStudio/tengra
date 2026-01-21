@@ -104,7 +104,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             if (result.success && result.id) {
                 setSshConnectionId(result.id)
                 setStep('ssh-browser')
-                loadRemoteDirectory(result.id, '/')
+                void loadRemoteDirectory(result.id, '/')
             } else {
                 setError(result.error || 'Failed to connect')
             }
@@ -327,7 +327,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             value={sshForm.port}
                                             onChange={e => setSshForm(p => ({ ...p, port: e.target.value }))}
                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
-                                            placeholder="22"
+                                            placeholder={t('ssh.placeholders.port')}
                                         />
                                     </div>
                                 </div>
@@ -338,7 +338,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                         value={sshForm.username}
                                         onChange={e => setSshForm(p => ({ ...p, username: e.target.value }))}
                                         className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
-                                        placeholder="root"
+                                        placeholder={t('ssh.placeholders.username')}
                                     />
                                 </div>
 
@@ -385,7 +385,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                                 value={sshForm.privateKey}
                                                 onChange={e => setSshForm(p => ({ ...p, privateKey: e.target.value }))}
                                                 className="w-full h-24 bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white font-mono text-xs resize-none"
-                                                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                                                placeholder={t('ssh.placeholders.privateKey')}
                                             />
                                         </div>
                                         <div>
@@ -419,7 +419,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     onChange={e => setSshPath(e.target.value)}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter' && sshConnectionId) {
-                                            loadRemoteDirectory(sshConnectionId, sshPath)
+                                            void loadRemoteDirectory(sshConnectionId, sshPath)
                                         }
                                     }}
                                     className="flex-1 bg-transparent text-sm text-white focus:outline-none font-mono"
@@ -437,7 +437,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     <button
                                         onClick={() => {
                                             const parent = sshPath.split('/').slice(0, -1).join('/') || '/'
-                                            if (sshConnectionId) { loadRemoteDirectory(sshConnectionId, parent) }
+                                            if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent) }
                                         }}
                                         className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg text-left transition-colors group"
                                     >
@@ -451,7 +451,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                         onClick={() => {
                                             if (file.isDirectory && sshConnectionId) {
                                                 const newPath = sshPath === '/' ? `/${file.name}` : `${sshPath}/${file.name}`
-                                                loadRemoteDirectory(sshConnectionId, newPath)
+                                                void loadRemoteDirectory(sshConnectionId, newPath)
                                             }
                                         }}
                                         className={cn(

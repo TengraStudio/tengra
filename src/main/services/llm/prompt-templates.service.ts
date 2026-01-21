@@ -10,6 +10,7 @@ import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { DatabaseService } from '@main/services/data/database.service'
 import { BUILTIN_TEMPLATES, PromptTemplate, renderTemplate as renderUtil } from '@main/utils/prompt-templates.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 export class PromptTemplatesService extends BaseService {
     private templatesPath: string
@@ -21,7 +22,7 @@ export class PromptTemplatesService extends BaseService {
     ) {
         super('PromptTemplatesService')
         this.templatesPath = path.join(this.dataService.getPath('db'), 'prompt-templates.json')
-        this.initialize()
+        void this.initialize()
     }
 
     public async initialize() {
@@ -138,8 +139,7 @@ export class PromptTemplatesService extends BaseService {
         // Actually looking at original code:
         // `renderTemplate` calls `this.getTemplate(templateId)` from SERVICE, getting it from service's array.
         // Then calls `this.templateManager.render(templateId, variables)`.
-        // BUT `templateManager.render` calls `this.findById` on itself!
-        // If `templateManager` is empty of custom templates, it won't find it if it's a custom one.
+        // BUT `templateManager.render` calls `this.findById` on itself // If `templateManager` is empty of custom templates, it won't find it if it's a custom one.
         // The original code might have been buggy or `TemplateManager` logic was:
         // `render` calls `findById`.
         // If `BUILTIN_TEMPLATES` are in `TemplateManager` (yes via `getAllTemplates` spreading `BUILTIN_TEMPLATES`), then builtins work.
@@ -216,7 +216,7 @@ export class PromptTemplatesService extends BaseService {
         try {
             this.logInfo('[PromptTemplatesService] Migrating legacy templates...')
             const content = await fs.promises.readFile(this.templatesPath, 'utf-8')
-            const templates = JSON.parse(content) as PromptTemplate[]
+            const templates = safeJsonParse<PromptTemplate[]>(content, [])
 
             if (Array.isArray(templates)) {
                 for (const template of templates) {

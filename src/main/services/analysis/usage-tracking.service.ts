@@ -5,6 +5,7 @@ import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
 interface UsageRecord {
@@ -39,7 +40,7 @@ export class UsageTrackingService {
             if (exists) {
                 appLogger.info('UsageTrackingService', 'Migrating legacy usage data...')
                 const data = await fs.readFile(this.legacyUsageFile, 'utf8')
-                const stats: UsageStats = JSON.parse(data)
+                const stats = safeJsonParse<UsageStats>(data, { hourly: [], daily: [], weekly: [] })
 
                 const records = (stats as Partial<UsageStats>).weekly ?? []
 

@@ -1,6 +1,8 @@
+import { appLogger } from '@main/logging/logger'
 import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { SettingsService } from '@main/services/system/settings.service'
+import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 
 export function registerUsageIpc(usageTrackingService: UsageTrackingService, settingsService: SettingsService, proxyService: ProxyService) {
@@ -11,14 +13,15 @@ export function registerUsageIpc(usageTrackingService: UsageTrackingService, set
         if (provider === 'copilot') {
             try {
                 const copilotQuota = await proxyService.getCopilotQuota()
-                if (copilotQuota && copilotQuota.success) {
+                const activeAccount = copilotQuota.accounts[0]
+                if (activeAccount) {
                     quota = {
-                        remaining: copilotQuota.remaining || 0,
-                        limit: copilotQuota.limit || 0
+                        remaining: activeAccount.remaining,
+                        limit: activeAccount.limit
                     }
                 }
             } catch (error) {
-                console.debug('[UsageIPC] Failed to get copilot quota:', error)
+                appLogger.warn('UsageIPC', `Failed to get copilot quota: ${getErrorMessage(error)}`)
             }
         }
 
@@ -30,7 +33,7 @@ export function registerUsageIpc(usageTrackingService: UsageTrackingService, set
     })
 
     ipcMain.handle('usage:recordUsage', async (_event, provider: string, model: string) => {
-        usageTrackingService.recordUsage(provider, model)
+        await usageTrackingService.recordUsage(provider, model)
         return { success: true }
     })
 }

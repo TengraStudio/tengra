@@ -1,6 +1,7 @@
 import { SSHService } from '@main/services/project/ssh.service';
 import { CommandService } from '@main/services/system/command.service';
 import { JsonObject } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export class DockerService {
     constructor(
@@ -20,8 +21,8 @@ export class DockerService {
             const result = await this.command.executeCommand(cmd);
             return {
                 success: result.success,
-                stdout: result.stdout || '',
-                stderr: result.stderr || ''
+                stdout: result.stdout ?? '',
+                stderr: result.stderr ?? ''
             };
         }
     }
@@ -35,7 +36,7 @@ export class DockerService {
         try {
             // Docker outputs multiple JSON objects, one per line
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const containers = lines.map((l: string) => JSON.parse(l) as JsonObject);
+            const containers = lines.map((l: string) => safeJsonParse<JsonObject>(l, {}));
             return { success: true, containers };
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
@@ -61,7 +62,7 @@ export class DockerService {
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const stats = lines.map((l: string) => JSON.parse(l) as JsonObject);
+            const stats = lines.map((l: string) => safeJsonParse<JsonObject>(l, {}));
             return { success: true, stats };
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
@@ -77,7 +78,7 @@ export class DockerService {
 
         try {
             const lines = result.stdout.trim().split('\n').filter((l: string) => l.length > 0);
-            const images = lines.map((l: string) => JSON.parse(l) as JsonObject);
+            const images = lines.map((l: string) => safeJsonParse<JsonObject>(l, {}));
             return { success: true, images };
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);

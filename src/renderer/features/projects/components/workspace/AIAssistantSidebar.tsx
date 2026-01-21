@@ -16,8 +16,8 @@ interface AIAssistantSidebarProps {
     onSelectModel: (provider: string, model: string) => void;
     settings: AppSettings;
     groupedModels: GroupedModels;
-    quotas: QuotaResponse | null;
-    codexUsage: CodexUsage | null;
+    quotas: { accounts: QuotaResponse[] } | null;
+    codexUsage: { accounts: { usage: CodexUsage }[] } | null;
     agentChatMessage: string;
     setAgentChatMessage: (val: string) => void;
     // Council Props

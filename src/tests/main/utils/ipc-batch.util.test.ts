@@ -80,11 +80,11 @@ describe('IPC Batch Utility', () => {
 
             registerBatchIpc();
 
-            // eslint-disable-next-line
+             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:invoke', expect.any(Function));
-            // eslint-disable-next-line
+             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:invokeSequential', expect.any(Function));
-            // eslint-disable-next-line
+             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:getChannels', expect.any(Function));
         });
     });

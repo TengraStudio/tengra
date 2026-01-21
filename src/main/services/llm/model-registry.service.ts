@@ -1,44 +1,48 @@
+import { appLogger } from '@main/logging/logger'
+import { BaseService } from '@main/services/base.service'
+import { ProxyService } from '@main/services/proxy/proxy.service'
+import { AuthService } from '@main/services/security/auth.service'
+import { TokenService } from '@main/services/security/token.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
+import { SettingsService } from '@main/services/system/settings.service'
 import { JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
 
 export interface ModelProviderInfo {
     id: string
     name: string
-    provider: string // Relaxed from specific union to string to allow copilot/llama/etc
+    provider: string
     description?: string
     tags?: string[]
     downloads?: number
     likes?: number
     contextWindow?: number
     parameters?: string
-    [key: string]: JsonValue | undefined // Include undefined
+    [key: string]: JsonValue | undefined
 }
 
-import { appLogger } from '@main/logging/logger'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { EventBusService } from '@main/services/system/event-bus.service'
-import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
-import { SettingsService } from '@main/services/system/settings.service'
+export interface ModelRegistryDependencies {
+    processManager: import('@main/services/system/process-manager.service').ProcessManagerService;
+    jobScheduler: JobSchedulerService;
+    settingsService: SettingsService;
+    proxyService: ProxyService;
+    eventBus: EventBusService;
+    authService: AuthService;
+    tokenService: TokenService;
+}
 
-export class ModelRegistryService {
+export class ModelRegistryService extends BaseService {
     private cachedModels: ModelProviderInfo[] = []
     private lastUpdate: number = 0
 
-    // eslint-disable-next-line max-params
-    constructor(
-        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService,
-        private jobScheduler: JobSchedulerService,
-        private settingsService: SettingsService,
-        private proxyService: ProxyService,
-        private eventBus: EventBusService,
-        private authService: AuthService
-    ) {
+    constructor(private deps: ModelRegistryDependencies) {
+        super('ModelRegistryService')
         this.initializeScheduler()
     }
 
     private initializeScheduler() {
-        this.jobScheduler.registerRecurringJob(
+        this.deps.jobScheduler.registerRecurringJob(
             'model-registry-update',
             async () => {
                 await this.updateCache()
@@ -47,17 +51,18 @@ export class ModelRegistryService {
                 // Get interval from settings, default to 1 hour (3600000 ms)
                 // User asked for capability to set e.g. 5 minutes.
                 // Assuming settings structure has 'modelUpdateInterval' in ms or similar.
-                const settings = this.settingsService.getSettings()
+                const settings = this.deps.settingsService.getSettings()
                 return settings.ai?.modelUpdateInterval ?? 60 * 60 * 1000
             }
         )
     }
 
-    async init() {
+    override async initialize(): Promise<void> {
         // Start the native service process
-        await this.processManager.startService({
+        await this.deps.processManager.startService({
             name: 'model-service',
-            executable: 'orbit-model-service.exe'
+            executable: 'orbit-model-service.exe',
+            persistent: true
         })
 
         // Initial load if empty
@@ -72,7 +77,7 @@ export class ModelRegistryService {
         this.cachedModels = await this.fetchRemoteModels()
         this.lastUpdate = Date.now()
         appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`)
-        this.eventBus.emit('model:updated', {
+        this.deps.eventBus.emit('model:updated', {
             provider: 'all',
             count: this.cachedModels.length,
             timestamp: this.lastUpdate
@@ -88,8 +93,8 @@ export class ModelRegistryService {
      * - Llama C++ models
      */
     async getAllModels(): Promise<ModelProviderInfo[]> {
-        const proxyPort = this.proxyService.getEmbeddedProxyStatus().port ?? 8317;
-        const proxyKey = await this.proxyService.getProxyKey();
+        const proxyPort = this.deps.proxyService.getEmbeddedProxyStatus().port ?? 8317;
+        const proxyKey = await this.deps.proxyService.getProxyKey();
 
         const promises: Promise<ModelProviderInfo[]>[] = [
             // Always fetch these providers
@@ -119,8 +124,14 @@ export class ModelRegistryService {
         // Dynamically add cloud providers if authenticated
         const cloudProviders = ['antigravity', 'codex', 'claude', 'copilot']; // Added copilot here to treat it uniformly
         for (const p of cloudProviders) {
-            // For copilot, we might need a specific way to get token if not in standard auth
-            const token = await this.authService.getActiveToken(p);
+            // Proactively refresh tokens for cloud providers before fetching models
+            try {
+                await this.deps.tokenService.ensureFreshToken(p);
+            } catch (err) {
+                appLogger.warn('ModelRegistry', `Failed to ensure fresh token for ${p}: ${getErrorMessage(err)}`);
+            }
+
+            const token = await this.deps.authService.getActiveToken(p);
             appLogger.debug('ModelRegistry', `Cloud provider ${p}: token ${token ? 'found' : 'NOT FOUND'}`);
             if (token) {
                 promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
@@ -140,7 +151,7 @@ export class ModelRegistryService {
 
     private async fetchFromRustService(provider: string, token?: string, proxyPort?: number, proxyKey?: string): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
+            const response = await this.deps.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
                 type: 'FetchModels',
                 provider,
                 token,
@@ -148,7 +159,7 @@ export class ModelRegistryService {
                 proxy_key: proxyKey
             })
 
-            appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models?.length ?? 0}, error=${response.error ?? 'none'}`)
+            appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`)
 
             if (response.success && response.models.length > 0) {
                 return response.models.map(m => ({
@@ -187,14 +198,14 @@ export class ModelRegistryService {
 
     private async fetchHuggingFaceModels(): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
+            const response = await this.deps.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
                 type: 'FetchModels',
                 provider: 'huggingface'
             })
 
             if (response.success && response.models.length > 0) {
                 return response.models
-            } else if (typeof response.error === 'string' && response.error.length > 0) {
+            } else if (response.error) {
                 appLogger.error('ModelRegistry', `Native HF fetch failed: ${response.error}`)
             }
         } catch (e) {

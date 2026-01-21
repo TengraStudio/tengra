@@ -64,4 +64,9 @@ export interface OpenAIResponse {
     completionTokens?: number | undefined;
     reasoning_content?: string | undefined;
     images?: string[] | undefined;
+    variants?: Array<{
+        content: string;
+        role: string;
+        model?: string;
+    }> | undefined;
 }

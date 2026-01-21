@@ -7,38 +7,25 @@ import { appLogger } from '@main/logging/logger'
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service'
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
-import { Migration, MigrationManager } from '@main/services/data/migration-manager'
+import { MigrationManager } from '@main/services/data/db-migration.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { JobState } from '@main/services/system/job-scheduler.service'
 import { PromptTemplate } from '@main/utils/prompt-templates.util'
 import { JsonObject, JsonValue } from '@shared/types/common'
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { v4 as uuidv4 } from 'uuid'
 
+import { getMigrationDefinitions } from './migrations'
 
-
-export interface AuthAccount {
-    id: string
-    name: string
-    avatar?: string
-    createdAt: number
-    updatedAt: number
+interface TransactionLike {
+    query: (sql: string, params?: unknown[], options?: Record<string, unknown>) => Promise<unknown>;
+    exec: (sql: string) => Promise<unknown>;
 }
 
-export interface AuthToken {
-    id: string
-    accountId: string
-    provider: string
-    accessToken?: string | undefined
-    refreshToken?: string | undefined
-    sessionToken?: string | undefined
-    idToken?: string | undefined
-    email?: string | undefined
-    expiresAt?: number | undefined
-    scope?: string | undefined
-    metadata?: JsonObject | undefined
-    updatedAt: number
-}
+
+
 
 /**
  * LinkedAccount represents a single authenticated account for a provider.
@@ -106,7 +93,10 @@ export class DatabaseService extends BaseService {
     private chatsPath: string
     private messagesPath: string
 
-    constructor(private dataService: DataService) {
+    constructor(
+        private dataService: DataService,
+        private eventBus: EventBusService
+    ) {
         super('DatabaseService')
         this.isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
         // Use a subdirectory 'pg_data' to keep Postgres files separate
@@ -160,9 +150,11 @@ export class DatabaseService extends BaseService {
             await this.migrateLegacyJsonData()
 
             appLogger.info('DatabaseService', 'Initialization complete!')
+            this.eventBus.emit('db:ready', { timestamp: Date.now() })
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to initialize PGlite:', error as Error)
             this.initError = error instanceof Error ? error : new Error(String(error))
+            this.eventBus.emit('db:error', { error: this.initError.message })
             this.db = null
             throw this.initError
         }
@@ -193,7 +185,7 @@ export class DatabaseService extends BaseService {
             exec: async (sql) => { await db.exec(sql); },
             transaction: <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
                 return db.transaction(async (tx) => {
-                    const txAdapter = this.createAdapterFromTx(tx);
+                    const txAdapter = this.createAdapterFromTx(tx as unknown as TransactionLike);
                     return await fn(txAdapter);
                 })
             },
@@ -220,10 +212,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    private createAdapterFromTx(tx: {
-        query: (sql: string, params?: any[], options?: any) => Promise<any>;
-        exec: (sql: string) => Promise<any>;
-    }): DatabaseAdapter {
+    private createAdapterFromTx(tx: TransactionLike): DatabaseAdapter {
         // Reuse the tx object directly as it matches the shape we need mostly,
         // but we need to wrap it to match DatabaseAdapter exactly.
         const txObj = tx;
@@ -242,7 +231,7 @@ export class DatabaseService extends BaseService {
                 return {
                     run: async (...params: SqlValue[]) => {
                         const safeParams = params.map(p => p === undefined ? null : p)
-                        const res = await txObj.query(normalized, safeParams)
+                        const res = await txObj.query(normalized, safeParams) as { affectedRows: number }
                         return { rowsAffected: res.affectedRows, insertId: undefined }
                     },
                     all: async <T = unknown>(...params: SqlValue[]) => {
@@ -282,584 +271,12 @@ export class DatabaseService extends BaseService {
         const adapter = this.createAdapter()
         const manager = new MigrationManager(adapter)
 
-        manager.registerAll(this.getMigrationDefinitions())
+        manager.registerAll(getMigrationDefinitions(this.isTest))
 
         await manager.migrate()
     }
 
-    private getMigrationDefinitions(): Migration[] {
-        return [
-            ...this.getCoreSchemaMigrations(),
-            ...this.getCodeIntelligenceMigrations(),
-            ...this.getUtilitySchemaMigrations()
-        ];
-    }
 
-    private getCoreSchemaMigrations(): Migration[] {
-        return [
-            ...this.getProjectMigrations(),
-            ...this.getChatMigrations(),
-            ...this.getFolderPromptCouncilMigrations()
-        ];
-    }
-
-    private getProjectMigrations(): Migration[] {
-        return [
-            {
-                id: 1,
-                name: 'Initial Schema (Postgres)',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS projects (
-                            id TEXT PRIMARY KEY,
-                            title TEXT NOT NULL,
-                            description TEXT DEFAULT '',
-                            path TEXT NOT NULL,
-                            mounts TEXT DEFAULT '[]',
-                            chat_ids TEXT DEFAULT '[]',
-                            council_config TEXT DEFAULT '{"enabled":false,"members":[],"consensusThreshold":0.7}',
-                            status TEXT DEFAULT 'active',
-                            logo TEXT,
-                            metadata TEXT DEFAULT '{}',
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE TABLE IF NOT EXISTS chat_events (
-                            id TEXT PRIMARY KEY,
-                            thread_id TEXT NOT NULL,
-                            type TEXT NOT NULL,
-                            payload TEXT NOT NULL,
-                            timestamp BIGINT NOT NULL,
-                            metadata TEXT DEFAULT '{}'
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_chat_events_thread_id ON chat_events(thread_id);
-                    `)
-                }
-            },
-            {
-                id: 2,
-                name: 'Time Tracking',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS time_tracking (
-                            id TEXT PRIMARY KEY,
-                            type TEXT NOT NULL,
-                            project_id TEXT,
-                            start_time BIGINT NOT NULL,
-                            end_time BIGINT,
-                            duration_ms BIGINT DEFAULT 0,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_time_tracking_type ON time_tracking(type);
-                    `)
-                }
-            }
-        ];
-    }
-
-    private getChatMigrations(): Migration[] {
-        return [
-            {
-                id: 3,
-                name: 'Chats and Messages',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS chats (
-                            id TEXT PRIMARY KEY,
-                            title TEXT NOT NULL,
-                            is_Generating INTEGER DEFAULT 0,
-                            backend TEXT,
-                            model TEXT,
-                            folder_id TEXT,
-                            project_id TEXT,
-                            is_pinned INTEGER DEFAULT 0,
-                            is_favorite INTEGER DEFAULT 0,
-                            metadata TEXT DEFAULT '{}',
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE TABLE IF NOT EXISTS messages (
-                            id TEXT PRIMARY KEY,
-                            chat_id TEXT NOT NULL,
-                            role TEXT NOT NULL,
-                            content TEXT NOT NULL,
-                            timestamp BIGINT NOT NULL,
-                            provider TEXT,
-                            model TEXT,
-                            metadata TEXT DEFAULT '{}',
-                            vector ${this.isTest ? 'FLOAT8[]' : 'vector(1536)'}, -- Vector support
-                            FOREIGN KEY(chat_id) REFERENCES chats(id) ON DELETE CASCADE
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
-                        CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
-                    `)
-                }
-            }
-        ];
-    }
-
-    private getFolderPromptCouncilMigrations(): Migration[] {
-        return [
-            {
-                id: 4,
-                name: 'Folders, Prompts, Council',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS folders (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            color TEXT,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE TABLE IF NOT EXISTS prompts (
-                            id TEXT PRIMARY KEY,
-                            title TEXT NOT NULL,
-                            content TEXT NOT NULL,
-                            tags TEXT DEFAULT '[]',
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE TABLE IF NOT EXISTS council_sessions (
-                            id TEXT PRIMARY KEY,
-                            goal TEXT NOT NULL,
-                            status TEXT NOT NULL,
-                            logs TEXT DEFAULT '[]',
-                            agents TEXT DEFAULT '[]',
-                            plan TEXT,
-                            solution TEXT,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                    `)
-                }
-            }
-        ];
-    }
-
-    private getCodeIntelligenceMigrations(): Migration[] {
-        return [
-            {
-                id: 5,
-                name: 'Code Intelligence & Vectors',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS semantic_fragments (
-                            id TEXT PRIMARY KEY,
-                            content TEXT,
-                            embedding ${this.isTest ? 'FLOAT8[]' : 'vector(1536)'},
-                            source TEXT,
-                            source_id TEXT,
-                            tags TEXT DEFAULT '[]',
-                            importance FLOAT,
-                            project_id TEXT,
-                            created_at BIGINT,
-                            updated_at BIGINT
-                        );
-                        CREATE TABLE IF NOT EXISTS episodic_memories (
-                            id TEXT PRIMARY KEY,
-                            title TEXT,
-                            summary TEXT,
-                            embedding ${this.isTest ? 'FLOAT8[]' : 'vector(1536)'},
-                            start_date BIGINT,
-                            end_date BIGINT,
-                            chat_id TEXT,
-                            participants TEXT DEFAULT '[]',
-                            created_at BIGINT
-                        );
-                        CREATE TABLE IF NOT EXISTS code_symbols (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            project_path TEXT,
-                            file_path TEXT,
-                            line INTEGER,
-                            kind TEXT,
-                            signature TEXT,
-                            docstring TEXT,
-                            embedding ${this.isTest ? 'FLOAT8[]' : 'vector(1536)'}
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_code_symbols_project ON code_symbols(project_path);
-                        CREATE INDEX IF NOT EXISTS idx_code_symbols_name ON code_symbols(name);
-                        
-                        CREATE TABLE IF NOT EXISTS agents (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            system_prompt TEXT,
-                            tools TEXT DEFAULT '[]',
-                            parent_model TEXT,
-                            created_at BIGINT,
-                            updated_at BIGINT
-                        );
-
-                        CREATE TABLE IF NOT EXISTS memories (
-                            key TEXT PRIMARY KEY,
-                            value TEXT,
-                            updated_at BIGINT
-                        );
-
-                        CREATE TABLE IF NOT EXISTS entity_knowledge (
-                            id TEXT PRIMARY KEY,
-                            entity_type TEXT,
-                            entity_name TEXT,
-                            key TEXT,
-                            value TEXT,
-                            confidence FLOAT,
-                            source TEXT,
-                            updated_at BIGINT
-                        );
-                    `)
-                }
-            }
-        ];
-    }
-
-    private getUtilitySchemaMigrations(): Migration[] {
-        return [
-            ...this.getTimestampAndIndexMigrations(),
-            ...this.getTokenAndUsageMigrations(),
-            ...this.getMultiAccountMigrations()
-        ];
-    }
-
-    private getTimestampAndIndexMigrations(): Migration[] {
-        return [
-            {
-                id: 6,
-                name: 'Fix Timestamp Types',
-                up: async (db: DatabaseAdapter) => {
-                    const queries = [
-                        'ALTER TABLE projects ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE projects ALTER COLUMN updated_at TYPE BIGINT',
-                        'ALTER TABLE chat_events ALTER COLUMN timestamp TYPE BIGINT',
-                        'ALTER TABLE time_tracking ALTER COLUMN start_time TYPE BIGINT',
-                        'ALTER TABLE time_tracking ALTER COLUMN end_time TYPE BIGINT',
-                        'ALTER TABLE time_tracking ALTER COLUMN duration_ms TYPE BIGINT',
-                        'ALTER TABLE time_tracking ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE time_tracking ALTER COLUMN updated_at TYPE BIGINT',
-                        'ALTER TABLE chats ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE chats ALTER COLUMN updated_at TYPE BIGINT',
-                        'ALTER TABLE messages ALTER COLUMN timestamp TYPE BIGINT',
-                        'ALTER TABLE folders ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE folders ALTER COLUMN updated_at TYPE BIGINT',
-                        'ALTER TABLE prompts ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE prompts ALTER COLUMN updated_at TYPE BIGINT',
-                        'ALTER TABLE council_sessions ALTER COLUMN created_at TYPE BIGINT',
-                        'ALTER TABLE council_sessions ALTER COLUMN updated_at TYPE BIGINT'
-                    ];
-                    for (const query of queries) {
-                        try {
-                            await db.exec(query);
-                        } catch {
-                            appLogger.debug('DatabaseService', `Type fix skipped: ${query}`);
-                        }
-                    }
-                }
-            },
-            {
-                id: 7,
-                name: 'Add Performance Indexes',
-                up: async (db: DatabaseAdapter) => {
-                    const indexQueries = [
-                        'CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id)',
-                        'CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id)',
-                        'CREATE INDEX IF NOT EXISTS idx_chats_created_at ON chats(created_at DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_chats_is_pinned ON chats(is_pinned) WHERE is_pinned = 1',
-                        'CREATE INDEX IF NOT EXISTS idx_chats_is_favorite ON chats(is_favorite) WHERE is_favorite = 1',
-                        'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role)',
-                        'CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)',
-                        'CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_time_tracking_project_id ON time_tracking(project_id)',
-                        'CREATE INDEX IF NOT EXISTS idx_time_tracking_start_time ON time_tracking(start_time DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_council_sessions_status ON council_sessions(status)',
-                        'CREATE INDEX IF NOT EXISTS idx_council_sessions_created_at ON council_sessions(created_at DESC)',
-                        'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_id ON semantic_fragments(project_id)',
-                        'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_source ON semantic_fragments(source)',
-                        'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_type ON entity_knowledge(entity_type)',
-                        'CREATE INDEX IF NOT EXISTS idx_entity_knowledge_entity_name ON entity_knowledge(entity_name)'
-                    ];
-                    for (const query of indexQueries) {
-                        try {
-                            await db.exec(query);
-                        } catch {
-                            appLogger.debug('DatabaseService', `Index creation skipped: ${query}`);
-                        }
-                    }
-                }
-            }
-        ];
-    }
-
-    private getTokenAndUsageMigrations(): Migration[] {
-        return [
-            {
-                id: 8,
-                name: 'Usage Tracking Schema',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS usage_tracking (
-                            id TEXT PRIMARY KEY,
-                            timestamp BIGINT NOT NULL,
-                            provider TEXT NOT NULL,
-                            model TEXT NOT NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_usage_tracking_timestamp ON usage_tracking(timestamp);
-                        CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider ON usage_tracking(provider);
-                    `)
-                }
-            },
-            {
-                id: 9,
-                name: 'Prompt Templates Schema',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS prompt_templates (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            description TEXT,
-                            template TEXT NOT NULL,
-                            variables TEXT NOT NULL,
-                            category TEXT,
-                            tags TEXT,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_prompt_templates_category ON prompt_templates(category);
-                    `)
-                }
-            },
-            {
-                id: 10,
-                name: 'Audit Logs Schema',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS audit_logs (
-                            id TEXT PRIMARY KEY,
-                            timestamp BIGINT NOT NULL,
-                            action TEXT NOT NULL,
-                            category TEXT NOT NULL,
-                            user_id TEXT,
-                            details TEXT,
-                            ip_address TEXT,
-                            user_agent TEXT,
-                            success BOOLEAN NOT NULL,
-                            error TEXT
-                        );
-                        CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
-                        CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category);
-                    `)
-                }
-            },
-            {
-                id: 11,
-                name: 'Job Scheduler State Schema',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS scheduler_state (
-                            id TEXT PRIMARY KEY,
-                            last_run BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                    `)
-                }
-            },
-            {
-                id: 12,
-                name: 'Auth Tokens Schema',
-                up: async (db: DatabaseAdapter) => {
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS auth_tokens (
-                            id TEXT PRIMARY KEY,
-                            provider TEXT NOT NULL,
-                            access_token TEXT,
-                            refresh_token TEXT,
-                            session_token TEXT,
-                            expires_at BIGINT,
-                            scope TEXT,
-                            metadata TEXT,
-                            updated_at BIGINT NOT NULL
-                        );
-                    `);
-                }
-            }
-        ];
-    }
-
-    private getMultiAccountMigrations(): Migration[] {
-        return [
-            {
-                id: 13,
-                name: 'Multi-Account Auth Schema',
-                up: async (db: DatabaseAdapter) => {
-                    const now = Date.now();
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS auth_accounts (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            avatar TEXT,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL
-                        );
-                        INSERT INTO auth_accounts (id, name, created_at, updated_at)
-                        VALUES ('default', 'Default Account', ${now}, ${now})
-                        ON CONFLICT(id) DO NOTHING;
-                    `);
-
-                    // Rebuild auth_tokens with correct schema and relationships
-                    // We assume migration 12 ran, so we rename/copy/drop pattern
-
-                    // 1. Create new table
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS auth_tokens_new (
-                            id TEXT PRIMARY KEY,
-                            account_id TEXT NOT NULL,
-                            provider TEXT NOT NULL,
-                            access_token TEXT,
-                            refresh_token TEXT,
-                            session_token TEXT,
-                            expires_at BIGINT,
-                            scope TEXT,
-                            metadata TEXT,
-                            updated_at BIGINT NOT NULL,
-                            UNIQUE(account_id, provider),
-                            FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
-                        );
-                    `);
-
-                    // 2. Migrate data (if any exists in old table)
-                    // We try to migrate from 'auth_tokens' if it exists. 
-                    // Note: 'auth_tokens' might not have account_id yet.
-                    try {
-                        const existing = await db.query('SELECT count(*) as c FROM auth_tokens').then(r => r.rows[0] as { c: number });
-                        if (Number(existing.c) > 0) {
-                            await db.exec(`
-                                INSERT INTO auth_tokens_new (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-                                SELECT id, 'default', provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
-                                FROM auth_tokens;
-                            `);
-                        }
-                    } catch (e) {
-                        // Ignore if auth_tokens doesn't exist or query fails
-                    }
-
-                    // 3. Swap tables
-                    await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
-                    await db.exec(`ALTER TABLE auth_tokens_new RENAME TO auth_tokens;`);
-                }
-            },
-            {
-                id: 14,
-                name: 'Add email to auth_tokens and fix multi-account constraint',
-                up: async (db: DatabaseAdapter) => {
-                    // 1. Create the new table with the email column and the correct UNIQUE constraint
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS auth_tokens_v14 (
-                            id TEXT PRIMARY KEY,
-                            account_id TEXT NOT NULL,
-                            provider TEXT NOT NULL,
-                            email TEXT,
-                            access_token TEXT,
-                            refresh_token TEXT,
-                            session_token TEXT,
-                            expires_at BIGINT,
-                            scope TEXT,
-                            metadata TEXT,
-                            updated_at BIGINT NOT NULL,
-                            UNIQUE(account_id, provider, email),
-                            FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
-                        );
-                    `);
-
-                    // 2. Migrate data from auth_tokens
-                    try {
-                        await db.exec(`
-                            INSERT INTO auth_tokens_v14 (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-                            SELECT id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
-                            FROM auth_tokens;
-                        `);
-                    } catch (e) {
-                        appLogger.warn('DatabaseService', 'Migration 14: Failed to migrate existing tokens or table missing.');
-                    }
-
-                    // 3. Replace old table
-                    await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
-                    await db.exec(`ALTER TABLE auth_tokens_v14 RENAME TO auth_tokens;`);
-                }
-            },
-            {
-                id: 15,
-                name: 'Create linked_accounts table for provider-centric multi-account',
-                up: async (db: DatabaseAdapter) => {
-                    const now = Date.now();
-
-                    // Create the new linked_accounts table
-                    await db.exec(`
-                        CREATE TABLE IF NOT EXISTS linked_accounts (
-                            id TEXT PRIMARY KEY,
-                            provider TEXT NOT NULL,
-                            email TEXT,
-                            display_name TEXT,
-                            avatar_url TEXT,
-                            access_token TEXT,
-                            refresh_token TEXT,
-                            session_token TEXT,
-                            expires_at BIGINT,
-                            scope TEXT,
-                            is_active BOOLEAN DEFAULT FALSE,
-                            metadata TEXT,
-                            created_at BIGINT NOT NULL,
-                            updated_at BIGINT NOT NULL,
-                            UNIQUE(provider, email)
-                        );
-                    `);
-
-                    // Create indices for fast lookup
-                    await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider);`);
-                    await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_active ON linked_accounts(provider, is_active);`);
-
-                    // Migrate existing tokens from auth_tokens to linked_accounts
-                    try {
-                        const existingTokens = await db.query('SELECT * FROM auth_tokens');
-                        for (const row of existingTokens.rows) {
-                            const token = row as JsonObject;
-                            // Check if already migrated
-                            const email = token.email as string || null;
-                            const provider = token.provider as string;
-                            const existing = await db.query(
-                                'SELECT id FROM linked_accounts WHERE provider = $1 AND (email = $2 OR (email IS NULL AND $2 IS NULL))',
-                                [provider, email]
-                            );
-
-                            if (existing.rows.length === 0) {
-                                const metadataStr = token.metadata ? JSON.stringify(token.metadata) : null;
-                                await db.prepare(`
-                                    INSERT INTO linked_accounts (id, provider, email, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                `).run(
-                                    token.id as string,
-                                    provider,
-                                    email,
-                                    token.access_token as string | null,
-                                    token.refresh_token as string | null,
-                                    token.session_token as string | null,
-                                    token.expires_at as number | null,
-                                    token.scope as string | null,
-                                    true,  // First account per provider is active
-                                    metadataStr,
-                                    now,
-                                    (token.updated_at as number | undefined) ?? now
-                                );
-                            }
-                        }
-                    } catch {
-                        appLogger.warn('DatabaseService', 'Migration 15: No existing tokens to migrate or migration failed.');
-                    }
-                }
-            }
-        ];
-    }
 
     private async migrateLegacyJsonData() {
         if (!this.db) {
@@ -880,7 +297,7 @@ export class DatabaseService extends BaseService {
         if (!fs.existsSync(this.foldersPath)) { return }
         try {
             const content = await fs.promises.readFile(this.foldersPath, 'utf-8')
-            const folders = JSON.parse(content) as Folder[]
+            const folders = safeJsonParse<Folder[]>(content, [])
             if (!Array.isArray(folders) || folders.length === 0) { return }
 
             const count = await db.prepare('SELECT COUNT(*) as c FROM folders').get() as { c: number }
@@ -901,7 +318,7 @@ export class DatabaseService extends BaseService {
         if (!fs.existsSync(this.promptsPath)) { return }
         try {
             const content = await fs.promises.readFile(this.promptsPath, 'utf-8')
-            const prompts = JSON.parse(content) as Prompt[]
+            const prompts = safeJsonParse<Prompt[]>(content, [])
             if (!Array.isArray(prompts) || prompts.length === 0) { return }
 
             const count = await db.prepare('SELECT COUNT(*) as c FROM prompts').get() as { c: number }
@@ -922,7 +339,7 @@ export class DatabaseService extends BaseService {
         if (!fs.existsSync(this.councilPath)) { return }
         try {
             const content = await fs.promises.readFile(this.councilPath, 'utf-8')
-            const sessions = JSON.parse(content) as CouncilSession[]
+            const sessions = safeJsonParse<CouncilSession[]>(content, [])
             if (!Array.isArray(sessions) || sessions.length === 0) { return }
 
             const count = await db.prepare('SELECT COUNT(*) as c FROM council_sessions').get() as { c: number }
@@ -946,7 +363,7 @@ export class DatabaseService extends BaseService {
             if (Number(countP.c) !== 0) { return }
 
             const content = await fs.promises.readFile(this.projectsPath, 'utf-8')
-            const projects = JSON.parse(content) as Project[]
+            const projects = safeJsonParse<Project[]>(content, [])
             if (!Array.isArray(projects) || projects.length === 0) { return }
 
             for (const p of projects) {
@@ -973,35 +390,45 @@ export class DatabaseService extends BaseService {
 
             appLogger.info('DatabaseService', 'Migrating legacy chats...')
             const content = await fs.promises.readFile(this.chatsPath, 'utf-8')
-            const chats = JSON.parse(content) as JsonObject[]
+            const chats = safeJsonParse<JsonObject[]>(content, [])
             if (!Array.isArray(chats) || chats.length === 0) { return }
 
             for (const c of chats) {
-                const id = String(c.id ?? '')
-                if (!id) { continue }
-                await db.prepare(`
-                    INSERT INTO chats (id, title, model, backend, folder_id, project_id, is_pinned, is_favorite, is_archived, metadata, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).run(
-                    id,
-                    String(c.title ?? 'Imported Chat'),
-                    String(c.model ?? ''),
-                    String(c.backend ?? 'unknown'),
-                    c.folderId as string ?? null,
-                    c.projectId as string ?? null,
-                    Number(c.isPinned ?? c.is_pinned ?? 0),
-                    Number(c.isFavorite ?? c.is_favorite ?? 0),
-                    Number(c.isArchived ?? c.is_archived ?? 0),
-                    JSON.stringify(c.metadata ?? {}),
-                    Number(c.createdAt ?? c.created_at ?? Date.now()),
-                    Number(c.updatedAt ?? c.updated_at ?? Date.now())
-                )
+                await this.migrateSingleChat(db, c)
             }
             await fs.promises.rename(this.chatsPath, `${this.chatsPath}.migrated`)
             appLogger.info('DatabaseService', `Migrated ${chats.length} chats.`)
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed migration chats', error as Error)
         }
+    }
+
+    private async migrateSingleChat(db: DatabaseAdapter, c: JsonObject) {
+        const id = String(c.id ?? '')
+        if (!id) { return }
+        const values = this.getChatMigrationValues(c, id)
+        await db.prepare(`
+            INSERT INTO chats (id, title, model, backend, folder_id, project_id, is_pinned, is_favorite, is_archived, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(...values)
+    }
+
+    // eslint-disable-next-line complexity
+    private getChatMigrationValues(c: JsonObject, id: string): SqlValue[] {
+        return [
+            id,
+            String(c.title ?? 'Imported Chat'),
+            String(c.model ?? ''),
+            String(c.backend ?? 'unknown'),
+            (c.folderId as string | null) ?? null,
+            (c.projectId as string | null) ?? null,
+            Number(c.isPinned ?? c.is_pinned ?? 0),
+            Number(c.isFavorite ?? c.is_favorite ?? 0),
+            Number(c.isArchived ?? c.is_archived ?? 0),
+            JSON.stringify(c.metadata ?? {}),
+            Number(c.createdAt ?? c.created_at ?? Date.now()),
+            Number(c.updatedAt ?? c.updated_at ?? Date.now())
+        ]
     }
 
     private async handleMessageMigration(db: DatabaseAdapter) {
@@ -1012,32 +439,41 @@ export class DatabaseService extends BaseService {
 
             appLogger.info('DatabaseService', 'Migrating legacy messages...')
             const content = await fs.promises.readFile(this.messagesPath, 'utf-8')
-            const messages = JSON.parse(content) as JsonObject[]
+            const messages = safeJsonParse<JsonObject[]>(content, [])
             if (!Array.isArray(messages) || messages.length === 0) { return }
 
             for (const m of messages) {
-                const id = String(m.id ?? '')
-                const chatId = String(m.chatId ?? m.chat_id ?? '')
-                if (!id || !chatId) { continue }
-                await db.prepare(`
-                    INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `).run(
-                    id,
-                    chatId,
-                    String(m.role ?? 'user'),
-                    String(m.content ?? ''),
-                    Number(m.timestamp ?? Date.now()),
-                    m.provider as string ?? null,
-                    m.model as string ?? null,
-                    JSON.stringify(m.metadata ?? {})
-                )
+                await this.migrateSingleMessage(db, m)
             }
             await fs.promises.rename(this.messagesPath, `${this.messagesPath}.migrated`)
             appLogger.info('DatabaseService', `Migrated ${messages.length} messages.`)
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed migration messages', error as Error)
         }
+    }
+
+    private async migrateSingleMessage(db: DatabaseAdapter, m: JsonObject) {
+        const id = String(m.id ?? '')
+        const chatId = String(m.chatId ?? m.chat_id ?? '')
+        if (!id || !chatId) { return }
+        const values = this.getMessageMigrationValues(m, id, chatId)
+        await db.prepare(`
+            INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(...values)
+    }
+
+    private getMessageMigrationValues(m: JsonObject, id: string, chatId: string): SqlValue[] {
+        return [
+            id,
+            chatId,
+            String(m.role ?? 'user'),
+            String(m.content ?? ''),
+            Number(m.timestamp ?? Date.now()),
+            (m.provider as string | null) ?? null,
+            (m.model as string | null) ?? null,
+            JSON.stringify(m.metadata ?? {})
+        ]
     }
 
     // --- CRUD Implementations ---
@@ -1102,7 +538,7 @@ export class DatabaseService extends BaseService {
             id: String(r.id),
             title: String(r.title),
             content: String(r.content),
-            tags: JSON.parse((r.tags as string | null) ?? '[]') as string[],
+            tags: this.parseJsonField(r.tags as string | null, [] as string[]),
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at)
         }))
@@ -1116,7 +552,7 @@ export class DatabaseService extends BaseService {
             id: String(row.id),
             title: String(row.title),
             content: String(row.content),
-            tags: JSON.parse((row.tags as string | null) ?? '[]') as string[],
+            tags: this.parseJsonField(row.tags as string | null, [] as string[]),
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
@@ -1164,7 +600,7 @@ export class DatabaseService extends BaseService {
 
     private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
         if (!json) { return defaultValue }
-        try { return JSON.parse(json) as T } catch { return defaultValue }
+        return safeJsonParse<T>(json, defaultValue)
     }
 
     async getProjects(): Promise<Project[]> {
@@ -1268,7 +704,7 @@ export class DatabaseService extends BaseService {
                         metadata, created_at, updated_at
                     ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).run(...chatData)
-            appLogger.info('DatabaseService', `Created chat: ${chatId} (${chat.title || 'New Chat'})`)
+            appLogger.info('DatabaseService', `Created chat: ${chatId} (${chat.title ?? 'New Chat'})`)
             return { success: true, id: chatId }
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to create chat:', error as Error)
@@ -1707,8 +1143,8 @@ export class DatabaseService extends BaseService {
             tags: this.parseJsonField(r.tags as string | null, []),
             importance: Number(r.importance ?? 0),
             projectId: r.project_id as string | undefined,
-            createdAt: Number(r.createdAt || r.created_at),
-            updatedAt: Number(r.updatedAt || r.updated_at)
+            createdAt: Number(r.createdAt ?? r.created_at),
+            updatedAt: Number(r.updatedAt ?? r.updated_at)
         }))
     }
 
@@ -1727,8 +1163,8 @@ export class DatabaseService extends BaseService {
             tags: this.parseJsonField(r.tags as string | null, []),
             importance: Number(r.importance ?? 0),
             projectId: r.project_id as string | undefined,
-            createdAt: Number(r.createdAt || r.created_at),
-            updatedAt: Number(r.updatedAt || r.updated_at)
+            createdAt: Number(r.createdAt ?? r.created_at),
+            updatedAt: Number(r.updatedAt ?? r.updated_at)
         }));
     }
 
@@ -1759,7 +1195,7 @@ export class DatabaseService extends BaseService {
 
     async storeEpisodicMemory(memory: EpisodicMemory) {
         const db = await this.ensureDb()
-        const vec = memory.embedding ? `[${memory.embedding.join(',')}]` : null
+        const vec = `[${memory.embedding.join(',')}]`
         await db.prepare(`
             INSERT INTO episodic_memories(id, title, summary, embedding, start_date, end_date, chat_id, participants, created_at)
         VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2056,7 +1492,7 @@ export class DatabaseService extends BaseService {
     async getMigrationStatus() {
         const db = await this.ensureDb()
         const manager = new MigrationManager(db)
-        manager.registerAll(this.getMigrationDefinitions())
+        manager.registerAll(getMigrationDefinitions(this.isTest))
         return await manager.getStatus()
     }
 
@@ -2255,7 +1691,8 @@ export class DatabaseService extends BaseService {
             const now = Date.now()
 
             await db.transaction(async (tx) => {
-                await this.performChatDuplication(tx, chat, newId, now)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await this.performChatDuplication(tx as any, chat, newId, now)
             })
 
             return newId
@@ -2265,7 +1702,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    private async performChatDuplication(tx: any, chat: Chat, newId: string, now: number) {
+    private async performChatDuplication(tx: TransactionLike, chat: Chat, newId: string, now: number) {
         const txAdapter = this.createAdapterFromTx(tx)
         await this.insertDuplicatedChat(txAdapter, chat, newId, now)
         await this.duplicateChatMessages(txAdapter, chat.id, newId)
@@ -2365,9 +1802,9 @@ export class DatabaseService extends BaseService {
                 name: String(row.name),
                 description: String(row.description ?? ''),
                 template: String(row.template),
-                variables: JSON.parse((row.variables as string | null) ?? '[]'),
+                variables: this.parseJsonField(row.variables as string | null, []),
                 category: String(row.category ?? ''),
-                tags: row.tags ? JSON.parse(row.tags as string) : undefined,
+                tags: this.parseJsonField(row.tags as string | null, undefined),
                 createdAt: Number(row.created_at),
                 updatedAt: Number(row.updated_at)
             }))
@@ -2509,7 +1946,7 @@ export class DatabaseService extends BaseService {
                 action: String(row.action),
                 category: String(row.category) as AuditLogEntry['category'],
                 userId: row.user_id as string | undefined,
-                details: row.details ? JSON.parse(row.details as string) : undefined,
+                details: this.parseJsonField(row.details as string | null, undefined),
                 ipAddress: row.ip_address as string | undefined,
                 userAgent: row.user_agent as string | undefined,
                 success: Boolean(row.success),
@@ -2574,155 +2011,6 @@ export class DatabaseService extends BaseService {
             appLogger.error('DatabaseService', `Failed to update job last run: ${getErrorMessage(error)} `)
         }
     }
-    // --- Auth Token Methods ---
-
-    // --- Auth Token Methods ---
-
-    async getAuthToken(id: string): Promise<AuthToken | null> {
-        try {
-            const db = await this.ensureDb()
-            const row = await db.prepare('SELECT * FROM auth_tokens WHERE id = ?').get<JsonObject>(id)
-            if (!row) { return null }
-            return this.mapAuthTokenRow(row)
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get auth token ${id}: ${getErrorMessage(error)} `)
-            return null
-        }
-    }
-
-    async getAuthTokenByProvider(accountId: string, provider: string): Promise<AuthToken | null> {
-        try {
-            const db = await this.ensureDb()
-            const row = await db.prepare('SELECT * FROM auth_tokens WHERE account_id = ? AND provider = ?').get<JsonObject>(accountId, provider)
-            if (!row) { return null }
-            return this.mapAuthTokenRow(row)
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get auth token for ${provider}: ${getErrorMessage(error)} `)
-            return null
-        }
-    }
-
-    async getAuthTokensByProvider(accountId: string, provider: string): Promise<AuthToken[]> {
-        try {
-            const db = await this.ensureDb()
-            const rows = await db.prepare('SELECT * FROM auth_tokens WHERE account_id = ? AND provider = ?').all<JsonObject>(accountId, provider)
-            return rows.map(row => this.mapAuthTokenRow(row))
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get auth tokens for ${provider}: ${getErrorMessage(error)} `)
-            return []
-        }
-    }
-
-    async saveAuthToken(token: AuthToken): Promise<void> {
-        try {
-            const db = await this.ensureDb()
-            await db.prepare(`
-                INSERT INTO auth_tokens(id, account_id, provider, email, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    account_id = excluded.account_id,
-                    provider = excluded.provider,
-                    email = excluded.email,
-                    access_token = excluded.access_token,
-                    refresh_token = excluded.refresh_token,
-                    session_token = excluded.session_token,
-                    expires_at = excluded.expires_at,
-                    scope = excluded.scope,
-                    metadata = excluded.metadata,
-                    updated_at = excluded.updated_at
-            `).run(
-                token.id,
-                token.accountId,
-                token.provider,
-                token.email ?? null,
-                token.accessToken ?? null,
-                token.refreshToken ?? null,
-                token.sessionToken ?? null,
-                token.expiresAt ?? null,
-                token.scope ?? null,
-                token.metadata ? JSON.stringify(token.metadata) : null,
-                token.updatedAt
-            )
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to save auth token ${token.id}: ${getErrorMessage(error)} `)
-            throw error
-        }
-    }
-
-    async deleteAuthToken(id: string): Promise<void> {
-        try {
-            const db = await this.ensureDb()
-            await db.prepare('DELETE FROM auth_tokens WHERE id = ?').run(id)
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to delete auth token ${id}: ${getErrorMessage(error)} `)
-            throw error
-        }
-    }
-
-    async getAllAuthTokens(accountId?: string): Promise<AuthToken[]> {
-        try {
-            const db = await this.ensureDb()
-            let sql = 'SELECT * FROM auth_tokens'
-            const params: SqlValue[] = []
-            if (accountId) {
-                sql += ' WHERE account_id = ?'
-                params.push(accountId)
-            }
-            const rows = await db.prepare(sql).all<JsonObject>(...params)
-            return rows.map(row => this.mapAuthTokenRow(row))
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get all auth tokens: ${getErrorMessage(error)} `)
-            return []
-        }
-    }
-
-    // --- Auth Account Methods ---
-
-    async createAuthAccount(account: AuthAccount): Promise<void> {
-        try {
-            const db = await this.ensureDb()
-            await db.prepare(`
-                INSERT INTO auth_accounts(id, name, avatar, created_at, updated_at)
-                VALUES(?, ?, ?, ?, ?)
-            `).run(account.id, account.name, account.avatar ?? null, account.createdAt, account.updatedAt)
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to create auth account: ${getErrorMessage(error)} `)
-            throw error
-        }
-    }
-
-    async getAuthAccounts(): Promise<AuthAccount[]> {
-        try {
-            const db = await this.ensureDb()
-            const rows = await db.prepare('SELECT * FROM auth_accounts ORDER BY created_at ASC').all<JsonObject>()
-            return rows.map(row => ({
-                id: String(row.id),
-                name: String(row.name),
-                avatar: row.avatar as string | undefined,
-                createdAt: Number(row.created_at),
-                updatedAt: Number(row.updated_at)
-            }))
-        } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get auth accounts: ${getErrorMessage(error)} `)
-            return []
-        }
-    }
-
-    private mapAuthTokenRow(row: JsonObject): AuthToken {
-        return {
-            id: String(row.id),
-            accountId: String(row.account_id),
-            provider: String(row.provider),
-            email: row.email as string | undefined,
-            accessToken: row.access_token as string | undefined,
-            refreshToken: row.refresh_token as string | undefined,
-            sessionToken: row.session_token as string | undefined,
-            expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
-            scope: row.scope as string | undefined,
-            metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
-            updatedAt: Number(row.updated_at)
-        }
-    }
 
     // --- Linked Account Methods (New Multi-Account System) ---
 
@@ -2760,6 +2048,7 @@ export class DatabaseService extends BaseService {
     async saveLinkedAccount(account: LinkedAccount): Promise<void> {
         try {
             const db = await this.ensureDb()
+            const values = this.getLinkedAccountParams(account)
             await db.prepare(`
                 INSERT INTO linked_accounts(id, provider, email, display_name, avatar_url, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2776,26 +2065,30 @@ export class DatabaseService extends BaseService {
                     is_active = excluded.is_active,
                     metadata = excluded.metadata,
                     updated_at = excluded.updated_at
-            `).run(
-                account.id,
-                account.provider,
-                account.email ?? null,
-                account.displayName ?? null,
-                account.avatarUrl ?? null,
-                account.accessToken ?? null,
-                account.refreshToken ?? null,
-                account.sessionToken ?? null,
-                account.expiresAt ?? null,
-                account.scope ?? null,
-                account.isActive,
-                account.metadata ? JSON.stringify(account.metadata) : null,
-                account.createdAt,
-                account.updatedAt
-            )
+            `).run(...values)
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to save linked account ${account.id}: ${getErrorMessage(error)}`)
             throw error
         }
+    }
+
+    private getLinkedAccountParams(account: LinkedAccount): SqlValue[] {
+        return [
+            account.id,
+            account.provider,
+            account.email ?? null,
+            account.displayName ?? null,
+            account.avatarUrl ?? null,
+            account.accessToken ?? null,
+            account.refreshToken ?? null,
+            account.sessionToken ?? null,
+            account.expiresAt ?? null,
+            account.scope ?? null,
+            account.isActive,
+            account.metadata ? JSON.stringify(account.metadata) : null,
+            account.createdAt,
+            account.updatedAt
+        ]
     }
 
     async deleteLinkedAccount(id: string): Promise<void> {
@@ -2834,7 +2127,7 @@ export class DatabaseService extends BaseService {
             expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
             scope: row.scope as string | undefined,
             isActive: Boolean(row.is_active),
-            metadata: row.metadata ? JSON.parse(row.metadata as string) : undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, undefined),
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }

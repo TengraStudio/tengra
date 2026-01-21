@@ -121,7 +121,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                 setLoading(false)
             }
         }
-        loadRoot()
+        void loadRoot()
     }, [rootPath])
 
     if (loading) {return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>}

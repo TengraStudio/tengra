@@ -1,5 +1,5 @@
-﻿import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import { useCallback, useEffect, useState } from 'react'
+import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AppSettings } from '@/types'
 
@@ -39,11 +39,11 @@ export function useModelManager(
         if (appSettings?.general?.defaultModel) {
             setSelectedModel(appSettings.general.defaultModel)
             // defaultProvider does not exist, using lastProvider as fallback or just empty
-            setSelectedProvider(appSettings.general.lastProvider || '')
+            setSelectedProvider(appSettings.general.lastProvider ?? '')
         }
     }, [appSettings])
 
-    const handleSelectModel = (provider: string, model: string) => {
+    const handleSelectModel = useCallback((provider: string, model: string) => {
         if (!appSettings) { return }
         setSelectedModel(model)
         setSelectedProvider(provider)
@@ -56,9 +56,9 @@ export function useModelManager(
             }
         })
         setIsModelMenuOpen(false)
-    }
+    }, [appSettings, setAppSettings])
 
-    const persistLastSelection = (provider: string, model: string) => {
+    const persistLastSelection = useCallback((provider: string, model: string) => {
         if (!appSettings) { return }
         setAppSettings({
             ...appSettings,
@@ -68,11 +68,11 @@ export function useModelManager(
                 lastProvider: provider
             }
         })
-    }
+    }, [appSettings, setAppSettings])
 
-    const toggleFavorite = (modelId: string) => {
+    const toggleFavorite = useCallback((modelId: string) => {
         if (!appSettings) { return }
-        const currentFavorites = appSettings.general.favoriteModels || []
+        const currentFavorites = appSettings.general.favoriteModels ?? []
         const isFav = currentFavorites.includes(modelId)
 
         let newFavorites: string[]
@@ -89,13 +89,13 @@ export function useModelManager(
                 favoriteModels: newFavorites
             }
         })
-    }
+    }, [appSettings, setAppSettings])
 
-    const isFavorite = (modelId: string) => {
+    const isFavorite = useCallback((modelId: string) => {
         return appSettings?.general.favoriteModels?.includes(modelId) ?? false
-    }
+    }, [appSettings])
 
-    return {
+    return useMemo(() => ({
         models,
         groupedModels,
         selectedModel,
@@ -112,5 +112,9 @@ export function useModelManager(
         persistLastSelection,
         toggleFavorite,
         isFavorite
-    }
+    }), [
+        models, groupedModels, selectedModel, selectedProvider, proxyModels,
+        isModelMenuOpen, isLoading, refreshModels, handleSelectModel,
+        persistLastSelection, toggleFavorite, isFavorite
+    ])
 }

@@ -115,16 +115,16 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
 
                             <div className="mb-8 flex justify-center">
                                 <div className="p-4 bg-primary/10 rounded-2xl">
-                                    {steps[currentStep]!.icon}
+                                    {steps[currentStep]?.icon}
                                 </div>
                             </div>
 
                             <div className="text-center space-y-3">
                                 <h2 className="text-2xl font-black tracking-tight text-white uppercase italic">
-                                    {steps[currentStep]!.title}
+                                    {steps[currentStep]?.title}
                                 </h2>
                                 <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-                                    {steps[currentStep]!.description}
+                                    {steps[currentStep]?.description}
                                 </p>
                             </div>
                         </div>

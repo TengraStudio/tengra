@@ -193,7 +193,7 @@ export class ModelRouter {
      * Find a fallback model when primary provider is unavailable
      */
     private findFallback(modelId: string, currentProvider: string): { provider: string; model: string } | null {
-        const fallbackProviders = FALLBACK_CHAINS[currentProvider] || []
+        const fallbackProviders = FALLBACK_CHAINS[currentProvider] ?? []
 
         for (const provider of fallbackProviders) {
             const equivalent = this.findEquivalent(modelId, provider)

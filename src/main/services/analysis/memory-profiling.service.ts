@@ -43,7 +43,7 @@ export class MemoryProfilingService extends BaseService {
 
     constructor(dataService?: DataService) {
         super('MemoryProfilingService');
-        this.dataService = dataService || null;
+        this.dataService = dataService ?? null;
     }
 
     /**
@@ -105,8 +105,8 @@ export class MemoryProfilingService extends BaseService {
             return {
                 snapshots: this.snapshots,
                 trend: 'stable',
-                averageHeapUsed: this.snapshots[0]?.heapUsed || 0,
-                peakHeapUsed: this.snapshots[0]?.heapUsed || 0,
+                averageHeapUsed: this.snapshots[0]?.heapUsed ?? 0,
+                peakHeapUsed: this.snapshots[0]?.heapUsed ?? 0,
                 leakSuspects: [],
                 recommendations: ['Not enough snapshots for analysis. Take more snapshots.']
             };
@@ -168,8 +168,8 @@ export class MemoryProfilingService extends BaseService {
         // Check for continuous heap growth
         if (this.snapshots.length >= 10) {
             const recent = this.snapshots.slice(-10);
-            const first = recent[0]!.heapUsed;
-            const last = recent[recent.length - 1]!.heapUsed;
+            const first = recent[0]?.heapUsed;
+            const last = recent[recent.length - 1]?.heapUsed;
             const growth = ((last - first) / first) * 100;
 
             if (growth > 20) {
@@ -185,8 +185,8 @@ export class MemoryProfilingService extends BaseService {
         // Check for external memory growth (native bindings)
         if (this.snapshots.length >= 5) {
             const recent = this.snapshots.slice(-5);
-            const firstExternal = recent[0]!.external;
-            const lastExternal = recent[recent.length - 1]!.external;
+            const firstExternal = recent[0]?.external;
+            const lastExternal = recent[recent.length - 1]?.external;
 
             if (lastExternal > firstExternal * 1.5) {
                 suspects.push({
@@ -259,7 +259,7 @@ export class MemoryProfilingService extends BaseService {
      * Write heap snapshot to file
      */
     async writeHeapSnapshot(): Promise<string> {
-        const snapshotDir = this.dataService?.getPath('logs') || app.getPath('userData');
+        const snapshotDir = this.dataService?.getPath('logs') ?? app.getPath('userData');
         const filename = `heap-${Date.now()}.heapsnapshot`;
         const filepath = path.join(snapshotDir, filename);
 

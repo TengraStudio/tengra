@@ -1,7 +1,10 @@
+import { appLogger } from '@main/logging/logger'
 import { ToolCall } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface StreamChunk {
+    index?: number
     content?: string
     reasoning?: string
     images?: Array<string | { image_url: { url: string } }>
@@ -18,7 +21,7 @@ type OpenAIStreamDelta = {
 }
 
 type OpenAIStreamPayload = {
-    choices?: Array<{ delta?: OpenAIStreamDelta }>
+    choices?: Array<{ delta?: OpenAIStreamDelta; index?: number }>
 }
 
 export class StreamParser {
@@ -26,15 +29,22 @@ export class StreamParser {
      * Parses a chat stream response (SSE) and yields structured chunks.
      * Supports both Web Streams (ReadableStream) and Node.js Streams (AsyncIterable).
      */
-    static async *parseChatStream(response: Response): AsyncGenerator<StreamChunk> {
-        if (!response.body) { throw new Error('No response body'); }
+    static async *parseChatStream(input: Response | ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>): AsyncGenerator<StreamChunk> {
+        let body: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
+
+        if ('body' in input && input.body) {
+            body = input.body;
+        } else if ('body' in input && !input.body) {
+            throw new Error('No response body');
+        } else {
+            body = input as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
+        }
 
         const decoder = new TextDecoder();
         let buffer = '';
-        const body = response.body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
 
         try {
-            console.log(`[StreamParser] Starting parse. Body type: ${response.body?.constructor.name}`);
+            appLogger.info('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
             if ('getReader' in body && typeof body.getReader === 'function') {
                 // Web Standard ReadableStream
                 const reader = body.getReader();
@@ -44,10 +54,10 @@ export class StreamParser {
                     while (iterations < MAX_STREAM_ITERATIONS) {
                         const { done, value } = await reader.read();
                         if (done) {
-                            console.log('[StreamParser] Reader done');
+                            appLogger.info('stream-parser.util', '[StreamParser] Reader done');
                             break;
                         }
-                        console.debug(`[StreamParser] Received ${value.length} bytes`);
+                        appLogger.debug('stream-parser.util', `[StreamParser] Received ${value.length} bytes`);
                         buffer += decoder.decode(value, { stream: true });
                         yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
                         iterations++;
@@ -60,9 +70,9 @@ export class StreamParser {
                 }
             } else {
                 // Node.js Stream
-                console.log('[StreamParser] Using AsyncIterable iteration');
+                appLogger.info('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
                 for await (const value of body as AsyncIterable<Uint8Array>) {
-                    console.debug(`[StreamParser] Received ${value.length} bytes`);
+                    appLogger.debug('stream-parser.util', `[StreamParser] Received ${value.length} bytes`);
                     buffer += decoder.decode(value, { stream: true });
                     yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
                 }
@@ -77,7 +87,7 @@ export class StreamParser {
         const lines = buffer.split('\n');
         // Keep the last partial line in the buffer
         const lastLine = lines.pop();
-        updateBuffer(lastLine || '');
+        updateBuffer(lastLine ?? '');
 
         for (const line of lines) {
             const trimmed = line.trim();
@@ -113,11 +123,11 @@ export class StreamParser {
             };
 
             try {
-                const json = JSON.parse(jsonData) as StreamPayload;
+                const json = safeJsonParse<StreamPayload>(jsonData, { choices: [] });
 
                 // 1. OPENCODE /responses format
                 if (json.type === 'response.output_text.delta' && json.delta) {
-                    const content = typeof json.delta === 'string' ? json.delta : json.delta?.text || '';
+                    const content = typeof json.delta === 'string' ? json.delta : json.delta?.text ?? '';
                     if (content) {
                         yield { content };
                     }
@@ -125,7 +135,7 @@ export class StreamParser {
                 }
 
                 if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
-                    const reasoning = typeof json.delta === 'string' ? json.delta : json.delta?.text || '';
+                    const reasoning = typeof json.delta === 'string' ? json.delta : json.delta?.text ?? '';
                     if (reasoning) {
                         yield { reasoning };
                     }
@@ -135,7 +145,7 @@ export class StreamParser {
                 if (json.type === 'response.output_item.done' && json.item?.content) {
                     const contentValues = json.item.content
                         .filter((c) => c.type === 'output_text')
-                        .map((c) => c.text || '')
+                        .map((c) => c.text ?? '')
                         .join('');
                     if (contentValues) {
                         yield { content: contentValues };
@@ -148,10 +158,10 @@ export class StreamParser {
                     yield {
                         type: 'tool_calls',
                         tool_calls: [{
-                            id: 'opencode-tc-' + (json.response_id || 'unknown'),
+                            id: 'opencode-tc-' + (json.response_id ?? 'unknown'),
                             type: 'function',
                             function: {
-                                name: json.name || 'unknown',
+                                name: json.name ?? 'unknown',
                                 arguments: args
                             }
                         }]
@@ -165,25 +175,29 @@ export class StreamParser {
                 }
 
                 // 2. STANDARD OpenAI format
-                const delta = json.choices?.[0]?.delta;
-                if (!delta) { continue; }
+                const choices = json.choices ?? [];
+                for (const choice of choices) {
+                    const delta = choice.delta;
+                    if (!delta) { continue; }
 
-                const content = delta.content || '';
-                const reasoning = delta.reasoning_content || delta.reasoning || '';
-                const images = Array.isArray(delta.images) ? delta.images : [];
+                    const content = delta.content ?? '';
+                    const reasoning = (delta.reasoning_content || delta.reasoning) ?? '';
+                    const images = Array.isArray(delta.images) ? delta.images : [];
 
-                if (content || reasoning || images.length > 0 || delta.tool_calls) {
-                    yield {
-                        content,
-                        reasoning,
-                        images,
-                        type: delta.tool_calls ? 'tool_calls' : undefined,
-                        tool_calls: delta.tool_calls
-                    };
+                    if (content || reasoning || images.length > 0 || delta.tool_calls) {
+                        yield {
+                            index: choice.index ?? 0,
+                            content,
+                            reasoning,
+                            images,
+                            type: delta.tool_calls ? 'tool_calls' : undefined,
+                            tool_calls: delta.tool_calls
+                        };
+                    }
                 }
             } catch (error) {
                 // Silent catch for malformed JSON chunks
-                console.debug('[StreamParser] Skipping malformed chunk:', getErrorMessage(error));
+                appLogger.debug('stream-parser.util', '[StreamParser] Skipping malformed chunk:', getErrorMessage(error));
             }
         }
     }

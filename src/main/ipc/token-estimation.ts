@@ -58,7 +58,7 @@ export function registerTokenEstimationIpc() {
         if (typeof model !== 'string') {
             throw new Error('Model must be a string')
         }
-        return tokenEstimator.fitsInContextWindow(messages, model, reservedTokens || 0)
+        return tokenEstimator.fitsInContextWindow(messages, model, reservedTokens ?? 0)
     }, { fits: false, estimatedTokens: 0, contextWindow: 8192, remainingTokens: 0 }))
 
     /**
@@ -71,7 +71,7 @@ export function registerTokenEstimationIpc() {
         if (typeof model !== 'string') {
             throw new Error('Model must be a string')
         }
-        return contextWindowService.getContextWindowInfo(messages, model, reservedTokens || 0)
+        return contextWindowService.getContextWindowInfo(messages, model, reservedTokens ?? 0)
     }, {
         model: '',
         contextWindowSize: 8192,
@@ -109,7 +109,7 @@ export function registerTokenEstimationIpc() {
         if (typeof model !== 'string') {
             throw new Error('Model must be a string')
         }
-        return contextWindowService.needsTruncation(messages, model, reservedTokens || 0)
+        return contextWindowService.needsTruncation(messages, model, reservedTokens ?? 0)
     }, false))
 
     /**
@@ -122,7 +122,7 @@ export function registerTokenEstimationIpc() {
         if (typeof model !== 'string') {
             throw new Error('Model must be a string')
         }
-        return contextWindowService.getRecommendedTruncationSettings(messages, model, reservedTokens || 0)
+        return contextWindowService.getRecommendedTruncationSettings(messages, model, reservedTokens ?? 0)
     }, {
         reservedTokens: 0,
         keepSystemMessages: true,

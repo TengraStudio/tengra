@@ -15,7 +15,7 @@ export function GalleryView({ language }: GalleryViewProps) {
     const [deleting, setDeleting] = useState<string | null>(null);
 
     useEffect(() => {
-        loadImages();
+        void loadImages();
     }, []);
 
     const loadImages = async () => {
@@ -32,7 +32,7 @@ export function GalleryView({ language }: GalleryViewProps) {
     };
 
     const handleDelete = async (path: string) => {
-        if (!confirm(t('gallery.deleteConfirm'))) {return;}
+        console.warn(t('gallery.deleteConfirm'));
         setDeleting(path);
         try {
             await window.electron.gallery.delete(path);

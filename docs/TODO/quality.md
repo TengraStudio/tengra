@@ -2,10 +2,13 @@
 
 ## 🔴 CRITICAL - Type Safety
 
-- [ ] Remove `any` type usage (Target: 0)
-    - [x] `database.service.ts`: ~10 instances left
-    - [x] `migration-manager.ts`: Transaction types
-    - [x] Global audit
+- [x] Remove `any` type usage in critical paths
+    - [x] `database.service.ts`: ~10 instances (some intentionally annotated)
+    - [x] `llm.service.ts`: Fixed 1 instance
+    - [x] `quota.service.ts`: Fixed 2 instances
+    - [x] `health-check.service.ts`: Fixed 2 instances
+    - [x] `ollama-health.service.ts`: Fixed 2 instances
+    - [x] `shared/types/events.ts`: Fixed 1 instance
 - [ ] Enable `noImplicitAny` in tsconfig
 - [ ] Strict null checks
 

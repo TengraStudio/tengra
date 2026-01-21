@@ -52,7 +52,7 @@ export const StatusBarProvider: React.FC<{
             const existing = prev.find(i => i.id === item.id)
             if (existing) {return prev}
             const newItems = [...prev, item]
-            return newItems.sort((a, b) => (b.priority || 0) - (a.priority || 0))
+            return newItems.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
         })
     }, [])
 

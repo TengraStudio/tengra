@@ -57,6 +57,16 @@ func GetProviderName(modelName string) []string {
 		return providers
 	}
 
+	// Fallback for Antigravity models that might not be explicitly registered
+	if strings.HasPrefix(modelName, "antigravity/") {
+		return []string{"antigravity"}
+	}
+
+	// Fallback for Claude/Anthropic models
+	if strings.HasPrefix(modelName, "claude") || strings.HasPrefix(modelName, "anthropic/") {
+		return []string{"claude"}
+	}
+
 	return providers
 }
 

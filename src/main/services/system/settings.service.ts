@@ -5,6 +5,7 @@ import * as path from 'path'
 import { appLogger } from '@main/logging/logger'
 import { AppSettings } from '@shared/types/settings'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -151,7 +152,7 @@ export class SettingsService extends BaseService {
             appLogger.info('SettingsService', `Found settings file at ${this.settingsPath}`);
             const data = await fs.promises.readFile(this.settingsPath, 'utf8')
 
-            if (!data?.trim()) {
+            if (!data.trim()) {
                 appLogger.warn('SettingsService', 'Settings file is empty, using defaults');
                 loaded = {}
             } else {
@@ -173,8 +174,8 @@ export class SettingsService extends BaseService {
 
     private async parseAndRecoverSettings(data: string): Promise<Partial<AppSettings>> {
         try {
-            return JSON.parse(data) as Partial<AppSettings>;
-        } catch (parseError) {
+            return safeJsonParse<Partial<AppSettings>>(data, {});
+        } catch {
             appLogger.warn('SettingsService', 'JSON.parse failed, attempting recovery...');
 
             const recovered = this.attemptJsonRecovery(data)
@@ -213,16 +214,15 @@ export class SettingsService extends BaseService {
 
     private async mergeWithDefaults(loaded: Partial<AppSettings>): Promise<AppSettings> {
         // Merge tokens from AuthService (always do this if authService is available)
-        let authTokens: Record<string, string> = {}
+        let authAccounts: Array<Record<string, unknown>> = []
         if (this.authService) {
-            authTokens = await this.authService.getAllTokens()
-            appLogger.info('SettingsService', `Loaded auth tokens. Keys: ${Object.keys(authTokens)}`)
+            authAccounts = (await this.authService.getAllAccountsFull()) as unknown as Record<string, unknown>[]
+            appLogger.info('SettingsService', `Loaded auth accounts count: ${authAccounts.length}`)
         }
 
         // Helper for fuzzy token lookup
-        // Token finding logic extracted to findTokenInAuth
         const findToken = (provider: string, fallbackKeys: string[] = []): string => {
-            return this.findTokenInAuth(authTokens, provider, fallbackKeys);
+            return this.findTokenInAuth(authAccounts, provider, fallbackKeys);
         };
 
         const def = DEFAULT_SETTINGS;
@@ -239,21 +239,21 @@ export class SettingsService extends BaseService {
         const res: AppSettings = {
             ...def,
             ...loaded,
-            ollama: { ...def.ollama, ...(loaded.ollama || {}) },
+            ollama: { ...def.ollama, ...(loaded.ollama ?? {}) },
             autoUpdate: loaded.autoUpdate
                 ? { ...defAutoUpdate, ...loaded.autoUpdate }
                 : defAutoUpdate,
-            general: { ...def.general, ...(loaded.general || {}) },
+            general: { ...def.general, ...(loaded.general ?? {}) },
             github: {
                 ...def.github,
-                ...(loaded.github || {}),
-                token: findToken('github') || loaded.github?.token || ''
+                ...(loaded.github ?? {}),
+                token: (findToken('github') || (loaded.github?.token ?? ''))
             },
             openai: loaded.openai
                 ? {
                     ...defOpenAI,
                     ...loaded.openai,
-                    apiKey: findToken('openai') || loaded.openai.apiKey || '',
+                    apiKey: (findToken('openai') || (loaded.openai.apiKey ?? '')),
                     model: loaded.openai.model || defOpenAI.model
                 }
                 : defOpenAI,
@@ -261,7 +261,7 @@ export class SettingsService extends BaseService {
                 ? {
                     ...defAnthropic,
                     ...loaded.anthropic,
-                    apiKey: findToken('anthropic') || loaded.anthropic.apiKey || '',
+                    apiKey: (findToken('anthropic') || (loaded.anthropic.apiKey ?? '')),
                     model: loaded.anthropic.model || defAnthropic.model
                 }
                 : defAnthropic,
@@ -270,7 +270,7 @@ export class SettingsService extends BaseService {
                     ...defAntigravity,
                     ...loaded.antigravity,
                     connected: loaded.antigravity.connected ?? defAntigravity.connected,
-                    token: findToken('antigravity') || loaded.antigravity.token || ''
+                    token: (findToken('antigravity') || (loaded.antigravity.token ?? ''))
                 }
                 : defAntigravity,
             copilot: loaded.copilot
@@ -278,23 +278,23 @@ export class SettingsService extends BaseService {
                     ...defCopilot,
                     ...loaded.copilot,
                     connected: loaded.copilot.connected ?? defCopilot.connected,
-                    token: findToken('copilot') || findToken('github') || loaded.copilot.token || ''
+                    token: (findToken('copilot') || findToken('github') || (loaded.copilot.token ?? ''))
                 }
                 : defCopilot,
             groq: loaded.groq
                 ? {
                     ...defGroq,
                     ...loaded.groq,
-                    apiKey: findToken('groq') || loaded.groq.apiKey || '',
+                    apiKey: (findToken('groq') || (loaded.groq.apiKey ?? '')),
                     model: loaded.groq.model || defGroq.model
                 }
                 : defGroq,
             proxy: {
                 ...defProxy,
-                ...(loaded.proxy || {}),
+                ...(loaded.proxy ?? {}),
                 enabled: loaded.proxy?.enabled ?? defProxy.enabled,
                 url: loaded.proxy?.url || defProxy.url,
-                key: findToken('proxy') || loaded.proxy?.key || ''
+                key: (findToken('proxy') || (loaded.proxy?.key ?? ''))
             },
             window: loaded.window
         };
@@ -370,7 +370,7 @@ export class SettingsService extends BaseService {
         const wasModified = endIndex < cleanData.length - 1 || startIndex > 0
 
         try {
-            const parsed = JSON.parse(jsonCandidate) as Partial<AppSettings>
+            const parsed = safeJsonParse<Partial<AppSettings>>(jsonCandidate, {})
             return { data: parsed, wasModified }
         } catch {
             return null
@@ -440,7 +440,7 @@ export class SettingsService extends BaseService {
 
             for (const [key, val] of Object.entries(tokens)) {
                 if (val) {
-                    void this.authService.saveToken(key, val);
+                    void this.authService.linkAccount(key, { accessToken: val });
                 }
             }
         }
@@ -514,24 +514,30 @@ export class SettingsService extends BaseService {
         return this.settings
     }
 
-    private findTokenInAuth(authTokens: Record<string, string>, provider: string, fallbackKeys: string[] = []): string {
+    private findTokenInAuth(authAccounts: Array<Record<string, unknown>>, provider: string, fallbackKeys: string[] = []): string {
         const providers: Record<string, string[]> = {
-            github: ['proxy-auth-token', 'proxy_auth_token', 'github_token', 'github', 'github.token', 'github_token.json'],
-            copilot: ['proxy-auth-token', 'proxy_auth_token', 'copilot_token', 'copilot', 'copilot.token', 'copilot_token.json'],
-            antigravity: ['antigravity_token', 'antigravity']
+            github: ['proxy-auth-token', 'proxy_auth_token', 'github_token', 'github', 'github.token'],
+            copilot: ['proxy-auth-token', 'proxy_auth_token', 'copilot_token', 'copilot', 'copilot.token', 'github_token'],
+            antigravity: ['antigravity_token', 'antigravity'],
+            openai: ['openai_key', 'openai'],
+            anthropic: ['anthropic_key', 'anthropic'],
+            groq: ['groq_key', 'groq'],
+            proxy: ['proxy_key', 'proxy']
         };
 
-        const searchKeys = [...(providers[provider] || [provider + '_token', provider + '_key', provider]), ...fallbackKeys];
+        const searchProviders = [provider, ...(providers[provider] ?? []), ...fallbackKeys];
 
-        for (const key of searchKeys) {
-            if (authTokens[key]) {
-                return authTokens[key];
+        for (const p of searchProviders) {
+            const acc = authAccounts.find(a => a.provider === p);
+            if (acc) {
+                return ((acc.accessToken as string) || (acc.sessionToken as string) || '');
             }
         }
 
-        const fuzzyKey = Object.keys(authTokens).find(k => k.startsWith(provider + '-'));
-        if (fuzzyKey) {
-            return authTokens[fuzzyKey];
+        // Fuzzy search for specific provider patterns if needed
+        const fuzzyAcc = authAccounts.find(a => (a.provider as string).startsWith(provider + '-'));
+        if (fuzzyAcc) {
+            return ((fuzzyAcc.accessToken as string) || (fuzzyAcc.sessionToken as string) || '');
         }
 
         return '';
@@ -542,7 +548,7 @@ export class SettingsService extends BaseService {
         const res = { ...target };
         for (const key of Object.keys(source)) {
             if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                res[key] = { ...((target[key] as any) || {}), ...source[key] };
+                res[key] = { ...((target[key] as Record<string, unknown>) || {}), ...source[key] };
             } else {
                 res[key] = source[key];
             }

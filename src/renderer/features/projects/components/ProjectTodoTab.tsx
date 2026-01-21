@@ -279,7 +279,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                     </button>
                                 </div>
                                 <div className="text-[10px] text-muted-foreground mt-2 pl-1">
-                                    Will act on: <span className="font-mono text-primary/70">/TODO.md</span>
+                                    {t('projects.willActOn')} <span className="font-mono text-primary/70">/TODO.md</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -309,7 +309,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                         <span className="truncate">{file.relativePath}</span>
                                         <div className="h-px bg-white/5 flex-1 group-hover:bg-white/10 transition-colors" />
                                         <span className={cn("px-1.5 py-0.5 rounded text-[10px]", pendingCount > 0 ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground")}>
-                                            {pendingCount} pending
+                                            {pendingCount} {t('projectDashboard.pending')}
                                         </span>
                                     </button>
 

@@ -21,7 +21,7 @@ class PerformanceMonitor {
         this.marks.set(name, { name, timestamp })
 
         if (process.env.NODE_ENV === 'development') {
-            console.log(`[Perf] ${name}: ${timestamp}ms`)
+            console.warn(`[Perf] ${name}: ${timestamp}ms`)
         }
     }
 
@@ -41,7 +41,7 @@ class PerformanceMonitor {
         this.measures.push({ name, timestamp: start.timestamp, duration })
 
         if (process.env.NODE_ENV === 'development') {
-            console.log(`[Perf] ${name}: ${duration}ms`)
+            console.warn(`[Perf] ${name}: ${duration}ms`)
         }
 
         return duration
@@ -63,13 +63,12 @@ class PerformanceMonitor {
      */
     logSummary(): void {
         const report = this.getReport()
-        console.group('[Performance Summary]')
-        console.log(`Total time: ${report.totalTime}ms`)
-        console.table(report.marks)
+        console.warn('[Performance Summary]')
+        console.warn(`Total time: ${report.totalTime}ms`)
+        console.warn('Marks:', report.marks)
         if (report.measures.length > 0) {
-            console.table(report.measures)
+            console.warn('Measures:', report.measures)
         }
-        console.groupEnd()
     }
 
     /**

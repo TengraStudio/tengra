@@ -13,11 +13,12 @@
 
 ### 1.3 Path Traversal
 - [x] FileSystemService: `isPathAllowed`/`validatePath` protects paths ✅ Phase 21
-- [ ] Verify `SSHService` path validation
+- [x] SSHService: `validateRemotePath` protects all file operations ✅
 
 ### 1.4 JSON Safety
 - [x] Wrap `JSON.parse` in try-catch blocks (Phase 4/5)
-- [ ] Audit remaining 90+ instances
+- [x] Added `safeJsonParse` utility for safe parsing with defaults
+- [ ] Apply `safeJsonParse` to remaining 90+ instances
 
 ---
 

@@ -4,16 +4,19 @@ import path from 'path'
 
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
+import { LinkedAccount } from '@main/services/data/database.service'
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { QuotaService } from '@main/services/proxy/quota.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { SecurityService } from '@main/services/security/security.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { AuthenticationError } from '@main/utils/error.util'
 import { LocalAuthServer } from '@main/utils/local-auth-server.util'
 import { JsonObject, JsonValue } from '@shared/types'
-import { ModelQuotaItem, QuotaResponse } from '@shared/types/quota'
+import { ClaudeQuota, CopilotQuota, ModelQuotaItem, QuotaResponse } from '@shared/types/quota'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { net } from 'electron'
 
 export type QuotaInfo = {
@@ -41,7 +44,12 @@ interface ProxyModelResponse {
   [key: string]: JsonValue | undefined;
 }
 
-type ProxyRequestResponse = JsonObject | { success: boolean; error?: string; raw?: JsonValue }
+export type ProxyRequestResponse = JsonObject | {
+  success: boolean;
+  error?: string;
+  raw?: JsonValue;
+  sessionKey?: string;
+}
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -70,24 +78,43 @@ const GITHUB_CLIENTS = {
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 
+export interface ProxyServiceOptions {
+  settingsService: SettingsService;
+  dataService: DataService;
+  securityService: SecurityService;
+  processManager: ProxyProcessManager;
+  quotaService: QuotaService;
+  authService: AuthService;
+  eventBus: EventBusService;
+}
+
 export class ProxyService extends BaseService {
   private currentPort: number = 8317
 
-  constructor(
-    public settingsService: SettingsService,
-    private dataService: DataService,
-    private securityService: SecurityService,
-    private processManager: ProxyProcessManager,
-    private quotaService: QuotaService,
-    private authService: AuthService
-  ) {
+  constructor(private options: ProxyServiceOptions) {
     super('ProxyService')
   }
 
+  get settingsService(): SettingsService { return this.options.settingsService; }
+  get dataService(): DataService { return this.options.dataService; }
+  get securityService(): SecurityService { return this.options.securityService; }
+  get processManager(): ProxyProcessManager { return this.options.processManager; }
+  get quotaService(): QuotaService { return this.options.quotaService; }
+  get authService(): AuthService { return this.options.authService; }
+  get eventBus(): EventBusService { return this.options.eventBus }
+
   override async initialize(): Promise<void> {
     await super.initialize()
+
+    // Listen for token refreshes (no longer syncs files, but logs it)
+    this.eventBus.on('token:refreshed', (payload) => {
+      this.logInfo(`Token refreshed for ${payload.provider}, available via Auth API`)
+    })
+
     await this.ensureAuthStoreKey()
     await this.ensureProxyKey()
+    await this.cleanupAuthDirectory()
+    // No longer calling syncAuthFiles()
   }
 
   override async cleanup(): Promise<void> {
@@ -97,6 +124,38 @@ export class ProxyService extends BaseService {
     } catch (e) {
       this.logError('Failed to stop proxy during cleanup:', e as Error)
     }
+  }
+
+  /**
+   * @deprecated Token synchronization now happens via AuthAPIService (HTTP)
+   */
+  async syncAuthFiles(): Promise<void> {
+    // This is now a no-op to prevent writing sensitive data to disk
+    return Promise.resolve()
+  }
+
+  private prepareTokenData(account: LinkedAccount, provider: string): JsonObject {
+    const tokenData: JsonObject = {
+      access_token: this.authService.decryptToken(account.accessToken ?? ''),
+      refresh_token: this.authService.decryptToken(account.refreshToken ?? ''),
+      scope: account.scope,
+      ...account.metadata
+    }
+
+    if (account.email) {
+      tokenData.email = account.email
+    }
+
+    if (provider === 'claude' || provider === 'anthropic') {
+      tokenData.type = 'claude'
+      if (account.expiresAt) {
+        tokenData.expired = new Date(account.expiresAt).toISOString()
+      }
+    } else if (provider === 'antigravity') {
+      tokenData.type = 'antigravity'
+    }
+
+    return tokenData
   }
 
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
@@ -110,7 +169,16 @@ export class ProxyService extends BaseService {
       request.on('response', (response) => {
         let data = '';
         response.on('data', (chunk) => data += chunk);
-        response.on('end', () => { try { resolve(JSON.parse(data)); } catch (error) { reject(error); } });
+        response.on('end', () => {
+          const result = safeJsonParse<DeviceCodeResponse>(data, {
+            device_code: '',
+            user_code: '',
+            verification_uri: '',
+            expires_in: 0,
+            interval: 0
+          })
+          resolve(result)
+        });
       });
       request.on('error', (err) => reject(err));
       request.end();
@@ -129,16 +197,14 @@ export class ProxyService extends BaseService {
           let data = '';
           response.on('data', (chunk) => data += chunk);
           response.on('end', () => {
-            try {
-              const json: TokenResponse = JSON.parse(data);
-              if (json.access_token) {
-                resolve(json);
-              } else if (json.error === 'authorization_pending') {
-                setTimeout(checkToken, (interval + 1) * 1000);
-              } else {
-                reject(new Error(json.error_description ?? json.error));
-              }
-            } catch (error) { reject(error); }
+            const json: TokenResponse = safeJsonParse<TokenResponse>(data, { error: 'Invalid response' } as TokenResponse);
+            if (json.access_token) {
+              resolve(json);
+            } else if (json.error === 'authorization_pending') {
+              setTimeout(checkToken, (interval + 1) * 1000);
+            } else {
+              reject(new Error(json.error_description ?? json.error));
+            }
           });
         });
         request.on('error', (err) => reject(err));
@@ -154,28 +220,33 @@ export class ProxyService extends BaseService {
 
   private async startGoogleAuth(prefix: string): Promise<{ url: string, state: string }> {
     return LocalAuthServer.startAntigravityAuth(
-      async (data) => {
-        const now = Date.now()
+      (data) => {
+        void (async () => {
+          const now = Date.now()
 
-        let projectId: string | undefined
-        try {
-          projectId = await this.fetchAntigravityProjectID(data.access_token)
-          if (projectId) {
-            this.logInfo(`Discovered Antigravity project ID: ${projectId}`)
+          let projectId: string | undefined
+          try {
+            projectId = await this.fetchAntigravityProjectID(data.access_token)
+            if (projectId) {
+              this.logInfo(`Discovered Antigravity project ID: ${projectId}`)
+            }
+          } catch (e) {
+            this.logWarn('Failed to discover Antigravity project ID:', e as Error)
           }
-        } catch (e) {
-          this.logWarn('Failed to discover Antigravity project ID:', e as Error)
-        }
 
-        // Link account using individual fields
-        await this.authService.linkAccount(prefix, {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresAt: now + (data.expires_in * 1000),
-          scope: data.scope,
-          email: data.email,
-          metadata: { ...data, project_id: projectId } as any
-        })
+          // Link account using individual fields
+          await this.authService.linkAccount(prefix, {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresAt: now + (data.expires_in * 1000),
+            scope: data.scope,
+            email: data.email,
+            metadata: { ...data, project_id: projectId }
+          })
+
+          // Sync to file system so proxy picks it up immediately
+          await this.syncAuthFiles()
+        })().catch(err => this.logError('Antigravity login failed', err as Error));
       },
       (err) => {
         this.logError(`${prefix} Auth failed:`, err as Error)
@@ -186,8 +257,35 @@ export class ProxyService extends BaseService {
     )
   }
 
-  async getAnthropicAuthUrl(): Promise<ProxyRequestResponse> {
-    return this.makeRequest('/v0/management/anthropic-auth-url?is_webui=true', await this.getProxyKey())
+  async getAnthropicAuthUrl(): Promise<{ url: string; state: string }> {
+    // Use TypeScript LocalAuthServer to avoid terminal spam from Go proxy's browser automation
+    return this.startClaudeAuth()
+  }
+
+  private async startClaudeAuth(): Promise<{ url: string; state: string }> {
+    return LocalAuthServer.startClaudeAuth(
+      async (data) => {
+        const now = Date.now()
+
+        // Link account using individual fields
+        await this.authService.linkAccount('claude', {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: data.expires_in ? now + (data.expires_in * 1000) : undefined,
+          scope: data.scope,
+          email: data.email,
+          metadata: { ...data }
+        })
+
+        // Sync to file system so proxy picks it up immediately
+        await this.syncAuthFiles()
+
+        this.logInfo('Claude OAuth login successful')
+      },
+      (err) => {
+        this.logError('Claude Auth failed:', err as Error)
+      }
+    )
   }
 
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
@@ -209,9 +307,9 @@ export class ProxyService extends BaseService {
     }
 
     // Include tokens from Database - These take precedence and ensure uniqueness by provider
-    const dbTokens = await this.authService.getAllFullTokens();
-    for (const token of dbTokens) {
-      const normalized = this.normalizeProviderName(token.provider);
+    const accounts = await this.authService.getAllAccountsFull();
+    for (const account of accounts) {
+      const normalized = this.normalizeProviderName(account.provider);
       // Always add database tokens with db: prefix
       filesMap.set(normalized, {
         name: `db:${normalized}`,
@@ -249,7 +347,7 @@ export class ProxyService extends BaseService {
   async deleteAuthFile(name: string): Promise<{ success: boolean }> {
     if (name.startsWith('db:')) {
       const provider = name.substring(3);
-      await this.authService.deleteToken(provider);
+      await this.authService.unlinkAllForProvider(provider);
       return { success: true };
     }
 
@@ -284,20 +382,19 @@ export class ProxyService extends BaseService {
     return status
   }
 
-  async prepareAuthWorkDir(): Promise<void> {
-    return this.processManager.prepareTempAuthDir()
-  }
-
   async generateConfig(port?: number): Promise<void> {
     return this.processManager.generateConfig(port ?? this.currentPort)
   }
 
-  async getQuota(): Promise<QuotaResponse | null> {
-    return this.quotaService.getQuota(this.currentPort, await this.getProxyKey())
+  async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
+    const quota = await this.quotaService.getQuota(this.currentPort, await this.getProxyKey())
+    if (!quota) { return null; }
+    return quota;
   }
 
   async getCodexUsage(): Promise<Partial<QuotaResponse>> {
-    return this.quotaService.getCodexUsage()
+    const res = await this.quotaService.getCodexUsage()
+    return { accounts: res.accounts } as Partial<QuotaResponse>;
   }
 
   async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
@@ -308,23 +405,27 @@ export class ProxyService extends BaseService {
     return this.quotaService.getLegacyQuota()
   }
 
-  async getCopilotQuota(): Promise<{ success: boolean; plan?: string; limit?: number; remaining?: number; used?: number; percentage?: number | null }> {
-    return this.quotaService.getCopilotQuota()
+  async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
+    return this.quotaService.getCopilotQuota();
   }
 
-  async getClaudeQuota(): Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }> {
-    return this.quotaService.getClaudeQuota()
+  async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
+    return this.quotaService.getClaudeQuota();
   }
 
   async getModels(): Promise<ProxyModelResponse> {
     const apiKey = await this.getProxyKey();
     const proxyData = await this.getProxyModels(apiKey);
 
-    const [codexData, copilotData, claudeData] = await Promise.all([
+    const [codexData, copilotDataRaw, claudeDataRaw] = await Promise.all([
       this.quotaService.fetchCodexUsage(),
-      this.quotaService.getCopilotQuota(),
-      this.quotaService.getClaudeQuota()
+      this.getCopilotQuota(),
+      this.getClaudeQuota()
     ]);
+
+    // Use the first account's quota for normalization (legacy behavior)
+    const copilotData = copilotDataRaw.accounts[0] ? { success: true, ...copilotDataRaw.accounts[0] } : null;
+    const claudeData = claudeDataRaw.accounts[0] ?? null;
 
     const quotas = this.normalizeQuota(codexData, copilotData, claudeData);
 
@@ -349,7 +450,7 @@ export class ProxyService extends BaseService {
     try {
       this.logInfo(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
       const res = await this.makeRequest('/v1/models', apiKey)
-      if (res && 'data' in res && Array.isArray(res.data)) {
+      if ('data' in res && Array.isArray(res.data)) {
         return res.data as ModelItem[];
       }
     } catch (error) {
@@ -444,7 +545,7 @@ export class ProxyService extends BaseService {
     const ids = new Set(merged.map(m => m.id));
     for (const m of extra) {
       if (ids.has(m.id)) {
-        merged.push({ ...m, id: m.id + '-antigravity', name: (m.name ?? m.id) + ' (Antigravity)', provider: 'antigravity' });
+        merged.push({ ...m, id: `${m.id}-antigravity`, name: `${m.name} (Antigravity)`, provider: 'antigravity' });
       } else {
         merged.push(m);
       }
@@ -453,7 +554,7 @@ export class ProxyService extends BaseService {
   }
 
   private enrichModelWithQuota(m: ModelItem, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }): ModelItem {
-    const provider = (m.provider ?? 'custom').toLowerCase();
+    const provider = m.provider.toLowerCase();
     const model = { ...m };
 
     this.applyQuotaInfo(model, provider, quotas);
@@ -533,10 +634,30 @@ export class ProxyService extends BaseService {
     return this.dataService.getPath('auth')
   }
 
-  private makeRequest(path: string, apiKey?: string): Promise<ProxyRequestResponse> {
+  private async cleanupAuthDirectory() {
+    try {
+      const dir = this.getAuthWorkDir()
+      const exists = await fs.promises.access(dir).then(() => true).catch(() => false)
+      if (!exists) { return }
+
+      const files = await fs.promises.readdir(dir)
+      const jsonFiles = files.filter(f => f.endsWith('.json') || f.endsWith('.json.enc'))
+
+      if (jsonFiles.length > 0) {
+        this.logInfo(`Cleaning up ${jsonFiles.length} legacy auth files...`)
+        for (const file of jsonFiles) {
+          await fs.promises.unlink(path.join(dir, file)).catch(() => { })
+        }
+      }
+    } catch (e) {
+      this.logError('Failed to cleanup auth directory:', e as Error)
+    }
+  }
+
+  private makeRequest(path: string, apiKey?: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<ProxyRequestResponse> {
     return new Promise((resolve, reject) => {
       const options = {
-        method: 'GET',
+        method,
         protocol: 'http:' as const,
         hostname: '127.0.0.1',
         port: this.currentPort,
@@ -544,8 +665,12 @@ export class ProxyService extends BaseService {
       }
 
       const request = net.request(options)
-      if (apiKey) {
-        request.setHeader('Authorization', `Bearer ${apiKey}`)
+      const token = apiKey ?? this.settingsService.getSettings().proxy?.key
+      if (token) {
+        request.setHeader('Authorization', `Bearer ${token}`)
+      }
+      if (body) {
+        request.setHeader('Content-Type', 'application/json')
       }
 
       request.on('response', (res) => {
@@ -556,27 +681,26 @@ export class ProxyService extends BaseService {
             resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
             return
           }
-          try {
-            const parsed = JSON.parse(d) as JsonValue
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              resolve(parsed as JsonObject)
-            } else {
-              resolve({ success: false, error: 'Invalid JSON', raw: d })
-            }
-          } catch {
-            resolve({ success: false, error: 'Invalid JSON', raw: d });
+          const parsed = safeJsonParse<JsonValue>(d, null)
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            resolve(parsed as JsonObject)
+          } else {
+            resolve({ success: false, error: 'Invalid JSON', raw: d })
           }
         })
       })
 
       request.on('error', err => reject(err))
+      if (body) {
+        request.write(JSON.stringify(body))
+      }
       request.end()
     })
   }
 
   private async ensureProxyKey(): Promise<string> {
     const settings = this.settingsService.getSettings()
-    let key = settings.proxy?.key?.trim() || ''
+    let key = settings.proxy?.key.trim() ?? ''
     if (!key || key.length > 72) {
       key = crypto.randomBytes(32).toString('base64')
       const currentProxy = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1' }
@@ -589,7 +713,7 @@ export class ProxyService extends BaseService {
 
   private async ensureAuthStoreKey(): Promise<string> {
     const settings = this.settingsService.getSettings()
-    let key = settings.proxy?.authStoreKey?.trim() || ''
+    let key = settings.proxy?.authStoreKey?.trim() ?? ''
     if (!key || key.length > 72) {
       key = crypto.randomBytes(32).toString('base64')
       const currentProxy = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1', key: '' }
@@ -629,9 +753,9 @@ export class ProxyService extends BaseService {
     if (fileName.endsWith('.enc')) {
       const decrypted = this.securityService.decryptSync(content);
       if (!decrypted) { return null; }
-      return JSON.parse(decrypted);
+      return safeJsonParse<JsonValue>(decrypted, null);
     }
-    return JSON.parse(content);
+    return safeJsonParse<JsonValue>(content, null);
   }
 
   private async fetchAntigravityProjectID(accessToken: string): Promise<string | undefined> {
@@ -659,17 +783,14 @@ export class ProxyService extends BaseService {
         let data = ''
         response.on('data', chunk => data += chunk)
         response.on('end', () => {
-          if (response.statusCode && response.statusCode >= 400) {
+          if (response.statusCode >= 400) {
             resolve(undefined)
             return
           }
-          try {
-            const json = JSON.parse(data)
-            const projectID = json.cloudaicompanionProject?.id || json.cloudaicompanionProject
-            resolve(typeof projectID === 'string' ? projectID.trim() : undefined)
-          } catch {
-            resolve(undefined)
-          }
+          const json = safeJsonParse<{ cloudaicompanionProject?: { id?: string } | string }>(data, {})
+          const project = json.cloudaicompanionProject
+          const projectID = typeof project === 'object' ? project.id : project
+          resolve(typeof projectID === 'string' ? projectID.trim() : undefined)
         })
       })
 

@@ -6,7 +6,8 @@ import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
 import { useProjectManager } from '@renderer/features/projects/hooks/useProjectManager'
 import { useTranslation } from '@renderer/i18n'
 import { CatchError } from '@shared/types/common'
-import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react'
 import React from 'react'
 
 import { Project } from '@/types'
@@ -46,13 +47,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Chat History Manager for undo/redo
     const historyManager = useChatHistory()
 
+    const handleSpeakAdapter = useCallback((id: string, text: string) => {
+        handleSpeak(text, id);
+    }, [handleSpeak]);
+
     const chatManager = useChatManager({
         selectedModel,
         selectedProvider,
         language,
         appSettings: appSettings || undefined,
         autoReadEnabled: false, // Could be moved to settings/context
-        handleSpeak: (id, text) => handleSpeak(text, id), // Adapter
+        handleSpeak: handleSpeakAdapter, // Stable Adapter
         formatChatError: (e: CatchError) => {
             if (e instanceof Error) {
                 const message = e.message;
@@ -62,8 +67,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                         // Try to parse JSON error if present
                         const jsonMatch = message.match(/\{[\s\S]*\}/);
                         if (jsonMatch) {
-                            const errData = JSON.parse(jsonMatch[0]);
-                            const errorMsg = errData.error?.message || errData.message || message;
+                            const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {})
+                            const errorMsg = errData.error?.message ?? errData.message ?? message;
                             if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
                                 return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
                             }
@@ -131,6 +136,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [historyManager, chatManager])
 
+    const undo = useCallback(() => {
+        isRestoringRef.current = true
+        const state = historyManager.undo()
+        if (state) {
+            chatManager.setChats(state.chats)
+            chatManager.setCurrentChatId(state.currentChatId)
+        }
+    }, [historyManager, chatManager])
+
+    const redo = useCallback(() => {
+        isRestoringRef.current = true
+        const state = historyManager.redo()
+        if (state) {
+            chatManager.setChats(state.chats)
+            chatManager.setCurrentChatId(state.currentChatId)
+        }
+    }, [historyManager, chatManager])
+
     const value = useMemo(() => ({
         ...chatManager,
         handleSpeak,
@@ -143,26 +166,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         loadProjects,
         canUndo: historyManager.canUndo,
         canRedo: historyManager.canRedo,
-        undo: () => {
-            isRestoringRef.current = true
-            const state = historyManager.undo()
-            if (state) {
-                chatManager.setChats(state.chats)
-                chatManager.setCurrentChatId(state.currentChatId)
-            }
-        },
-        redo: () => {
-            isRestoringRef.current = true
-            const state = historyManager.redo()
-            if (state) {
-                chatManager.setChats(state.chats)
-                chatManager.setCurrentChatId(state.currentChatId)
-            }
-        }
+        undo,
+        redo
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
         projects, selectedProject, setSelectedProject, loadProjects,
-        historyManager.canUndo, historyManager.canRedo, historyManager.undo, historyManager.redo
+        historyManager.canUndo, historyManager.canRedo, undo, redo
     ])
 
     return (

@@ -24,6 +24,11 @@ export default tseslint.config(
             'react-hooks': reactHooks,
             'simple-import-sort': simpleImportSort,
         },
+        settings: {
+            react: {
+                version: 'detect',
+            },
+        },
         rules: {
             ...reactHooks.configs.recommended.rules,
             'react/react-in-jsx-scope': 'off',

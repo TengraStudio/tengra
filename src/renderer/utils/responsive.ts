@@ -3,7 +3,7 @@
  * Provides hooks and utilities for responsive design across screen sizes
  */
 
-import { useEffect,useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
@@ -25,12 +25,12 @@ export function useBreakpoint(): Breakpoint {
     useEffect(() => {
         const updateBreakpoint = () => {
             const width = window.innerWidth
-            if (width >= breakpoints['2xl']) {setBreakpoint('2xl')}
-            else if (width >= breakpoints.xl) {setBreakpoint('xl')}
-            else if (width >= breakpoints.lg) {setBreakpoint('lg')}
-            else if (width >= breakpoints.md) {setBreakpoint('md')}
-            else if (width >= breakpoints.sm) {setBreakpoint('sm')}
-            else {setBreakpoint('xs')}
+            if (width >= breakpoints['2xl']) { setBreakpoint('2xl') }
+            else if (width >= breakpoints.xl) { setBreakpoint('xl') }
+            else if (width >= breakpoints.lg) { setBreakpoint('lg') }
+            else if (width >= breakpoints.md) { setBreakpoint('md') }
+            else if (width >= breakpoints.sm) { setBreakpoint('sm') }
+            else { setBreakpoint('xs') }
         }
 
         updateBreakpoint()
@@ -45,20 +45,22 @@ export function useBreakpoint(): Breakpoint {
  * Hook to check if current breakpoint matches
  */
 export function useMediaQuery(query: string): boolean {
-    const [matches, setMatches] = useState(false)
-
-    useEffect(() => {
+    const subscribe = useCallback((callback: () => void) => {
         const media = window.matchMedia(query)
-        if (media.matches !== matches) {
-            setMatches(media.matches)
-        }
-
-        const listener = () => setMatches(media.matches)
+        const listener = () => callback()
         media.addEventListener('change', listener)
         return () => media.removeEventListener('change', listener)
-    }, [matches, query])
+    }, [query])
 
-    return matches
+    const getSnapshot = useCallback(() => {
+        // Return value must be stable if unchanged to prevent loops, but matches boolean is stable.
+        if (typeof window !== 'undefined') {
+            return window.matchMedia(query).matches
+        }
+        return false
+    }, [query])
+
+    return useSyncExternalStore(subscribe, getSnapshot)
 }
 
 /**
@@ -66,12 +68,12 @@ export function useMediaQuery(query: string): boolean {
  */
 export function getResponsiveClasses(base: string, variants: Partial<Record<Breakpoint, string>>): string {
     const classes = [base]
-    
+
     Object.entries(variants).forEach(([bp, variant]) => {
         if (variant) {
             classes.push(`${bp}:${variant}`)
         }
     })
-    
+
     return classes.join(' ')
 }

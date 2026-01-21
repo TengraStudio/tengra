@@ -1,12 +1,13 @@
 import { IpcRendererEvent } from 'electron'
 
 import {
-    AgentDefinition, AppSettings, AuthStatus, Chat, CopilotQuota, CouncilSession,
-    EntityKnowledge, EpisodicMemory,     FileSearchResult, Folder, IpcValue, Message, Project,
+    AgentDefinition, AppSettings, AuthStatus, Chat, ClaudeQuota, CopilotQuota, CouncilSession,
+    EntityKnowledge, EpisodicMemory, FileSearchResult, Folder, IpcValue, Message, Project,
     ProjectAnalysis, ProjectStats, QuotaResponse,
-SemanticFragment,
+    SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
-    SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult} from '@/shared/types'
+    SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
+} from '@/shared/types'
 
 export interface TodoItem {
     file: string
@@ -132,11 +133,15 @@ export interface ElectronAPI {
     antigravityLogin: () => Promise<{ url: string; state: string }>
 
     claudeLogin: () => Promise<{ url: string; state: string }>
+    claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>
     anthropicLogin: () => Promise<{ url: string; state: string }>
     codexLogin: () => Promise<{ url: string; state: string }>
 
     checkAuthStatus: () => Promise<AuthStatus>
     deleteProxyAuthFile: (name: string) => Promise<{ success: boolean }>
+    syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
+    saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
+    triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>
 
     // --- Linked Accounts (New Multi-Account API) ---
 
@@ -174,6 +179,11 @@ export interface ElectronAPI {
      * Check if a provider has any linked accounts.
      */
     hasLinkedAccount: (provider: string) => Promise<boolean>
+
+    /**
+     * Get all linked accounts for a provider (alias for getLinkedAccounts).
+     */
+    getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>
 
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>
@@ -220,10 +230,10 @@ export interface ElectronAPI {
 
     // Proxy
     getProxyModels: () => Promise<{ id: string; object: string }[]>
-    getQuota: (provider?: string) => Promise<QuotaResponse | null>
-    getCopilotQuota: () => Promise<CopilotQuota>
-    getCodexUsage: () => Promise<Partial<QuotaResponse>>
-    getClaudeQuota: () => Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }>
+    getQuota: (provider?: string) => Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null>
+    getCopilotQuota: () => Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }>
+    getCodexUsage: () => Promise<{ accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }> }>
+    getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
@@ -440,6 +450,7 @@ export interface ElectronAPI {
 
     // Shell / External
     openExternal: (url: string) => void
+    captureCookies: (url: string, timeoutMs?: number) => Promise<{ success: boolean }>
     openTerminal: (command: string) => Promise<boolean>
 
     // Files
@@ -496,7 +507,22 @@ export interface ElectronAPI {
             messages: Message[]
             models: Array<{ provider: string; model: string }>
             strategy?: 'consensus' | 'voting' | 'best-of-n' | 'chain-of-thought'
-        }) => Promise<{ response: string; modelContributions: Array<{ model: string; response: string }> }>
+        }) => Promise<{
+            response?: string
+            responses: Array<{
+                provider: string
+                model: string
+                content: string
+                latency: number
+            }>
+            consensus?: string
+            bestResponse?: {
+                provider: string
+                model: string
+                content: string
+            }
+            modelContributions?: Array<{ model: string; response: string }>
+        }>
         getProviderStats: () => Promise<Array<{ provider: string; requestCount: number; avgLatency: number }>>
         getActiveTaskCount: () => Promise<number>
         setProviderConfig: (provider: string, config: { concurrencyLimit?: number; rateLimit?: number }) => Promise<void>

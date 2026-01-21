@@ -45,24 +45,24 @@ export interface NormalizedStreamChunk {
  * Normalize OpenAI response
  */
 export function normalizeOpenAIResponse(response: JsonValue, model: string): NormalizedResponse {
-    const res = asObject(response) || {};
-    const choices = asArray(res.choices) || [];
+    const res = asObject(response) ?? {};
+    const choices = asArray(res.choices) ?? [];
     const choice = asObject(choices[0]);
     const message = asObject(choice?.message) || { role: 'assistant', content: '' };
     const usage = asObject(res.usage);
 
     return {
-        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content || ''),
+        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
         role: 'assistant',
         provider: 'openai',
         model,
         finishReason: normalizeFinishReason(choice?.finish_reason as string | undefined),
         usage: usage ? {
-            promptTokens: Number(usage.prompt_tokens || 0),
-            completionTokens: Number(usage.completion_tokens || 0),
-            totalTokens: Number(usage.total_tokens || 0)
+            promptTokens: Number(usage.prompt_tokens ?? 0),
+            completionTokens: Number(usage.completion_tokens ?? 0),
+            totalTokens: Number(usage.total_tokens ?? 0)
         } : undefined,
-        toolCalls: message.tool_calls ? (asArray(message.tool_calls) || []).map((t) => normalizeToolCall(t)) : undefined,
+        toolCalls: message.tool_calls ? (asArray(message.tool_calls) ?? []).map((t) => normalizeToolCall(t)) : undefined,
         reasoning: (message.reasoning_content as string) || (message.reasoning as string),
         metadata: {
             id: res.id as string,
@@ -77,8 +77,8 @@ export function normalizeOpenAIResponse(response: JsonValue, model: string): Nor
  * Normalize Anthropic response
  */
 export function normalizeAnthropicResponse(response: JsonValue, model: string): NormalizedResponse {
-    const res = asObject(response) || {};
-    const content = asArray(res.content) || [];
+    const res = asObject(response) ?? {};
+    const content = asArray(res.content) ?? [];
     const textPart = asObject(content.find((c) => asObject(c)?.type === 'text'));
     const textContent = (textPart?.text as string) || '';
     const toolUseContent = content.filter((c) => asObject(c)?.type === 'tool_use');
@@ -91,18 +91,18 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
         model,
         finishReason: normalizeFinishReason(res.stop_reason as string | undefined),
         usage: usage ? {
-            promptTokens: Number(usage.input_tokens || 0),
-            completionTokens: Number(usage.output_tokens || 0),
-            totalTokens: Number(usage.input_tokens || 0) + Number(usage.output_tokens || 0)
+            promptTokens: Number(usage.input_tokens ?? 0),
+            completionTokens: Number(usage.output_tokens ?? 0),
+            totalTokens: Number(usage.input_tokens ?? 0) + Number(usage.output_tokens ?? 0)
         } : undefined,
         toolCalls: toolUseContent.map((t) => {
-            const block = asObject(t) || {};
+            const block = asObject(t) ?? {};
             return {
-                id: (block.id as string) || `tool-${Date.now()}`,
+                id: (block.id as string) ?? `tool-${Date.now()}`,
                 type: 'function' as const,
                 function: {
-                    name: (block.name as string) || '',
-                    arguments: JSON.stringify(block.input || {})
+                    name: (block.name as string) ?? '',
+                    arguments: JSON.stringify(block.input ?? {})
                 }
             };
         }),
@@ -120,18 +120,18 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
  * Normalize Ollama response
  */
 export function normalizeOllamaResponse(response: JsonValue, model: string): NormalizedResponse {
-    const res = asObject(response) || {};
+    const res = asObject(response) ?? {};
     const message = asObject(res.message);
     return {
-        content: (message?.content as string) || (res.response as string) || '',
+        content: (message?.content as string) ?? (res.response as string) ?? '',
         role: 'assistant',
         provider: 'ollama',
         model,
         finishReason: res.done ? 'stop' : undefined,
         usage: res.eval_count ? {
-            promptTokens: Number(res.prompt_eval_count || 0),
-            completionTokens: Number(res.eval_count || 0),
-            totalTokens: Number(res.prompt_eval_count || 0) + Number(res.eval_count || 0)
+            promptTokens: Number(res.prompt_eval_count ?? 0),
+            completionTokens: Number(res.eval_count ?? 0),
+            totalTokens: Number(res.prompt_eval_count ?? 0) + Number(res.eval_count ?? 0)
         } : undefined,
         metadata: {
             totalDuration: res.total_duration as number,
@@ -250,10 +250,10 @@ function normalizeFinishReason(reason: string | undefined | null): NormalizedRes
 }
 
 function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
-    const tc = asObject(toolCall) || {}
-    const fn = asObject(tc.function) || {}
+    const tc = asObject(toolCall) ?? {}
+    const fn = asObject(tc.function) ?? {}
     const argsValue = fn.arguments !== undefined ? fn.arguments : tc.arguments
-    const args = typeof argsValue === 'string' ? argsValue : JSON.stringify(argsValue || {})
+    const args = typeof argsValue === 'string' ? argsValue : JSON.stringify(argsValue ?? {})
     return {
         id: typeof tc.id === 'string' ? tc.id : `tool-${Date.now()}`,
         type: 'function',

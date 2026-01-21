@@ -1,7 +1,8 @@
-﻿import { Box, Play, RefreshCw, Square, Terminal,Trash2 } from 'lucide-react'
-import { useCallback,useEffect, useState } from 'react'
+﻿import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { Box, Play, RefreshCw, Square, Terminal, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 interface ContainerInfo {
@@ -43,18 +44,19 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                 return
             }
 
-            const lines = (result.stdout || '').trim().split('\n').filter(Boolean)
+            const lines = (result.stdout ?? '').trim().split('\n').filter(Boolean)
             const parsed = lines.map((line: string) => {
                 try {
-                    const data = JSON.parse(line)
+                    const data = safeJsonParse<Record<string, unknown> | null>(line, null)
+                    if (!data) { return null }
                     return {
-                        id: data.ID,
-                        name: data.Names,
-                        image: data.Image,
-                        status: data.Status,
-                        state: (data.State?.toLowerCase() || 'unknown') as ContainerInfo['state'],
-                        ports: data.Ports || '',
-                        created: data.CreatedAt
+                        id: String(data.ID ?? ''),
+                        name: String(data.Names ?? ''),
+                        image: String(data.Image ?? ''),
+                        status: String(data.Status ?? ''),
+                        state: (String(data.State ?? '').toLowerCase() || 'unknown') as ContainerInfo['state'],
+                        ports: String(data.Ports ?? ''),
+                        created: String(data.CreatedAt ?? '')
                     }
                 } catch {
                     return null
@@ -78,6 +80,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
             setLogs(result.stdout || result.stderr || t('docker.noLogs'))
         } catch (err) {
+            console.error('[DockerDashboard] Failed to parse message', err)
             setLogs(`Error: ${err instanceof Error ? err.message : String(err)}`)
         }
     }, [t])
@@ -93,13 +96,13 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
     useEffect(() => {
         if (isOpen) {
-            loadContainers()
+            void loadContainers()
         }
     }, [isOpen, loadContainers])
 
     useEffect(() => {
         if (selectedContainer) {
-            loadLogs(selectedContainer)
+            void loadLogs(selectedContainer)
         }
     }, [selectedContainer, loadLogs])
 
@@ -112,7 +115,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
         }
     }
 
-    if (!isOpen) {return null}
+    if (!isOpen) { return null }
 
     return (
         <div className="flex flex-col h-full bg-gradient-to-b from-zinc-900 to-black">
@@ -182,7 +185,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                             <div className="flex gap-1 mt-2">
                                 {container.state === 'running' ? (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); containerAction('stop', container.id) }}
+                                        onClick={(e) => { e.stopPropagation(); void containerAction('stop', container.id) }}
                                         className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
                                         title={t('docker.stop')}
                                     >
@@ -190,7 +193,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); containerAction('start', container.id) }}
+                                        onClick={(e) => { e.stopPropagation(); void containerAction('start', container.id) }}
                                         className="p-1.5 rounded hover:bg-green-500/20 text-zinc-400 hover:text-green-400"
                                         title={t('docker.start')}
                                     >
@@ -198,7 +201,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                     </button>
                                 )}
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); containerAction('rm', container.id) }}
+                                    onClick={(e) => { e.stopPropagation(); void containerAction('rm', container.id) }}
                                     className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
                                     title={t('docker.remove')}
                                 >

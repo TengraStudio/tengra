@@ -4,6 +4,7 @@
 
 import { EventEmitter } from 'events'
 
+import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -46,12 +47,12 @@ export class HealthCheckService extends BaseService {
         this.stop()
     }
 
-    on(event: string, listener: (...args: any[]) => void) {
+    on(event: string, listener: (...args: unknown[]) => void) {
         this.events.on(event, listener)
         return this
     }
 
-    emit(event: string, ...args: any[]) {
+    emit(event: string, ...args: unknown[]) {
         return this.events.emit(event, ...args)
     }
 
@@ -92,17 +93,17 @@ export class HealthCheckService extends BaseService {
 
         for (const [name, check] of this.checks) {
             // Run immediately
-            this.runCheck(name)
+            void this.runCheck(name)
 
             // Schedule periodic checks
             const interval = setInterval(() => {
-                this.runCheck(name)
+                void this.runCheck(name)
             }, check.intervalMs)
 
             this.intervals.set(name, interval)
         }
 
-        console.log(`[HealthCheck] Started monitoring ${this.checks.size} services`)
+        appLogger.info('health-check.service', `[HealthCheck] Started monitoring ${this.checks.size} services`)
     }
 
     /**
@@ -116,7 +117,7 @@ export class HealthCheckService extends BaseService {
         }
         this.intervals.clear()
 
-        console.log('[HealthCheck] Stopped monitoring')
+        appLogger.info('health-check.service', '[HealthCheck] Stopped monitoring')
     }
 
     /**
@@ -151,7 +152,7 @@ export class HealthCheckService extends BaseService {
             // Emit event if status changed
             if (previous?.status !== status.status) {
                 this.emit('statusChange', status)
-                console.log(`[HealthCheck] ${name}: ${previous?.status || 'unknown'} -> ${status.status}`)
+                appLogger.info('health-check.service', `[HealthCheck] ${name}: ${previous?.status ?? 'unknown'} -> ${status.status}`)
             }
         } catch (error) {
             const status: HealthStatus = {
@@ -207,7 +208,7 @@ export class HealthCheckService extends BaseService {
      */
     async checkNow(name: string): Promise<HealthStatus | null> {
         await this.runCheck(name)
-        return this.statuses.get(name) || null
+        return this.statuses.get(name) ?? null
     }
 
     /**
@@ -227,7 +228,7 @@ export class HealthCheckService extends BaseService {
                 const stmt = db.prepare('SELECT 1');
                 stmt.get();
                 return true;
-            } catch (e) {
+            } catch {
                 return false;
             }
         }, { intervalMs: 60000, critical: true });

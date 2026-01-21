@@ -30,8 +30,8 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
 
     useEffect(() => {
         if (active) {
-            fetchStats()
-            const interval = setInterval(fetchStats, 5000) // Poll every 5s
+            void fetchStats()
+            const interval = setInterval(() => void fetchStats(), 5000) // Poll every 5s
             return () => clearInterval(interval)
         }
         return undefined

@@ -30,7 +30,10 @@ describe('SecurityService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new SecurityService();
+        const mockDataService = {
+            getPath: vi.fn().mockReturnValue('/tmp')
+        } as any;
+        service = new SecurityService(mockDataService);
     });
 
     describe('generatePassword', () => {

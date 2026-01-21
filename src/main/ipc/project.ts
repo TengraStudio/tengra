@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { DatabaseService } from '@main/services/data/database.service'
 import { LogoService } from '@main/services/external/logo.service'
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
@@ -6,15 +7,24 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { dialog, ipcMain } from 'electron'
 
-export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, projectService: ProjectService, logoService: LogoService, codeIntelligenceService: CodeIntelligenceService, jobSchedulerService: JobSchedulerService, databaseService: DatabaseService) => {
+export interface ProjectIpcDeps {
+    projectService: ProjectService
+    logoService: LogoService
+    codeIntelligenceService: CodeIntelligenceService
+    jobSchedulerService: JobSchedulerService
+    databaseService: DatabaseService
+}
+
+export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | null, deps: ProjectIpcDeps) => {
+    const { projectService, logoService, codeIntelligenceService, jobSchedulerService, databaseService } = deps
     ipcMain.handle('project:analyze', createIpcHandler('project:analyze', async (_event, rootPath: string, projectId: string) => {
-        console.log(`[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`)
+        appLogger.info('ProjectIPC', `[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`)
         const results = await projectService.analyzeProject(rootPath)
-        console.log(`[ProjectIPC] Analysis returned ${results?.files?.length || 0} files`)
+        appLogger.info('ProjectIPC', `[ProjectIPC] Analysis returned ${results.files.length} files`)
         // Trigger background indexing
         if (projectId) {
             codeIntelligenceService.indexProject(rootPath, projectId).catch(err => {
-                console.error('Failed to auto-index project:', err)
+                appLogger.error('ProjectIPC', `Failed to auto-index project: ${err}`)
             })
         }
         return results
@@ -22,26 +32,28 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
 
     ipcMain.handle('project:watch', createIpcHandler('project:watch', async (_event, rootPath: string) => {
         const win = getWindow()
-        await projectService.watchProject(rootPath, async (event, filePath) => {
-            if (win && !win.isDestroyed()) {
-                win.webContents.send('project:file-change', { event, path: filePath, rootPath })
-            }
+        await projectService.watchProject(rootPath, (event, filePath) => {
+            void (async () => {
+                if (win && !win.isDestroyed()) {
+                    win.webContents.send('project:file-change', { event, path: filePath, rootPath })
+                }
 
-            // Proactive RAG Indexing
-            if (event === 'change' || event === 'rename') {
-                jobSchedulerService.schedule(`index:${filePath}`, async () => {
-                    try {
-                        const projects = await databaseService.getProjects();
-                        // Ideally matches rootPath.
-                        const exactProject = projects.find(p => p.path === rootPath);
-                        if (exactProject) {
-                            await codeIntelligenceService.updateFileIndex(exactProject.id, filePath);
+                // Proactive RAG Indexing
+                if (event === 'change' || event === 'rename') {
+                    jobSchedulerService.schedule(`index:${filePath}`, async () => {
+                        try {
+                            const projects = await databaseService.getProjects();
+                            // Ideally matches rootPath.
+                            const exactProject = projects.find(p => p.path === rootPath);
+                            if (exactProject) {
+                                await codeIntelligenceService.updateFileIndex(exactProject.id, filePath);
+                            }
+                        } catch (e) {
+                            appLogger.error('ProjectIPC', `[ProjectIPC] Auto-index failed: ${e}`)
                         }
-                    } catch (e) {
-                        console.error('[ProjectIPC] Auto-index failed:', e)
-                    }
-                }, 5000)
-            }
+                    }, 5000)
+                }
+            })()
         })
         return { success: true }
     }))
@@ -87,6 +99,6 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
             return null
         }
 
-        return await logoService.applyLogo(projectPath, result.filePaths[0]!)
+        return await logoService.applyLogo(projectPath, result.filePaths[0] || '')
     }))
 }

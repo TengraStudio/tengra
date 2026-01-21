@@ -1,3 +1,4 @@
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { useCallback, useEffect, useRef } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
@@ -25,7 +26,7 @@ const loadHistory = (projectId?: string): string[] => {
     try {
         const stored = localStorage.getItem(getHistoryKey(projectId))
         if (stored) {
-            return JSON.parse(stored)
+            return safeJsonParse<string[]>(stored, [])
         }
     } catch (error) {
         console.warn('Failed to load terminal history:', error)
@@ -78,16 +79,16 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
     useEffect(() => {
         // Prevent multiple initializations
         if (isInitializedRef.current) {
-            console.log('[TerminalComponent] Already initialized, skipping')
+            console.warn('[TerminalComponent] Already initialized, skipping')
             return
         }
 
         if (!terminalRef.current) {
-            console.log('[TerminalComponent] No container ref, skipping')
+            console.warn('[TerminalComponent] No container ref, skipping')
             return
         }
 
-        console.log('[TerminalComponent] Initializing terminal')
+        console.warn('[TerminalComponent] Initializing terminal')
         isInitializedRef.current = true
 
         // Generate a unique terminal ID for this mount
@@ -144,7 +145,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         term.open(terminalRef.current)
 
         try {
-            if (terminalRef.current && (terminalRef.current as any).offsetParent) {
+            if (terminalRef.current && (terminalRef.current as HTMLElement).offsetParent) {
                 fitAddon.fit()
             }
         } catch {
@@ -156,11 +157,9 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
         // Initialize backend process
         const initTerminal = async () => {
-            const finalTerminalId = terminalIdRef.current!
-
-            // Final check before creating
-            if (initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {
-                console.warn(`[TerminalComponent] Terminal ${finalTerminalId} already exists, skipping`)
+            const finalTerminalId = terminalIdRef.current // Final check before creating
+            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {
+                console.warn(`[TerminalComponent] Terminal ${finalTerminalId} already exists or is null, skipping`)
                 return
             }
 
@@ -208,7 +207,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
                 // Use a ref to store cleanups to call in useEffect cleanup
                 const cleanups = { data: cleanupData, exit: cleanupExit };
-                (term as any)._cleanups = cleanups;
+                (term as unknown as { _cleanups: typeof cleanups })._cleanups = cleanups;
 
                 // Enhanced data handler with history support
                 term.onData(data => {
@@ -251,8 +250,8 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                             } else {
                                 // Restore original input
                                 historyIndexRef.current = -1
-                                window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
-                                window.electron.terminal.write(pidRef.current, currentInputRef.current)
+                                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r')
+                                void window.electron.terminal.write(pidRef.current, currentInputRef.current)
                                 lineBuffer = currentInputRef.current
                             }
                         }
@@ -297,11 +296,11 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
             }
         }
 
-        initTerminal()
+        void initTerminal()
 
         const handleResize = () => {
             try {
-                if (terminalRef.current && (terminalRef.current as any).offsetParent) {
+                if (terminalRef.current && (terminalRef.current as HTMLElement).offsetParent) {
                     fitAddon.fit()
                 }
             } catch {
@@ -327,7 +326,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
             }
 
             // Call individual cleanups
-            const cleanups = (term as any)._cleanups
+            const cleanups = (term as unknown as { _cleanups?: { data: () => void, exit: () => void } })._cleanups
             if (cleanups) {
                 if (typeof cleanups.data === 'function') { cleanups.data() }
                 if (typeof cleanups.exit === 'function') { cleanups.exit() }

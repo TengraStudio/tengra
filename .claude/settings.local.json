@@ -35,7 +35,13 @@
       "Bash(echo:*)",
       "Bash(findstr:*)",
       "Bash(unset:*)",
-      "Read(//c/Users/agnes/AppData/Roaming/Orbit/runtime/logs/**)"
+      "Read(//c/Users/agnes/AppData/Roaming/Orbit/runtime/logs/**)",
+      "Bash(git log:*)",
+      "Bash(go build:*)",
+      "Bash(npm run build:rust:*)",
+      "Bash(cargo build:*)",
+      "Bash(copy \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\src\\\\services\\\\target\\\\release\\\\orbit-quota-service.exe\" \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\orbit-quota-service.exe\" /Y)",
+      "Bash(npm run lint:*)"
     ]
   }
 }

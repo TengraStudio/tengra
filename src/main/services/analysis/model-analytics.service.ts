@@ -114,7 +114,7 @@ export class ModelAnalyticsService extends BaseService {
 
         const totalRequests = filteredRecords.length;
         const totalTokens = filteredRecords.reduce((sum, r) => sum + r.totalTokens, 0);
-        const totalCost = filteredRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+        const totalCost = filteredRecords.reduce((sum, r) => sum + (r.cost ?? 0), 0);
         const avgResponseTime = totalRequests > 0
             ? filteredRecords.reduce((sum, r) => sum + r.responseTimeMs, 0) / totalRequests
             : 0;
@@ -130,19 +130,23 @@ export class ModelAnalyticsService extends BaseService {
                 provider,
                 requests: providerRecords.length,
                 tokens: providerRecords.reduce((sum, r) => sum + r.totalTokens, 0),
-                cost: providerRecords.reduce((sum, r) => sum + (r.cost || 0), 0)
+                cost: providerRecords.reduce((sum, r) => sum + (r.cost ?? 0), 0)
             };
         });
 
         // Daily usage
         const dailyMap = new Map<string, { requests: number; tokens: number; cost: number }>();
         filteredRecords.forEach(r => {
-            const date = new Date(r.timestamp).toISOString().split('T')[0]!;
-            const existing = dailyMap.get(date) || { requests: 0, tokens: 0, cost: 0 };
+            const dateParts = new Date(r.timestamp).toISOString().split('T')
+            const date = dateParts[0]
+            if (!date) {
+                return
+            }
+            const existing = dailyMap.get(date) ?? { requests: 0, tokens: 0, cost: 0 };
             dailyMap.set(date, {
                 requests: existing.requests + 1,
                 tokens: existing.tokens + r.totalTokens,
-                cost: existing.cost + (r.cost || 0)
+                cost: existing.cost + (r.cost ?? 0)
             });
         });
         const dailyUsage = Array.from(dailyMap.entries())
@@ -152,7 +156,7 @@ export class ModelAnalyticsService extends BaseService {
         // Top models
         const modelCounts = new Map<string, number>();
         filteredRecords.forEach(r => {
-            modelCounts.set(r.model, (modelCounts.get(r.model) || 0) + 1);
+            modelCounts.set(r.model, (modelCounts.get(r.model) ?? 0) + 1);
         });
         const topModels = Array.from(modelCounts.entries())
             .map(([model, requests]) => ({ model, requests }))
@@ -232,7 +236,7 @@ export class ModelAnalyticsService extends BaseService {
 
         return {
             model,
-            provider: records[0]?.provider || 'unknown',
+            provider: records[0]?.provider ?? 'unknown',
             totalRequests: records.length,
             successfulRequests: successful.length,
             failedRequests: records.length - successful.length,
@@ -244,7 +248,7 @@ export class ModelAnalyticsService extends BaseService {
                 : 0,
             minResponseTimeMs: responseTimes.length > 0 ? Math.min(...responseTimes) : 0,
             maxResponseTimeMs: responseTimes.length > 0 ? Math.max(...responseTimes) : 0,
-            totalCost: records.reduce((sum, r) => sum + (r.cost || 0), 0),
+            totalCost: records.reduce((sum, r) => sum + (r.cost ?? 0), 0),
             successRate: records.length > 0 ? (successful.length / records.length) * 100 : 0,
             tokensPerSecond: records.length > 0
                 ? records.reduce((sum, r) => sum + r.totalTokens, 0) /

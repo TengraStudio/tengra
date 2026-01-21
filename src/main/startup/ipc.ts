@@ -45,7 +45,7 @@ export function registerIpcHandlers(
     registerModelRegistryIpc(services.modelRegistryService)
 
     registerAuthIpc(services.proxyService, services.settingsService, services.copilotService, services.authService)
-    registerProxyIpc(services.proxyService)
+    registerProxyIpc(services.proxyService, undefined, services.authService)
     registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService)
 
     registerChatIpc({
@@ -66,7 +66,13 @@ export function registerIpcHandlers(
         proxyService: services.proxyService
     })
 
-    registerProjectIpc(getMainWindow, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService)
+    registerProjectIpc(getMainWindow, {
+        projectService: services.projectService,
+        logoService: services.logoService,
+        codeIntelligenceService: services.codeIntelligenceService,
+        jobSchedulerService: services.jobSchedulerService,
+        databaseService: services.databaseService
+    })
     registerAgentIpc(services.agentService)
     registerProcessIpc(services.processService)
     setupProcessEvents(services.processService)

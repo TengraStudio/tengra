@@ -3,6 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 
 import { appLogger } from '@main/logging/logger'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 // Type definitions for node-pty
@@ -340,7 +341,7 @@ export class TerminalService {
      * Get session buffer content
      */
     getSessionBuffer(sessionId: string): string {
-        return this.sessions.get(sessionId)?.buffer || this.snapshots.get(sessionId)?.buffer || ''
+        return (this.sessions.get(sessionId)?.buffer || (this.snapshots.get(sessionId)?.buffer ?? ''))
     }
 
     /**
@@ -357,7 +358,7 @@ export class TerminalService {
             }
 
             const data = await fs.promises.readFile(this.persistencePath, 'utf-8')
-            const rawSnapshots = JSON.parse(data) as TerminalSnapshot[]
+            const rawSnapshots = safeJsonParse<TerminalSnapshot[]>(data, [])
 
             // Filter out old snapshots (> 7 days)
             const now = Date.now()

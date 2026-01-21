@@ -60,7 +60,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
     }, [isVisible])
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(selectedText)
+        void navigator.clipboard.writeText(selectedText)
         setIsVisible(false)
     }
 

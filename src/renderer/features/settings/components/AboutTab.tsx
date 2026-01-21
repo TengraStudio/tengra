@@ -1,4 +1,4 @@
-﻿import { Activity, AlertTriangle,ExternalLink } from 'lucide-react'
+import { Activity, AlertTriangle,ExternalLink } from 'lucide-react'
 import React from 'react'
 
 import antigravityLogo from '@/assets/antigravity.svg'
@@ -18,7 +18,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     <div className="flex items-center justify-center gap-2 mt-1">
                         <p className="text-sm text-primary font-mono font-bold">v1.2.0 (Beta)</p>
                         <button
-                            onClick={() => alert(t('about.updateCheckAlert'))}
+                            onClick={() => console.warn(t('about.updateCheckAlert'))}
                             className="bg-primary/10 text-[10px] text-primary px-2 py-0.5 rounded hover:bg-primary/20 transition-colors uppercase font-bold tracking-wide"
                         >
                             {t('about.checkUpdates')}

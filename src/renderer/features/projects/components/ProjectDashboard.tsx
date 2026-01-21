@@ -137,7 +137,7 @@ export const ProjectDashboard = ({
             ])
 
             setGitData({
-                branch: branchResult.success ? branchResult.branch || null : null,
+                branch: branchResult.success ? branchResult.branch ?? null : null,
                 isClean: statusResult.success ? (statusResult.isClean ?? null) : null,
                 lastCommit: lastCommitResult.success && lastCommitResult.hash
                     ? {
@@ -147,23 +147,23 @@ export const ProjectDashboard = ({
                         relativeTime: lastCommitResult.relativeTime || ''
                     }
                     : null,
-                recentCommits: recentCommitsResult.success ? (recentCommitsResult.commits || []) : [],
+                recentCommits: recentCommitsResult.success ? (recentCommitsResult.commits ?? []) : [],
                 isRepository: true,
                 loading: false,
-                changedFiles: detailedStatus.success ? (detailedStatus.allFiles || []) : [],
-                stagedFiles: detailedStatus.success ? (detailedStatus.stagedFiles || []) : [],
-                unstagedFiles: detailedStatus.success ? (detailedStatus.unstagedFiles || []) : []
+                changedFiles: detailedStatus.success ? (detailedStatus.allFiles ?? []) : [],
+                stagedFiles: detailedStatus.success ? (detailedStatus.stagedFiles ?? []) : [],
+                unstagedFiles: detailedStatus.success ? (detailedStatus.unstagedFiles ?? []) : []
             })
 
-            setBranches(branchesResult.success ? (branchesResult.branches || []) : [])
-            setRemotes(remotesResult.success ? (remotesResult.remotes || []) : [])
-            setTrackingInfo(trackingResult.success ? { tracking: trackingResult.tracking || null, ahead: trackingResult.ahead || 0, behind: trackingResult.behind || 0 } : null)
+            setBranches(branchesResult.success ? (branchesResult.branches ?? []) : [])
+            setRemotes(remotesResult.success ? (remotesResult.remotes ?? []) : [])
+            setTrackingInfo(trackingResult.success ? { tracking: trackingResult.tracking ?? null, ahead: trackingResult.ahead ?? 0, behind: trackingResult.behind ?? 0 } : null)
             setDiffStats(diffStatsResult.success ? {
-                staged: diffStatsResult.staged || { added: 0, deleted: 0, files: 0 },
-                unstaged: diffStatsResult.unstaged || { added: 0, deleted: 0, files: 0 },
-                total: diffStatsResult.total || { added: 0, deleted: 0, files: 0 }
+                staged: diffStatsResult.staged ?? { added: 0, deleted: 0, files: 0 },
+                unstaged: diffStatsResult.unstaged ?? { added: 0, deleted: 0, files: 0 },
+                total: diffStatsResult.total ?? { added: 0, deleted: 0, files: 0 }
             } : null)
-            setCommitStats(commitStatsResult.success ? (commitStatsResult.commitCounts || {}) : {})
+            setCommitStats(commitStatsResult.success ? (commitStatsResult.commitCounts ?? {}) : {})
         } catch (error) {
             console.error('Failed to fetch git data:', error)
             setGitData(prev => ({ ...prev, loading: false }))
@@ -173,7 +173,7 @@ export const ProjectDashboard = ({
     // Fetch git data when git tab is active
     useEffect(() => {
         if (activeTab === 'git' && project.path) {
-            fetchGitData()
+            void fetchGitData()
         }
     }, [activeTab, project.path, fetchGitData])
 
@@ -330,7 +330,7 @@ export const ProjectDashboard = ({
         setLoading(true)
         try {
             const rootPath = project.path
-            console.log('[ProjectDashboard] Requesting analysis for path:', rootPath)
+            console.warn('[ProjectDashboard] Requesting analysis for path:', rootPath)
             if (rootPath) {
                 setProjectRoot(rootPath)
                 window.electron.log.info(`[ProjectDashboard] Calling analyze for ${rootPath}`)
@@ -361,7 +361,7 @@ export const ProjectDashboard = ({
     }
 
     useEffect(() => {
-        analyzeProject()
+        void analyzeProject()
     }, [project.path, project.id, analyzeProject])
 
     const handleFileSelect = async (path: string) => {
@@ -446,7 +446,7 @@ export const ProjectDashboard = ({
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => {
-                                                    if (e.key === 'Enter') { handleSaveName() }
+                                                    if (e.key === 'Enter') { void handleSaveName() }
                                                     if (e.key === 'Escape') { setIsEditingName(false) }
                                                 }}
                                                 onBlur={handleSaveName}
@@ -515,11 +515,11 @@ export const ProjectDashboard = ({
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.fileCount')}</div>
-                                <div className="text-2xl font-black text-white">{stats?.fileCount || 0}</div>
+                                <div className="text-2xl font-black text-white">{stats?.fileCount ?? 0}</div>
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.loc')}</div>
-                                <div className="text-2xl font-black text-white">~{stats?.loc || 0}</div>
+                                <div className="text-2xl font-black text-white">~{stats?.loc ?? 0}</div>
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.totalSize') || 'Total Size'}</div>
@@ -527,7 +527,7 @@ export const ProjectDashboard = ({
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.modules')}</div>
-                                <div className="text-2xl font-black text-white">{analysis?.monorepo?.packages?.length || Object.keys(dependencies || {}).length}</div>
+                                <div className="text-2xl font-black text-white">{analysis?.monorepo?.packages?.length ?? Object.keys(dependencies ?? {}).length}</div>
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
@@ -543,7 +543,7 @@ export const ProjectDashboard = ({
                                     {t('projectDashboard.techStack')}
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {(analysis?.frameworks || []).map((fw: string) => (
+                                    {(analysis?.frameworks ?? []).map((fw: string) => (
                                         <span key={fw} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-blue-300 font-medium">
                                             {fw}
                                         </span>
@@ -559,7 +559,7 @@ export const ProjectDashboard = ({
                                     {t('projectDashboard.langDist')}
                                 </h3>
                                 <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
-                                    {Object.entries(analysis?.languages || {})
+                                    {Object.entries(analysis?.languages ?? {})
                                         .sort(([, a], [, b]) => (b as number) - (a as number))
                                         .slice(0, 15)
                                         .map(([lang, count]) => {
@@ -741,7 +741,7 @@ export const ProjectDashboard = ({
                                             </div>
                                         </div>
                                         <div className="bg-white/5 rounded-xl p-4">
-                                            <div className="text-xs text-muted-foreground mb-1">Tracking</div>
+                                            <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.tracking')}</div>
                                             <div className="text-sm font-semibold text-white flex items-center gap-2">
                                                 {trackingInfo?.tracking ? (
                                                     <>
@@ -756,11 +756,11 @@ export const ProjectDashboard = ({
                                                             </span>
                                                         )}
                                                         {trackingInfo.ahead === 0 && trackingInfo.behind === 0 && (
-                                                            <span className="text-emerald-400">Up to date</span>
+                                                            <span className="text-emerald-400">{t('projectDashboard.upToDate')}</span>
                                                         )}
                                                     </>
                                                 ) : (
-                                                    <span className="text-muted-foreground">No remote</span>
+                                                    <span className="text-muted-foreground">{t('projectDashboard.noRemote')}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -782,7 +782,7 @@ export const ProjectDashboard = ({
                                             ) : (
                                                 <Download className="w-3.5 h-3.5" />
                                             )}
-                                            Pull
+                                            {t('projectDashboard.pull')}
                                         </button>
                                         <button
                                             onClick={handlePush}
@@ -798,7 +798,7 @@ export const ProjectDashboard = ({
                                             ) : (
                                                 <Upload className="w-3.5 h-3.5" />
                                             )}
-                                            Push
+                                            {t('projectDashboard.push')}
                                         </button>
                                     </div>
 
@@ -813,7 +813,7 @@ export const ProjectDashboard = ({
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' && !e.shiftKey && commitMessage.trim()) {
                                                             e.preventDefault()
-                                                            handleCommit()
+                                                            void handleCommit()
                                                         }
                                                     }}
                                                     placeholder={t('projectDashboard.commitMessage')}
@@ -967,7 +967,7 @@ export const ProjectDashboard = ({
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation()
-                                                                        handleUnstageFile(file.path)
+                                                                        void handleUnstageFile(file.path)
                                                                     }}
                                                                     className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-amber-400"
                                                                     title={t('projectDashboard.unstage')}
@@ -1001,7 +1001,7 @@ export const ProjectDashboard = ({
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation()
-                                                                        handleStageFile(file.path)
+                                                                        void handleStageFile(file.path)
                                                                     }}
                                                                     className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-emerald-400"
                                                                     title={t('projectDashboard.stage')}

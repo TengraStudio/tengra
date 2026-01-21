@@ -9,6 +9,7 @@ import * as path from 'path'
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 interface LlamaConfig {
@@ -264,14 +265,12 @@ export class LlamaService extends BaseService {
                             if (line.startsWith('data: ')) {
                                 const jsonStr = line.slice(6).trim()
                                 if (jsonStr === '[DONE]') {continue}
-                                try {
-                                    const obj = JSON.parse(jsonStr)
-                                    const content = obj.choices?.[0]?.delta?.content
-                                    if (content) {
-                                        fullResponse += content
-                                        onToken(content)
-                                    }
-                                } catch { /* ignore parse error in stream */ }
+                                const obj = safeJsonParse<{ choices?: Array<{ delta?: { content?: string } }> }>(jsonStr, {})
+                                const content = obj.choices?.[0]?.delta?.content
+                                if (content) {
+                                    fullResponse += content
+                                    onToken(content)
+                                }
                             }
                         }
                     } else {
@@ -283,13 +282,9 @@ export class LlamaService extends BaseService {
                     if (onToken) {
                         resolve({ success: true, response: fullResponse })
                     } else {
-                        try {
-                            const result = JSON.parse(data)
-                            const content = result.choices?.[0]?.message?.content || ''
-                            resolve({ success: true, response: content })
-                        } catch (e) {
-                            resolve({ success: false, error: `Invalid response: ${getErrorMessage(e as Error)}` })
-                        }
+                        const result = safeJsonParse<{ choices?: Array<{ message?: { content?: string } }> }>(data, {})
+                        const content = result.choices?.[0]?.message?.content ?? ''
+                        resolve({ success: true, response: content })
                     }
                 })
             })
@@ -327,11 +322,12 @@ export class LlamaService extends BaseService {
                 let data = ''
                 res.on('data', chunk => data += chunk.toString())
                 res.on('end', () => {
-                    try {
-                        const json = JSON.parse(data)
-                        resolve(json.data[0].embedding)
-                    } catch (e) {
-                        reject(new Error(`Failed to parse llama-server embeddings response: ${getErrorMessage(e as Error)}`))
+                    const json = safeJsonParse<{ data?: Array<{ embedding?: number[] }> }>(data, {})
+                    const embedding = json.data?.[0]?.embedding
+                    if (embedding) {
+                        resolve(embedding)
+                    } else {
+                        reject(new Error('Invalid embedding response from llama-server'))
                     }
                 })
             })

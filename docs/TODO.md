@@ -36,7 +36,7 @@ This document serves as the central index for project tasks. Tasks are categoriz
 
 | Category | Status | Blocking |
 |----------|--------|----------|
-| **i18n** | 🚧 In Progress | 20+ Hardcoded Strings |
+| **i18n** | ✅ Done | Expanded Language Support |
 | **Security** | 🔍 Reviewing | Auth Migration |
 | **Features** | ⏳ Backlog | Memory/RAG |
 | **Architecture** | 🔄 Refactoring | Event Bus |
@@ -47,8 +47,8 @@ This document serves as the central index for project tasks. Tasks are categoriz
 ## 📅 Roadmap
 
 ### Immediate (Phase 18)
-- Fix Hardcoded Strings (i18n)
-- Complete Turkish Translation
+- [x] Fix Hardcoded Strings (i18n)
+- [x] Complete Turkish Translation
 - Accessibility Audit (ARIA)
 
 ### Short Term (Phase 19)

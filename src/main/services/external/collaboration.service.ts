@@ -1,5 +1,7 @@
+import { appLogger } from '@main/logging/logger'
 import { JsonObject } from '@shared/types/common'
-import { WebSocket,WebSocketServer } from 'ws'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { WebSocket, WebSocketServer } from 'ws'
 
 export interface AgentMessage {
     id: string
@@ -16,40 +18,40 @@ export class CollaborationService {
     private clients: Map<string, WebSocket[]> = new Map() // sessionId -> sockets
 
     constructor() {
-        // We'll bind to a specific port, e.g., 3001 or let the OS pick if we want strict internal use,
-        // but for now 3001 is a good default for the "Agent Bus".
-        // In a real app we might attach to the main HTTP server, but a separate port is cleaner for this addon.
+        // We'll bind to a specific port, e.g., 3001
         this.initializeServer(3001)
     }
 
     private initializeServer(port: number) {
         this.wss = new WebSocketServer({ port })
 
-        console.log(`[CollaborationService] WebSocket server started on port ${ port } `)
+        appLogger.info('collaboration.service', `[CollaborationService] WebSocket server started on port ${port}`)
 
         this.wss.on('connection', (ws) => {
-            console.log('[CollaborationService] New client connected')
+            appLogger.info('collaboration.service', '[CollaborationService] New client connected')
 
             ws.on('message', (data) => {
                 try {
-                    const parsed = JSON.parse(data.toString())
+                    const parsed = safeJsonParse<JsonObject>(data.toString(), {})
+
                     // Basic protocol: { type: 'join', sessionId: '...' }
                     if (parsed.type === 'join' && parsed.sessionId) {
-                        this.addClient(parsed.sessionId, ws)
+                        this.addClient(parsed.sessionId as string, ws)
                     }
+
                     // Handle other incoming messages (e.g. user chat)
                     if (parsed.type === 'chat' && parsed.sessionId) {
-                        this.broadcast(parsed.sessionId, {
+                        this.broadcast(parsed.sessionId as string, {
                             id: Date.now().toString(),
-                            sessionId: parsed.sessionId,
+                            sessionId: parsed.sessionId as string,
                             sender: 'user',
-                            content: parsed.content,
+                            content: parsed.content as string,
                             timestamp: Date.now(),
                             type: 'text'
                         })
                     }
                 } catch (e) {
-                    console.error('[CollaborationService] Failed to parse message', e)
+                    appLogger.error('collaboration.service', '[CollaborationService] Failed to parse message', e as Error)
                 }
             })
 
@@ -64,7 +66,7 @@ export class CollaborationService {
             this.clients.set(sessionId, [])
         }
         this.clients.get(sessionId)?.push(ws)
-        console.log(`[CollaborationService] Client joined session ${ sessionId } `)
+        appLogger.info('collaboration.service', `[CollaborationService] Client joined session ${sessionId}`)
     }
 
     private removeClient(ws: WebSocket) {
@@ -82,7 +84,7 @@ export class CollaborationService {
 
     public broadcast(sessionId: string, message: AgentMessage) {
         const sockets = this.clients.get(sessionId)
-        if (!sockets) {return}
+        if (!sockets) { return }
 
         const payload = JSON.stringify(message)
         sockets.forEach(ws => {

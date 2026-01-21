@@ -2,9 +2,11 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-import { Language,useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 import { ToolResult } from '@/types'
 import { JsonObject, JsonValue } from '@/types/common'
+
+import { TerminalView } from './TerminalView'
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -31,169 +33,40 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     const { t } = useTranslation(language)
     const hasError = result?.error
     const resultData = result?.result as CommandExecutionResult | undefined
-    const execStdout = resultData?.stdout
     const execStderr = resultData?.stderr
     const execError = resultData?.error
     const [commandExpanded, setCommandExpanded] = useState(false)
-    const [showMarkdown, setShowMarkdown] = useState(false)
+    const [userExpanded, setUserExpanded] = useState(false)
 
     useEffect(() => {
-        if (toolCall.name !== 'execute_command') {return}
+        if (toolCall.name !== 'execute_command') { return }
+
+        let timer: NodeJS.Timeout | undefined
+
         if (isExecuting || execError || execStderr) {
-            setCommandExpanded(true)
+            timer = setTimeout(() => {
+                setCommandExpanded(true)
+            }, 0)
+        }
+
+        return () => {
+            if (timer) { clearTimeout(timer) }
         }
     }, [toolCall.name, isExecuting, execError, execStderr])
 
     // SPECIAL HANDLING: Terminal Commands ("Direct & Real-time")
     if (toolCall.name === 'execute_command') {
-        const command = String(toolCall.arguments.command || '')
-        const stdout = execStdout
-        const stderr = execStderr
-        const error = execError
-        const outputText = [stdout, stderr, error].filter(Boolean).join('\n')
-        const preview = outputText ? outputText.split('\n').slice(0, 6).join('\n') : ''
-        const hasOutput = Boolean(outputText)
-        const statusLabel = isExecuting ? t('tools.running') : (error || stderr ? t('tools.error') : t('tools.completed'))
-        const statusClass = error || stderr
-            ? 'bg-red-500/10 text-red-400 border-red-500/20'
-            : isExecuting
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-muted/20 text-muted-foreground border-border/50'
+        const command = String(toolCall.arguments.command ?? '')
 
         return (
-            <div className="my-3 animate-in fade-in slide-in-from-bottom-1 duration-500">
-                <button
-                    onClick={() => setCommandExpanded(!commandExpanded)}
-                    className={cn(
-                        "w-full text-left rounded-xl border px-3 py-2 transition-all",
-                        commandExpanded ? "bg-muted/30 border-border" : "bg-muted/10 border-border/50 hover:bg-muted/20"
-                    )}
-                >
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className={cn("text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded border", statusClass)}>
-                                {statusLabel}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{t('tools.command')}</span>
-                            <span className="text-xs font-mono text-foreground/80 truncate">{command}</span>
-                        </div>
-                        <span className={cn("text-xs text-muted-foreground transition-transform", commandExpanded && "rotate-180")}>v</span>
-                    </div>
-                    {!commandExpanded && (
-                        <div className="mt-2 text-xs font-mono text-zinc-300 whitespace-pre-wrap max-h-24 overflow-hidden">
-                            {preview || (isExecuting ? t('tools.executing') : t('tools.noOutput'))}
-                        </div>
-                    )}
-                </button>
-
-                {commandExpanded && (
-                    <div className="terminal-window mt-3 border border-border shadow-2xl rounded-xl overflow-hidden">
-                        {/* Mac-style Header */}
-                        <div className="terminal-header bg-muted h-7 flex items-center justify-between px-2">
-                            <div className="flex gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                                <div className="terminal-dot bg-[#ff5f56] border-[#e0443e]"></div>
-                                <div className="terminal-dot bg-[#ffbd2e] border-[#dea123]"></div>
-                                <div className="terminal-dot bg-[#27c93f] border-[#1aab29]"></div>
-                            </div>
-                            <div className="text-sm text-zinc-400 font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
-                                <span className="opacity-50">admin@macbook</span>
-                                <span className="text-zinc-600">~</span>
-                                <span>zsh</span>
-                            </div>
-                            {hasOutput && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        setShowMarkdown(!showMarkdown)
-                                    }}
-                                    className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors uppercase tracking-wider font-bold mr-2"
-                                    title={t('toolDisplay.markdownView')}
-                                >
-                                    {showMarkdown ? t('toolDisplay.text') : t('toolDisplay.markdown')}
-                                </button>
-                            )}
-                            {/* KILL BUTTON */}
-                            {isExecuting && (
-                                <button
-                                    onClick={async (e) => {
-                                        e.stopPropagation()
-                                        const success = await window.electron.killTool(toolCall.id)
-                                        if (success) {console.log("Process killed")}
-                                    }}
-                                    className="text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors uppercase tracking-wider font-bold"
-                                    title={t('tools.forceStop')}
-                                >
-                                    {t('tools.stop')}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Terminal Body */}
-                        <div className="terminal-content p-4 bg-background min-h-[120px] max-h-[400px] overflow-y-auto font-mono text-sm leading-relaxed selection:bg-primary/20">
-                            {/* Command Prompt Line */}
-                            <div className="flex items-center gap-2 text-emerald-400 font-bold mb-1">
-                                <span className="text-blue-400">&gt;</span>
-                                <span className="text-cyan-300">~</span>
-                                <span className="text-zinc-200">{command}</span>
-                            </div>
-
-                            {/* Output */}
-                            <div className="pl-0 mt-2">
-                                {/* Loading State */}
-                                {isExecuting && (
-                                    <div className="flex items-center gap-2 text-zinc-500 italic mb-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"></span>
-                                        {t('tools.executingCommand')}
-                                    </div>
-                                )}
-
-                                {result ? (
-                                    <>
-                                        {showMarkdown ? (
-                                            <div className="text-zinc-200 text-sm leading-6">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                    {outputText || t('tools.noOutputReturned')}
-                                                </ReactMarkdown>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {stdout && (
-                                                    <div className="text-zinc-300 whitespace-pre-wrap leading-6 tracking-wide">
-                                                        {stdout}
-                                                    </div>
-                                                )}
-                                                {stderr && (
-                                                    <div className="text-red-400 whitespace-pre-wrap mt-2 leading-6">
-                                                        <span className="inline-block mr-2">stderr:</span>
-                                                        {stderr}
-                                                    </div>
-                                                )}
-                                                {error && (
-                                                    <div className="text-red-500 font-bold whitespace-pre-wrap mt-2 leading-6 bg-red-500/10 p-2 rounded">
-                                                        <span className="inline-block mr-2">error:</span>
-                                                        {error}
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                        {!hasOutput && !isExecuting && (
-                                            <div className="text-zinc-600 italic text-xs mt-1 opacity-50">
-                                                {t('tools.noOutput')}
-                                            </div>
-                                        )}
-                                    </>
-                                ) : null}
-
-                                {/* Blinking Cursor at the end */}
-                                <div className="mt-2">
-                                    <span className="text-emerald-400 font-bold mr-2">&gt;</span>
-                                    <span className="inline-block w-2.5 h-5 bg-zinc-500/80 align-sub animate-pulse"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+            <TerminalView
+                toolCallId={toolCall.id}
+                command={command}
+                result={result}
+                isExecuting={isExecuting}
+                expanded={commandExpanded}
+                onToggleExpand={() => setCommandExpanded(!commandExpanded)}
+            />
         )
     }
 
@@ -202,18 +75,18 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     // const isCompleted = !!result
 
     // Auto-expand only if there is an error or it's a specific tool type
-    const [userExpanded, setUserExpanded] = useState(false)
+    // Auto-expand only if there is an error or it's a specific tool type
 
     // Specific status messages
     let statusText = t('tools.usingTool')
     if (isExecuting) {
-        if (toolCall.name.includes('search')) {statusText = t('tools.searching')}
-        else if (toolCall.name.includes('file')) {statusText = t('tools.readingFiles')}
-        else if (toolCall.name.includes('command')) {statusText = t('tools.executingCmd')}
-        else if (toolCall.name.includes('screenshot')) {statusText = t('tools.screenshotting')}
+        if (toolCall.name.includes('search')) { statusText = t('tools.searching') }
+        else if (toolCall.name.includes('file')) { statusText = t('tools.readingFiles') }
+        else if (toolCall.name.includes('command')) { statusText = t('tools.executingCmd') }
+        else if (toolCall.name.includes('screenshot')) { statusText = t('tools.screenshotting') }
     } else {
-        if (hasError) {statusText = t('tools.failed')}
-        else {statusText = t('tools.completed')}
+        if (hasError) { statusText = t('tools.failed') }
+        else { statusText = t('tools.completed') }
     }
 
     if (isExecuting) {
@@ -250,7 +123,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
                 <div className="mt-2 ml-2 border-l-2 border-white/10 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
                     <div className="space-y-1">
                         <div className="text-sm uppercase tracking-wider text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
-                        <ToolArguments name={toolCall.name} args={toolCall.arguments} />
+                        <ToolArguments name={toolCall.name} args={toolCall.arguments} t={t} />
                     </div>
                     {result && (
                         <div className="space-y-1">
@@ -264,12 +137,12 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
     )
 }
 
-function ToolArguments({ name, args }: { name: string; args: JsonObject }) {
+function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (key: string) => string }) {
     if (name === 'read_file' || name === 'write_file') {
         const pathValue = typeof args.path === 'string'
             ? args.path
             : (typeof args.file === 'string' ? args.file : '')
-        return <div className="font-mono text-primary bg-primary/10 px-2 py-1 rounded inline-block">Path: {pathValue}</div>
+        return <div className="font-mono text-primary bg-primary/10 px-2 py-1 rounded inline-block">{t('tools.path')}: {pathValue}</div>
     }
     return <pre className="font-mono text-muted-foreground bg-muted/50 p-2 rounded overflow-x-auto">{JSON.stringify(args, null, 2)}</pre>
 }
@@ -330,7 +203,7 @@ function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (
         const imgParams = typeof result === 'string'
             ? result
             : (result && typeof result === 'object' && !Array.isArray(result) ? (result as JsonObject).image : undefined)
-        if (typeof imgParams === 'string') {return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />}
+        if (typeof imgParams === 'string') { return <img src={imgParams} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" /> }
     }
 
     if (typeof result === 'string') {

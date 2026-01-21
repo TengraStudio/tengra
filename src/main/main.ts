@@ -7,6 +7,12 @@ dotenv.config()
 
 import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell, Tray } from 'electron'
 
+// Suppress Electron security warnings in development (CSP warnings due to Monaco Editor requiring unsafe-eval)
+// These warnings don't appear in packaged apps
+if (!app.isPackaged) {
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
+}
+
 // Set the application name early - this affects Task Manager display on Windows
 app.setName('Orbit')
 
@@ -264,18 +270,17 @@ app.whenReady().then(async () => {
         })
 
     // Debug: Check what tokens are available (Now safe to call)
-    if (services.authService) {
-
-        const tokens = await services.authService.getAllTokens();
-        appLogger.debug('Main', `AuthService identified ${Object.keys(tokens).length} tokens at startup. Keys: ${JSON.stringify(Object.keys(tokens))}`)
-        if (tokens['copilot_token']) {
-            appLogger.debug('Main', `copilot_token found in AuthService, length: ${tokens['copilot_token'].length}`)
+    {
+        const accounts = await services.authService.getAllAccountsFull();
+        appLogger.debug('Main', `AuthService identified ${accounts.length} accounts at startup. Providers: ${JSON.stringify(accounts.map(a => a.provider))}`)
+        const copilot = accounts.find(a => a.provider === 'copilot_token' || a.provider === 'copilot');
+        if (copilot?.accessToken) {
+            appLogger.debug('Main', `copilot account found in AuthService, token length: ${copilot.accessToken.length}`)
         }
-        if (tokens['github_token']) {
-            appLogger.debug('Main', `github_token found in AuthService, length: ${tokens['github_token'].length}`)
+        const github = accounts.find(a => a.provider === 'github_token' || a.provider === 'github');
+        if (github?.accessToken) {
+            appLogger.debug('Main', `github account found in AuthService, token length: ${github.accessToken.length}`)
         }
-    } else {
-        appLogger.warn('Main', 'AuthService not available in settingsService')
     }
 
     appLogger.info('Main', 'Starting Proxy initialization...')
@@ -327,6 +332,9 @@ app.whenReady().then(async () => {
     // Store services for use in event handlers
     globalServices = services
 
+    // Cookie Interceptor removed as requested
+
+
     // Configure auto-start on boot
     const settings = services.settingsService.getSettings()
     if (settings.window?.startOnStartup !== undefined) {
@@ -350,6 +358,26 @@ app.whenReady().then(async () => {
         appLogger.error('Main', `Failed to create window: ${e}`)
     }
 
+    // Initialize Services
+    // The original `services` variable is already defined and assigned above.
+    // This line is likely a remnant from a different refactoring.
+    // services = buildServices(mainWindow, app.getPath('userData')) 
+
+    // Register IPC
+    // registerIpc(services, mainWindow) // This is handled by registerIpcHandlers above
+
+    // Auto-start Ollama
+    try {
+        const { startOllama } = await import('@main/startup/ollama')
+        appLogger.info('Main', 'Initiating Ollama auto-start...')
+        // Don't await this to avoid blocking startup
+        void startOllama(() => mainWindow, false).catch(err => {
+            appLogger.error('Main', `Ollama auto-start failed: ${err}`)
+        })
+    } catch (e) {
+        appLogger.error('Main', `Failed to import startOllama: ${e}`)
+    }
+
     // Initialize Auto-Updater
     if (mainWindow) {
         services.updateService.init(mainWindow)
@@ -358,6 +386,7 @@ app.whenReady().then(async () => {
     }
 
     // Initialize Crash Reporting
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     services.sentryService.init()
 
 
@@ -374,6 +403,9 @@ app.whenReady().then(async () => {
             mainWindow.show()
         }
     })
+}).catch(e => {
+    appLogger.error('Main', `Failed to start application: ${e}`)
+    app.exit(1)
 })
 
 function setupTray() {
@@ -451,6 +483,7 @@ app.on('window-all-closed', () => {
 })
 
 // Cleanup on app quit - prevent memory leaks
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 app.on('before-quit', async (event) => {
     appLogger.info('Main', 'Application shutdown initiated')
 
@@ -467,8 +500,10 @@ app.on('before-quit', async (event) => {
         // Cleanup services
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (container) {
-            appLogger.info('Main', 'Disposing service container...')
+            appLogger.info('Main', 'Disposing service container (native services will persist)...')
             try {
+                // container.dispose() often kills processes, but we want them to persist.
+                // Our ProcessManagerService.killAll() is now a no-op for native services.
                 await container.dispose()
                 appLogger.info('Main', 'Service container disposed successfully')
             } catch (e) {

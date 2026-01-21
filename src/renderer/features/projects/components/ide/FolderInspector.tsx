@@ -37,7 +37,7 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                 setLoading(false)
             }
         }
-        loadData()
+        void loadData()
     }, [folderPath])
 
     if (!folderPath) {return (
@@ -69,7 +69,7 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-white/5 border border-white/5">
                         <div className="text-[10px] uppercase text-muted-foreground mb-1">Files</div>
-                        <div className="text-xl font-bold">{data.stats?.fileCount || 0}</div>
+                        <div className="text-xl font-bold">{data.stats?.fileCount ?? 0}</div>
                     </div>
                     <div className="p-3 rounded-lg bg-white/5 border border-white/5">
                         <div className="text-[10px] uppercase text-muted-foreground mb-1">Size</div>

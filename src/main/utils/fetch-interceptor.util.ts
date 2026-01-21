@@ -5,7 +5,7 @@ import { appLogger } from '@main/logging/logger';
  */
 export async function fetchWithLogging(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const startTime = Date.now();
-    const method = init?.method || 'GET';
+    const method = init?.method ?? 'GET';
     const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
 
     // Log Request

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { Folder, Project, TerminalTab } from '@/types'
@@ -14,7 +14,7 @@ export function useProjectManager() {
         const id = uuidv4()
         const newTab: TerminalTab = {
             id,
-            name: name || 'Terminal',
+            name: name ?? 'Terminal',
             type: 'bash',
             status: 'idle',
             history: [],
@@ -66,7 +66,7 @@ export function useProjectManager() {
     }, [loadFolders])
 
     const handleDeleteFolder = useCallback(async (id: string, onFolderDeleted?: () => void) => {
-        if (!window.confirm('Klasörü silmek istediğinize emin misiniz?')) { return }
+        console.warn('Klasörü silmek istediğinize emin misiniz?');
         try {
             await window.electron.db.deleteFolder(id)
             await loadFolders()

@@ -1,7 +1,7 @@
 import { DatabaseService } from '@main/services/data/database.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { SecurityService } from '@main/services/security/security.service'
-import { beforeEach,describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock dependencies
 vi.mock('@main/logging/logger', () => ({
@@ -97,21 +97,21 @@ describe('AuthService (New Multi-Account System)', () => {
         })
     })
 
-    describe('TokenService Compatibility', () => {
-        it('should provide getAllFullTokens for backward compatibility', async () => {
+    describe('Token Access', () => {
+        it('should provide getAllAccountsFull', async () => {
             const mockAccounts = [
                 { id: '1', provider: 'github', email: 'user@test.com', accessToken: 'encrypted_token', isActive: true, createdAt: Date.now(), updatedAt: Date.now() }
             ]
             vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts)
 
-            const tokens = await authService.getAllFullTokens()
+            const accounts = await authService.getAllAccountsFull()
 
-            expect(tokens).toHaveLength(1)
-            expect(tokens[0]?.provider).toBe('github')
-            expect(tokens[0]?.accessToken).toBe('token') // Decrypted
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0]?.provider).toBe('github')
+            expect(accounts[0]?.accessToken).toBe('token') // Decrypted
         })
 
-        it('should provide getToken for backward compatibility', async () => {
+        it('should provide getActiveToken', async () => {
             const mockAccount = {
                 id: '1',
                 provider: 'github',
@@ -122,7 +122,7 @@ describe('AuthService (New Multi-Account System)', () => {
             }
             vi.mocked(mockDatabaseService.getActiveLinkedAccount).mockResolvedValue(mockAccount)
 
-            const token = await authService.getToken('github')
+            const token = await authService.getActiveToken('github')
 
             expect(token).toBe('token') // Decrypted
         })

@@ -24,7 +24,7 @@ export function registerLlamaIpc(llamaService: LlamaService) {
     })
 
     ipcMain.handle('llama:resetSession', async () => {
-        llamaService.resetSession()
+        await llamaService.resetSession()
         return { success: true }
     })
 

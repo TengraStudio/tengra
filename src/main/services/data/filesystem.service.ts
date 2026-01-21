@@ -4,6 +4,7 @@ import * as fs from 'fs/promises'
 import * as https from 'https'
 import * as path from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { ServiceResponse } from '@shared/types/index'
 import { getErrorMessage } from '@shared/utils/error.util'
 
@@ -315,7 +316,7 @@ export class FileSystemService {
                 proc.stderr?.on('data', (data) => error += data.toString())
                 proc.on('close', (code) => {
                     if (code === 0) {resolve({ success: true, message: `Extracted to ${destPath}` })}
-                    else {resolve({ success: false, error: error || `Exit code ${code}` })}
+                    else {resolve({ success: false, error: error ?? `Exit code ${code}` })}
                 })
             })
         } catch (e) {
@@ -348,7 +349,7 @@ export class FileSystemService {
                 if (this.shouldIgnore(path.join(absoluteDir, filename.toString()))) {return}
 
                 // Debounce or just emission could be handled by caller, but basic log here
-                console.log(`[FileWatcher] ${eventType}: ${filename}`)
+                appLogger.info('filesystem.service', `[FileWatcher] ${eventType}: ${filename}`)
                 if (callback) {callback(eventType, filename.toString())}
             })
 
@@ -423,7 +424,7 @@ export class FileSystemService {
     async applyEdits(filePath: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
         try {
             const result = await this.readFile(filePath)
-            if (!result.success || !result.data) {return { success: false, error: result.error || 'File read failed' }}
+            if (!result.success || !result.data) {return { success: false, error: result.error ?? 'File read failed' }}
 
             const lines = result.data.split('\n');
             const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine);

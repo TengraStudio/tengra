@@ -71,7 +71,7 @@ export class MultiModelComparisonService extends BaseService {
 
     private async waitForComparison(
         addPromises: Array<Promise<void>>,
-        results: Record<string, any>,
+        results: Record<string, { success: boolean; data?: OpenAIResponse; error?: string }>,
         expectedCount: number
     ): Promise<void> {
         // Wait for all addTask calls to complete
