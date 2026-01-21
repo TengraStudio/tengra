@@ -1,3 +1,4 @@
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -50,7 +51,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
     const [isExpanded, setIsExpanded] = useState(() => {
         if (persistState && typeof window !== 'undefined') {
             const stored = localStorage.getItem(storageKey)
-            return stored !== null ? JSON.parse(stored) : defaultExpanded
+            return stored !== null ? safeJsonParse<boolean>(stored, defaultExpanded) : defaultExpanded
         }
         return defaultExpanded
     })

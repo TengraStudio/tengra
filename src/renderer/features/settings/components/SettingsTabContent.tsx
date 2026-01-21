@@ -1,0 +1,80 @@
+import React from 'react'
+
+import { GalleryView } from '@/features/chat/components/GalleryView'
+import { GroupedModels, ModelInfo } from '@/features/models/utils/model-fetcher'
+import {
+    AboutTab,
+    AccountsTab,
+    AdvancedTab,
+    AppearanceTab,
+    DeveloperTab,
+    GeneralTab,
+    MCPSettingsTab,
+    ModelsTab,
+    ModelUsageLimitsTab,
+    PersonasTab,
+    SpeechTab,
+    StatisticsTab
+} from '@/features/settings/components'
+
+import { SettingsSharedProps } from '../types'
+
+interface SettingsTabContentProps {
+    activeTab: string
+    sharedProps: SettingsSharedProps
+    installedModels: ModelInfo[]
+    proxyModels?: ModelInfo[]
+    onRefreshModels: () => void
+    handleFactoryReset: () => void | Promise<void>
+    groupedModels?: GroupedModels
+}
+
+export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
+    activeTab,
+    sharedProps,
+    installedModels,
+    proxyModels,
+    onRefreshModels,
+    handleFactoryReset,
+    groupedModels
+}) => {
+    const tabMap: Record<string, React.ReactNode> = {
+        general: <GeneralTab {...sharedProps} />,
+        accounts: <AccountsTab {...sharedProps} />,
+        appearance: <AppearanceTab {...sharedProps} />,
+        models: (
+            <ModelsTab
+                {...sharedProps}
+                installedModels={installedModels}
+                proxyModels={proxyModels}
+                onRefreshModels={onRefreshModels}
+            />
+        ),
+        statistics: <StatisticsTab {...sharedProps} />,
+        personas: <PersonasTab {...sharedProps} />,
+        speech: <SpeechTab {...sharedProps} />,
+        developer: <DeveloperTab {...sharedProps} />,
+        advanced: (
+            <AdvancedTab
+                {...sharedProps}
+                installedModels={installedModels}
+                proxyModels={proxyModels}
+            />
+        ),
+        about: <AboutTab {...sharedProps} onReset={() => { void handleFactoryReset(); }} />,
+        'usage-limits': (
+            <ModelUsageLimitsTab
+                {...sharedProps}
+                groupedModels={groupedModels}
+            />
+        ),
+        'mcp-servers': <MCPSettingsTab />,
+        gallery: (
+            <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">
+                <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />
+            </div>
+        )
+    }
+
+    return <>{tabMap[activeTab] ?? null}</>
+}

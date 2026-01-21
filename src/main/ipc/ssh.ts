@@ -19,13 +19,20 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     sshService.on('disconnected', (id) => send('ssh:disconnected', id))
     sshService.on('error', (payload) => send('ssh:error', payload))
 
+    registerConnectionHandlers(sshService)
+    registerCommandHandlers(sshService, send)
+    registerFileSystemHandlers(sshService, send)
+    registerSystemHandlers(sshService)
+}
+
+function registerConnectionHandlers(sshService: SSHService) {
     ipcMain.handle('ssh:connect', async (_event, connection: Partial<SSHConnection> & { host: string; username: string }) => {
-        const id = connection.id || randomUUID()
-        const port = connection.port || 22
-        const authType = connection.authType || (connection.privateKey ? 'key' : 'password')
+        const id = connection.id ?? randomUUID()
+        const port = connection.port ?? 22
+        const authType = connection.authType ?? (connection.privateKey ? 'key' : 'password')
         const payload: SSHConnection = {
             id,
-            name: connection.name || `${connection.username}@${connection.host}`,
+            name: connection.name ?? `${connection.username}@${connection.host}`,
             host: connection.host,
             port,
             username: connection.username,
@@ -49,6 +56,36 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
         }
     })
 
+    ipcMain.handle('ssh:getConnections', async () => {
+        return sshService.getAllConnections()
+    })
+
+    ipcMain.handle('ssh:isConnected', async (_event, connectionId: string) => {
+        return sshService.isConnected(connectionId)
+    })
+
+    ipcMain.handle('ssh:getProfiles', async () => {
+        return await sshService.getSavedProfiles()
+    })
+
+    ipcMain.handle('ssh:saveProfile', async (_event, profile: SSHConnection) => {
+        try {
+            return await sshService.saveProfile(profile)
+        } catch {
+            return false
+        }
+    })
+
+    ipcMain.handle('ssh:deleteProfile', async (_event, id: string) => {
+        try {
+            return await sshService.deleteProfile(id)
+        } catch {
+            return false
+        }
+    })
+}
+
+function registerCommandHandlers(sshService: SSHService, send: (channel: string, data: JsonValue) => void) {
     ipcMain.handle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
         try {
             return await sshService.executeCommand(connectionId, command, options)
@@ -58,6 +95,21 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
         }
     })
 
+    ipcMain.handle('ssh:shellStart', async (_event, connectionId: string) => {
+        return await sshService.startShell(
+            connectionId,
+            (data) => send('ssh:shellData', { connectionId, data }),
+            () => send('ssh:disconnected', connectionId)
+        )
+    })
+
+    ipcMain.handle('ssh:shellWrite', async (_event, payload: { connectionId: string; data: string }) => {
+        const success = sshService.sendShellData(payload.connectionId, payload.data)
+        return { success }
+    })
+}
+
+function registerFileSystemHandlers(sshService: SSHService, send: (channel: string, data: JsonValue) => void) {
     ipcMain.handle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             return await sshService.listDirectory(payload.connectionId, payload.path)
@@ -141,28 +193,9 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
             return { success: false, error: getErrorMessage(_error as Error) }
         }
     })
+}
 
-    ipcMain.handle('ssh:getConnections', async () => {
-        return sshService.getAllConnections()
-    })
-
-    ipcMain.handle('ssh:isConnected', async (_event, connectionId: string) => {
-        return sshService.isConnected(connectionId)
-    })
-
-    ipcMain.handle('ssh:shellStart', async (_event, connectionId: string) => {
-        return await sshService.startShell(
-            connectionId,
-            (data) => send('ssh:shellData', { connectionId, data }),
-            () => send('ssh:disconnected', connectionId)
-        )
-    })
-
-    ipcMain.handle('ssh:shellWrite', async (_event, payload: { connectionId: string; data: string }) => {
-        const success = sshService.sendShellData(payload.connectionId, payload.data)
-        return { success }
-    })
-
+function registerSystemHandlers(sshService: SSHService) {
     ipcMain.handle('ssh:getSystemStats', async (_event, connectionId: string) => {
         try {
             return await sshService.getSystemStats(connectionId)
@@ -193,25 +226,6 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
             return await sshService.readLogFile(payload.connectionId, payload.path, payload.lines)
         } catch (error) {
             return getErrorMessage(error as Error)
-        }
-    })
-    ipcMain.handle('ssh:getProfiles', async () => {
-        return await sshService.getSavedProfiles()
-    })
-
-    ipcMain.handle('ssh:saveProfile', async (_event, profile: SSHConnection) => {
-        try {
-            return await sshService.saveProfile(profile)
-        } catch {
-            return false
-        }
-    })
-
-    ipcMain.handle('ssh:deleteProfile', async (_event, id: string) => {
-        try {
-            return await sshService.deleteProfile(id)
-        } catch {
-            return false
         }
     })
 }

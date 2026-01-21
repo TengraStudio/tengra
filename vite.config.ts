@@ -27,7 +27,7 @@ export default defineConfig({
                     // This variable may be set by IDE environments like VSCode
                     const env = { ...process.env }
                     delete env.ELECTRON_RUN_AS_NODE
-                    options.startup(['.', '--no-sandbox'], { env })
+                    void options.startup(['.', '--no-sandbox'], { env })
                 },
                 vite: {
                     resolve: {
@@ -120,6 +120,12 @@ export default defineConfig({
         conditions: ['import', 'module', 'browser', 'default'],
         // Handle .mjs extensions properly
         extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']
+    },
+    define: {
+        // Shim Node.js globals for dependencies that expect them in browser context
+        '__dirname': '""',
+        '__filename': '""',
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
     },
     build: {
         outDir: 'dist/renderer',

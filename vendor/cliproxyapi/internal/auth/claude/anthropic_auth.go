@@ -79,6 +79,8 @@ func NewClaudeAuth(cfg *config.Config) *ClaudeAuth {
 //   - string: The complete authorization URL
 //   - string: The state parameter for verification
 //   - error: An error if PKCE codes are missing or URL generation fails
+//
+
 func (o *ClaudeAuth) GenerateAuthURL(state string, pkceCodes *PKCECodes) (string, string, error) {
 	if pkceCodes == nil {
 		return "", "", fmt.Errorf("PKCE codes are required")
@@ -197,6 +199,7 @@ func (o *ClaudeAuth) ExchangeCodeForTokens(ctx context.Context, code, state stri
 		RefreshToken: tokenResp.RefreshToken,
 		Email:        tokenResp.Account.EmailAddress,
 		Expire:       time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Format(time.RFC3339),
+		OrgID:        tokenResp.Organization.UUID,
 	}
 
 	// Create auth bundle
@@ -273,6 +276,7 @@ func (o *ClaudeAuth) RefreshTokens(ctx context.Context, refreshToken string) (*C
 		RefreshToken: tokenResp.RefreshToken,
 		Email:        tokenResp.Account.EmailAddress,
 		Expire:       time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Format(time.RFC3339),
+		OrgID:        tokenResp.Organization.UUID,
 	}, nil
 }
 
@@ -292,47 +296,14 @@ func (o *ClaudeAuth) CreateTokenStorage(bundle *ClaudeAuthBundle) *ClaudeTokenSt
 		LastRefresh:  bundle.LastRefresh,
 		Email:        bundle.TokenData.Email,
 		Expire:       bundle.TokenData.Expire,
+		SessionKey:   bundle.TokenData.SessionKey,
+		OrgID:        bundle.TokenData.OrgID,
 	}
 
 	return storage
 }
 
-// RefreshTokensWithRetry refreshes tokens with automatic retry logic.
-// This method implements exponential backoff retry logic for token refresh operations,
-// providing resilience against temporary network or service issues.
-//
-// Parameters:
-//   - ctx: The context for the request
-//   - refreshToken: The refresh token to use
-//   - maxRetries: The maximum number of retry attempts
-//
-// Returns:
-//   - *ClaudeTokenData: The refreshed token data
-//   - error: An error if all retry attempts fail
-func (o *ClaudeAuth) RefreshTokensWithRetry(ctx context.Context, refreshToken string, maxRetries int) (*ClaudeTokenData, error) {
-	var lastErr error
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		if attempt > 0 {
-			// Wait before retry
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
-			}
-		}
-
-		tokenData, err := o.RefreshTokens(ctx, refreshToken)
-		if err == nil {
-			return tokenData, nil
-		}
-
-		lastErr = err
-		log.Warnf("Token refresh attempt %d failed: %v", attempt+1, err)
-	}
-
-	return nil, fmt.Errorf("token refresh failed after %d attempts: %w", maxRetries, lastErr)
-}
+// ... existing code ...
 
 // UpdateTokenStorage updates an existing token storage with new token data.
 // This method refreshes the token storage with newly obtained access and refresh tokens,
@@ -347,4 +318,12 @@ func (o *ClaudeAuth) UpdateTokenStorage(storage *ClaudeTokenStorage, tokenData *
 	storage.LastRefresh = time.Now().Format(time.RFC3339)
 	storage.Email = tokenData.Email
 	storage.Expire = tokenData.Expire
+
+	// Preserve existing session info if new token data doesn't provide it
+	if tokenData.SessionKey != "" {
+		storage.SessionKey = tokenData.SessionKey
+	}
+	if tokenData.OrgID != "" {
+		storage.OrgID = tokenData.OrgID
+	}
 }

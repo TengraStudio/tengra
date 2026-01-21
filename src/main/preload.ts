@@ -4,13 +4,14 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 ipcRenderer.setMaxListeners(50)
 import {
     AgentDefinition, AppSettings, AuthStatus,
-    Chat, CopilotQuota, CouncilSession,
-    EntityKnowledge, EpisodicMemory,     FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
+    Chat, CodexUsage, CopilotQuota, CouncilSession,
+    EntityKnowledge, EpisodicMemory, FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
     Message, OllamaLibraryModel,
     ProcessInfo,
     Project, ProjectAnalysis, Prompt,
     QuotaResponse, SemanticFragment,
-SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult} from '@shared/types'
+    SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
+} from '@shared/types'
 
 interface ModelDefinition {
     id: string
@@ -69,12 +70,14 @@ export interface ElectronAPI {
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => Promise<{ success: boolean; token?: string; error?: string }>
     antigravityLogin: () => Promise<{ url: string; state: string }>
 
-    claudeLogin: () => Promise<{ url: string; state: string }>
     anthropicLogin: () => Promise<{ url: string; state: string }>
+    claudeLogin: () => Promise<{ url: string; state: string }>
     codexLogin: () => Promise<{ url: string; state: string }>
 
     checkAuthStatus: () => Promise<AuthStatus>
     deleteProxyAuthFile: (name: string) => Promise<boolean>
+    syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
+    saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
 
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>
@@ -86,10 +89,10 @@ export interface ElectronAPI {
 
     // Proxy
     getProxyModels: () => Promise<ProxyModelResponse>
-    getQuota: () => Promise<QuotaResponse | null>
-    getCopilotQuota: () => Promise<CopilotQuota>
-    getCodexUsage: () => Promise<Partial<QuotaResponse>>
-    getClaudeQuota: () => Promise<{ success: boolean; fiveHour?: { utilization: number; resetsAt: string }; sevenDay?: { utilization: number; resetsAt: string } }>
+    getQuota: () => Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null>
+    getCopilotQuota: () => Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }>
+    getCodexUsage: () => Promise<{ accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }> }>
+    getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
     importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
@@ -354,6 +357,7 @@ export interface ElectronAPI {
 
     // Screenshot
     captureScreenshot: () => Promise<{ success: boolean; image?: string; error?: string }>
+    captureCookies: (url: string, timeoutMs?: number) => Promise<{ success: boolean }>
 
     // Shell / External
     openExternal: (url: string) => void
@@ -465,6 +469,7 @@ export interface ElectronAPI {
     unlinkAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>
     unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>
     hasLinkedAccount: (provider: string) => Promise<boolean>
+    getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>
 
     // IPC Batching for performance
     batch: {
@@ -514,11 +519,13 @@ const api: ElectronAPI = {
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => ipcRenderer.invoke('auth:poll-token', deviceCode, interval, appId),
     antigravityLogin: () => ipcRenderer.invoke('proxy:antigravityLogin'),
 
+    anthropicLogin: () => ipcRenderer.invoke('proxy:claudeLogin'),
     claudeLogin: () => ipcRenderer.invoke('proxy:claudeLogin'),
-    anthropicLogin: () => ipcRenderer.invoke('proxy:anthropicLogin'),
     codexLogin: () => ipcRenderer.invoke('proxy:codexLogin'),
     checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
     deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
+    syncAuthFiles: () => ipcRenderer.invoke('proxy:syncAuthFiles'),
+    saveClaudeSession: (sessionKey: string, accountId?: string) => ipcRenderer.invoke('proxy:saveClaudeSession', sessionKey, accountId),
 
     // --- Linked Accounts (New Multi-Account API) ---
     getLinkedAccounts: (provider) => ipcRenderer.invoke('auth:get-linked-accounts', provider),
@@ -528,6 +535,7 @@ const api: ElectronAPI = {
     unlinkAccount: (accountId) => ipcRenderer.invoke('auth:unlink-account', accountId),
     unlinkProvider: (provider) => ipcRenderer.invoke('auth:unlink-provider', provider),
     hasLinkedAccount: (provider) => ipcRenderer.invoke('auth:has-linked-account', provider),
+    getAccountsByProvider: (provider) => ipcRenderer.invoke('auth:get-linked-accounts', provider),
 
     code: {
         scanTodos: (rootPath) => ipcRenderer.invoke('code:scanTodos', rootPath),
@@ -552,24 +560,24 @@ const api: ElectronAPI = {
     chatOpenAI: async (messages, model, tools, provider, options) => {
         const res = await ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options)
         if (res.success) { return res.data }
-        throw new Error(res.error?.message || 'Chat request failed')
+        throw new Error(res.error?.message ?? 'Chat request failed')
     },
     chatStream: (messages, model, tools, provider, options, chatId, projectId) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options, chatId, projectId),
     abortChat: () => ipcRenderer.invoke('ollama:abort'),
     onStreamChunk: (callback) => {
-        console.log(`[Preload] onStreamChunk registered on ${window.location.href}`);
+        console.warn(`[Preload] onStreamChunk registered on ${window.location.href}`);
         const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; chatId?: string; done?: boolean }) => {
-            console.log('[Preload] Received ollama:streamChunk:', JSON.stringify(chunk));
+            console.warn('[Preload] Received ollama:streamChunk:', JSON.stringify(chunk));
             callback(chunk);
         }
         ipcRenderer.on('ollama:streamChunk', listener)
         return () => {
-            console.log('[Preload] onStreamChunk unsubscribing');
+            console.warn('[Preload] onStreamChunk unsubscribing');
             ipcRenderer.removeListener('ollama:streamChunk', listener)
         }
     },
     removeStreamChunkListener: () => {
-        console.log('[Preload] removeAllListeners for ollama:streamChunk');
+        console.warn('[Preload] removeAllListeners for ollama:streamChunk');
         ipcRenderer.removeAllListeners('ollama:streamChunk')
     },
 
@@ -755,6 +763,7 @@ const api: ElectronAPI = {
 
     captureScreenshot: () => ipcRenderer.invoke('screenshot:capture'),
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+    captureCookies: (url: string, timeoutMs?: number) => ipcRenderer.invoke('window:captureCookies', url, timeoutMs),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
     runCommand: (command, args, cwd) => ipcRenderer.invoke('shell:runCommand', command, args, cwd),
     git: {
@@ -802,7 +811,7 @@ const api: ElectronAPI = {
         ipcRenderer.on(`files:search-result:${jobId}`, resultListener)
         ipcRenderer.on(`files:search-complete:${jobId}`, completeListener)
 
-        ipcRenderer.invoke('files:searchFilesStream', rootPath, pattern, jobId)
+        void ipcRenderer.invoke('files:searchFilesStream', rootPath, pattern, jobId)
 
         return () => { // unsubscribe function
             ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener)
@@ -832,37 +841,37 @@ const api: ElectronAPI = {
         analyze: async (rootPath: string, projectId: string) => {
             const res = await ipcRenderer.invoke('project:analyze', rootPath, projectId)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Analysis failed')
+            throw new Error(res.error?.message ?? 'Analysis failed')
         },
         analyzeIdentity: async (rootPath: string) => {
             const res = await ipcRenderer.invoke('project:analyzeIdentity', rootPath)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Identity analysis failed')
+            throw new Error(res.error?.message ?? 'Identity analysis failed')
         },
         generateLogo: async (projectPath: string, prompt: string, style: string) => {
             const res = await ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Logo generation failed')
+            throw new Error(res.error?.message ?? 'Logo generation failed')
         },
         analyzeDirectory: async (dirPath: string) => {
             const res = await ipcRenderer.invoke('project:analyzeDirectory', dirPath)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Directory analysis failed')
+            throw new Error(res.error?.message ?? 'Directory analysis failed')
         },
         applyLogo: async (projectPath: string, tempLogoPath: string) => {
             const res = await ipcRenderer.invoke('project:applyLogo', projectPath, tempLogoPath)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Apply logo failed')
+            throw new Error(res.error?.message ?? 'Apply logo failed')
         },
         getCompletion: async (text: string) => {
             const res = await ipcRenderer.invoke('project:getCompletion', text)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Completion failed')
+            throw new Error(res.error?.message ?? 'Completion failed')
         },
         improveLogoPrompt: async (prompt: string) => {
             const res = await ipcRenderer.invoke('project:improveLogoPrompt', prompt)
             if (res.success) { return res.data }
-            throw new Error(res.error?.message || 'Prompt improvement failed')
+            throw new Error(res.error?.message ?? 'Prompt improvement failed')
         },
         uploadLogo: async (projectPath: string) => {
             const res = await ipcRenderer.invoke('project:uploadLogo', projectPath)

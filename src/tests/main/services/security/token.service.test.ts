@@ -2,6 +2,7 @@ import { appLogger } from '@main/logging/logger';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -13,6 +14,8 @@ vi.mock('@main/services/security/auth.service');
 vi.mock('@main/services/llm/copilot.service');
 vi.mock('@main/services/system/settings.service');
 vi.mock('@main/services/system/job-scheduler.service');
+vi.mock('@main/services/system/job-scheduler.service');
+vi.mock('@main/services/system/event-bus.service');
 vi.mock('axios');
 
 describe('TokenService', () => {
@@ -22,6 +25,7 @@ describe('TokenService', () => {
     let mockSettingsService: SettingsService;
     let mockJobScheduler: JobSchedulerService;
     let mockProcessManager: ProcessManagerService;
+    let mockEventBus: EventBusService;
 
     const mockToken = {
         id: 'google_user',
@@ -39,11 +43,10 @@ describe('TokenService', () => {
         process.env.ANTIGRAVITY_CLIENT_SECRET = 'mock-secret';
 
         mockAuthService = {
-            getAllFullTokens: vi.fn().mockResolvedValue([]),
-            saveToken: vi.fn().mockResolvedValue(true),
-            getToken: vi.fn(),
-            getAllTokens: vi.fn(),
-            getAuthToken: vi.fn()
+            getAllAccountsFull: vi.fn().mockResolvedValue([]),
+            linkAccount: vi.fn().mockResolvedValue(true),
+            getActiveToken: vi.fn(),
+            getActiveAccountFull: vi.fn()
         } as unknown as AuthService;
 
         mockCopilotService = {
@@ -66,22 +69,37 @@ describe('TokenService', () => {
 
         mockProcessManager = {
             startService: vi.fn().mockResolvedValue(undefined),
-            on: vi.fn(),
+            on: vi.fn((event, callback) => {
+                if (event === 'token-service:ready') {
+                    // callback(1234)
+                    // We need to execute it. In mock, we can just call it.
+                    // But since start() calls on(), we need to make sure it captures the callback.
+                    // Or return a mock that calls it.
+                    // Safer: use setTimeout to simulate async event
+                    setTimeout(() => callback(1234), 0);
+                }
+            }),
             sendRequest: vi.fn().mockResolvedValue({ success: true, token: { id: 'test', accessToken: 'new-token' } })
         } as unknown as ProcessManagerService;
+
+        mockEventBus = {
+            emit: vi.fn(),
+            on: vi.fn(),
+            off: vi.fn()
+        } as unknown as EventBusService;
 
         tokenService = new TokenService(
             mockSettingsService,
             mockCopilotService,
             mockAuthService,
-            mockProcessManager,
-            mockJobScheduler
+            mockEventBus,
+            { processManager: mockProcessManager, jobScheduler: mockJobScheduler }
         );
     });
 
     describe('Lifecycle', () => {
-        it('should register jobs with JobScheduler if available', () => {
-            tokenService.start();
+        it('should register jobs with JobScheduler if available', async () => {
+            await tokenService.initialize();
             expect(mockJobScheduler.registerRecurringJob).toHaveBeenCalledWith(
                 'token-refresh-oauth',
                 expect.anything(),
@@ -94,19 +112,19 @@ describe('TokenService', () => {
             );
         });
 
-        it('should use legacy intervals if JobScheduler is missing', () => {
-            const legacyService = new TokenService(mockSettingsService, mockCopilotService, mockAuthService, mockProcessManager);
+        it('should use legacy intervals if JobScheduler is missing', async () => {
+            const legacyService = new TokenService(mockSettingsService, mockCopilotService, mockAuthService, mockEventBus, { processManager: mockProcessManager });
             const setIntervalSpy = vi.spyOn(global, 'setInterval');
-            legacyService.start();
+            await legacyService.initialize();
             expect(setIntervalSpy).toHaveBeenCalledTimes(2);
             expect(appLogger.warn).toHaveBeenCalledWith('TokenService', expect.stringContaining('No JobScheduler provided'));
-            legacyService.stop();
+            legacyService.cleanup();
         });
     });
 
     describe('Token Refresh Logic', () => {
         it('should refresh Google tokens when expired', async () => {
-            vi.mocked(mockAuthService.getAllFullTokens).mockResolvedValue([mockToken as any]);
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockToken as any]);
             vi.mocked(axios.post).mockResolvedValue({
                 data: {
                     access_token: 'new-access',
@@ -115,7 +133,7 @@ describe('TokenService', () => {
                 }
             });
 
-            tokenService.start();
+            await tokenService.initialize();
 
             // Wait for the async call inside start()
             await new Promise(resolve => setTimeout(resolve, 0));
@@ -124,31 +142,44 @@ describe('TokenService', () => {
                 'token-service',
                 expect.objectContaining({
                     type: 'Refresh',
-                    token: expect.objectContaining({ id: 'google_user' })
+                    token: expect.objectContaining({ id: 'google_user' }),
+                    client_id: expect.any(String),
+                    client_secret: 'mock-secret'
                 })
             );
         });
 
+        it('should proactive refresh tokens expiring soon (within 30 mins)', async () => {
+            const expiringSoonToken = { ...mockToken, expiresAt: Date.now() + 15 * 60 * 1000 };
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([expiringSoonToken as any]);
+            vi.mocked(axios.post).mockResolvedValue({
+                data: { access_token: 'new', expires_in: 3600 }
+            });
+
+            await tokenService.initialize();
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockProcessManager.sendRequest).toHaveBeenCalled();
+        });
+
         it('should not refresh tokens that are still valid', async () => {
             const validToken = { ...mockToken, expiresAt: Date.now() + 3600000 };
-            vi.mocked(mockAuthService.getAllFullTokens).mockResolvedValue([validToken as any]);
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([validToken as any]);
 
-            tokenService.start();
+            await tokenService.initialize();
             await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(mockProcessManager.sendRequest).not.toHaveBeenCalled();
         });
 
         it('should handle refresh errors and log them', async () => {
-            vi.mocked(mockAuthService.getAllFullTokens).mockResolvedValue([mockToken as any]);
-            vi.mocked(axios.post).mockRejectedValue({
-                response: {
-                    status: 400,
-                    data: { error: 'invalid_grant' }
-                }
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockToken as any]);
+            vi.mocked(mockProcessManager.sendRequest).mockResolvedValue({
+                success: false,
+                error: 'invalid_grant'
             });
 
-            tokenService.start();
+            await tokenService.initialize();
             await new Promise(resolve => setTimeout(resolve, 0));
 
             // Should send request for other items? 
@@ -179,7 +210,9 @@ describe('TokenService', () => {
                 'token-service',
                 expect.objectContaining({
                     type: 'Refresh',
-                    token: expect.objectContaining({ id: 'google_user' })
+                    token: expect.objectContaining({ id: 'google_user' }),
+                    client_id: expect.any(String),
+                    client_secret: 'mock-secret'
                 })
             );
         });
@@ -191,7 +224,7 @@ describe('TokenService', () => {
                 copilot: { token: 'gh-token' }
             } as any);
 
-            tokenService.start();
+            await tokenService.initialize();
             const jobCallback = vi.mocked(mockJobScheduler.registerRecurringJob).mock.calls.find(call => call[0] === 'token-refresh-copilot')?.[1];
 
             if (jobCallback) {

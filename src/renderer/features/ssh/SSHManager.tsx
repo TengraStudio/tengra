@@ -1,4 +1,3 @@
-﻿
 import { NginxWizard } from '@renderer/features/ssh/NginxWizard'
 import { PackageManager } from '@renderer/features/ssh/PackageManager'
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser'
@@ -19,6 +18,14 @@ interface SSHManagerProps {
     language: Language
 }
 
+interface SSHProfile {
+    host: string
+    port: number
+    username: string
+    password?: string
+    privateKey?: string
+}
+
 export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const { t } = useTranslation(language)
     const {
@@ -31,7 +38,14 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     } = useSSHConnections(isOpen)
 
     const [showAddModal, setShowAddModal] = useState(false)
-    const [newConnection, setNewConnection] = useState({
+    const [newConnection, setNewConnection] = useState<{
+        host: string;
+        port: number;
+        username: string;
+        password?: string;
+        privateKey?: string;
+        name?: string;
+    }>({
         name: '',
         host: '',
         port: 22,
@@ -112,7 +126,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const handleDisconnect = async (id: string) => {
         await window.electron.ssh.disconnect(id)
         // updateConnectionStatus(id, 'disconnected') // Hook handles this via listener
-        setTerminalOutput(prev => prev + `${t('ssh.disconnected') || 'Disconnected.'}\n`)
+        setTerminalOutput(prev => prev + `${t('ssh.disconnected')}\n`)
     }
 
     const handleExecute = async (id: string, cmd: string) => {
@@ -120,8 +134,8 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         await window.electron.ssh.shellWrite(id, cmd + '\n')
     }
 
-    const handleConnectProfile = (conn: any) => {
-        window.electron.ssh.connect({
+    const handleConnectProfile = (conn: SSHProfile) => {
+        void window.electron.ssh.connect({
             host: conn.host,
             port: conn.port,
             username: conn.username,
@@ -161,7 +175,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                 { id: 'files', label: t('ssh.files') },
                                 { id: 'packages', label: t('ssh.packages') },
                                 { id: 'logs', label: t('ssh.logs') },
-                                { id: 'management', label: t('ssh.management') || 'Management' }
+                                { id: 'management', label: t('ssh.management') }
                             ].map(tab => (
                                 <button
                                     key={tab.id}

@@ -85,7 +85,7 @@ export class HttpService extends BaseService {
         const requestHeaders = fetchOptions.headers ? JSON.stringify(fetchOptions.headers) : '{}';
         const requestBody = fetchOptions.body ? (typeof fetchOptions.body === 'string' ? fetchOptions.body.substring(0, 500) : '[Binary/Stream]') : '';
 
-        const httpMethod = fetchOptions.method || 'GET';
+        const httpMethod = fetchOptions.method ?? 'GET';
         appLogger.debug('HTTP', `[${requestId}] --> ${httpMethod} ${url}`);
         appLogger.debug('HTTP', `[${requestId}] Headers: ${requestHeaders}`);
         if (requestBody) {
@@ -115,7 +115,7 @@ export class HttpService extends BaseService {
             });
 
             // Clean up after request completes
-            requestPromise.finally(() => {
+            void requestPromise.finally(() => {
                 setTimeout(() => {
                     this.pendingRequests.delete(key);
                 }, this.DEDUPLICATION_WINDOW_MS);
@@ -129,7 +129,7 @@ export class HttpService extends BaseService {
      * Generates a unique key for request deduplication
      */
     private generateRequestKey(url: string, options: RequestInit): string {
-        const method = options.method || 'GET';
+        const method = options.method ?? 'GET';
         const body = options.body ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)) : '';
         return `${method}:${url}:${body}`;
     }
@@ -214,7 +214,7 @@ export class HttpService extends BaseService {
 
                 if (isLastAttempt) {
                     const duration = Date.now() - startTime;
-                    const method = fetchOptions.method || 'GET';
+                    const method = fetchOptions.method ?? 'GET';
                     appLogger.error('HTTP', `[${requestId}] <-- FAILED ${method} ${url} (Attempt ${attempt + 1}/${retryCount + 1}) (${duration}ms): ${errMsg}`);
                     throw error;
                 }

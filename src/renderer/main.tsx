@@ -10,10 +10,15 @@ import '@renderer/web-bridge'
 
 installRendererLogger()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-        <AppProviders>
-            <App />
-        </AppProviders>
-    </React.StrictMode>
-)
+const rootElement = document.getElementById('root')
+if (rootElement) {
+    ReactDOM.createRoot(rootElement).render(
+        <React.StrictMode>
+            <AppProviders>
+                <App />
+            </AppProviders>
+        </React.StrictMode>
+    )
+} else {
+    throw new Error('Root element not found')
+}

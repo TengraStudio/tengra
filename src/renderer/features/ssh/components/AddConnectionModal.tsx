@@ -13,7 +13,7 @@ interface AddConnectionModalProps {
         privateKey?: string;
         name?: string;
     }
-    setNewConnection: (val: any) => void
+    setNewConnection: (val: AddConnectionModalProps['newConnection']) => void
     shouldSaveProfile: boolean
     setShouldSaveProfile: (val: boolean) => void
     isConnecting: boolean
@@ -31,7 +31,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     isConnecting,
     onConnect
 }) => {
-    if (!isOpen) {return null}
+    if (!isOpen) { return null }
 
     return (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
@@ -68,7 +68,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                         type="password"
                         value={newConnection.password || ''}
                         onChange={e => setNewConnection({ ...newConnection, password: e.target.value })}
-                        placeholder="Currently optional if key used"
+                        placeholder={t('ssh.placeholders.passwordOptional')}
                     />
                 </div>
                 <div className="form-group">
@@ -76,7 +76,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <textarea
                         value={newConnection.privateKey || ''}
                         onChange={e => setNewConnection({ ...newConnection, privateKey: e.target.value })}
-                        placeholder="-----BEGIN RSA PRIVATE KEY-----"
+                        placeholder={t('ssh.placeholders.privateKey')}
                         style={{ height: '80px', fontSize: '0.8em' }}
                     />
                 </div>
@@ -92,11 +92,11 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                 </div>
                 {shouldSaveProfile && (
                     <div className="form-group">
-                        <label>Profile Name</label>
+                        <label>{t('ssh.profileName')}</label>
                         <input
                             value={newConnection.name || ''}
                             onChange={e => setNewConnection({ ...newConnection, name: e.target.value })}
-                            placeholder="My Server"
+                            placeholder={t('ssh.placeholders.profileName')}
                         />
                     </div>
                 )}

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect,useState } from 'react'
+﻿import { useCallback, useState } from 'react'
 
 export interface TextToSpeechReturn {
     speak: (text: string, messageId?: string) => void
@@ -17,44 +17,43 @@ interface TTSOptions {
 }
 
 export function useTextToSpeech(options: TTSOptions = {}): TextToSpeechReturn {
-    const [isSpeaking, setIsSpeaking] = useState(false)
-    const [isSupported, setIsSupported] = useState(false)
-    const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
+    const { voice, rate, pitch, volume, onEnd } = options
 
-    useEffect(() => {
-        if ('speechSynthesis' in window) {
-            setIsSupported(true)
-        }
-    }, [])
+    const [isSpeaking, setIsSpeaking] = useState(false)
+    const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
+    const [isSupported] = useState(() => {
+        if (typeof window === 'undefined') { return false }
+        return 'speechSynthesis' in window
+    })
 
     const stop = useCallback(() => {
-        if (!isSupported) {return}
+        if (!isSupported) { return }
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
         setSpeakingMessageId(null)
     }, [isSupported])
 
     const speak = useCallback((text: string, messageId?: string) => {
-        if (!isSupported) {return}
+        if (!isSupported) { return }
 
         // Cancel any ongoing speech
         window.speechSynthesis.cancel()
 
         const utterance = new SpeechSynthesisUtterance(text)
 
-        if (options.voice) {utterance.voice = options.voice}
-        if (options.rate) {utterance.rate = options.rate}
-        if (options.pitch) {utterance.pitch = options.pitch}
-        if (options.volume) {utterance.volume = options.volume}
+        if (voice) { utterance.voice = voice }
+        if (rate) { utterance.rate = rate }
+        if (pitch) { utterance.pitch = pitch }
+        if (volume) { utterance.volume = volume }
 
         utterance.onstart = () => {
             setIsSpeaking(true)
-            if (messageId) {setSpeakingMessageId(messageId)}
+            if (messageId) { setSpeakingMessageId(messageId) }
         }
         utterance.onend = () => {
             setIsSpeaking(false)
             setSpeakingMessageId(null)
-            options.onEnd?.()
+            onEnd?.()
         }
         utterance.onerror = () => {
             setIsSpeaking(false)
@@ -62,7 +61,7 @@ export function useTextToSpeech(options: TTSOptions = {}): TextToSpeechReturn {
         }
 
         window.speechSynthesis.speak(utterance)
-    }, [isSupported, options.voice, options.rate, options.pitch, options.volume, options.onEnd])
+    }, [isSupported, voice, rate, pitch, volume, onEnd])
 
     return {
         speak,

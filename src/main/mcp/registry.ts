@@ -56,26 +56,38 @@ function wrap(handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandl
     return async (args: JsonObject) => {
         try {
             const rawResult = await Promise.resolve(handler(args))
-            if (rawResult && typeof rawResult === 'object' && 'success' in rawResult) {
-                const res = rawResult as ServiceResponse<unknown>
-                if (res.success === false) {
-                    return { success: false, error: (res.error || res.message) || 'Unknown error' }
-                }
-                const data = (res.data ?? res.result ?? res.content ?? res) ?? null
-                return { success: true, data: data as JsonValue }
-            }
-            return { success: true, data: (rawResult ?? null) as JsonValue }
+            return normalizeResult(rawResult)
         } catch (error) {
             return { success: false, error: getErrorMessage(error) }
         }
     }
 }
 
+function normalizeResult(rawResult: McpHandlerResult): McpResult {
+    if (isServiceResponse(rawResult)) {
+        return normalizeServiceResponse(rawResult)
+    }
+    return { success: true, data: (rawResult ?? null) as JsonValue }
+}
+
+function isServiceResponse(result: unknown): result is ServiceResponse<unknown> {
+    return !!(result && typeof result === 'object' && 'success' in result)
+}
+
+function normalizeServiceResponse(res: ServiceResponse<unknown>): McpResult {
+    if (res.success === false) {
+        return { success: false, error: (res.error ?? res.message) ?? 'Unknown error' }
+    }
+    // prioritized data extraction
+    const data = res.data ?? res.result ?? res.content ?? res
+    return { success: true, data: data as JsonValue }
+}
+
 const buildActions = (actions: Array<Omit<McpAction, 'handler'> & { handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult> }>): McpAction[] =>
     actions.map(a => ({ ...a, handler: wrap(a.handler) }))
 
 const normalizeTarget = (target: string): string => {
-    const trimmed = String(target || '').trim()
+    const trimmed = String(target).trim()
     if (!trimmed) { return '' }
     try {
         const url = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`)
@@ -86,7 +98,7 @@ const normalizeTarget = (target: string): string => {
 }
 
 const ensureAllowedTarget = (deps: McpDeps, target: string) => {
-    const allowed = deps.settings.getSettings().mcpSecurityAllowedHosts || []
+    const allowed = deps.settings.getSettings().mcpSecurityAllowedHosts ?? []
     const normalized = normalizeTarget(target)
     if (!normalized) {
         throw new Error('Target is required')
@@ -98,6 +110,17 @@ const ensureAllowedTarget = (deps: McpDeps, target: string) => {
 }
 
 export function buildMcpServices(deps: McpDeps): McpService[] {
+    return [
+        ...buildCoreServices(deps),
+        ...buildNetworkServices(deps),
+        ...buildUtilityServices(deps),
+        ...buildProjectServices(deps),
+        ...buildDataServices(deps),
+        ...buildSecurityServices(deps)
+    ]
+}
+
+function buildCoreServices(deps: McpDeps): McpService[] {
     return [
         {
             name: 'filesystem',
@@ -126,28 +149,24 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
             ])
         },
         {
-            name: 'web',
-            description: 'HTTP utilities',
-            actions: buildActions([
-                { name: 'fetch', description: 'Fetch web page HTML/text', handler: ({ url }) => deps.web.fetchWebPage(url as string) },
-                { name: 'search', description: 'Search the web', handler: ({ query, numResults }) => deps.web.searchWeb(query as string, numResults as number) }
-            ])
-        },
-        {
-            name: 'utility',
-            description: 'Utility helpers',
-            actions: buildActions([
-                { name: 'exchangeRate', description: 'Get FX rate', handler: ({ from, to }) => deps.utility.getExchangeRate(from as string, to as string) },
-                { name: 'storeMemory', description: 'Store memory key/value', handler: ({ key, value }) => deps.utility.storeMemory(key as string, value as string) },
-                { name: 'recallMemory', description: 'Recall memory by key', handler: ({ key }) => deps.utility.recallMemory(key as string) }
-            ])
-        },
-        {
             name: 'system',
             description: 'Local system info',
             actions: buildActions([
                 { name: 'diskSpace', description: 'Get disk space info', handler: () => deps.system.getDiskSpace() },
                 { name: 'processOnPort', description: 'Find process on port', handler: ({ port }) => deps.system.getProcessOnPort(Number(port)) }
+            ])
+        }
+    ]
+}
+
+function buildNetworkServices(deps: McpDeps): McpService[] {
+    return [
+        {
+            name: 'web',
+            description: 'HTTP utilities',
+            actions: buildActions([
+                { name: 'fetch', description: 'Fetch web page HTML/text', handler: ({ url }) => deps.web.fetchWebPage(url as string) },
+                { name: 'search', description: 'Search the web', handler: ({ query, numResults }) => deps.web.searchWeb(query as string, numResults as number) }
             ])
         },
         {
@@ -160,18 +179,34 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
             ])
         },
         {
+            name: 'network',
+            description: 'Network utilities',
+            actions: buildActions([
+                { name: 'ping', description: 'Ping host', handler: ({ host }) => deps.network.ping(host as string) },
+                { name: 'traceroute', description: 'Run traceroute', handler: ({ host }) => deps.network.traceroute(host as string) },
+                { name: 'whois', description: 'WHOIS lookup', handler: ({ domain }) => deps.network.whois(domain as string) }
+            ])
+        }
+    ]
+}
+
+function buildUtilityServices(deps: McpDeps): McpService[] {
+    return [
+        {
+            name: 'utility',
+            description: 'Utility helpers',
+            actions: buildActions([
+                { name: 'exchangeRate', description: 'Get FX rate', handler: ({ from, to }) => deps.utility.getExchangeRate(from as string, to as string) },
+                { name: 'storeMemory', description: 'Store memory key/value', handler: ({ key, value }) => deps.utility.storeMemory(key as string, value as string) },
+                { name: 'recallMemory', description: 'Recall memory by key', handler: ({ key }) => deps.utility.recallMemory(key as string) }
+            ])
+        },
+        {
             name: 'screenshot',
             description: 'Screen capture utilities',
             actions: buildActions([
                 { name: 'capture', description: 'Capture primary screen', handler: () => deps.screenshot.captureScreen() },
                 { name: 'listWindows', description: 'List windows', handler: () => deps.screenshot.listWindows() }
-            ])
-        },
-        {
-            name: 'scanner',
-            description: 'Project scanning',
-            actions: buildActions([
-                { name: 'scanDirectory', description: 'Scan directory for code files', handler: ({ path }) => deps.scanner.scanDirectory(path as string) }
             ])
         },
         {
@@ -182,19 +217,30 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
             ])
         },
         {
-            name: 'network',
-            description: 'Network utilities',
-            actions: buildActions([
-                { name: 'ping', description: 'Ping host', handler: ({ host }) => deps.network.ping(host as string) },
-                { name: 'traceroute', description: 'Run traceroute', handler: ({ host }) => deps.network.traceroute(host as string) },
-                { name: 'whois', description: 'WHOIS lookup', handler: ({ domain }) => deps.network.whois(domain as string) }
-            ])
-        },
-        {
             name: 'monitoring',
             description: 'System monitoring',
             actions: buildActions([
                 { name: 'usage', description: 'Get CPU/memory usage', handler: () => deps.monitoring.getUsage() }
+            ])
+        },
+        {
+            name: 'clipboard',
+            description: 'Clipboard helpers',
+            actions: buildActions([
+                { name: 'read', description: 'Read clipboard text', handler: () => deps.clipboard.readText() },
+                { name: 'write', description: 'Write clipboard text', handler: ({ text }) => deps.clipboard.writeText(text as string) }
+            ])
+        }
+    ]
+}
+
+function buildProjectServices(deps: McpDeps): McpService[] {
+    return [
+        {
+            name: 'scanner',
+            description: 'Project scanning',
+            actions: buildActions([
+                { name: 'scanDirectory', description: 'Scan directory for code files', handler: ({ path }) => deps.scanner.scanDirectory(path as string) }
             ])
         },
         {
@@ -205,6 +251,56 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
                 { name: 'log', description: 'Get git log', handler: ({ repoPath, limit }) => deps.git.getLog(repoPath as string, limit as number) }
             ])
         },
+        {
+            name: 'docker',
+            description: 'Docker utilities',
+            actions: buildActions([
+                { name: 'listContainers', description: 'List docker containers', handler: () => deps.docker.listContainers() },
+                { name: 'stats', description: 'Docker stats (no stream)', handler: () => deps.docker.getStats() },
+                { name: 'listImages', description: 'List docker images', handler: () => deps.docker.listImages() }
+            ])
+        }
+    ]
+}
+
+function buildDataServices(deps: McpDeps): McpService[] {
+    return [
+        {
+            name: 'embedding',
+            description: 'Embedding operations',
+            actions: buildActions([
+                { name: 'embed', description: 'Generate embedding', handler: ({ text }) => deps.embedding.generateEmbedding(text as string) }
+            ])
+        },
+        {
+            name: 'ollama',
+            description: 'Ollama local LLM utilities',
+            actions: buildActions([
+                { name: 'listModels', description: 'List local ollama models', handler: () => deps.ollama.getModels() },
+                { name: 'ps', description: 'List running ollama models', handler: () => deps.ollama.ps() }
+            ])
+        },
+        {
+            name: 'database',
+            description: 'App database access',
+            actions: buildActions([
+                { name: 'stats', description: 'Get DB stats', handler: () => deps.database.getStats() },
+                { name: 'chats', description: 'List chats', handler: () => deps.database.getAllChats() }
+            ])
+        },
+        {
+            name: 'content',
+            description: 'Content helpers (markdown/code)',
+            actions: buildActions([
+                { name: 'base64Encode', description: 'Base64 encode', handler: ({ text }) => deps.content.base64Encode(text as string) },
+                { name: 'formatJson', description: 'Pretty print JSON', handler: ({ json }) => deps.content.formatJson(json as JsonValue) }
+            ])
+        }
+    ]
+}
+
+function buildSecurityServices(deps: McpDeps): McpService[] {
+    return [
         {
             name: 'security',
             description: 'Security helpers',
@@ -264,54 +360,6 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
                         return deps.command.executeCommand(command)
                     })
                 }
-            ])
-        },
-        {
-            name: 'embedding',
-            description: 'Embedding operations',
-            actions: buildActions([
-                { name: 'embed', description: 'Generate embedding', handler: ({ text }) => deps.embedding.generateEmbedding(text as string) }
-            ])
-        },
-        {
-            name: 'docker',
-            description: 'Docker utilities',
-            actions: buildActions([
-                { name: 'listContainers', description: 'List docker containers', handler: () => deps.docker.listContainers() },
-                { name: 'stats', description: 'Docker stats (no stream)', handler: () => deps.docker.getStats() },
-                { name: 'listImages', description: 'List docker images', handler: () => deps.docker.listImages() }
-            ])
-        },
-        {
-            name: 'ollama',
-            description: 'Ollama local LLM utilities',
-            actions: buildActions([
-                { name: 'listModels', description: 'List local ollama models', handler: () => deps.ollama.getModels() },
-                { name: 'ps', description: 'List running ollama models', handler: () => deps.ollama.ps() }
-            ])
-        },
-        {
-            name: 'database',
-            description: 'App database access',
-            actions: buildActions([
-                { name: 'stats', description: 'Get DB stats', handler: () => deps.database.getStats() },
-                { name: 'chats', description: 'List chats', handler: () => deps.database.getAllChats() }
-            ])
-        },
-        {
-            name: 'content',
-            description: 'Content helpers (markdown/code)',
-            actions: buildActions([
-                { name: 'base64Encode', description: 'Base64 encode', handler: ({ text }) => deps.content.base64Encode(text as string) },
-                { name: 'formatJson', description: 'Pretty print JSON', handler: ({ json }) => deps.content.formatJson(json as JsonValue) }
-            ])
-        },
-        {
-            name: 'clipboard',
-            description: 'Clipboard helpers',
-            actions: buildActions([
-                { name: 'read', description: 'Read clipboard text', handler: () => deps.clipboard.readText() },
-                { name: 'write', description: 'Write clipboard text', handler: ({ text }) => deps.clipboard.writeText(text as string) }
             ])
         }
     ]

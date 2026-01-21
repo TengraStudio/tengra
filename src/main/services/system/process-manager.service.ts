@@ -13,10 +13,12 @@ interface ProcessOptions {
     name: string
     executable: string
     args?: string[]
+    persistent?: boolean // If true, process won't be killed on app exit
 }
 
 export class ProcessManagerService extends EventEmitter {
     private processes: Map<string, ChildProcess> = new Map()
+    private persistentServices: Set<string> = new Set()
     private servicePorts: Map<string, number> = new Map()
     private isDev: boolean
 
@@ -26,7 +28,7 @@ export class ProcessManagerService extends EventEmitter {
     }
 
     private getPortFilePath(name: string): string {
-        const appData = process.env.APPDATA || path.join(process.env.HOME || '', 'Library', 'Application Support')
+        const appData = process.env.APPDATA || path.join(process.env.HOME ?? '', 'Library', 'Application Support')
         return path.join(appData, 'Orbit', 'services', `${name}.port`)
     }
 
@@ -80,6 +82,9 @@ export class ProcessManagerService extends EventEmitter {
         if (discoveredPort) {
             appLogger.info('ProcessManager', `Discovered existing service ${options.name} on port ${discoveredPort}`)
             this.servicePorts.set(options.name, discoveredPort)
+            if (options.persistent) {
+                this.persistentServices.add(options.name)
+            }
             return
         }
 
@@ -93,9 +98,9 @@ export class ProcessManagerService extends EventEmitter {
 
         try {
             const child = spawn(binPath, options.args ?? [], {
-                stdio: ['pipe', 'pipe', 'pipe'],
-                windowsHide: false,
-                detached: true // Allow it to live beyond Orbit if we want
+                stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin to prevent hanging
+                windowsHide: true, // Clean taskbar
+                detached: true // Allow it to live beyond Orbit
             })
 
             child.unref() // Electron won't wait for it to exit
@@ -109,20 +114,27 @@ export class ProcessManagerService extends EventEmitter {
             })
 
             child.on('close', (code) => {
-                appLogger.warn('ProcessManager', `Service ${options.name} exited with code ${code}`)
+                if (code !== 0 && code !== 1) {
+                    appLogger.warn('ProcessManager', `Service ${options.name} exited with code ${code}`)
+                } else {
+                    appLogger.debug('ProcessManager', `Service ${options.name} exited with code ${code}`)
+                }
                 this.processes.delete(options.name)
                 this.servicePorts.delete(options.name)
+                this.persistentServices.delete(options.name)
             })
 
             this.processes.set(options.name, child)
+            if (options.persistent) {
+                this.persistentServices.add(options.name)
+            }
 
             // Wait for port file to appear (polling)
             return new Promise((resolve) => {
                 let attempts = 0
                 const maxAttempts = 50
                 const checkPort = setInterval(() => {
-                    // Do NOT cleanup stale files during startup polling - the process might have just written it 
-                    // but isn't listening yet.
+                    // Do NOT cleanup stale files during startup polling
                     const portPromise = this.discoverService(options.name, false)
                     portPromise.then(p => {
                         if (p) {
@@ -138,7 +150,7 @@ export class ProcessManagerService extends EventEmitter {
                     if (attempts >= maxAttempts) {
                         clearInterval(checkPort)
                         appLogger.error('ProcessManager', `Timed out waiting for ${options.name} to report port`)
-                        resolve() // Resolve anyway to allow app to continue, though service might fail
+                        resolve()
                     }
                 }, 100)
             })
@@ -155,18 +167,39 @@ export class ProcessManagerService extends EventEmitter {
             this.processes.delete(name)
         }
         this.servicePorts.delete(name)
+        this.persistentServices.delete(name)
     }
 
     killAll() {
+        appLogger.info('ProcessManager', 'Stopping all non-persistent services for shutdown')
         for (const [name, child] of this.processes) {
-            child.kill()
-            appLogger.info('ProcessManager', `Killed service ${name}`)
+            if (this.persistentServices.has(name)) {
+                appLogger.info('ProcessManager', `Skipping persistent service: ${name}`)
+                continue
+            }
+
+            // Remove 'close' listener to prevent logs during intentional shutdown
+            child.removeAllListeners('close')
+            try {
+                child.kill()
+            } catch { /* ignore */ }
         }
-        this.processes.clear()
+
+        // Only clear non-persistent
+        const newMap = new Map<string, ChildProcess>()
+        for (const [name, child] of this.processes) {
+            if (this.persistentServices.has(name)) {
+                newMap.set(name, child)
+            }
+        }
+        this.processes = newMap
+
+        // We can clear ports though, as this instance is dying
         this.servicePorts.clear()
+        // persistentServices set stays in memory until this class instance dies, which is fine
     }
 
-    async sendRequest<T>(name: string, data: Record<string, unknown>, _timeoutMs = 10000): Promise<T> {
+    async sendRequest<T>(name: string, data: Record<string, unknown>, _timeoutMs = 10000, endpointOverride?: string): Promise<T> {
         let port = this.servicePorts.get(name)
 
         if (!port) {
@@ -188,7 +221,7 @@ export class ProcessManagerService extends EventEmitter {
             'memory-service': '/rpc'
         }
 
-        const endpoint = endpointMap[name] || '/'
+        const endpoint = endpointOverride ?? (endpointMap[name] || '/')
         const url = `http://127.0.0.1:${port}${endpoint}`
 
         try {
@@ -196,6 +229,31 @@ export class ProcessManagerService extends EventEmitter {
             return response.data as T
         } catch (error) {
             appLogger.error('ProcessManager', `HTTP request to ${name} failed: ${getErrorMessage(error)}`)
+            throw error
+        }
+    }
+
+    async sendGetRequest<T>(name: string, endpoint: string): Promise<T> {
+        let port = this.servicePorts.get(name)
+
+        if (!port) {
+            port = await this.discoverService(name) ?? undefined
+            if (port) {
+                this.servicePorts.set(name, port)
+            }
+        }
+
+        if (!port) {
+            throw new Error(`Service ${name} port not discovered. Is it started?`)
+        }
+
+        const url = `http://127.0.0.1:${port}${endpoint}`
+
+        try {
+            const response = await axios.get(url)
+            return response.data as T
+        } catch (error) {
+            appLogger.error('ProcessManager', `HTTP GET request to ${name} (${endpoint}) failed: ${getErrorMessage(error)}`)
             throw error
         }
     }

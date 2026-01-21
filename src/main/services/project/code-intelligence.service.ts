@@ -2,6 +2,7 @@ import * as crypto from 'crypto'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { getErrorMessage } from '@shared/utils/error.util'
@@ -71,7 +72,7 @@ export class CodeIntelligenceService {
     }
 
     async indexProject(rootPath: string, projectId: string): Promise<void> {
-        console.log(`[CodeIntelligence] Indexing project ${projectId} at ${rootPath}`)
+        appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing project ${projectId} at ${rootPath}`)
 
         const sendProgress = (current: number, total: number, status: string) => {
             const windows = BrowserWindow.getAllWindows()
@@ -89,14 +90,17 @@ export class CodeIntelligenceService {
             await this.scanDirRecursively(rootPath, files)
 
             const total = files.length
-            console.log(`[CodeIntelligence] Found ${total} files. Starting indexing...`)
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} files. Starting indexing...`)
 
             // Clear old data
             await this.db.clearCodeSymbols(projectId);
             await this.db.clearSemanticFragments(projectId);
 
             for (let i = 0; i < total; i++) {
-                const filePath = files[i]!
+                const filePath = files[i]
+                if (filePath === undefined) {
+                    continue
+                }
                 const relativeName = path.basename(filePath)
 
                 sendProgress(i + 1, total, `Indexing ${relativeName}...`)
@@ -128,7 +132,7 @@ export class CodeIntelligenceService {
             }
 
             sendProgress(total, total, 'Complete')
-            console.log(`[CodeIntelligence] Indexing complete for ${projectId}`)
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing complete for ${projectId}`)
         } catch (error) {
             console.error('[CodeIntelligence] Indexing failed:', getErrorMessage(error as Error))
             sendProgress(0, 0, 'Failed')
@@ -137,7 +141,7 @@ export class CodeIntelligenceService {
 
     async updateFileIndex(projectId: string, filePath: string): Promise<void> {
         try {
-            console.log(`[CodeIntelligence] Updating index for ${filePath}`);
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Updating index for ${filePath}`);
 
             // 1. Clear existing data for this file
             await this.db.deleteCodeSymbolsForFile(projectId, filePath);
@@ -149,7 +153,7 @@ export class CodeIntelligenceService {
             // 3. Re-index Symbols
             const symbols = this.parseFileSymbols(content, filePath);
             for (const sym of symbols) {
-                const text = `${sym.kind} ${sym.name}\n${sym.signature}\n${sym.docstring || ''}`
+                const text = `${sym.kind} ${sym.name}\n${sym.signature}\n${sym.docstring ?? ''}`
                 const vector = await this.embedding.generateEmbedding(text)
                 await this.db.storeCodeSymbol({
                     id: crypto.randomUUID(),

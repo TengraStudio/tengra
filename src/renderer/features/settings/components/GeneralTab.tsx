@@ -20,7 +20,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
     const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
         if (!settings) {return}
         const current = settings.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
-        handleSave({ ...settings, autoUpdate: { ...current, ...patch } })
+        void handleSave({ ...settings, autoUpdate: { ...current, ...patch } })
     }
 
     const autoUpdate = settings?.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
@@ -126,7 +126,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                                 onClick={() => {
                                     if (!settings) {return}
                                     const current = settings.crashReporting || { enabled: false }
-                                    handleSave({ ...settings, crashReporting: { enabled: !current.enabled } })
+                                    void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } })
                                 }}
                                 className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${settings?.crashReporting?.enabled ? 'bg-primary' : 'bg-gray-600'}`}
                             >

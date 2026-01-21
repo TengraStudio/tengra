@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { ValidationError } from '@main/utils/error.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -81,9 +82,7 @@ export class Container {
 
         switch (definition.scope) {
             case Scope.SINGLETON:
-                if (!definition.instance) {
-                    definition.instance = this.instantiate(definition);
-                }
+                definition.instance ??= this.instantiate(definition);
                 return definition.instance;
 
             case Scope.TRANSIENT:
@@ -98,7 +97,7 @@ export class Container {
      * Initialize all singleton services that implement LifecycleAware.
      */
     async init(): Promise<void> {
-        if (this.initialized) {return;}
+        if (this.initialized) { return; }
 
         const singletons = Array.from(this.services.values())
             .filter(def => def.scope === Scope.SINGLETON);
@@ -106,11 +105,11 @@ export class Container {
         // Instantiate all singletons first
         for (const def of singletons) {
             try {
-                console.log(`[Container] Instantiating ${def.name}...`);
+                appLogger.info('Container', `Instantiating ${def.name}...`);
                 this.resolve(def.name);
-                console.log(`[Container] Instantiated ${def.name}`);
+                appLogger.info('Container', `Instantiated ${def.name}`);
             } catch (error) {
-                console.error(`[Container] Failed to instantiate ${def.name}:`, error);
+                appLogger.error('Container', `Failed to instantiate ${def.name}`, error as Error);
                 throw error;
             }
         }
@@ -118,13 +117,13 @@ export class Container {
         // Run initialize() on them
         for (const def of singletons) {
             const instance = def.instance as LifecycleAware;
-            if (instance && typeof instance.initialize === 'function') {
+            if (typeof instance.initialize === 'function') {
                 try {
-                    console.log(`[Container] Initializing ${def.name}...`);
+                    appLogger.info('Container', `Initializing ${def.name}...`);
                     await instance.initialize();
-                    console.log(`[Container] Initialized ${def.name}`);
+                    appLogger.info('Container', `Initialized ${def.name}`);
                 } catch (error) {
-                    console.error(`[Container] Failed to initialize ${def.name}:`, error);
+                    appLogger.error('Container', `Failed to initialize ${def.name}`, error as Error);
                     // Continue despite error to allow app to launch
                     // throw error; 
                 }
@@ -144,11 +143,11 @@ export class Container {
 
         for (const def of singletons) {
             const instance = def.instance as LifecycleAware;
-            if (instance && typeof instance.cleanup === 'function') {
+            if (typeof instance.cleanup === 'function') {
                 try {
                     await instance.cleanup();
                 } catch (error) {
-                    console.error(`[Container] Failed to cleanup ${def.name}:`, error);
+                    appLogger.error('Container', `Failed to cleanup ${def.name}`, error as Error);
                 }
             }
         }

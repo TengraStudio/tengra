@@ -43,7 +43,7 @@ export class UpdateService {
         if (settings.autoUpdate?.enabled && settings.autoUpdate?.checkOnStartup) {
             // Delay check slightly to not slow down startup
             setTimeout(() => {
-                this.checkForUpdates()
+                void this.checkForUpdates()
             }, 5000)
         }
     }
@@ -59,7 +59,7 @@ export class UpdateService {
 
             const settings = this.settingsService.getSettings()
             if (settings.autoUpdate?.downloadAutomatically && !settings.autoUpdate?.notifyOnly) {
-                this.downloadUpdate()
+                void this.downloadUpdate()
             }
         })
 

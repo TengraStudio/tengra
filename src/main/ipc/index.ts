@@ -127,7 +127,13 @@ export function registerAllIpc(
 
     // Productivity & Tools
     registerSshIpc(getWin, services.sshService);
-    registerProjectIpc(getWin, services.projectService, services.logoService, services.codeIntelligenceService, services.jobSchedulerService, services.databaseService);
+    registerProjectIpc(getWin, {
+        projectService: services.projectService,
+        logoService: services.logoService,
+        codeIntelligenceService: services.codeIntelligenceService,
+        jobSchedulerService: services.jobSchedulerService,
+        databaseService: services.databaseService
+    });
     registerAgentIpc(services.agentService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
     registerMemoryIpc(services.memoryService);

@@ -23,7 +23,7 @@ test.describe('Application Launch', () => {
         const title = await window.title();
 
         // Check title (Update expected title as needed)
-        console.log(`Window title: ${title}`);
+        console.warn(`Window title: ${title}`);
         // expect(title).toContain('Orbit'); 
         // Title usually set in HTML or via setIsTitleVisible. 
         // The main.ts loads index.html.

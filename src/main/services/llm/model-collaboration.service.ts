@@ -109,7 +109,7 @@ export class ModelCollaborationService {
             )
 
             const latency = Date.now() - startTime
-            const content = response.content || ''
+            const content = response.content ?? ''
 
             return {
                 content,
@@ -138,7 +138,7 @@ export class ModelCollaborationService {
         words.forEach(word => {
             const normalized = word.toLowerCase().replace(/[^\w]/g, '')
             if (normalized.length > 3) { // Ignore short words
-                wordFreq.set(normalized, (wordFreq.get(normalized) || 0) + 1)
+                wordFreq.set(normalized, (wordFreq.get(normalized) ?? 0) + 1)
             }
         })
 
@@ -176,7 +176,7 @@ export class ModelCollaborationService {
 
         responses.forEach((r) => {
             const key = `${r.provider}/${r.model}`
-            votes[key] = (votes[key] || 0) + 1
+            votes[key] = (votes[key] ?? 0) + 1
         })
 
         return votes

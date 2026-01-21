@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 
 export interface FeatureFlag {
@@ -46,7 +47,7 @@ export class FeatureFlagService extends BaseService {
             // Load from disk
             try {
                 const content = await fs.promises.readFile(this.configPath, 'utf-8');
-                const loaded = JSON.parse(content) as FeatureFlag[];
+                const loaded = safeJsonParse<FeatureFlag[]>(content, []);
                 loaded.forEach(f => this.flags.set(f.id, f));
             } catch {
                 // Ignore if file doesn't exist

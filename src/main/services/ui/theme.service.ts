@@ -3,7 +3,9 @@ import * as path from 'path'
 
 import { BaseService } from '@main/services/base.service'
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants'
+import { JsonObject } from '@shared/types/common'
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 interface ThemeStoreData {
@@ -43,7 +45,7 @@ export class ThemeService extends BaseService {
             const exists = await fs.promises.access(this.storePath).then(() => true).catch(() => false)
             if (exists) {
                 const data = await fs.promises.readFile(this.storePath, 'utf8')
-                const loaded = JSON.parse(data) as ThemeStoreData
+                const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE)
                 return { ...DEFAULT_THEME_STORE, ...loaded }
             }
         } catch (error) {
@@ -250,22 +252,27 @@ export class ThemeService extends BaseService {
 
     async importTheme(jsonString: string): Promise<CustomTheme | null> {
         try {
-            const data = JSON.parse(jsonString)
+            const data = safeJsonParse<JsonObject>(jsonString, {})
             if (data.version !== '1.0' || !data.theme) {
                 throw new Error('Invalid theme format')
             }
 
-            const theme = data.theme
-            if (!theme.id || !theme.name || !theme.colors) {
+            const themeObject = data.theme as JsonObject
+            if (!themeObject || typeof themeObject !== 'object' || Array.isArray(themeObject)) {
+                throw new Error('Invalid theme format')
+            }
+
+            if (!themeObject.id || !themeObject.name || !themeObject.colors) {
                 throw new Error('Missing required theme properties')
             }
 
-            if (getThemeById(theme.id) || this.store.customThemes.some(t => t.id === theme.id)) {
+            const themeId = themeObject.id as string
+            if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
                 throw new Error('Theme ID already exists')
             }
 
             return await this.addCustomTheme({
-                ...theme,
+                ...(themeObject as unknown as CustomTheme),
                 isCustom: true,
                 source: 'imported'
             })
@@ -277,7 +284,7 @@ export class ThemeService extends BaseService {
 
     async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {
         const original = this.getThemeDetails(themeId)
-        if (!original || 'isBuiltIn' in original) {
+        if (!original || !('id' in original)) {
             return null
         }
 

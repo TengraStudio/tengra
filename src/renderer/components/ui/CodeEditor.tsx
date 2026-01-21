@@ -80,7 +80,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             try {
                 await initTextMateSupport(monaco);
                 textMateInitialized = true;
-                console.log('[CodeEditor] TextMate support initialized');
+                console.warn('[CodeEditor] TextMate support initialized');
             } catch (error) {
                 console.warn('[CodeEditor] TextMate initialization failed, using Monaco defaults:', error);
             } finally {
@@ -174,8 +174,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 height="100%"
                 defaultLanguage={normalizedLanguage}
                 language={normalizedLanguage}
-                value={value || ''}
-                onChange={onChange as any}
+                value={value ?? ''}
+                onChange={onChange}
                 theme={monacoTheme}
                 onMount={handleEditorDidMount}
                 loading={

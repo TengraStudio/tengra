@@ -71,7 +71,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             if (result?.success) {
                 // Handle both response formats: { files } or { data }
                 const anyResult = result as { files?: MountFileEntry[]; data?: MountFileEntry[] }
-                const fileList = anyResult.files || anyResult.data || []
+                const fileList = anyResult.files ?? anyResult.data ?? []
                 if (Array.isArray(fileList)) {
                     const mapped = fileList.map((item: MountFileEntry) => ({
                         name: item.name,
@@ -97,7 +97,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 // Avoid reloading if already loaded and no refresh signal? 
                 // Actually loadRoot handles re-fetching.
                 // We want to fetch on mount.
-                loadRoot(mount)
+                void loadRoot(mount)
             }
         })
     }, [refreshSignal, mounts])
@@ -116,7 +116,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         setExpandedMounts((prev) => {
             const next = { ...prev, [mount.id]: !prev[mount.id] }
             if (!prev[mount.id]) {
-                loadRoot(mount)
+                void loadRoot(mount)
             }
             return next
         })
@@ -224,7 +224,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             (mounts.length > 1 || mount.type !== 'local') ? "ml-0" : "" // Indent if nested
                         )}>
                             <div className="space-y-0 relative">
-                                {(rootNodes[mount.id] || []).map((node) => (
+                                {(rootNodes[mount.id] ?? []).map((node) => (
                                     <WorkspaceTreeItem
                                         key={`${mount.id}:${node.path}`}
                                         node={node}
@@ -239,7 +239,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                         t={t}
                                     />
                                 ))}
-                                {(rootNodes[mount.id] || []).length === 0 && !loadingMounts[mount.id] && (
+                                {(rootNodes[mount.id] ?? []).length === 0 && !loadingMounts[mount.id] && (
                                     <div className="text-[11px] text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
                                         {t('workspace.emptyFolder')}
                                     </div>

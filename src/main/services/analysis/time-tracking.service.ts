@@ -150,9 +150,9 @@ export class TimeTrackingService extends BaseService {
             `).run(
                 id,
                 record.type,
-                record.projectId || null,
+                record.projectId ?? null,
                 record.startTime,
-                record.endTime || null,
+                record.endTime ?? null,
                 record.durationMs,
                 now,
                 now
@@ -226,12 +226,12 @@ export class TimeTrackingService extends BaseService {
             // Add current project times
             for (const [projectId, startTime] of this.projectStartTimes.entries()) {
                 const currentTime = Date.now() - startTime
-                projectCodingTime[projectId] = (projectCodingTime[projectId] || 0) + currentTime
+                projectCodingTime[projectId] = (projectCodingTime[projectId] ?? 0) + currentTime
             }
 
             return {
-                totalOnlineTime: (appOnlineResult.total || 0) + currentAppTime,
-                totalCodingTime: (codingResult.total || 0) + currentCodingTime,
+                totalOnlineTime: (appOnlineResult.total ?? 0) + currentAppTime,
+                totalCodingTime: (codingResult.total ?? 0) + currentCodingTime,
                 projectCodingTime
             }
         } catch (error) {

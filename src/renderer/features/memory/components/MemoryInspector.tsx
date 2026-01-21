@@ -32,7 +32,7 @@ export const MemoryInspector: React.FC = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        search(searchQuery);
+        void search(searchQuery);
     };
 
     const handleAddFact = async () => {

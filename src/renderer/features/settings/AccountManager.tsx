@@ -34,7 +34,7 @@ export const AccountManager: React.FC = () => {
         try {
             const accs = await window.electron.ipcRenderer.invoke('auth:get-accounts');
             const active = await window.electron.ipcRenderer.invoke('auth:get-active-account');
-            setAccounts(accs || []);
+            setAccounts(accs ?? []);
             setActiveAccountId(active);
         } catch (error) {
             console.error('Failed to load accounts', error);
@@ -50,7 +50,7 @@ export const AccountManager: React.FC = () => {
             setNewAccountName('');
             await loadAccounts();
             showMessage(`Account "${newAccountName}" created`, 'success');
-        } catch (error) {
+        } catch {
             showMessage('Failed to create account', 'error');
         } finally {
             setIsCreating(false);
@@ -63,7 +63,7 @@ export const AccountManager: React.FC = () => {
             setActiveAccountId(id);
             showMessage(`Switched to "${name}"`, 'success');
             setTimeout(() => window.location.reload(), 1000); // Reload to apply changes
-        } catch (error) {
+        } catch {
             showMessage('Failed to switch account', 'error');
         }
     };
@@ -76,7 +76,7 @@ export const AccountManager: React.FC = () => {
                         <Users className="w-5 h-5" />
                         Account Management
                     </div>
-                    <Button variant="ghost" size="icon" onClick={loadAccounts} title="Refresh Accounts">
+                    <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title="Refresh Accounts">
                         <RefreshCw className="w-4 h-4" />
                     </Button>
                 </CardTitle>
@@ -115,7 +115,7 @@ export const AccountManager: React.FC = () => {
                                         Active
                                     </div>
                                 ) : (
-                                    <Button variant="secondary" size="sm" onClick={() => handleSwitchAccount(account.id, account.name)}>
+                                    <Button variant="secondary" size="sm" onClick={() => { void handleSwitchAccount(account.id, account.name); }}>
                                         Switch
                                     </Button>
                                 )}
@@ -133,7 +133,7 @@ export const AccountManager: React.FC = () => {
                             onChange={(e) => setNewAccountName(e.target.value)}
                             className="bg-background"
                         />
-                        <Button onClick={handleCreateAccount} disabled={isCreating || !newAccountName.trim()}>
+                        <Button onClick={() => { void handleCreateAccount(); }} disabled={isCreating || !newAccountName.trim()}>
                             <Plus className="w-4 h-4 mr-2" />
                             Create
                         </Button>

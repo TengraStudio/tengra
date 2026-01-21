@@ -2,6 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 
 import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 import { JsonValue } from '@/types/common';
 
@@ -19,7 +20,7 @@ export class ContentService {
     async fetchWebPage(url: string): Promise<{ success: boolean; content?: string; title?: string; error?: string }> {
         try {
             const res = await fetch(url, { headers: { 'User-Agent': this.userAgent } })
-            if (!res.ok) {return { success: false, error: `HTTP ${res.status}` }}
+            if (!res.ok) { return { success: false, error: `HTTP ${res.status}` } }
             const html = await res.text()
             const content = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').trim().slice(0, 15000)
             const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
@@ -63,7 +64,7 @@ export class ContentService {
             for (const f of files) {
                 const full = path.join(dir, f.name)
                 if (f.isDirectory()) {
-                    if (!ignore.includes(f.name)) {await walk(full)}
+                    if (!ignore.includes(f.name)) { await walk(full) }
                 } else if (allowed.includes(path.extname(f.name))) {
                     const content = await fs.readFile(full, 'utf8')
                     results.push({ path: full, content, chunks: [content.slice(0, 1000)] })
@@ -83,7 +84,7 @@ export class ContentService {
 
     formatJson(json: JsonValue): string {
         try {
-            return JSON.stringify(typeof json === 'string' ? JSON.parse(json) : json, null, 2);
+            return JSON.stringify(typeof json === 'string' ? safeJsonParse(json, {}) : json, null, 2);
         } catch {
             return String(json);
         }

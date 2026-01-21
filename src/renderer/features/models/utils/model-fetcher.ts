@@ -27,7 +27,7 @@ export async function fetchModels(): Promise<ModelInfo[]> {
         return models.map(m => {
             // Fall back to owned_by if provider is not set (common in OpenAI-compat APIs)
             const providerHint = m.provider || (m as { owned_by?: string }).owned_by;
-            const categorized = categorizeModel(m.id || m.name || '', providerHint);
+            const categorized = categorizeModel((m.id || m.name) ?? '', providerHint);
             return {
                 ...m,
                 provider: categorized.provider,
@@ -52,7 +52,7 @@ export function groupModels(models: ModelInfo[]): GroupedModels {
     const groups: GroupedModels = {};
 
     models.forEach(m => {
-        const provider = m.provider || 'other';
+        const provider = m.provider ?? 'other';
         if (!groups[provider]) {
             groups[provider] = {
                 label: m.label || provider,

@@ -1,17 +1,34 @@
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
+import { AuthService } from '@main/services/security/auth.service'
 import { ipcMain } from 'electron'
 
-export function registerProxyIpc(proxyService: ProxyService, processManager?: ProxyProcessManager) {
+export function registerProxyIpc(proxyService: ProxyService, _processManager?: ProxyProcessManager, _authService?: AuthService) {
     ipcMain.handle('proxy:antigravityLogin', async () => {
         return await proxyService.getAntigravityAuthUrl()
     })
 
     ipcMain.handle('proxy:claudeLogin', async () => {
+        // Try to get OAuth URL (same as anthropicLogin)
+        // This will open the browser for OAuth flow
         return await proxyService.getAnthropicAuthUrl()
     })
 
+
+
+    ipcMain.handle('proxy:saveClaudeSession', async (_event, sessionKey: string, accountId?: string) => {
+        try {
+            return await proxyService.quotaService.saveClaudeSession(sessionKey, accountId)
+        } catch (error) {
+            console.error('Failed to save manual session:', error)
+            return { success: false, error: (error as Error).message }
+        }
+    })
+
+
+
     ipcMain.handle('proxy:anthropicLogin', async () => {
+        // Legacy OAuth flow - still available but doesn't capture sessionKey
         return await proxyService.getAnthropicAuthUrl()
     })
 
@@ -47,12 +64,9 @@ export function registerProxyIpc(proxyService: ProxyService, processManager?: Pr
         return await proxyService.deleteAuthFile(name)
     })
 
-    // Sync auth files from temp to permanent storage after OAuth callbacks
+    // Sync auth files - now handled automatically by HTTP auth API
     ipcMain.handle('proxy:syncAuthFiles', async () => {
-        if (processManager) {
-            await processManager.forceSyncAuthFiles()
-            return { success: true }
-        }
-        return { success: false, error: 'Process manager not available' }
+        // Auth sync is now automatic via HTTP API - no manual sync needed
+        return { success: true }
     })
 }

@@ -17,7 +17,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
 
     useEffect(() => {
         if (active && packages.length === 0) {
-            loadPackages()
+            void loadPackages()
         }
     }, [active, connectionId])
 

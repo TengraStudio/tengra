@@ -58,8 +58,8 @@ export function registerLoggingIpc() {
             else if (upper === 'INFO') {level = LogLevel.INFO}
             else if (upper === 'WARN') {level = LogLevel.WARN}
             else if (upper === 'ERROR') {level = LogLevel.ERROR}
-            message = arg2 || ''
-        } else if (typeof arg1 === 'object' && arg1 !== null) {
+            message = arg2 ?? ''
+        } else if (typeof arg1 === 'object') {
             // log:write, { level, message, context, data }
             level = arg1.level ?? LogLevel.INFO
             message = arg1.message ?? ''

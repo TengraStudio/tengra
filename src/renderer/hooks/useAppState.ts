@@ -3,7 +3,7 @@
  * Centralizes UI state management for the App component
  */
 
-import { useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { Toast } from '@/types'
 // SettingsCategory type is used by dependent modules via AppState interface
@@ -68,7 +68,7 @@ export function useAppState(): AppState {
     // Toast notifications
     const [toasts, setToasts] = useState<Toast[]>([])
 
-    const addToast = (toast: Omit<Toast, 'id'>) => {
+    const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
         const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         setToasts(prev => [...prev, { ...toast, id }])
 
@@ -76,18 +76,18 @@ export function useAppState(): AppState {
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id))
         }, 5000)
-    }
+    }, [])
 
-    const removeToast = (id: string) => {
+    const removeToast = useCallback((id: string) => {
         setToasts(prev => prev.filter(t => t.id !== id))
-    }
+    }, [])
 
     // Refs
     const fileInputRef = useRef<HTMLInputElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
-    return {
+    return useMemo(() => ({
         currentView,
         setCurrentView,
         isSidebarCollapsed,
@@ -112,5 +112,18 @@ export function useAppState(): AppState {
         fileInputRef,
         textareaRef,
         messagesEndRef
-    }
+    }), [
+        currentView,
+        isSidebarCollapsed,
+        isDragging,
+        showCommandPalette,
+        showSSHManager,
+        showShortcuts,
+        showFileMenu,
+        showScrollButton,
+        isAudioOverlayOpen,
+        toasts,
+        addToast,
+        removeToast
+    ])
 }

@@ -51,7 +51,10 @@ export class MetricsService extends EventEmitter {
             this.metrics.set(name, [])
         }
 
-        const arr = this.metrics.get(name)!
+        const arr = this.metrics.get(name)
+        if (!arr) {
+            throw new Error(`Failed to get metrics array for ${name}`)
+        }
         arr.push(data)
 
         // Trim to max data points
@@ -80,7 +83,10 @@ export class MetricsService extends EventEmitter {
             })
         }
 
-        const stats = this.providerStats.get(key)!
+        const stats = this.providerStats.get(key)
+        if (!stats) {
+            throw new Error(`Failed to get provider stats for ${key}`)
+        }
         stats.requestCount++
         if (success) {
             stats.successCount++
@@ -102,7 +108,7 @@ export class MetricsService extends EventEmitter {
      * Get metrics for a specific name
      */
     getMetrics(name: string, since?: number): MetricData[] {
-        const data = this.metrics.get(name) || []
+        const data = this.metrics.get(name) ?? []
         if (since) {
             return data.filter(d => d.timestamp >= since)
         }
@@ -178,9 +184,7 @@ export class MetricsService extends EventEmitter {
 let instance: MetricsService | null = null
 
 export function getMetricsService(): MetricsService {
-    if (!instance) {
-        instance = new MetricsService()
-    }
+    instance ??= new MetricsService()
     return instance
 }
 

@@ -291,7 +291,10 @@ export const PanelLayoutProvider: React.FC<{
             for (const group of Object.values(newGroups)) {
                 const index = group.panels.findIndex(p => p.id === panelId)
                 if (index >= 0) {
-                    movedPanel = { ...group.panels[index]!, position: newPosition }
+                    const panelAtIndex = group.panels[index]
+                    if (panelAtIndex) {
+                        movedPanel = { ...panelAtIndex, position: newPosition }
+                    }
                     group.panels = group.panels.filter(p => p.id !== panelId)
                     if (group.activePanel === panelId) {
                         group.activePanel = group.panels[0]?.id || ''
@@ -369,10 +372,10 @@ export const PanelLayout: React.FC<{
     className?: string
 }> = ({ children, className }) => {
     const { state, resizeGroup } = usePanelLayout()
-    const left = state.groups.left!
-    const right = state.groups.right!
-    const bottom = state.groups.bottom!
-    const center = state.groups.center!
+    const left = state.groups.left
+    const right = state.groups.right
+    const bottom = state.groups.bottom
+    const center = state.groups.center
 
     const handleLeftResize = useCallback((delta: number) => {
         resizeGroup('left', (left.size || DEFAULT_SIZES.left) + delta)

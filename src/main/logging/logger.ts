@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as fs from 'fs'
 import * as path from 'path'
 import * as zlib from 'zlib'
@@ -76,9 +77,7 @@ class AppLogger {
 
     private determineLogDir(): string {
         try {
-            if (app) {
-                return path.join(app.getPath('userData'), 'logs')
-            }
+            return path.join(app.getPath('userData'), 'logs')
         } catch {
             // ignore
         }

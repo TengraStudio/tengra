@@ -5,6 +5,7 @@ import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { DatabaseService } from '@main/services/data/database.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 export interface AuditLogEntry {
@@ -42,7 +43,7 @@ export class AuditLogService extends BaseService {
         try {
             appLogger.info('AuditLogService', 'Migrating legacy audit logs to database...')
             const content = await fs.promises.readFile(this.legacyLogPath, 'utf8')
-            const logs: AuditLogEntry[] = JSON.parse(content)
+            const logs: AuditLogEntry[] = safeJsonParse<AuditLogEntry[]>(content, [])
 
             if (Array.isArray(logs) && logs.length > 0) {
                 // Insert efficiently (could be batched but ensuring one by one for safety here since it's a one-time thing and audit logs can be sensitive/large)

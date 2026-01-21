@@ -21,7 +21,7 @@ export const UpdateNotification: React.FC = () => {
 
     useEffect(() => {
         const handleUpdateStatus = (_event: IpcRendererEvent, newStatus: UpdateStatus) => {
-            console.log('Update status received:', newStatus)
+            console.warn('Update status received:', newStatus)
             setStatus(newStatus)
 
             // Auto-show logic
@@ -47,11 +47,11 @@ export const UpdateNotification: React.FC = () => {
     }, [])
 
     const handleDownload = () => {
-        window.electron?.ipcRenderer.invoke('update:download')
+        void window.electron?.ipcRenderer.invoke('update:download')
     }
 
     const handleInstall = () => {
-        window.electron?.ipcRenderer.invoke('update:install')
+        void window.electron?.ipcRenderer.invoke('update:install')
     }
 
     const handleDismiss = () => {
@@ -99,8 +99,8 @@ export const UpdateNotification: React.FC = () => {
                         {status.state === 'downloading' && (
                             <div className="space-y-1">
                                 <div className="flex justify-between">
-                                    <span>{formatBytes(status.bytesPerSecond || 0)}/s</span>
-                                    <span>{Math.round(status.progress || 0)}%</span>
+                                    <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
+                                    <span>{Math.round(status.progress ?? 0)}%</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
                                     <div

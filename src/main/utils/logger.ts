@@ -44,7 +44,7 @@ export class Logger {
 
     private static log(level: LogLevel, message: string, meta?: JsonValue) {
         const line = this.format(level, message, meta);
-        console.log(line.trim());
+        console.warn(line.trim());
         if (this.logFile) {
             fs.appendFile(this.logFile, line, (err) => {
                 if (err) {console.error('Failed to write to log file', err);}

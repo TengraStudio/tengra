@@ -39,8 +39,8 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             }
         }
 
-        load()
-        const interval = setInterval(load, 5000)
+        void load()
+        const interval = setInterval(() => void load(), 5000)
         return () => {
             isMounted = false
             clearInterval(interval)
@@ -86,7 +86,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                         <motion.div
                             className="h-full bg-purple-500"
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(stats.memory?.percent || 0, 100)}%` }}
+                            animate={{ width: `${Math.min(stats.memory?.percent ?? 0, 100)}%` }}
                         />
                     </div>
                 </CardContent>

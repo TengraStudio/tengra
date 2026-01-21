@@ -31,7 +31,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
     }
 
     useEffect(() => {
-        fetchPackages()
+        void fetchPackages()
     }, [connectionId, manager])
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))

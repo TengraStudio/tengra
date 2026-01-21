@@ -3,6 +3,7 @@ import * as http from 'http'
 import { AddressInfo } from 'net'
 
 import { CatchError } from '@shared/types/common'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { net } from 'electron'
 
 export interface AuthResult {
@@ -29,6 +30,12 @@ export class LocalAuthServer {
     private static readonly AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
     private static readonly TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
 
+    // Claude Constants
+    private static readonly CLAUDE_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
+    private static readonly CLAUDE_AUTH_ENDPOINT = 'https://claude.ai/oauth/authorize'
+    private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://console.anthropic.com/v1/oauth/token'
+
+
     /**
      * Starts the Antigravity OAuth flow using PKCE.
      */
@@ -45,7 +52,7 @@ export class LocalAuthServer {
                         return
                     }
 
-                    const url = new URL(req.url || '/', `http://127.0.0.1:${address.port}`)
+                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`)
 
                     if (url.pathname === '/callback') {
                         const code = url.searchParams.get('code')
@@ -119,6 +126,100 @@ export class LocalAuthServer {
         })
     }
 
+    /**
+     * Starts the Claude OAuth flow using PKCE.
+     */
+    static async startClaudeAuth(
+        onSuccess: (data: AuthCallbackData) => Promise<void> | void,
+        onError: (err: CatchError) => void
+    ): Promise<AuthResult> {
+        return new Promise((resolve, reject) => {
+            let verifier: string
+            let oauthState: string
+
+            const server = http.createServer(async (req, res) => {
+                try {
+                    const address = server.address() as AddressInfo | null
+                    if (!address) { return }
+
+                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`)
+
+                    if (url.pathname === '/callback') {
+                        const code = url.searchParams.get('code')
+                        const callbackState = url.searchParams.get('state')
+                        const error = url.searchParams.get('error')
+
+                        if (error) {
+                            console.error('[LocalAuthServer] Claude Callback error:', error)
+                            res.writeHead(400, { 'Content-Type': 'text/html' })
+                            res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>')
+                            onError(new Error(error))
+                            server.close()
+                            return
+                        }
+
+                        if (code) {
+                            try {
+                                const redirectUri = `http://localhost:${address.port}/callback`
+                                if (!verifier) { throw new Error('Code verifier missing') }
+
+                                // Use callback state if present, otherwise use the original state
+                                const stateToUse = callbackState ?? oauthState
+
+                                const tokenData = await LocalAuthServer.exchangeCodeForClaudeToken(code, verifier, redirectUri, stateToUse)
+
+                                await onSuccess(tokenData)
+
+                                res.writeHead(200, { 'Content-Type': 'text/html' })
+                                res.end('<h1>Login Successful!</h1><p>You can close this window and return to Orbit.</p>')
+                            } catch (e) {
+                                const err = e as Error
+                                console.error('[LocalAuthServer] Claude Auth Failed:', err)
+                                res.writeHead(500, { 'Content-Type': 'text/html' })
+                                res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`)
+                                onError(err)
+                            } finally {
+                                server.close()
+                            }
+                        }
+                    } else {
+                        res.writeHead(404)
+                        res.end()
+                    }
+                } catch (err) {
+                    console.error('[LocalAuthServer] Server handler error:', err)
+                }
+            })
+
+            server.listen(0, '127.0.0.1', () => {
+                try {
+                    const address = server.address() as AddressInfo
+                    const port = address.port
+                    // Claude Code specifically requires http://localhost:PORT/callback
+                    const redirectUri = `http://localhost:${port}/callback`
+                    oauthState = crypto.randomBytes(16).toString('hex')
+
+                    verifier = LocalAuthServer.generateCodeVerifier()
+                    const challenge = LocalAuthServer.generateCodeChallenge(verifier)
+
+                    const authUrl = new URL(LocalAuthServer.CLAUDE_AUTH_ENDPOINT)
+                    authUrl.searchParams.append('client_id', LocalAuthServer.CLAUDE_CLIENT_ID)
+                    authUrl.searchParams.append('redirect_uri', redirectUri)
+                    authUrl.searchParams.append('response_type', 'code')
+                    authUrl.searchParams.append('scope', 'user:profile user:inference user:sessions:claude_code org:create_api_key')
+                    authUrl.searchParams.append('state', oauthState)
+                    authUrl.searchParams.append('code_challenge', challenge)
+                    authUrl.searchParams.append('code_challenge_method', 'S256')
+
+                    resolve({ url: authUrl.toString(), state: oauthState })
+                } catch (e) {
+                    server.close()
+                    reject(e)
+                }
+            })
+        })
+    }
+
     private static generateCodeVerifier(): string {
         return LocalAuthServer.base64URLEncode(crypto.randomBytes(32))
     }
@@ -169,7 +270,62 @@ export class LocalAuthServer {
                         return
                     }
                     try {
-                        const json = JSON.parse(data)
+                        const json = safeJsonParse(data, null)
+                        if (!json) { throw new Error('Malformed token response') }
+                        resolve(json)
+                    } catch (e) {
+                        reject(e)
+                    }
+                })
+            })
+
+            request.on('error', (err) => reject(err))
+
+            request.write(body.toString())
+            request.end()
+        })
+    }
+
+    private static async exchangeCodeForClaudeToken(code: string, verifier: string, redirectUri: string, state: string): Promise<AuthCallbackData> {
+        // Match the Go proxy's token exchange format exactly
+        const payload = {
+            code: code,
+            state: state,
+            grant_type: 'authorization_code',
+            client_id: LocalAuthServer.CLAUDE_CLIENT_ID,
+            redirect_uri: redirectUri,
+            code_verifier: verifier
+        }
+        const body = JSON.stringify(payload)
+
+        console.log('[LocalAuthServer] Token exchange to:', LocalAuthServer.CLAUDE_TOKEN_ENDPOINT)
+        console.log('[LocalAuthServer] Payload:', JSON.stringify({ ...payload, code: '[REDACTED]', code_verifier: '[REDACTED]' }))
+
+        return new Promise((resolve, reject) => {
+            const request = net.request({
+                method: 'POST',
+                url: LocalAuthServer.CLAUDE_TOKEN_ENDPOINT
+            })
+
+            // Set headers using setHeader method (required for Electron net.request)
+            request.setHeader('Content-Type', 'application/json')
+            request.setHeader('Accept', 'application/json')
+            request.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+            request.on('response', (response) => {
+                let data = ''
+                response.on('data', chunk => data += chunk)
+                response.on('end', () => {
+                    if (response.statusCode && response.statusCode >= 400) {
+                        const err = new Error(`Claude token exchange failed: ${response.statusCode} - ${data}`)
+                        console.error('[LocalAuthServer]', err.message)
+                        reject(err)
+                        return
+                    }
+                    try {
+                        const json = safeJsonParse(data, null)
+                        if (!json) { throw new Error('Malformed token response') }
+                        console.log('[LocalAuthServer] Token exchange successful')
                         resolve(json)
                     } catch (e) {
                         reject(e)

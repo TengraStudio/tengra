@@ -86,7 +86,7 @@ export function sanitizeFilename(filename: string): string {
         sanitized = sanitized.substring(0, 255)
     }
 
-    return sanitized || 'unnamed'
+    return sanitized ?? 'unnamed'
 }
 
 /**
@@ -135,6 +135,26 @@ export function sanitizeJson(jsonString: string): string {
         return JSON.stringify(parsed)
     } catch {
         return ''
+    }
+}
+
+/**
+ * Safely parses a JSON string, returning a default value if parsing fails
+ * This prevents runtime crashes from malformed JSON data
+ * 
+ * @param jsonString - The JSON string to parse
+ * @param defaultValue - The default value to return if parsing fails
+ * @returns Parsed JSON object or the default value
+ */
+export function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
+    if (typeof jsonString !== 'string' || jsonString.trim() === '') {
+        return defaultValue
+    }
+
+    try {
+        return JSON.parse(jsonString) as T
+    } catch {
+        return defaultValue
     }
 }
 

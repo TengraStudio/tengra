@@ -56,10 +56,9 @@ export function registerSettingsIpc(options: {
         }
 
         if (newSettings.ollama) {
-            const result = updateOllamaConnection()
-            if (result instanceof Promise) {
-                result.catch(error => console.error('[IPC] updateOllamaConnection failed:', error))
-            }
+            void Promise.resolve(updateOllamaConnection()).catch(error =>
+                console.error('[IPC] updateOllamaConnection failed:', error)
+            )
         }
         if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey) }
         if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey) }
@@ -75,8 +74,8 @@ export function registerSettingsIpc(options: {
         if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
 
         // Update Antigravity proxy settings in LLMService
-        const proxyUrl = newSettings.proxy?.url || 'http://localhost:8317/v1'
-        const proxyKey = newSettings.proxy?.key || 'connected'
+        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1'
+        const proxyKey = newSettings.proxy?.key ?? 'connected'
         llmService.setProxySettings(proxyUrl, proxyKey)
 
         updateOpenAIConnection()

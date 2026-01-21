@@ -1,10 +1,10 @@
-import { LocalAIService } from '@main/services/llm/local-ai.service'
 import { LLMService } from '@main/services/llm/llm.service'
+import { LocalAIService } from '@main/services/llm/local-ai.service'
 import { OllamaService } from '@main/services/llm/ollama.service'
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { SettingsService } from '@main/services/system/settings.service'
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain } from 'electron'
 
@@ -93,7 +93,7 @@ export function registerOllamaIpc(options: {
             if (res.message.content) {
                 event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' })
             }
-            return { content: res.message.content || '', role: 'assistant' }
+            return { content: res.message.content, role: 'assistant' }
         } catch (err) {
             const message = getErrorMessage(err as Error)
             console.error('[Main:Ollama] Chat Error:', message)
@@ -111,5 +111,13 @@ export function registerOllamaIpc(options: {
             console.error('[Main:Ollama] getLibraryModels Error:', getErrorMessage(err as Error))
             return []
         }
+    })
+
+    ipcMain.handle('ollama:start', async () => {
+        const { startOllama } = await import('@main/startup/ollama')
+        // Get primary window
+        const win = BrowserWindow.getAllWindows()[0]
+        const getWin = () => win ?? null
+        return await startOllama(getWin, true)
     })
 }

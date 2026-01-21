@@ -36,7 +36,7 @@ export abstract class BaseLLMService {
         return tools.map(tool => {
             // Ensure strict OpenAI format compatible structure
             return {
-                type: tool.type || 'function',
+                type: tool.type ?? 'function',
                 function: {
                     name: tool.function.name,
                     description: tool.function.description,

@@ -1,20 +1,20 @@
 import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoGeneratorModal'
-import { ProjectDashboard } from '@renderer/features/projects/components/ProjectDashboard'
-import { AIAssistantSidebar } from '@renderer/features/projects/components/workspace/AIAssistantSidebar'
 import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip'
-import { EditorTabs } from '@renderer/features/projects/components/workspace/EditorTabs'
-import { WorkspaceEditor } from '@renderer/features/projects/components/workspace/WorkspaceEditor'
 import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar'
 import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer'
+import { useProjectState } from '@renderer/features/projects/hooks/useProjectState'
+import { useProjectWorkspaceController } from '@renderer/features/projects/hooks/useProjectWorkspaceController'
 import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager'
-import { Activity, X } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import React from 'react'
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { TerminalPanel } from '@/features/terminal/TerminalPanel'
-import { Language, useTranslation } from '@/i18n'
+import { Language } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, CouncilSession, Message, Project, ProjectDashboardTab, QuotaResponse, TerminalTab, WorkspaceEntry } from '@/types'
+import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types'
+
+import { WorkspaceMain } from './workspace/WorkspaceMain'
+import { WorkspaceNotifications } from './workspace/WorkspaceNotifications'
+import { WorkspaceSidebar } from './workspace/WorkspaceSidebar'
 
 // Types are now shared from @/types
 
@@ -34,9 +34,9 @@ interface ProjectWorkspaceProps {
     selectedModel: string
     onSelectModel: (provider: string, model: string) => void
     groupedModels?: GroupedModels
-    quotas?: QuotaResponse | null
-    codexUsage?: CodexUsage
-    settings?: AppSettings
+    quotas?: { accounts: QuotaResponse[] } | null
+    codexUsage?: { accounts: { usage: CodexUsage }[] } | null
+    settings?: AppSettings | null
     sendMessage?: (content?: string) => void
     messages?: Message[]
     isLoading?: boolean
@@ -63,145 +63,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     messages,
     isLoading
 }) => {
-    const { t } = useTranslation(language)
-    const [notifications, setNotifications] = useState<{ id: string; type: 'success' | 'error' | 'info'; message: string }[]>([])
-
-    const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
-        const id = Math.random().toString(36).substr(2, 9)
-        setNotifications(prev => [...prev, { id, type, message }])
-        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 5000)
-    }, [])
-
-    const logActivity = useCallback((title: string, detail?: string) => {
-        console.log(`[Activity] ${title}: ${detail}`)
-    }, [])
-
-    const wm = useWorkspaceManager({ project, notify, logActivity })
-
-    const [selectedEntry, setSelectedEntry] = useState<WorkspaceEntry | null>(null)
-    const [viewTab, setViewTab] = useState<'editor' | 'council' | 'logs'>('editor')
-
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-    // AI Assistant Panel
-    const [showAgentPanel, setShowAgentPanel] = useState(false)
-    const [agentPanelWidth, setAgentPanelWidth] = useState(380)
-
-    // Terminal
-    const [showTerminal, setShowTerminal] = useState(false)
-    const [terminalHeight, setTerminalHeight] = useState(250)
-
-    // Modals
-    const [, setShowMountModal] = useState(false)
-    const [, setEntryModal] = useState<{ type: 'createFile' | 'createFolder' | 'rename' | 'delete'; entry: WorkspaceEntry } | null>(null)
-    const [showLogoModal, setShowLogoModal] = useState(false)
-    const [, setEntryName] = useState('')
-
-    const handleUpdateProject = async (updates: Partial<Project>) => {
-        if (onUpdateProject) {
-            await onUpdateProject(updates)
-            notify('success', t('workspace.projectUpdated'))
-        }
-    }
-
-    const [councilSession, setCouncilSession] = useState<CouncilSession | null>(null)
-    const [activityLog, setActivityLog] = useState<ActivityEntry[]>([])
-
-    // WebSocket Connection for Council
-    useEffect(() => {
-        if (!councilSession?.id) { return }
-
-        // Get WebSocket URL from environment or use default
-        // In production, this should use wss:// for secure connections
-        // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
-        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) ?? 'ws://localhost:3001'
-
-        // Validate WebSocket URL
-        if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-            console.error('[ProjectWorkspace] Invalid WebSocket URL:', wsUrl)
-            setTimeout(() => notify('error', 'Invalid WebSocket configuration'), 0)
-            return
-        }
-
-        const ws = new WebSocket(wsUrl)
-
-        ws.onopen = () => {
-            ws.send(JSON.stringify({ type: 'join', sessionId: councilSession.id }))
-        }
-
-        ws.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data)
-                if (msg.sessionId === councilSession.id) {
-                    setActivityLog(prev => [...prev, {
-                        id: msg.id,
-                        title: msg.sender.toUpperCase(),
-                        agentId: msg.sender, // generic sender from WS
-                        message: msg.content,
-                        type: (msg.type === 'job' ? 'info' : (msg.type === 'error' ? 'error' : 'info')) as 'info' | 'error' | 'success' | 'plan', // Map types broadly
-                        timestamp: msg.timestamp
-                    }])
-                }
-            } catch (e) {
-                console.error('Failed to parse WS message:', e)
-            }
-        }
-
-        ws.onerror = (error) => {
-            console.error('[ProjectWorkspace] WebSocket error:', error)
-            setTimeout(() => notify('error', 'WebSocket connection error'), 0)
-        }
-
-        ws.onclose = () => {
-            console.log('[ProjectWorkspace] WebSocket connection closed')
-        }
-
-        return () => {
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close()
-            }
-        }
-    }, [councilSession, notify])
-
-    const [agentChatMessage, setAgentChatMessage] = useState('')
-
-    const runCouncil = async () => {
-        if (!agentChatMessage.trim()) { return; }
-        try {
-            notify('info', 'Initializing Council Session...')
-            const session = await window.electron.council.createSession(agentChatMessage)
-            if (session) {
-                setCouncilSession(session)
-                setActivityLog([]) // Clear previous logs
-                window.electron.council.startLoop(session.id)
-                notify('success', 'Council started.')
-            }
-        } catch (e: unknown) {
-            notify('error', 'Failed to start council: ' + (e instanceof Error ? e.message : 'Unknown error'))
-        }
-    }
-
-    useEffect(() => {
-        if (wm.dashboardTab === 'council') {
-            const timer = setTimeout(() => setViewTab('council'), 0)
-            return () => clearTimeout(timer)
-        } else if (wm.dashboardTab === 'overview' || wm.dashboardTab === 'editor') {
-            const timer = setTimeout(() => setViewTab('editor'), 0)
-            return () => clearTimeout(timer)
-        }
-        return undefined
-    }, [wm.dashboardTab])
-
-
-    const [agents, setAgents] = useState<CouncilAgent[]>([
-        { id: '1', name: 'Architect', role: 'System Design & Structure', enabled: true, status: 'ready', kind: 'local' },
-        { id: '2', name: 'Developer', role: 'Implementation & Logic', enabled: true, status: 'ready', kind: 'local' },
-        { id: '3', name: 'Reviewer', role: 'Security & Optimization', enabled: true, status: 'ready', kind: 'cloud' }
-    ])
-
-    const toggleAgent = (id: string) => {
-        setAgents(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a))
-    }
+    const {
+        ps, wm, activityLog, setActivityLog,
+        handleUpdateProject, runCouncil, toggleAgent, t
+    } = useProjectWorkspaceController({ project, language, onUpdateProject })
 
 
 
@@ -211,183 +76,89 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <WorkspaceToolbar
                 project={project}
                 projectName={project.title}
-                description={project.description || ''}
-                onNameChange={(title) => handleUpdateProject({ title })}
-                onDescriptionChange={(description) => handleUpdateProject({ description })}
+                onNameChange={(title) => { void handleUpdateProject({ title }) }}
                 handleRunProject={() => wm.setDashboardTab('terminal')}
                 onBack={onBack}
-
                 language={language}
                 dashboardTab={wm.dashboardTab}
                 onDashboardTabChange={wm.setDashboardTab}
-                sidebarCollapsed={sidebarCollapsed}
-                toggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+                sidebarCollapsed={ps.sidebarCollapsed}
+                toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
+                showAgentPanel={ps.showAgentPanel}
+                toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
             />
 
             <div className="flex-1 flex overflow-hidden relative">
-                {/* Left Panel: Explorer - Collapsible Navigation Plate */}
-                <div className={cn(
-                    "flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-20",
-                    sidebarCollapsed ? "w-0 overflow-hidden opacity-0" : "w-72 opacity-100"
-                )}>
-                    <div className="flex-1 overflow-hidden">
-                        <WorkspaceExplorer
-                            mounts={wm.mounts}
-                            mountStatus={wm.mountStatus}
-                            refreshSignal={wm.refreshSignal}
-                            onOpenFile={wm.openFile}
-                            onSelectEntry={setSelectedEntry}
-                            selectedEntry={selectedEntry}
-                            onAddMount={() => setShowMountModal(true)}
-                            onRemoveMount={(id) => wm.persistMounts(wm.mounts.filter(m => m.id !== id))}
-                            onEnsureMount={wm.ensureMountReady}
-                            onContextAction={(action) => {
-                                setEntryModal({ type: action.type, entry: action.entry })
-                                if (action.type !== 'delete') { setEntryName(action.entry.name) }
-                            }}
-                            variant="panel"
-                            language={language}
-                        />
-                    </div>
-                </div>
+                {/* Left Panel: Explorer */}
+                <ProjectExplorerPanel
+                    ps={ps}
+                    wm={wm}
+                    language={language}
+                />
 
-                {/* Center: Editor Area */}
-                <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
-                    {wm.openTabs.length > 0 && wm.dashboardTab === 'editor' && (
-                        <div className="z-20 relative">
-                            <EditorTabs
-                                openTabs={wm.openTabs}
-                                activeTabId={wm.activeTabId}
-                                setActiveTabId={wm.setActiveEditorTabId}
-                                closeTab={wm.closeTab}
-                            />
-                        </div>
-                    )}
+                <WorkspaceMain
+                    dashboardTab={wm.dashboardTab}
+                    openTabs={wm.openTabs}
+                    activeTabId={wm.activeTabId}
+                    setActiveEditorTabId={wm.setActiveEditorTabId}
+                    closeTab={wm.closeTab}
+                    activeTab={wm.activeTab}
+                    updateTabContent={wm.updateTabContent}
+                    project={project}
+                    handleUpdateProject={handleUpdateProject}
+                    setShowLogoModal={ps.setShowLogoModal}
+                    language={language}
+                    setDashboardTab={wm.setDashboardTab}
+                    onDeleteProject={onDeleteProject}
+                    showTerminal={ps.showTerminal}
+                    setShowTerminal={ps.setShowTerminal}
+                    terminalHeight={ps.terminalHeight}
+                    setTerminalHeight={ps.setTerminalHeight}
+                    tabs={tabs}
+                    activeTabIdTerminal={activeTabId}
+                    setTabsTerminal={setTabs}
+                    setActiveTabIdTerminal={setActiveTabId}
+                />
 
-                    <div className="flex-1 relative overflow-hidden">
-                        <div className={cn("absolute inset-0 z-0", wm.dashboardTab !== 'editor' && "pointer-events-none opacity-0")}>
-                            <WorkspaceEditor
-                                activeTab={wm.activeTab}
-                                updateTabContent={wm.updateTabContent}
-                                emptyState={null}
-                            />
-                        </div>
-
-                        {wm.dashboardTab !== 'editor' && (
-                            <div className="absolute inset-0 z-10 bg-background animate-in fade-in duration-200">
-                                <ProjectDashboard
-                                    project={project}
-                                    onUpdate={handleUpdateProject}
-                                    onOpenLogoGenerator={() => setShowLogoModal(true)}
-                                    language={language}
-                                    activeTab={wm.dashboardTab as ProjectDashboardTab}
-                                    onTabChange={(tab: ProjectDashboardTab) => wm.setDashboardTab(tab)}
-                                    onDelete={onDeleteProject}
-                                />
-                            </div>
-                        )}
-
-                        <div
-                            className={cn(
-                                "absolute bottom-0 left-0 right-0 bg-background border-t border-white/10 z-30",
-                                !showTerminal && "hidden"
-                            )}
-                            style={{ height: terminalHeight }}
-                        >
-                            <TerminalPanel
-                                isOpen={showTerminal}
-                                onToggle={() => setShowTerminal(!showTerminal)}
-                                height={terminalHeight}
-                                onHeightChange={setTerminalHeight}
-                                projectPath={project.path}
-                                tabs={tabs}
-                                activeTabId={activeTabId}
-                                setTabs={setTabs}
-                                setActiveTabId={setActiveTabId}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Panel: AI Assistant */}
-                <div
-                    className={cn(
-                        "border-l border-white/5 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative",
-                        showAgentPanel ? "opacity-100" : "w-0 opacity-0 overflow-hidden"
-                    )}
-                    style={{ width: showAgentPanel ? agentPanelWidth : 0 }}
-                >
-                    {/* Resizer */}
-                    <div
-                        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 transition-colors z-50"
-                        onMouseDown={(e) => {
-                            const startX = e.clientX
-                            const startWidth = agentPanelWidth
-                            const doDrag = (dragEvent: MouseEvent) => {
-                                setAgentPanelWidth(Math.max(300, Math.min(800, startWidth - (dragEvent.clientX - startX))))
-                            }
-                            const stopDrag = () => {
-                                window.removeEventListener('mousemove', doDrag)
-                                window.removeEventListener('mouseup', stopDrag)
-                            }
-                            window.addEventListener('mousemove', doDrag)
-                            window.addEventListener('mouseup', stopDrag)
-                        }}
-                    />
-                    <div className="h-full flex flex-col">
-                        <AIAssistantSidebar
-                            viewTab={viewTab}
-                            selectedProvider={selectedProvider}
-                            selectedModel={selectedModel}
-                            onSelectModel={onSelectModel}
-                            settings={settings as AppSettings}
-                            groupedModels={groupedModels as GroupedModels}
-                            quotas={quotas || null}
-                            codexUsage={codexUsage || null}
-                            agentChatMessage={agentChatMessage}
-                            setAgentChatMessage={setAgentChatMessage}
-                            councilEnabled={wm.councilEnabled}
-                            toggleCouncil={() => wm.setCouncilEnabled(!wm.councilEnabled)}
-                            agents={agents}
-                            toggleAgent={toggleAgent}
-                            addAgent={() => notify('info', 'Agent creation coming soon')}
-                            runCouncil={runCouncil}
-                            activityLog={activityLog}
-                            clearLogs={() => setActivityLog([])}
-                            t={t}
-                            messages={messages}
-                            isLoading={isLoading}
-                            language={language}
-                            onSourceClick={(path) => wm.openFile({ mountId: wm.mounts[0]?.id, path, name: path.split('/').pop() || '', isDirectory: false })}
-                        />
-                    </div>
-                </div>
+                <WorkspaceSidebar
+                    showAgentPanel={ps.showAgentPanel}
+                    agentPanelWidth={ps.agentPanelWidth}
+                    setAgentPanelWidth={ps.setAgentPanelWidth}
+                    viewTab={ps.viewTab}
+                    selectedProvider={selectedProvider}
+                    selectedModel={selectedModel}
+                    onSelectModel={onSelectModel}
+                    settings={settings ?? null}
+                    groupedModels={groupedModels as GroupedModels}
+                    quotas={quotas ?? null}
+                    codexUsage={codexUsage ?? null}
+                    agentChatMessage={ps.agentChatMessage}
+                    setAgentChatMessage={ps.setAgentChatMessage}
+                    councilEnabled={wm.councilEnabled}
+                    toggleCouncil={() => wm.setCouncilEnabled(!wm.councilEnabled)}
+                    agents={ps.agents}
+                    toggleAgent={toggleAgent}
+                    addAgent={() => ps.notify('info', 'Agent creation coming soon')}
+                    runCouncil={() => { void runCouncil() }}
+                    activityLog={activityLog}
+                    clearLogs={() => setActivityLog([])}
+                    t={t}
+                    messages={messages}
+                    isLoading={isLoading}
+                    language={language}
+                    onSourceClick={(path: string) => { void wm.openFile({ mountId: wm.mounts[0]?.id, path, name: path.split('/').pop() ?? '', isDirectory: false }) }}
+                />
             </div>
 
             {/* Notifications */}
-            <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
-                {notifications.map(n => (
-                    <div key={n.id} className={cn(
-                        "px-4 py-3 rounded-xl border shadow-2xl animate-in slide-in-from-right-10 fade-in pointer-events-auto min-w-[300px] flex items-center gap-3",
-                        n.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                            n.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-400" :
-                                "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                    )}>
-                        {n.type === 'success' ? <Activity className="w-4 h-4" /> : n.type === 'error' ? <X className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
-                        <span className="text-xs font-bold tracking-tight">{n.message}</span>
-                    </div>
-                ))}
-            </div>
+            <WorkspaceNotifications notifications={ps.notifications} />
 
             {/* Modals */}
             <LogoGeneratorModal
-                isOpen={showLogoModal}
-                onClose={() => setShowLogoModal(false)}
+                isOpen={ps.showLogoModal}
+                onClose={() => ps.setShowLogoModal(false)}
                 project={project}
-                onApply={async (logoPath) => {
-                    await handleUpdateProject({ logo: logoPath })
-                    setShowLogoModal(false)
-                }}
+                onApply={(logoPath: string) => { void handleUpdateProject({ logo: logoPath }).then(() => ps.setShowLogoModal(false)) }}
                 language={language}
             />
 
@@ -395,10 +166,45 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <CommandStrip
                 language={language}
                 branchName="main"
-                notificationCount={notifications.length}
+                notificationCount={ps.notifications.length}
                 status={isLoading ? 'busy' : 'ready'}
-                onCommandClick={() => notify('info', 'Command Palette coming soon')}
+                onCommandClick={() => ps.notify('info', 'Command Palette coming soon')}
             />
+        </div>
+    )
+}
+
+interface ProjectExplorerPanelProps {
+    ps: ReturnType<typeof useProjectState>;
+    wm: ReturnType<typeof useWorkspaceManager>;
+    language: Language;
+}
+
+function ProjectExplorerPanel({ ps, wm, language }: ProjectExplorerPanelProps) {
+    return (
+        <div className={cn(
+            "flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-20",
+            ps.sidebarCollapsed ? "w-0 overflow-hidden opacity-0" : "w-72 opacity-100"
+        )}>
+            <div className="flex-1 overflow-hidden">
+                <WorkspaceExplorer
+                    mounts={wm.mounts}
+                    mountStatus={wm.mountStatus}
+                    refreshSignal={wm.refreshSignal}
+                    onOpenFile={(...args) => { void wm.openFile(...args) }}
+                    onSelectEntry={ps.setSelectedEntry}
+                    selectedEntry={ps.selectedEntry}
+                    onAddMount={() => ps.setShowMountModal(true)}
+                    onRemoveMount={(id: string) => { void wm.persistMounts(wm.mounts.filter(m => m.id !== id)) }}
+                    onEnsureMount={wm.ensureMountReady}
+                    onContextAction={(action) => {
+                        ps.setEntryModal({ type: action.type, entry: action.entry })
+                        if (action.type !== 'delete') { ps.setEntryName(action.entry.name) }
+                    }}
+                    variant="panel"
+                    language={language}
+                />
+            </div>
         </div>
     )
 }

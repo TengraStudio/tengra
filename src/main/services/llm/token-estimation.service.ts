@@ -42,7 +42,7 @@ export class TokenEstimationService {
             // Sum up text content from all parts
             content = message.content
                 .filter(part => part.type === 'text' && part.text)
-                .map(part => part.text || '')
+                .map(part => part.text ?? '')
                 .join(' ')
         }
 
@@ -178,7 +178,10 @@ export class TokenEstimationService {
 
             // Add messages from the end until we hit the limit
             for (let i = nonSystemMessages.length - 1; i >= 0; i--) {
-                const message = nonSystemMessages[i]!
+                const message = nonSystemMessages[i]
+                if (message === undefined) {
+                    continue
+                }
                 const messageTokens = this.estimateMessageTokens(message)
 
                 if (currentTokens + messageTokens <= maxTokens) {
@@ -198,7 +201,10 @@ export class TokenEstimationService {
         const truncated: Message[] = []
 
         for (let i = messages.length - 1; i >= 0; i--) {
-            const message = messages[i]!
+            const message = messages[i]
+            if (message === undefined) {
+                continue
+            }
             const messageTokens = this.estimateMessageTokens(message)
 
             if (currentTokens + messageTokens <= maxTokens) {

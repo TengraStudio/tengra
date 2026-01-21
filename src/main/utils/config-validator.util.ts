@@ -218,7 +218,7 @@ export function applyDefaults(config: JsonObject, schema: Schema): JsonObject {
         }
 
         if (field.type === 'object' && field.children) {
-            result[key] = applyDefaults((result[key] || {}) as JsonObject, field.children)
+            result[key] = applyDefaults((result[key] ?? {}) as JsonObject, field.children)
         }
     }
 

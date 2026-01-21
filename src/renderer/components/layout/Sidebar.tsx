@@ -49,7 +49,7 @@ export const Sidebar = React.memo(({
     const editRef = useRef<HTMLInputElement>(null)
     const [showSettingsMenu, setShowSettingsMenu] = useState(false)
 
-    const activeFolders = useMemo(() => folders || [], [folders])
+    const activeFolders = useMemo(() => folders ?? [], [folders])
 
     const filteredChats = useMemo(() => {
         if (!searchQuery) { return chats }

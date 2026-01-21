@@ -1,11 +1,14 @@
-/* eslint-disable complexity, max-depth, no-console */
+/* eslint-disable complexity, max-depth */
 import { appLogger } from '@main/logging/logger'
-import { AuthToken } from '@main/services/data/database.service'
+import { DataService } from '@main/services/data/data.service'
+import { LinkedAccount } from '@main/services/data/database.service'
 import { AuthService } from '@main/services/security/auth.service'
+import { TokenService } from '@main/services/security/token.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { JsonObject, JsonValue } from '@shared/types/common'
-import { CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota'
+import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import axios from 'axios'
 import { net, session } from 'electron'
 
@@ -14,12 +17,17 @@ export class QuotaService {
     constructor(
         private settingsService: SettingsService,
         private authService: AuthService,
-        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService
+        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService,
+        private tokenService: TokenService,
+        private dataService: DataService
     ) {
-        this.processManager.startService({
+        void this.processManager.startService({
             name: 'quota-service',
-            executable: 'orbit-quota-service'
-        })
+            executable: 'orbit-quota-service',
+            persistent: true
+        }).catch(err => appLogger.error('QuotaService', `Failed to start quota service: ${err}`))
+
+
     }
 
     private fetchWithNet(url: string, headers: Record<string, string>): Promise<JsonValue | null> {
@@ -34,13 +42,7 @@ export class QuotaService {
                     response.on('data', (chunk) => body += chunk.toString())
                     response.on('end', () => {
                         if (response.statusCode >= 200 && response.statusCode < 300) {
-                            try {
-                                resolve(JSON.parse(body))
-                            } catch {
-                                // If response is empty or not JSON, resolve null or reject
-                                if (!body.trim()) { resolve(null) }
-                                else { reject(new Error(`Failed to parse JSON: ${body.substring(0, 50)}`)) }
-                            }
+                            resolve(safeJsonParse(body, null))
                         } else {
                             reject(new Error(`Request failed with status code ${response.statusCode}`))
                         }
@@ -68,11 +70,7 @@ export class QuotaService {
                         resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d })
                         return
                     }
-                    try {
-                        resolve(JSON.parse(d) as JsonObject);
-                    } catch {
-                        resolve({ success: false, error: 'Invalid JSON', raw: d });
-                    }
+                    resolve(safeJsonParse(d, { success: false, error: 'Invalid JSON', raw: d }) as JsonObject);
                 })
             })
             request.on('error', (e: Error) => reject(e))
@@ -80,22 +78,24 @@ export class QuotaService {
         })
     }
 
-    async getQuota(_proxyPort: number, _proxyKey: string): Promise<any | null> {
+    async getQuota(_proxyPort: number, _proxyKey: string): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
         try {
-            const allTokens = await this.authService.getAllFullTokens()
-            const antigravityTokens = allTokens.filter(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google'))
+            const allAccounts = await this.authService.getAllAccountsFull()
+            appLogger.info('QuotaService', `getQuota: Found ${allAccounts.length} total accounts. Providers: ${allAccounts.map(a => a.provider).join(', ')}`)
+            const antigravityAccounts = allAccounts.filter(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'))
+            appLogger.info('QuotaService', `getQuota: Found ${antigravityAccounts.length} Antigravity accounts`)
 
-            if (antigravityTokens.length === 0) { return null }
+            if (antigravityAccounts.length === 0) { return null }
 
             const results = []
-            for (const token of antigravityTokens) {
-                if (token.accessToken) {
-                    const quota = await this.fetchAntigravityQuotaForToken(token)
+            for (const account of antigravityAccounts) {
+                if (account.accessToken) {
+                    const quota = await this.fetchAntigravityQuotaForToken(account)
                     if (quota) {
                         results.push({
                             ...quota,
-                            accountId: token.accountId,
-                            email: token.email
+                            accountId: account.id,
+                            email: account.email
                         })
                     }
                 }
@@ -108,9 +108,9 @@ export class QuotaService {
         }
     }
 
-    private async fetchAntigravityQuotaForToken(token: AuthToken): Promise<QuotaResponse | null> {
+    private async fetchAntigravityQuotaForToken(account: LinkedAccount): Promise<QuotaResponse | null> {
         try {
-            const data = await this.fetchAntigravityUpstreamForToken(token)
+            const data = await this.fetchAntigravityUpstreamForToken(account)
             if (data) {
                 return this.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> })
             }
@@ -125,8 +125,8 @@ export class QuotaService {
     // --- Antigravity ---
 
 
-    async fetchAntigravityUpstreamForToken(authToken: AuthToken): Promise<JsonObject | null> {
-        const accessToken = authToken.accessToken
+    async fetchAntigravityUpstreamForToken(account: LinkedAccount): Promise<JsonObject | null> {
+        const accessToken = account.accessToken
         if (!accessToken) { return null }
 
         const upstreamUrl = 'https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels'
@@ -140,36 +140,40 @@ export class QuotaService {
                 timeout: 8000
             })
             if (response.status === 200 && response.data) { return response.data as JsonObject }
-        } catch {
-            // handle error
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                appLogger.warn('QuotaService', 'Antigravity token invalid/expired (401). Triggering forced refresh.')
+                void this.tokenService.ensureFreshToken(account.provider, true)
+            }
         }
         return null
     }
 
 
     async fetchAntigravityQuota(): Promise<QuotaResponse | null> {
-        const fullToken = await this.authService.getAllFullTokens().then(ts => ts.find(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google')))
-        if (!fullToken) { return null }
-        return this.fetchAntigravityQuotaForToken(fullToken)
+        const accounts = await this.authService.getAllAccountsFull()
+        const account = accounts.find(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'))
+        if (!account) { return null }
+        return this.fetchAntigravityQuotaForToken(account)
     }
 
 
     async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
         try {
-            const token = await this.authService.getAllFullTokens().then(ts => ts.find(t => t.provider.startsWith('antigravity') || t.provider.startsWith('google')))
-            if (!token) { return [] }
-            const data = await this.fetchAntigravityUpstreamForToken(token) as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
+            const accounts = await this.authService.getAllAccountsFull()
+            const account = accounts.find(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'))
+            if (!account) { return [] }
+            const data = await this.fetchAntigravityUpstreamForToken(account) as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> } | null
             if (data?.models) {
                 const models: ModelQuotaItem[] = []
-                const nameMap: Record<string, string> = {
-                    "gemini-2.5-pro": "Gemini 2.5 Pro",
-                    "gemini-2.5-flash": "Gemini 2.5 Flash",
-                    "gemini-2.0-flash": "Gemini 2.0 Flash"
-                }
+                // Removed restrictive filtering for 'chat_' and 'rev' prefixes to show all models
+
 
                 for (const [key, val] of Object.entries(data.models)) {
-                    if (key.startsWith('chat_') || key.startsWith('rev')) { continue }
-
+                    // Filter out unwanted internal/restricted models
+                    if (['chat_23310', 'chat_20706', 'rev19-uic3-1p', 'tab_flash_lite_preview'].includes(key)) {
+                        continue
+                    }
                     let percentage = 100
                     let reset = '-'
 
@@ -196,7 +200,7 @@ export class QuotaService {
 
                     models.push({
                         id: key,
-                        name: val.displayName ?? nameMap[key] ?? key,
+                        name: (val.displayName ?? key) as string,
                         object: 'model',
                         owned_by: 'antigravity',
                         provider: 'antigravity',
@@ -219,7 +223,7 @@ export class QuotaService {
     async fetchLegacyQuota(): Promise<QuotaResponse | null> {
         try {
             const legacy = await this.getLegacyQuota()
-            if (legacy && legacy.success) { return legacy as QuotaResponse }
+            if (legacy.success) { return legacy as QuotaResponse }
         } catch {
             // ignore
         }
@@ -227,7 +231,7 @@ export class QuotaService {
     }
 
     async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: JsonObject } & Partial<QuotaResponse>> {
-        const token = await this.authService.getToken('antigravity')
+        const token = await this.authService.getActiveToken('antigravity')
         if (!token) { return { success: false, next_reset: '-', models: [], status: 'Error' } }
         return { success: true, data: { authenticated: true }, models: [], next_reset: '-', status: 'Authenticated' }
     }
@@ -236,14 +240,14 @@ export class QuotaService {
 
     async fetchProxyQuota(port: number, key: string): Promise<QuotaResponse | null> {
         try {
-            const res = await this.makeRequest('/v1/quota', port, key)
+            const res = await this.makeRequest('/v1/quota', port, key) as { success?: boolean; models?: unknown; status?: unknown };
             // Check if the response indicates an error (404, etc.)
-            if (res && typeof res === 'object' && 'success' in res && res.success === false) {
+            if (res.success === false) {
                 // Proxy doesn't have /v1/quota endpoint or returned error
                 return null
             }
             // Only return if it looks like a valid QuotaResponse
-            if (res && typeof res === 'object' && ('models' in res || 'status' in res)) {
+            if ('models' in res || 'status' in res) {
                 return res as unknown as QuotaResponse
             }
         } catch {
@@ -264,38 +268,39 @@ export class QuotaService {
         return null
     }
 
-    async getCodexUsage(): Promise<any> {
-        const allTokens = await this.authService.getAllFullTokens()
-        const codexTokens = allTokens.filter(t => t.provider === 'codex' || t.provider === 'openai')
+    async getCodexUsage(): Promise<{ accounts: Array<{ usage: JsonObject | { error: string }; accountId?: string; email?: string }> }> {
+        const allAccounts = await this.authService.getAllAccountsFull()
+        const codexAccounts = allAccounts.filter(a => a.provider === 'codex' || a.provider === 'openai')
+        appLogger.info('QuotaService', `getCodexUsage: Found ${codexAccounts.length} Codex accounts (Total: ${allAccounts.length})`)
 
         const results = []
-        for (const token of codexTokens) {
-            const usage = await this.fetchCodexUsageForToken(token)
+        for (const account of codexAccounts) {
+            const usage = await this.fetchCodexUsageForToken(account)
             if (usage) {
                 results.push({
                     usage,
-                    accountId: token.accountId,
-                    email: token.email
+                    accountId: account.id,
+                    email: account.email
                 })
             }
         }
         return { accounts: results }
     }
 
-    private async fetchCodexUsageForToken(token: AuthToken): Promise<any | null> {
-        const accessToken = token.accessToken
+    private async fetchCodexUsageForToken(account: LinkedAccount): Promise<JsonObject | { error: string } | null> {
+        const accessToken = account.accessToken
         if (!accessToken) { return null }
 
         try {
             const response = await axios.get('https://api.openai.com/dashboard/billing/usage', {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
-                    'OpenAI-Organization': token.metadata?.organizationId as string
+                    'OpenAI-Organization': account.metadata?.organizationId as string
                 }
             })
             return response.data
         } catch (e) {
-            return null
+            return { error: (e instanceof Error ? e.message : String(e)) }
         }
     }
 
@@ -305,7 +310,7 @@ export class QuotaService {
 
         if (!token || token === 'connected') {
             try {
-                const dbToken = await this.authService.getToken('codex')
+                const dbToken = await this.authService.getActiveToken('codex')
                 if (dbToken) { token = dbToken }
             } catch {
                 // ignore
@@ -327,7 +332,7 @@ export class QuotaService {
                     if (sessionData?.accessToken) { token = sessionData.accessToken }
                 }
             } catch (error) {
-                console.debug('[QuotaService] Failed to fetch ChatGPT session cookies:', getErrorMessage(error))
+                appLogger.debug('quota.service', '[QuotaService] Failed to fetch ChatGPT session cookies:', getErrorMessage(error))
             }
         }
 
@@ -342,49 +347,195 @@ export class QuotaService {
 
     // --- Claude/Anthropic ---
 
-    async getClaudeQuota(): Promise<any> {
-        const allTokens = await this.authService.getAllFullTokens()
-        const claudeTokens = allTokens.filter(t => t.provider === 'claude' || t.provider === 'anthropic')
+    async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
+        const accounts = await this.authService.getAllAccountsFull()
+        const claudeAccounts = accounts.filter(a => a.provider === 'claude' || a.provider === 'anthropic')
+        appLogger.info('QuotaService', `getClaudeQuota: Found ${claudeAccounts.length} Claude accounts`)
 
-        const results = []
-        for (const token of claudeTokens) {
-            const quota = await this.fetchClaudeQuotaForToken(token)
+        const results: ClaudeQuota[] = []
+        for (const account of claudeAccounts) {
+            const quota = await this.fetchClaudeQuotaForToken(account)
             if (quota) {
                 results.push({
                     ...quota,
-                    accountId: token.accountId,
-                    email: token.email
+                    accountId: account.id,
+                    email: account.email
                 })
             }
         }
         return { accounts: results }
     }
 
-    private async fetchClaudeQuotaForToken(token: AuthToken): Promise<any | null> {
-        const accessToken = token.accessToken
-        const sessionKey = token.sessionToken
-        if (!accessToken && !sessionKey) { return null }
+    private async fetchClaudeQuotaForToken(account: LinkedAccount): Promise<ClaudeQuota | null> {
+        appLogger.info('quota.service', `Fetching Claude quota for account: ${account.id}`, { account } as unknown as JsonObject)
+        let accessToken = account.accessToken;
+        // Check if accessToken is actually a JSON string (e.g. OAuth response) and extract the real token
+        if (accessToken?.trim().startsWith('{')) {
+            try {
+                const parsed = safeJsonParse<JsonObject>(accessToken, {});
+                if (parsed.access_token) {
+                    accessToken = parsed.access_token as string;
+                }
+            } catch { /* ignore */ }
+        }
 
-        const orgId = await this.fetchClaudeOrganizationId(accessToken || '', sessionKey || null)
-        if (!orgId) { return null }
+        const sessionKey = account.sessionToken;
+        if (!accessToken && !sessionKey) { return { success: false, error: 'No access token or session key' }; }
 
-        const usage = await this.fetchClaudeUsage(accessToken || '', orgId, sessionKey || null)
-        if (!usage) { return null }
+        try {
+            // Check for persisted Org ID first
+            let orgId: string | null | undefined = account.metadata?.claudeOrgId as string | undefined
 
-        return this.formatClaudeUsage(usage)
+            if (!orgId) {
+                appLogger.info('QuotaService', 'Fetching Claude Organization ID from API...')
+                orgId = await this.fetchClaudeOrganizationId(accessToken ?? '', sessionKey ?? null)
+
+                if (orgId) {
+                    // Persist the Org ID if found
+                    try {
+                        const currentMeta = account.metadata ?? {}
+                        await this.authService.updateToken(account.id, {
+                            metadata: { ...currentMeta, claudeOrgId: orgId }
+                        })
+                        appLogger.info('QuotaService', `Persisted Claude Org ID: ${orgId}`)
+                    } catch (err) {
+                        appLogger.warn('QuotaService', `Failed to persist Claude Org ID: ${getErrorMessage(err)}`)
+                    }
+                }
+            } else {
+                appLogger.info('QuotaService', `Using persisted Claude Org ID: ${orgId}`)
+            }
+
+            if (!orgId) { return { success: false, error: 'Failed to retrieve Organization ID' } }
+
+            const usage = await this.fetchClaudeUsage(accessToken ?? '', orgId, sessionKey ?? null)
+            if (!usage) { return { success: false, error: 'Failed to fetch usage information' } }
+
+            return this.formatClaudeUsage(usage)
+        } catch (e) {
+            return { success: false, error: (e instanceof Error ? e.message : String(e)) }
+        }
     }
 
-    private formatClaudeUsage(usage: any) {
+    private formatClaudeUsage(usage: { five_hour?: { utilization?: number; resets_at?: string }; seven_day?: { utilization?: number; resets_at?: string } }): ClaudeQuota {
         return {
             success: true,
             fiveHour: usage.five_hour ? {
-                utilization: usage.five_hour.utilization,
-                resetsAt: usage.five_hour.resets_at
+                utilization: usage.five_hour.utilization ?? 0,
+                resetsAt: usage.five_hour.resets_at ?? ''
             } : undefined,
             sevenDay: usage.seven_day ? {
-                utilization: usage.seven_day.utilization,
-                resetsAt: usage.seven_day.resets_at
+                utilization: usage.seven_day.utilization ?? 0,
+                resetsAt: usage.seven_day.resets_at ?? ''
             } : undefined
+        }
+    }
+
+    /**
+     * Validates and saves a Claude session key to the database.
+     * Fetches the organization ID and updates the specified account.
+     */
+    public async saveClaudeSession(sessionKey: string, accountId?: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            // Validate key format locally
+            if (!sessionKey.startsWith('sk-ant-sid')) {
+                return { success: false, error: 'Invalid session key format. Must start with sk-ant-sid' }
+            }
+
+            // Fetch Org ID to validate the session
+            const orgId = await this.fetchClaudeOrganizationId('', sessionKey)
+            if (!orgId) {
+                return { success: false, error: 'Failed to retrieve Organization ID. The session key might be invalid or expired.' }
+            }
+
+            if (accountId) {
+                // Targeted update for a specific account (ideal for manual flow)
+                await this.authService.updateToken(accountId, {
+                    sessionToken: sessionKey,
+                    metadata: { claudeOrgId: orgId }
+                })
+                appLogger.info('QuotaService', `Updated Claude account ${accountId} with manual sessionKey`)
+            } else {
+                // Fallback: look for matches (legacy behavior or generic entry)
+                const fullAccounts = await this.authService.getAllAccountsFull()
+                const claudeAccounts = fullAccounts.filter(a => a.provider === 'claude')
+                const accountToUpdate = claudeAccounts.find(a =>
+                    a.sessionToken === sessionKey || a.metadata?.claudeOrgId === orgId
+                )
+
+                if (accountToUpdate) {
+                    await this.authService.updateToken(accountToUpdate.id, {
+                        sessionToken: sessionKey,
+                        metadata: { ...accountToUpdate.metadata, claudeOrgId: orgId }
+                    })
+                } else {
+                    await this.authService.linkAccount('claude', {
+                        sessionToken: sessionKey,
+                        email: `claude-manual-${orgId.substring(0, 8)}`,
+                        metadata: { claudeOrgId: orgId }
+                    })
+                }
+            }
+            return { success: true }
+        } catch (err) {
+            const msg = getErrorMessage(err)
+            appLogger.error('QuotaService', `Failed to save Claude session: ${msg}`)
+            return { success: false, error: msg }
+        }
+    }
+
+    /**
+     * Imports Claude authentication data from legacy JSON files in the auth directory.
+     * This handles the transition from file-based to database-based authentication.
+     */
+    private async importLegacyClaudeFiles(): Promise<void> {
+        const authDir = this.dataService.getPath('auth')
+        const fs = await import('fs')
+        const path = await import('path')
+
+        if (!fs.existsSync(authDir)) { return }
+
+        try {
+            const files = fs.readdirSync(authDir)
+            for (const file of files) {
+                if (file.endsWith('.json') && (file.toLowerCase().startsWith('claude') || file.toLowerCase().startsWith('anthropic'))) {
+                    const filePath = path.join(authDir, file)
+                    try {
+                        const content = fs.readFileSync(filePath, 'utf8')
+                        const data = safeJsonParse<JsonObject>(content, {})
+
+                        // Check if we already have this account in DB (by email)
+                        const email = data.email
+                        if (email) {
+                            const existing = await this.authService.getAccountsByProvider('claude')
+                            if (existing.some(a => a.email === email)) {
+                                // Already in DB, skip
+                                continue
+                            }
+                        }
+
+                        // Save to DB
+                        const tokenData = {
+                            accessToken: (data.access_token ?? data.accessToken ?? undefined) as string | undefined,
+                            refreshToken: (data.refresh_token ?? data.refreshToken ?? undefined) as string | undefined,
+                            sessionToken: (data.session_token ?? data.sessionToken ?? data.session_key ?? undefined) as string | undefined,
+                            email: (data.email ?? undefined) as string | undefined,
+                            expiresAt: (data.expires_at || data.expiresAt) ? Number(data.expires_at ?? data.expiresAt) : undefined,
+                            scope: (data.scope ?? undefined) as string | undefined,
+                            metadata: data
+                        }
+                        await this.authService.linkAccount('claude', tokenData)
+                        appLogger.info('QuotaService', `Imported legacy Claude auth file to database: ${file}`)
+
+                        // Optional: Rename file to .migrated to avoid re-processing
+                        fs.renameSync(filePath, filePath + '.migrated')
+                    } catch (err) {
+                        appLogger.error('QuotaService', `Error importing legacy file ${file}: ${getErrorMessage(err)}`)
+                    }
+                }
+            }
+        } catch (err) {
+            appLogger.error('QuotaService', `Failed to read auth directory: ${getErrorMessage(err)}`)
         }
     }
 
@@ -393,113 +544,231 @@ export class QuotaService {
             try {
                 const parts = accessToken.split('.')
                 if (parts.length === 3) {
-                    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-                    return payload.org_id || payload.organization_id || payload.org_uuid || payload.uuid || null
+                    const payload = safeJsonParse<JsonObject>(Buffer.from(parts[1], 'base64').toString(), {})
+                    const id = (payload.org_id ?? payload.organization_id ?? payload.org_uuid ?? payload.uuid ?? null) as string | null
+                    if (id) { return id }
                 }
             } catch { /* ignore */ }
         }
+        appLogger.info('quota.service', 'Fetching Claude organization ID', { accessToken, sessionKey })
 
-        const endpoints = [
-            'https://claude.ai/api/organizations',
-            'https://console.anthropic.com/api/organizations',
-            'https://api.anthropic.com/v1/organizations'
-        ]
+        // User explicitly requested to use ONLY claude.ai with specific headers
+        const url = 'https://claude.ai/api/organizations'
 
-        for (const url of endpoints) {
-            try {
-                const headers: Record<string, string> = {
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Anthropic-Version': '2023-06-01'
-                }
+        try {
+            // Headers copied from user's working curl command
+            const headers: Record<string, string> = {
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'en-US,en;q=0.9',
+                'cache-control': 'max-age=0',
+                'priority': 'u=0, i',
+                'sec-ch-ua': '"Opera";v="125", "Not?A_Brand";v="8", "Chromium";v="141"',
+                'sec-ch-ua-arch': '"x86"',
+                'sec-ch-ua-bitness': '"64"',
+                'sec-ch-ua-full-version': '"125.0.5729.49"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-model': '""',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-ch-ua-platform-version': '"19.0.0"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'none',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 OPR/125.0.0.0 (Edition Yx TR PA)',
+            }
 
-                if (sessionKey) { headers['Cookie'] = `sessionKey=${sessionKey}` }
-                else if (accessToken) { headers['Authorization'] = `Bearer ${accessToken}` }
-                else { continue }
+            // Always use Cookie for claude.ai
+            const tokenToUse = sessionKey ?? accessToken
+            if (tokenToUse) {
+                headers['Cookie'] = `sessionKey=${tokenToUse}`
+            }
 
-                const data = await this.fetchWithNet(url, headers)
-                if (Array.isArray(data) && data.length > 0) {
-                    const first = data[0] as JsonObject
-                    return (first.uuid as string) ?? (first.id as string) ?? null
-                }
-            } catch { /* ignore */ }
-        }
-        return null
-    }
-
-    private async fetchClaudeUsage(accessToken: string, orgId: string, sessionKey: string | null): Promise<any | null> {
-        const endpoints = [
-            `https://claude.ai/api/organizations/${orgId}/usage`,
-            `https://console.anthropic.com/api/organizations/${orgId}/usage`,
-            `https://api.anthropic.com/v1/organizations/${orgId}/usage`
-        ]
-
-        for (const url of endpoints) {
-            try {
-                const headers: Record<string, string> = {
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Anthropic-Version': '2023-06-01'
-                }
-
-                if (sessionKey) {
-                    headers['Cookie'] = `sessionKey=${sessionKey}`
-                }
-                if (accessToken && accessToken.length > 20) {
-                    headers['Authorization'] = `Bearer ${accessToken}`
-                }
-                if (!headers['Cookie'] && !headers['Authorization']) { continue }
-
-                const data = await this.fetchWithNet(url, headers)
-                if (data && typeof data === 'object') {
-                    const usage = data as any
-                    if (usage.five_hour || usage.seven_day || usage.utilization !== undefined) {
-                        return usage
-                    }
-                }
-            } catch { /* ignore */ }
+            const data = await this.fetchWithNet(url, headers)
+            if (Array.isArray(data) && data.length > 0) {
+                const first = data[0] as JsonObject
+                return (first.uuid ?? first.id ?? null) as string | null
+            }
+        } catch (e) {
+            appLogger.warn('QuotaService', `fetchClaudeOrganizationId failed for ${url}: ${getErrorMessage(e)}`)
         }
         return null
     }
 
+    private async fetchClaudeUsage(accessToken: string, orgId: string, sessionKey: string | null): Promise<Record<string, unknown> | null> {
+        // Try the new Anthropic OAuth usage endpoint first (for OAuth tokens)
+        if (accessToken) {
+            try {
+                const oauthUrl = 'https://api.anthropic.com/api/oauth/usage'
+                const oauthHeaders: Record<string, string> = {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'anthropic-beta': 'oauth-2025-04-20',
+                    'Accept': 'application/json'
+                }
 
-    async getCopilotQuota(): Promise<any> {
-        const allTokens = await this.authService.getAllFullTokens()
-        const copilotTokens = allTokens.filter(t => t.provider === 'copilot')
+                appLogger.info('QuotaService', `Trying Anthropic OAuth usage endpoint: ${oauthUrl}`)
+                const oauthData = await this.fetchWithNet(oauthUrl, oauthHeaders)
+                if (oauthData && typeof oauthData === 'object' && !Array.isArray(oauthData)) {
+                    appLogger.info('QuotaService', `Anthropic OAuth usage response:`, oauthData as JsonObject)
+                    return oauthData as Record<string, unknown>
+                }
+            } catch (e) {
+                appLogger.warn('QuotaService', `Anthropic OAuth usage endpoint failed: ${getErrorMessage(e)}`)
+            }
+        }
+
+        // Fallback to claude.ai endpoint (for session keys)
+        const url = `https://claude.ai/api/organizations/${orgId}/usage`
+
+        try {
+            const headers: Record<string, string> = {
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'en-US,en;q=0.9',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 OPR/125.0.0.0 (Edition Yx TR PA)',
+            }
+
+            const tokenToUse = sessionKey ?? accessToken
+            if (tokenToUse) {
+                headers['Cookie'] = `sessionKey=${tokenToUse}`
+            }
+
+            const data = await this.fetchWithNet(url, headers)
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                return data as Record<string, unknown>
+            }
+        } catch (e) {
+            appLogger.warn('QuotaService', `fetchClaudeUsage failed for ${url}: ${getErrorMessage(e)}`)
+        }
+        return null
+    }
+
+
+    async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
+        const allAccounts = await this.authService.getAllAccountsFull()
+        appLogger.info('QuotaService', `getCopilotQuota: All available token providers: ${allAccounts.map(a => a.provider).join(', ')}`)
+
+        const copilotAccounts = allAccounts.filter(a => a.provider === 'copilot' || a.provider === 'github')
+        appLogger.info('QuotaService', `getCopilotQuota: Found ${copilotAccounts.length} Copilot/GitHub candidates`)
+
+        // Deduplicate by identity (email or token) to avoid showing same account twice
+        // We treat 'github' and 'copilot' as synonymous providers for the same user
+        const seenIdentities = new Set<string>()
+        const uniqueAccounts: LinkedAccount[] = []
+
+        for (const account of copilotAccounts) {
+            // Identity resolution: try to use email as primary key
+            const email = account.email?.toLowerCase().trim()
+            const token = account.accessToken?.trim()
+            const identity = email ?? token
+
+            if (!identity) {
+                continue
+            }
+
+            if (seenIdentities.has(identity)) {
+                appLogger.info('QuotaService', `getCopilotQuota: Merging duplicate provider/account for identity: ${identity.substring(0, 10)}... (Provider: ${account.provider})`)
+                continue
+            }
+
+            // Also check if we already have an account with the same email if this one is just a token
+            if (email && seenIdentities.has(email)) {
+                continue
+            }
+            if (token && seenIdentities.has(token)) {
+                continue
+            }
+
+            seenIdentities.add(identity)
+            if (email) {
+                seenIdentities.add(email)
+            }
+            if (token) {
+                seenIdentities.add(token)
+            }
+
+            uniqueAccounts.push(account)
+        }
+
+        // Final safety: as the user noted, multiple accounts with different tokens/emails
+        // are often actually the same person in the context of Copilot/GitHub.
+        // If we still have more than one, we consolidate to a single representative account.
+        if (uniqueAccounts.length > 1) {
+            appLogger.info('QuotaService', `getCopilotQuota: Consolidating ${uniqueAccounts.length} candidate accounts into one primary view.`)
+            const primary = uniqueAccounts.find(a => a.provider === 'github') ?? uniqueAccounts[0]
+            uniqueAccounts.splice(0, uniqueAccounts.length, primary)
+        }
+
+        appLogger.info('QuotaService', `getCopilotQuota: Consolidated to ${uniqueAccounts.length} unique logical account(s).`)
 
         const results = []
-        for (const token of copilotTokens) {
-            const quota = await this.fetchCopilotQuotaForToken(token)
+        for (const account of uniqueAccounts) {
+            const quota = await this.fetchCopilotQuotaForToken(account)
             if (quota) {
                 results.push({
                     ...quota,
-                    accountId: token.accountId,
-                    email: token.email
+                    accountId: account.id,
+                    email: account.email
                 })
             }
         }
         return { accounts: results }
     }
 
-    private async fetchCopilotQuotaForToken(token: AuthToken): Promise<CopilotQuota | null> {
-        const githubToken = token.accessToken
+    private async fetchCopilotQuotaForToken(account: LinkedAccount): Promise<CopilotQuota | null> {
+        const githubToken = account.accessToken
         if (!githubToken) { return null }
 
         try {
-            const response = await axios.get('https://api.github.com/user/copilot_billing', {
+            // 1. Fetch Billing Info (Restored to copilot_internal/user)
+            const billingRes = await axios.get('https://api.github.com/copilot_internal/user', {
                 headers: {
                     'Authorization': `token ${githubToken}`,
-                    'Accept': 'application/vnd.github+json'
+                    'Accept': 'application/vnd.github+json',
+                    'User-Agent': 'GithubCopilot/1.250.0'
                 }
             })
-            return response.data
+
+            const data = billingRes.data as {
+                quota_snapshots?: { premium_interactions?: { entitlement?: number; remaining?: number } };
+                copilot_plan?: string;
+                quota_reset_date?: string;
+            }
+            const premium = data.quota_snapshots?.premium_interactions
+            const quota: CopilotQuota = {
+                copilot_plan: data.copilot_plan ?? 'unknown',
+                limit: premium?.entitlement ?? 0,
+                remaining: premium?.remaining ?? 0,
+                reset: data.quota_reset_date ?? undefined,
+                // rate_limit will be filled below
+            }
+
+            // 2. Fetch Rate Limit Info (Parallel)
+            try {
+                const rateLimitRes = await axios.get('https://api.github.com/rate_limit', {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github+json',
+                        'User-Agent': 'GithubCopilot/1.250.0'
+                    }
+                })
+                const rl = rateLimitRes.data as { resources: { core: { limit: number; remaining: number; reset: number } } }
+                quota.rate_limit = {
+                    limit: rl.resources.core.limit,
+                    remaining: rl.resources.core.remaining,
+                    reset: new Date(rl.resources.core.reset * 1000).toISOString()
+                }
+            } catch {
+                // Ignore rate limit errors, we still have billing info
+            }
+
+            return quota
         } catch (e) {
-            return null
+            return { error: (e instanceof Error ? e.message : String(e)), remaining: 0, limit: 0, copilot_plan: 'unknown' }
         }
     }
 
     private async fetchCopilotBilling(): Promise<JsonObject | null> {
-        const token = await this.authService.getToken('copilot')
+        const token = await this.authService.getActiveToken('copilot')
 
         if (!token || token === 'connected') { return null }
 
@@ -509,7 +778,7 @@ export class QuotaService {
             })
             return response.data as JsonObject
         } catch (error) {
-            console.debug('[QuotaService] fetchCopilotBilling failed:', getErrorMessage(error))
+            appLogger.debug('quota.service', '[QuotaService] fetchCopilotBilling failed:', getErrorMessage(error))
             return null
         }
     }
@@ -569,7 +838,7 @@ export class QuotaService {
                     headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
                     timeout: 10000
                 })
-                if (response?.data && typeof response.data === 'object') { return response.data as JsonObject }
+                if (response.data && typeof response.data === 'object') { return response.data as JsonObject }
             } catch (e) {
                 if (axios.isAxiosError(e) && (e.response?.status === 401 || e.response?.status === 403)) { break }
             }
@@ -582,8 +851,13 @@ export class QuotaService {
         if (!data.models) { return null }
         const models: ModelQuotaItem[] = []
         for (const [key, val] of Object.entries(data.models)) {
+            // Filter out unwanted internal/restricted models
+            if (['chat_23310', 'chat_20706', 'rev19-uic3-1p', 'tab_flash_lite_preview'].includes(key)) {
+                appLogger.info('QuotaService', `parseQuotaResponse: Skipping filtered model: ${key}`)
+                continue
+            }
             try {
-                if (key.startsWith('chat_') || key.startsWith('rev')) { continue }
+                // Removed restrictive filtering for 'chat_' and 'rev' prefixes
                 let percentage = 100
                 let reset = '-'
                 let quotaInfo: QuotaInfo | undefined
@@ -610,14 +884,14 @@ export class QuotaService {
                     quotaInfo = {
                         remainingQuota: q.remainingQuota,
                         totalQuota: q.totalQuota,
-                        remainingFraction: q.remainingFraction ?? (percentage / 100),
+                        remainingFraction: q.remainingFraction,
                         resetTime: q.resetTime
                     }
                 }
 
                 models.push({
                     id: key,
-                    name: val.displayName || key,
+                    name: val.displayName ?? key,
                     object: 'model',
                     owned_by: 'antigravity',
                     provider: 'antigravity',

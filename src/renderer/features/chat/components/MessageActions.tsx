@@ -185,7 +185,7 @@ export const MessageActionsGroup = ({
             </div>
 
             {role === 'assistant' && (
-                <ActionButton label={t('messageBubble.regenerate') || 'Regenerate'} onClick={() => alert('Regenerate feature coming soon!')}>
+                <ActionButton label={t('messageBubble.regenerate') || 'Regenerate'} onClick={() => console.warn('Regenerate feature coming soon!')}>
                     <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
             )}

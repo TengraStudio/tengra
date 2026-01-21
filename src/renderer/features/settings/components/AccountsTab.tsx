@@ -1,7 +1,7 @@
 import { LinkedAccountInfo } from '@renderer/electron.d'
 import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal'
 import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts'
-import { Check, ChevronDown, ExternalLink, Plus, RefreshCw, Trash2, User } from 'lucide-react'
+import { ChevronDown, ExternalLink, Plus, RefreshCw } from 'lucide-react'
 import React, { useState } from 'react'
 
 import antigravityLogo from '@/assets/antigravity.svg'
@@ -11,6 +11,8 @@ import copilotLogo from '@/assets/copilot.png'
 import ollamaLogo from '@/assets/ollama.svg'
 import { cn } from '@/lib/utils'
 import { AppSettings } from '@/types'
+
+import { AccountRow } from './accounts/AccountRow'
 
 type ProviderCategory = 'ai' | 'developer' | 'local'
 
@@ -48,6 +50,7 @@ interface AccountsTabProps {
     setSettings: (s: AppSettings) => void
     deviceCodeModal?: DeviceCodeModalState
     closeDeviceCodeModal?: () => void
+    setManualSessionModal: (state: import('./ManualSessionModal').ManualSessionModalState) => void
     t: (key: string) => string
 }
 
@@ -58,11 +61,12 @@ interface ProviderCardProps {
     onConnect: (providerId: string) => void
     onUnlink: (accountId: string) => Promise<void>
     onSetActive: (providerId: string, accountId: string) => Promise<void>
+    onShowManualSession: (accountId: string, email?: string) => void
     t: (key: string) => string
 }
 
 const ProviderCard = React.memo<ProviderCardProps>(({
-    provider, accounts, authBusy, onConnect, onUnlink, onSetActive, t
+    provider, accounts, authBusy, onConnect, onUnlink, onSetActive, onShowManualSession, t
 }) => {
     const [expanded, setExpanded] = useState(accounts.length > 0)
     const isBusy = authBusy === provider.id
@@ -74,7 +78,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
         if (accounts.length > 0 && !expanded) {
             setExpanded(true)
         }
-    }, [accounts.length])
+    }, [accounts.length, expanded])
 
     return (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -113,7 +117,14 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                         </>
                     ) : (
                         <button
-                            onClick={(e) => { e.stopPropagation(); onConnect(provider.id); }}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!authBusy) {
+                                    onConnect(provider.id);
+                                }
+                            }}
                             disabled={!!authBusy}
                             className={cn(
                                 "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors flex items-center gap-1.5",
@@ -133,77 +144,36 @@ const ProviderCard = React.memo<ProviderCardProps>(({
             {hasAccounts && expanded && (
                 <div className="border-t border-border">
                     {accounts.map((account, index) => (
-                        <div
+                        <AccountRow
                             key={account.id}
-                            className={cn(
-                                "px-4 py-3 flex items-center gap-3 transition-colors",
-                                index !== accounts.length - 1 && "border-b border-border/50",
-                                account.isActive && "bg-primary/5"
-                            )}
-                        >
-                            {/* Avatar */}
-                            <div className={cn(
-                                "h-9 w-9 rounded-full flex items-center justify-center overflow-hidden shrink-0",
-                                account.isActive ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background" : "bg-muted"
-                            )}>
-                                {account.avatarUrl ? (
-                                    <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
-                                ) : (
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                )}
-                            </div>
-
-                            {/* Account Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-foreground truncate">
-                                    {account.displayName ?? account.email ?? 'Account'}
-                                </div>
-                                {account.email && account.displayName && (
-                                    <div className="text-xs text-muted-foreground truncate">{account.email}</div>
-                                )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-2">
-                                {account.isActive ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-xs font-bold">
-                                        <Check className="h-3 w-3" />
-                                        {t('accounts.active')}
-                                    </span>
-                                ) : (
-                                    <button
-                                        onClick={() => onSetActive(provider.id, account.id)}
-                                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
-                                    >
-                                        {t('accounts.setActive')}
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => onUnlink(account.id)}
-                                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                    title={t('accounts.removeAccount')}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        </div>
+                            account={account}
+                            isLast={index === accounts.length - 1}
+                            providerId={provider.id}
+                            onUnlink={onUnlink}
+                            onSetActive={onSetActive}
+                            onShowManualSession={onShowManualSession}
+                            t={t}
+                        />
                     ))}
 
                     {/* Add Another Account Button */}
-                    <div className="p-3 border-t border-border/50">
-                        <button
-                            onClick={() => onConnect(provider.id)}
-                            disabled={!!authBusy}
-                            className={cn(
-                                "w-full px-3 py-2.5 rounded-lg text-xs font-medium border border-dashed flex items-center justify-center gap-2 transition-colors",
-                                authBusy ? "opacity-50 cursor-not-allowed text-muted-foreground border-border" :
-                                    "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30 hover:bg-muted/30"
-                            )}
-                        >
-                            <Plus className="h-3.5 w-3.5" />
-                            {t('accounts.addAnotherAccount')}
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onConnect(provider.id);
+                        }}
+                        disabled={!!authBusy}
+                        className={cn(
+                            "w-full px-3 py-2.5 rounded-lg text-xs font-medium border border-dashed flex items-center justify-center gap-2 transition-colors",
+                            authBusy ? "opacity-50 cursor-not-allowed text-muted-foreground border-border" :
+                                "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30 hover:bg-muted/30"
+                        )}
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        {t('accounts.addAnotherAccount')}
+                    </button>
                 </div>
             )}
         </div>
@@ -218,6 +188,7 @@ const ProviderList = React.memo(({
     onConnect,
     onUnlink,
     onSetActive,
+    onShowManualSession,
     t
 }: {
     title: string
@@ -227,6 +198,7 @@ const ProviderList = React.memo(({
     onConnect: (id: string) => void
     onUnlink: (id: string) => Promise<void>
     onSetActive: (pid: string, aid: string) => Promise<void>
+    onShowManualSession: (aid: string, email?: string) => void
     t: (k: string) => string
 }) => {
     return (
@@ -244,6 +216,7 @@ const ProviderList = React.memo(({
                         onConnect={onConnect}
                         onUnlink={onUnlink}
                         onSetActive={onSetActive}
+                        onShowManualSession={onShowManualSession}
                         t={t}
                     />
                 ))}
@@ -300,7 +273,7 @@ const OllamaSection = React.memo(({
                             <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.serverAddress')}</label>
                             <input
                                 type="text"
-                                value={settings.ollama?.url ?? ''}
+                                value={settings.ollama.url}
                                 onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, url: e.target.value } })}
                                 onBlur={() => handleSave()}
                                 className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 font-mono text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -310,7 +283,7 @@ const OllamaSection = React.memo(({
                             <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.contextLimit')}</label>
                             <input
                                 type="number"
-                                value={settings.ollama?.numCtx ?? 16384}
+                                value={settings.ollama.numCtx ?? 16384}
                                 onChange={e => setSettings({ ...settings, ollama: { ...settings.ollama, numCtx: Number(e.target.value) } })}
                                 onBlur={() => handleSave()}
                                 className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 font-mono text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -319,14 +292,24 @@ const OllamaSection = React.memo(({
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={checkOllama}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                checkOllama();
+                            }}
                             className="px-3 py-1.5 rounded-lg text-xs font-bold bg-muted/50 text-muted-foreground border border-border hover:bg-muted hover:text-foreground transition-colors"
                         >
                             {t('accounts.check')}
                         </button>
                         {!isRunning && (
                             <button
-                                onClick={startOllama}
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    startOllama();
+                                }}
                                 className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
                             >
                                 {t('accounts.start')}
@@ -343,7 +326,8 @@ OllamaSection.displayName = 'OllamaSection'
 export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
     connectGitHubProfile, connectCopilot, connectBrowserProvider,
-    startOllama, checkOllama, handleSave, setSettings, deviceCodeModal, closeDeviceCodeModal, t
+    startOllama, checkOllama, handleSave, setSettings, deviceCodeModal, closeDeviceCodeModal,
+    setManualSessionModal, t
 }) => {
     const handleConnect = React.useCallback((providerId: string) => {
         switch (providerId) {
@@ -362,6 +346,10 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     const aiProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'ai'), [])
     const developerProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'developer'), [])
 
+    const handleShowManualSession = React.useCallback((accountId: string, email?: string) => {
+        setManualSessionModal({ isOpen: true, accountId, email })
+    }, [setManualSessionModal])
+
     if (!settings) { return null }
 
     return (
@@ -373,7 +361,12 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                     <p className="text-sm text-muted-foreground mt-0.5">{t('accounts.subtitle')}</p>
                 </div>
                 <button
-                    onClick={handleRefresh}
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRefresh();
+                    }}
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                     <RefreshCw className={cn("h-3.5 w-3.5", linkedAccounts.loading && "animate-spin")} />
@@ -396,6 +389,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 onConnect={handleConnect}
                 onUnlink={linkedAccounts.unlinkAccount}
                 onSetActive={linkedAccounts.setActiveAccount}
+                onShowManualSession={handleShowManualSession}
                 t={t}
             />
 
@@ -407,6 +401,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 onConnect={handleConnect}
                 onUnlink={linkedAccounts.unlinkAccount}
                 onSetActive={linkedAccounts.setActiveAccount}
+                onShowManualSession={handleShowManualSession}
                 t={t}
             />
 

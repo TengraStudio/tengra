@@ -29,7 +29,7 @@ export const MessageList = memo(({
     isLoading,
     language,
     selectedProvider,
-    selectedModel,
+    selectedModel: _selectedModel,
     onSpeak,
     onStopSpeak,
     speakingMessageId,

@@ -81,7 +81,7 @@ export class RequestQueue {
             this.queue.splice(insertIndex, 0, request as QueuedRequest<unknown>)
 
             // Try to process
-            this.processQueue()
+            void this.processQueue()
         })
     }
 
@@ -133,7 +133,7 @@ export class RequestQueue {
                     this.running--
                     // Only continue processing if we haven't hit the iteration limit
                     if (iterations < MAX_QUEUE_ITERATIONS) {
-                        this.processQueue()
+                        void this.processQueue()
                     }
                 })
         }
@@ -226,7 +226,11 @@ export function getProviderQueue(provider: string, options?: QueueOptions): Requ
         queues.set(key, new RequestQueue(options))
     }
 
-    return queues.get(key)!
+    const queue = queues.get(key)
+    if (!queue) {
+        throw new Error(`Failed to get queue for provider: ${key}`)
+    }
+    return queue
 }
 
 /**

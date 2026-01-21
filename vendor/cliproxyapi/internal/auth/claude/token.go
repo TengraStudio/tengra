@@ -6,10 +6,6 @@ package claude
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-
-	"github.com/router-for-me/CLIProxyAPI/v6/internal/misc"
 )
 
 // ClaudeTokenStorage stores OAuth2 token information for Anthropic Claude API authentication.
@@ -36,6 +32,12 @@ type ClaudeTokenStorage struct {
 
 	// Expire is the timestamp when the current access token expires.
 	Expire string `json:"expired"`
+
+	// SessionKey is the captured web session key (sk-ant-sid-...) used for web endpoints
+	SessionKey string `json:"session_key,omitempty"`
+
+	// OrgID is the UUID of the organization (from /api/organizations)
+	OrgID string `json:"organization_id,omitempty"`
 }
 
 // SaveTokenToFile serializes the Claude token storage to a JSON file.
@@ -48,26 +50,17 @@ type ClaudeTokenStorage struct {
 // Returns:
 //   - error: An error if the operation fails, nil otherwise
 func (ts *ClaudeTokenStorage) SaveTokenToFile(authFilePath string) error {
-	misc.LogSavingCredentials(authFilePath)
 	ts.Type = "claude"
 
-	// Create directory structure if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(authFilePath), 0700); err != nil {
-		return fmt.Errorf("failed to create directory: %v", err)
-	}
-
-	// Create the token file
-	f, err := os.Create(authFilePath)
+	// Marshal the token data
+	data, err := json.Marshal(ts)
 	if err != nil {
-		return fmt.Errorf("failed to create token file: %w", err)
+		return fmt.Errorf("failed to marshal token: %w", err)
 	}
-	defer func() {
-		_ = f.Close()
-	}()
 
-	// Encode and write the token data as JSON
-	if err = json.NewEncoder(f).Encode(ts); err != nil {
-		return fmt.Errorf("failed to write token to file: %w", err)
-	}
+	// Print to stdout with a prefix for the parent process (Electron) to capture
+	// This replaces writing to a file, satisfying the requirement to update DB directly (via IPC)
+	fmt.Printf("__ORBIT_AUTH_UPDATE__:%s\n", string(data))
+
 	return nil
 }

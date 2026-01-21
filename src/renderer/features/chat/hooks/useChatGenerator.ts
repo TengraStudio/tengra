@@ -1,4 +1,5 @@
-import { formatMessageContent, getPresetOptions, processStreamChunk } from '@renderer/features/chat/hooks/utils'
+import { processChatStream } from '@renderer/features/chat/hooks/process-stream'
+import { formatMessageContent, getPresetOptions } from '@renderer/features/chat/hooks/utils'
 import { useState } from 'react'
 
 import { chatStream } from '@/lib/chat-stream'
@@ -61,7 +62,13 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
         autoReadEnabled, formatChatError
     } = props
 
-    const [streamingStates, setStreamingStates] = useState<Record<string, { content?: string, reasoning?: string, speed?: number | null, sources?: string[] | undefined }>>({})
+    const [streamingStates, setStreamingStates] = useState<Record<string, {
+        content?: string,
+        reasoning?: string,
+        speed?: number | null,
+        sources?: string[] | undefined,
+        variants?: Record<number, { content: string, reasoning: string }>
+    }>>({})
 
     const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string) => {
         setStreamingStates(prev => ({ ...prev, [chatId]: { content: '', reasoning: '', speed: null } }))
@@ -81,7 +88,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             })
 
             const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath }
-            console.log(`[useChatGenerator] Starting stream for chatId: ${chatId}`);
+            console.warn(`[useChatGenerator] Starting stream for chatId: ${chatId}`);
             const stream = chatStream(allMessages, activeModel, tools, selectedProvider, fullOptions, chatId, projectId)
             const streamStartTime = performance.now()
 
@@ -92,92 +99,14 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             // Should be awaited or voided
             void window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() })
 
-            interface StreamResult { finalContent: string; finalReasoning: string; finalSources: string[] }
 
-            const processStream = async (
-                stream: AsyncGenerator<unknown, void, unknown>,
-                chatId: string,
-                assistantId: string,
-                setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, { content?: string, reasoning?: string, speed?: number | null, sources?: string[] | undefined }>>>,
-                streamStartTime: number
-            ): Promise<StreamResult> => {
-                let finalContent = ''
-                let finalReasoning = ''
-                let finalSources: string[] = []
-                let lastSaveTime = Date.now()
-                let lastDbSaveTime = Date.now()
 
-                console.log(`[useChatGenerator:processStream] Beginning iteration for chatId: ${chatId}`);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                for await (const chunk of stream as AsyncGenerator<any, void, unknown>) {
-                    console.debug(`[useChatGenerator:processStream] Processing chunk for ${chatId}:`, chunk);
-                    const current = { content: finalContent, reasoning: finalReasoning, sources: finalSources }
-                    const result = processStreamChunk(chunk, current, streamStartTime)
+            await processChatStream({
+                stream, chatId, assistantId, setStreamingStates, setChats, streamStartTime,
+                activeModel, selectedProvider, t, autoReadEnabled, handleSpeak
+            })
 
-                    if (result.updated) {
-                        if (result.newSources) {
-                            finalSources = result.newSources
-                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], sources: finalSources } }))
-                        }
-                        if (result.newReasoning) {
-                            finalReasoning = result.newReasoning
-                            setStreamingStates(prev => ({ ...prev, [chatId]: { ...prev[chatId], reasoning: finalReasoning } }))
-                        }
-                        if (result.newContent !== undefined) {
-                            finalContent = result.newContent
-                            setStreamingStates(prev => {
-                                const state = prev[chatId]
-                                if (!state) { return prev }
-                                return {
-                                    ...prev,
-                                    [chatId]: {
-                                        ...state,
-                                        content: finalContent,
-                                        speed: result.speed ?? null
-                                    }
-                                }
-                            })
 
-                            // Update the main chats state so all UI components see the live progress
-                            const now = Date.now()
-                            if (now - lastSaveTime >= 100) { // Throttle updates to ~10fps for performance
-                                lastSaveTime = now
-                                setChats(prev => prev.map(c => c.id === chatId ? {
-                                    ...c,
-                                    messages: c.messages.map(m => m.id === assistantId ? { ...m, content: finalContent, reasoning: finalReasoning || undefined } : m)
-                                } : c))
-                            }
-
-                            if (now - lastDbSaveTime >= 2000 && finalContent) {
-                                lastDbSaveTime = now
-                                void window.electron.db.updateMessage(assistantId, { content: finalContent, reasoning: finalReasoning || undefined })
-                            }
-                        }
-                    }
-                }
-                return { finalContent, finalReasoning, finalSources }
-            }
-
-            const { finalContent, finalReasoning, finalSources } = await processStream(stream, chatId, assistantId, setStreamingStates, streamStartTime)
-
-            const responseTime = Math.round(performance.now() - streamStartTime)
-            const completedMsg: Message = {
-                id: assistantId, role: 'assistant', content: finalContent, reasoning: finalReasoning || undefined,
-                timestamp: new Date(), provider: selectedProvider, model: activeModel, responseTime, sources: finalSources
-            }
-
-            await window.electron.db.updateMessage(assistantId, { content: finalContent, reasoning: finalReasoning || undefined, responseTime, sources: finalSources })
-
-            setChats(prev => prev.map(c => {
-                if (c.id !== chatId) { return c }
-                let title = c.title
-                if (c.messages.length <= 1 && finalContent) {
-                    title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
-                }
-                return { ...c, title, messages: c.messages.map(m => m.id === assistantId ? completedMsg : m), isGenerating: false }
-            }))
-
-            if (autoReadEnabled && finalContent) { handleSpeak(assistantId, finalContent) }
 
         } catch (e) {
             console.error('[generateResponse] Error:', e)

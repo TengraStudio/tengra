@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { CommandService } from '@main/services/system/command.service'
 import { ToolExecutor } from '@main/tools/tool-executor'
 import { JsonObject } from '@shared/types/common'
@@ -13,10 +14,10 @@ export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: Com
     })
 
     ipcMain.handle('tools:getDefinitions', () => {
-        console.log('[Main] tools:getDefinitions called')
+        appLogger.info('tools', '[Main] tools:getDefinitions called')
         try {
             const defs = toolExecutor.getToolDefinitions()
-            console.log('[Main] tool definitions returned:', defs ? defs.length : 'null')
+            appLogger.info('tools', '[Main] tool definitions returned:', defs.length)
             return defs
         } catch (e) {
             console.error('[Main] tools:getDefinitions error:', e)

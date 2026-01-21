@@ -3,6 +3,7 @@ import * as http from 'http'
 import { promisify } from 'util'
 
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { BrowserWindow, dialog } from 'electron'
 
 import { appLogger } from '../logging/logger'
@@ -19,9 +20,9 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
             : undefined
         const reqOptions: http.RequestOptions = {
             hostname: urlObj.hostname,
-            port: urlObj.port || 80,
+            port: urlObj.port ?? 80,
             path: urlObj.pathname + urlObj.search,
-            method: options?.method || 'GET',
+            method: options?.method ?? 'GET',
             headers,
             family: 4 // Force IPv4
         }
@@ -34,7 +35,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
                 resolve({
                     ok: statusCode >= 200 && statusCode < 300,
                     status: statusCode,
-                    json: () => Promise.resolve(JSON.parse(data)),
+                    json: () => Promise.resolve(safeJsonParse(data, {})),
                     text: () => Promise.resolve(data)
                 } as unknown as Response)
             })

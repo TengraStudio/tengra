@@ -5,6 +5,7 @@ import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { DatabaseService } from '@main/services/data/database.service'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 interface RecurringJob {
@@ -43,7 +44,10 @@ export class JobSchedulerService extends BaseService {
      */
     schedule(key: string, task: () => Promise<void>, delay: number = 2000) {
         if (this.tasks.has(key)) {
-            clearTimeout(this.tasks.get(key)!)
+            const existingTimeout = this.tasks.get(key)
+            if (existingTimeout !== undefined) {
+                clearTimeout(existingTimeout)
+            }
         }
 
         const timeout = setTimeout(async () => {
@@ -63,7 +67,10 @@ export class JobSchedulerService extends BaseService {
      */
     cancel(key: string) {
         if (this.tasks.has(key)) {
-            clearTimeout(this.tasks.get(key)!)
+            const timeout = this.tasks.get(key)
+            if (timeout !== undefined) {
+                clearTimeout(timeout)
+            }
             this.tasks.delete(key)
         }
     }
@@ -89,7 +96,7 @@ export class JobSchedulerService extends BaseService {
         const states = await this.databaseService.getAllJobStates()
 
         for (const [id, job] of this.recurringJobs) {
-            const lastRun = states[id]?.lastRun || 0
+            const lastRun = states[id]?.lastRun ?? 0
             job.lastRun = lastRun
             this.scheduleNextRun(job)
         }
@@ -105,7 +112,7 @@ export class JobSchedulerService extends BaseService {
         try {
             appLogger.info('JobScheduler', 'Migrating legacy job state...')
             const content = await fs.promises.readFile(this.legacyStatePath, 'utf8')
-            const state = JSON.parse(content) as Record<string, JobState>
+            const state = safeJsonParse<Record<string, JobState>>(content, {})
 
             for (const [id, jobState] of Object.entries(state)) {
                 if (jobState && typeof jobState.lastRun === 'number') {
@@ -124,7 +131,7 @@ export class JobSchedulerService extends BaseService {
     private scheduleNextRun(job: RecurringJob) {
         const now = Date.now()
         const interval = job.getInterval()
-        const nextRun = (job.lastRun || 0) + interval
+        const nextRun = (job.lastRun ?? 0) + interval
 
         let delay = nextRun - now
 
@@ -138,7 +145,10 @@ export class JobSchedulerService extends BaseService {
 
         // Clear existing if any
         if (this.recurringTimers.has(job.id)) {
-            clearTimeout(this.recurringTimers.get(job.id)!)
+            const existingTimer = this.recurringTimers.get(job.id)
+            if (existingTimer !== undefined) {
+                clearTimeout(existingTimer)
+            }
         }
 
         const timer = setTimeout(async () => {

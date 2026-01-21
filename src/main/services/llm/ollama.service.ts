@@ -1,10 +1,12 @@
 // Ollama service using Node http module with forced IPv4
 import * as http from 'http'
 
+import { appLogger } from '@main/logging/logger'
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolCall } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import axios from 'axios'
 
 
@@ -59,7 +61,7 @@ export class OllamaService {
     constructor(settingsService: SettingsService) {
         this.settingsService = settingsService
         const settings = this.settingsService.getSettings()
-        if (settings.ollama?.url) {
+        if (settings.ollama && settings.ollama.url) {
             try {
                 const url = new URL(settings.ollama.url)
                 this.host = url.hostname
@@ -74,7 +76,7 @@ export class OllamaService {
         if (this.currentRequest) {
             this.currentRequest.destroy()
             this.currentRequest = null
-            console.log('Ollama request aborted by user')
+            appLogger.info('ollama.service', 'Ollama request aborted by user')
         }
     }
 
@@ -97,7 +99,7 @@ export class OllamaService {
                 hostname: this.host,
                 port: this.port,
                 path: options.path,
-                method: options.method || 'GET',
+                method: options.method ?? 'GET',
                 headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
                 family: 4 // Force IPv4
             }, (res) => {
@@ -105,15 +107,15 @@ export class OllamaService {
                 res.on('data', chunk => data += chunk)
                 res.on('end', () => {
                     resolve({
-                        ok: res.statusCode! >= 200 && res.statusCode! < 300,
-                        status: res.statusCode!,
+                        ok: (res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300,
+                        status: res.statusCode ?? 500,
                         data
                     })
                 })
             })
 
             req.on('error', reject)
-            req.setTimeout(options.timeout || 10000, () => {
+            req.setTimeout(options.timeout ?? 10000, () => {
                 req.destroy()
                 reject(new Error('Request timeout'))
             })
@@ -163,8 +165,8 @@ export class OllamaService {
     async getModels(): Promise<OllamaModel[]> {
         try {
             const response = await this.httpRequest({ path: '/api/tags', timeout: 5000 })
-            const data = JSON.parse(response.data)
-            return data.models || []
+            const data = safeJsonParse<{ models?: OllamaModel[] }>(response.data, { models: [] })
+            return data.models ?? []
         } catch (error) {
             console.error('Failed to get models:', getErrorMessage(error as Error))
             return []
@@ -174,8 +176,8 @@ export class OllamaService {
     async ps(): Promise<JsonObject[]> {
         try {
             const response = await this.httpRequest({ path: '/api/ps', timeout: 5000 })
-            const data = JSON.parse(response.data)
-            return (data.models || []) as JsonObject[]
+            const data = safeJsonParse<{ models?: JsonObject[] }>(response.data, { models: [] })
+            return (data.models ?? []) as JsonObject[]
         } catch (error) {
             console.error('Failed to get running models:', getErrorMessage(error as Error))
             return []
@@ -192,12 +194,18 @@ export class OllamaService {
                     messages,
                     stream: false,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama?.numCtx || 16384,
+                        num_ctx: this.settingsService.getSettings().ollama?.numCtx ?? 16384,
                     },
                     keep_alive: '24h'  // Keep model loaded
                 })
             })
-            return JSON.parse(response.data)
+            const data = safeJsonParse<OllamaResponse>(response.data, {
+                model: '',
+                created_at: '',
+                message: { role: 'assistant', content: '' },
+                done: true
+            })
+            return data
         } catch (error) {
             console.error('Chat error:', getErrorMessage(error as Error))
             throw error
@@ -230,7 +238,7 @@ export class OllamaService {
                     stream: true,
                     tools: tools && tools.length > 0 ? tools : undefined,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama?.numCtx || 16384,
+                        num_ctx: this.settingsService.getSettings().ollama?.numCtx ?? 16384,
                     },
                     keep_alive: '24h'
                 }),
@@ -238,7 +246,7 @@ export class OllamaService {
                     const lines = chunk.toString().split('\n').filter(Boolean)
                     for (const line of lines) {
                         try {
-                            const data = JSON.parse(line) as OllamaResponse
+                            const data = safeJsonParse<OllamaResponse>(line, {} as OllamaResponse)
                             if (data.message?.content) {
                                 fullResponse += data.message.content
                                 onChunk?.(data.message.content)
@@ -282,8 +290,8 @@ export class OllamaService {
                     input
                 })
             })
-            const data = JSON.parse(response.data)
-            return data.embeddings?.[0] || []
+            const data = safeJsonParse<{ embeddings?: number[][] }>(response.data, { embeddings: [] })
+            return data.embeddings?.[0] ?? []
         } catch (error) {
             console.error('Error generating embeddings with Ollama:', getErrorMessage(error as Error))
             throw error
@@ -303,11 +311,11 @@ export class OllamaService {
                     const lines = chunk.split('\n').filter(Boolean)
                     for (const line of lines) {
                         try {
-                            const data = JSON.parse(line)
+                            const data = safeJsonParse<Record<string, unknown>>(line, {})
                             onProgress?.({
-                                status: data.status || 'downloading',
-                                completed: data.completed,
-                                total: data.total
+                                status: (data.status as string) ?? 'downloading',
+                                completed: data.completed as number | undefined,
+                                total: data.total as number | undefined
                             })
                         } catch {
                             // Ignore
@@ -334,8 +342,8 @@ export class OllamaService {
             if (response.ok) {
                 return { success: true }
             } else {
-                const data = JSON.parse(response.data)
-                return { success: false, error: data.error || 'Failed to delete model' }
+                const data = safeJsonParse<{ error?: string }>(response.data, {})
+                return { success: false, error: data.error ?? 'Failed to delete model' }
             }
         } catch (error) {
             const message = getErrorMessage(error as Error)
@@ -386,7 +394,7 @@ export class OllamaService {
                     model.pulls = pullsMap[model.name];
                 }
             }
-            console.log(`[OllamaService] Library enriched with Pulls. Found counts for ${Object.keys(pullsMap).length} models.`);
+            appLogger.info('ollama.service', `[OllamaService] Library enriched with Pulls. Found counts for ${Object.keys(pullsMap).length} models.`);
             return results;
         } catch (e) {
             const message = getErrorMessage(e as Error)

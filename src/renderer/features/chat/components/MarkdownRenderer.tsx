@@ -37,7 +37,7 @@ const MermaidDiagram = ({ code }: { code: string }) => {
                 setError(message)
             }
         }
-        render()
+        void render()
     }, [code, id])
 
     if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
@@ -71,7 +71,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                 rehypePlugins={[rehypeKatex]}
                 components={{
                     code({ className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '')
+                        const match = /language-(\w+)/.exec(className ?? '')
                         const isInline = !match
                         const codeString = String(children).replace(/\n$/, '')
                         if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} /> }

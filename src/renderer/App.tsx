@@ -18,7 +18,7 @@ import { useAppState } from '@renderer/hooks/useAppState'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useTranslation } from '@renderer/i18n'
 import { ViewManager } from '@renderer/views/ViewManager'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
@@ -34,6 +34,13 @@ import '@renderer/App.css'
 const SSHManager = lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })))
 const AudioChatOverlay = lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })))
 
+const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
+    { id: 'code', icon: 'Code', iconColor: 'text-blue-400', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
+    { id: 'analyze', icon: 'FileSearch', iconColor: 'text-emerald-400', title: t('templates.analyze.title'), description: t('templates.analyze.description'), prompt: t('templates.analyze.prompt') },
+    { id: 'creative', icon: 'Sparkles', iconColor: 'text-purple-400', title: t('templates.creative.title'), description: t('templates.creative.description'), prompt: t('templates.creative.prompt') },
+    { id: 'debug', icon: 'Bug', iconColor: 'text-rose-400', title: t('templates.debug.title'), description: t('templates.debug.description'), prompt: t('templates.debug.prompt') }
+]
+
 
 export default function App() {
     // Context Consumption
@@ -44,13 +51,14 @@ export default function App() {
 
     const { setInput, handleSend, processFile, createNewChat, currentChatId, setCurrentChatId, chats, setChats } = useChat()
 
-    const { isListening, startListening, stopListening } = useVoiceInput((text) => setInput(prev => prev + text))
+    const { t } = useTranslation(language || 'en')
+
+    const handleVoiceInput = useCallback((text: string) => setInput(prev => prev + text), [setInput])
+    const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput)
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking } = useTextToSpeech()
 
     const { models, loadModels, selectedModel, setSelectedModel } = useModel()
     const { projects, setSelectedProject, selectedProject } = useProject()
-
-    const { t } = useTranslation(language || 'en')
 
     // App state management
     const appState = useAppState()
@@ -60,8 +68,13 @@ export default function App() {
         window.orbitSpeak = handleSpeak
     }, [handleSpeak])
 
+    const { messagesEndRef } = appState;
+    const handleScrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, [messagesEndRef])
+
     // Keyboard shortcuts
-    useKeyboardShortcuts({
+    const keyboardShortcutsConfig = useMemo(() => ({
         onCommandPalette: () => appState.setShowCommandPalette(!appState.showCommandPalette),
         onNewChat: createNewChat,
         onOpenSettings: () => {
@@ -78,7 +91,7 @@ export default function App() {
                 }
             })()
         },
-        onSwitchView: (view) => appState.setCurrentView(view),
+        onSwitchView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory') => appState.setCurrentView(view),
         onToggleSidebar: () => appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed),
         onCloseModals: () => {
             appState.setShowCommandPalette(false)
@@ -89,14 +102,13 @@ export default function App() {
         showShortcuts: appState.showShortcuts,
         showSSHManager: appState.showSSHManager,
         currentChatId
-    })
+    }), [
+        appState, createNewChat, currentChatId, setChats, setSettingsCategory
+    ])
 
-    const CHAT_TEMPLATES: ChatTemplate[] = [
-        { id: 'code', icon: 'Code', iconColor: 'text-blue-400', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
-        { id: 'analyze', icon: 'FileSearch', iconColor: 'text-emerald-400', title: t('templates.analyze.title'), description: t('templates.analyze.description'), prompt: t('templates.analyze.prompt') },
-        { id: 'creative', icon: 'Sparkles', iconColor: 'text-purple-400', title: t('templates.creative.title'), description: t('templates.creative.description'), prompt: t('templates.creative.prompt') },
-        { id: 'debug', icon: 'Bug', iconColor: 'text-rose-400', title: t('templates.debug.title'), description: t('templates.debug.description'), prompt: t('templates.debug.prompt') }
-    ]
+    useKeyboardShortcuts(keyboardShortcutsConfig)
+
+    const chatTemplates = useMemo(() => getChatTemplates(t), [t])
 
     return (
         <ErrorBoundary fallback={<ErrorFallback error={new Error('App Error')} resetErrorBoundary={() => window.location.reload()} />}>
@@ -157,11 +169,11 @@ export default function App() {
                 <QuickActionBar
                     onExplain={(text) => {
                         setInput(`Açıkla: ${text}`)
-                        handleSend()
+                        void handleSend()
                     }}
                     onTranslate={(text) => {
                         setInput(`Çevir: ${text}`)
-                        handleSend()
+                        void handleSend()
                     }}
                     language={language || 'en'}
                 />
@@ -271,11 +283,11 @@ export default function App() {
                                 >
                                     <ViewManager
                                         currentView={appState.currentView}
-                                        templates={CHAT_TEMPLATES}
+                                        templates={chatTemplates}
                                         messagesEndRef={appState.messagesEndRef}
                                         fileInputRef={appState.fileInputRef}
                                         textareaRef={appState.textareaRef}
-                                        onScrollToBottom={() => appState.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                                        onScrollToBottom={handleScrollToBottom}
                                         showScrollButton={appState.showScrollButton}
                                         setShowScrollButton={appState.setShowScrollButton}
                                         showFileMenu={appState.showFileMenu}

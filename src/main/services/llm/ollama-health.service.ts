@@ -24,12 +24,12 @@ export class OllamaHealthService extends BaseService {
         this.logInfo('Service initialized')
     }
 
-    on(event: string | symbol, listener: (...args: any[]) => void): this {
+    on(event: string | symbol, listener: (...args: unknown[]) => void): this {
         this.events.on(event, listener)
         return this
     }
 
-    emit(event: string | symbol, ...args: any[]): boolean {
+    emit(event: string | symbol, ...args: unknown[]): boolean {
         return this.events.emit(event, ...args)
     }
 
@@ -60,11 +60,11 @@ export class OllamaHealthService extends BaseService {
         this.logInfo('Starting health checks...')
 
         // Initial check
-        this.checkHealth()
+        void this.checkHealth()
 
         // Periodic checks
         this.intervalId = setInterval(() => {
-            this.checkHealth()
+            void this.checkHealth()
         }, this.checkInterval)
     }
 
@@ -91,7 +91,7 @@ export class OllamaHealthService extends BaseService {
 
             if (response.ok) {
                 const data = await response.json() as { models?: unknown[] }
-                const modelsCount = data.models?.length || 0
+                const modelsCount = data.models?.length ?? 0
 
                 this.status = {
                     online: true,

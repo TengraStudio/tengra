@@ -20,6 +20,22 @@ interface MultiModelCollaborationProps {
 
 type Strategy = 'consensus' | 'voting' | 'best-of-n' | 'chain-of-thought'
 
+interface CollaborationResult {
+    response?: string
+    responses: Array<{
+        provider: string
+        model: string
+        content: string
+        latency: number
+    }>
+    consensus?: string
+    bestResponse?: {
+        provider: string
+        model: string
+        content: string
+    }
+}
+
 export function MultiModelCollaboration({
     messages,
     onResult,
@@ -28,7 +44,7 @@ export function MultiModelCollaboration({
     const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([])
     const [strategy, setStrategy] = useState<Strategy>('consensus')
     const [isRunning, setIsRunning] = useState(false)
-    const [results, setResults] = useState<any>(null)
+    const [results, setResults] = useState<CollaborationResult | null>(null)
     const [error, setError] = useState<string | null>(null)
 
     const handleAddModel = () => {
@@ -165,7 +181,7 @@ export function MultiModelCollaboration({
                         {/* Individual Responses */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Individual Responses</label>
-                            {results.responses.map((response: any, index: number) => (
+                            {results.responses.map((response, index: number) => (
                                 <Card key={index} className="p-3">
                                     <div className="flex items-start justify-between mb-2">
                                         <span className="text-sm font-medium">

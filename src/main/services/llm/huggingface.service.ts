@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { getErrorMessage } from '@shared/utils/error.util'
 import axios from 'axios'
 
@@ -56,10 +57,10 @@ export class HuggingFaceService {
                 id: m.modelId,
                 name: m.modelId.split('/')[1] || m.modelId,
                 author: m.author,
-                description: m.cardData?.short_description || `A high-quality model by ${m.author}`,
-                downloads: m.downloads || 0,
-                likes: m.likes || 0,
-                tags: m.tags || [],
+                description: m.cardData?.short_description ?? `A high-quality model by ${m.author}`,
+                downloads: m.downloads ?? 0,
+                likes: m.likes ?? 0,
+                tags: m.tags ?? [],
                 lastModified: m.lastModified
             }))
         } catch (error) {
@@ -110,7 +111,7 @@ export class HuggingFaceService {
                 start = stats.size
                 if (start === expectedSize) {
                     // Already filtered, maybe verify hash?
-                    console.log('File already exists with correct size, verifying hash...')
+                    appLogger.info('huggingface.service', 'File already exists with correct size, verifying hash...')
                     const valid = await this.verifyHash(outputPath, expectedSha256)
                     if (valid) {return { success: true }}
                     // If invalid, restart or resume? For safety, if full size but invalid, restart.

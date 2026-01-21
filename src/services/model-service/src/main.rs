@@ -48,7 +48,13 @@ struct ModelInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     thinking_levels: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pricing: Option<Pricing>,
+    pub pricing: Option<Pricing>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub percentage: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reset: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quota_info: Option<serde_json::Value>,
 }
 
 #[derive(Serialize)]
@@ -63,18 +69,33 @@ struct AppState {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
+    if let Err(e) = run().await {
+        eprintln!("Model service fatal error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> Result<(), Box<dyn Error>> {
     let state = Arc::new(AppState {
         client: Client::new(),
     });
 
     let app = Router::new()
         .route("/fetch", post(fetch_models))
+        .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);
 
     // Bind to ephemeral port
     let addr = SocketAddr::from(([127, 0, 0, 1], 0));
-    let listener = TcpListener::bind(addr).await?;
+    let listener = match TcpListener::bind(addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("Failed to bind to port: {}", e);
+            return Err(e.into());
+        }
+    };
+
     let local_addr = listener.local_addr()?;
     let port = local_addr.port();
 
@@ -83,12 +104,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Port Discovery
     if let Ok(appdata) = std::env::var("APPDATA") {
         let services_dir = std::path::Path::new(&appdata).join("Orbit").join("services");
-        fs::create_dir_all(&services_dir)?;
+        if let Err(e) = fs::create_dir_all(&services_dir) {
+            eprintln!("Failed to create services directory: {}", e);
+            return Err(e.into());
+        }
         let port_file = services_dir.join("model-service.port");
-        fs::write(port_file, port.to_string())?;
+        if let Err(e) = fs::write(&port_file, port.to_string()) {
+            eprintln!("Failed to write port file {}: {}", port_file.display(), e);
+            return Err(e.into());
+        }
+    } else {
+        eprintln!("APPDATA environment variable not found");
     }
 
-    axum::serve(listener, app).await?;
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+        return Err(e.into());
+    }
 
     Ok(())
 }
@@ -132,7 +164,10 @@ async fn fetch_ollama(client: &Client) -> Response {
                          description: Some(format!("Size: {:.1}GB", m.size as f64 / 1024.0 / 1024.0 / 1024.0)),
                          downloads: None,
                          pricing: None,
-                         thinking_levels: None
+                         thinking_levels: None,
+                         percentage: None,
+                         reset: None,
+                         quota_info: None,
                      }).collect();
                      Response { success: true, models, error: None }
                  },
@@ -164,7 +199,10 @@ async fn fetch_huggingface(client: &Client) -> Response {
                          description: Some(format!("Likes: {}", m.likes)),
                          downloads: Some(m.downloads as u64),
                          pricing: None,
-                         thinking_levels: None
+                         thinking_levels: None,
+                         percentage: None,
+                         reset: None,
+                         quota_info: None,
                      }).collect();
                      Response { success: true, models, error: None }
                  },
@@ -209,7 +247,10 @@ async fn fetch_copilot(client: &Client, token: Option<String>) -> Response {
                          description: Some("GitHub Copilot Model".into()),
                          downloads: None,
                          pricing: None,
-                         thinking_levels: None
+                         thinking_levels: None,
+                         percentage: None,
+                         reset: None,
+                         quota_info: None,
                      }).collect();
                      Response { success: true, models, error: None }
                  },
@@ -247,8 +288,11 @@ async fn fetch_antigravity(client: &Client, token: Option<String>, _port: Option
 
             #[derive(Deserialize)]
             struct AntigravityModelData {
-                displayName: Option<String>,
+                #[serde(rename = "displayName")]
+                display_name: Option<String>,
                 description: Option<String>,
+                #[serde(rename = "quotaInfo")]
+                quota_info: Option<serde_json::Value>,
             }
 
             #[derive(Deserialize)]
@@ -258,20 +302,53 @@ async fn fetch_antigravity(client: &Client, token: Option<String>, _port: Option
 
             match resp.json::<AntigravityResponse>().await {
                 Ok(data) => {
-                    let mut models: Vec<ModelInfo> = data.models.into_iter().map(|(id, info)| {
-                        // Apply aliasing logic similar to Go proxy if needed, 
-                        // or just map known IDs we care about.
+                    let mut models: Vec<ModelInfo> = data.models.into_iter()
+                        .filter(|(id, _)| {
+                            // Global internal model filtering
+                            !["chat_23310", "chat_20706", "rev19-uic3-1p", "tab_flash_lite_preview"].contains(&id.as_str())
+                        })
+                        .map(|(mut id, info)| {
+                        // Normalize IDs to match proxy expectations
+                        if id == "claude-opus-4-5-thinking" || id == "claude-opus-4.5-thinking" { id = "claude-opus-4-5-thinking".into(); }
+                        else if id == "claude-sonnet-4-5-thinking" || id == "claude-4.5-sonnet-thinking" { id = "claude-sonnet-4-5-thinking".into(); }
+                        else if id == "claude-opus-4.5" || id == "claude-opus-4-5-20251101" { id = "claude-opus-4-5".into(); }
+                        else if id == "claude-sonnet-4.5" || id == "claude-sonnet-4-5-20250929" { id = "claude-sonnet-4-5".into(); }
                         
                         let (thinking_levels, pricing) = get_antigravity_metadata(&id);
 
+                        let mut percentage = None;
+                        let mut reset = None;
+
+                        if let Some(ref q) = info.quota_info {
+                            if let Some(rf) = q.get("remainingFraction").and_then(|v| v.as_f64()) {
+                                percentage = Some((rf * 100.0) as u8);
+                            } else if let (Some(rq), Some(tq)) = (q.get("remainingQuota").and_then(|v| v.as_f64()), q.get("totalQuota").and_then(|v| v.as_f64())) {
+                                if tq > 0.0 {
+                                    percentage = Some(((rq / tq) * 100.0) as u8);
+                                }
+                            }
+
+                            if let Some(rt) = q.get("resetTime").and_then(|v| v.as_str()) {
+                                reset = Some(rt.to_string());
+                            }
+                        }
+
+                        let mut name = info.display_name.unwrap_or_else(|| id.clone());
+                        if id.contains("claude") {
+                            name = name.replace("Gemini ", "");
+                        }
+
                         ModelInfo {
                             id: id.clone(),
-                            name: info.displayName.unwrap_or(id.clone()),
+                            name,
                             provider: "antigravity".into(),
                             description: info.description,
                             downloads: None,
                             thinking_levels,
                             pricing,
+                            percentage,
+                            reset,
+                            quota_info: info.quota_info.clone(),
                         }
                     }).collect();
                     
@@ -336,6 +413,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["minimal".into(), "low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5-codex".into(), 
@@ -345,6 +425,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5-codex-mini".into(), 
@@ -354,6 +437,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 0.25, cached_input: Some(0.025), cache_write_5m: None, cache_write_1h: None, output: 2.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.1".into(), 
@@ -363,6 +449,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["none".into(), "low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.1-codex".into(), 
@@ -372,6 +461,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.1-codex-mini".into(), 
@@ -381,6 +473,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 0.25, cached_input: Some(0.025), cache_write_5m: None, cache_write_1h: None, output: 2.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.1-codex-max".into(), 
@@ -390,6 +485,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.2".into(), 
@@ -399,6 +497,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["none".into(), "low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5.2-codex".into(), 
@@ -408,6 +509,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         
         // Standard Models
@@ -419,6 +523,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing { input: 2.50, cached_input: Some(1.25), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-4o-mini".into(), 
@@ -428,6 +535,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing { input: 0.15, cached_input: Some(0.075), cache_write_5m: None, cache_write_1h: None, output: 0.60 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         // Pro and Reasoning Models
         ModelInfo { 
@@ -438,6 +548,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 21.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 168.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-5-pro".into(), 
@@ -447,6 +560,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 15.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 120.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-4.1".into(), 
@@ -456,6 +572,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing { input: 2.00, cached_input: Some(0.50), cache_write_5m: None, cache_write_1h: None, output: 8.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "gpt-4.1-mini".into(), 
@@ -465,6 +584,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing { input: 0.40, cached_input: Some(0.10), cache_write_5m: None, cache_write_1h: None, output: 1.60 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         
         // OpenAI o-series Reasoning
@@ -476,6 +598,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 15.00, cached_input: Some(7.50), cache_write_5m: None, cache_write_1h: None, output: 60.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "o1-pro".into(), 
@@ -485,6 +610,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 150.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 600.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "o1-mini".into(), 
@@ -494,6 +622,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.10, cached_input: Some(0.55), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "o3".into(), 
@@ -503,6 +634,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 2.00, cached_input: Some(0.50), cache_write_5m: None, cache_write_1h: None, output: 8.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "o3-pro".into(), 
@@ -512,6 +646,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 20.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 80.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "o3-mini".into(), 
@@ -521,6 +658,9 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.10, cached_input: Some(0.55), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
     ];
     Response { success: true, models, error: None }
@@ -536,6 +676,9 @@ async fn fetch_opencode(_client: &Client) -> Response {
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing { input: 0.05, cached_input: Some(0.005), cache_write_5m: None, cache_write_1h: None, output: 0.40 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo {
             id: "grok-code".into(),
@@ -545,6 +688,9 @@ async fn fetch_opencode(_client: &Client) -> Response {
             downloads: None,
             thinking_levels: None,
             pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo {
             id: "glm-4.7-free".into(),
@@ -554,6 +700,9 @@ async fn fetch_opencode(_client: &Client) -> Response {
             downloads: None,
             thinking_levels: None,
             pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo {
             id: "minimax-m2.1-free".into(),
@@ -563,6 +712,9 @@ async fn fetch_opencode(_client: &Client) -> Response {
             downloads: None,
             thinking_levels: None,
             pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo {
             id: "big-pickle".into(),
@@ -572,6 +724,9 @@ async fn fetch_opencode(_client: &Client) -> Response {
             downloads: None,
             thinking_levels: None,
             pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
     ];
     Response { success: true, models, error: None }
@@ -594,6 +749,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.10), 
                 output: 5.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-sonnet-4-5-20250929".into(), 
@@ -609,6 +767,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.30), 
                 output: 15.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-opus-4-5-20251101".into(), 
@@ -624,6 +785,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.50), 
                 output: 25.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-opus-4-1-20250805".into(), 
@@ -639,6 +803,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(1.50), 
                 output: 75.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-opus-4-20250514".into(), 
@@ -654,6 +821,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(1.50), 
                 output: 75.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-sonnet-4-20250514".into(), 
@@ -669,6 +839,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.30), 
                 output: 15.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         
         // Claude 3 Series
@@ -686,6 +859,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.30), 
                 output: 15.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-3-5-sonnet-20241022".into(), 
@@ -701,6 +877,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.30), 
                 output: 15.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-3-5-haiku-20241022".into(), 
@@ -716,6 +895,9 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(0.08), 
                 output: 4.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
         ModelInfo { 
             id: "claude-3-opus-20240229".into(), 
@@ -731,12 +913,13 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cached_input: Some(1.50), 
                 output: 75.00 
             }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
         },
     ];
     Response { success: true, models, error: None }
 }
-
-// fetch_proxy_models removed as all cloud providers are now hardcoded in Rust service
 
 
 

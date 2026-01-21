@@ -188,7 +188,7 @@ export async function initTextMateSupport(monaco: Monaco): Promise<boolean> {
             }
 
             isInitialized = true;
-            console.log('[TextMate] Additional language support initialized');
+            console.warn('[TextMate] Additional language support initialized');
             return true;
         } catch (error) {
             console.error('[TextMate] Failed to initialize:', error);

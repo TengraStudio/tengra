@@ -105,7 +105,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
                 averageLatency: 0
             })
         }
-        this.processQueues()
+        void this.processQueues()
     }
 
     /**
@@ -119,14 +119,17 @@ export class MultiLLMOrchestrator extends EventEmitter {
             this.providerQueues.set(normalizedProvider, [])
         }
 
-        const queue = this.providerQueues.get(normalizedProvider)!
+        const queue = this.providerQueues.get(normalizedProvider)
+        if (!queue) {
+            throw new Error(`Failed to get queue for provider: ${normalizedProvider}`)
+        }
         queue.push(task)
 
         // Sort by priority (higher first)
-        queue.sort((a, b) => (b.priority || 0) - (a.priority || 0))
+        queue.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
 
         this.updateProviderStats(normalizedProvider)
-        this.processQueues()
+        void this.processQueues()
     }
 
     /**
@@ -134,13 +137,13 @@ export class MultiLLMOrchestrator extends EventEmitter {
      */
     private normalizeProvider(provider: string): string {
         const lower = provider.toLowerCase()
-        if (lower.includes('openai') || lower.includes('gpt')) {return 'openai'}
-        if (lower.includes('anthropic') || lower.includes('claude')) {return 'anthropic'}
-        if (lower.includes('groq')) {return 'groq'}
-        if (lower.includes('gemini') || lower.includes('google') || lower.includes('antigravity')) {return 'gemini'}
-        if (lower.includes('ollama')) {return 'ollama'}
-        if (lower.includes('llama') && !lower.includes('ollama')) {return 'llama'}
-        if (lower.includes('copilot') || lower.includes('github')) {return 'copilot'}
+        if (lower.includes('openai') || lower.includes('gpt')) { return 'openai' }
+        if (lower.includes('anthropic') || lower.includes('claude')) { return 'anthropic' }
+        if (lower.includes('groq')) { return 'groq' }
+        if (lower.includes('gemini') || lower.includes('google') || lower.includes('antigravity')) { return 'gemini' }
+        if (lower.includes('ollama')) { return 'ollama' }
+        if (lower.includes('llama') && !lower.includes('ollama')) { return 'llama' }
+        if (lower.includes('copilot') || lower.includes('github')) { return 'copilot' }
         return lower
     }
 
@@ -176,7 +179,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
         const tasksToStart = queue.splice(0, availableSlots)
 
         for (const task of tasksToStart) {
-            this.startTask(task)
+            void this.startTask(task)
         }
     }
 
@@ -225,7 +228,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
             this.activeTasks.delete(task.taskId)
             this.taskStartTimes.delete(task.taskId)
             this.broadcastStatus(task.chatId, false, provider)
-            this.processQueues() // Process next tasks
+            void this.processQueues() // Process next tasks
         }
     }
 
@@ -247,7 +250,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
      * Update provider statistics
      */
     private updateProviderStats(provider: string) {
-        const queue = this.providerQueues.get(provider) || []
+        const queue = this.providerQueues.get(provider) ?? []
         const stats = this.providerStats.get(provider)
         if (stats) {
             stats.queuedTasks = queue.length
@@ -258,7 +261,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
      * Get statistics for a provider
      */
     getProviderStats(provider: string): ProviderStats | null {
-        return this.providerStats.get(provider.toLowerCase()) || null
+        return this.providerStats.get(provider.toLowerCase()) ?? null
     }
 
     /**

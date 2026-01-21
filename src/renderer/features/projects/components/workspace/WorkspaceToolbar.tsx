@@ -11,9 +11,7 @@ import { DashboardTabs } from './DashboardTabs';
 interface WorkspaceToolbarProps {
     project: Project;
     projectName: string;
-    description: string;
     onNameChange: (name: string) => void;
-    onDescriptionChange: (desc: string) => void;
     onBack: () => void;
     toggleSidebar: () => void;
     sidebarCollapsed: boolean;
@@ -21,21 +19,23 @@ interface WorkspaceToolbarProps {
     dashboardTab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor';
     onDashboardTabChange?: (tab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor') => void;
     handleRunProject: () => void;
+    showAgentPanel: boolean;
+    toggleAgentPanel: () => void;
 }
 
 export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     project,
     projectName,
-    description,
     onNameChange,
-    onDescriptionChange,
     onBack,
     toggleSidebar,
     sidebarCollapsed,
     language,
     dashboardTab,
     onDashboardTabChange,
-    handleRunProject
+    handleRunProject,
+    showAgentPanel,
+    toggleAgentPanel
 }) => {
     const { t } = useTranslation(language);
     const [isEditingName, setIsEditingName] = React.useState(false);
@@ -128,7 +128,13 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-                {/* Right actions if any */}
+                <button
+                    onClick={toggleAgentPanel}
+                    className={cn("p-1.5 rounded-md transition-colors", showAgentPanel ? "text-white bg-white/10" : "text-muted-foreground hover:text-white")}
+                    title={t('workspace.toggleAgentPanel')}
+                >
+                    {showAgentPanel ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+                </button>
             </div>
         </div>
     );

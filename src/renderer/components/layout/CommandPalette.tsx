@@ -107,7 +107,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             if (!groups[c.category]) {
                 groups[c.category] = []
             }
-            groups[c.category]!.push(c)
+            groups[c.category]?.push(c)
         })
         return groups
     }, [filtered])

@@ -1,4 +1,4 @@
-import React, { useRef,useState } from 'react'
+import React, { useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -31,13 +31,13 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     as: Component = 'div'
 }) => {
     const [rotation, setRotation] = useState({ x: 0, y: 0 })
-    const cardRef = useRef<HTMLDivElement>(null)
+    const cardRef = useRef<HTMLElement>(null)
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (hoverEffect !== '3d') {return}
+        if (hoverEffect !== '3d') { return }
 
         const card = cardRef.current
-        if (!card) {return}
+        if (!card) { return }
 
         const rect = card.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
@@ -68,7 +68,9 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
 
     return (
         <Component
-            ref={cardRef as any}
+            ref={(node: HTMLElement | null) => {
+                (cardRef as React.MutableRefObject<HTMLElement | null>).current = node
+            }}
             className={cn(
                 'p-4 rounded-xl border border-border bg-card',
                 'transition-all duration-200',

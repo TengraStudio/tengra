@@ -1,7 +1,9 @@
 import * as fs from 'fs';
 
+import { DataService } from '@main/services/data/data.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { TokenService } from '@main/services/security/token.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import axios from 'axios';
@@ -49,6 +51,8 @@ describe('QuotaService', () => {
     let mockSettingsService: SettingsService;
     let mockAuthService: AuthService;
     let mockProcessManager: ProcessManagerService;
+    let mockTokenService: TokenService;
+    let mockDataService: DataService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -64,61 +68,53 @@ describe('QuotaService', () => {
         } as unknown as SettingsService;
 
         mockAuthService = {
-            getToken: vi.fn(),
-            getAuthToken: vi.fn()
+            getAllAccountsFull: vi.fn().mockResolvedValue([]),
+            getActiveToken: vi.fn(),
+            getActiveAccountFull: vi.fn()
         } as unknown as AuthService;
 
         mockProcessManager = {
-            startService: vi.fn(),
+            startService: vi.fn().mockResolvedValue(undefined),
             sendRequest: vi.fn()
         } as unknown as ProcessManagerService;
 
-        quotaService = new QuotaService(mockSettingsService, mockAuthService, mockProcessManager);
+        mockTokenService = {
+            ensureFreshToken: vi.fn()
+        } as unknown as TokenService;
+
+        mockDataService = {
+            // Mock methods if needed
+        } as unknown as DataService;
+
+        quotaService = new QuotaService(mockSettingsService, mockAuthService, mockProcessManager, mockTokenService, mockDataService);
     });
 
     describe('getQuota', () => {
         it('should return null if no token is available', async () => {
-            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue(null);
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([]);
             const result = await quotaService.getQuota(8080, 'key');
             expect(result).toBeNull();
         });
 
-        it('should return quota data on successful API call', async () => {
-            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({
-                accessToken: 'mock-token',
+        // Add 401 test
+        it('should trigger token refresh on 401', async () => {
+            const mockAccount = {
+                accessToken: 'bad-token',
                 id: 'antigravity',
-                accountId: 'mock-account',
                 provider: 'antigravity',
                 updatedAt: Date.now()
+            };
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount as any]);
+            vi.mocked(axios.isAxiosError).mockReturnValue(true);
+            vi.mocked(axios.post).mockRejectedValue({
+                isAxiosError: true,
+                response: { status: 401 }
             });
 
-            vi.mocked(mockProcessManager.sendRequest).mockResolvedValue({
-                success: true,
-                quota: {
-                    total: 100,
-                    remaining: 50,
-                    reset_at: 'tomorrow'
-                }
-            });
+            const result = await quotaService.getAntigravityAvailableModels();
 
-            const result = await quotaService.getQuota(8080, 'key');
-
-            expect(result).not.toBeNull();
-            expect(result?.status).toBe('50%');
-        });
-
-        it('should handle API errors gracefully', async () => {
-            vi.mocked(mockAuthService.getAuthToken).mockResolvedValue({
-                accessToken: 'mock-token',
-                id: 'antigravity',
-                accountId: 'mock-account',
-                provider: 'antigravity',
-                updatedAt: Date.now()
-            });
-            vi.mocked(mockProcessManager.sendRequest).mockResolvedValue({ success: false, error: 'Failed' });
-
-            const result = await quotaService.getQuota(8080, 'key');
-            expect(result).toBeNull();
+            expect(mockTokenService.ensureFreshToken).toHaveBeenCalledWith('antigravity', true);
+            expect(result).toEqual([]);
         });
     });
 
@@ -127,7 +123,7 @@ describe('QuotaService', () => {
             vi.mocked(fs.existsSync).mockReturnValue(false);
 
             const result = await quotaService.getCopilotQuota();
-            expect(result.success).toBe(false);
+            expect(result.accounts).toEqual([]);
         });
     });
 });

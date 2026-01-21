@@ -35,12 +35,12 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
 
     const handleApply = async () => {
         if (!domain) {
-            setStatus({ type: 'error', message: 'Domain name is required' })
+            setStatus({ type: 'error', message: t('ssh.nginx.status.domainRequired') })
             return
         }
 
         setIsGenerating(true)
-        setStatus({ type: 'info', message: 'Connecting to server...' })
+        setStatus({ type: 'info', message: t('ssh.nginx.status.connecting') })
 
         try {
             const fileName = domain.replace(/[^a-z0-9]/gi, '_').toLowerCase()
@@ -51,18 +51,18 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             await window.electron.ssh.writeFile(connectionId, tempPath, config)
 
             // Step 2: Try to move with sudo (User will see errors if they don't have sudo or if it fails)
-            setStatus({ type: 'info', message: 'Moving configuration to Nginx directory...' })
+            setStatus({ type: 'info', message: t('ssh.nginx.status.moving') })
             const moveCmd = `sudo mv ${tempPath} ${remotePath} && sudo ln -sf ${remotePath} /etc/nginx/sites-enabled/ && sudo nginx -t && sudo systemctl reload nginx`
 
             const result = await window.electron.ssh.execute(connectionId, moveCmd)
 
             if (result.code === 0) {
-                setStatus({ type: 'success', message: 'Nginx reloaded successfully!' })
+                setStatus({ type: 'success', message: t('ssh.nginx.status.success') })
             } else {
-                setStatus({ type: 'error', message: `Failed to apply: ${result.stderr || 'Unknown error'}. Make sure you have sudo privileges.` })
+                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr || 'Unknown error' }) })
             }
         } catch (error) {
-            setStatus({ type: 'error', message: `Error: ${error instanceof Error ? error.message : String(error)}` })
+            setStatus({ type: 'error', message: `${t('common.error')}: ${error instanceof Error ? error.message : String(error)}` })
         } finally {
             setIsGenerating(false)
         }

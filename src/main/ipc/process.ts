@@ -87,12 +87,10 @@ export const setupProcessEvents = (processService: ProcessService) => {
     }
 
     processService.on('data', ({ id, data }) => {
-        const current = buffers.get(id) || ''
+        const current = buffers.get(id) ?? ''
         buffers.set(id, current + data)
 
-        if (!timer) {
-            timer = setTimeout(flush, 100)
-        }
+        timer ??= setTimeout(flush, 100)
     })
 
     processService.on('exit', ({ id, code }) => {

@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { TerminalService } from '@main/services/project/terminal.service'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron'
@@ -8,7 +9,7 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     ipcMain.setMaxListeners(50)
     try {
         terminalService = new TerminalService()
-        console.log('[IPC] Terminal service initialized')
+        appLogger.info('terminal', '[IPC] Terminal service initialized')
     } catch (error) {
         console.error('[IPC] Failed to initialize terminal service:', error)
         terminalService = null
@@ -51,30 +52,30 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
     // Write to session
     ipcMain.handle('terminal:write', createSafeIpcHandler('terminal:write', async (_event: IpcMainInvokeEvent, sessionId: string, data: string) => {
         if (!terminalService) {return false}
-        return terminalService.write(sessionId, data) ?? false
+        return terminalService.write(sessionId, data)
     }, false))
 
     // Resize session
     ipcMain.handle('terminal:resize', createSafeIpcHandler('terminal:resize', async (_event: IpcMainInvokeEvent, sessionId: string, cols: number, rows: number) => {
         if (!terminalService) {return false}
-        return terminalService.resize(sessionId, cols, rows) ?? false
+        return terminalService.resize(sessionId, cols, rows)
     }, false))
 
     // Kill session
     ipcMain.handle('terminal:kill', createSafeIpcHandler('terminal:kill', async (_event: IpcMainInvokeEvent, sessionId: string) => {
         if (!terminalService) {return false}
-        return terminalService.kill(sessionId) ?? false
+        return terminalService.kill(sessionId)
     }, false))
 
     // Get active sessions
     ipcMain.handle('terminal:getSessions', createSafeIpcHandler('terminal:getSessions', async () => {
         if (!terminalService) {return []}
-        return terminalService.getActiveSessions() ?? []
+        return terminalService.getActiveSessions()
     }, []))
 
     // Read session buffer
     ipcMain.handle('terminal:readBuffer', createSafeIpcHandler('terminal:readBuffer', async (_event: IpcMainInvokeEvent, sessionId: string) => {
         if (!terminalService) {return ''}
-        return terminalService.getSessionBuffer(sessionId) ?? ''
+        return terminalService.getSessionBuffer(sessionId)
     }, ''))
 }

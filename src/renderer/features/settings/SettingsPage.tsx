@@ -1,15 +1,16 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
 import { SettingsCategory } from '@renderer/features/settings/types'
-import { Search, X } from 'lucide-react'
-import { memo, useCallback,useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 
-import { GalleryView } from '@/features/chat/components/GalleryView'
+// Tab Components
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
 import type { ModelInfo } from '@/features/models/utils/model-fetcher'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
-// Tab Components
-import { AboutTab, AccountsTab, AdvancedTab, AppearanceTab, DeveloperTab, GeneralTab, MCPSettingsTab, ModelsTab, ModelUsageLimitsTab, PersonasTab, SpeechTab, StatisticsTab } from '@/features/settings/components'
+import { SettingsSearch, SettingsTabContent } from '@/features/settings/components'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
+
+import { ManualSessionModal } from './components/ManualSessionModal'
 
 import '@renderer/features/settings/SettingsPage.css'
 
@@ -29,16 +30,17 @@ export function SettingsPage({
     groupedModels
 }: SettingsPageProps) {
     const {
-        settings, updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
+        settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
-        isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
-        setSettings, linkedAccounts, deviceCodeModal, closeDeviceCodeModal
+        linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession
     } = useSettingsLogic(onRefreshModels)
 
-    const { t } = useTranslation(settings?.general?.language || 'tr')
+    const { t } = useTranslation(settings?.general.language ?? 'tr')
 
     // Search state for settings
     const [searchQuery, setSearchQuery] = useState('')
@@ -64,20 +66,24 @@ export function SettingsPage({
         )
     }, [searchQuery, allTabs])
 
+    const [showResetConfirm, setShowResetConfirm] = useState(false)
+
     const handleFactoryReset = useCallback(async () => {
-        if (confirm(t('settings.factoryResetConfirm'))) {
-            await window.electron.saveSettings({
-                ollama: { url: 'http://localhost:11434' },
-                general: { language: 'tr', theme: 'dark', resolution: '1920x1080', fontSize: 14 },
-                proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
-            })
-            window.location.reload()
-        }
-    }, [t])
+        await window.electron.saveSettings({
+            ollama: { url: 'http://localhost:11434' },
+            general: { language: 'tr', theme: 'dark', resolution: '1920x1080', fontSize: 14 },
+            proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
+        })
+        window.location.reload()
+    }, [])
+
+    const onResetClick = useCallback(() => {
+        setShowResetConfirm(true)
+    }, [])
 
     const loadSettings = useCallback(async () => {
         const data = await window.electron.getSettings()
-        setSettings(data)
+        void setSettings(data)
     }, [setSettings])
 
     const sharedProps = useMemo(() => ({
@@ -88,6 +94,7 @@ export function SettingsPage({
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, setIsLoading: (_v: boolean) => { }, onReset: handleFactoryReset
     }), [
         settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
@@ -97,6 +104,7 @@ export function SettingsPage({
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
+        manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, handleFactoryReset
     ])
 
@@ -104,38 +112,12 @@ export function SettingsPage({
         <div className="settings-container">
             <div className="settings-content flex h-full gap-6">
                 <main className="settings-main flex-1 overflow-y-auto">
-                    {/* Search Bar */}
-                    <div className="mb-6 sticky top-0 z-10 bg-background pb-4 border-b border-white/5">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder={t('settings.searchPlaceholder')}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                                aria-label={t('settings.searchPlaceholder')}
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-md transition-colors"
-                                    aria-label={t('common.clear')}
-                                >
-                                    <X className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                            )}
-                        </div>
-                        {searchQuery && (
-                            <div className="mt-3 text-xs text-muted-foreground">
-                                {filteredTabs.length > 0 ? (
-                                    <span>{t('settings.searchResults', { count: filteredTabs.length })}</span>
-                                ) : (
-                                    <span>{t('settings.noResults')}</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <SettingsSearch
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        t={t}
+                        filteredTabsCount={filteredTabs.length}
+                    />
 
                     <div className={cn("settings-section h-full pr-4", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
                         {statusMessage && (
@@ -144,23 +126,34 @@ export function SettingsPage({
                                 {statusMessage}
                             </div>
                         )}
+                        <div className="hidden">[DEBUG: BUILD VERSION 2026-01-19-01]</div>
 
-                        {activeTab === 'general' && <GeneralTab {...sharedProps} />}
-                        {activeTab === 'accounts' && <AccountsTab {...sharedProps} />}
-                        {activeTab === 'appearance' && <AppearanceTab {...sharedProps} />}
-                        {activeTab === 'models' && <ModelsTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} onRefreshModels={onRefreshModels} />}
-                        {activeTab === 'statistics' && <StatisticsTab {...sharedProps} />}
-                        {activeTab === 'personas' && <PersonasTab {...sharedProps} />}
-                        {activeTab === 'speech' && <SpeechTab {...sharedProps} />}
-                        {activeTab === 'developer' && <DeveloperTab {...sharedProps} />}
-                        {activeTab === 'advanced' && <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />}
-                        {activeTab === 'about' && <AboutTab {...sharedProps} onReset={handleFactoryReset} />}
-                        {activeTab === 'usage-limits' && <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels || undefined} />}
-                        {activeTab === 'mcp-servers' && <MCPSettingsTab />}
-                        {activeTab === 'gallery' && <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20"><GalleryView language={settings?.general?.language || 'tr'} /></div>}
+                        <SettingsTabContent
+                            activeTab={activeTab}
+                            sharedProps={sharedProps}
+                            installedModels={installedModels}
+                            proxyModels={proxyModels}
+                            onRefreshModels={onRefreshModels}
+                            handleFactoryReset={onResetClick}
+                            groupedModels={groupedModels ?? undefined}
+                        />
                     </div>
                 </main>
             </div>
+            <ConfirmationModal
+                isOpen={showResetConfirm}
+                onClose={() => setShowResetConfirm(false)}
+                onConfirm={() => { void handleFactoryReset(); }}
+                title={t('settings.factoryReset')}
+                message={t('settings.factoryResetConfirm')}
+                confirmLabel={t('common.reset')}
+                isDestructive
+            />
+            <ManualSessionModal
+                {...manualSessionModal}
+                onClose={() => { setManualSessionModal({ ...manualSessionModal, isOpen: false }); }}
+                onSave={handleSaveClaudeSession}
+            />
         </div>
     )
 }
