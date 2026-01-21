@@ -1,83 +1,61 @@
-# Development & Contributor Guide
+# Development Guide
 
-Welcome to the Orbit development guide. This document covers everything you need to know to contribute to the project, from setting up your environment to following our coding standards.
+This guide outlines the environment setup, coding standards, and workflows required for contributing to Orbit. Following these standards ensures the stability, security, and performance of the application.
 
----
-
-## 1. Getting Started
+## 1. Environment Setup
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- Git
+- **Node.js**: v18.0.0 or higher.
+- **Git**: Latest version.
+- **VS Build Tools / GCC**: Required for compiling native Rust and Go components.
 
-### Installation
-1. Clone the repository.
-2. Run `npm install` to install dependencies.
-3. Run `npm run dev` to start the application in development mode.
+### Quick Start
+1. `npm install`
+2. `npm run build` (Ensures all native binaries are compiled)
+3. `npm run dev` (Starts Electron in development mode with HMR)
 
-### Build Commands
-- `npm run build`: Build for production.
-- `npm run build:check`: Run TypeScript compilation check.
-- `npm run lint`: Run ESLint.
+## 2. Core Development Rules
 
----
+We adhere to high-integrity software standards, inspired by **NASA's Power of Ten** rules for safety-critical code.
 
-## 2. Coding Standards
+### Mandatory Standards
+- **Documentation First**: Read `docs/AI_RULES.md` and `docs/ARCHITECTURE.md` before making architectural changes.
+- **No `any` or `unknown` usage**: Always use specific interfaces or types. Use type guards for external data.
+- **Build Before Commit**: You MUST run `npm run build` successfully before pushing any changes.
+- **Zero Warnings Policy**: New code should not introduce ESLint warnings or TypeScript errors.
+- **NASA Rule 2 (Loops)**: All loops must have a fixed upper bound or a clear exit condition to prevent infinite execution.
+- **NASA Rule 4 (Function Length)**: Keep functions short (target < 60 lines) and focused on a single responsibility.
+- **NASA Rule 8 (Input Validation)**: Always validate parameters at the start of public service methods.
 
-We follow strict TypeScript and React best practices to ensure code quality and maintainability.
+## 3. Architecture & Code Style
 
-### General Rules
-- **No `any`**: Use proper types or `unknown` with type guards.
-- **Functional Components**: Use React functional components with hooks.
-- **Path Aliases**: Use `@/` for `src/` imports.
-- **Error Handling**: Use `try/catch` blocks for asynchronous operations and provide meaningful error messages.
+- **Domain-Based Services**: Services should be grouped by domain in `src/main/services/` (e.g., `llm/`, `security/`).
+- **Path Aliases**:
+    - `@main/`: Maps to `src/main/`
+    - `@renderer/`: Maps to `src/renderer/`
+    - `@shared/`: Maps to `src/shared/`
+    - `@/`: Maps to `src/renderer/` (Vite default)
+- **Error Handling**: Use the centralized `appLogger` (`this.logError()`) instead of `console.log`.
+- **Naming**:
+    - `kebab-case.service.ts` for service files.
+    - `PascalCase.tsx` for React components.
 
-### Naming Conventions
-- **Files**: `PascalCase` for components, `kebab-case` for utilities and hooks.
-- **Variables/Functions**: `camelCase`.
-- **Interfaces/Types**: `PascalCase`.
+## 4. Testing Workflow
 
-### CSS & Styling
-- Use **Tailwind CSS** for styling.
-- Follow the established design system tokens (colors, spacing).
-- Ensure responsiveness across all screen sizes.
+We use **Vitest** for majority of testing.
 
----
+- `npm run test`: Runs the full test suite.
+- `npm run test:watch`: Runs tests related to changed files.
+- `npm run type-check`: Validates TypeScript across all workspaces.
 
-## 3. Testing
+**Requirements**:
+- All new services must have a corresponding `.test.ts` file in `src/tests/`.
+- Critical business logic (Auth, Sync, Model Orchestration) requires 90%+ branch coverage.
 
-### Run Tests
-- `npm test`: Run all tests.
-- `npm run test:watch`: Run tests in watch mode.
-- `npm run test:coverage`: Run tests and generate coverage report.
+## 5. Build Pipeline
 
-### Writing Tests
-- Place test files in the `tests/` directory (mapped to `src/` structure).
-- Use **Vitest** for unit and integration tests.
-- Mock external services and IPC calls using provided utilities.
-- Target at least 80% coverage for new features.
-
----
-
-## 4. Security
-
-- **Secrets**: Never commit API keys or sensitive information. Use `.env` files for local configuration.
-- **IPC Safety**: Only expose necessary methods through the IPC bridge.
-- **Input Validation**: Sanitize all user input before processing or storing.
-
----
-
-## 5. Contributing Process
-
-1. **Fork** the repository.
-2. **Create a branch** for your feature or bugfix (`feature/my-feature` or `fix/my-bug`).
-3. **Write tests** for your changes.
-4. **Ensure linting passes**.
-5. **Submit a Pull Request** with a detailed description of your changes.
-
----
-
-## 6. Code of Conduct
-
-We are committed to providing a welcoming and inspiring community for all. Please be respectful and professional in all interactions.
+The build process is automated via `scripts/build-native.js` and `vite.config.ts`.
+1. **TSC**: Compiles TypeScript.
+2. **Lint**: Validates styles and rules.
+3. **Vite**: Builds the renderer and preload bundles.
+4. **Native Build**: Compiles Rust and Go microservices and copies them to `resources/bin`.
