@@ -8,6 +8,7 @@ import { join } from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { Chat, Message } from '@shared/types/chat';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { BrowserWindow, dialog } from 'electron';
 
 export type ExportFormat = 'markdown' | 'html' | 'json' | 'txt';
@@ -46,7 +47,7 @@ export class ExportService {
      */
     async exportChat(chat: Chat, options: ExportOptions): Promise<ExportResult> {
         const opts = { ...DEFAULT_OPTIONS, ...options };
-        const title = opts.title || chat.title || 'Untitled Chat';
+        const title = (opts.title || (chat.title ?? 'Untitled Chat'));
 
         appLogger.info('ExportService', `Exporting chat "${title}" as ${opts.format}`);
 
@@ -90,7 +91,7 @@ export class ExportService {
             const { filePath, canceled } = await dialog.showSaveDialog(this.window, {
                 title: `Export Chat as ${filterName}`,
                 defaultPath: join(
-                    process.env.USERPROFILE || process.env.HOME || '',
+                    (process.env.USERPROFILE || (process.env.HOME ?? '')),
                     'Documents',
                     `${sanitizedTitle}.${fileExtension}`
                 ),
@@ -121,14 +122,14 @@ export class ExportService {
             return { success: false, error: 'No window available' };
         }
 
-        const title = options?.title || chat.title || 'Untitled Chat';
+        const title = (options?.title || (chat.title ?? 'Untitled Chat'));
         const sanitizedTitle = this.sanitizeFilename(title);
 
         try {
             const { filePath, canceled } = await dialog.showSaveDialog(this.window, {
                 title: 'Export Chat to PDF',
                 defaultPath: join(
-                    process.env.USERPROFILE || process.env.HOME || '',
+                    (process.env.USERPROFILE || (process.env.HOME ?? '')),
                     'Documents',
                     `${sanitizedTitle}.pdf`
                 ),
@@ -227,11 +228,12 @@ export class ExportService {
         }
 
         if (msg.toolResults) {
-            const results = typeof msg.toolResults === 'string' ? JSON.parse(msg.toolResults) : msg.toolResults
+            const results = typeof msg.toolResults === 'string' ? safeJsonParse<unknown[]>(msg.toolResults, []) : msg.toolResults
             if (Array.isArray(results) && results.length > 0) {
                 lines.push('**Tool Results:**')
                 results.forEach(result => {
-                    lines.push(`- \`${result.name}\`: ${JSON.stringify(result.result).substring(0, 200)}...`)
+                    const res = result as { name: string; result: unknown }
+                    lines.push(`- \`${res.name}\`: ${JSON.stringify(res.result).substring(0, 200)}...`)
                 })
                 lines.push('')
             }
@@ -242,7 +244,7 @@ export class ExportService {
      * Generate HTML format
      */
     private generateHTML(chat: Chat, options: ExportOptions): string {
-        const title = options.title || chat.title || 'Untitled Chat';
+        const title = (options.title || chat.title) ?? 'Untitled Chat';
         const messages = chat.messages
             .filter(m => m.role !== 'system' || options.includeSystemMessages)
             .map(msg => this.generateHTMLMessage(msg, options))
@@ -350,7 +352,7 @@ export class ExportService {
     private generateHTMLMetadata(chat: Chat): string {
         return `
     <div class="metadata">
-        <strong>Model:</strong> ${this.escapeHTML(chat.model || 'Unknown')}<br>
+        <strong>Model:</strong> ${this.escapeHTML(chat.model ?? 'Unknown')}<br>
         <strong>Created:</strong> ${new Date(chat.createdAt).toLocaleString()}<br>
         <strong>Messages:</strong> ${chat.messages.length}
     </div>`;
@@ -423,7 +425,7 @@ export class ExportService {
      */
     private generatePlainText(chat: Chat, options: ExportOptions): string {
         const lines: string[] = [];
-        const title = options.title || chat.title || 'Untitled Chat';
+        const title = (options.title || (chat.title ?? 'Untitled Chat'));
 
         // Header
         lines.push(`═══════════════════════════════════════════════════════════════`);
@@ -433,7 +435,7 @@ export class ExportService {
 
         // Metadata
         if (options.includeMetadata) {
-            lines.push(`Model: ${chat.model || 'Unknown'}`);
+            lines.push(`Model: ${chat.model ?? 'Unknown'}`);
             lines.push(`Created: ${new Date(chat.createdAt).toLocaleString()}`);
             lines.push(`Messages: ${chat.messages.length}`);
             lines.push('');

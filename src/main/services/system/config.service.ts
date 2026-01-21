@@ -81,6 +81,6 @@ export class ConfigService extends BaseService {
      * Helper to get database path
      */
     getDatabasePath(): string {
-        return process.env.DATABASE_PATH || 'default-orbit.db';
+        return process.env.DATABASE_PATH ?? 'default-orbit.db';
     }
 }

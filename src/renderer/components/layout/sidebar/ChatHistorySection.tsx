@@ -131,13 +131,13 @@ const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
     chatsToGroup.forEach(chat => {
         const date = new Date(chat.createdAt).getTime()
         if (date >= today) {
-            groups[t('dateGroups.today')]!.push(chat)
+            groups[t('dateGroups.today')]?.push(chat)
         } else if (date >= yesterday) {
-            groups[t('dateGroups.yesterday')]!.push(chat)
+            groups[t('dateGroups.yesterday')]?.push(chat)
         } else if (date >= today - 7 * 86400000) {
-            groups[t('dateGroups.lastWeek')]!.push(chat)
+            groups[t('dateGroups.lastWeek')]?.push(chat)
         } else {
-            groups[t('dateGroups.older')]!.push(chat)
+            groups[t('dateGroups.older')]?.push(chat)
         }
     })
 

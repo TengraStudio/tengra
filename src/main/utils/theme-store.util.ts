@@ -3,6 +3,7 @@ import * as path from 'path'
 
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants'
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 interface ThemeStoreData {
@@ -46,7 +47,7 @@ class ThemeStore {
         try {
             await fs.promises.access(this.storePath)
             const data = await fs.promises.readFile(this.storePath, 'utf8')
-            const loaded = JSON.parse(data) as ThemeStoreData
+            const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE)
             return { ...DEFAULT_THEME_STORE, ...loaded }
         } catch {
             console.warn('[ThemeStore] Failed to load, using defaults')
@@ -250,8 +251,8 @@ class ThemeStore {
 
     async importTheme(jsonString: string): Promise<CustomTheme | null> {
         try {
-            const data = JSON.parse(jsonString)
-            if (data.version !== '1.0' || !data.theme) {
+            const data = safeJsonParse<{ version?: string; theme?: CustomTheme }>(jsonString, {})
+            if (data?.version !== '1.0' || !data.theme) {
                 throw new Error('Invalid theme format')
             }
 

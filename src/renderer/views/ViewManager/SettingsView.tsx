@@ -1,5 +1,5 @@
 import { GroupedModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import React, { lazy,Suspense } from 'react'
+import React, { lazy, Suspense, useCallback } from 'react'
 
 import { LoadingState } from '@/components/ui/LoadingState'
 import { SettingsCategory } from '@/features/settings/types'
@@ -21,12 +21,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     settingsCategory,
     groupedModels
 }) => {
+    const onRefreshModels = useCallback(() => {
+        void loadModels()
+    }, [loadModels])
+
     return (
         <Suspense fallback={<LoadingState size="md" />}>
             <SettingsPage
                 installedModels={installedModels}
                 proxyModels={proxyModels}
-                onRefreshModels={() => { void loadModels() }}
+                onRefreshModels={onRefreshModels}
                 activeTab={settingsCategory}
                 groupedModels={groupedModels}
             />

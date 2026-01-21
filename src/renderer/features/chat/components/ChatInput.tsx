@@ -60,14 +60,20 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
     }, [prompts, commandQuery])
 
     // Auto-resize textarea
+    // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto'
             textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
         }
+    }, [input])
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const newValue = e.target.value
+        setInput(newValue)
 
         // Check for slash command
-        const lastWord = input.split(' ').pop() || ''
+        const lastWord = newValue.split(' ').pop() ?? ''
         if (lastWord.startsWith('/')) {
             setShowCommandMenu(true)
             setCommandQuery(lastWord.slice(1))
@@ -75,7 +81,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
         } else {
             setShowCommandMenu(false)
         }
-    }, [input])
+    }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (showCommandMenu && filteredPrompts.length > 0) {
@@ -111,7 +117,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             if (!isLoading && (input.trim() || attachments.length > 0)) {
-                sendMessage()
+                void sendMessage()
             }
         }
     }
@@ -120,7 +126,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0]
             if (file) {
-                processFile(file)
+                void processFile(file)
             }
             // Reset value so same file can be selected again
             e.target.value = ''
@@ -149,7 +155,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
             // Process the first file (can be extended to support multiple files)
             const file = files[0]
             if (file) {
-                processFile(file)
+                void processFile(file)
             }
         }
     }
@@ -304,7 +310,7 @@ export const ChatInput: React.FC<ChatInputProps> = React.memo(({
                     data-testid="chat-textarea"
                     ref={textareaRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     placeholder={
                         t('input.placeholder.default')

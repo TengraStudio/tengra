@@ -33,7 +33,41 @@ export const en = {
         noThemes: 'No themes found',
         apply: 'Apply Theme',
         active: 'Active',
-        pro: 'PRO'
+        pro: 'PRO',
+        themes: {
+            'dark-default': {
+                name: 'Dark Default',
+                description: 'The default dark theme with purple accents'
+            },
+            'light-default': {
+                name: 'Light Default',
+                description: 'A clean light theme for daytime use'
+            },
+            'nord': {
+                name: 'Nord',
+                description: 'An arctic, north-bluish color palette'
+            },
+            'dracula': {
+                name: 'Dracula',
+                description: 'A dark theme with vibrant colors'
+            },
+            'monokai': {
+                name: 'Monokai Pro',
+                description: 'Professional dark theme with warm accents'
+            },
+            'github-dark': {
+                name: 'GitHub Dark',
+                description: 'The official GitHub dark theme'
+            },
+            'solarized-dark': {
+                name: 'Solarized Dark',
+                description: 'Precision colors for machines and people'
+            },
+            'tokyo-night': {
+                name: 'Tokyo Night',
+                description: 'A clean theme celebrating the lights of Tokyo'
+            }
+        }
     },
     modelSelector: {
         searchModels: 'Search Models...',
@@ -111,7 +145,8 @@ export const en = {
         generate: 'GENERATE LOGO',
         changeLogo: 'Change Logo',
         noDescription: 'No description provided',
-        todoPlaceholder: 'What needs to be done? (Press Enter)'
+        todoPlaceholder: 'What needs to be done? (Press Enter)',
+        willActOn: 'Will act on:'
     },
     projectWizard: {
         title: 'Project Wizard',
@@ -217,7 +252,16 @@ export const en = {
         added: 'Added',
         deleted: 'Deleted',
         modified: 'Modified',
-        renamed: 'Renamed'
+        renamed: 'Renamed',
+        tracking: 'Tracking',
+        upToDate: 'Up to date',
+        noRemote: 'No remote',
+        pull: 'Pull',
+        push: 'Push',
+        gitStatus: {
+            pulling: 'Pulling...',
+            pushing: 'Pushing...'
+        }
     },
     git: {
         commitGenerator: 'Git Commit Generator',
@@ -239,6 +283,7 @@ export const en = {
         disconnect: 'Disconnect',
         connecting: 'Connecting...',
         connected: 'Successfully connected to {host}',
+        disconnected: 'Disconnected',
         connectionError: 'Error: {error}',
         terminal: 'Terminal',
         files: 'Files',
@@ -246,6 +291,8 @@ export const en = {
         packages: 'Packages',
         logs: 'Logs',
         logsComingSoon: 'Logs coming soon...',
+        utils: 'Utils',
+        management: 'Management',
         terminalOutput: 'Terminal output will appear here...',
         runCommand: 'Run a command...',
         noServerConnected: 'No server connected.',
@@ -292,8 +339,12 @@ export const en = {
         placeholders: {
             host: '192.168.1.1',
             port: '22',
-            username: 'root'
+            username: 'root',
+            passwordOptional: 'Currently optional if key used',
+            privateKey: '-----BEGIN RSA PRIVATE KEY-----',
+            profileName: 'My Server'
         },
+        profileName: 'Profile Name',
         nginx: {
             title: 'Nginx Reverse Proxy Wizard',
             subtitle: 'Easily expose your backend application through a domain.',
@@ -449,7 +500,7 @@ export const en = {
         voiceCloning: 'Voice Cloning',
         voiceCloningDesc: 'Integrate your own voice into the Orbit ecosystem.',
         voiceCloningTitle: 'Use Your Own Voice!',
-        voiceCloningTeaser: 'Speak for 1 minute and let the AI imitate your voice! This feature is now active!',
+        voiceCloningTeaser: 'Speak for 1 minute and let the AI imitate your voice This feature is now active!',
         record: 'Start Recording',
         stopRecord: 'Stop Recording',
         recording: 'Recording...',
@@ -534,6 +585,24 @@ export const en = {
         marketplaceSubtitle: 'Discover thousands of servers to empower your platform.',
         searchPlaceholder: 'Search for servers or tools...',
         searchTools: 'Search tools...',
+        storeTitle: 'MCP Tool Store',
+        toolsInstalled: '{{count}} tools installed • Browse Model Context Protocol servers',
+        noTools: 'No tools found',
+        features: 'FEATURES',
+        rating: 'rating',
+        downloads: 'downloads',
+        configure: 'Configure',
+        uninstall: 'Uninstall',
+        install: 'Install Tool',
+        close: 'Close',
+        categories: {
+            all: 'All Tools',
+            filesystem: 'Filesystem',
+            database: 'Database',
+            api: 'APIs',
+            development: 'Development',
+            ai: 'AI'
+        }
     },
     workspace: {
         editor: 'Editor',
@@ -598,6 +667,20 @@ export const en = {
             default: 'Type a message...'
         },
         attachFile: 'Attach file'
+    },
+    workspaceModals: {
+        mountTitle: 'Add Existing Folder or Server',
+        existingFolder: 'Existing Folder',
+        sshServer: 'SSH Server',
+        folderPath: 'Folder Path',
+        pick: 'Select',
+        host: 'Host',
+        port: 'Port',
+        username: 'Username',
+        cancel: 'Cancel',
+        add: 'Add',
+        deleteConfirm: 'Are you sure you want to delete {name}?',
+        confirm: 'Confirm'
     },
     templates: {
         code: {
@@ -817,7 +900,7 @@ export const en = {
         reviewer: 'Reviewer',
         reviewerRole: 'Code Quality Auditor',
         refactorPrompt: 'Refactor this code line (Line {{line}}): {{content}}',
-        welcomeMessage: 'Hello! I am your AI assistant. How can I help you with your code?',
+        welcomeMessage: 'Hello I am your AI assistant. How can I help you with your code?',
         council: 'Council',
         enabled: 'Enabled',
         disabled: 'Disabled',
@@ -851,11 +934,33 @@ export const en = {
         cloud: 'cloud'
     },
     modelComparison: {
-        promptPlaceholder: 'Enter your prompt to compare across models...',
+        title: 'Model Comparison',
+        subtitle: 'Compare responses from multiple AI models side by side',
+        promptPlaceholder: 'Enter a prompt to compare models...',
+        compare: 'Compare',
+        addModel: 'Add Model',
+        responsePlaceholder: 'Response will appear here',
         copyResponse: 'Copy response'
     },
     council: {
-        taskPlaceholder: 'Describe a task for the council...'
+        title: 'Agent Council',
+        subtitle: 'Collaborative AI agents working together',
+        taskPlaceholder: 'Describe a task for the council...',
+        starting: 'Starting...',
+        start: 'Start',
+        liveActivity: 'Live Activity',
+        entry: 'entry',
+        entries: 'entries',
+        noActiveSession: 'No active session',
+        noActiveSessionDesc: 'Start a task to see the council agents in action. Activity logs will appear here.',
+        status: {
+            planning: 'Planning',
+            working: 'Working',
+            reviewing: 'Reviewing',
+            waiting_for_approval: 'Waiting for Approval',
+            completed: 'Completed',
+            failed: 'Failed'
+        }
     },
     shortcuts: {
         title: 'Keyboard Shortcuts',
@@ -1000,5 +1105,31 @@ export const en = {
         skip: 'Skip',
         next: 'Next',
         finish: 'Finish'
+    },
+    agentDashboard: {
+        title: 'Council of Agents',
+        subtitle: 'Autonomous Task Execution System',
+        sessions: 'Sessions',
+        start: 'Start',
+        status: 'Status',
+        activeAgents: 'Active Agents',
+        stopAuto: 'Stop Auto',
+        autoRun: 'Auto Run',
+        step: 'Step',
+        currentPlan: 'Current Plan',
+        selectSession: 'Select a session or create a new one to begin.'
+    },
+    tools: {
+        usingTool: 'Using Tool',
+        searching: 'Searching Web...',
+        readingFiles: 'Reading Files...',
+        executingCmd: 'Executing Command...',
+        screenshotting: 'Taking Screenshot...',
+        failed: 'Failed',
+        completed: 'Completed',
+        input: 'INPUT',
+        output: 'OUTPUT',
+        filePreview: 'File Preview',
+        path: 'Path:'
     }
 }

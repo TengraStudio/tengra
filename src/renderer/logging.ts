@@ -13,8 +13,11 @@ export function installRendererLogger() {
     if (!logger) {return}
 
     const original = {
+        // eslint-disable-next-line no-console
         debug: console.debug.bind(console),
+        // eslint-disable-next-line no-console
         info: console.info.bind(console),
+        // eslint-disable-next-line no-console
         log: console.log.bind(console),
         warn: console.warn.bind(console),
         error: console.error.bind(console)
@@ -28,14 +31,17 @@ export function installRendererLogger() {
         // }
     }
 
+    // eslint-disable-next-line no-console
     console.debug = (...args: LogValue[]) => {
         original.debug(...args)
         send('debug', args)
     }
+    // eslint-disable-next-line no-console
     console.log = (...args: LogValue[]) => {
         original.log(...args)
         send('info', args)
     }
+    // eslint-disable-next-line no-console
     console.info = (...args: LogValue[]) => {
         original.info(...args)
         send('info', args)

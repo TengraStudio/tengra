@@ -30,10 +30,13 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         setIsAnalyzing(true)
         try {
             const result = await window.electron.project.analyzeIdentity(project.path)
-            setSuggestions(result.suggestedPrompts || [])
-            setPalette(result.colors || [])
+            setSuggestions(result.suggestedPrompts ?? [])
+            setPalette(result.colors ?? [])
             if (result.suggestedPrompts && result.suggestedPrompts.length > 0 && !prompt) {
-                setPrompt(result.suggestedPrompts[0]!)
+                const firstPrompt = result.suggestedPrompts[0]
+                if (firstPrompt !== undefined) {
+                    setPrompt(firstPrompt)
+                }
             }
         } catch (error) {
             console.error('Analysis failed', error)

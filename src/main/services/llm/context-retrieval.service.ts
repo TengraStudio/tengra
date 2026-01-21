@@ -29,7 +29,7 @@ export class ContextRetrievalService {
             if (symbols.length > 0) {
                 contextParts.push("Relevant Code Symbols:");
                 symbols.slice(0, 3).forEach(sym => {
-                    contextParts.push(`- ${sym.kind} ${sym.name} (${sym.path}:${sym.line})\n  ${sym.signature}\n  ${sym.docstring || ''}`);
+                    contextParts.push(`- ${sym.kind} ${sym.name} (${sym.path}:${sym.line})\n  ${sym.signature}\n  ${sym.docstring ?? ''}`);
                     if (!sources.includes(sym.path)) {sources.push(sym.path);}
                 });
             }

@@ -38,9 +38,43 @@ function buildNative() {
 
         // Build workspace
         console.log('Compiling Rust binaries...');
-        execSync('cargo build --release', {
+
+        // Prepare command
+        let buildCmd = 'cargo build --release';
+        let env = { ...process.env };
+
+        // Check if cl.exe is in PATH
+        try {
+            execSync('where cl.exe', { stdio: 'ignore' });
+            // cl.exe found, enforce it
+            env.CC = 'cl.exe';
+            env.CXX = 'cl.exe';
+        } catch (e) {
+            console.log('cl.exe not found in PATH. Attempting to locate VS Build Tools...');
+
+            // Known location based on user's system
+            const vcvarsPath = 'C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat';
+
+            if (fs.existsSync(vcvarsPath)) {
+                console.log(`Found vcvarsall.bat at: ${vcvarsPath}`);
+                // Chain the commands: setup env -> build
+                // Note: We don't set CC/CXX here, relying on vcvarsall to set PATH correctly
+                buildCmd = `call "${vcvarsPath}" x64 && cargo build --release`;
+                // Remove CC/CXX from env to avoid confusing cc-rs if they aren't in PATH yet (though vcvars should fix it)
+                delete env.CC;
+                delete env.CXX;
+            } else {
+                console.warn('WARNING: vcvarsall.bat not found at expected location. Build may fail if cl.exe is required.');
+                // Try standard fallback just in case
+                env.CC = 'cl.exe';
+                env.CXX = 'cl.exe';
+            }
+        }
+
+        execSync(buildCmd, {
             cwd: SERVICES_DIR,
-            stdio: 'inherit'
+            stdio: 'inherit',
+            env: env
         });
 
         // Create output dir

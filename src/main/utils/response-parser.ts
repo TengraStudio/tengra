@@ -3,6 +3,7 @@
  */
 
 import { JsonObject, JsonValue } from '@shared/types/common'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -11,19 +12,16 @@ const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
  * Parse content from various API response formats
  */
 export function parseAIResponseContent(response: JsonValue | undefined): string {
-    if (!response) {return ''}
+    if (!response) { return '' }
 
     // If response is a string, try to parse it
     if (typeof response === 'string') {
         const trimmed = response.trim()
         // Check if it looks like JSON
         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            try {
-                const parsed = JSON.parse(trimmed) as JsonValue
+            const parsed = safeJsonParse<JsonValue>(trimmed, null)
+            if (parsed) {
                 return parseAIResponseContent(parsed)
-            } catch {
-                // Not valid JSON, return as-is
-                return trimmed
             }
         }
         return trimmed
@@ -37,7 +35,7 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
             .join('')
     }
 
-    if (!isJsonObject(response)) {return ''}
+    if (!isJsonObject(response)) { return '' }
     const res = response
 
     // Handle new Copilot format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
@@ -52,13 +50,13 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
     if (Array.isArray(res.content)) {
         return res.content
             .filter((item) => {
-                if (!item) {return false}
-                if (typeof item === 'string') {return true}
+                if (!item) { return false }
+                if (typeof item === 'string') { return true }
                 return isJsonObject(item) && (item.type === 'output_text' || item.text)
             })
             .map((item) => {
-                if (typeof item === 'string') {return item}
-                if (!isJsonObject(item)) {return ''}
+                if (typeof item === 'string') { return item }
+                if (!isJsonObject(item)) { return '' }
                 return typeof item.text === 'string' ? item.text : ''
             })
             .join('')
@@ -91,11 +89,9 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
         // Check if content is nested JSON
         const c = res.content.trim()
         if (c.startsWith('{') && c.includes('"content"')) {
-            try {
-                const parsed = JSON.parse(c)
+            const parsed = safeJsonParse(c, null)
+            if (parsed) {
                 return parseAIResponseContent(parsed)
-            } catch {
-                // Fallback to raw content if parsing fails
             }
         }
         return c
@@ -110,8 +106,8 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
     }
 
     // Fallback - if nothing else works
-    if (typeof res.text === 'string') {return res.text}
-    if (res.role === 'assistant' && !res.content) {return ''}
+    if (typeof res.text === 'string') { return res.text }
+    if (res.role === 'assistant' && !res.content) { return '' }
 
     return ''
 }

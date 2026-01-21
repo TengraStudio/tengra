@@ -39,6 +39,16 @@ export interface ToolResult {
     error?: string | undefined
 }
 
+export interface MessageVariant {
+    id: string
+    content: string
+    model?: string
+    provider?: string
+    timestamp: Date
+    label?: string // e.g. "Draft 1", "Creative", "Concise"
+    isSelected?: boolean
+}
+
 export interface Message {
     id: string
     chatId?: string | undefined // Reference to parent chat
@@ -57,6 +67,7 @@ export interface Message {
     rating?: 1 | -1 | 0 | undefined
     reactions?: string[] | undefined
     sources?: string[] | undefined
+    variants?: MessageVariant[] | undefined // Alternative responses
 }
 
 export interface Chat {

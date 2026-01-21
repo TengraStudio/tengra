@@ -5,6 +5,12 @@ import { getErrorMessage } from '@shared/utils/error.util'
 import { BrowserWindow, ipcMain, shell } from 'electron'
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
+    registerWindowControlHandlers(getMainWindow)
+    registerShellHandlers()
+    registerCookieHandlers()
+}
+
+function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
     ipcMain.on('window:minimize', () => getMainWindow()?.minimize())
     ipcMain.on('window:maximize', () => {
         const win = getMainWindow()
@@ -40,7 +46,9 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
         if (!win) { return }
         win.setFullScreen(!win.isFullScreen())
     })
+}
 
+function registerShellHandlers() {
     ipcMain.handle('shell:openExternal', async (_event, url) => {
         appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${url}`)
 
@@ -134,3 +142,72 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
         })
     })
 }
+
+function registerCookieHandlers() {
+    /**
+     * Opens a hidden BrowserWindow to capture cookies from a URL.
+     * Useful for capturing session cookies after OAuth completes in an external browser.
+     */
+    ipcMain.handle('window:captureCookies', async (_event, url: string, timeoutMs = 5000) => {
+        return new Promise<{ success: boolean }>((resolve) => {
+            try {
+                appLogger.info('WindowIPC', `Creating hidden window to capture cookies from: ${url}`)
+
+                const hiddenWin = new BrowserWindow({
+                    width: 1,
+                    height: 1,
+                    show: false,
+                    webPreferences: {
+                        partition: 'default', // Use default session for cookie sharing
+                        nodeIntegration: false,
+                        contextIsolation: true
+                    }
+                })
+
+                let resolved = false
+
+                // Close window after timeout
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true
+                        if (!hiddenWin.isDestroyed()) {
+                            hiddenWin.close()
+                        }
+                        appLogger.info('WindowIPC', 'Cookie capture window closed after timeout')
+                        resolve({ success: true })
+                    }
+                }, timeoutMs)
+
+                // Close window once page loads (cookies should be set by then)
+                hiddenWin.webContents.once('did-finish-load', () => {
+                    if (!resolved) {
+                        resolved = true
+                        clearTimeout(timeout)
+                        // Wait a bit for cookies to be set
+                        setTimeout(() => {
+                            if (!hiddenWin.isDestroyed()) {
+                                hiddenWin.close()
+                            }
+                            appLogger.info('WindowIPC', 'Cookie capture window closed after page load')
+                            resolve({ success: true })
+                        }, 1000)
+                    }
+                })
+
+                hiddenWin.on('closed', () => {
+                    if (!resolved) {
+                        resolved = true
+                        clearTimeout(timeout)
+                        resolve({ success: true })
+                    }
+                })
+
+                void hiddenWin.loadURL(url)
+            } catch (error) {
+                appLogger.error('WindowIPC', `Failed to create cookie capture window: ${getErrorMessage(error)}`)
+                resolve({ success: false })
+            }
+        })
+    })
+}
+

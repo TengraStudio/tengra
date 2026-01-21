@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto'
 
+import { BaseService } from '@main/services/base.service'
 import { DatabaseService } from '@main/services/data/database.service'
 
 export interface AgentDefinition {
@@ -22,18 +23,19 @@ interface AgentRow {
     updated_at: number
 }
 
-export class AgentService {
-    constructor(private dbService: DatabaseService) { }
+export class AgentService extends BaseService {
+    constructor(private dbService: DatabaseService) {
+        super('AgentService')
+    }
 
-    async init() {
+    override async initialize(): Promise<void> {
         await this.seedBuiltInAgents()
     }
 
     async registerAgent(agent: AgentDefinition): Promise<string> {
-        const id = agent.id || randomUUID()
+        const id = agent.id ?? randomUUID()
         const now = Date.now()
-        const toolsJson = JSON.stringify(agent.tools || [])
-
+        const toolsJson = JSON.stringify(agent.tools)
         const db = this.dbService.getDatabase()
 
         // Check for existing by name
@@ -45,13 +47,13 @@ export class AgentService {
                 UPDATE agents
                 SET system_prompt = $1, tools = $2, parent_model = $3, updated_at = $4
                 WHERE name = $5
-             `).run(agent.systemPrompt, toolsJson, agent.parentModel || 'gpt-4o', now, agent.name)
+             `).run(agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, agent.name)
             return existing.id
         } else {
             await db.prepare(`
                 INSERT INTO agents (id, name, system_prompt, tools, parent_model, created_at, updated_at) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel || 'gpt-4o', now, now)
+             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, now)
             return id
         }
     }
@@ -60,18 +62,16 @@ export class AgentService {
         const db = this.dbService.getDatabase()
         let result = await db.prepare('SELECT * FROM agents WHERE id = $1').get(idOrName) as AgentRow | undefined
 
-        if (!result) {
-            result = await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName) as AgentRow | undefined
-        }
+        result ??= (await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)) as AgentRow | undefined
 
         if (!result) { return null }
 
         return {
             id: result.id,
             name: result.name,
-            description: 'Agent', // Implicit
+            description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools || '[]'),
+            tools: JSON.parse(result.tools ?? '[]'),
             parentModel: result.parent_model
         }
     }
@@ -84,7 +84,7 @@ export class AgentService {
             name: result.name,
             description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools || '[]'),
+            tools: JSON.parse(result.tools ?? '[]'),
             parentModel: result.parent_model
         }))
     }
@@ -119,7 +119,7 @@ export class AgentService {
                 await this.registerAgent(agent)
             } catch (error) {
                 // Database might not be ready yet (table doesn't exist)
-                console.warn(`[AgentService] Failed to seed agent ${agent.name}:`, error instanceof Error ? error.message : error)
+                this.logWarn(`Failed to seed agent ${agent.name}`, error as Error)
             }
         }
     }

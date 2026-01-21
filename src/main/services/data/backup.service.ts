@@ -11,6 +11,7 @@ import { DataService } from '@main/services/data/data.service'
 import { Chat, ChatMessage, DatabaseService } from '@main/services/data/database.service'
 import { JsonObject, JsonValue } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 export interface BackupMetadata {
     version: string
@@ -127,7 +128,7 @@ export class BackupService {
                 const settingsPath = path.join(this.dataService.getPath('config'), 'settings.json')
                 try {
                     const settingsContent = await fs.promises.readFile(settingsPath, 'utf8')
-                    backup.settings = JSON.parse(settingsContent) as JsonObject
+                    backup.settings = safeJsonParse<JsonObject>(settingsContent, {})
                     includes.push('settings')
                 } catch (e) {
                     appLogger.warn('BackupService', 'Could not read settings:', e as Error)
@@ -228,7 +229,7 @@ export class BackupService {
 
         try {
             const backupContent = await fs.promises.readFile(backupPath, 'utf8');
-            const backup = JSON.parse(backupContent) as Partial<BackupData>;
+            const backup = safeJsonParse<Partial<BackupData>>(backupContent, {});
 
             if (!backup?._metadata) {
                 result.errors.push('Invalid backup file: missing metadata');
@@ -387,11 +388,11 @@ export class BackupService {
                 const filePath = path.join(this.backupDir, file)
                 try {
                     const content = await fs.promises.readFile(filePath, 'utf8')
-                    const json = JSON.parse(content)
+                    const json = safeJsonParse<Record<string, unknown>>(content, {})
                     backups.push({
                         name: file,
                         path: filePath,
-                        metadata: json._metadata
+                        metadata: json._metadata as BackupMetadata | undefined
                     })
                 } catch {
                     backups.push({ name: file, path: filePath })
@@ -440,7 +441,7 @@ export class BackupService {
             }
 
             const content = await fs.promises.readFile(this.configPath, 'utf8')
-            const loaded = JSON.parse(content) as Partial<AutoBackupConfig>
+            const loaded = safeJsonParse<Partial<AutoBackupConfig>>(content, {})
             this.autoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG, ...loaded }
 
             // Start auto-backup if enabled

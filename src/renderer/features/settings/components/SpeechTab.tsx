@@ -31,8 +31,8 @@ export const SpeechTab: React.FC<SpeechTabProps> = ({ settings, updateSpeech, t 
             }
         }
 
-        loadVoices()
-        loadDevices()
+        void loadVoices()
+        void loadDevices()
 
         if (window.speechSynthesis.onvoiceschanged !== undefined) {window.speechSynthesis.onvoiceschanged = loadVoices}
 

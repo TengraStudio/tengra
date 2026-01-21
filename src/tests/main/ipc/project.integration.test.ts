@@ -58,7 +58,13 @@ describe('Project IPC Integration', () => {
     });
 
     it('should register project handlers', () => {
-        registerProjectIpc(() => null, mockProjectService, mockLogoService, mockCodeIntelligenceService, {} as any, {} as any);
+        registerProjectIpc(() => null, {
+            projectService: mockProjectService,
+            logoService: mockLogoService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as any,
+            databaseService: {} as any
+        });
         expect(ipcMainHandlers.has('project:analyze')).toBe(true);
         expect(ipcMainHandlers.has('project:generateLogo')).toBe(true);
         expect(ipcMainHandlers.has('project:analyzeIdentity')).toBe(true);
@@ -68,7 +74,13 @@ describe('Project IPC Integration', () => {
         const analyzeProjectMock = vi.fn();
         mockProjectService.analyzeProject = analyzeProjectMock;
 
-        registerProjectIpc(() => null, mockProjectService, mockLogoService, mockCodeIntelligenceService, {} as any, {} as any);
+        registerProjectIpc(() => null, {
+            projectService: mockProjectService,
+            logoService: mockLogoService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as any,
+            databaseService: {} as any
+        });
         const handler = ipcMainHandlers.get('project:analyze');
 
         const mockResult = { files: [], symbols: [] };
@@ -89,7 +101,13 @@ describe('Project IPC Integration', () => {
         const generateLogoMock = vi.fn();
         mockLogoService.generateLogo = generateLogoMock;
 
-        registerProjectIpc(() => null, mockProjectService, mockLogoService, mockCodeIntelligenceService, {} as any, {} as any);
+        registerProjectIpc(() => null, {
+            projectService: mockProjectService,
+            logoService: mockLogoService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as any,
+            databaseService: {} as any
+        });
         const handler = ipcMainHandlers.get('project:generateLogo');
 
         generateLogoMock.mockResolvedValue('/path/to/logo.png');
@@ -107,7 +125,13 @@ describe('Project IPC Integration', () => {
         const analyzeProjectMock = vi.fn();
         mockProjectService.analyzeProject = analyzeProjectMock;
 
-        registerProjectIpc(() => null, mockProjectService, mockLogoService, mockCodeIntelligenceService, {} as any, {} as any);
+        registerProjectIpc(() => null, {
+            projectService: mockProjectService,
+            logoService: mockLogoService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as any,
+            databaseService: {} as any
+        });
         const handler = ipcMainHandlers.get('project:analyze');
 
         analyzeProjectMock.mockRejectedValue(new Error('Analysis Failed'));

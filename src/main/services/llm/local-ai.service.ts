@@ -1,10 +1,9 @@
 import { ChildProcess, exec, spawn } from 'child_process'
 import { existsSync } from 'fs'
-import * as fsPromises from 'fs/promises'
 import { join } from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { SettingsService } from '@main/services/system/settings.service'
-import { app } from 'electron'
 
 export interface LocalAIModel {
     id: string
@@ -48,8 +47,8 @@ export class LocalAIService {
         if (process.platform !== 'win32') { return; }
 
         try {
-            console.log('[LocalAI] Attempting to auto-start Ollama headlessly...');
-            const localAppData = process.env.LOCALAPPDATA || join(process.env.USERPROFILE || '', 'AppData', 'Local');
+            appLogger.info('local-ai.service', '[LocalAI] Attempting to auto-start Ollama headlessly...');
+            const localAppData = process.env.LOCALAPPDATA || join(process.env.USERPROFILE ?? '', 'AppData', 'Local');
             const ollamaExePath = join(localAppData, 'Programs', 'Ollama', 'ollama.exe');
 
             if (existsSync(ollamaExePath)) {
@@ -59,7 +58,7 @@ export class LocalAIService {
                     windowsHide: true,
                     shell: false
                 }).unref();
-                console.log('[LocalAI] Triggered headless ollama serve via binary');
+                appLogger.info('local-ai.service', '[LocalAI] Triggered headless ollama serve via binary');
             } else {
                 // Fallback to system PATH
                 spawn('ollama', ['serve'], {
@@ -68,16 +67,16 @@ export class LocalAIService {
                     windowsHide: true,
                     shell: false
                 }).unref();
-                console.log('[LocalAI] Triggered headless ollama serve via PATH');
+                appLogger.info('local-ai.service', '[LocalAI] Triggered headless ollama serve via PATH');
             }
-        } catch (e) {
-            console.error('[LocalAI] Critical failure during Ollama auto-start:', e);
+        } catch (_e) {
+            console.error('[LocalAI] Critical failure during Ollama auto-start:', _e);
         }
     }
 
     async ollamaChat(model: string, messages: OllamaChatMessage[]): Promise<OllamaChatResponse> {
         const settings = this.settingsService.getSettings()
-        const num_ctx = settings.ollama.numCtx || 4096
+        const num_ctx = settings.ollama.numCtx ?? 4096
 
         return await this.ollamaRequest<OllamaChatResponse>('/api/chat', 'POST', {
             model,
@@ -125,8 +124,8 @@ export class LocalAIService {
 
     async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
         return new Promise((resolve) => {
-            exec('nvidia-smi', (error: Error | null, stdout: string) => {
-                if (error) {
+            exec('nvidia-smi', (_error: Error | null, stdout: string) => {
+                if (_error) {
                     resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' })
                 } else {
                     resolve({ hasCuda: true, detail: stdout.split('\n')[0] })

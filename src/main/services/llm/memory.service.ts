@@ -6,6 +6,7 @@ import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { LLMService } from '@main/services/llm/llm.service'
 import { ProcessManagerService } from '@main/services/system/process-manager.service'
 import { ChatMessage } from '@main/types/llm.types'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { app } from 'electron'
 
 interface PersonalitySettings {
@@ -55,9 +56,10 @@ export class MemoryService {
 
         const dbPath = path.join(app.getPath('userData'), 'memory.db');
 
-        this.processManager.startService({
+        void this.processManager.startService({
             name: 'memory-service',
             executable: 'orbit-memory-service',
+            persistent: true
         });
 
         try {
@@ -163,11 +165,16 @@ ${transcript}`;
         try {
             const res = await this.callLLM(
                 [{ role: 'system', content: 'You are an expert at analyzing and summarizing conversations.' }, { role: 'user', content: prompt }],
-                model || 'gpt-4o-mini',
+                model ?? 'gpt-4o-mini',
                 provider
             );
 
-            const data = JSON.parse(res.content.replace(/```json|```/g, '').trim());
+            const data = safeJsonParse<SummarizationResult>(res.content.replace(/```json|```/g, '').trim(), {
+                topics: [],
+                summary: '',
+                title: '',
+                pendingTasks: []
+            });
             return data;
         } catch (error) {
             console.warn('[MemoryService] Advanced summarization failed, falling back to basic:', error);
@@ -331,11 +338,7 @@ ${transcript}`;
     async getPersonality(): Promise<PersonalitySettings | null> {
         const value = await this.db.recallMemory('system:personality')
         if (value) {
-            try {
-                return JSON.parse(value) as PersonalitySettings
-            } catch {
-                console.error('[MemoryService] Failed to parse personality')
-            }
+            return safeJsonParse<PersonalitySettings | null>(value, null)
         }
         return null
     }
@@ -368,7 +371,7 @@ Example Output:
                 provider
             );
 
-            const facts: string[] = JSON.parse(res.content.replace(/```json|```/g, '').trim() || '[]');
+            const facts: string[] = safeJsonParse<string[]>(res.content.replace(/```json|```/g, '').trim() || '[]', []);
             const fragments: SemanticFragment[] = [];
 
             for (const fact of facts) {
@@ -411,7 +414,7 @@ User Message: "${content}"`;
                 provider
             );
 
-            const update = JSON.parse(res.content.replace(/```json|```/g, '').trim() || 'null');
+            const update = safeJsonParse<Partial<PersonalitySettings> | null>(res.content.replace(/```json|```/g, '').trim() || 'null', null);
             if (update) {
                 const current = await this.getPersonality() ?? { traits: [], customInstructions: '', allowProfanity: false, responseStyle: 'professional' };
                 const merged = {
@@ -438,7 +441,7 @@ User Message: "${content}"`;
             if (!res.ok) { return null; }
 
             const data = await res.json() as OllamaTagsResponse;
-            const installedModels = (data.models || []).map((m) => m.name?.toLowerCase());
+            const installedModels = (data.models ?? []).map((m) => m.name?.toLowerCase());
 
             // Find first preferred model that's installed
             for (const preferred of PREFERRED_OLLAMA_MODELS) {
@@ -447,7 +450,7 @@ User Message: "${content}"`;
                     const match = installedModels.find((m: string) => m === preferred || m.startsWith(preferred));
                     if (match) {
                         this.cachedOllamaModel = match;
-                        console.log(`[MemoryService] Auto-selected Ollama model: ${match}`);
+                        appLogger.info('memory.service', `[MemoryService] Auto-selected Ollama model: ${match}`);
                         return match;
                     }
                 }
@@ -456,7 +459,7 @@ User Message: "${content}"`;
             // Fallback: use first available model
             if (installedModels.length > 0) {
                 this.cachedOllamaModel = installedModels[0];
-                console.log(`[MemoryService] Fallback to first available model: ${installedModels[0]}`);
+                appLogger.info('memory.service', `[MemoryService] Fallback to first available model: ${installedModels[0]}`);
                 return installedModels[0];
             }
         } catch (e) {
@@ -473,7 +476,7 @@ User Message: "${content}"`;
         const backgroundModel = await this.getAvailableOllamaModel();
 
         if (!backgroundModel) {
-            console.log('[MemoryService] No Ollama model available, skipping background task');
+            appLogger.info('memory.service', '[MemoryService] No Ollama model available, skipping background task');
             return { content: '[]' }; // Return empty for fact extraction
         }
 

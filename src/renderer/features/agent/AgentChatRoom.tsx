@@ -1,5 +1,6 @@
 import { AgentLog, AgentMessage } from '@shared/types/agent'
-import { Bot, Clock,Sparkles, Terminal } from 'lucide-react'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { Bot, Clock, Sparkles, Terminal } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { motion } from '@/lib/framer-motion-compat'
@@ -34,12 +35,12 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
 
     // WebSocket Connection
     useEffect(() => {
-        if (!sessionId) {return}
+        if (!sessionId) { return }
 
         // Get WebSocket URL from environment or use default
         // In production, this should use wss:// for secure connections
         // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
-        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) || 'ws://localhost:3001'
+        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) ?? 'ws://localhost:3001'
 
         // Validate WebSocket URL
         if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
@@ -56,10 +57,11 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
 
         socket.onmessage = (event) => {
             try {
-                const msg: AgentMessage = JSON.parse(event.data)
+                const msg = safeJsonParse<AgentMessage>(event.data, {} as AgentMessage)
+                if (!msg?.id) { return }
                 // Deduping based on ID in case of overlapping log polls/WS
                 setMessages(prev => {
-                    if (prev.some(p => p.id === msg.id)) {return prev}
+                    if (prev.some(p => p.id === msg.id)) { return prev }
                     return [...prev, msg]
                 })
             } catch (e) {
@@ -72,7 +74,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
         }
 
         socket.onclose = () => {
-            console.log('[AgentChatRoom] WebSocket connection closed')
+            console.warn('[AgentChatRoom] WebSocket connection closed')
         }
 
         return () => {

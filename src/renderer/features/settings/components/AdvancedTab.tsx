@@ -28,10 +28,10 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
     settings, installedModels, proxyModels, setSettings, handleSave, benchmarkResult, isBenchmarking: _isBenchmarking, handleRunBenchmark: _handleRunBenchmark, t
 }) => {
     const [selectedConfigModel, setSelectedConfigModel] = useState<string | null>(null)
-    const availableModels = [...(installedModels || []), ...(proxyModels || [])]
-    const currentModelId = selectedConfigModel || (availableModels[0]?.id || '')
-    const modelSettings = settings?.modelSettings?.[currentModelId] || {}
-    const modelPresets = settings?.presets || [
+    const availableModels = [...(installedModels ?? []), ...(proxyModels ?? [])]
+    const currentModelId = selectedConfigModel ?? (availableModels[0]?.id ?? '')
+    const modelSettings = settings?.modelSettings?.[currentModelId] ?? {}
+    const modelPresets = settings?.presets ?? [
         { id: 'creative', name: t('ssh.presets.creative'), temperature: 0.9, topP: 0.95, frequencyPenalty: 0.1, presencePenalty: 0.1 },
         { id: 'precise', name: t('ssh.presets.precise'), temperature: 0.2, topP: 0.1, frequencyPenalty: 0, presencePenalty: 0 },
         { id: 'balanced', name: t('ssh.presets.balanced'), temperature: 0.7, topP: 0.9, frequencyPenalty: 0, presencePenalty: 0 }

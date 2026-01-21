@@ -1,9 +1,9 @@
-import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components'
-import { Brain, Cpu,Sparkles } from 'lucide-react'
+import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components'
+import { Brain, Cpu, Sparkles } from 'lucide-react'
 import React from 'react'
 
 import { SettingsCategory } from '@/features/settings/types'
-import { useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n'
 
 interface ProvidersSectionProps {
     isCollapsed: boolean;
@@ -16,7 +16,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
     language,
     onOpenSettings
 }) => {
-    const { t } = useTranslation(language as any)
+    const { t } = useTranslation(language as Language)
 
     if (isCollapsed) {
         return null

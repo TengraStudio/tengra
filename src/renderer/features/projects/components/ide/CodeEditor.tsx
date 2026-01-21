@@ -140,7 +140,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
             }
         }
 
-        initEditor()
+        void initEditor()
 
         return () => {
             mounted = false

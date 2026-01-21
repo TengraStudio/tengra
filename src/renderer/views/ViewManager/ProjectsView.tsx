@@ -22,8 +22,8 @@ interface ProjectsViewProps {
     selectedModel: string
     onSelectModel: (p: string, m: string) => void
     groupedModels: GroupedModels | null
-    quotas: QuotaResponse | null
-    codexUsage: CodexUsage | null
+    quotas: { accounts: QuotaResponse[] } | null
+    codexUsage: { accounts: { usage: CodexUsage }[] } | null
     appSettings: AppSettings | null
     onSendMessage: (text?: string) => void
     displayMessages: Message[]

@@ -5,7 +5,9 @@ import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
 
+import { appLogger } from '@main/logging/logger'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import * as pty from 'node-pty'
 
 
@@ -38,9 +40,9 @@ export class ProcessService extends EventEmitter {
     spawn(command: string, args: string[], cwd: string): string {
         const id = Math.random().toString(36).substring(7)
 
-        console.log(`[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd}`)
+        appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `)
 
-        const ptyProcess = pty.spawn(this.shell, ['-c', `${command} ${args.join(' ')}`], {
+        const ptyProcess = pty.spawn(this.shell, ['-c', `${command} ${args.join(' ')} `], {
             name: 'xterm-color',
             cols: 80,
             rows: 30,
@@ -67,7 +69,7 @@ export class ProcessService extends EventEmitter {
         })
 
         ptyProcess.onExit(({ exitCode }) => {
-            console.log(`[ProcessService] Task ${id} exited with ${exitCode}`)
+            appLogger.info('process.service', `[ProcessService] Task ${id} exited with ${exitCode} `)
             task.status = exitCode === 0 ? 'stopped' : 'failed'
             this.emit('exit', { id, code: exitCode })
             // Optional: Keep in history, but remove active reference later?
@@ -83,7 +85,7 @@ export class ProcessService extends EventEmitter {
     kill(id: string) {
         const task = this.processes.get(id)
         if (task) {
-            console.log(`[ProcessService] Killing task ${id}`)
+            appLogger.info('process.service', `[ProcessService] Killing task ${id} `)
             task.ptyProcess.kill()
             task.status = 'stopped'
             this.processes.delete(id)
@@ -108,8 +110,8 @@ export class ProcessService extends EventEmitter {
 
             if (pkgExists) {
                 const content = await fs.readFile(pkgPath, 'utf-8')
-                const pkg = JSON.parse(content)
-                if (pkg.scripts) {
+                const pkg = safeJsonParse<Record<string, unknown>>(content, {})
+                if (pkg.scripts && typeof pkg.scripts === 'object') {
                     Object.assign(scripts, pkg.scripts)
                 }
             }
@@ -138,19 +140,19 @@ export class ProcessService extends EventEmitter {
 
     resize(id: string, cols: number, rows: number): boolean {
         const task = this.processes.get(id)
-        if (!task) {return false}
+        if (!task) { return false }
         try {
             task.ptyProcess.resize(cols, rows)
             return true
         } catch (e) {
-            console.error(`[ProcessService] Resize failed for task ${id}:`, e)
+            console.error(`[ProcessService] Resize failed for task ${id}: `, e)
             return false
         }
     }
 
     write(id: string, data: string): boolean {
         const task = this.processes.get(id)
-        if (!task) {return false}
+        if (!task) { return false }
         try {
             task.ptyProcess.write(data)
             return true
@@ -158,7 +160,7 @@ export class ProcessService extends EventEmitter {
             // Broken pipe errors are common when process has exited
             const errorMsg = getErrorMessage(e as Error)
             if (!errorMsg.includes('EPIPE') && !errorMsg.includes('broken pipe')) {
-                console.error(`[ProcessService] Write failed for task ${id}:`, e)
+                console.error(`[ProcessService] Write failed for task ${id}: `, e)
             }
             return false
         }
@@ -167,11 +169,11 @@ export class ProcessService extends EventEmitter {
     async execute(command: string, cwd?: string): Promise<string> {
         try {
             const { stdout, stderr } = await execAsync(command, { cwd })
-            return stdout || stderr || 'Command executed successfully'
+            return (stdout || stderr) ?? 'Command executed successfully'
         } catch (e) {
             const msg = getErrorMessage(e as Error)
-            const stderr = (e as { stderr?: string }).stderr || ''
-            return `Error: ${msg}\nStderr: ${stderr}`
+            const stderr = (e as { stderr?: string }).stderr ?? ''
+            return (`Error: ${msg}\nStderr: ${(stderr || '')}`)
         }
     }
 }

@@ -65,7 +65,7 @@ export function registerPromptTemplatesIpc(promptTemplatesService: PromptTemplat
      * Update an existing custom template
      */
     ipcMain.handle('prompt-templates:update', createIpcHandler('prompt-templates:update', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Omit<PromptTemplate, 'id' | 'createdAt'>>) => {
-        const result = promptTemplatesService.updateTemplate(id, updates)
+        const result = await promptTemplatesService.updateTemplate(id, updates)
         if (!result) {
             throw new Error(`Template not found: ${id}`)
         }
@@ -76,7 +76,7 @@ export function registerPromptTemplatesIpc(promptTemplatesService: PromptTemplat
      * Delete a custom template
      */
     ipcMain.handle('prompt-templates:delete', createIpcHandler('prompt-templates:delete', async (_event: IpcMainInvokeEvent, id: string) => {
-        const success = promptTemplatesService.deleteTemplate(id)
+        const success = await promptTemplatesService.deleteTemplate(id)
         if (!success) {
             throw new Error(`Template not found: ${id}`)
         }
@@ -90,7 +90,7 @@ export function registerPromptTemplatesIpc(promptTemplatesService: PromptTemplat
         if (typeof templateId !== 'string') {
             throw new Error('Template ID must be a string')
         }
-        if (typeof variables !== 'object' || variables === null) {
+        if (typeof variables !== 'object') {
             throw new Error('Variables must be an object')
         }
         const result = promptTemplatesService.renderTemplate(templateId, variables)

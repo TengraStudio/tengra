@@ -1,8 +1,9 @@
 import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
-import { AuthToken, DatabaseService, LinkedAccount } from '@main/services/data/database.service'
+import { DatabaseService, LinkedAccount } from '@main/services/data/database.service'
 import { SecurityService } from '@main/services/security/security.service'
 import { JsonObject } from '@shared/types/common'
+import { getErrorMessage } from '@shared/utils/error.util'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -52,6 +53,47 @@ export class AuthService extends BaseService {
     override async initialize(): Promise<void> {
         await this.databaseService.initialize()
         appLogger.info('AuthService', 'Initialized with new multi-account system')
+
+        // Proactively migrate all tokens to new encryption format
+        await this.migrateExistingTokens()
+    }
+
+    /**
+     * Proactively migrates all tokens in the database to the new secure encryption format.
+     */
+    private async migrateExistingTokens(): Promise<void> {
+        try {
+            const accounts = await this.databaseService.getLinkedAccounts()
+            let migratedCount = 0
+
+            for (const account of accounts) {
+                let needsUpgrade = false
+                const updated: Partial<LinkedAccount> = {}
+
+                const checkAndSet = (val: string | undefined, key: 'accessToken' | 'refreshToken' | 'sessionToken') => {
+                    if (val && !val.startsWith('orbit:v1:')) {
+                        const decryptedValue = this.decrypt(val)
+                        updated[key] = this.encrypt(decryptedValue)
+                        needsUpgrade = true
+                    }
+                }
+
+                checkAndSet(account.accessToken, 'accessToken')
+                checkAndSet(account.refreshToken, 'refreshToken')
+                checkAndSet(account.sessionToken, 'sessionToken')
+
+                if (needsUpgrade) {
+                    await this.databaseService.saveLinkedAccount({ ...account, ...updated })
+                    migratedCount++
+                }
+            }
+
+            if (migratedCount > 0) {
+                appLogger.info('AuthService', `Proactive migration complete: Upgraded ${migratedCount} accounts to orbit:v1 format.`)
+            }
+        } catch (error) {
+            appLogger.error('AuthService', `Proactive migration failed: ${getErrorMessage(error)}`)
+        }
     }
 
     // --- Provider Methods ---
@@ -95,12 +137,17 @@ export class AuthService extends BaseService {
         const account = await this.databaseService.getActiveLinkedAccount(normalized)
         if (!account) { return null }
 
-        return {
+        const decrypted = {
             ...account,
             accessToken: this.decrypt(account.accessToken),
             refreshToken: this.decrypt(account.refreshToken),
             sessionToken: this.decrypt(account.sessionToken)
         }
+
+        // Auto-upgrade encryption if needed
+        void this.checkAndUpgradeEncryption(account)
+
+        return decrypted
     }
 
     /**
@@ -257,143 +304,43 @@ export class AuthService extends BaseService {
      */
     async getAllAccountsFull(): Promise<LinkedAccount[]> {
         const accounts = await this.databaseService.getLinkedAccounts()
-        return accounts.map(a => ({
-            ...a,
-            accessToken: this.decrypt(a.accessToken),
-            refreshToken: this.decrypt(a.refreshToken),
-            sessionToken: this.decrypt(a.sessionToken)
-        }))
-    }
-
-    // --- TokenService Compatibility Methods ---
-    // These methods provide backward compatibility with TokenService
-
-    /**
-     * @deprecated Use getAllAccountsFull() instead
-     * TokenService compatibility: Get all tokens in AuthToken format.
-     */
-    async getAllFullTokens(): Promise<AuthToken[]> {
-        const accounts = await this.getAllAccountsFull()
-        return accounts.map(a => ({
-            id: a.id,
-            accountId: 'default',  // Legacy compatibility
-            provider: a.provider,
-            email: a.email,
-            accessToken: a.accessToken,
-            refreshToken: a.refreshToken,
-            sessionToken: a.sessionToken,
-            expiresAt: a.expiresAt,
-            scope: a.scope,
-            metadata: a.metadata,
-            updatedAt: a.updatedAt
-        }))
-    }
-
-    /**
-     * @deprecated Use linkAccount() instead
-     * TokenService compatibility: Save a token.
-     */
-    async saveToken(provider: string, token: string | Partial<AuthToken>): Promise<void> {
-        const normalized = this.normalizeProvider(provider)
-
-        let tokenData: TokenData
-
-        if (typeof token === 'string') {
-            const trimmed = token.trim()
-            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-                try {
-                    const parsed = JSON.parse(trimmed)
-                    tokenData = {
-                        accessToken: parsed.access_token ?? parsed.accessToken ?? token,
-                        refreshToken: parsed.refresh_token ?? parsed.refreshToken,
-                        sessionToken: parsed.session_token ?? parsed.sessionToken,
-                        email: parsed.email,
-                        expiresAt: parsed.expires_at ?? parsed.expiresAt,
-                        scope: parsed.scope,
-                        metadata: parsed
-                    }
-
-                    // Handle String-based expires_at (like from ProxyService)
-                    if (parsed.expired && !tokenData.expiresAt) {
-                        tokenData.expiresAt = new Date(parsed.expired).getTime()
-                    }
-                } catch {
-                    tokenData = { accessToken: token }
-                }
-            } else {
-                tokenData = { accessToken: token }
-            }
-        } else {
-            tokenData = {
-                accessToken: token.accessToken,
-                refreshToken: token.refreshToken,
-                sessionToken: token.sessionToken,
-                email: token.email,
-                expiresAt: token.expiresAt,
-                scope: token.scope,
-                metadata: token.metadata
-            }
-        }
-
-        await this.linkAccount(normalized, tokenData)
-    }
-
-    /**
-     * @deprecated Use getActiveToken() instead
-     * TokenService compatibility: Get token string.
-     */
-    async getToken(provider: string): Promise<string | undefined> {
-        return this.getActiveToken(provider)
-    }
-
-    /**
-     * @deprecated Use getActiveAccountFull() instead
-     * TokenService compatibility: Get full auth token.
-     */
-    async getAuthToken(provider: string): Promise<AuthToken | null> {
-        const account = await this.getActiveAccountFull(provider)
-        if (!account) { return null }
-
-        return {
-            id: account.id,
-            accountId: 'default',
-            provider: account.provider,
-            email: account.email,
-            accessToken: account.accessToken,
-            refreshToken: account.refreshToken,
-            sessionToken: account.sessionToken,
-            expiresAt: account.expiresAt,
-            scope: account.scope,
-            metadata: account.metadata,
-            updatedAt: account.updatedAt
-        }
-    }
-
-    /**
-     * @deprecated Use getAllAccounts() instead
-     * TokenService compatibility: Get all tokens as key-value pairs.
-     */
-    async getAllTokens(): Promise<Record<string, string>> {
-        const accounts = await this.getAllAccountsFull()
-        const result: Record<string, string> = {}
+        const fullAccounts: LinkedAccount[] = []
 
         for (const a of accounts) {
-            const token = a.accessToken ?? a.sessionToken ?? a.refreshToken
-            if (token) {
-                result[a.provider] = token
+            fullAccounts.push({
+                ...a,
+                accessToken: this.decrypt(a.accessToken),
+                refreshToken: this.decrypt(a.refreshToken),
+                sessionToken: this.decrypt(a.sessionToken)
+            })
+            // Background upgrade check
+            void this.checkAndUpgradeEncryption(a)
+        }
+        return fullAccounts
+    }
+
+    private async checkAndUpgradeEncryption(account: LinkedAccount): Promise<void> {
+        let needsUpgrade = false
+        const updated: Partial<LinkedAccount> = {}
+
+        const checkAndSet = (val: string | undefined, key: 'accessToken' | 'refreshToken' | 'sessionToken') => {
+            if (val && !val.startsWith('orbit:v1:')) {
+                const decryptedValue = this.decrypt(val)
+                updated[key] = this.encrypt(decryptedValue)
+                needsUpgrade = true
             }
         }
 
-        return result
+        checkAndSet(account.accessToken, 'accessToken')
+        checkAndSet(account.refreshToken, 'refreshToken')
+        checkAndSet(account.sessionToken, 'sessionToken')
+
+        if (needsUpgrade) {
+            appLogger.info('AuthService', `Upgrading encryption format for account ${account.id} (${account.provider})`)
+            await this.databaseService.saveLinkedAccount({ ...account, ...updated })
+        }
     }
 
-    /**
-     * @deprecated Use unlinkAllForProvider() instead
-     * TokenService compatibility: Delete all tokens for a provider.
-     */
-    async deleteToken(provider: string): Promise<void> {
-        await this.unlinkAllForProvider(provider)
-    }
 
     // --- Helper Methods ---
 
@@ -416,7 +363,7 @@ export class AuthService extends BaseService {
 
     private encrypt(text: string | undefined): string | undefined {
         if (!text) { return undefined }
-        return this.securityService.encryptSync(text) ?? undefined
+        return this.securityService.encryptSync(text)
     }
 
     private decrypt(text: string | undefined): string | undefined {

@@ -498,6 +498,15 @@ func ensureMetadataDefaults(auth *coreauth.Auth) {
 			}
 		}
 	}
+	// Ensure prefix is set for providers that need it
+	if strings.TrimSpace(auth.Prefix) == "" {
+		switch strings.ToLower(strings.TrimSpace(auth.Provider)) {
+		case "antigravity":
+			auth.Prefix = "antigravity"
+		case "anthropic":
+			auth.Prefix = "anthropic"
+		}
+	}
 }
 
 func authFileName(auth *coreauth.Auth) string {

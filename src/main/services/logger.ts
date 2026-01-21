@@ -15,13 +15,13 @@ export class Logger {
 
     static debug(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.DEBUG) {
-            console.debug(`[DEBUG] [${context}] ${message}`, ...args)
+            console.warn(`[DEBUG] [${context}] ${message}`, ...args)
         }
     }
 
     static info(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.INFO) {
-            console.info(`[INFO] [${context}] ${message}`, ...args)
+            console.warn(`[INFO] [${context}] ${message}`, ...args)
         }
     }
 

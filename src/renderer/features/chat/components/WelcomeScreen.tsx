@@ -34,7 +34,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 {templates.map((template) => (
                     <button
                         key={template.id}
-                        onClick={() => onSelectTemplate(template.prompt || '')}
+                        onClick={() => onSelectTemplate(template.prompt ?? '')}
                         className="group p-4 bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] hover:border-primary/30 rounded-xl transition-all duration-300 text-left flex items-start gap-3 hover:shadow-2xl active:scale-[0.98]"
                     >
                         <div className={cn("p-2.5 rounded-lg bg-white/[0.03] group-hover:bg-primary/10 transition-colors", template.iconColor)}>

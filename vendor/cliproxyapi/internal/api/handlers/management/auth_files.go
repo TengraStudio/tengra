@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -18,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/claude"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/auth/codex"
@@ -643,9 +646,9 @@ func (h *Handler) DeleteAuthFile(c *gin.Context) {
 			full = abs
 		}
 	}
-	
+
 	log.Infof("Attempting to delete auth file: %s", full)
-	
+
 	if err := os.Remove(full); err != nil {
 		if os.IsNotExist(err) {
 			log.Warnf("Auth file not found: %s", full)
@@ -656,23 +659,23 @@ func (h *Handler) DeleteAuthFile(c *gin.Context) {
 		}
 		return
 	}
-	
+
 	// Verify deletion succeeded
 	if _, statErr := os.Stat(full); statErr == nil {
 		log.Errorf("File still exists after deletion: %s", full)
 		c.JSON(500, gin.H{"error": "file deletion verification failed"})
 		return
 	}
-	
+
 	log.Infof("Successfully deleted auth file: %s", full)
-	
+
 	if err := h.deleteTokenRecord(ctx, full); err != nil {
 		log.Warnf("Failed to delete token record for %s: %v", full, err)
 		// Continue anyway since file is deleted
 	}
-	
+
 	h.disableAuth(ctx, full)
-	
+
 	c.JSON(200, gin.H{"status": "ok", "deleted": true, "file": filepath.Base(name)})
 }
 
@@ -971,17 +974,65 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 				EmailAddress string `json:"email_address"`
 			} `json:"account"`
 		}
+		// ... existing token exchange code ...
 		if errU := json.Unmarshal(respBody, &tResp); errU != nil {
 			log.Errorf("failed to parse token response: %v", errU)
 			SetOAuthSessionError(state, "Failed to parse token response")
 			return
 		}
+
+		// --- NEW LOGIC: Use the Access Token to fetch Session Key / Org ID ---
+		// We try to hit the organization endpoint.
+		// Older commits suggested this flow: OAuth Token -> claude.ai Request -> Session Info
+
+		sessionKey := ""
+		orgID := ""
+
+		// Try to fetch organization info using the new Access Token via HTTP client
+		// This assumes the Access Token is valid for claude.ai API calls (which it should be if scope was correct)
+		orgReq, _ := http.NewRequestWithContext(ctx, "GET", "https://claude.ai/api/organizations", nil)
+		// Try setting it as Bearer token first (standard OAuth)
+		orgReq.Header.Set("Authorization", "Bearer "+tResp.AccessToken)
+		orgReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+		orgResp, errOrg := httpClient.Do(orgReq)
+		if errOrg == nil {
+			defer orgResp.Body.Close()
+			if orgResp.StatusCode == 200 {
+				orgBody, _ := io.ReadAll(orgResp.Body)
+				// Check for cookies in response (sometimes session is set here)
+				for _, c := range orgResp.Cookies() {
+					if c.Name == "sessionKey" {
+						sessionKey = c.Value
+					}
+				}
+				// Parse Organizations
+				// Response is typically List<Organization>
+				var orgs []map[string]any
+				if json.Unmarshal(orgBody, &orgs) == nil && len(orgs) > 0 {
+					if id, ok := orgs[0]["uuid"].(string); ok {
+						orgID = id
+					}
+				}
+			} else {
+				// Try getting sessionKey from the Set-Cookie of the OAuth response itself?
+				// Unlikely but possible.
+			}
+		}
+
+		// SessionKey extraction from browser cookies has been disabled
+		// (it caused terminal window spam on Windows due to CDP automation)
+		log.Infof("OAuth callback complete. SessionKey from API: %v, OrgID: %v", sessionKey != "", orgID != "")
+
 		bundle := &claude.ClaudeAuthBundle{
 			TokenData: claude.ClaudeTokenData{
 				AccessToken:  tResp.AccessToken,
 				RefreshToken: tResp.RefreshToken,
 				Email:        tResp.Account.EmailAddress,
 				Expire:       time.Now().Add(time.Duration(tResp.ExpiresIn) * time.Second).Format(time.RFC3339),
+				// Store captured session key if any
+				SessionKey: sessionKey,
+				OrgID:      orgID,
 			},
 			LastRefresh: time.Now().Format(time.RFC3339),
 		}
@@ -2302,4 +2353,216 @@ func (h *Handler) GetAuthStatus(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "wait"})
+}
+
+// --- Claude Browser Automation ---
+
+func (h *Handler) RequestAnthropicTokenBrowser(c *gin.Context) {
+	sessionKey, err := h.captureClaudeSessionKey(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Create a minimal auth record
+	auth := &coreauth.Auth{
+		Provider:  "claude",
+		Metadata:  map[string]any{"sessionToken": sessionKey},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if _, err := h.saveTokenRecord(c.Request.Context(), auth); err != nil {
+		log.Errorf("Failed to save token: %v", err)
+		// We return the key anyway so the client can use it
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"sessionKey": sessionKey,
+		"status":     "success",
+	})
+}
+
+func (h *Handler) captureClaudeSessionKey(parentCtx context.Context) (string, error) {
+	// 1. Detect default browser path
+	browserPath, err := getDefaultBrowserPath(parentCtx)
+	if err != nil {
+		log.Warnf("Failed to detect default browser: %v", err)
+		browserPath = ""
+	} else {
+		log.Infof("Detected default browser: %s", browserPath)
+	}
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", false),
+		chromedp.Flag("enable-automation", false),
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.WindowSize(1200, 800),
+	)
+
+	if browserPath != "" {
+		opts = append(opts, chromedp.ExecPath(browserPath))
+
+		// 2. Locate and Clone Profile (Windows specific)
+		var profilePath string
+		home, _ := os.UserConfigDir() // AppData/Roaming
+
+		// Detect profile path based on browser type
+		browserPathLower := strings.ToLower(browserPath)
+		if strings.Contains(browserPathLower, "opera") {
+			profilePath = filepath.Join(home, "Opera Software", "Opera Stable")
+		} else if strings.Contains(browserPathLower, "chrome") {
+			localHome, _ := os.UserCacheDir()
+			profilePath = filepath.Join(filepath.Dir(localHome), "Local", "Google", "Chrome", "User Data")
+		} else if strings.Contains(browserPathLower, "msedge") { // Edge
+			localHome, _ := os.UserCacheDir()
+			profilePath = filepath.Join(filepath.Dir(localHome), "Local", "Microsoft", "Edge", "User Data")
+		} else if strings.Contains(browserPathLower, "brave") { // Brave
+			localHome, _ := os.UserCacheDir()
+			profilePath = filepath.Join(filepath.Dir(localHome), "Local", "BraveSoftware", "Brave-Browser", "User Data")
+		} else if strings.Contains(browserPathLower, "vivaldi") { // Vivaldi
+			localHome, _ := os.UserCacheDir()
+			profilePath = filepath.Join(filepath.Dir(localHome), "Local", "Vivaldi", "User Data")
+		}
+
+		// If profile found, clone it
+		if profilePath != "" {
+			if _, err := os.Stat(profilePath); err == nil {
+				tempDir, err := os.MkdirTemp("", "orbit-browser-clone")
+				if err == nil {
+					log.Infof("Cloning profile from %s to %s", profilePath, tempDir)
+					defer os.RemoveAll(tempDir)
+
+					cmd := exec.CommandContext(parentCtx, "robocopy", profilePath, tempDir, "/E",
+						"/XD", "Cache", "Code Cache", "GPUCache", "Service Worker", "CacheStorage", "ScriptCache",
+						"/XF", "lockfile", "LOCK",
+						"/R:0", "/W:0",
+					)
+					_ = cmd.Run()
+
+					opts = append(opts, chromedp.UserDataDir(tempDir))
+				}
+			}
+		}
+	}
+
+	// Create a chromedp context with a visible browser (not headless)
+	opts = append(opts,
+		chromedp.Flag("headless", false),
+		chromedp.Flag("disable-gpu", false),
+		chromedp.Flag("no-sandbox", true),
+		chromedp.WindowSize(1200, 800),
+		// Add flags to prevent automation detection if possible
+		chromedp.Flag("enable-automation", false),
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(parentCtx, opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	log.Info("Navigating to https://claude.ai/login...")
+
+	if err := chromedp.Run(ctx, chromedp.Navigate("https://claude.ai/login")); err != nil {
+		return "", fmt.Errorf("failed to navigate to login: %w", err)
+	}
+
+	log.Info("Waiting for sessionKey cookie...")
+
+	// Wait loop for cookie
+	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer timeoutCancel()
+
+	var sessionKey string
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeoutCtx.Done():
+			return "", fmt.Errorf("timeout waiting for login")
+		case <-ticker.C:
+			// Check cookies
+			var cookies []*network.Cookie
+			if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+				var err error
+				cookies, err = network.GetCookies().WithURLs([]string{"https://claude.ai"}).Do(ctx)
+				return err
+			})); err != nil {
+				log.Warnf("Failed to get cookies: %v", err)
+				continue
+			}
+
+			for _, cookie := range cookies {
+				if cookie.Name == "sessionKey" && cookie.Value != "" {
+					sessionKey = cookie.Value
+					break
+				}
+			}
+
+			if sessionKey != "" {
+				log.Infof("Successfully captured sessionKey: %s...", sessionKey[:10])
+				return sessionKey, nil
+			}
+		}
+	}
+}
+
+func getDefaultBrowserPath(ctx context.Context) (string, error) {
+	if os.Getenv("GOOS") != "windows" {
+		return "", fmt.Errorf("autodetect only supported on windows")
+	}
+
+	// 1. Get UserChoice ProgId for http
+	out, err := exec.CommandContext(ctx, "reg", "query", "HKCU\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\http\\UserChoice", "/v", "ProgId").Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to query ProgId: %w", err)
+	}
+
+	lines := strings.Split(string(out), "\n")
+	var progID string
+	for _, line := range lines {
+		if strings.Contains(line, "ProgId") {
+			parts := strings.Fields(line)
+			if len(parts) >= 3 {
+				progID = parts[2]
+			}
+		}
+	}
+
+	if progID == "" {
+		return "", fmt.Errorf("ProgId not found in registry output")
+	}
+
+	// 2. Get Open Command for that ProgId
+	cmdKey := fmt.Sprintf("HKCR\\%s\\shell\\open\\command", progID)
+	out, err = exec.CommandContext(ctx, "reg", "query", cmdKey).Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to query command for ProgId %s: %w", progID, err)
+	}
+
+	outputStr := string(out)
+	firstQuote := strings.Index(outputStr, "\"")
+	if firstQuote == -1 {
+		parts := strings.Split(outputStr, "REG_SZ")
+		if len(parts) > 1 {
+			cmdPart := strings.TrimSpace(parts[1])
+			fields := strings.Fields(cmdPart)
+			if len(fields) > 0 {
+				return fields[0], nil
+			}
+		}
+		return "", fmt.Errorf("executable path not found in registry output")
+	}
+
+	remaining := outputStr[firstQuote+1:]
+	secondQuote := strings.Index(remaining, "\"")
+	if secondQuote == -1 {
+		return "", fmt.Errorf("malformed registry path (missing closing quote)")
+	}
+
+	browserPath := remaining[:secondQuote]
+	return browserPath, nil
 }

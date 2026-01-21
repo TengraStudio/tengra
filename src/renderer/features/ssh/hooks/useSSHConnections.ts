@@ -39,11 +39,11 @@ export function useSSHConnections(isOpen: boolean) {
 
             const merged: SSHConnection[] = profilesRaw.map(p => {
                 const conn: SSHConnection = {
-                    id: p.id || '',
-                    name: p.name || '',
-                    host: p.host || '',
-                    port: p.port || 22,
-                    username: p.username || '',
+                    id: p.id ?? '',
+                    name: p.name ?? '',
+                    host: p.host ?? '',
+                    port: p.port ?? 22,
+                    username: p.username ?? '',
                     status: 'disconnected' as const,
                     authType: p.privateKey ? 'key' : 'password'
                 }
@@ -106,7 +106,7 @@ export function useSSHConnections(isOpen: boolean) {
             updateConnectionStatus(id, 'connected')
             setIsConnecting(false)
             setSelectedConnectionId(id)
-            window.electron.ssh.shellStart(id)
+            void window.electron.ssh.shellStart(id)
         }
 
         const onDisconnected = (id: string) => {

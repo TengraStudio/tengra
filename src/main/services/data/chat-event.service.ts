@@ -1,6 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { JsonValue } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ChatEvent {
@@ -82,9 +83,9 @@ export class ChatEventService extends BaseService {
                 id: row.id,
                 threadId: row.thread_id,
                 type: row.type as ChatEventType,
-                payload: JSON.parse(row.payload) as JsonValue,
+                payload: safeJsonParse<JsonValue>(row.payload, {}),
                 timestamp: row.timestamp,
-                metadata: JSON.parse(row.metadata) as JsonValue
+                metadata: safeJsonParse<JsonValue>(row.metadata, {})
             }));
         } catch (error) {
             this.logError(`Failed to get events for thread ${threadId}`, error);

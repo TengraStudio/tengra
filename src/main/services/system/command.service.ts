@@ -73,7 +73,7 @@ export class CommandService {
         if (!safety.allowed) {
             return {
                 success: false,
-                error: safety.reason || 'Command blocked by safety policy'
+                error: safety.reason ?? 'Command blocked by safety policy'
             }
         }
 
@@ -83,7 +83,7 @@ export class CommandService {
                 const child = exec(command, {
                     cwd: options?.cwd || process.cwd(),
                     timeout: options?.timeout || this.maxTimeout,
-                    shell: options?.shell || 'powershell.exe',
+                    shell: options?.shell ?? 'powershell.exe',
                     maxBuffer: 10 * 1024 * 1024
                 }, (error, stdout, stderr) => {
                     if (options.id) {this.activeProcesses.delete(options.id)}
@@ -115,7 +115,7 @@ export class CommandService {
             const { stdout, stderr } = await execAsync(command, {
                 cwd: options?.cwd || process.cwd(),
                 timeout: options?.timeout || this.maxTimeout,
-                shell: options?.shell || 'powershell.exe',
+                shell: options?.shell ?? 'powershell.exe',
                 maxBuffer: 10 * 1024 * 1024 // 10MB buffer
             })
             // ... same as before
@@ -148,7 +148,7 @@ export class CommandService {
             if (!safety.allowed) {
                 resolve({
                     success: false,
-                    error: safety.reason || 'Command blocked by safety policy'
+                    error: safety.reason ?? 'Command blocked by safety policy'
                 })
                 return
             }

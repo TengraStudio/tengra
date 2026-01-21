@@ -5,6 +5,8 @@ import { SystemEventKey, SystemEvents } from '@shared/types/events'
 
 export class EventBusService extends BaseService {
     private bus: EventEmitter
+    private eventHistory: { event: string; payload: unknown; timestamp: number }[] = []
+    private readonly MAX_HISTORY = 50
 
     constructor() {
         super('EventBusService')
@@ -16,9 +18,25 @@ export class EventBusService extends BaseService {
      * Emit a strictly typed system event
      */
     emit<K extends SystemEventKey>(event: K, payload: SystemEvents[K]): void {
+        const timestamp = Date.now()
+
+        // Add to history
+        this.eventHistory.unshift({ event, payload, timestamp })
+        if (this.eventHistory.length > this.MAX_HISTORY) {
+            this.eventHistory.pop()
+        }
+
         this.bus.emit(event, payload)
-        // Optional: log significant events?
-        // this.logDebug(`Emitted ${event}`, payload)
+
+        // Always log significant events
+        this.logDebug(`Event: ${event} - Payload: ${JSON.stringify(payload)}`)
+    }
+
+    /**
+     * Get recent event history
+     */
+    getHistory() {
+        return this.eventHistory
     }
 
     /**

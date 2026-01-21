@@ -25,7 +25,7 @@ export function useMemory() {
     }, []);
 
     useEffect(() => {
-        refresh();
+        void refresh();
     }, [refresh]);
 
     const deleteFact = async (id: string) => {
@@ -47,7 +47,7 @@ export function useMemory() {
     const addFact = async (content: string, tags: string[] = []) => {
         const res = await window.electron.memory.addFact(content, tags);
         if (res.success) {
-            refresh();
+            void refresh();
         }
         return res;
     };

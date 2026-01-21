@@ -35,7 +35,7 @@ export function registerHealthIpc(healthCheckService: HealthCheckService) {
             throw new Error('Service name must be a non-empty string')
         }
         const status = healthCheckService.getStatus()
-        return status.services.find(s => s.name === serviceName.trim()) || null
+        return status.services.find(s => s.name === serviceName.trim()) ?? null
     }, null))
 
     /**

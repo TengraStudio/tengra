@@ -3,6 +3,7 @@ import * as net from 'net';
 import * as os from 'os';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger'
 import { INetworkService } from '@main/types/services';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
@@ -66,9 +67,9 @@ export class NetworkService implements INetworkService {
         try {
             const wsServer = new WebSocketServer({ port });
             wsServer.on('connection', (ws) => {
-                console.log('[WS] Connected');
+                appLogger.info('network.service', '[WS] Connected');
                 ws.on('message', (message: string) => {
-                    console.log('[WS] Received:', message);
+                    appLogger.info('network.service', '[WS] Received:', message);
                 });
             });
             return { success: true, message: `WebSocket server started on port ${port}` };

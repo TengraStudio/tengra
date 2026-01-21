@@ -13,7 +13,7 @@ export class FolderRepository implements IRepository<Folder> {
 
     async findById(id: string): Promise<Folder | null> {
         const folders = await this.db.getFolders();
-        return folders.find(f => f.id === id) || null;
+        return folders.find(f => f.id === id) ?? null;
     }
 
     async create(item: Folder): Promise<Folder> {

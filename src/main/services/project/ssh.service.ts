@@ -7,6 +7,7 @@ import * as path from 'path'
 import { appLogger } from '@main/logging/logger'
 import { SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats } from '@shared/types/ssh'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { safeStorage } from 'electron'
 import { Client, ClientChannel } from 'ssh2'
 
@@ -66,10 +67,42 @@ export class SSHService extends EventEmitter {
     private keepaliveTimers: Map<string, NodeJS.Timeout> = new Map()
     private storagePath: string
     private initPromise: Promise<void> | null = null
+    // Allowed base directories for file operations (prevents path traversal)
+    private allowedBasePaths: string[] = ['/home', '/var', '/tmp', '/opt', '/srv', '/usr/local']
 
     constructor(storagePath: string) {
         super()
         this.storagePath = storagePath
+    }
+
+    /**
+     * Validates and normalizes a remote path to prevent path traversal attacks.
+     * Returns the normalized path if valid, throws if path traversal detected.
+     */
+    private validateRemotePath(remotePath: string): string {
+        // Normalize the path to resolve '..' and '.' segments
+        const normalized = path.posix.normalize(remotePath)
+
+        // Check for path traversal attempts that escape allowed directories
+        if (normalized.includes('..')) {
+            throw new Error('Access denied: Path traversal detected')
+        }
+
+        // Ensure path is absolute
+        if (!normalized.startsWith('/')) {
+            throw new Error('Access denied: Path must be absolute')
+        }
+
+        // Check if path starts with an allowed base path
+        const isAllowed = this.allowedBasePaths.some(base =>
+            normalized === base || normalized.startsWith(base + '/')
+        )
+
+        if (!isAllowed) {
+            throw new Error(`Access denied: Path must be within allowed directories: ${this.allowedBasePaths.join(', ')}`)
+        }
+
+        return normalized
     }
 
     /**
@@ -129,7 +162,7 @@ export class SSHService extends EventEmitter {
                 return []
             }
             const content = await fs.promises.readFile(this.profilesPath, 'utf-8')
-            return JSON.parse(content) as SSHConnection[]
+            return safeJsonParse<SSHConnection[]>(content, [])
         } catch (error) {
             appLogger.error('SSHService', `Failed to load SSH profiles: ${getErrorMessage(error as Error)}`)
             return []
@@ -152,7 +185,10 @@ export class SSHService extends EventEmitter {
             }
 
             if (index >= 0) {
-                profiles[index]! = safeProfile
+                const existingProfile = profiles[index]
+                if (existingProfile !== undefined) {
+                    profiles[index] = safeProfile
+                }
             } else {
                 profiles.push(safeProfile)
             }
@@ -192,7 +228,10 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id)
         if (index === -1) { return false }
 
-        profiles[index]!.isFavorite = !profiles[index]!.isFavorite
+        const p = profiles[index];
+        if (p) {
+            p.isFavorite = !p.isFavorite
+        }
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
         return true
     }
@@ -224,7 +263,10 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id)
         if (index === -1) { return false }
 
-        profiles[index]!.tags = tags
+        const p = profiles[index];
+        if (p) {
+            p.tags = tags
+        }
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
         return true
     }
@@ -299,10 +341,12 @@ export class SSHService extends EventEmitter {
                         const profiles = await this.getSavedProfiles()
                         const profileIndex = profiles.findIndex(p => p.id === config.id)
                         if (profileIndex >= 0) {
-                            const profile = profiles[profileIndex]!;
-                            profile.lastConnected = Date.now();
-                            profile.connectionCount = (profile.connectionCount ?? 0) + 1;
-                            await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
+                            const profile = profiles[profileIndex]
+                            if (profile) {
+                                profile.lastConnected = Date.now();
+                                profile.connectionCount = (profile.connectionCount ?? 0) + 1;
+                                await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2))
+                            }
                         }
                     } catch {
                         // Ignore error updating history
@@ -463,14 +507,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async listDirectory(connectionId: string, path: string): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
+    async listDirectory(connectionId: string, dirPath: string): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(dirPath)
         return new Promise((resolve) => {
             conn.sftp((err, sftp) => {
                 if (err) { return resolve({ success: false, error: err.message }) }
-                sftp.readdir(path, (err, list) => {
+                sftp.readdir(validPath, (err, list) => {
                     if (err) { return resolve({ success: false, error: err.message }) }
                     const files = list.map((entry) => {
                         const permissions = typeof entry.longname === 'string'
@@ -495,14 +540,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async readFile(connectionId: string, path: string): Promise<string> {
+    async readFile(connectionId: string, filePath: string): Promise<string> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(filePath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                const stream = sftp.createReadStream(path)
+                const stream = sftp.createReadStream(validPath)
                 let data = ''
                 stream.on('data', (d: Buffer | string) => data += d.toString())
                 stream.on('end', () => resolve(data))
@@ -511,14 +557,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async writeFile(connectionId: string, path: string, content: string): Promise<boolean> {
+    async writeFile(connectionId: string, filePath: string, content: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(filePath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                const stream = sftp.createWriteStream(path)
+                const stream = sftp.createWriteStream(validPath)
                 stream.write(content)
                 stream.end()
                 stream.on('close', () => resolve(true))
@@ -527,14 +574,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async deleteDirectory(connectionId: string, path: string): Promise<boolean> {
+    async deleteDirectory(connectionId: string, dirPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(dirPath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                sftp.rmdir(path, (err) => {
+                sftp.rmdir(validPath, (err) => {
                     if (err) { return reject(err) }
                     resolve(true)
                 })
@@ -542,14 +590,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async deleteFile(connectionId: string, path: string): Promise<boolean> {
+    async deleteFile(connectionId: string, filePath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(filePath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                sftp.unlink(path, (err) => {
+                sftp.unlink(validPath, (err) => {
                     if (err) { return reject(err) }
                     resolve(true)
                 })
@@ -557,14 +606,15 @@ export class SSHService extends EventEmitter {
         })
     }
 
-    async createDirectory(connectionId: string, path: string): Promise<boolean> {
+    async createDirectory(connectionId: string, dirPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validPath = this.validateRemotePath(dirPath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                sftp.mkdir(path, (err) => {
+                sftp.mkdir(validPath, (err) => {
                     if (err) { return reject(err) }
                     resolve(true)
                 })
@@ -576,10 +626,12 @@ export class SSHService extends EventEmitter {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validOldPath = this.validateRemotePath(oldPath)
+        const validNewPath = this.validateRemotePath(newPath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
-                sftp.rename(oldPath, newPath, (err) => {
+                sftp.rename(validOldPath, validNewPath, (err) => {
                     if (err) { return reject(err) }
                     resolve(true)
                 })
@@ -591,12 +643,13 @@ export class SSHService extends EventEmitter {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validRemotePath = this.validateRemotePath(remotePath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
 
                 // Use fastPut for efficiency
-                sftp.fastPut(localPath, remotePath, {
+                sftp.fastPut(localPath, validRemotePath, {
                     step: (transferred, _chunk, total) => {
                         if (onProgress) { onProgress(transferred, total) }
                     }
@@ -612,11 +665,12 @@ export class SSHService extends EventEmitter {
         const conn = this.connections.get(connectionId)
         if (!conn) { throw new Error('Not connected') }
 
+        const validRemotePath = this.validateRemotePath(remotePath)
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) { return reject(err) }
 
-                sftp.fastGet(remotePath, localPath, {
+                sftp.fastGet(validRemotePath, localPath, {
                     step: (transferred, _chunk, total) => {
                         if (onProgress) { onProgress(transferred, total) }
                     }
@@ -860,9 +914,9 @@ export class SSHService extends EventEmitter {
 
     private parseMemoryStats(output: string) {
         const lines = output.split('\n')
-        const values = lines[1]?.split(/\s+/).filter(Boolean) || []
-        const total = parseInt(values[1] || '0')
-        const used = parseInt(values[2] || '0')
+        const values = lines[1]?.split(/\s+/).filter(Boolean) ?? []
+        const total = parseInt(values[1] ?? '0')
+        const used = parseInt(values[2] ?? '0')
         return { total, used, percent: total ? Math.round((used / total) * 100) : 0 }
     }
 
@@ -872,8 +926,8 @@ export class SSHService extends EventEmitter {
 
     private parseDiskStats(output: string): string {
         const lines = output.split('\n')
-        const values = lines[1]?.split(/\s+/).filter(Boolean) || []
-        return values[4] || '0%'
+        const values = lines[1]?.split(/\s+/).filter(Boolean) ?? []
+        return values[4] ?? '0%'
     }
 
     async getInstalledPackages(connectionId: string, manager: 'apt' | 'npm' | 'pip' = 'apt'): Promise<SSHPackageInfo[]> {
@@ -901,12 +955,11 @@ export class SSHService extends EventEmitter {
                     return parts[0] ? { name: parts[0].trim().replace(/^.* /, ''), version: parts[1]?.trim() || 'unknown' } : null
                 }).filter((p): p is SSHPackageInfo => p !== null)
             }
-            if (manager === 'pip') {
-                return lines.slice(2).map(l => {
-                    const parts = l.split(/\s+/)
-                    return parts[0] ? { name: parts[0], version: parts[1] || 'unknown' } : null
-                }).filter((p): p is SSHPackageInfo => p !== null)
-            }
+            // manager is guaranteed to be 'pip' here
+            return lines.slice(2).map(l => {
+                const parts = l.split(/\s+/)
+                return parts[0] ? { name: parts[0], version: parts[1] || 'unknown' } : null
+            }).filter((p): p is SSHPackageInfo => p !== null)
 
             return []
         } catch (error) {

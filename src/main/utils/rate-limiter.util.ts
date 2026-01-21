@@ -137,7 +137,11 @@ export function getRateLimiter(provider: string): RateLimiter {
         limiters.set(key, new RateLimiter(options))
     }
 
-    return limiters.get(key)!
+    const limiter = limiters.get(key)
+    if (!limiter) {
+        throw new Error(`Failed to get rate limiter for provider: ${key}`)
+    }
+    return limiter
 }
 
 /**

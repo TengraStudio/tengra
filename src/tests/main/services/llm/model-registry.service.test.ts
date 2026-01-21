@@ -1,6 +1,7 @@
-import { AuthService } from '@main/services/security/auth.service'
 import { ModelRegistryService } from '@main/services/llm/model-registry.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
+import { AuthService } from '@main/services/security/auth.service'
+import { TokenService } from '@main/services/security/token.service'
 import { EventBusService } from '@main/services/system/event-bus.service'
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
 import { ProcessManagerService } from '@main/services/system/process-manager.service'
@@ -24,6 +25,7 @@ describe('ModelRegistryService', () => {
     let mockProxyService: Partial<ProxyService>
     let mockEventBus: Partial<EventBusService>
     let mockAuthService: Partial<AuthService>
+    let mockTokenService: Partial<TokenService>
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -50,24 +52,26 @@ describe('ModelRegistryService', () => {
         mockProxyService = { getModels: vi.fn().mockResolvedValue({ data: [] }) }
         mockEventBus = { emit: vi.fn() }
         mockAuthService = { getActiveToken: vi.fn().mockResolvedValue('test-token') }
+        mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) }
 
-        service = new ModelRegistryService(
-            mockProcessManager as ProcessManagerService,
-            mockScheduler as JobSchedulerService,
-            mockSettings as SettingsService,
-            mockProxyService as ProxyService,
-            mockEventBus as EventBusService,
-            mockAuthService as AuthService
-        )
+        service = new ModelRegistryService({
+            processManager: mockProcessManager as ProcessManagerService,
+            jobScheduler: mockScheduler as JobSchedulerService,
+            settingsService: mockSettings as SettingsService,
+            proxyService: mockProxyService as ProxyService,
+            eventBus: mockEventBus as EventBusService,
+            authService: mockAuthService as AuthService,
+            tokenService: mockTokenService as TokenService
+        })
     })
 
     describe('constructor', () => {
         it('should register a recurring job for cache updates', () => {
             expect(mockScheduler.registerRecurringJob).toHaveBeenCalledWith(
                 'model-registry-update',
-                // eslint-disable-next-line
+
                 expect.any(Function),
-                // eslint-disable-next-line
+
                 expect.any(Function)
             )
         })
@@ -76,8 +80,8 @@ describe('ModelRegistryService', () => {
     describe('getRemoteModels', () => {
         it('should fetch and cache remote models', async () => {
             const models = await service.getRemoteModels()
-            expect(models.length).toBe(2) // 1 ollama + 1 huggingface
-            expect(mockProcessManager.sendRequest).toHaveBeenCalledTimes(2)
+            expect(models.length).toBe(1) // only huggingface is fetched in fetchRemoteModels
+            expect(mockProcessManager.sendRequest).toHaveBeenCalledTimes(1)
         })
 
         it('should return cached models on subsequent calls', async () => {
@@ -85,26 +89,12 @@ describe('ModelRegistryService', () => {
                 ; (mockProcessManager.sendRequest as ReturnType<typeof vi.fn>).mockClear()
 
             const models = await service.getRemoteModels()
-            expect(models.length).toBe(2)
+            expect(models.length).toBe(1)
             expect(mockProcessManager.sendRequest).not.toHaveBeenCalled()
         })
 
         it('should include models with correct provider tags', async () => {
             const models = await service.getRemoteModels()
-
-            const ollamaModel = models.find(m => m.provider === 'ollama')
-            expect(ollamaModel).toBeDefined()
-            // expect(ollamaModel?.id).toBe('ollama/llama3') // Implementation detail changed? Rust service returns what? 
-            // The mock returns name:'llama3' which mapping logic converts to id:'ollama/llama3' maybe?
-            // Checking mapping logic in service:
-            // models.push(...response.models) -> Rust returns raw models? 
-            // The service code I wrote: `models.push(...response.models)`. 
-            // It assumes Rust returns ALREADY formatted `ModelProviderInfo` or similar?
-            // Rust: `ModelProviderInfo { ... }`
-            // So if my mock returns raw fields, they directly go to `models`.
-            // My mock above returns: name: 'llama3'. It does NOT have 'id', 'provider'.
-            // Rust service SHOULD return fully formed objects.
-            // I'll update mock to return full objects to match Rust expectations.
 
             const hfModel = models.find(m => m.provider === 'huggingface')
             expect(hfModel).toBeDefined()

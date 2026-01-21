@@ -838,12 +838,12 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 				statusCode := statusCodeFromResult(result.Error)
 				switch statusCode {
 				case 401:
-					next := now.Add(30 * time.Minute)
+					next := now.Add(5 * time.Minute)
 					state.NextRetryAfter = next
 					suspendReason = "unauthorized"
 					shouldSuspendModel = true
 				case 402, 403:
-					next := now.Add(30 * time.Minute)
+					next := now.Add(5 * time.Minute)
 					state.NextRetryAfter = next
 					suspendReason = "payment_required"
 					shouldSuspendModel = true

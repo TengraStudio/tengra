@@ -1,8 +1,10 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 export interface ProjectStats {
     fileCount: number
@@ -26,13 +28,15 @@ export interface ProjectAnalysis {
     todos: string[]
 }
 
+const LOG_CONTEXT = 'ProjectService'
+
 export class ProjectService {
     constructor() { }
 
     private watchers: Map<string, import('fs').FSWatcher> = new Map()
 
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
-        console.log(`[ProjectService] Starting watch on ${rootPath}`)
+        appLogger.info(LOG_CONTEXT, `Starting watch on ${rootPath}`)
 
         // Stop existing watcher if any
         if (this.watchers.has(rootPath)) {
@@ -51,11 +55,11 @@ export class ProjectService {
                 onChange(event, path.join(rootPath, filename.toString()))
             })
 
-            watcher.on('error', (err) => console.error(`[ProjectWatcher] Error on ${rootPath}:`, err))
+            watcher.on('error', (err) => appLogger.error(LOG_CONTEXT, `Error on ${rootPath}:`, err))
             this.watchers.set(rootPath, watcher)
 
         } catch (e) {
-            console.warn(`[ProjectService] Failed to watch ${rootPath}:`, getErrorMessage(e as Error))
+            appLogger.warn(LOG_CONTEXT, `Failed to watch ${rootPath}:`, getErrorMessage(e as Error))
         }
     }
 
@@ -72,20 +76,20 @@ export class ProjectService {
             rootPath = rootPath.slice(1)
         }
         rootPath = path.resolve(rootPath)
-        console.log('[ProjectService] Analyzing project at (normalized):', rootPath)
+        appLogger.info(LOG_CONTEXT, 'Analyzing project at (normalized):', { rootPath })
         const runStart = Date.now()
 
         const files = await this.scanFiles(rootPath, rootPath)
-        console.log(`[ProjectService] Found ${files.length} files`)
+        appLogger.info(LOG_CONTEXT, `Found ${files.length} files`)
         const type = await this.detectType(files)
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type, files)
-        const stats = await this.calculateStats(files)
-        console.log(`[ProjectService] Stats calculated:`, stats)
+        const stats = await this.calculateStats(files, runStart)
+        appLogger.info(LOG_CONTEXT, `Stats calculated:`, stats as unknown as JsonObject)
         const languages = this.calculateLanguages(files)
         const monorepo = await this.detectMonorepo(rootPath, files)
         const todos = await this.findTodos(rootPath, files)
 
-        console.log(`[ProjectService] Analysis complete in ${Date.now() - runStart}ms`)
+        appLogger.info(LOG_CONTEXT, `Analysis complete in ${Date.now() - runStart}ms`)
 
         return {
             type,
@@ -104,55 +108,57 @@ export class ProjectService {
         try {
             const fileNames = files.map(f => path.basename(f).toLowerCase())
 
-            // pnpm
             if (fileNames.includes('pnpm-workspace.yaml')) {
                 return { type: 'pnpm', packages: await this.findPackages(rootPath, 'pnpm-workspace.yaml') }
             }
-
-            // lerna
             if (fileNames.includes('lerna.json')) {
                 return { type: 'lerna', packages: await this.findPackages(rootPath, 'lerna.json') }
             }
-
-            // yarn/npm workspaces (in package.json)
             if (fileNames.includes('package.json')) {
-                const pkgPath = path.join(rootPath, 'package.json')
-                const content = await fs.readFile(pkgPath, 'utf-8')
-                const pkg = JSON.parse(content)
-                if (pkg.workspaces) {
-                    return { type: 'npm', packages: pkg.workspaces } // Simplification: actually explicit globs
-                }
+                const npmWorkspace = await this.checkNpmWorkspace(rootPath)
+                if (npmWorkspace) { return npmWorkspace }
             }
 
-            // Gradle multi-project
-            const gradleSettings = fileNames.find(f => f === 'settings.gradle' || f === 'settings.gradle.kts')
-            if (gradleSettings) {
-                const settingsPath = path.join(rootPath, gradleSettings)
-                const content = await fs.readFile(settingsPath, 'utf-8')
-                // Match include 'module', include ':module', include(":module")
-                const moduleMatches = content.matchAll(/include\s*\(?([\s\S]*?)\)?(?:\n|$)/g)
-                const packages: string[] = []
-                for (const m of moduleMatches) {
-                    const block = m[1] || ''
-                    const names = block.matchAll(/['"]:?([^'"]+)['"]/g)
-                    for (const n of names) {
-                        if (n[1]) {
-                            packages.push(n[1])
-                        }
-                    }
-                }
-                if (packages.length > 0) {
-                    return { type: 'unknown', packages } // Gradle doesn't have a single "monorepo" type in the UI enum but we can use packages
-                }
-            }
+            const gradleWorkspace = await this.checkGradleWorkspace(rootPath, fileNames)
+            if (gradleWorkspace) { return gradleWorkspace }
 
-            // Turbo
             if (fileNames.includes('turbo.json')) {
                 return { type: 'turbo', packages: [] }
             }
 
         } catch (e) {
-            console.warn('[ProjectService] Monorepo detection failed:', e)
+            appLogger.warn(LOG_CONTEXT, 'Monorepo detection failed:', getErrorMessage(e as Error))
+        }
+        return undefined
+    }
+
+    private async checkNpmWorkspace(rootPath: string): Promise<ProjectAnalysis['monorepo'] | undefined> {
+        const pkgPath = path.join(rootPath, 'package.json')
+        const content = await fs.readFile(pkgPath, 'utf-8')
+        const pkg = safeJsonParse<{ workspaces?: string[] }>(content, {})
+        if (pkg.workspaces) {
+            return { type: 'npm', packages: pkg.workspaces }
+        }
+        return undefined
+    }
+
+    private async checkGradleWorkspace(rootPath: string, fileNames: string[]): Promise<ProjectAnalysis['monorepo'] | undefined> {
+        const gradleSettings = fileNames.find(f => f === 'settings.gradle' || f === 'settings.gradle.kts')
+        if (gradleSettings) {
+            const settingsPath = path.join(rootPath, gradleSettings)
+            const content = await fs.readFile(settingsPath, 'utf-8')
+            const moduleMatches = content.matchAll(/include\s*\(?([\s\S]*?)\)?(?:\n|$)/g)
+            const packages: string[] = []
+            for (const m of moduleMatches) {
+                const block = m[1] ?? ''
+                const names = block.matchAll(/['"]:?([^'"]+)['"]/g)
+                for (const n of names) {
+                    if (n[1]) { packages.push(n[1]) }
+                }
+            }
+            if (packages.length > 0) {
+                return { type: 'unknown', packages }
+            }
         }
         return undefined
     }
@@ -165,47 +171,58 @@ export class ProjectService {
         })
 
         if (foundFile) {
-            try {
-                const content = await fs.readFile(foundFile, 'utf-8')
-                // Extract tasks (lines starting with - [ ], - [x], etc.)
-                const lines = content.split('\n')
-                const tasks = lines
-                    .map(l => l.trim())
-                    .filter(l => /^[-*+]\s*\[[ xX]?\]/.test(l) || /^[-*+]\s+/.test(l))
-                    .map(l => l.replace(/^[-*+]\s*\[[ xX]?\]\s*/, '').replace(/^[-*+]\s+/, ''))
-
-                if (tasks.length > 0) { return tasks }
-
-                // If no checklist, just return first non-empty 10 lines
-                return lines.filter(l => l.trim().length > 0).slice(0, 10)
-            } catch (e) {
-                console.warn('[ProjectService] Failed to read todo file:', e)
-            }
+            return this.parseTodoFile(foundFile)
         }
 
         // Fallback: look for TODO comments in code (first 10)
+        return this.scanCodeComments(files)
+    }
+
+    private async parseTodoFile(filePath: string): Promise<string[]> {
+        try {
+            const content = await fs.readFile(filePath, 'utf-8')
+            const lines = content.split('\n')
+            const tasks = lines
+                .map(l => l.trim())
+                .filter(l => /^[-*+]\s*\[[ xX]?\]/.test(l) || /^[-*+]\s+/.test(l))
+                .map(l => l.replace(/^[-*+]\s*\[[ xX]?\]\s*/, '').replace(/^[-*+]\s+/, ''))
+
+            if (tasks.length > 0) { return tasks }
+            // If no checklist, just return first non-empty 10 lines
+            return lines.filter(l => l.trim().length > 0).slice(0, 10)
+        } catch (e) {
+            appLogger.warn(LOG_CONTEXT, 'Failed to read todo file:', getErrorMessage(e as Error))
+            return []
+        }
+    }
+
+    private async scanCodeComments(files: string[]): Promise<string[]> {
         const codeFiles = files.filter(f => /\.(ts|tsx|js|jsx|py|go|rs|kt|java|cpp|h)$/.test(f)).slice(0, 100)
         const todoComments: string[] = []
         for (const file of codeFiles) {
             try {
                 const content = await fs.readFile(file, 'utf-8')
-                const lines = content.split('\n')
-                for (const line of lines) {
-                    if (line.includes('TODO:') || line.includes('FIXME:')) {
-                        const todoParts = line.split('TODO:')
-                        const fixmeParts = line.split('FIXME:')
-                        const comment = (todoParts.length > 1 ? todoParts[1]! : fixmeParts.length > 1 ? fixmeParts[1]! : undefined)?.trim()
-                        if (comment) {
-                            todoComments.push(comment)
-                        }
-                        if (todoComments.length >= 10) { break }
-                    }
-                }
+                this.extractTodosFromContent(content, todoComments)
+                if (todoComments.length >= 10) { break }
             } catch { /* ignore */ }
             if (todoComments.length >= 10) { break }
         }
-
         return todoComments
+    }
+
+    private extractTodosFromContent(content: string, todoComments: string[]) {
+        const lines = content.split('\n')
+        for (const line of lines) {
+            if (line.includes('TODO:') || line.includes('FIXME:')) {
+                const todoParts = line.split('TODO:')
+                const fixmeParts = line.split('FIXME:')
+                const comment = (todoParts.length > 1 ? todoParts[1] : fixmeParts.length > 1 ? fixmeParts[1] : undefined)?.trim()
+                if (comment) {
+                    todoComments.push(comment)
+                }
+                if (todoComments.length >= 10) { break }
+            }
+        }
     }
 
     private async findPackages(_rootPath: string, _configType: string): Promise<string[]> {
@@ -226,11 +243,11 @@ export class ProjectService {
         try {
             const pkgPath = path.join(dirPath, 'package.json')
             const content = await fs.readFile(pkgPath, 'utf-8')
-            pkg = JSON.parse(content)
+            pkg = safeJsonParse<JsonObject>(content, {})
             hasPackageJson = true
         } catch (error) {
             /* package.json not found or parse error */
-            console.debug(`[ProjectService] package.json not found in ${dirPath}:`, getErrorMessage(error as Error))
+            appLogger.debug('project.service', `[ProjectService] package.json not found in ${dirPath}:`, getErrorMessage(error as Error))
         }
 
         // 2. Check for README.md
@@ -240,7 +257,7 @@ export class ProjectService {
             readme = await fs.readFile(readmePath, 'utf-8')
         } catch (error) {
             /* README.md not found */
-            console.debug(`[ProjectService] README.md not found in ${dirPath}:`, getErrorMessage(error as Error))
+            appLogger.debug(LOG_CONTEXT, `README.md not found in ${dirPath}:`, getErrorMessage(error as Error))
         }
 
         // 3. Stats for this folder
@@ -250,10 +267,10 @@ export class ProjectService {
             files = entries.map(e => path.join(dirPath, e))
         } catch (error) {
             /* Failed to read directory */
-            console.warn(`[ProjectService] Failed to read directory ${dirPath}:`, getErrorMessage(error as Error))
+            appLogger.warn(LOG_CONTEXT, `Failed to read directory ${dirPath}:`, getErrorMessage(error as Error))
         }
 
-        const stats = await this.calculateStats(files)
+        const stats = await this.calculateStats(files, Date.now())
 
         return { hasPackageJson, pkg, readme, stats }
     }
@@ -336,23 +353,20 @@ export class ProjectService {
             const ext = path.extname(file).slice(1).toLowerCase()
             if (!ext) { continue }
 
-            const lang = commonExts[ext] || ext.toUpperCase()
-            langMap[lang] = (langMap[lang] || 0) + 1
+            const lang = commonExts[ext] ?? ext.toUpperCase()
+            langMap[lang] = (langMap[lang] ?? 0) + 1
         }
 
         return langMap
     }
 
     private async scanFiles(dir: string, rootPath: string, fileList: string[] = []): Promise<string[]> {
-        console.log(`[ProjectService] Scanning directory: ${dir}`)
-        // Simple recursive scan, respecting basic ignores
+        appLogger.info(LOG_CONTEXT, `Scanning directory: ${dir}`)
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true })
             for (const entry of entries) {
+                if (this.shouldIgnore(entry.name)) { continue }
                 const fullPath = path.join(dir, entry.name)
-
-                // Basic ignore list
-                if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === 'build' || entry.name === '.orbit' || entry.name === '.vscode' || entry.name === 'coverage') { continue }
 
                 if (entry.isDirectory()) {
                     await this.scanFiles(fullPath, rootPath, fileList)
@@ -361,286 +375,360 @@ export class ProjectService {
                 }
             }
         } catch (error) {
-            console.warn(`[ProjectService] Failed to scan directory ${dir}:`, getErrorMessage(error as Error))
+            appLogger.warn(LOG_CONTEXT, `Failed to scan directory ${dir}:`, getErrorMessage(error as Error))
         }
         if (dir === rootPath) {
-            console.log(`[ProjectService] Scan complete for ${dir}. Found ${fileList.length} files. First 3:`, fileList.slice(0, 3))
+            appLogger.info(LOG_CONTEXT, `Project analysis started for ${rootPath}. Found ${fileList.slice(0, 3)}...`)
         }
         return fileList
     }
 
+    private shouldIgnore(name: string): boolean {
+        return name === 'node_modules' || name === '.git' || name === 'dist' || name === 'build' || name === '.orbit' || name === '.vscode' || name === 'coverage'
+    }
+
     private async detectType(files: string[]): Promise<ProjectAnalysis['type'] | string> {
-        // Check for specific indicator files
         const fileNames = files.map(f => path.basename(f).toLowerCase())
         if (fileNames.includes('package.json')) { return 'node' }
-        if (fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'))) { return 'python' }
+        if (this.isPythonProject(fileNames)) { return 'python' }
         if (fileNames.includes('cargo.toml')) { return 'rust' }
         if (fileNames.includes('go.mod')) { return 'go' }
-        if (fileNames.includes('pom.xml') || fileNames.includes('build.gradle') || fileNames.includes('build.gradle.kts')) { return 'java' }
-        if (fileNames.includes('cmakelists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc') || f.endsWith('.h') || f.endsWith('.hpp'))) { return 'cpp' }
+        if (this.isJavaProject(fileNames)) { return 'java' }
+        if (this.isCppProject(fileNames)) { return 'cpp' }
         if (fileNames.some(f => f.endsWith('.php'))) { return 'php' }
-        if (fileNames.some(f => f.endsWith('.cs')) || fileNames.some(f => f.endsWith('.csproj'))) { return 'csharp' }
-        if (fileNames.some(f => f.endsWith('.kt')) || fileNames.some(f => f.endsWith('.kts'))) { return 'java' } // Map Kotlin to Java for now as they share the ecosystem
-
+        if (this.isCsharpProject(fileNames)) { return 'csharp' }
         return 'unknown'
     }
 
+    private isPythonProject(fileNames: string[]): boolean {
+        return fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'))
+    }
+
+    private isJavaProject(fileNames: string[]): boolean {
+        return fileNames.includes('pom.xml') || fileNames.includes('build.gradle') || fileNames.includes('build.gradle.kts') || fileNames.some(f => f.endsWith('.kt') || f.endsWith('.kts'))
+    }
+
+    private isCppProject(fileNames: string[]): boolean {
+        return fileNames.includes('cmakelists.txt') || fileNames.some(f => f.endsWith('.cpp') || f.endsWith('.cc') || f.endsWith('.h') || f.endsWith('.hpp'))
+    }
+
+    private isCsharpProject(fileNames: string[]): boolean {
+        return fileNames.some(f => f.endsWith('.cs') || f.endsWith('.csproj'))
+    }
+
     private async analyzeDependencies(rootPath: string, type: string, allFiles: string[]): Promise<{ frameworks: string[], dependencies: Record<string, string>, devDependencies: Record<string, string> }> {
-        const result = {
-            frameworks: [] as string[],
-            dependencies: {} as Record<string, string>,
-            devDependencies: {} as Record<string, string>
+        switch (type) {
+            case 'node': return this.analyzeNodeDependencies(rootPath)
+            case 'python': return this.analyzePythonDependencies(rootPath)
+            case 'go': return this.analyzeGoDependencies(rootPath)
+            case 'rust': return this.analyzeRustDependencies(rootPath)
+            case 'java': return this.analyzeJavaDependencies(rootPath, allFiles)
+            default: return { frameworks: [], dependencies: {}, devDependencies: {} }
+        }
+    }
+
+    private async analyzeNodeDependencies(rootPath: string) {
+        const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} }
+        try {
+            const pkgPath = path.join(rootPath, 'package.json')
+            const content = await fs.readFile(pkgPath, 'utf-8')
+            const pkg = safeJsonParse<JsonObject>(content, {})
+
+            result.dependencies = (pkg.dependencies as Record<string, string>) ?? {}
+            result.devDependencies = (pkg.devDependencies as Record<string, string>) ?? {}
+
+            this.detectNodeFrameworks(pkg, result.frameworks)
+        } catch (error) {
+            appLogger.warn(LOG_CONTEXT, 'Failed to parse package.json:', getErrorMessage(error as Error))
+        }
+        return result
+    }
+
+    private detectNodeFrameworks(pkg: JsonObject, frameworks: string[]) {
+        const deps = { ...(pkg.dependencies as JsonObject ?? {}), ...(pkg.devDependencies as JsonObject ?? {}) }
+        const depKeys = Object.keys(deps)
+
+        const FRAMEWORK_MAP: Record<string, string> = {
+            'react': 'React',
+            'vue': 'Vue',
+            'angular': 'Angular',
+            '@angular/core': 'Angular',
+            'svelte': 'Svelte',
+            'next': 'Next.js',
+            'nuxt': 'Nuxt',
+            'express': 'Express',
+            'nest': 'NestJS',
+            '@nestjs/core': 'NestJS',
+            'electron': 'Electron',
+            'tailwindcss': 'TailwindCSS',
+            'typescript': 'TypeScript'
         }
 
-        if (type === 'node') {
-            try {
-                const pkgPath = path.join(rootPath, 'package.json')
-                const content = await fs.readFile(pkgPath, 'utf-8')
-                const pkg = JSON.parse(content)
-
-                result.dependencies = pkg.dependencies || {}
-                result.devDependencies = pkg.devDependencies || {}
-
-                const allDeps = { ...result.dependencies, ...result.devDependencies }
-                const depKeys = Object.keys(allDeps)
-
-                // Framework detection logic
-                if (depKeys.includes('react')) { result.frameworks.push('React') }
-                if (depKeys.includes('next')) { result.frameworks.push('Next.js') }
-                if (depKeys.includes('vue')) { result.frameworks.push('Vue') }
-                if (depKeys.includes('svelte')) { result.frameworks.push('Svelte') }
-                if (depKeys.includes('express')) { result.frameworks.push('Express') }
-                if (depKeys.includes('electron')) { result.frameworks.push('Electron') }
-                if (depKeys.includes('tailwindcss')) { result.frameworks.push('TailwindCSS') }
-                if (depKeys.includes('typescript')) { result.frameworks.push('TypeScript') }
-            } catch (error) {
-                console.warn('[ProjectService] Failed to parse package.json:', getErrorMessage(error as Error))
+        for (const [key, name] of Object.entries(FRAMEWORK_MAP)) {
+            if (depKeys.includes(key) && !frameworks.includes(name)) {
+                frameworks.push(name)
             }
-        } else if (type === 'python') {
-            // Parse requirements.txt
-            try {
-                const reqPath = path.join(rootPath, 'requirements.txt')
-                const content = await fs.readFile(reqPath, 'utf-8')
-                const lines = content.split('\n')
-
-                for (const line of lines) {
-                    const trimmed = line.trim()
-                    if (!trimmed || trimmed.startsWith('#')) { continue }
-
-                    // Parse package==version, package>=version, etc.
-                    const match = trimmed.match(/^([a-zA-Z0-9_-]+)(?:[=<>!~]+(.+))?/)
-                    if (match?.[1]) {
-                        result.dependencies[match[1]] = match[2] || '*'
-                    }
-                }
-            } catch (error) {
-                /* requirements.txt not found */
-                console.debug('[ProjectService] requirements.txt not found:', getErrorMessage(error as Error))
-            }
-
-            // Parse pyproject.toml for modern Python projects
-            try {
-                const pyprojectPath = path.join(rootPath, 'pyproject.toml')
-                const content = await fs.readFile(pyprojectPath, 'utf-8')
-
-                // Simple TOML parsing for dependencies section
-                const depMatch = content.match(/\[project\.dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
-                if (depMatch) {
-                    const depLines = depMatch[1].split('\n')
-                    for (const line of depLines) {
-                        const match = line.match(/^([a-zA-Z0-9_-]+)\s*=/)
-                        if (match?.[1]) {
-                            result.dependencies[match[1]] = '*'
-                        }
-                    }
-                }
-
-                // Also check [tool.poetry.dependencies] for Poetry projects
-                const poetryMatch = content.match(/\[tool\.poetry\.dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
-                if (poetryMatch) {
-                    const depLines = poetryMatch[1].split('\n')
-                    for (const line of depLines) {
-                        const match = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"?([^"]+)"?/)
-                        if (match?.[1] && match[1] !== 'python') {
-                            result.dependencies[match[1]] = match[2] || '*'
-                        }
-                    }
-                }
-            } catch (error) {
-                /* pyproject.toml not found */
-                console.debug('[ProjectService] pyproject.toml not found:', getErrorMessage(error as Error))
-            }
-
-            // Python framework detection
-            const allDeps = Object.keys(result.dependencies)
-            if (allDeps.includes('django')) { result.frameworks.push('Django') }
-            if (allDeps.includes('flask')) { result.frameworks.push('Flask') }
-            if (allDeps.includes('fastapi')) { result.frameworks.push('FastAPI') }
-            if (allDeps.includes('pytorch') || allDeps.includes('torch')) { result.frameworks.push('PyTorch') }
-            if (allDeps.includes('tensorflow')) { result.frameworks.push('TensorFlow') }
-            if (allDeps.includes('numpy')) { result.frameworks.push('NumPy') }
-            if (allDeps.includes('pandas')) { result.frameworks.push('Pandas') }
-            if (allDeps.includes('pytest')) { result.frameworks.push('Pytest') }
-
-        } else if (type === 'go') {
-            // Parse go.mod
-            try {
-                const goModPath = path.join(rootPath, 'go.mod')
-                const content = await fs.readFile(goModPath, 'utf-8')
-
-                // Extract require block
-                const requireMatch = content.match(/require\s*\(([\s\S]*?)\)/)
-                if (requireMatch) {
-                    const lines = requireMatch[1].split('\n')
-                    for (const line of lines) {
-                        const match = line.trim().match(/^([^\s]+)\s+v?(.+)/)
-                        if (match?.[1] && match[2]) {
-                            result.dependencies[match[1]] = match[2]
-                        }
-                    }
-                }
-
-                // Also handle single-line requires
-                const singleReqs = content.matchAll(/require\s+([^\s]+)\s+v?([^\s\n]+)/g)
-                for (const match of singleReqs) {
-                    if (match[1] && match[2]) {
-                        result.dependencies[match[1]] = match[2]
-                    }
-                }
-            } catch (error) {
-                /* go.mod not found */
-                console.debug('[ProjectService] go.mod not found:', getErrorMessage(error as Error))
-            }
-
-            // Go framework detection
-            const allDeps = Object.keys(result.dependencies)
-            if (allDeps.some(d => d.includes('gin-gonic'))) { result.frameworks.push('Gin') }
-            if (allDeps.some(d => d.includes('echo'))) { result.frameworks.push('Echo') }
-            if (allDeps.some(d => d.includes('fiber'))) { result.frameworks.push('Fiber') }
-            if (allDeps.some(d => d.includes('gorilla/mux'))) { result.frameworks.push('Gorilla Mux') }
-            if (allDeps.some(d => d.includes('gorm'))) { result.frameworks.push('GORM') }
-
-        } else if (type === 'rust') {
-            // Parse Cargo.toml
-            try {
-                const cargoPath = path.join(rootPath, 'Cargo.toml')
-                const content = await fs.readFile(cargoPath, 'utf-8')
-
-                // Extract [dependencies] section
-                const depMatch = content.match(/\[dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
-                if (depMatch) {
-                    const lines = depMatch[1].split('\n')
-                    for (const line of lines) {
-                        const trimmed = line.trim()
-                        if (!trimmed || trimmed.startsWith('#')) { continue }
-
-                        // Handle both `package = "version"` and `package = { version = "x" }`
-                        const simpleMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/)
-                        const complexMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*\{/)
-
-                        if (simpleMatch?.[1] && simpleMatch[2]) {
-                            result.dependencies[simpleMatch[1]] = simpleMatch[2]
-                        } else if (complexMatch?.[1]) {
-                            // Extract version from complex declaration
-                            const versionMatch = trimmed.match(/version\s*=\s*"([^"]+)"/)
-                            result.dependencies[complexMatch[1]] = versionMatch?.[1] ? versionMatch[1] : '*'
-                        }
-                    }
-                }
-
-                // Extract [dev-dependencies] section
-                const devDepMatch = content.match(/\[dev-dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
-                if (devDepMatch) {
-                    const lines = devDepMatch[1].split('\n')
-                    for (const line of lines) {
-                        const trimmed = line.trim()
-                        if (!trimmed || trimmed.startsWith('#')) { continue }
-
-                        const simpleMatch = trimmed.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/)
-                        if (simpleMatch?.[1] && simpleMatch[2]) {
-                            result.devDependencies[simpleMatch[1]] = simpleMatch[2]
-                        }
-                    }
-                }
-            } catch (error) {
-                /* Cargo.toml not found */
-                console.debug('[ProjectService] Cargo.toml not found:', getErrorMessage(error as Error))
-            }
-
-            // Rust framework detection
-            const allDeps = Object.keys(result.dependencies)
-            if (allDeps.includes('actix-web')) { result.frameworks.push('Actix Web') }
-            if (allDeps.includes('axum')) { result.frameworks.push('Axum') }
-            if (allDeps.includes('rocket')) { result.frameworks.push('Rocket') }
-            if (allDeps.includes('tokio')) { result.frameworks.push('Tokio') }
-            if (allDeps.includes('serde')) { result.frameworks.push('Serde') }
-            if (allDeps.includes('diesel')) { result.frameworks.push('Diesel') }
-            if (allDeps.includes('sqlx')) { result.frameworks.push('SQLx') }
-        } else if (type === 'java') {
-            // Find ALL build.gradle / build.gradle.kts files
-            const gradleFiles = allFiles.filter(f => f.endsWith('build.gradle') || f.endsWith('build.gradle.kts'))
-
-            for (const file of gradleFiles) {
-                try {
-                    const content = await fs.readFile(file, 'utf-8')
-
-                    // Improved regex for dependencies (implementation "name" or implementation("name"))
-                    const depRegex = /(?:implementation|api|compile|runtimeOnly|compileOnly|testImplementation|classpath)\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g
-                    let match
-                    while ((match = depRegex.exec(content)) !== null) {
-                        const dep = match[1]!
-                        const parts = dep.split(':')
-                        const name = parts.length > 1 ? parts[1]! : dep
-                        result.dependencies[name] = parts.length > 2 ? parts[2]! : '*'
-                    }
-
-                    // Framework detection from content
-                    if (content.includes('org.springframework.boot')) { result.frameworks.push('Spring Boot') }
-                    if (content.includes('com.android.application') || content.includes('com.android.library')) { result.frameworks.push('Android') }
-                    if (content.includes('androidx.compose')) { result.frameworks.push('Jetpack Compose') }
-                    if (content.includes('io.quarkus')) { result.frameworks.push('Quarkus') }
-                    if (content.includes('io.micronaut')) { result.frameworks.push('Micronaut') }
-                    if (content.includes('kotlin("jvm")') || content.includes('id "org.jetbrains.kotlin.jvm"')) { result.frameworks.push('Kotlin JVM') }
-                    if (content.includes('kotlin("android")') || content.includes('id "org.jetbrains.kotlin.android"')) { result.frameworks.push('Kotlin Android') }
-                } catch (error) {
-                    console.debug(`[ProjectService] Failed to read gradle file ${file}:`, getErrorMessage(error as Error))
-                }
-            }
-
-            // Framework detection from aggregated dependencies
-            const depKeys = Object.keys(result.dependencies)
-            if (depKeys.some(d => d.includes('junit'))) { result.frameworks.push('JUnit') }
-            if (depKeys.some(d => d.includes('hibernate'))) { result.frameworks.push('Hibernate') }
-            if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) { result.frameworks.push('Dagger/Hilt') }
-            if (depKeys.some(d => d.includes('retrofit'))) { result.frameworks.push('Retrofit') }
-            if (depKeys.some(d => d.includes('base09'))) { result.frameworks.push('Base09') } // Custom?
-
-            // Parse all pom.xml files
-            const pomFiles = allFiles.filter(f => f.endsWith('pom.xml'))
-            for (const file of pomFiles) {
-                try {
-                    const content = await fs.readFile(file, 'utf-8')
-                    const depRegex = /<dependency>[\s\S]*?<artifactId>([^<]+)<\/artifactId>[\s\S]*?(?:<version>([^<]+)<\/version>)?[\s\S]*?<\/dependency>/g
-                    let match
-                    while ((match = depRegex.exec(content)) !== null) {
-                        if (match[1]) {
-                            result.dependencies[match[1]] = match[2] || '*'
-                        }
-                    }
-                    if (content.includes('spring-boot')) { result.frameworks.push('Spring Boot') }
-                } catch (error) {
-                    console.debug(`[ProjectService] Failed to read pom file ${file}:`, getErrorMessage(error as Error))
-                }
-            }
-
-            // Deduplicate frameworks
-            result.frameworks = [...new Set(result.frameworks)]
         }
+    }
+
+    private async analyzePythonDependencies(rootPath: string) {
+        const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} }
+
+        await this.analyzeRequirementsTxt(rootPath, result.dependencies)
+        await this.analyzePyProject(rootPath, result.dependencies)
+
+        const allDeps = Object.keys(result.dependencies)
+        this.detectPythonFrameworks(allDeps, result.frameworks)
 
         return result
     }
 
-    private async calculateStats(files: string[]): Promise<ProjectStats> {
+    private async analyzeRequirementsTxt(rootPath: string, dependencies: Record<string, string>) {
+        try {
+            const reqPath = path.join(rootPath, 'requirements.txt')
+            const content = await fs.readFile(reqPath, 'utf-8')
+            const lines = content.split('\n')
+
+            for (const line of lines) {
+                const trimmed = line.trim()
+                if (!trimmed || trimmed.startsWith('#')) { continue }
+                const match = trimmed.match(/^([a-zA-Z0-9_-]+)(?:[=<>!~]+(.+))?/)
+                if (match?.[1]) {
+                    dependencies[match[1]] = match[2] || '*'
+                }
+            }
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, 'requirements.txt not found:', getErrorMessage(error as Error))
+        }
+    }
+
+    private async analyzePyProject(rootPath: string, dependencies: Record<string, string>) {
+        try {
+            const pyprojectPath = path.join(rootPath, 'pyproject.toml')
+            const content = await fs.readFile(pyprojectPath, 'utf-8')
+
+            this.parsePyProjectDependencies(content, dependencies)
+            this.parsePoetryDependencies(content, dependencies)
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, 'pyproject.toml not found:', getErrorMessage(error as Error))
+        }
+    }
+
+    private parsePyProjectDependencies(content: string, dependencies: Record<string, string>) {
+        const depMatch = content.match(/\[project\.dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
+        if (depMatch) {
+            const depLines = depMatch[1].split('\n')
+            for (const line of depLines) {
+                const match = line.match(/^([a-zA-Z0-9_-]+)\s*=/)
+                if (match?.[1]) { dependencies[match[1]] = '*' }
+            }
+        }
+    }
+
+    private parsePoetryDependencies(content: string, dependencies: Record<string, string>) {
+        const poetryMatch = content.match(/\[tool\.poetry\.dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
+        if (poetryMatch) {
+            const depLines = poetryMatch[1].split('\n')
+            for (const line of depLines) {
+                const match = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"?([^"]+)"?/)
+                if (match?.[1] && match[1] !== 'python') {
+                    dependencies[match[1]] = match[2] || '*'
+                }
+            }
+        }
+    }
+
+    private detectPythonFrameworks(allDeps: string[], frameworks: string[]) {
+        if (allDeps.includes('django')) { frameworks.push('Django') }
+        if (allDeps.includes('flask')) { frameworks.push('Flask') }
+        if (allDeps.includes('fastapi')) { frameworks.push('FastAPI') }
+        if (allDeps.includes('pytorch') || allDeps.includes('torch')) { frameworks.push('PyTorch') }
+        if (allDeps.includes('tensorflow')) { frameworks.push('TensorFlow') }
+        if (allDeps.includes('numpy')) { frameworks.push('NumPy') }
+        if (allDeps.includes('pandas')) { frameworks.push('Pandas') }
+        if (allDeps.includes('pytest')) { frameworks.push('Pytest') }
+    }
+
+    private async analyzeGoDependencies(rootPath: string) {
+        const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} }
+        try {
+            const goModPath = path.join(rootPath, 'go.mod')
+            const content = await fs.readFile(goModPath, 'utf-8')
+            this.parseGoMod(content, result.dependencies)
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, 'go.mod not found:', getErrorMessage(error as Error))
+        }
+
+        const allDeps = Object.keys(result.dependencies)
+        if (allDeps.some(d => d.includes('gin-gonic'))) { result.frameworks.push('Gin') }
+        if (allDeps.some(d => d.includes('echo'))) { result.frameworks.push('Echo') }
+        if (allDeps.some(d => d.includes('fiber'))) { result.frameworks.push('Fiber') }
+        if (allDeps.some(d => d.includes('gorilla/mux'))) { result.frameworks.push('Gorilla Mux') }
+        if (allDeps.some(d => d.includes('gorm'))) { result.frameworks.push('GORM') }
+
+        return result
+    }
+
+    private parseGoMod(content: string, dependencies: Record<string, string>) {
+        const requireMatch = content.match(/require\s*\(([\s\S]*?)\)/)
+        if (requireMatch) {
+            const lines = requireMatch[1].split('\n')
+            for (const line of lines) {
+                const match = line.trim().match(/^([^\s]+)\s+v?(.+)/)
+                if (match?.[1] && match[2]) { dependencies[match[1]] = match[2] }
+            }
+        }
+
+        const singleReqs = content.matchAll(/require\s+([^\s]+)\s+v?([^\s\n]+)/g)
+        for (const match of singleReqs) {
+            if (match[1] && match[2]) { dependencies[match[1]] = match[2] }
+        }
+    }
+
+    private async analyzeRustDependencies(rootPath: string) {
+        const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} as Record<string, string> }
+        try {
+            const cargoPath = path.join(rootPath, 'Cargo.toml')
+            const content = await fs.readFile(cargoPath, 'utf-8')
+            this.parseCargoToml(content, result)
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, 'Cargo.toml not found:', getErrorMessage(error as Error))
+        }
+
+        const allDeps = Object.keys(result.dependencies)
+        this.detectRustFrameworks(allDeps, result.frameworks)
+
+        return result
+    }
+
+    private parseCargoToml(content: string, result: { dependencies: Record<string, string>, devDependencies: Record<string, string> }) {
+        const depMatch = content.match(/\[dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
+        if (depMatch) {
+            this.parseCargoBlock(depMatch[1], result.dependencies)
+        }
+
+        const devDepMatch = content.match(/\[dev-dependencies\]\s*\n([\s\S]*?)(?:\n\[|$)/)
+        if (devDepMatch) {
+            this.parseCargoBlock(devDepMatch[1], result.devDependencies)
+        }
+    }
+
+    private parseCargoBlock(block: string, target: Record<string, string>) {
+        const lines = block.split('\n')
+        for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed || trimmed.startsWith('#')) { continue }
+
+            if (this.parseSimpleCargoDep(trimmed, target)) { continue }
+            this.parseComplexCargoDep(trimmed, target)
+        }
+    }
+
+    private parseSimpleCargoDep(line: string, target: Record<string, string>): boolean {
+        const simpleMatch = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"([^"]+)"/)
+        if (simpleMatch?.[1] && simpleMatch[2]) {
+            target[simpleMatch[1]] = simpleMatch[2]
+            return true
+        }
+        return false
+    }
+
+    private parseComplexCargoDep(line: string, target: Record<string, string>) {
+        const complexMatch = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*\{/)
+        if (complexMatch?.[1]) {
+            const versionMatch = line.match(/version\s*=\s*"([^"]+)"/)
+            target[complexMatch[1]] = versionMatch?.[1] ?? '*'
+        }
+    }
+
+    private detectRustFrameworks(allDeps: string[], frameworks: string[]) {
+        if (allDeps.includes('actix-web')) { frameworks.push('Actix Web') }
+        if (allDeps.includes('axum')) { frameworks.push('Axum') }
+        if (allDeps.includes('rocket')) { frameworks.push('Rocket') }
+        if (allDeps.includes('tokio')) { frameworks.push('Tokio') }
+        if (allDeps.includes('serde')) { frameworks.push('Serde') }
+        if (allDeps.includes('diesel')) { frameworks.push('Diesel') }
+        if (allDeps.includes('sqlx')) { frameworks.push('SQLx') }
+    }
+
+    private async analyzeJavaDependencies(_rootPath: string, allFiles: string[]) {
+        const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} }
+
+        await this.analyzeGradleDependencies(allFiles, result)
+        await this.analyzeMavenDependencies(allFiles, result)
+
+        this.detectJavaFrameworks(Object.keys(result.dependencies), result.frameworks)
+        result.frameworks = [...new Set(result.frameworks)]
+        return result
+    }
+
+    private async analyzeGradleDependencies(allFiles: string[], result: { dependencies: Record<string, string>, frameworks: string[] }) {
+        const gradleFiles = allFiles.filter(f => f.endsWith('build.gradle') || f.endsWith('build.gradle.kts'))
+        for (const file of gradleFiles) {
+            try {
+                const content = await fs.readFile(file, 'utf-8')
+                this.parseGradleDeps(content, result.dependencies)
+                this.detectGradleFrameworks(content, result.frameworks)
+            } catch (error) {
+                appLogger.debug(LOG_CONTEXT, `Failed to read gradle file ${file}:`, getErrorMessage(error as Error))
+            }
+        }
+    }
+
+    private parseGradleDeps(content: string, dependencies: Record<string, string>) {
+        const depRegex = /(?:implementation|api|compile|runtimeOnly|compileOnly|testImplementation|classpath)\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g
+        let match
+        while ((match = depRegex.exec(content)) !== null) {
+            const dep = match[1] ?? ''
+            const parts = dep.split(':')
+            const name = parts.length > 1 ? (parts[1] ?? dep) : dep
+            dependencies[name] = parts.length > 2 ? (parts[2] ?? '*') : '*'
+        }
+    }
+
+    private detectGradleFrameworks(content: string, frameworks: string[]) {
+        if (content.includes('org.springframework.boot')) { frameworks.push('Spring Boot') }
+        if (content.includes('com.android.application') || content.includes('com.android.library')) { frameworks.push('Android') }
+        if (content.includes('androidx.compose')) { frameworks.push('Jetpack Compose') }
+        if (content.includes('io.quarkus')) { frameworks.push('Quarkus') }
+        if (content.includes('io.micronaut')) { frameworks.push('Micronaut') }
+        this.detectKotlinFrameworks(content, frameworks)
+    }
+
+    private detectKotlinFrameworks(content: string, frameworks: string[]) {
+        if (content.includes('kotlin("jvm")') || content.includes('id "org.jetbrains.kotlin.jvm"')) { frameworks.push('Kotlin JVM') }
+        if (content.includes('kotlin("android")') || content.includes('id "org.jetbrains.kotlin.android"')) { frameworks.push('Kotlin Android') }
+    }
+
+    private async analyzeMavenDependencies(allFiles: string[], result: { dependencies: Record<string, string>, frameworks: string[] }) {
+        const pomFiles = allFiles.filter(f => f.endsWith('pom.xml'))
+        for (const file of pomFiles) {
+            try {
+                const content = await fs.readFile(file, 'utf-8')
+                const depRegex = /<dependency>[\s\S]*?<artifactId>([^<]+)<\/artifactId>[\s\S]*?(?:<version>([^<]+)<\/version>)?[\s\S]*?<\/dependency>/g
+                let match
+                while ((match = depRegex.exec(content)) !== null) {
+                    if (match[1]) { result.dependencies[match[1]] = match[2] ?? '*' }
+                }
+                if (content.includes('spring-boot')) { result.frameworks.push('Spring Boot') }
+            } catch (error) {
+                appLogger.debug(LOG_CONTEXT, `Failed to read pom file ${file}:`, getErrorMessage(error as Error))
+            }
+        }
+    }
+
+    private detectJavaFrameworks(depKeys: string[], frameworks: string[]) {
+        if (depKeys.some(d => d.includes('junit'))) { frameworks.push('JUnit') }
+        if (depKeys.some(d => d.includes('hibernate'))) { frameworks.push('Hibernate') }
+        if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) { frameworks.push('Dagger/Hilt') }
+        if (depKeys.some(d => d.includes('retrofit'))) { frameworks.push('Retrofit') }
+        if (depKeys.some(d => d.includes('base09'))) { frameworks.push('Base09') }
+    }
+
+    private async calculateStats(files: string[], runStart: number): Promise<ProjectStats> {
+        if (runStart % 100 === 0) {
+            appLogger.info(LOG_CONTEXT, 'Calculate stats sample', { filesCount: files.length })
+        }
         let totalSize = 0
         let lastModified = 0
         const fileCount = files.length
@@ -659,7 +747,7 @@ export class ProjectService {
                 }
             } catch (error) {
                 // Ignore missing file errors during scan
-                console.debug(`[ProjectService] Failed to stat file ${file}:`, getErrorMessage(error as Error))
+                appLogger.debug(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error))
             }
         }
 

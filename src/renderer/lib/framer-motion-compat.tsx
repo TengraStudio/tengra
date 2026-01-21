@@ -30,22 +30,7 @@ export interface AnimatePresenceProps {
 
 // Simple motion component - just renders the element with CSS transition classes
 const createMotionComponent = (tag: string) => {
-    const MotionComponent = React.forwardRef<HTMLElement, MotionProps>((props, ref) => {
-        const {
-            initial: _initial,
-            animate: _animate,
-            exit: _exit,
-            transition: _transition,
-            whileHover: _whileHover,
-            whileTap: _whileTap,
-            layout: _layout,
-            variants: _variants,
-            custom: _custom,
-            children,
-            style,
-            className,
-            ...restProps
-        } = props
+    const MotionComponent = React.forwardRef<HTMLElement, MotionProps>(({ initial: _initial, animate: _animate, exit: _exit, transition: _transition, whileHover: _whileHover, whileTap: _whileTap, layout: _layout, variants: _variants, custom: _custom, children, style, className, ...restProps }, ref) => {
 
         return React.createElement(
             tag,
@@ -70,7 +55,7 @@ const createMotionComponent = (tag: string) => {
 const motionComponentCache: Record<string, React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>> = {}
 
 // Motion proxy that creates components on demand
-export const motion: any = new Proxy({} as any, {
+export const motion = new Proxy({} as Record<string, React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>>, {
     get: (_, tag: string) => {
         if (!motionComponentCache[tag]) {
             motionComponentCache[tag] = createMotionComponent(tag) as unknown as React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>
@@ -80,12 +65,7 @@ export const motion: any = new Proxy({} as any, {
 })
 
 // Simple AnimatePresence - just renders children directly
-export const AnimatePresence: React.FC<AnimatePresenceProps> = React.memo(({
-    children,
-    mode: _mode = 'sync',
-    initial: _initial = true,
-    onExitComplete: _onExitComplete
-}) => {
+export const AnimatePresence: React.FC<AnimatePresenceProps> = React.memo(({ children, mode: _mode = 'sync', initial: _initial = true, onExitComplete: _onExitComplete }) => {
     return <>{children}</>
 })
 

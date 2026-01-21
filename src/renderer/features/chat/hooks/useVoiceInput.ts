@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef,useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface VoiceInputReturn {
     isListening: boolean
@@ -8,7 +8,7 @@ export interface VoiceInputReturn {
 }
 
 type SpeechRecognitionResultLike = { isFinal: boolean; 0: { transcript: string } }
-type SpeechRecognitionResultListLike = { length: number; [index: number]: SpeechRecognitionResultLike }
+type SpeechRecognitionResultListLike = { length: number;[index: number]: SpeechRecognitionResultLike }
 type SpeechRecognitionEventLike = { resultIndex: number; results: SpeechRecognitionResultListLike }
 type SpeechRecognitionErrorEventLike = { error: string }
 
@@ -34,20 +34,19 @@ declare global {
 
 export function useVoiceInput(onFinalResult: (text: string) => void, language: string = 'tr-TR'): VoiceInputReturn {
     const [isListening, setIsListening] = useState(false)
-    const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null)
-    const [isSupported, setIsSupported] = useState(false)
+    const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+    const [isSupported] = useState(() => {
+        if (typeof window === 'undefined') { return false }
+        return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window)
+    })
 
     const manualStop = useRef(false)
 
     useEffect(() => {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            setIsSupported(true)
+        if (isSupported) {
             const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition
-            if (!SpeechRecognitionCtor) {return}
+            if (!SpeechRecognitionCtor) { return }
             const recognitionInstance = new SpeechRecognitionCtor()
-
-            recognitionInstance.continuous = true
-            recognitionInstance.interimResults = false
             recognitionInstance.lang = language
 
             recognitionInstance.onresult = (event: SpeechRecognitionEventLike) => {
@@ -57,7 +56,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                         finalTranscript += event.results[i][0].transcript
                     }
                 }
-                if (finalTranscript) {onFinalResult(finalTranscript)}
+                if (finalTranscript) { onFinalResult(finalTranscript) }
             }
 
             recognitionInstance.onerror = (event: SpeechRecognitionErrorEventLike) => {
@@ -73,7 +72,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                 if (!manualStop.current && isListening) {
                     try {
                         recognitionInstance.start()
-                    } catch (e) {
+                    } catch {
                         setIsListening(false)
                     }
                 } else {
@@ -81,29 +80,29 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                 }
             }
 
-            setRecognition(recognitionInstance)
+            recognitionRef.current = recognitionInstance
         }
     }, [language, onFinalResult, isListening]) // isListening dependency is tricky here
 
     const startListening = useCallback(() => {
-        if (recognition) {
+        if (recognitionRef.current) {
             manualStop.current = false
             try {
-                recognition.start()
+                recognitionRef.current.start()
                 setIsListening(true)
             } catch (error) {
                 console.error('Failed to start recognition:', error)
             }
         }
-    }, [recognition])
+    }, [])
 
     const stopListening = useCallback(() => {
-        if (recognition) {
+        if (recognitionRef.current) {
             manualStop.current = true
-            recognition.stop()
+            recognitionRef.current.stop()
             setIsListening(false)
         }
-    }, [recognition])
+    }, [])
 
     return {
         isListening,

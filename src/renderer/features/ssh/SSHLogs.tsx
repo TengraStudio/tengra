@@ -13,7 +13,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
 
     useEffect(() => {
         if (active && logFiles.length === 0) {
-            loadFiles()
+            void loadFiles()
         }
     }, [active, connectionId])
 
@@ -21,7 +21,10 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         const files = await window.electron.ssh.getLogFiles(connectionId)
         setLogFiles(files)
         if (files.length > 0 && !selectedLog) {
-            selectLog(files[0]!)
+            const firstFile = files[0]
+            if (firstFile !== undefined) {
+                void selectLog(firstFile)
+            }
         }
     }
 
@@ -31,9 +34,9 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         try {
             const data = await window.electron.ssh.readLogFile(connectionId, path, 100)
             setContent(data)
-        } catch (e) {
+        } catch {
             setContent('Failed to read log file (Permissions denied or empty).')
-        } finally {
+        }finally {
             setLoading(false)
         }
     }

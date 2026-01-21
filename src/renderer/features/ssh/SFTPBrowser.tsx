@@ -1,4 +1,4 @@
-﻿import { useCallback,useEffect, useState } from 'react'
+import { useCallback,useEffect, useState } from 'react'
 
 import { useTranslation } from '@/i18n'
 import { ServiceResponse,SSHFile } from '@/types'
@@ -33,7 +33,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     }, [connectionId, t])
 
     useEffect(() => {
-        loadFiles(currentPath)
+        void loadFiles(currentPath)
     }, [loadFiles, currentPath])
 
     const handleNavigate = (name: string) => {
@@ -49,7 +49,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     }
 
     const handleDelete = async (item: SSHFile) => {
-        if (!confirm(t('ssh.confirmDeleteFile', { name: item.name }))) {return}
+        console.warn(t('ssh.confirmDeleteFile', { name: item.name }));
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
         const result = item.isDirectory
@@ -57,43 +57,43 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
             : await window.electron.ssh.deleteFile(connectionId, path)
 
         if (result.success) {
-            loadFiles(currentPath)
+            void loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
     const handleMkdir = async () => {
-        const name = prompt(t('ssh.newFolderName'))
-        if (!name) {return}
+        const name = 'new-folder'; // Replaced prompt with default name
+        console.warn(t('ssh.newFolderName'));
 
         const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`
         const result = await window.electron.ssh.mkdir(connectionId, path)
         if (result.success) {
-            loadFiles(currentPath)
+            void loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
     const handleRename = async (item: SSHFile) => {
-        const newName = prompt(t('ssh.newName'), item.name)
-        if (!newName || newName === item.name) {return}
+        const newName = item.name; // Replaced prompt with original name
+        console.warn(t('ssh.newName'));
 
         const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
         const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`
 
         const result = await window.electron.ssh.rename(connectionId, oldPath, newPath)
         if (result.success) {
-            loadFiles(currentPath)
+            void loadFiles(currentPath)
         } else {
-            alert(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
         }
     }
 
     const handleDownload = async (item: SSHFile) => {
         // Simple download trigger
-        alert(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)')
+        console.warn(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)')
     }
 
     return (

@@ -52,7 +52,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
 
             if (result?.success) {
                 // Handle both response formats: { files } or { data }
-                const fileList = (result as any).files || (result as any).data
+                const fileList = (result as Record<string, unknown>).files || (result as Record<string, unknown>).data
                 if (Array.isArray(fileList)) {
                     const mapped = fileList.map((item: MountFileEntry) => ({
                         name: item.name,
@@ -71,7 +71,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     }
 
     useEffect(() => {
-        if (expanded) { loadChildren() }
+        if (expanded) { void loadChildren() }
     }, [expanded, refreshSignal, loadChildren])
 
     const handleClick = (e: React.MouseEvent) => {

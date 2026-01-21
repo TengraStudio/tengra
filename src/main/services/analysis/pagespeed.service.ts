@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 
@@ -58,7 +59,7 @@ export class PageSpeedService {
                 params.key = this.apiKey;
             }
 
-            console.log(`[PageSpeedService] Analyzing ${url} (${strategy})...`);
+            appLogger.info('pagespeed.service', `[PageSpeedService] Analyzing ${url} (${strategy})...`);
 
             const response = await axios.get(endpoint, { params });
             const data = response.data;
@@ -70,11 +71,11 @@ export class PageSpeedService {
                 url,
                 performanceScore: lighthouse.categories.performance.score * 100,
                 metrics: {
-                    fcp: audits['first-contentful-paint']?.displayValue || '',
-                    lcp: audits['largest-contentful-paint']?.displayValue || '',
-                    tbt: audits['total-blocking-time']?.displayValue || '',
-                    cls: audits['cumulative-layout-shift']?.displayValue || '',
-                    speedIndex: audits['speed-index']?.displayValue || ''
+                    fcp: audits['first-contentful-paint']?.displayValue ?? '',
+                    lcp: audits['largest-contentful-paint']?.displayValue ?? '',
+                    tbt: audits['total-blocking-time']?.displayValue ?? '',
+                    cls: audits['cumulative-layout-shift']?.displayValue ?? '',
+                    speedIndex: audits['speed-index']?.displayValue ?? ''
                 },
                 opportunities: []
             };
@@ -82,7 +83,7 @@ export class PageSpeedService {
             // Extract opportunities (suggestions for improvement)
             const opportunities = Object.values(audits)
                 .filter((audit) => audit.details?.type === 'opportunity' && audit.score < 0.9)
-                .sort((a, b) => (a.score || 0) - (b.score || 0))
+                .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
                 .slice(0, 5) // Top 5 issues
                 .map((audit) => ({
                     title: audit.title,

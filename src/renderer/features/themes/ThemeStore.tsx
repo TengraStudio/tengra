@@ -136,8 +136,14 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
     const [filter, setFilter] = useState<'all' | 'installed' | 'dark' | 'light'>('all')
     const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
 
+    const builtInThemes = useMemo(() => BUILT_IN_THEMES.map(theme => ({
+        ...theme,
+        name: t(`themeStore.themes.${theme.id}.name`),
+        description: t(`themeStore.themes.${theme.id}.description`)
+    })), [t])
+
     const filteredThemes = useMemo(() => {
-        let themes = BUILT_IN_THEMES
+        let themes = builtInThemes
 
         if (searchQuery) {
             const q = searchQuery.toLowerCase()
@@ -151,13 +157,13 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
         if (filter === 'installed') {
             themes = themes.filter(t => t.isInstalled)
         } else if (filter === 'dark') {
-            themes = themes.filter(t => t.name.toLowerCase().includes('dark') || t.colors.background.startsWith('#0') || t.colors.background.startsWith('#1') || t.colors.background.startsWith('#2'))
+            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.colors.background.startsWith('#0') || t.colors.background.startsWith('#1') || t.colors.background.startsWith('#2'))
         } else if (filter === 'light') {
-            themes = themes.filter(t => t.name.toLowerCase().includes('light') || t.colors.background.startsWith('#f') || t.colors.background.startsWith('#e'))
+            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.colors.background.startsWith('#f') || t.colors.background.startsWith('#e'))
         }
 
         return themes
-    }, [searchQuery, filter])
+    }, [searchQuery, filter, builtInThemes])
 
     const ThemeCard = ({ theme }: { theme: Theme }) => {
         const isActive = currentThemeId === theme.id

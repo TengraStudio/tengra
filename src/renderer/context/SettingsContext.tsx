@@ -1,5 +1,5 @@
 
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { AppSettings, JsonValue } from '@/types'
 
@@ -19,53 +19,62 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const [originalSettings, setOriginalSettings] = useState<AppSettings | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
-    const reloadSettings = async () => {
+    const reloadSettings = useCallback(async () => {
         try {
             const data = await window.electron.getSettings()
             setSettings(data)
-            setOriginalSettings(JSON.parse(JSON.stringify(data)))
+            setOriginalSettings(structuredClone(data))
         } catch (error) {
             console.error('Failed to load settings:', error)
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         void reloadSettings()
-    }, [])
+    }, [reloadSettings])
 
-    const updateSettings = async (newSettings: AppSettings, saveImmediately = true) => {
+    const updateSettings = useCallback(async (newSettings: AppSettings, saveImmediately = true) => {
         setSettings(newSettings)
         if (saveImmediately) {
             try {
                 await window.electron.saveSettings(newSettings)
-                setOriginalSettings(JSON.parse(JSON.stringify(newSettings)))
+                setOriginalSettings(structuredClone(newSettings))
             } catch (error) {
                 console.error('Failed to save settings:', error)
             }
         }
-    }
+    }, [])
 
     // Auto-save logic
     useEffect(() => {
-        if (!settings || !originalSettings) {return}
-        if (deepEqual(settings, originalSettings)) {return}
+        if (!settings || !originalSettings) { return }
+        if (deepEqual(settings, originalSettings)) { return }
 
-        const timeout = setTimeout(async () => {
-            try {
-                await window.electron.saveSettings(settings)
-                setOriginalSettings(JSON.parse(JSON.stringify(settings)))
-            } catch (error) {
-                console.error('Auto-save failed:', error)
-            }
+        const timeout = setTimeout(() => {
+            void (async () => {
+                try {
+                    await window.electron.saveSettings(settings)
+                    setOriginalSettings(structuredClone(settings))
+                } catch (error) {
+                    console.error('Auto-save failed:', error)
+                }
+            })()
         }, 2000)
 
         return () => clearTimeout(timeout)
     }, [settings, originalSettings])
 
+    const value = useMemo(() => ({
+        settings,
+        isLoading,
+        updateSettings,
+        reloadSettings
+    }), [settings, isLoading, updateSettings, reloadSettings])
+
     return (
-        <SettingsContext.Provider value={{ settings, isLoading, updateSettings, reloadSettings }}>
+        <SettingsContext.Provider value={value}>
             {children}
         </SettingsContext.Provider>
     )

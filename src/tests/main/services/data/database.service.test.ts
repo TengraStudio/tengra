@@ -1,5 +1,6 @@
 import { DataService } from '@main/services/data/data.service'
 import { DatabaseService } from '@main/services/data/database.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock modules
@@ -40,13 +41,19 @@ vi.mock('@electric-sql/pglite', () => {
 describe('DatabaseService', () => {
     let service: DatabaseService
     let mockDataService: DataService
+    let mockEventBus: EventBusService
 
     beforeEach(async () => {
         vi.clearAllMocks()
         mockDataService = {
             getPath: vi.fn().mockReturnValue('/mock/db/path')
         } as unknown as DataService
-        service = new DatabaseService(mockDataService)
+        mockEventBus = {
+            emit: vi.fn(),
+            on: vi.fn(),
+            off: vi.fn()
+        } as unknown as EventBusService
+        service = new DatabaseService(mockDataService, mockEventBus)
         // Initialize calls runMigrations which uses query a lot
         await service.initialize()
         // Reset query calls from init so we can assert on test logic

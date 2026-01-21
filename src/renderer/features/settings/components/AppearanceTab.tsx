@@ -32,7 +32,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
 
     const rawTheme = settings?.general?.theme || 'graphite'
     const currentTheme = rawTheme === 'dark' || rawTheme === 'system' ? 'graphite' : rawTheme === 'light' ? 'snow' : rawTheme
-    const currentFont = settings?.general?.fontFamily || fontOptions[0]!.id
+    const currentFont = settings?.general?.fontFamily || fontOptions[0]?.id
 
     const handleThemeChange = (themeId: string) => {
         updateGeneral({ theme: themeId })

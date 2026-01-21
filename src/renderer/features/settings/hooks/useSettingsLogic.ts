@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { useSettings } from '@/context/SettingsContext'
 import { AppSettings } from '@/types'
@@ -23,12 +23,18 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
     // Sub-hooks - linkedAccounts created first so auth can trigger refresh
     const linkedAccounts = useLinkedAccounts()
-    const auth = useSettingsAuth(settings, updateSettings, onRefreshModels, linkedAccounts.refreshAccounts)
+    const auth = useSettingsAuth(
+        settings,
+        updateSettings,
+        onRefreshModels,
+        linkedAccounts.refreshAccounts,
+        (accountId, email) => auth.setManualSessionModal({ isOpen: true, accountId, email })
+    )
     const stats = useSettingsStats()
     const personas = useSettingsPersonas(settings, updateSettings)
 
     // Handlers
-    const handleSave = async (newSettings?: AppSettings) => {
+    const handleSave = useCallback(async (newSettings?: AppSettings) => {
         const toSave = newSettings || settings
         if (!toSave) { return }
         setIsLoading(true)
@@ -38,24 +44,24 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
             setStatusMessage('Kaydedildi!')
             setTimeout(() => setStatusMessage(''), 2000)
         } finally { setIsLoading(false) }
-    }
+    }, [settings, updateSettings, onRefreshModels])
 
-    const updateGeneral = async (patch: Partial<AppSettings['general']>) => {
+    const updateGeneral = useCallback(async (patch: Partial<AppSettings['general']>) => {
         if (!settings) { return }
         const updated = { ...settings, general: { ...settings.general, ...patch } }
         await updateSettings(updated, true)
-    }
+    }, [settings, updateSettings])
 
-    const updateSpeech = async (patch: Partial<NonNullable<AppSettings['speech']>>) => {
+    const updateSpeech = useCallback(async (patch: Partial<NonNullable<AppSettings['speech']>>) => {
         if (!settings) { return }
         const updated = { ...settings, speech: { ...settings.speech, ...patch } } as AppSettings
         await updateSettings(updated, true)
-    }
+    }, [settings, updateSettings])
 
     // Benchmark (Kept local as it is simple)
     const [benchmarkResult, setBenchmarkResult] = useState<{ tokensPerSec: number; latency: number } | null>(null)
     const [isBenchmarking, setIsBenchmarking] = useState(false)
-    const handleRunBenchmark = async (currentModelId: string) => {
+    const handleRunBenchmark = useCallback(async (currentModelId: string) => {
         if (!currentModelId) { return }
         setIsBenchmarking(true)
         setBenchmarkResult(null)
@@ -68,12 +74,12 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         } finally {
             setIsBenchmarking(false)
         }
-    }
+    }, [])
 
     // Combine status messages
     const exposedStatusMessage = statusMessage || auth.statusMessage
 
-    return {
+    return useMemo(() => ({
         settings,
         setSettings,
         isLoading,
@@ -94,6 +100,9 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         disconnectProvider: auth.disconnectProvider,
         deviceCodeModal: auth.deviceCodeModal,
         closeDeviceCodeModal: auth.closeDeviceCodeModal,
+        manualSessionModal: auth.manualSessionModal,
+        setManualSessionModal: auth.setManualSessionModal,
+        handleSaveClaudeSession: auth.handleSaveClaudeSession,
 
         // Linked Accounts (new multi-account system)
         linkedAccounts,
@@ -115,6 +124,10 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         ...personas,
 
         isDirty: false
-    }
+    }), [
+        settings, setSettings, isLoading, exposedStatusMessage, auth,
+        linkedAccounts, updateGeneral, updateSpeech, handleSave,
+        stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
+    ])
 }
 

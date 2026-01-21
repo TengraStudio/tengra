@@ -30,8 +30,9 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         if (!Array.isArray(request.models) || request.models.length === 0) {
             throw new Error('Models must be a non-empty array')
         }
-        if (!request.strategy) {
-            throw new Error('Strategy is required')
+        const validStrategies = ['consensus', 'vote', 'best-of-n', 'chain-of-thought'] as const
+        if (!validStrategies.includes(request.strategy)) {
+            throw new Error('Strategy must be one of: consensus, vote, best-of-n, chain-of-thought')
         }
 
         return await collaborationService.collaborate(request)
@@ -45,7 +46,7 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         provider?: string
     ) => {
         if (provider) {
-            return multiLLMOrchestrator.getProviderStats(provider) || null
+            return multiLLMOrchestrator.getProviderStats(provider) ?? null
         }
         return Object.fromEntries(multiLLMOrchestrator.getAllStats())
     }, {}))

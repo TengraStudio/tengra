@@ -1,9 +1,11 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
+import { appLogger } from '@main/logging/logger'
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProjectService } from '@main/services/project/project.service';
 import { JsonObject } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export class LogoService {
     constructor(private llmService: LLMService, private projectService: ProjectService) { }
@@ -24,7 +26,7 @@ export class LogoService {
         try {
             const pkgPath = join(projectPath, 'package.json');
             const content = await fs.readFile(pkgPath, 'utf-8');
-            pkgData = JSON.parse(content) as JsonObject;
+            pkgData = safeJsonParse<JsonObject>(content, {});
         } catch {
             console.warn(`[LogoService] No package.json found at ${projectPath}`);
         }
@@ -60,10 +62,10 @@ ${context}`;
 
             const jsonMatch = response.content.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                const data = JSON.parse(jsonMatch[0]);
+                const data = safeJsonParse<JsonObject>(jsonMatch[0], {});
                 return {
-                    suggestedPrompts: data.concepts || [],
-                    colors: data.colors || []
+                    suggestedPrompts: (data.concepts as string[]) ?? [],
+                    colors: (data.colors as string[]) ?? []
                 };
             }
         } catch (error) {
@@ -95,7 +97,7 @@ ${context}`;
     }
 
     async generateLogo(projectPath: string, prompt: string, style: string): Promise<string> {
-        console.log(`[LogoService] Generating logo for ${projectPath} with prompt: "${prompt}" and style: "${style}"`);
+        appLogger.info('logo.service', `[LogoService] Generating logo for ${projectPath} with prompt: "${prompt}" and style: "${style}"`);
 
         const styleKeywords = this.getStylePrompt(style);
 

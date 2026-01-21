@@ -74,15 +74,15 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
     useEffect(() => {
         // Load Ollama Library
-        window.electron.getLibraryModels().then((libs) => {
+        void window.electron.getLibraryModels().then((libs) => {
             // Map the strictly typed response to OllamaLibraryModel
             const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }))
-            console.log(`[ModelExplorer] Fetched ${typedLibs.length} models from Ollama library.`);
+            console.warn(`[ModelExplorer] Fetched ${typedLibs.length} models from Ollama library.`);
             setOllamaLibrary(typedLibs)
         })
 
         // Get models dir
-        window.electron.llama.getModelsDir().then(setModelsDir)
+        void window.electron.llama.getModelsDir().then(setModelsDir)
 
         // Listen for progress
         window.electron.huggingface.onDownloadProgress((progress) => {
@@ -114,7 +114,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 const hfSort = sortBy === 'popularity' ? 'downloads' : (sortBy === 'updated' ? 'updated' : 'name');
                 const result = await window.electron.huggingface.searchModels(query, 40, page, hfSort)
                 const { models, total } = result
-                console.log(`[ModelExplorer] Fetched ${models.length} of ${total} models from HuggingFace (Query: "${query}", Page: ${page}, Sort: ${sortBy})`);
+                console.warn(`[ModelExplorer] Fetched ${models.length} of ${total} models from HuggingFace (Query: "${query}", Page: ${page}, Sort: ${sortBy})`);
                 setHfResults(models.map((r) => ({ ...r, provider: 'huggingface' })))
                 setTotalHf(total)
             } else {
@@ -133,12 +133,12 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
     useEffect(() => {
         // Initial fetch immediately, subsequent with debounce if query changes
         if (!query && hfResults.length === 0) {
-            fetchModels()
+            void fetchModels()
             return
         }
 
         const timer = setTimeout(() => {
-            fetchModels()
+            void fetchModels()
         }, 500)
         return () => clearTimeout(timer)
     }, [query, hfResults.length, fetchModels])
@@ -222,11 +222,11 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         setPullingOllama(fullModelName)
         try {
             await window.electron.pullModel(fullModelName)
-            alert(`Successfully pulled ${fullModelName}`)
+            console.warn(`Successfully pulled ${fullModelName}`)
             onRefreshModels?.()
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e)
-            alert(`Failed to pull: ${message}`)
+            console.warn(`Failed to pull: ${message}`)
         } finally {
             setPullingOllama(null)
         }
@@ -248,10 +248,10 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 const next = { ...downloading }
                 delete next[universalPath]
                 setDownloading(next)
-                alert(`Downloaded: ${safeName}`)
+                console.warn(`Downloaded: ${safeName}`)
                 onRefreshModels?.()
             } else {
-                alert('Download failed: ' + res.error)
+                console.warn('Download failed: ' + res.error)
                 const next = { ...downloading }
                 delete next[universalPath]
                 setDownloading(next)

@@ -15,7 +15,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Language, useTranslation } from '@/i18n'
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import type { AppSettings, CodexUsage, QuotaResponse } from '@/types'
+import { AppSettings, CodexUsage, QuotaResponse } from '@/types'
 
 interface ModelSelectorProps {
     selectedProvider: string
@@ -23,8 +23,8 @@ interface ModelSelectorProps {
     onSelect: (provider: string, model: string) => void
     settings?: AppSettings | undefined
     groupedModels?: GroupedModels | undefined
-    quotas?: QuotaResponse | null | undefined
-    codexUsage?: CodexUsage | null | undefined
+    quotas?: { accounts: QuotaResponse[] } | null | undefined
+    codexUsage?: { accounts: { usage: CodexUsage }[] } | null | undefined
     onOpenChange?: ((isOpen: boolean) => void) | undefined
     contextTokens?: number | undefined
     language?: Language | undefined
@@ -32,7 +32,7 @@ interface ModelSelectorProps {
     isFavorite?: (modelId: string) => boolean
 }
 
-export function ModelSelector({ selectedProvider, selectedModel, onSelect, settings, groupedModels, quotas = null, codexUsage = null, onOpenChange, contextTokens = 0, language = 'en', toggleFavorite, isFavorite }: ModelSelectorProps) {
+export function ModelSelector({ selectedProvider, selectedModel, onSelect, settings, groupedModels, quotas = null, codexUsage = null, onOpenChange, contextTokens = 0, language = 'en', toggleFavorite, isFavorite: _isFavorite }: ModelSelectorProps) {
     const { t } = useTranslation(language)
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
@@ -125,7 +125,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                         try {
                             const result = await window.electron.checkUsageLimit(provider, modelId)
                             checks[key] = result
-                        } catch (error) {
+                        } catch {
                             checks[key] = { allowed: true } // Default to allowed on error
                         }
                     }
@@ -135,7 +135,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             setUsageLimitChecks(checks)
         }
 
-        checkLimits()
+        void checkLimits()
     }, [settings?.modelUsageLimits, groupedModels])
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
@@ -197,11 +197,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
         // 2. Check Copilot Credits - check remaining number (0-5 means disabled)
         if (provider === 'copilot') {
-            const copilotQuota = (quotas as { copilot?: { remaining: number; limit: number } })?.copilot ||
-                (quotas as { data?: { copilot?: { remaining: number; limit: number } } })?.data?.copilot;
+            const copilotQuota = quotas?.accounts?.find(a => a.copilot)?.copilot || (quotas as Record<string, unknown>)?.copilot;
             if (copilotQuota) {
                 // Disable if remaining is 0-5
-                if (copilotQuota.remaining <= 5 && copilotQuota.limit > 0) {
+                const q = copilotQuota as { remaining: number; limit: number };
+                if (q.remaining <= 5 && q.limit > 0) {
                     return true;
                 }
             }
@@ -215,8 +215,9 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
 
             if (modelLimit?.enabled) {
                 // Check models array in quotas for percentage
-                if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
-                    const modelQuotaItem = quotas.models.find((m: any) =>
+                const foundQuota = quotas?.accounts?.find(a => a.models?.some((m) => m.id?.toLowerCase() === lowerModelId));
+                if (foundQuota?.models) {
+                    const modelQuotaItem = foundQuota.models.find((m) =>
                         m.id?.toLowerCase() === lowerModelId ||
                         m.id?.toLowerCase() === modelId.toLowerCase()
                     );
@@ -232,8 +233,9 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             }
 
             // Check models array in quotas for percentage
-            if (quotas && 'models' in quotas && Array.isArray(quotas.models)) {
-                const modelQuotaItem = quotas.models.find((m: any) =>
+            const generalQuota = quotas?.accounts?.find(a => a.models?.some((m) => m.id?.toLowerCase() === lowerModelId));
+            if (generalQuota?.models) {
+                const modelQuotaItem = generalQuota.models.find((m) =>
                     m.id?.toLowerCase() === lowerModelId ||
                     m.id?.toLowerCase() === modelId.toLowerCase()
                 );
@@ -264,13 +266,13 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 for (const [, groupModels] of Object.entries(ANTIGRAVITY_QUOTA_GROUPS)) {
                     if (groupModels.some(m => m.toLowerCase() === lowerModelId)) {
                         for (const groupModel of groupModels) {
-                            let gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
+                            const gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
                             if (gQuota) {
-                                (gQuota as any) = gQuota
-                                if ((gQuota as any).percentage !== undefined && (gQuota as any).percentage <= 5) {
+                                const quotaData = gQuota as unknown as Record<string, unknown>;
+                                if (quotaData.percentage !== undefined && typeof quotaData.percentage === 'number' && quotaData.percentage <= 5) {
                                     return true;
                                 }
-                                if (gQuota.exhausted || (gQuota as any).remaining <= 0) {
+                                if (gQuota.exhausted || gQuota.remaining <= 0) {
                                     return true;
                                 }
                             }
@@ -328,13 +330,13 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
             { key: 'custom', catId: 'custom' }
         ]
 
-        const hidden = new Set<string>(settings?.general?.hiddenModels || [])
+        const hidden = new Set<string>(settings?.general?.hiddenModels ?? [])
         const searchLower = debouncedSearchQuery.toLowerCase()
-        const favorites = new Set(settings?.general?.favoriteModels || [])
+        const favorites = new Set(settings?.general?.favoriteModels ?? [])
 
         for (const mapping of brandsMapping) {
             const group = groupedModels[mapping.key]
-            const models = group?.models || []
+            const models = group?.models ?? []
             const cat = cats.find(c => c.id === mapping.catId)
             if (!cat) { continue }
             const favCat = cats.find(c => c.id === 'favorites')
@@ -365,9 +367,9 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                 const modelItem: ModelItem = {
                     id: id,
                     label: label,
-                    disabled: isModelDisabled(id, m.provider || '') || (m.quota?.percentage !== undefined && m.quota.percentage <= 1) || false,
-                    provider: m.provider || '',
-                    type: m.type || 'text',
+                    disabled: isModelDisabled(id, m.provider ?? '') || (m.quota?.percentage !== undefined && m.quota.percentage <= 1),
+                    provider: m.provider ?? '',
+                    type: m.type ?? 'text',
                     contextWindow: m.contextWindow,
                     pinned: favorites.has(id)
                 }
@@ -421,7 +423,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
         return 32000
     }, [selectedModel, currentModelInfo]);
 
-    const contextUsagePercent = Math.min(100, ((contextTokens || 0) / (contextLimit || 32000)) * 100)
+    const contextUsagePercent = Math.min(100, ((contextTokens ?? 0) / (contextLimit ?? 32000)) * 100)
 
     // Callback refs to satisfy aggressive linting
     const setReferenceNode = useCallback((node: HTMLElement | null) => {
@@ -561,7 +563,7 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                                                             {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
                                                             {(model.contextWindow ?? 0) > 0 && (
                                                                 <span className="text-[9px] text-zinc-600 bg-zinc-800/50 px-1 rounded border border-white/5">
-                                                                    {(model.contextWindow!) >= 1000000 ? `${(model.contextWindow!) / 1000000}m` : `${(model.contextWindow!) / 1000}k`}
+                                                                    {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
                                                                 </span>
                                                             )}
                                                         </span>

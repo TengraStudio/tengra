@@ -13,7 +13,7 @@ export function registerKeyRotationIpc(keyRotationService: KeyRotationService) {
         if (typeof provider !== 'string') {
             throw new Error('Provider must be a string')
         }
-        return keyRotationService.getCurrentKey(provider) || null
+        return keyRotationService.getCurrentKey(provider) ?? null
     }, null))
 
     /**
@@ -24,7 +24,7 @@ export function registerKeyRotationIpc(keyRotationService: KeyRotationService) {
             throw new Error('Provider must be a string')
         }
         const success = keyRotationService.rotateKey(provider)
-        return { success, currentKey: keyRotationService.getCurrentKey(provider) || null }
+        return { success, currentKey: keyRotationService.getCurrentKey(provider) ?? null }
     }))
 
     /**
@@ -38,7 +38,7 @@ export function registerKeyRotationIpc(keyRotationService: KeyRotationService) {
             throw new Error('Keys must be a string (comma-separated)')
         }
         keyRotationService.initializeProviderKeys(provider, keys)
-        return { success: true, currentKey: keyRotationService.getCurrentKey(provider) || null }
+        return { success: true, currentKey: keyRotationService.getCurrentKey(provider) ?? null }
     }))
 
     /**

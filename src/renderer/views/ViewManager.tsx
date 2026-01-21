@@ -136,7 +136,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                     <SettingsView
                         installedModels={installedModels}
                         proxyModels={proxyModels}
-                        loadModels={() => { void loadModels() }}
+                        loadModels={loadModels}
                         settingsCategory={settingsCategory}
                         groupedModels={groupedModels}
                     />

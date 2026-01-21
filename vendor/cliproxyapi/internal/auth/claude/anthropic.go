@@ -19,6 +19,12 @@ type ClaudeTokenData struct {
 	Email string `json:"email"`
 	// Expire is the timestamp of the token expire
 	Expire string `json:"expired"`
+
+	// SessionKey is the captured web session key (sk-ant-sid-...) used for web endpoints
+	SessionKey string `json:"session_key,omitempty"`
+
+	// OrgID is the UUID of the organization (from /api/organizations)
+	OrgID string `json:"organization_id,omitempty"`
 }
 
 // ClaudeAuthBundle aggregates authentication data after OAuth flow completion

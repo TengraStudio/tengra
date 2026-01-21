@@ -108,7 +108,6 @@ export class ProxyEmbedService {
         const args = ['-config', configPath]
 
         // Ensure config exists
-        this.proxyService.prepareAuthWorkDir()
         await this.proxyService.generateConfig(options?.port)
 
         appLogger.info('ProxyEmbed', `Spawning embedded proxy: ${binaryPath} ${args.join(' ')}`)
@@ -167,7 +166,7 @@ export class ProxyEmbedService {
     private logChunk(buffer: string, chunk: string, level: 'info' | 'error'): string {
         const combined = buffer + chunk
         const lines = combined.split(/\r?\n/)
-        const remainder = lines.pop() || ''
+        const remainder = lines.pop() ?? ''
         for (const line of lines) {
             const trimmed = line.trim()
             if (!trimmed) {continue}
