@@ -6,6 +6,33 @@ Track the evolution of Orbit.
 
 ## Recent Updates
 
+### 2026-01-21: Phase 5 - Robust Bidirectional Token Sync & Build Stabilization
+
+**Status**: Completed (20:15:00)
+
+**Core Architectural Changes**:
+- **Bidirectional Persistence** ✅:
+    - Implemented `POST /api/auth/accounts/:id` in `AuthAPIService.ts` to receive token updates from external services.
+    - Updated Go proxy's `HTTPAuthStore.Save` to push refreshed tokens back to Orbit's database immediately upon refresh.
+    - This ensures tokens refreshed in the background (Claude, Antigravity, Codex) are persisted without requiring UI interaction.
+- **Decommissioned File-based Sync** ✅:
+    - Entirely removed `syncAuthFiles()` logic that wrote sensitive tokens to the disk.
+    - Proxy now pulls tokens on-demand from `AuthAPIService` and pushes updates back via HTTP.
+    - Improved security by ensuring zero plain-text/loose JSON credentials reside in the `auth/` directory.
+
+**Build & Stability Fixes**:
+- **Renderer UI** ✅:
+    - Fixed polymorphic ref type mismatch in `AnimatedCard.tsx` (TS2322).
+    - Implemented a robust callback ref pattern to handle dynamic components (`div`, `button`, `article`) while satisfying strict intersection types.
+- **System Services** ✅:
+    - **EventBus**: Fixed `logDebug` signature mismatch in `event-bus.service.ts`.
+    - **Security**: Fixed `SecurityService` test constructor by properly injecting mocked `DataService`.
+    - **Themes**: Resolved type mismatch in `theme-store.util.ts` by providing a non-null schema to `safeJsonParse`.
+
+**Verification**:
+- Verified full build chain consistency: `tsc` → `lint` → `vite build` → `native build`.
+- Final build succeeded at 20:12:00.
+
 ### 2026-01-21: ESLint Warning Fixes - Session 2
 
 **Status**: Fixed 113 warnings (1044 → 931)
@@ -407,10 +434,12 @@ Track the evolution of Orbit.
 
 ## Version History
 
+### v1.2.0: Unified Microservice Sync
+- Transitioned to HTTP-based bidirectional token synchronization.
+- Eliminated persistent file-based credentials for improved security.
+- Standardized cross-process communication between Electron and Go/Rust services.
+
 ### v1.1.0: Multi-LLM Support
-- Added `MultiLLMOrchestrator` for concurrent model execution.
-- Introduced Model Collaboration strategies.
-- Switched to PGlite for better local performance.
 
 ### v1.0.0: Initial Release
 - Basic chat functionality with OpenAI and Anthropic.
