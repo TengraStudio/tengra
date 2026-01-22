@@ -60,7 +60,12 @@ export class AuthAPIService extends BaseService {
 
             // Listen on random available port
             this.server.listen(0, '127.0.0.1', () => {
-                const address = this.server!.address()
+                const server = this.server
+                if (!server) {
+                    reject(new Error('Server not initialized'))
+                    return
+                }
+                const address = server.address()
                 if (address && typeof address === 'object') {
                     this.port = address.port
                     appLogger.info('AuthAPIService', `Auth API listening on port ${this.port}`)
@@ -73,9 +78,10 @@ export class AuthAPIService extends BaseService {
     }
 
     override async cleanup(): Promise<void> {
-        if (this.server) {
+        const server = this.server
+        if (server) {
             return new Promise((resolve) => {
-                this.server!.close(() => {
+                server.close(() => {
                     appLogger.info('AuthAPIService', 'Auth API server stopped')
                     resolve()
                 })
@@ -101,6 +107,7 @@ export class AuthAPIService extends BaseService {
                     const normalizedProvider = this.normalizeProviderName(acc.provider)
                     // Go proxy expects 'claude' for model routing
                     const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider
+                    const isClaudeProvider = providerForGo === 'claude'
 
                     return {
                         id: acc.id || `${acc.provider}.json`,
@@ -109,14 +116,15 @@ export class AuthAPIService extends BaseService {
                         email: acc.email,
                         label: acc.displayName || acc.email || acc.provider,
                         access_token: acc.accessToken,
-                        refresh_token: acc.refreshToken,
+                        // Let Rust token-service own Claude refresh; proxy sees only access token
+                        refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
                         session_token: acc.sessionToken,
                         expires_at: acc.expiresAt,
                         scope: acc.scope,
                         metadata: {
                             ...acc.metadata,
                             type: providerForGo,
-                            auth_type: providerForGo === 'claude' ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
+                            auth_type: isClaudeProvider ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
                             email: acc.email
                         },
                         created_at: acc.createdAt,
@@ -155,10 +163,10 @@ export class AuthAPIService extends BaseService {
             // Map from Go proxy fields back to Orbit internal fields if needed
             // Currently updateToken accepts Partial<TokenData>
             await this.authService.updateToken(accountId, {
-                accessToken: data.access_token || data.accessToken,
-                refreshToken: data.refresh_token || data.refreshToken,
-                sessionToken: data.session_token || data.sessionToken,
-                expiresAt: data.expires_at || data.expiresAt,
+                accessToken: data.access_token ?? data.accessToken,
+                refreshToken: data.refresh_token ?? data.refreshToken,
+                sessionToken: data.session_token ?? data.sessionToken,
+                expiresAt: data.expires_at ?? data.expiresAt,
                 metadata: data.metadata
             })
 
