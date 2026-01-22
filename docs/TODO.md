@@ -57,13 +57,15 @@ This document serves as the central index for project tasks. Tasks are categoriz
 
 ### Short-Term Goals
 - Authentication database migration
-- Gallery prompt storage implementation
-- Service layer standardization
+- [ ] Gallery prompt storage implementation
+- [ ] Service layer standardization
+- [ ] Exportable Research Briefs (PDF/Markdown)
 
 ### Medium-Term Goals
 - Development of the Statistics dashboard
-- Implementation of the "Thinking" mode for agents
-- Design and development of a plugin system
-- Refactor database system to a Windows service (Rust-based standalone PGlite host)
+- [ ] Implementation of the "Thinking" mode for agents
+- [ ] Design and development of a plugin system
+- [ ] Refactor database system to a Windows service (Rust-based standalone PGlite host)
+- [ ] Local AI Hardware Optimization & Management UI
 
 *Last Updated: January 22, 2026*

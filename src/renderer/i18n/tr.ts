@@ -1176,7 +1176,41 @@ export const tr = {
             marketTrends: 'Pazar Trendleri',
             competitors: 'Rakipler',
             selectPath: 'Proje Yolunu Seç',
-            creating: 'Proje oluşturuluyor...'
+            creating: 'Proje oluşturuluyor...',
+            detailedDescription: 'Detaylı Açıklama',
+            roadmap: 'Proje Yol Haritası',
+            techStack: 'Teknoloji Stack\'i',
+            competitorAnalysis: 'Rakip Analizi'
+        },
+
+        // Tech stack categories
+        techStack: {
+            frontend: 'Frontend',
+            backend: 'Backend',
+            database: 'Veritabanı',
+            infrastructure: 'Altyapı',
+            other: 'Diğer Araçlar'
+        },
+
+        // Competitor analysis
+        competitor: {
+            strengths: 'Güçlü Yönler',
+            weaknesses: 'Zayıf Yönler',
+            missingFeatures: 'Eksik Özellikler',
+            opportunity: 'Farklılaşma Fırsatı'
+        },
+
+        // Generation stages (multi-stage pipeline)
+        stages: {
+            seedGeneration: 'İlk konsept oluşturuluyor...',
+            ideaResearch: 'Bu fikir için pazar araştırılıyor...',
+            naming: 'İsim önerileri oluşturuluyor...',
+            longDescription: 'Detaylı açıklama yazılıyor...',
+            roadmap: 'Proje yol haritası hazırlanıyor...',
+            techStack: 'Teknoloji stack\'i seçiliyor...',
+            competitorAnalysis: 'Rakipler analiz ediliyor...',
+            finalizing: 'Fikir sonlandırılıyor...',
+            complete: 'Fikir tamamlandı'
         },
 
         // Logo generation
