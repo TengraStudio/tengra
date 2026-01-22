@@ -608,8 +608,7 @@ export class QuotaService {
 
                 appLogger.info('QuotaService', `Trying Anthropic OAuth usage endpoint: ${oauthUrl}`)
                 const oauthData = await this.fetchWithNet(oauthUrl, oauthHeaders)
-                if (oauthData && typeof oauthData === 'object' && !Array.isArray(oauthData)) {
-                    appLogger.info('QuotaService', `Anthropic OAuth usage response:`, oauthData as JsonObject)
+                if (oauthData && typeof oauthData === 'object' && !Array.isArray(oauthData)) { 
                     return oauthData as Record<string, unknown>
                 }
             } catch (e) {

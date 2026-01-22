@@ -487,6 +487,7 @@ export const webElectronMock: ElectronAPI = {
         rejectIdea: async (_ideaId) => ({ success: true }),
         canGenerateLogo: async () => false,
         generateLogo: async (_ideaId, _prompt) => ({ success: true, logoPath: '' }),
+        queryResearch: async (_ideaId, _question) => ({ success: true, answer: 'Mock research answer' }),
         onResearchProgress: () => () => { },
         onIdeaProgress: () => () => { }
     },

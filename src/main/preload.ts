@@ -540,6 +540,7 @@ export interface ElectronAPI {
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
         canGenerateLogo: () => Promise<boolean>
         generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
+        queryResearch: (ideaId: string, question: string) => Promise<{ success: boolean; answer: string }>
         onResearchProgress: (callback: (progress: IpcValue) => void) => () => void
         onIdeaProgress: (callback: (progress: IpcValue) => void) => () => void
     }
@@ -1070,6 +1071,7 @@ const api: ElectronAPI = {
         rejectIdea: (ideaId) => ipcRenderer.invoke('ideas:rejectIdea', ideaId),
         canGenerateLogo: () => ipcRenderer.invoke('ideas:canGenerateLogo'),
         generateLogo: (ideaId, prompt) => ipcRenderer.invoke('ideas:generateLogo', ideaId, prompt),
+        queryResearch: (ideaId, question) => ipcRenderer.invoke('ideas:queryResearch', ideaId, question),
         onResearchProgress: (callback) => {
             const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
             ipcRenderer.on('ideas:research-progress', listener)

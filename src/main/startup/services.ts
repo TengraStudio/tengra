@@ -35,6 +35,7 @@ import { HuggingFaceService } from '@main/services/llm/huggingface.service'
 import { LlamaService } from '@main/services/llm/llama.service'
 import { LLMService } from '@main/services/llm/llm.service'
 import { LocalAIService } from '@main/services/llm/local-ai.service'
+import { LocalImageService } from '@main/services/llm/local-image.service'
 import { MemoryService } from '@main/services/llm/memory.service'
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service'
 import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/llm/model-registry.service'
@@ -292,18 +293,20 @@ function registerProjectServices() {
     container.register('sshService', (ds) => new SSHService((ds as DataService).getPath('config')), ['dataService']);
     container.register('dockerService', (cs, ssh) => new DockerService(cs as CommandService, ssh as SSHService), ['commandService', 'sshService']);
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
-    container.register('logoService', (ls, ps) => new LogoService(ls as LLMService, ps as ProjectService), ['llmService', 'projectService']);
+    container.register('localImageService', (ss) => new LocalImageService(ss as SettingsService), ['settingsService']);
+    container.register('logoService', (ls, ps, lis) => new LogoService(ls as LLMService, ps as ProjectService, lis as LocalImageService), ['llmService', 'projectService', 'localImageService']);
     container.register('projectScaffoldService', () => new ProjectScaffoldService());
     container.register('marketResearchService', (ws) => new MarketResearchService(ws as WebService), ['webService']);
-    container.register('ideaGeneratorService', (dbs, ls, mrs, pss, as, ebs) =>
+    container.register('ideaGeneratorService', (dbs, ls, mrs, pss, as, ebs, lis) =>
         new IdeaGeneratorService({
             databaseService: dbs as DatabaseService,
             llmService: ls as LLMService,
             marketResearchService: mrs as MarketResearchService,
             projectScaffoldService: pss as ProjectScaffoldService,
             authService: as as AuthService,
-            eventBus: ebs as EventBusService
-        }), ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService']);
+            eventBus: ebs as EventBusService,
+            localImageService: lis as LocalImageService
+        }), ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);

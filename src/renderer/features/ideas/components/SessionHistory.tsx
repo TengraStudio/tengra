@@ -1,0 +1,422 @@
+/**
+ * Session History component for viewing all past idea generation sessions
+ */
+import { IdeaSession, IdeaStatus, ProjectIdea } from '@shared/types/ideas'
+import {
+    Calendar,
+    CheckCircle,
+    ChevronDown,
+    ChevronRight,
+    Clock,
+    Lightbulb,
+    Loader2,
+    ThumbsDown,
+    XCircle
+} from 'lucide-react'
+import React, { useCallback, useMemo, useState } from 'react'
+
+import { cn } from '@/lib/utils'
+
+import { getCategoryMeta } from '../utils/categories'
+
+interface SessionHistoryProps {
+    sessions: IdeaSession[]
+    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectSession: (sessionId: string) => void
+    t: (key: string) => string
+}
+
+interface SessionWithIdeas {
+    session: IdeaSession
+    ideas: ProjectIdea[]
+    isExpanded: boolean
+    isLoading: boolean
+}
+
+const formatDate = (timestamp: number, t: (key: string, params?: Record<string, unknown>) => string): string => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    if (diffDays === 1) {
+        return t('dateGroups.yesterday')
+    }
+    if (diffDays < 7) {
+        return t('ideas.history.daysAgo', { count: diffDays })
+    }
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
+const getStatusIcon = (status: string) => {
+    switch (status) {
+        case 'completed':
+            return <CheckCircle className="w-4 h-4 text-green-400" />
+        case 'cancelled':
+            return <XCircle className="w-4 h-4 text-red-400" />
+        case 'generating':
+        case 'researching':
+            return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+        default:
+            return <Clock className="w-4 h-4 text-white/40" />
+    }
+}
+
+const getIdeaStatusBadge = (status: IdeaStatus, t: (key: string) => string) => {
+    switch (status) {
+        case 'approved':
+            return (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">
+                    <CheckCircle className="w-3 h-3" />
+                    {t('ideas.status.approved')}
+                </span>
+            )
+        case 'rejected':
+            return (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">
+                    <ThumbsDown className="w-3 h-3" />
+                    {t('ideas.status.rejected')}
+                </span>
+            )
+        default:
+            return (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
+                    <Clock className="w-3 h-3" />
+                    {t('ideas.status.pending')}
+                </span>
+            )
+    }
+}
+
+const IdeaRow: React.FC<{ idea: ProjectIdea; onSelect: (idea: ProjectIdea) => void; t: (key: string) => string }> = ({
+    idea,
+    onSelect,
+    t
+}) => {
+    const meta = getCategoryMeta(idea.category)
+    const Icon = meta.icon
+
+    return (
+        <button
+            type="button"
+            onClick={() => onSelect(idea)}
+            className="w-full flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg transition-colors text-left group"
+        >
+            <div
+                className={cn(
+                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                    meta.bgColor,
+                    meta.color
+                )}
+            >
+                <Icon className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
+                    {idea.title}
+                </p>
+                <p className="text-xs text-white/40 truncate">{idea.description}</p>
+            </div>
+            {getIdeaStatusBadge(idea.status, t)}
+        </button>
+    )
+}
+IdeaRow.displayName = 'IdeaRow'
+
+const SessionRow: React.FC<{
+    sessionData: SessionWithIdeas
+    onToggle: (sessionId: string) => void | Promise<void>
+    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectSession: (sessionId: string) => void
+    t: (key: string, params?: Record<string, unknown>) => string
+}> = ({ sessionData, onToggle, onSelectIdea, onSelectSession, t }) => {
+    const { session, ideas, isExpanded, isLoading } = sessionData
+
+    return (
+        <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+            {/* Session Header */}
+            <button
+                type="button"
+                onClick={() => { void onToggle(session.id) }}
+                className="w-full flex items-center gap-4 p-4 hover:bg-white/5 transition-colors"
+            >
+                <div className="shrink-0">
+                    {isExpanded ? (
+                        <ChevronDown className="w-5 h-5 text-white/60" />
+                    ) : (
+                        <ChevronRight className="w-5 h-5 text-white/60" />
+                    )}
+                </div>
+
+                <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2">
+                        {getStatusIcon(session.status)}
+                        <span className="text-sm font-medium text-white">
+                            {session.categories.map(c => {
+                                const meta = getCategoryMeta(c)
+                                return meta.label
+                            }).join(', ')}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
+                        <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(session.createdAt, t)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Lightbulb className="w-3 h-3" />
+                            {session.ideasGenerated} / {session.maxIdeas} {t('ideas.idea.viewDetails').split(' ')[0].toLowerCase()}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                            {session.model}
+                        </span>
+                    </div>
+                </div>
+
+                {session.status === 'completed' && (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            void onSelectSession(session.id)
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                    >
+                        {t('ideas.history.viewDetails')}
+                    </button>
+                )}
+            </button>
+
+            {/* Ideas List (Expandable) */}
+            {isExpanded && (
+                <div className="border-t border-white/10 p-2">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                            <Loader2 className="w-5 h-5 animate-spin text-white/40" />
+                        </div>
+                    ) : ideas.length === 0 ? (
+                        <p className="text-center text-sm text-white/40 py-4">
+                            {t('ideas.history.noIdeasYet')}
+                        </p>
+                    ) : (
+                        <div className="space-y-1">
+                            {ideas.map(idea => (
+                                <IdeaRow
+                                    key={idea.id}
+                                    idea={idea}
+                                    onSelect={onSelectIdea}
+                                    t={t}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+SessionRow.displayName = 'SessionRow'
+
+export const SessionHistory: React.FC<SessionHistoryProps> = ({
+    sessions,
+    onSelectIdea,
+    onSelectSession,
+    t
+}) => {
+    // Initialize session map using useMemo to avoid useEffect setState pattern
+    const initialMap = useMemo(() => {
+        const map = new Map<string, SessionWithIdeas>()
+        for (const session of sessions) {
+            map.set(session.id, {
+                session,
+                ideas: [],
+                isExpanded: false,
+                isLoading: false
+            })
+        }
+        return map
+    }, [sessions])
+
+    const [sessionsWithIdeas, setSessionsWithIdeas] = useState<Map<string, SessionWithIdeas>>(initialMap)
+    const [prevSessions, setPrevSessions] = useState(sessions)
+
+    // Sync state when sessions change (Adjustment during render pattern)
+    if (sessions !== prevSessions) {
+        setPrevSessions(sessions)
+        const newMap = new Map<string, SessionWithIdeas>()
+        for (const session of sessions) {
+            const existing = sessionsWithIdeas.get(session.id)
+            newMap.set(session.id, {
+                session,
+                ideas: existing?.ideas ?? [],
+                isExpanded: existing?.isExpanded ?? false,
+                isLoading: existing?.isLoading ?? false
+            })
+        }
+        setSessionsWithIdeas(newMap)
+    }
+
+    const toggleSession = useCallback(async (sessionId: string) => {
+        // Use functional updates to avoid stale closure
+        setSessionsWithIdeas(prev => {
+            const current = prev.get(sessionId)
+            if (!current) { return prev }
+
+            // If already expanded, just collapse
+            if (current.isExpanded) {
+                const newMap = new Map(prev)
+                newMap.set(sessionId, { ...current, isExpanded: false })
+                return newMap
+            }
+
+            // Expand and set loading
+            const newMap = new Map(prev)
+            newMap.set(sessionId, { ...current, isExpanded: true, isLoading: true })
+            return newMap
+        })
+
+        // Load ideas asynchronously
+        try {
+            const ideas = await window.electron.ideas.getIdeas(sessionId)
+            setSessionsWithIdeas(prev => {
+                const newMap = new Map(prev)
+                const updated = prev.get(sessionId)
+                if (updated) {
+                    newMap.set(sessionId, { ...updated, ideas, isLoading: false })
+                }
+                return newMap
+            })
+        } catch {
+            setSessionsWithIdeas(prev => {
+                const newMap = new Map(prev)
+                const updated = prev.get(sessionId)
+                if (updated) {
+                    newMap.set(sessionId, { ...updated, isLoading: false })
+                }
+                return newMap
+            })
+        }
+    }, [])
+
+    // Group sessions by date
+    const groupedSessions = React.useMemo(() => {
+        const groups: { label: string; sessions: SessionWithIdeas[] }[] = []
+        const today: SessionWithIdeas[] = []
+        const yesterday: SessionWithIdeas[] = []
+        const thisWeek: SessionWithIdeas[] = []
+        const older: SessionWithIdeas[] = []
+
+        const now = new Date()
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+        const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
+        const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
+
+        for (const session of sessions) {
+            const data = sessionsWithIdeas.get(session.id)
+            if (!data) { continue }
+
+            if (session.createdAt >= todayStart) {
+                today.push(data)
+            } else if (session.createdAt >= yesterdayStart) {
+                yesterday.push(data)
+            } else if (session.createdAt >= weekStart) {
+                thisWeek.push(data)
+            } else {
+                older.push(data)
+            }
+        }
+
+        if (today.length > 0) { groups.push({ label: t('dateGroups.today'), sessions: today }) }
+        if (yesterday.length > 0) { groups.push({ label: t('dateGroups.yesterday'), sessions: yesterday }) }
+        if (thisWeek.length > 0) { groups.push({ label: t('dateGroups.lastWeek'), sessions: thisWeek }) }
+        if (older.length > 0) { groups.push({ label: t('dateGroups.older'), sessions: older }) }
+
+        return groups
+    }, [sessions, sessionsWithIdeas, t])
+
+    // Compute stats
+    const stats = React.useMemo(() => {
+        let totalIdeas = 0
+        let approved = 0
+        let pending = 0
+
+        for (const data of sessionsWithIdeas.values()) {
+            for (const idea of data.ideas) {
+                totalIdeas++
+                if (idea.status === 'approved') { approved++ }
+                if (idea.status === 'pending') { pending++ }
+            }
+        }
+
+        return {
+            totalSessions: sessions.length,
+            completedSessions: sessions.filter(s => s.status === 'completed').length,
+            totalIdeas,
+            approved,
+            pending
+        }
+    }, [sessions, sessionsWithIdeas])
+
+    if (sessions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4">
+                    <Lightbulb className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                    {t('ideas.empty.noSessions')}
+                </h3>
+                <p className="text-white/50 max-w-sm">
+                    {t('ideas.empty.noSessionsDesc')}
+                </p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                    <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
+                    <p className="text-xs text-white/50 mt-1">Total Sessions</p>
+                </div>
+                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                    <p className="text-2xl font-bold text-purple-400">{stats.completedSessions}</p>
+                    <p className="text-xs text-white/50 mt-1">Completed</p>
+                </div>
+                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                    <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
+                    <p className="text-xs text-white/50 mt-1">Approved Ideas</p>
+                </div>
+                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                    <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                    <p className="text-xs text-white/50 mt-1">Pending Review</p>
+                </div>
+            </div>
+
+            {/* Grouped Sessions */}
+            {groupedSessions.map(group => (
+                <div key={group.label}>
+                    <h3 className="text-sm font-semibold text-white/60 mb-3 px-1">
+                        {group.label}
+                    </h3>
+                    <div className="space-y-3">
+                        {group.sessions.map(sessionData => (
+                            <SessionRow
+                                key={sessionData.session.id}
+                                sessionData={sessionData}
+                                onToggle={(id) => { void toggleSession(id) }}
+                                onSelectIdea={onSelectIdea}
+                                onSelectSession={onSelectSession}
+                                t={t}
+                            />
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}

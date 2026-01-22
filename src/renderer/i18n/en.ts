@@ -1175,7 +1175,41 @@ export const en = {
             marketTrends: 'Market Trends',
             competitors: 'Competitors',
             selectPath: 'Select Project Path',
-            creating: 'Creating project...'
+            creating: 'Creating project...',
+            detailedDescription: 'Detailed Description',
+            roadmap: 'Project Roadmap',
+            techStack: 'Technology Stack',
+            competitorAnalysis: 'Competitor Analysis'
+        },
+
+        // Tech stack categories
+        techStack: {
+            frontend: 'Frontend',
+            backend: 'Backend',
+            database: 'Database',
+            infrastructure: 'Infrastructure',
+            other: 'Other Tools'
+        },
+
+        // Competitor analysis
+        competitor: {
+            strengths: 'Strengths',
+            weaknesses: 'Weaknesses',
+            missingFeatures: 'Missing Features',
+            opportunity: 'Differentiation Opportunity'
+        },
+
+        // Generation stages (multi-stage pipeline)
+        stages: {
+            seedGeneration: 'Generating initial concept...',
+            ideaResearch: 'Researching market for this idea...',
+            naming: 'Creating name suggestions...',
+            longDescription: 'Writing detailed description...',
+            roadmap: 'Building project roadmap...',
+            techStack: 'Selecting technology stack...',
+            competitorAnalysis: 'Analyzing competitors...',
+            finalizing: 'Finalizing idea...',
+            complete: 'Idea complete'
         },
 
         // Logo generation

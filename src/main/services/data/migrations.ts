@@ -290,6 +290,29 @@ function getIdeaGeneratorMigrations(): Migration[] {
                     CREATE INDEX IF NOT EXISTS idx_project_ideas_created_at ON project_ideas(created_at DESC);
                 `);
             }
+        },
+        {
+            id: 19,
+            name: 'Extended Idea Fields for Multi-Stage Pipeline',
+            up: async (db: DatabaseAdapter) => {
+                // Add new columns for the multi-stage idea generation pipeline
+                const alterQueries = [
+                    'ALTER TABLE project_ideas ADD COLUMN long_description TEXT',
+                    'ALTER TABLE project_ideas ADD COLUMN roadmap TEXT',
+                    'ALTER TABLE project_ideas ADD COLUMN tech_stack TEXT',
+                    'ALTER TABLE project_ideas ADD COLUMN idea_competitors TEXT',
+                    'ALTER TABLE project_ideas ADD COLUMN generation_stage TEXT DEFAULT \'idle\'',
+                    'ALTER TABLE project_ideas ADD COLUMN research_context TEXT'
+                ];
+
+                for (const query of alterQueries) {
+                    try {
+                        await db.exec(query);
+                    } catch {
+                        appLogger.debug('DatabaseService', `Column may already exist: ${query}`);
+                    }
+                }
+            }
         }
     ]
 }

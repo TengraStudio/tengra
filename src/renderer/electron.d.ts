@@ -527,6 +527,7 @@ export interface ElectronAPI {
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
         canGenerateLogo: () => Promise<boolean>
         generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
+        queryResearch: (ideaId: string, question: string) => Promise<{ success: boolean; answer: string }>
         onResearchProgress: (callback: (progress: ResearchProgress) => void) => () => void
         onIdeaProgress: (callback: (progress: IdeaProgress) => void) => () => void
     }

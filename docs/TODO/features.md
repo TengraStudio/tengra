@@ -19,6 +19,9 @@
 - [ ] Store prompt metadata with images
 - [ ] Gallery UI overhaul (Hover details, Regenerate)
 - [ ] Database migration for Gallery Items
+- [ ] Local Image Management UI: Integrated settings to download, bench, and switch between Ollama and SD models.
+- [ ] Hardware-Aware Optimizer: Auto-configure generation parameters (steps, sampler) based on detected VRAM.
+- [ ] ComfyUI Node Support: Integration for advanced users to use custom ComfyUI workflows for image generation.
 
 ### 2.2 Statistics Dashboard
 - [ ] Usage Analytics (Model usage, Cost)
