@@ -1,5 +1,5 @@
 // Hide console window on Windows (prevents conhost.exe)
-// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use axum::{
     routing::post,

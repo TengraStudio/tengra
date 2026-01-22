@@ -1,21 +1,19 @@
 # Features Roadmap
 
-## 🔴 CRITICAL - Core Functionality
+## CRITICAL - Core Functionality
 
 ### 1.1 Missing Features
-- [ ] **Memory/RAG management**: UI and Backend
-- [ ] **Agent Council**: UI for multi-agent collaboration
-- [ ] **Onboarding Flow**: Complete remaining 50%
-- [ ] **Settings UI**: Add missing panels (Model parameters, Token limits)
+- [ ] Memory/RAG management: UI and Backend
+- [ ] Agent Council: UI for multi-agent collaboration
+- [ ] Onboarding Flow: Complete remaining 50%
+- [ ] Settings UI: Add missing panels (Model parameters, Token limits)
 
 ### 1.2 Project System
-- [ ] **Environment Variables Manager**: UI for .env
-- [ ] **Dependency Analyzer**: Visualization
-- [ ] **Project Settings Panel**
+- [ ] Environment Variables Manager: UI for .env
+- [ ] Dependency Analyzer: Visualization
+- [ ] Project Settings Panel
 
----
-
-## 🟠 HIGH - UI Enhancements
+## HIGH - UI Enhancements
 
 ### 2.1 Gallery System
 - [ ] Store prompt metadata with images
@@ -32,17 +30,13 @@
 - [ ] Show context window size and pricing
 - [ ] Favorites/Pinned models
 
----
+## MEDIUM - Thinking and Planning Mode
 
-## 🟡 MEDIUM - Thinking & Planning Mode
-
-- [ ] Implement "Thinking" UI (collapsible reasoning)
-- [ ] Implement "Planning" Mode (multi-step execution)
+- [ ] Implement Thinking UI (collapsible reasoning)
+- [ ] Implement Planning Mode (multi-step execution)
 - [ ] Support model-specific thinking blocks (Claude, o1)
 
----
-
-## 🟢 LOW - Quality of Life
+## LOW - Quality of Life
 
 - [ ] Chat Export/Import
 - [ ] Keyboard Shortcut Customization

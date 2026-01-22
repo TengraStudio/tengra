@@ -1,9 +1,9 @@
 import { IpcRendererEvent } from 'electron'
 
 import {
-    AgentDefinition, AppSettings, AuthStatus, Chat, ClaudeQuota, CopilotQuota, CouncilSession,
-    EntityKnowledge, EpisodicMemory, FileSearchResult, Folder, IpcValue, Message, Project,
-    ProjectAnalysis, ProjectStats, QuotaResponse,
+    AgentDefinition, AppSettings, AuthStatus, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota, CouncilSession,
+    EntityKnowledge, EpisodicMemory, FileSearchResult, Folder, IdeaProgress, IdeaSession, IdeaSessionConfig, IpcValue, Message, Project,
+    ProjectAnalysis, ProjectIdea, ProjectStats, QuotaResponse, ResearchData, ResearchProgress,
     SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
     SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
@@ -264,8 +264,8 @@ export interface ElectronAPI {
     // LLM chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>
     chat: (messages: Message[], model: string) => Promise<{ content: string }>
-    chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, projectId?: string) => Promise<IpcValue>
-    chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, chatId?: string, projectId?: string) => Promise<void>
+    chatOpenAI: (request: ChatRequest) => Promise<IpcValue>
+    chatStream: (request: ChatStreamRequest) => Promise<void>
     abortChat: () => void
     onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; done?: boolean }) => void) => (() => void)
     removeStreamChunkListener: (callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; done?: boolean }) => void) => void
@@ -336,6 +336,24 @@ export interface ElectronAPI {
             totalCodingTime: number
             projectCodingTime: Record<string, number>
         }>
+        getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
+            totalSent: number
+            totalReceived: number
+            totalCost: number
+            timeline: Array<{ timestamp: number; sent: number; received: number }>
+            byProvider: Record<string, { sent: number; received: number; cost: number }>
+            byModel: Record<string, { sent: number; received: number; cost: number }>
+        }>
+        addTokenUsage: (record: {
+            messageId?: string
+            chatId: string
+            projectId?: string
+            provider: string
+            model: string
+            tokensSent: number
+            tokensReceived: number
+            costEstimate?: number
+        }) => Promise<{ success: boolean }>
         getProjects: () => Promise<Project[]>
         getFolders: () => Promise<Folder[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
@@ -492,6 +510,25 @@ export interface ElectronAPI {
         delete: (path: string) => Promise<boolean>
         open: (path: string) => Promise<boolean>
         reveal: (path: string) => Promise<boolean>
+    }
+
+    // Ideas feature
+    ideas: {
+        createSession: (config: IdeaSessionConfig) => Promise<IdeaSession>
+        getSession: (id: string) => Promise<IdeaSession | null>
+        getSessions: () => Promise<IdeaSession[]>
+        cancelSession: (id: string) => Promise<{ success: boolean }>
+        startResearch: (sessionId: string) => Promise<{ success: boolean; data?: ResearchData }>
+        startGeneration: (sessionId: string) => Promise<{ success: boolean }>
+        enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: ProjectIdea }>
+        getIdea: (id: string) => Promise<ProjectIdea | null>
+        getIdeas: (sessionId?: string) => Promise<ProjectIdea[]>
+        approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<{ success: boolean; project?: Project }>
+        rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
+        canGenerateLogo: () => Promise<boolean>
+        generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
+        onResearchProgress: (callback: (progress: ResearchProgress) => void) => () => void
+        onIdeaProgress: (callback: (progress: IdeaProgress) => void) => () => void
     }
 
     getUserDataPath: () => Promise<string>

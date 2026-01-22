@@ -265,7 +265,7 @@ class ChatIpcManager {
         if (!projectId || messages.length === 0) { return messages; }
 
         const lastMessage = messages[messages.length - 1];
-        if (lastMessage?.role !== 'user') { return messages; }
+        if (lastMessage.role !== 'user') { return messages; }
 
         try {
             const query = RAGUtils.extractQuery(lastMessage);

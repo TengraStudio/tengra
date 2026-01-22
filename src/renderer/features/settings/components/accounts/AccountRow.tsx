@@ -42,9 +42,10 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                 <div className="text-sm font-medium text-foreground truncate">
                     {account.displayName ?? account.email ?? 'Account'}
                 </div>
-                {account.email && account.displayName && (
-                    <div className="text-xs text-muted-foreground truncate">{account.email}</div>
-                )}
+                {/* Always show email for clear account identification */}
+                <div className="text-xs text-muted-foreground truncate">
+                    {account.email ?? t('accounts.noEmail')}
+                </div>
             </div>
 
             {/* Actions */}

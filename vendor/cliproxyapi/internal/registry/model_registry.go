@@ -545,6 +545,22 @@ func (r *ModelRegistry) ResumeClientModel(clientID, modelID string) {
 	log.Debugf("Resumed client %s for model %s", clientID, modelID)
 }
 
+// ClientHasRegisteredModels reports whether the client has any models registered.
+// This is useful to distinguish between "no models registered" (external auth source)
+// and "models registered but specific model not supported".
+func (r *ModelRegistry) ClientHasRegisteredModels(clientID string) bool {
+	clientID = strings.TrimSpace(clientID)
+	if clientID == "" {
+		return false
+	}
+
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	models, exists := r.clientModels[clientID]
+	return exists && len(models) > 0
+}
+
 // ClientSupportsModel reports whether the client registered support for modelID.
 func (r *ModelRegistry) ClientSupportsModel(clientID, modelID string) bool {
 	clientID = strings.TrimSpace(clientID)

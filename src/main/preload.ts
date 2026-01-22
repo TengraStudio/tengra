@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 ipcRenderer.setMaxListeners(50)
 import {
     AgentDefinition, AppSettings, AuthStatus,
-    Chat, CodexUsage, CopilotQuota, CouncilSession,
+    Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota, CouncilSession,
     EntityKnowledge, EpisodicMemory, FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
     Message, OllamaLibraryModel,
     ProcessInfo,
@@ -124,8 +124,8 @@ export interface ElectronAPI {
     // Ollama chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>
     chat: (messages: Message[], model: string) => Promise<{ content: string; done: boolean }>
-    chatOpenAI: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>) => Promise<{ content: string; toolCalls?: ToolCall[]; reasoning?: string; images?: string[]; sources?: string[] }>
-    chatStream: (messages: Message[], model: string, tools?: ToolDefinition[], provider?: string, options?: Record<string, IpcValue>, chatId?: string, projectId?: string) => Promise<{ success: boolean; queued?: boolean }>
+    chatOpenAI: (request: ChatRequest) => Promise<{ content: string; toolCalls?: ToolCall[]; reasoning?: string; images?: string[]; sources?: string[] }>
+    chatStream: (request: ChatStreamRequest) => Promise<{ success: boolean; queued?: boolean }>
     abortChat: () => void
     onStreamChunk: (callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => () => void
     removeStreamChunkListener: () => void
@@ -201,6 +201,24 @@ export interface ElectronAPI {
             totalCodingTime: number
             projectCodingTime: Record<string, number>
         }>
+        getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
+            totalSent: number
+            totalReceived: number
+            totalCost: number
+            timeline: Array<{ timestamp: number; sent: number; received: number }>
+            byProvider: Record<string, { sent: number; received: number; cost: number }>
+            byModel: Record<string, { sent: number; received: number; cost: number }>
+        }>
+        addTokenUsage: (record: {
+            messageId?: string
+            chatId: string
+            projectId?: string
+            provider: string
+            model: string
+            tokensSent: number
+            tokensReceived: number
+            costEstimate?: number
+        }) => Promise<{ success: boolean }>
         getProjects: () => Promise<Project[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
         updateProject: (id: string, updates: Partial<Project>) => Promise<void>
@@ -506,6 +524,25 @@ export interface ElectronAPI {
         chatToPDF: (chat: Chat, options?: { title?: string }) => Promise<{ success: boolean; path?: string; error?: string }>
         getContent: (chat: Chat, options: { format: 'markdown' | 'html' | 'json' | 'txt'; includeTimestamps?: boolean; includeMetadata?: boolean; title?: string }) => Promise<{ success: boolean; content?: string; error?: string }>
     }
+
+    // Idea Generator
+    ideas: {
+        createSession: (config: { model: string; provider: string; categories: string[]; maxIdeas: number }) => Promise<IpcValue>
+        getSession: (id: string) => Promise<IpcValue>
+        getSessions: () => Promise<IpcValue[]>
+        cancelSession: (id: string) => Promise<{ success: boolean }>
+        startResearch: (sessionId: string) => Promise<{ success: boolean; data?: IpcValue }>
+        startGeneration: (sessionId: string) => Promise<{ success: boolean }>
+        enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: IpcValue }>
+        getIdea: (id: string) => Promise<IpcValue>
+        getIdeas: (sessionId?: string) => Promise<IpcValue[]>
+        approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<{ success: boolean; project?: IpcValue }>
+        rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
+        canGenerateLogo: () => Promise<boolean>
+        generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
+        onResearchProgress: (callback: (progress: IpcValue) => void) => () => void
+        onIdeaProgress: (callback: (progress: IpcValue) => void) => () => void
+    }
 }
 
 const api: ElectronAPI = {
@@ -557,13 +594,13 @@ const api: ElectronAPI = {
 
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
-    chatOpenAI: async (messages, model, tools, provider, options) => {
-        const res = await ipcRenderer.invoke('chat:openai', messages, model, tools, provider, options)
+    chatOpenAI: async (request) => {
+        const res = await ipcRenderer.invoke('chat:openai', request.messages, request.model, request.tools, request.provider, request.options, request.projectId)
         if (res.success) { return res.data }
         throw new Error(res.error?.message ?? 'Chat request failed')
     },
-    chatStream: (messages, model, tools, provider, options, chatId, projectId) => ipcRenderer.invoke('chat:stream', messages, model, tools, provider, options, chatId, projectId),
-    abortChat: () => ipcRenderer.invoke('ollama:abort'),
+    chatStream: (request) => ipcRenderer.invoke('chat:stream', request.messages, request.model, request.tools, request.provider, request.options, request.chatId, request.projectId),
+    abortChat: () => { void ipcRenderer.invoke('ollama:abort') },
     onStreamChunk: (callback) => {
         console.warn(`[Preload] onStreamChunk registered on ${window.location.href}`);
         const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; chatId?: string; done?: boolean }) => {
@@ -641,6 +678,17 @@ const api: ElectronAPI = {
         getStats: () => ipcRenderer.invoke('db:getStats'),
         getDetailedStats: (period) => ipcRenderer.invoke('db:getDetailedStats', period),
         getTimeStats: () => ipcRenderer.invoke('db:getTimeStats'),
+        getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => ipcRenderer.invoke('db:getTokenStats', period),
+        addTokenUsage: (record: {
+            messageId?: string
+            chatId: string
+            projectId?: string
+            provider: string
+            model: string
+            tokensSent: number
+            tokensReceived: number
+            costEstimate?: number
+        }) => ipcRenderer.invoke('db:addTokenUsage', record),
         getProjects: () => ipcRenderer.invoke('db:getProjects'),
         createProject: (name, path, desc, mounts) => ipcRenderer.invoke('db:createProject', name, path, desc, mounts),
         updateProject: (id, updates) => ipcRenderer.invoke('db:updateProject', id, updates),
@@ -762,7 +810,7 @@ const api: ElectronAPI = {
     },
 
     captureScreenshot: () => ipcRenderer.invoke('screenshot:capture'),
-    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+    openExternal: (url) => { void ipcRenderer.invoke('shell:openExternal', url) },
     captureCookies: (url: string, timeoutMs?: number) => ipcRenderer.invoke('window:captureCookies', url, timeoutMs),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
     runCommand: (command, args, cwd) => ipcRenderer.invoke('shell:runCommand', command, args, cwd),
@@ -913,7 +961,7 @@ const api: ElectronAPI = {
         getFiles: (modelId: string) => ipcRenderer.invoke('hf:get-files', modelId),
         downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256),
         onDownloadProgress: (callback) => ipcRenderer.on('hf:download-progress', (_event, progress) => callback(progress)),
-        cancelDownload: () => ipcRenderer.invoke('hf:cancel-download')
+        cancelDownload: () => { void ipcRenderer.invoke('hf:cancel-download') }
     },
 
     log: {
@@ -1006,6 +1054,32 @@ const api: ElectronAPI = {
         chatToText: (chat, options) => ipcRenderer.invoke('export:chatToText', chat, options),
         chatToPDF: (chat, options) => ipcRenderer.invoke('export:chatToPDF', chat, options),
         getContent: (chat, options) => ipcRenderer.invoke('export:getContent', chat, options)
+    },
+
+    ideas: {
+        createSession: (config) => ipcRenderer.invoke('ideas:createSession', config),
+        getSession: (id) => ipcRenderer.invoke('ideas:getSession', id),
+        getSessions: () => ipcRenderer.invoke('ideas:getSessions'),
+        cancelSession: (id) => ipcRenderer.invoke('ideas:cancelSession', id),
+        startResearch: (sessionId) => ipcRenderer.invoke('ideas:startResearch', sessionId),
+        startGeneration: (sessionId) => ipcRenderer.invoke('ideas:startGeneration', sessionId),
+        enrichIdea: (ideaId) => ipcRenderer.invoke('ideas:enrichIdea', ideaId),
+        getIdea: (id) => ipcRenderer.invoke('ideas:getIdea', id),
+        getIdeas: (sessionId) => ipcRenderer.invoke('ideas:getIdeas', sessionId),
+        approveIdea: (ideaId, projectPath, selectedName) => ipcRenderer.invoke('ideas:approveIdea', ideaId, projectPath, selectedName),
+        rejectIdea: (ideaId) => ipcRenderer.invoke('ideas:rejectIdea', ideaId),
+        canGenerateLogo: () => ipcRenderer.invoke('ideas:canGenerateLogo'),
+        generateLogo: (ideaId, prompt) => ipcRenderer.invoke('ideas:generateLogo', ideaId, prompt),
+        onResearchProgress: (callback) => {
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
+            ipcRenderer.on('ideas:research-progress', listener)
+            return () => ipcRenderer.removeListener('ideas:research-progress', listener)
+        },
+        onIdeaProgress: (callback) => {
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
+            ipcRenderer.on('ideas:idea-progress', listener)
+            return () => ipcRenderer.removeListener('ideas:idea-progress', listener)
+        }
     }
 }
 

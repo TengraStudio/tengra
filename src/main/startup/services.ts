@@ -21,6 +21,7 @@ import { FeatureFlagService } from '@main/services/external/feature-flag.service
 import { HistoryImportService } from '@main/services/external/history-import.service'
 import { HttpService } from '@main/services/external/http.service'
 import { LogoService } from '@main/services/external/logo.service'
+import { MarketResearchService } from '@main/services/external/market-research.service'
 import { RuleService } from '@main/services/external/rule.service'
 import { UtilityService } from '@main/services/external/utility.service'
 import { WebService } from '@main/services/external/web.service'
@@ -28,6 +29,7 @@ import { AgentService } from '@main/services/llm/agent.service'
 import { AgentCouncilService } from '@main/services/llm/agent-council.service'
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
+import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { HuggingFaceService } from '@main/services/llm/huggingface.service'
 import { LlamaService } from '@main/services/llm/llama.service'
@@ -44,6 +46,7 @@ import { PromptTemplatesService } from '@main/services/llm/prompt-templates.serv
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
 import { DockerService } from '@main/services/project/docker.service'
 import { GitService } from '@main/services/project/git.service'
+import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service'
 import { ProjectService } from '@main/services/project/project.service'
 import { SSHService } from '@main/services/project/ssh.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
@@ -141,6 +144,9 @@ export interface Services {
     backupService: BackupService;
     modelRegistryService: ModelRegistryService;
     eventBusService: EventBusService;
+    marketResearchService: MarketResearchService;
+    projectScaffoldService: ProjectScaffoldService;
+    ideaGeneratorService: IdeaGeneratorService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -200,7 +206,13 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('screenshotService', () => new ScreenshotService());
     container.register('processService', () => new ProcessService());
     container.register('processManagerService', () => new ProcessManagerService());
-    container.register('webService', () => new WebService());
+    container.register('webService', () => {
+        const ws = new WebService()
+        if (process.env['TAVILY_API_KEY']) {
+            ws.setTavilyKey(process.env['TAVILY_API_KEY'])
+        }
+        return ws
+    })
     container.register('updateService', (ss, ds) => new UpdateService(ss as SettingsService, ds as DataService), ['settingsService', 'dataService']);
     container.register('configService', (ss) => new ConfigService(ss as SettingsService), ['settingsService']);
     container.register('jobSchedulerService', (dbs) => new JobSchedulerService(dbs as DatabaseService), ['databaseService']);
@@ -219,7 +231,7 @@ function registerDataServices() {
 }
 
 function registerSecurityServices() {
-    container.register('authService', (dbs, ss) => new AuthService(dbs as DatabaseService, ss as SecurityService), ['databaseService', 'securityService']);
+    container.register('authService', (dbs, ss, ebs) => new AuthService(dbs as DatabaseService, ss as SecurityService, ebs as EventBusService), ['databaseService', 'securityService', 'eventBusService']);
     container.register('authAPIService', (as) => new AuthAPIService(as as AuthService), ['authService']);
     container.register('keyRotationService', (ss) => new KeyRotationService(ss as SettingsService), ['settingsService']);
     container.register('copilotService', (as, ns) => new CopilotService(as as AuthService, ns as NotificationService), ['authService', 'notificationService']);
@@ -281,6 +293,17 @@ function registerProjectServices() {
     container.register('dockerService', (cs, ssh) => new DockerService(cs as CommandService, ssh as SSHService), ['commandService', 'sshService']);
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
     container.register('logoService', (ls, ps) => new LogoService(ls as LLMService, ps as ProjectService), ['llmService', 'projectService']);
+    container.register('projectScaffoldService', () => new ProjectScaffoldService());
+    container.register('marketResearchService', (ws) => new MarketResearchService(ws as WebService), ['webService']);
+    container.register('ideaGeneratorService', (dbs, ls, mrs, pss, as, ebs) =>
+        new IdeaGeneratorService({
+            databaseService: dbs as DatabaseService,
+            llmService: ls as LLMService,
+            marketResearchService: mrs as MarketResearchService,
+            projectScaffoldService: pss as ProjectScaffoldService,
+            authService: as as AuthService,
+            eventBus: ebs as EventBusService
+        }), ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
@@ -423,6 +446,9 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         multiModelComparisonService: container.resolve<MultiModelComparisonService>('multiModelComparisonService'),
         backupService: container.resolve<BackupService>('backupService'),
         modelRegistryService: container.resolve<ModelRegistryService>('modelRegistryService'),
-        eventBusService: container.resolve<EventBusService>('eventBusService')
+        eventBusService: container.resolve<EventBusService>('eventBusService'),
+        marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
+        projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
+        ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService')
     };
 }

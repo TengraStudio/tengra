@@ -188,6 +188,10 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         const updated: AppSettings = { ...settings }
 
         try {
+            // Use new auth system to properly unlink accounts
+            await window.electron.unlinkProvider(provider)
+            
+            // Legacy: Also clean up old auth files for backward compatibility
             const status = await window.electron.checkAuthStatus()
             const files = (status?.files ?? []) as AuthFile[]
             const identifiers: string[] = []

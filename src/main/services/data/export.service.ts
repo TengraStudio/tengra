@@ -47,56 +47,21 @@ export class ExportService {
      */
     async exportChat(chat: Chat, options: ExportOptions): Promise<ExportResult> {
         const opts = { ...DEFAULT_OPTIONS, ...options };
-        const title = (opts.title || (chat.title ?? 'Untitled Chat'));
+        const title = (opts.title ?? chat.title) || 'Untitled Chat';
 
         appLogger.info('ExportService', `Exporting chat "${title}" as ${opts.format}`);
 
         try {
             // Generate content based on format
-            let content: string;
-            let fileExtension: string;
-            let filterName: string;
-
-            switch (opts.format) {
-                case 'markdown':
-                    content = this.generateMarkdown(chat, opts);
-                    fileExtension = 'md';
-                    filterName = 'Markdown Files';
-                    break;
-                case 'html':
-                    content = this.generateHTML(chat, opts);
-                    fileExtension = 'html';
-                    filterName = 'HTML Files';
-                    break;
-                case 'json':
-                    content = this.generateJSON(chat, opts);
-                    fileExtension = 'json';
-                    filterName = 'JSON Files';
-                    break;
-                case 'txt':
-                    content = this.generatePlainText(chat, opts);
-                    fileExtension = 'txt';
-                    filterName = 'Text Files';
-                    break;
-                default:
-                    return { success: false, error: `Unknown format: ${opts.format}` };
+            const metadata = this.getFormatMetadata(opts.format);
+            if (!metadata) {
+                return { success: false, error: `Unknown format: ${opts.format}` };
             }
-
-            // Show save dialog
-            if (!this.window) {
-                return { success: false, error: 'No window available' };
-            }
+            const { fileExtension, filterName } = metadata;
+            const content = this.getExportContent(chat, opts);
 
             const sanitizedTitle = this.sanitizeFilename(title);
-            const { filePath, canceled } = await dialog.showSaveDialog(this.window, {
-                title: `Export Chat as ${filterName}`,
-                defaultPath: join(
-                    (process.env.USERPROFILE || (process.env.HOME ?? '')),
-                    'Documents',
-                    `${sanitizedTitle}.${fileExtension}`
-                ),
-                filters: [{ name: filterName, extensions: [fileExtension] }]
-            });
+            const { filePath, canceled } = await this.promptSaveFile(sanitizedTitle, fileExtension, filterName);
 
             if (canceled || !filePath) {
                 return { success: false };
@@ -122,19 +87,11 @@ export class ExportService {
             return { success: false, error: 'No window available' };
         }
 
-        const title = (options?.title || (chat.title ?? 'Untitled Chat'));
+        const title = (options?.title ?? chat.title) || 'Untitled Chat';
         const sanitizedTitle = this.sanitizeFilename(title);
 
         try {
-            const { filePath, canceled } = await dialog.showSaveDialog(this.window, {
-                title: 'Export Chat to PDF',
-                defaultPath: join(
-                    (process.env.USERPROFILE || (process.env.HOME ?? '')),
-                    'Documents',
-                    `${sanitizedTitle}.pdf`
-                ),
-                filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-            });
+            const { filePath, canceled } = await this.promptSaveFile(sanitizedTitle, 'pdf', 'PDF Files');
 
             if (canceled || !filePath) {
                 return { success: false };
@@ -180,8 +137,8 @@ export class ExportService {
      * Generate Markdown format
      */
     private generateMarkdown(chat: Chat, options: ExportOptions): string {
-        const lines: string[] = []
-        const title = options.title ?? chat.title ?? 'Untitled Chat'
+        const lines: string[] = [];
+        const title = (options.title ?? chat.title) || 'Untitled Chat';
 
         lines.push(`# ${title}`, '')
 
@@ -199,8 +156,8 @@ export class ExportService {
     }
 
     private addMarkdownMetadata(lines: string[], chat: Chat): void {
-        lines.push('---')
-        lines.push(`**Model:** ${chat.model ?? 'Unknown'}`)
+        lines.push('---');
+        lines.push(`**Model:** ${chat.model || 'Unknown'}`);
         lines.push(`**Created:** ${new Date(chat.createdAt).toLocaleString()}`)
         lines.push(`**Messages:** ${chat.messages.length}`)
         lines.push('---', '')
@@ -244,7 +201,7 @@ export class ExportService {
      * Generate HTML format
      */
     private generateHTML(chat: Chat, options: ExportOptions): string {
-        const title = (options.title || chat.title) ?? 'Untitled Chat';
+        const title = (options.title ?? chat.title) || 'Untitled Chat';
         const messages = chat.messages
             .filter(m => m.role !== 'system' || options.includeSystemMessages)
             .map(msg => this.generateHTMLMessage(msg, options))
@@ -352,7 +309,7 @@ export class ExportService {
     private generateHTMLMetadata(chat: Chat): string {
         return `
     <div class="metadata">
-        <strong>Model:</strong> ${this.escapeHTML(chat.model ?? 'Unknown')}<br>
+        <strong>Model:</strong> ${this.escapeHTML(chat.model || 'Unknown')}<br>
         <strong>Created:</strong> ${new Date(chat.createdAt).toLocaleString()}<br>
         <strong>Messages:</strong> ${chat.messages.length}
     </div>`;
@@ -387,7 +344,7 @@ export class ExportService {
             : chat.messages.filter(m => m.role !== 'system');
 
         const exportData = {
-            title: options.title || chat.title,
+            title: (options.title ?? chat.title) || 'Untitled Chat',
             model: chat.model,
             createdAt: chat.createdAt,
             updatedAt: chat.updatedAt,
@@ -425,7 +382,7 @@ export class ExportService {
      */
     private generatePlainText(chat: Chat, options: ExportOptions): string {
         const lines: string[] = [];
-        const title = (options.title || (chat.title ?? 'Untitled Chat'));
+        const title = (options.title ?? chat.title) || 'Untitled Chat';
 
         // Header
         lines.push(`═══════════════════════════════════════════════════════════════`);
@@ -435,7 +392,7 @@ export class ExportService {
 
         // Metadata
         if (options.includeMetadata) {
-            lines.push(`Model: ${chat.model ?? 'Unknown'}`);
+            lines.push(`Model: ${chat.model || 'Unknown'}`);
             lines.push(`Created: ${new Date(chat.createdAt).toLocaleString()}`);
             lines.push(`Messages: ${chat.messages.length}`);
             lines.push('');
@@ -485,8 +442,8 @@ export class ExportService {
 
         if (Array.isArray(msg.content)) {
             return msg.content
-                .filter(part => part.type === 'text' && part.text)
-                .map(part => part.text)
+                .filter(part => part.type === 'text' && !!part.text)
+                .map(part => part.text ?? '')
                 .join('\n');
         }
 
@@ -500,6 +457,28 @@ export class ExportService {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    private getFormatMetadata(format: ExportFormat): { fileExtension: string, filterName: string } | null {
+        switch (format) {
+            case 'markdown': return { fileExtension: 'md', filterName: 'Markdown Files' };
+            case 'html': return { fileExtension: 'html', filterName: 'HTML Files' };
+            case 'json': return { fileExtension: 'json', filterName: 'JSON Files' };
+            case 'txt': return { fileExtension: 'txt', filterName: 'Text Files' };
+            default: return null;
+        }
+    }
+
+    private async promptSaveFile(defaultTitle: string, extension: string, filterName: string): Promise<{ filePath: string | undefined, canceled: boolean }> {
+        if (!this.window) {
+            throw new Error('No window available');
+        }
+        const homeDir = process.env.USERPROFILE ?? process.env.HOME ?? '';
+        return await dialog.showSaveDialog(this.window, {
+            title: `Export Chat as ${filterName}`,
+            defaultPath: join(homeDir, 'Documents', `${defaultTitle}.${extension}`),
+            filters: [{ name: filterName, extensions: [extension] }]
+        });
     }
 
     private sanitizeFilename(filename: string): string {

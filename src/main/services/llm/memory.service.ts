@@ -123,7 +123,7 @@ export class MemoryService {
                     limit
                 });
 
-                if (response.success && response.data) {
+                if (response.success) {
                     // Map back to SemanticFragment objects
                     // Note: Native search returns IDs and Scores. We should fetch full objects from DB for consistency.
                     const searchResults = response.data;
@@ -210,7 +210,7 @@ ${transcript}`;
         };
 
         // Store topics as semantic fragments for better retrieval if needed
-        if (analysis.topics && Array.isArray(analysis.topics)) {
+        if (Array.isArray(analysis.topics)) {
             for (const topic of analysis.topics) {
                 await this.rememberFact(`In chat "${analysis.title}", we discussed: ${topic}`, 'system', chatId, ['topic', ...analysis.topics]);
             }
@@ -247,7 +247,7 @@ ${transcript}`;
                     limit
                 });
 
-                if (response.success && response.data) {
+                if (response.success) {
                     // Filter or verify results are episodes if needed, or just fetch from DB
                     // For now, our native search searches EVERYTHING.
                     // To distinguish, we might need filtering in the Rust service 
@@ -420,7 +420,7 @@ User Message: "${content}"`;
                 const merged = {
                     ...current,
                     ...update,
-                    traits: Array.from(new Set([...(current.traits ?? []), ...(update.traits ?? [])]))
+                    traits: Array.from(new Set([...current.traits, ...(update.traits ?? [])]))
                 };
                 await this.updatePersonality(merged);
                 appLogger.info('MemoryService', 'Personality auto-updated based on conversation');
@@ -441,7 +441,7 @@ User Message: "${content}"`;
             if (!res.ok) { return null; }
 
             const data = await res.json() as OllamaTagsResponse;
-            const installedModels = (data.models ?? []).map((m) => m.name?.toLowerCase());
+            const installedModels = data.models.map((m) => m.name.toLowerCase());
 
             // Find first preferred model that's installed
             for (const preferred of PREFERRED_OLLAMA_MODELS) {

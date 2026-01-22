@@ -1,58 +1,51 @@
-# Project Planning & Roadmap
+# Project Planning and Roadmap
 
-This document outlines the Product Requirements Document (PRD), Roadmap, and strategic vision for Orbit.
+This document outlines the vision, current state, and future direction of Orbit. It serves as the primary reference for understanding our strategic goals and development progress.
 
----
+## Product Vision
 
-## 1. Product Vision
+Orbit is designed to be the definitive desktop environment for AI-assisted coding. Our goal is to provide a seamless bridge between the raw power of cloud-based language models and the critical privacy requirements of professional software development. We aim to empower developers with high-autonomy agents that understand local context while respecting data sovereignty.
 
-**Orbit** is a premier desktop AI coding assistant that balances the power of cloud-based LLMs with the privacy of local model execution. It provides a unified, multi-provider interface to enhance developer productivity.
+### Strategic Objectives
+- **Privacy as a Default**: Every feature is built with a local-first mindset, ensuring that sensitive credentials and code never leave the user's machine unless explicitly intended.
+- **Provider Agility**: Orbit provides a unified interface for all major LLM providers, allowing developers to switch models instantly based on performance, cost, or task suitability.
+- **Agent Autonomy**: We are moving beyond simple chat interfaces toward autonomous agent "councils" that can plan, execute, and verify complex multi-file changes.
 
-### Target Audience
-- **Independent Developers**: Seeking a local-first, privacy-respecting AI tool.
-- **Teams & Enterprises**: Needing unified access to multiple LLM providers (OpenAI, Anthropic, Gemini).
-- **Power Users**: Utilizing autonomous agent councils for complex, multi-step coding tasks.
+## Current Feature Status
 
----
+### Multi-Model Interaction
+Our core chat interface is fully stable and supports concurrent streams from OpenAI, Anthropic, Gemini, and local Ollama instances. This layer handles model-specific parameters and response streaming with high reliability.
 
-## 2. Core Features
+### Agent Orchestration
+The agent system is currently in a "stable" state, capable of executing multi-step tasks using a defined set of tools. Features like the Planner and Executor agents are operational and integrated with the local filesystem and terminal.
 
-| Feature             | Description                                                              | Status     |
-| ------------------- | ------------------------------------------------------------------------ | ---------- |
-| Multi-Model Chat    | Simultaneous conversations with OpenAI, Anthropic, Gemini, and Ollama.  | ✅ Stable  |
-| Agent Council       | Specialized agents (Planner, Executor, Critic) for complex task execution. | ✅ Stable  |
-| Privacy-First       | Local model execution via Ollama and on-device database persistence.    | ✅ Stable  |
-| Extensible Backend  | Easy integration of new providers and tools via a service architecture. | ✅ Stable  |
-| Semantic Memory     | Vector-based episodic and semantic memory for long-term context.        | ✅ Stable  |
-| SSH & DevOps        | Secure remote server connections, file management, and Nginx wizards.   | ✅ Stable  |
+### Secure Synchronization
+We have recently completed a major architectural shift to a bidirectional, HTTP-based token synchronization model. This has eliminated the risks associated with file-based credential storage and significantly improved the stability of our background services.
 
----
+### Semantic Context and Memory
+The application successfully utilizes vector-based memory to provide agents with relevant project context. This allows for more accurate code suggestions and better understanding of large, existing codebases.
 
-## 3. Development Roadmap
+## Development Roadmap
 
-### Phase 1: Core Stability (Completed)
-- [x] Multi-provider IPC bridge.
-- [x] Basic agent orchestration with tool usage.
-- [x] Local database persistence with PGlite.
-- [x] Responsive UI foundations with Tailwind CSS.
+### Completed Milestones
+- Established the multi-process Electron architecture and secure IPC bridge.
+- Integrated PGlite for robust, relational data persistence directly in the application.
+- Developed the Go-based proxy for high-performance routing and authentication.
+- Implemented the Rust-based token monitoring service for seamless background refreshes.
 
-### Phase 2: Intelligence & Tools (Current)
-- [x] Advanced collaboration strategies (Consensus, Chain-of-Thought).
-- [x] Context-aware project indexing (RAG).
-- [ ] Enhanced MCP (Model Context Protocol) tool integrations.
-- [ ] Voice-to-Code capability.
+### Current Priorities
+- **Refinement of Agent Tools**: Improving the precision and safety of tools available to agents.
+- **Resource Management**: Optimizing memory and CPU usage when running multiple local models simultaneously.
+- **Advanced Context Retrieval**: Enhancing our RAG (Retrieval-Augmented Generation) implementation to handle deeper semantic relationships in code.
 
-### Phase 3: Ecosystem & Optimization (Future)
-- [ ] Community plugin system for custom tools.
-- [ ] Mobile companion app for remote monitoring.
-- [ ] Performance analytics and cost tracking dashboard.
+### Future Initiatives
+- **Plugin Ecosystem**: Developing a framework that allows users to create and share custom tools and agent personas.
+- **Performance Analytics**: Adding a detailed dashboard for tracking token usage, costs, and model performance metrics.
+- **Collaborative Sessions**: Exploring ways to allow multiple users or agents to work together on the same project in real-time.
 
----
+## Ongoing Challenges and Solutions
 
-## 4. Gap Analysis
+- **Resource Constraints**: Running powerful LLMs locally is demanding. We are implementing more aggressive model offloading and resource scheduling in our orchestration layer.
+- **Configuration Complexity**: To simplify the initial setup, we are developing a guided "onboarding wizard" that helps users configure their API keys and local model environments.
+- **Real-time Synchronization**: As we move toward more distributed components, ensuring that every service has the latest state without introducing latency remains a key focus.
 
-| Limitation                                  | Solution Path                                                    |
-| ------------------------------------------- | ---------------------------------------------------------------- |
-| High memory usage with multiple local models | Implement aggressive resource management in `MultiLLMOrchestrator`. |
-| Initial setup complexity for local models  | Add a guided onboarding "Model Wizard".                          |
-| Limited real-time collaboration            | Explore WebRTC for shared agent sessions.                        |

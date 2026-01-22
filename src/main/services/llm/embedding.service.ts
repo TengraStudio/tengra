@@ -20,9 +20,7 @@ export class EmbeddingService {
 
     private initializeProvider() {
         const settings = this.settingsService.getSettings()
-        if (settings.embeddings) {
-            this.setProvider(settings.embeddings.provider, settings.embeddings.model)
-        }
+        this.setProvider(settings.embeddings.provider, settings.embeddings.model)
     }
 
     setProvider(provider: EmbeddingProvider, model?: string) {
@@ -33,19 +31,15 @@ export class EmbeddingService {
     getCurrentProvider(): EmbeddingProvider {
         // Ensure settings are synced
         const settings = this.settingsService.getSettings();
-        if (settings.embeddings?.provider) {
-            return settings.embeddings.provider;
-        }
+        return settings.embeddings.provider;
         return this.currentProvider;
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
         // Always check latest settings before generating
         const settings = this.settingsService.getSettings();
-        if (settings.embeddings?.provider) {
-            this.currentProvider = settings.embeddings.provider;
-            if (settings.embeddings.model) { this.model = settings.embeddings.model; }
-        }
+        this.currentProvider = settings.embeddings.provider;
+        if (settings.embeddings.model) { this.model = settings.embeddings.model; }
 
         switch (this.currentProvider) {
             case 'ollama':

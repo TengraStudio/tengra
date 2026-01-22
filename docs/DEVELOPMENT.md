@@ -1,61 +1,63 @@
 # Development Guide
 
-This guide outlines the environment setup, coding standards, and workflows required for contributing to Orbit. Following these standards ensures the stability, security, and performance of the application.
+This guide provides the necessary information to set up, develop, and test Orbit. We prioritize stability and security by following strict coding standards and a rigorous build process.
 
-## 1. Environment Setup
+## Environment Setup
 
 ### Prerequisites
-- **Node.js**: v18.0.0 or higher.
-- **Git**: Latest version.
-- **VS Build Tools / GCC**: Required for compiling native Rust and Go components.
+To build and run Orbit locally, you need the following tools:
+- **Node.js**: v18.0.0 or higher is required for the main application.
+- **Git**: Ensure you have the latest version for version control.
+- **Go**: v1.21+ is required to compile the `cliproxy-embed` microservice.
+- **Rust and Cargo**: latest stable version is required for the token, model, and memory services.
+- **Build Tools**: 
+    - On Windows: Visual Studio Build Tools (C++).
+    - On Linux/macOS: GCC or Clang and standard build utilities.
 
-### Quick Start
-1. `npm install`
-2. `npm run build` (Ensures all native binaries are compiled)
-3. `npm run dev` (Starts Electron in development mode with HMR)
+### Initial Configuration
+1. Clone the repository and navigate to the root directory.
+2. Run `npm install` to install all Node.js dependencies.
+3. Run `npm run build` to perform an initial compilation of the TypeScript code and all native microservices.
+4. Run `npm run dev` to start the application in development mode with Hot Module Replacement (HMR).
 
-## 2. Core Development Rules
+## Coding Standards
 
-We adhere to high-integrity software standards, inspired by **NASA's Power of Ten** rules for safety-critical code.
+Orbit follows high-integrity software standards to ensure the application remains reliable over time.
 
-### Mandatory Standards
-- **Documentation First**: Read `docs/AI_RULES.md` and `docs/ARCHITECTURE.md` before making architectural changes.
-- **No `any` or `unknown` usage**: Always use specific interfaces or types. Use type guards for external data.
-- **Build Before Commit**: You MUST run `npm run build` successfully before pushing any changes.
-- **Zero Warnings Policy**: New code should not introduce ESLint warnings or TypeScript errors.
-- **NASA Rule 2 (Loops)**: All loops must have a fixed upper bound or a clear exit condition to prevent infinite execution.
-- **NASA Rule 4 (Function Length)**: Keep functions short (target < 60 lines) and focused on a single responsibility.
-- **NASA Rule 8 (Input Validation)**: Always validate parameters at the start of public service methods.
+### Core Principles
+- **Type Safety**: The use of `any` or `unknown` is forbidden. Always define specific interfaces or use narrowed types.
+- **Documentation**: All new features must be documented in the `docs/` folder before the code is merged.
+- **Build Integrity**: You must never push code that fails the `npm run build` process locally.
+- **Performance**: Keep the main thread responsive by offloading heavy tasks to background services or native microservices.
 
-## 3. Architecture & Code Style
+### Function and Logic Rules
+- **Length**: Functions should be concise and perform a single task. We target a maximum of 60 lines per function.
+- **Loops**: Every loop must have a defined exit condition. Avoid recursive calls that do not have a clear base case.
+- **Validation**: All public service methods must validate their inputs before processing.
 
-- **Domain-Based Services**: Services should be grouped by domain in `src/main/services/` (e.g., `llm/`, `security/`).
-- **Path Aliases**:
-    - `@main/`: Maps to `src/main/`
-    - `@renderer/`: Maps to `src/renderer/`
-    - `@shared/`: Maps to `src/shared/`
-    - `@/`: Maps to `src/renderer/` (Vite default)
-- **Error Handling**: Use the centralized `appLogger` (`this.logError()`) instead of `console.log`.
-- **Naming**:
-    - `kebab-case.service.ts` for service files.
-    - `PascalCase.tsx` for React components.
+## Architecture and Style
 
-## 4. Testing Workflow
+- **Service Layer**: Services are the backbone of Orbit. They should be modular, domain-specific, and reside in `src/main/services/`.
+- **Path Aliasing**: Use the following aliases to keep imports clean:
+    - `@main/`: `src/main/`
+    - `@renderer/`: `src/renderer/`
+    - `@shared/`: `src/shared/`
+- **Logging**: Do not use `console.log`. Instead, use the centralized `appLogger` which handles rotating log files and formatting.
 
-We use **Vitest** for majority of testing.
+## Testing and Verification
 
-- `npm run test`: Runs the full test suite.
-- `npm run test:watch`: Runs tests related to changed files.
-- `npm run type-check`: Validates TypeScript across all workspaces.
+Verifying code quality is a mandatory step in our development lifecycle.
 
-**Requirements**:
-- All new services must have a corresponding `.test.ts` file in `src/tests/`.
-- Critical business logic (Auth, Sync, Model Orchestration) requires 90%+ branch coverage.
+- **Unit Testing**: We use Vitest for its speed and compatibility with Vite. Run `npm run test` to execute the suite.
+- **Coverage**: Critical logic, especially around authentication and token management, must maintain high test coverage.
+- **Type Checking**: Run `npm run type-check` to identify potential type mismatches across the entire project.
 
-## 5. Build Pipeline
+## Build and Release Process
 
-The build process is automated via `scripts/build-native.js` and `vite.config.ts`.
-1. **TSC**: Compiles TypeScript.
-2. **Lint**: Validates styles and rules.
-3. **Vite**: Builds the renderer and preload bundles.
-4. **Native Build**: Compiles Rust and Go microservices and copies them to `resources/bin`.
+The build process is complex because it involves multiple languages.
+1. **TypeScript Compilation**: The `tsc` compiler validates types and outputs JavaScript.
+2. **Linting**: ESLint checks for rule violations and potential bugs.
+3. **Frontend Build**: Vite bundles the React code, assets, and styles for the renderer process.
+4. **Native Compilation**: A custom script (`scripts/build-native.js`) triggers `go build` and `cargo build`, then moves the resulting binaries to the `resources/bin` directory.
+5. **Packaging**: Electron Builder packages the binaries and assets into an executable installer.
+

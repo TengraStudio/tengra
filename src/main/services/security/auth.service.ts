@@ -2,6 +2,7 @@ import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service'
 import { SecurityService } from '@main/services/security/security.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { v4 as uuidv4 } from 'uuid'
@@ -45,7 +46,8 @@ export interface LinkedAccountInfo {
 export class AuthService extends BaseService {
     constructor(
         private databaseService: DatabaseService,
-        private securityService: SecurityService
+        private securityService: SecurityService,
+        private eventBus: EventBusService
     ) {
         super('AuthService')
     }
@@ -225,6 +227,9 @@ export class AuthService extends BaseService {
         await this.databaseService.deleteLinkedAccount(accountId)
         appLogger.info('AuthService', `Unlinked account: ${accountId}`)
 
+        // Notify token service to stop refreshing this account
+        this.eventBus.emit('account:unlinked', { accountId, provider: account.provider })
+
         // If this was the active account, make another one active
         if (account.isActive) {
             const remainingAccounts = await this.databaseService.getLinkedAccounts(account.provider)
@@ -244,6 +249,8 @@ export class AuthService extends BaseService {
 
         for (const account of accounts) {
             await this.databaseService.deleteLinkedAccount(account.id)
+            // Notify token service to stop refreshing this account
+            this.eventBus.emit('account:unlinked', { accountId: account.id, provider: account.provider })
         }
         appLogger.info('AuthService', `Unlinked all accounts for ${normalized}`)
     }
@@ -269,6 +276,17 @@ export class AuthService extends BaseService {
 
         await this.databaseService.saveLinkedAccount(updatedAccount)
         appLogger.info('AuthService', `Updated token for account: ${accountId}`)
+    }
+
+    /**
+     * Public helper to decrypt a value (used by TokenService).
+     */
+    /**
+     * Check if a specific account exists in the database.
+     */
+    async accountExists(accountId: string): Promise<boolean> {
+        const accounts = await this.databaseService.getLinkedAccounts()
+        return accounts.some(a => a.id === accountId)
     }
 
     /**

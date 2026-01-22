@@ -108,6 +108,20 @@ export class AuthAPIService extends BaseService {
                     // Go proxy expects 'claude' for model routing
                     const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider
                     const isClaudeProvider = providerForGo === 'claude'
+                    const baseMetadata: JsonObject = { ...(acc.metadata ?? {}) }
+
+                    if (isClaudeProvider) {
+                        // Let Rust token-service own Claude refresh; proxy sees only access token
+                        delete (baseMetadata as { refresh_token?: unknown }).refresh_token
+                        delete (baseMetadata as { refreshToken?: unknown }).refreshToken
+                    }
+
+                    const metadata: JsonObject = {
+                        ...baseMetadata,
+                        type: providerForGo,
+                        auth_type: isClaudeProvider ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
+                        email: acc.email
+                    }
 
                     return {
                         id: acc.id || `${acc.provider}.json`,
@@ -116,17 +130,11 @@ export class AuthAPIService extends BaseService {
                         email: acc.email,
                         label: acc.displayName || acc.email || acc.provider,
                         access_token: acc.accessToken,
-                        // Let Rust token-service own Claude refresh; proxy sees only access token
                         refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
                         session_token: acc.sessionToken,
                         expires_at: acc.expiresAt,
                         scope: acc.scope,
-                        metadata: {
-                            ...acc.metadata,
-                            type: providerForGo,
-                            auth_type: isClaudeProvider ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
-                            email: acc.email
-                        },
+                        metadata,
                         created_at: acc.createdAt,
                         updated_at: acc.updatedAt
                     }

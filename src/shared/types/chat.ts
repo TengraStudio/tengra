@@ -109,4 +109,15 @@ export interface Toast {
     type: 'info' | 'success' | 'error' | 'warning'
 }
 
-// Merged above
+export interface ChatRequest {
+    messages: Message[]
+    model: string
+    tools?: ToolDefinition[]
+    provider?: string
+    options?: JsonObject
+    projectId?: string
+}
+
+export interface ChatStreamRequest extends ChatRequest {
+    chatId?: string
+}

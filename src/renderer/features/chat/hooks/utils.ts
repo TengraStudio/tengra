@@ -28,11 +28,12 @@ export const getPresetOptions = (appSettings: AppSettings | undefined, modelConf
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const processStreamChunk = (chunk: any, current: { content: string, reasoning: string, sources: string[] }, streamStartTime: number): {
+export const processStreamChunk = (chunk: any, current: { content: string, reasoning: string, sources: string[], images?: string[] }, streamStartTime: number): {
     updated: boolean
     newContent?: string
     newReasoning?: string
     newSources?: string[]
+    newImages?: string[]
     speed?: number | null
 } => {
     if (chunk.type === 'metadata') {
@@ -41,6 +42,11 @@ export const processStreamChunk = (chunk: any, current: { content: string, reaso
     if (chunk.type === 'error') { throw new Error(chunk.content) }
     if (chunk.type === 'reasoning') {
         return { updated: true, newReasoning: current.reasoning + chunk.content }
+    }
+    if (chunk.type === 'images') {
+        const currentImages = current.images ?? []
+        const newImages = [...currentImages, ...(chunk.images ?? [])]
+        return { updated: true, newImages }
     }
     if (chunk.type === 'content' || (!chunk.type && chunk.content)) {
         const newContent = current.content + chunk.content

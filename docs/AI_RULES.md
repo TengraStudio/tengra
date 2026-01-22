@@ -88,12 +88,12 @@ These rules, derived from NASA/JPL's "Power of 10" guidelines, are adapted for t
 - Prevent runaway code with explicit iteration limits.
 
 ```typescript
-// ✅ Good
+// Correct
 for (let i = 0; i < MAX_ITERATIONS && !done; i++) {
     // work
 }
 
-// ❌ Bad
+// Incorrect
 while (true) {
     // potentially infinite
 }
@@ -128,13 +128,13 @@ function processMessage(msg: Message): void {
 - Handle all Promise rejections.
 
 ```typescript
-// ✅ Good
+// Correct
 const result = await service.doSomething();
 if (!result.success) {
     throw new Error(result.error);
 }
 
-// ❌ Bad
+// Incorrect
 await service.doSomething(); // Ignored return
 ```
 
@@ -210,14 +210,14 @@ orbit/
 ### 3.3 File Naming Conventions
 
 ```
-✅ Correct naming:
+Correct naming:
 my-service.service.ts
 user-profile.component.tsx
 use-chat-manager.hook.ts
 settings.types.ts
 error.util.ts
 
-❌ Incorrect naming:
+Incorrect naming:
 myService.ts          # Missing suffix
 UserProfileComp.tsx   # Wrong suffix
 usechatmanager.ts     # Missing suffix, bad casing
@@ -302,12 +302,12 @@ container.register(
 ### 5.2 Valid Log File Examples
 
 ```
-✅ Correct:
+Correct:
 logs/token-refresh_2026-01-14.log
 logs/job-scheduler_2026-01-14.log
 logs/error_2026-01-14.json
 
-❌ Incorrect:
+Incorrect:
 logs/output              # No extension
 query                    # Root directory, no extension
 debug                    # No extension
@@ -319,13 +319,13 @@ src/logs/output.log      # Wrong location
 ```typescript
 import { appLogger } from '../logging/logger';
 
-// ✅ Correct usage
+// Correct usage
 appLogger.info('ServiceName', 'Operation completed successfully');
 appLogger.warn('ServiceName', 'Resource running low', { remaining: 10 });
 appLogger.error('ServiceName', 'Operation failed', error as Error);
 appLogger.debug('ServiceName', 'Debug info', { data: someData });
 
-// ❌ Never use
+// Never use
 console.log('Something happened');  // Use appLogger instead
 console.error('Error occurred');    // Use appLogger instead
 ```
@@ -401,17 +401,16 @@ class NetworkError extends AppError {
 }
 ```
 
-### 6.3 Forbidden Patterns
+// Incorrect patterns
 
-```typescript
-// ❌ Silent catch (swallowing errors)
+// Silent catch (swallowing errors)
 try {
     await operation();
 } catch (e) {
     // Empty catch block
 }
 
-// ❌ Logging without re-throwing when needed
+// Logging without re-throwing when needed
 try {
     await criticalOperation();
 } catch (e) {
@@ -419,7 +418,7 @@ try {
     // Execution continues as if nothing happened
 }
 
-// ❌ Using any for error
+// Using any for error
 catch (error: any) {
     error.someProperty; // Unsafe
 }
@@ -602,41 +601,41 @@ describe('ServiceName', () => {
 ### 10.1 TypeScript Rules
 
 ```typescript
-// ✅ Use strict types
+// Use strict types
 function processUser(user: User): ProcessedUser { ... }
 
-// ❌ Never use any
+// Never use any
 function processData(data: any): any { ... }
 
-// ✅ Use const assertions
+// Use const assertions
 const STATUS = {
     PENDING: 'pending',
     COMPLETE: 'complete'
 } as const;
 
-// ✅ Prefer interfaces for objects
+// Prefer interfaces for objects
 interface UserData {
     id: string;
     name: string;
 }
 
-// ✅ Use type for unions/primitives
+// Use type for unions/primitives
 type Status = 'pending' | 'complete' | 'failed';
 ```
 
 ### 10.2 Async/Await Rules
 
 ```typescript
-// ✅ Always await promises
+// Always await promises
 const result = await asyncOperation();
 
-// ✅ Handle promise arrays properly
+// Handle promise arrays properly
 const results = await Promise.all(promises);
 
-// ❌ Don't ignore promises
+// Don't ignore promises
 asyncOperation(); // Missing await
 
-// ✅ Use try-catch for async
+// Use try-catch for async
 try {
     await riskyAsync();
 } catch (error) {
@@ -658,14 +657,14 @@ Available aliases (defined in `tsconfig.json` and `vite.config.ts`):
 | `@/*` | `src/renderer/*` | Shorthand for renderer |
 
 ```typescript
-// ✅ CORRECT - Use path aliases
+// CORRECT - Use path aliases
 import { DataService } from '@main/services/data/data.service'
 import { appLogger } from '@main/logging/logger'
 import { JsonObject } from '@shared/types/common'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { useChat } from '@/hooks/useChat'
 
-// ❌ WRONG - Avoid relative paths
+// WRONG - Avoid relative paths
 import { DataService } from '../../../services/data/data.service'
 import { JsonObject } from '../../../../shared/types/common'
 ```

@@ -42,6 +42,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     let finalContent = ''
     let finalReasoning = ''
     let finalSources: string[] = []
+    let finalImages: string[] = []
     const finalVariants: Record<number, { content: string, reasoning: string }> = {}
 
     let lastSaveTime = Date.now()
@@ -59,7 +60,8 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         const current = {
             content: index === 0 ? finalContent : finalVariants[index].content,
             reasoning: index === 0 ? finalReasoning : finalVariants[index].reasoning,
-            sources: index === 0 ? finalSources : []
+            sources: index === 0 ? finalSources : [],
+            images: index === 0 ? finalImages : []
         }
 
         const result = processStreamChunk(chunk, current, streamStartTime)
@@ -70,6 +72,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 if (result.newSources) { finalSources = result.newSources }
                 if (result.newReasoning) { finalReasoning = result.newReasoning }
                 if (result.newContent !== undefined) { finalContent = result.newContent }
+                if (result.newImages) { finalImages = result.newImages }
             }
 
             // Update variants map
@@ -122,18 +125,24 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     // Final save and update
     const completedMsg = createCompletedMessage({
         assistantId, provider: selectedProvider, model: activeModel, content: finalContent, reasoning: finalReasoning,
-        sources: finalSources, variants: finalVariants, responseTime
+        sources: finalSources, images: finalImages, variants: finalVariants, responseTime
     })
 
     await saveMessageToDb({
         assistantId, model: activeModel, content: finalContent, reasoning: finalReasoning,
-        variants: finalVariants, responseTime, sources: finalSources
+        variants: finalVariants, responseTime, sources: finalSources, images: finalImages
     })
 
     setChats((prev) => prev.map((c) => {
         if (c.id !== chatId) { return c }
         let title = c.title
-        if (c.messages.length <= 1 && finalContent) {
+        // Update title if this is the first assistant response (chat has user msg + assistant msg = 2 messages)
+        // Also update if title looks like truncated user input (same as first user message)
+        const isFirstResponse = c.messages.length <= 2
+        const userMessages = c.messages.filter(m => m.role === 'user')
+        const firstUserContent = typeof userMessages[0]?.content === 'string' ? userMessages[0].content : ''
+        const titleLooksLikeUserInput = c.title === firstUserContent.slice(0, 50)
+        if ((isFirstResponse || titleLooksLikeUserInput) && finalContent) {
             title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
         }
         return { ...c, title, messages: c.messages.map((m) => m.id === assistantId ? completedMsg : m), isGenerating: false }
@@ -191,16 +200,18 @@ interface SaveToDbOptions {
     variants: Record<number, { content: string; reasoning: string }>
     responseTime?: number
     sources?: string[]
+    images?: string[]
 }
 
 const saveMessageToDb = async (options: SaveToDbOptions) => {
-    const { assistantId, model, content, reasoning, variants, responseTime, sources } = options
+    const { assistantId, model, content, reasoning, variants, responseTime, sources, images } = options
     const variantsToSave = createVariantsArray(assistantId, model, variants)
     await window.electron.db.updateMessage(assistantId, {
         content,
         reasoning: reasoning || undefined,
         responseTime,
         sources,
+        images: images && images.length > 0 ? images : undefined,
         variants: variantsToSave.length > 1 ? variantsToSave : undefined
     })
 }
@@ -212,16 +223,18 @@ interface CreateCompletedMessageOptions {
     content: string
     reasoning: string
     sources: string[]
+    images: string[]
     variants: Record<number, { content: string; reasoning: string }>
     responseTime: number
 }
 
 const createCompletedMessage = (options: CreateCompletedMessageOptions): Message => {
-    const { assistantId, provider, model, content, reasoning, sources, variants, responseTime } = options
+    const { assistantId, provider, model, content, reasoning, sources, images, variants, responseTime } = options
     const completedVariants = createVariantsArray(assistantId, model, variants)
     return {
         id: assistantId, role: 'assistant', content, reasoning: reasoning || undefined,
         timestamp: new Date(), provider, model, responseTime, sources,
+        images: images.length > 0 ? images : undefined,
         variants: completedVariants.length > 1 ? completedVariants : undefined
     }
 }
