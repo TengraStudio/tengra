@@ -444,6 +444,7 @@ func (s *Service) Run(ctx context.Context) error {
 			log.Warnf("failed to load auth store: %v", errLoad)
 		}
 		s.ensureAntigravityAuth(ctx)
+		s.ensureClaudeAuth(ctx)
 	}
 
 	tokenResult, err := s.tokenProvider.Load(ctx, s.cfg)
@@ -1362,5 +1363,37 @@ func (s *Service) ensureAntigravityAuth(ctx context.Context) {
 
 	log.Infof("registering default Antigravity auth: %s", defaultAuth.ID)
 	// Use applyCoreAuthAddOrUpdate to ensure executor and models are also registered
+	s.applyCoreAuthAddOrUpdate(ctx, defaultAuth)
+}
+
+func (s *Service) ensureClaudeAuth(ctx context.Context) {
+	if s == nil || s.coreManager == nil {
+		return
+	}
+
+	// Check if any Claude/Anthropic auth exists
+	auths := s.coreManager.List()
+	for _, a := range auths {
+		if (strings.EqualFold(a.Provider, "claude") || strings.EqualFold(a.Provider, "anthropic")) && !a.Disabled {
+			return
+		}
+	}
+
+	// Create default auth
+	now := time.Now().UTC()
+	defaultAuth := &coreauth.Auth{
+		ID:        uuid.NewString(),
+		Provider:  "claude",
+		Label:     "Claude (Default)",
+		Status:    coreauth.StatusActive,
+		CreatedAt: now,
+		UpdatedAt: now,
+		Prefix:    "claude",
+		Metadata: map[string]any{
+			"account_type": "oauth",
+		},
+	}
+
+	log.Infof("registering default Claude auth: %s", defaultAuth.ID)
 	s.applyCoreAuthAddOrUpdate(ctx, defaultAuth)
 }

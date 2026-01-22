@@ -81,8 +81,8 @@ export class CommandService {
             // If we need to track it, we should use the callback version of exec to get the child object
             return new Promise((resolve) => {
                 const child = exec(command, {
-                    cwd: options?.cwd || process.cwd(),
-                    timeout: options?.timeout || this.maxTimeout,
+                    cwd: options?.cwd ?? process.cwd(),
+                    timeout: options?.timeout ?? this.maxTimeout,
                     shell: options?.shell ?? 'powershell.exe',
                     maxBuffer: 10 * 1024 * 1024
                 }, (error, stdout, stderr) => {
@@ -113,8 +113,8 @@ export class CommandService {
         // Default legacy behavior
         try {
             const { stdout, stderr } = await execAsync(command, {
-                cwd: options?.cwd || process.cwd(),
-                timeout: options?.timeout || this.maxTimeout,
+                cwd: options?.cwd ?? process.cwd(),
+                timeout: options?.timeout ?? this.maxTimeout,
                 shell: options?.shell ?? 'powershell.exe',
                 maxBuffer: 10 * 1024 * 1024 // 10MB buffer
             })
@@ -175,7 +175,7 @@ export class CommandService {
                     stderr,
                     error: 'Command timed out'
                 })
-            }, options?.timeout || this.maxTimeout)
+            }, options?.timeout ?? this.maxTimeout)
 
             child.stdout?.on('data', (data: Buffer) => {
                 const text = data.toString()

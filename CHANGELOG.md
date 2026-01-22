@@ -6,6 +6,134 @@ Track the evolution of Orbit.
 
 ## Recent Updates
 
+### 2026-01-22: Idea Generator Refactoring & Type Safety Fixes
+
+**Status**: Completed
+
+**Features**:
+- **Ideas View Refactoring**: Modularized the complex `IdeasView.tsx` by extracting sub-components: `IdeaList`, `IdeaDetail`, `SessionConfig`, `ResearchVisualizer`, and `GenerationProgress`. Improved readability and maintainability.
+- **Enhanced Type Safety**: Fixed several type mismatches in the Ideas feature and shared Project types.
+- **Sidebar Integration**: Added 'Ideas' view to the Sidebar navigation with proper type support.
+
+**Technical Changes**:
+- **Refactoring**: Extracted 5 sub-components from `IdeasView.tsx` into `src/renderer/features/ideas/components/`.
+- **Type Fixes**: 
+    - Updated `DatabaseService` to use shared `WorkspaceMount` type and provide `updatedAt` field.
+    - Updated shared `Project` type to include `updatedAt: Date`.
+    - Fixed `AppView` and `SidebarProps` to consistently include `'ideas'`.
+    - Added `ideas` mock to `web-bridge.ts` to match `ElectronAPI` interface.
+- **Service Layer**: Fixed type casting in `IdeaGeneratorService` for `ResearchData` parsing.
+
+**Files Modified**:
+- `src/renderer/features/ideas/IdeasView.tsx`
+- `src/renderer/features/ideas/components/IdeaList.tsx`
+- `src/renderer/features/ideas/components/IdeaDetail.tsx`
+- `src/renderer/features/ideas/components/SessionConfig.tsx`
+- `src/renderer/features/ideas/components/ResearchVisualizer.tsx`
+- `src/renderer/features/ideas/components/GenerationProgress.tsx`
+- `src/renderer/components/layout/Sidebar.tsx`
+- `src/renderer/features/chat/components/ChatInput.tsx`
+- `src/renderer/web-bridge.ts`
+- `src/main/services/data/database.service.ts`
+- `src/main/services/llm/idea-generator.service.ts`
+- `src/shared/types/project.ts`
+
+### 2026-01-22: Token Usage Tracking & Account Identification
+
+**Status**: Completed (Phase 1 & 3)
+
+**New Features**:
+- **Token Usage Database Layer**: Added comprehensive token usage tracking infrastructure including migration #17 with `token_usage` table, `addTokenUsage()` and `getTokenUsageStats()` methods in DatabaseService.
+- **Token Statistics API**: New IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) for frontend access to token usage statistics with aggregation by provider, model, and timeline.
+- **Account Email Visibility**: Updated `AccountRow.tsx` to always display email address prominently for clear account identification.
+
+**Technical Changes**:
+- `src/main/services/data/migrations.ts`: Added migration #17 with `token_usage` table schema.
+- `src/main/services/data/database.service.ts`: Added `addTokenUsage()`, `getTokenUsageStats()`, and `getPeriodMs()` methods.
+- `src/main/ipc/db.ts`: Added `db:getTokenStats` and `db:addTokenUsage` IPC handlers.
+- `src/main/preload.ts`: Added token stats methods to preload bridge and type definitions.
+- `src/renderer/electron.d.ts`: Added `getTokenStats` and `addTokenUsage` type definitions.
+- `src/renderer/web-bridge.ts`: Added mock implementations for web development.
+- `src/renderer/features/settings/components/accounts/AccountRow.tsx`: Email now always displayed.
+
+**Files Modified**:
+- `src/main/services/data/migrations.ts`
+- `src/main/services/data/database.service.ts`
+- `src/main/ipc/db.ts`
+- `src/main/preload.ts`
+- `src/renderer/electron.d.ts`
+- `src/renderer/web-bridge.ts`
+- `src/renderer/features/settings/components/accounts/AccountRow.tsx`
+
+### 2026-01-22: Multi-Model Response System & Prompt Enhancement
+
+**Status**: Completed
+
+**New Features**:
+- **Multi-Model Response Tabs**: When users select multiple models (up to 4) using Shift+Click, the system now sends requests to ALL selected models in parallel and displays responses in a tabbed interface instead of chevron navigation.
+- **Prompt Enhancement Button**: Added a sparkle button (✨) in the chat input area that enhances user prompts using AI. Automatically selects Ollama models if available, otherwise falls back to Anthropic/Copilot lightweight models.
+- **Improved Chat Titles**: Fixed chat title generation to properly use the assistant's first response line instead of the user's input message.
+
+**Technical Changes**:
+- `useChatGenerator.ts`: Added `generateMultiModelResponse` function for parallel multi-model responses.
+- `MessageBubble.tsx`: Replaced chevron navigation with styled tab buttons for multi-model variants.
+- `ChatInput.tsx`: Added `handleEnhancePrompt` function and enhance button UI.
+- `process-stream.ts`: Fixed title generation condition from `messages.length <= 1` to `messages.length <= 2`.
+
+**Files Modified**:
+- `src/renderer/features/chat/hooks/useChatGenerator.ts`
+- `src/renderer/features/chat/hooks/useChatManager.ts`
+- `src/renderer/features/chat/hooks/process-stream.ts`
+- `src/renderer/features/chat/components/ChatInput.tsx`
+- `src/renderer/features/chat/components/MessageBubble.tsx`
+- `src/renderer/context/ChatContext.tsx`
+- `src/renderer/i18n/en.ts`, `src/renderer/i18n/tr.ts`
+
+### 2026-01-22: Native Service Stability & Process Recovery
+
+**Status**: Completed (00:55:00)
+
+**Fixes**:
+- **Rust token-service**: Fixed a critical panic when printing to `stdout` in a detached state (Windows pipe closing). Replaced `println!` with non-panicking `writeln!`.
+- **ProcessManagerService**:
+    - Implemented **auto-restart logic** for persistent services (token-service, model-service, etc.) if they crash with a non-zero exit code.
+    - Fixed `sendRequest` and `sendGetRequest` to properly use the **timeout parameter** with axios to prevent hanging during service failures.
+- **Authentication Zombie Token Cleanup**:
+    - Fixed an issue where the background `token-service` would continue refreshing "zombie" tokens (old tokens no longer in the Electron database).
+    - `TokenService` now automatically unregisters any monitored tokens found during sync that are not present in the app's database.
+    - Fixed `AuthService.unlinkAllForProvider` to correctly emit unlinking events, ensuring background service cleanup during mass logouts.
+- **Service Stability**: Rebuilt all native binaries to include the Rust stability fix.
+
+**Files Modified**:
+- `src/services/token-service/src/main.rs`: Replaced panicking `println!` with robust logging.
+- `src/main/services/system/process-manager.service.ts`: Added auto-restart and timeout implementation.
+- `resources/bin/*.exe`: Updated binaries via a clean rebuild.
+
+### 2026-01-21: Fix Token Refresh for Unlinked Accounts
+
+**Status**: Completed (20:30:00)
+
+**Bug Fixed**:
+- When a Claude/Antigravity/Codex account was unlinked (logout), the Rust `token-service` continued attempting to refresh the old account's tokens, causing "invalid_grant" errors.
+
+**Changes**:
+- **Rust token-service**: Added `/unregister` endpoint to remove tokens from the background refresh queue when accounts are unlinked.
+- **TypeScript AuthService**: Now emits `account:unlinked` event when an account is removed.
+- **TypeScript TokenService**: Listens for `account:unlinked` events and calls `/unregister` on the Rust token-service to stop refreshing deleted accounts.
+- **Event System**: Added new `account:unlinked` event type to `SystemEvents` interface.
+
+### 2026-01-21: Bug Fixes
+- **PromptTemplatesService**: Fixed `TS5076` error where `||` and `??` operations were mixed without parentheses in the `search` method. Improved logic to ensure boolean results for the search filter.
+- **DI Container**: Updated `AuthService` registration to include `EventBusService` dependency.
+
+**Files Modified**:
+- `src/services/token-service/src/main.rs`: Added `UnregisterRequest` struct and `handle_unregister` handler.
+- `src/shared/types/events.ts`: Added `account:unlinked` event type.
+- `src/main/services/security/auth.service.ts`: Added EventBusService dependency and event emission.
+- `src/main/services/security/token.service.ts`: Added `unregisterToken()` method and event listener.
+- `src/main/startup/services.ts`: Updated AuthService registration.
+- `src/tests/main/services/security/auth.migration.test.ts`: Updated mock for new constructor signature.
+
 ### 2026-01-21: Phase 5 - Robust Bidirectional Token Sync & Build Stabilization
 
 **Status**: Completed (20:15:00)

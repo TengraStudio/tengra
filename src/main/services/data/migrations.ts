@@ -234,7 +234,63 @@ function getUtilitySchemaMigrations(): Migration[] {
     return [
         ...getTimestampAndIndexMigrations(),
         ...getTokenAndUsageMigrations(),
-        ...getMultiAccountMigrations()
+        ...getMultiAccountMigrations(),
+        ...getIdeaGeneratorMigrations()
+    ]
+}
+
+function getIdeaGeneratorMigrations(): Migration[] {
+    return [
+        {
+            id: 18,
+            name: 'Idea Generator Schema',
+            up: async (db: DatabaseAdapter) => {
+                // Create idea_sessions table for tracking generation sessions
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS idea_sessions (
+                        id TEXT PRIMARY KEY,
+                        model TEXT NOT NULL,
+                        provider TEXT NOT NULL,
+                        categories TEXT NOT NULL,
+                        max_ideas INTEGER NOT NULL DEFAULT 5,
+                        ideas_generated INTEGER DEFAULT 0,
+                        status TEXT DEFAULT 'active',
+                        research_data TEXT,
+                        created_at BIGINT NOT NULL,
+                        updated_at BIGINT NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_idea_sessions_status ON idea_sessions(status);
+                    CREATE INDEX IF NOT EXISTS idx_idea_sessions_created_at ON idea_sessions(created_at DESC);
+                `);
+
+                // Create project_ideas table for generated ideas with enrichment
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS project_ideas (
+                        id TEXT PRIMARY KEY,
+                        session_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        description TEXT,
+                        explanation TEXT,
+                        value_proposition TEXT,
+                        name_suggestions TEXT,
+                        competitive_advantages TEXT,
+                        market_research TEXT,
+                        status TEXT DEFAULT 'pending',
+                        project_id TEXT,
+                        logo_path TEXT,
+                        metadata TEXT DEFAULT '{}',
+                        created_at BIGINT NOT NULL,
+                        updated_at BIGINT NOT NULL,
+                        FOREIGN KEY(session_id) REFERENCES idea_sessions(id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_project_ideas_session ON project_ideas(session_id);
+                    CREATE INDEX IF NOT EXISTS idx_project_ideas_status ON project_ideas(status);
+                    CREATE INDEX IF NOT EXISTS idx_project_ideas_category ON project_ideas(category);
+                    CREATE INDEX IF NOT EXISTS idx_project_ideas_created_at ON project_ideas(created_at DESC);
+                `);
+            }
+        }
     ]
 }
 
@@ -405,182 +461,225 @@ function getTokenAndUsageMigrations(): Migration[] {
 
 function getMultiAccountMigrations(): Migration[] {
     return [
-        {
-            id: 13,
-            name: 'Multi-Account Auth Schema',
-            up: async (db: DatabaseAdapter) => {
-                const now = Date.now();
-                await db.exec(`
-                    CREATE TABLE IF NOT EXISTS auth_accounts (
-                        id TEXT PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        avatar TEXT,
-                        created_at BIGINT NOT NULL,
-                        updated_at BIGINT NOT NULL
-                    );
-                    INSERT INTO auth_accounts (id, name, created_at, updated_at)
-                    VALUES ('default', 'Default Account', ${now}, ${now})
-                    ON CONFLICT(id) DO NOTHING;
-                `);
+        getMigration13(),
+        getMigration14(),
+        getMigration15(),
+        getMigration16(),
+        getMigration17()
+    ]
+}
 
-                // Rebuild auth_tokens with correct schema and relationships
-                // We assume migration 12 ran, so we rename/copy/drop pattern
+function getMigration13(): Migration {
+    return {
+        id: 13,
+        name: 'Multi-Account Auth Schema',
+        up: async (db: DatabaseAdapter) => {
+            const now = Date.now();
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS auth_accounts (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    avatar TEXT,
+                    created_at BIGINT NOT NULL,
+                    updated_at BIGINT NOT NULL
+                );
+                INSERT INTO auth_accounts (id, name, created_at, updated_at)
+                VALUES ('default', 'Default Account', ${now}, ${now})
+                ON CONFLICT(id) DO NOTHING;
+            `);
 
-                // 1. Create new table
-                await db.exec(`
-                    CREATE TABLE IF NOT EXISTS auth_tokens_new (
-                        id TEXT PRIMARY KEY,
-                        account_id TEXT NOT NULL,
-                        provider TEXT NOT NULL,
-                        access_token TEXT,
-                        refresh_token TEXT,
-                        session_token TEXT,
-                        expires_at BIGINT,
-                        scope TEXT,
-                        metadata TEXT,
-                        updated_at BIGINT NOT NULL,
-                        UNIQUE(account_id, provider),
-                        FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
-                    );
-                `);
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS auth_tokens_new (
+                    id TEXT PRIMARY KEY,
+                    account_id TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    access_token TEXT,
+                    refresh_token TEXT,
+                    session_token TEXT,
+                    expires_at BIGINT,
+                    scope TEXT,
+                    metadata TEXT,
+                    updated_at BIGINT NOT NULL,
+                    UNIQUE(account_id, provider),
+                    FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
+                );
+            `);
 
-                // 2. Migrate data (if any exists in old table)
-                // We try to migrate from 'auth_tokens' if it exists. 
-                // Note: 'auth_tokens' might not have account_id yet.
-                try {
-                    const existing = await db.query('SELECT count(*) as c FROM auth_tokens').then(r => r.rows[0] as { c: number });
-                    if (Number(existing.c) > 0) {
-                        await db.exec(`
-                            INSERT INTO auth_tokens_new (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-                            SELECT id, 'default', provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
-                            FROM auth_tokens;
-                        `);
-                    }
-                } catch {
-                    // Ignore if auth_tokens doesn't exist or query fails
-                }
-
-                // 3. Swap tables
-                await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
-                await db.exec(`ALTER TABLE auth_tokens_new RENAME TO auth_tokens;`);
-            }
-        },
-        {
-            id: 14,
-            name: 'Add email to auth_tokens and fix multi-account constraint',
-            up: async (db: DatabaseAdapter) => {
-                // 1. Create the new table with the email column and the correct UNIQUE constraint
-                await db.exec(`
-                    CREATE TABLE IF NOT EXISTS auth_tokens_v14 (
-                        id TEXT PRIMARY KEY,
-                        account_id TEXT NOT NULL,
-                        provider TEXT NOT NULL,
-                        email TEXT,
-                        access_token TEXT,
-                        refresh_token TEXT,
-                        session_token TEXT,
-                        expires_at BIGINT,
-                        scope TEXT,
-                        metadata TEXT,
-                        updated_at BIGINT NOT NULL,
-                        UNIQUE(account_id, provider, email),
-                        FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
-                    );
-                `);
-
-                // 2. Migrate data from auth_tokens
-                try {
+            try {
+                const existing = await db.query<{ c: number }>('SELECT count(*) as c FROM auth_tokens').then(r => r.rows[0]);
+                if (Number(existing.c) > 0) {
                     await db.exec(`
-                        INSERT INTO auth_tokens_v14 (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
-                        SELECT id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
+                        INSERT INTO auth_tokens_new (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+                        SELECT id, 'default', provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
                         FROM auth_tokens;
                     `);
-                } catch {
-                    appLogger.warn('DatabaseService', 'Migration 14: Failed to migrate existing tokens or table missing.');
                 }
+            } catch { /* Ignore */ }
 
-                // 3. Replace old table
-                await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
-                await db.exec(`ALTER TABLE auth_tokens_v14 RENAME TO auth_tokens;`);
-            }
-        },
-        {
-            id: 15,
-            name: 'Create linked_accounts table for provider-centric multi-account',
-            up: async (db: DatabaseAdapter) => {
-                const now = Date.now();
+            await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
+            await db.exec(`ALTER TABLE auth_tokens_new RENAME TO auth_tokens;`);
+        }
+    }
+}
 
-                // Create the new linked_accounts table
+function getMigration14(): Migration {
+    return {
+        id: 14,
+        name: 'Add email to auth_tokens and fix multi-account constraint',
+        up: async (db: DatabaseAdapter) => {
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS auth_tokens_v14 (
+                    id TEXT PRIMARY KEY,
+                    account_id TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    email TEXT,
+                    access_token TEXT,
+                    refresh_token TEXT,
+                    session_token TEXT,
+                    expires_at BIGINT,
+                    scope TEXT,
+                    metadata TEXT,
+                    updated_at BIGINT NOT NULL,
+                    UNIQUE(account_id, provider, email),
+                    FOREIGN KEY(account_id) REFERENCES auth_accounts(id) ON DELETE CASCADE
+                );
+            `);
+
+            try {
                 await db.exec(`
-                    CREATE TABLE IF NOT EXISTS linked_accounts (
-                        id TEXT PRIMARY KEY,
-                        provider TEXT NOT NULL,
-                        email TEXT,
-                        display_name TEXT,
-                        avatar_url TEXT,
-                        access_token TEXT,
-                        refresh_token TEXT,
-                        session_token TEXT,
-                        expires_at BIGINT,
-                        scope TEXT,
-                        is_active BOOLEAN DEFAULT FALSE,
-                        metadata TEXT,
-                        created_at BIGINT NOT NULL,
-                        updated_at BIGINT NOT NULL,
-                        UNIQUE(provider, email)
-                    );
+                    INSERT INTO auth_tokens_v14 (id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at)
+                    SELECT id, account_id, provider, access_token, refresh_token, session_token, expires_at, scope, metadata, updated_at
+                    FROM auth_tokens;
                 `);
-
-                // Create indices for fast lookup
-                await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider);`);
-                await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_active ON linked_accounts(provider, is_active);`);
-
-                // Migrate existing tokens from auth_tokens to linked_accounts
-                try {
-                    const existingTokens = await db.query('SELECT * FROM auth_tokens');
-                    for (const row of existingTokens.rows) {
-                        const token = row as JsonObject;
-                        // Check if already migrated
-                        const email = token.email as string || null;
-                        const provider = token.provider as string;
-                        const existing = await db.query(
-                            'SELECT id FROM linked_accounts WHERE provider = $1 AND (email = $2 OR (email IS NULL AND $2 IS NULL))',
-                            [provider, email]
-                        );
-
-                        if (existing.rows.length === 0) {
-                            const metadataStr = token.metadata ? JSON.stringify(token.metadata) : null;
-                            await db.prepare(`
-                                INSERT INTO linked_accounts (id, provider, email, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            `).run(
-                                token.id as string,
-                                provider,
-                                email,
-                                token.access_token as string | null,
-                                token.refresh_token as string | null,
-                                token.session_token as string | null,
-                                token.expires_at as number | null,
-                                token.scope as string | null,
-                                true,  // First account per provider is active
-                                metadataStr,
-                                now,
-                                (token.updated_at as number | undefined) ?? now
-                            );
-                        }
-                    }
-                } catch {
-                    appLogger.warn('DatabaseService', 'Migration 15: No existing tokens to migrate or migration failed.');
-                }
+            } catch {
+                appLogger.warn('DatabaseService', 'Migration 14: Failed to migrate existing tokens or table missing.');
             }
-        },
-        {
-            id: 16,
-            name: 'Cleanup legacy auth tables',
-            up: async (db: DatabaseAdapter) => {
-                await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
-                await db.exec(`DROP TABLE IF EXISTS auth_accounts;`);
+
+            await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
+            await db.exec(`ALTER TABLE auth_tokens_v14 RENAME TO auth_tokens;`);
+        }
+    }
+}
+
+function getMigration15(): Migration {
+    return {
+        id: 15,
+        name: 'Create linked_accounts table for provider-centric multi-account',
+        up: async (db: DatabaseAdapter) => {
+            const now = Date.now();
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS linked_accounts (
+                    id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL,
+                    email TEXT,
+                    display_name TEXT,
+                    avatar_url TEXT,
+                    access_token TEXT,
+                    refresh_token TEXT,
+                    session_token TEXT,
+                    expires_at BIGINT,
+                    scope TEXT,
+                    is_active BOOLEAN DEFAULT FALSE,
+                    metadata TEXT,
+                    created_at BIGINT NOT NULL,
+                    updated_at BIGINT NOT NULL,
+                    UNIQUE(provider, email)
+                );
+            `);
+            await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider);`);
+            await db.exec(`CREATE INDEX IF NOT EXISTS idx_linked_accounts_active ON linked_accounts(provider, is_active);`);
+
+            try {
+                const existingTokens = await db.query<JsonObject>('SELECT * FROM auth_tokens');
+                for (const row of existingTokens.rows) {
+                    await handleLegacyTokenMigration(row, db, now)
+                }
+            } catch {
+                appLogger.warn('DatabaseService', 'Migration 15: No tokens to migrate or failure.');
             }
         }
-    ]
+    }
+}
+
+async function handleLegacyTokenMigration(row: JsonObject, db: DatabaseAdapter, now: number) {
+    const token = row;
+    const email = (token.email as string) || null;
+    const provider = token.provider as string;
+    const existing = await db.query<JsonObject>(
+        'SELECT id FROM linked_accounts WHERE provider = $1 AND (email = $2 OR (email IS NULL AND $2 IS NULL))',
+        [provider, email]
+    );
+
+    if (existing.rows.length === 0) {
+        const metadataStr = token.metadata ? JSON.stringify(token.metadata) : null;
+        await db.prepare(`
+            INSERT INTO linked_accounts (id, provider, email, access_token, refresh_token, session_token, expires_at, scope, is_active, metadata, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            token.id as string,
+            provider,
+            email,
+            token.access_token as string | null,
+            token.refresh_token as string | null,
+            token.session_token as string | null,
+            token.expires_at as number | null,
+            token.scope as string | null,
+            true,
+            metadataStr,
+            now,
+            (token.updated_at as number | undefined) ?? now
+        );
+    }
+}
+
+function getMigration16(): Migration {
+    return {
+        id: 16,
+        name: 'Cleanup legacy auth tables',
+        up: async (db: DatabaseAdapter) => {
+            await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
+            await db.exec(`DROP TABLE IF EXISTS auth_accounts;`);
+        }
+    }
+}
+
+function getMigration17(): Migration {
+    return {
+        id: 17,
+        name: 'Token usage tracking and extended time tracking',
+        up: async (db: DatabaseAdapter) => {
+            // Create token_usage table for detailed token tracking per message
+            await db.exec(`
+                CREATE TABLE IF NOT EXISTS token_usage (
+                    id TEXT PRIMARY KEY,
+                    message_id TEXT,
+                    chat_id TEXT NOT NULL,
+                    project_id TEXT,
+                    provider TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    tokens_sent INTEGER NOT NULL DEFAULT 0,
+                    tokens_received INTEGER NOT NULL DEFAULT 0,
+                    cost_estimate REAL DEFAULT 0,
+                    timestamp BIGINT NOT NULL,
+                    hour INTEGER NOT NULL,
+                    day INTEGER NOT NULL,
+                    month INTEGER NOT NULL,
+                    year INTEGER NOT NULL,
+                    created_at BIGINT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_token_usage_chat ON token_usage(chat_id);
+                CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp);
+                CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider);
+                CREATE INDEX IF NOT EXISTS idx_token_usage_date ON token_usage(year, month, day);
+            `);
+
+            // Add chat_id to time_tracking for chat-level time tracking
+            try {
+                await db.exec(`ALTER TABLE time_tracking ADD COLUMN chat_id TEXT;`);
+                await db.exec(`CREATE INDEX IF NOT EXISTS idx_time_tracking_chat ON time_tracking(chat_id);`);
+            } catch {
+                appLogger.debug('DatabaseService', 'chat_id column may already exist in time_tracking');
+            }
+        }
+    }
 }

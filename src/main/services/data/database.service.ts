@@ -58,8 +58,22 @@ export interface EntityKnowledge { id: string; entityType: string; entityName: s
 export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' }
 export interface AgentProfile { id: string; name: string; role: string; description: string }
 export interface CouncilSession { id: string; goal: string; status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string | undefined; solution?: string | undefined; createdAt: number; updatedAt: number }
-export interface WorkspaceMount { path: string; name: string; type: 'local' | 'ssh'; }
-export interface Project { id: string; title: string; description: string; path: string; mounts: WorkspaceMount[]; chatIds: string[]; councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }; status: 'active' | 'archived' | 'draft'; logo?: string | undefined; metadata?: JsonObject | undefined; createdAt: number; updatedAt: number }
+import { WorkspaceMount } from '@shared/types/workspace'
+
+export interface Project {
+    id: string
+    title: string
+    description: string
+    path: string
+    mounts: WorkspaceMount[]
+    chatIds: string[]
+    councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }
+    status: 'active' | 'archived' | 'draft'
+    logo?: string
+    metadata?: JsonObject
+    createdAt: number
+    updatedAt: number
+}
 export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined }
 // Need to import WorkspaceMount properly or redefine it matching shared/types/workspace
 // Assuming local redefinition or import if accessible. Importing 'WorkspaceMount' was in original.
@@ -587,7 +601,12 @@ export class DatabaseService extends BaseService {
             title: String(row.title),
             description: (row.description as string | null) ?? '',
             path: String(row.path),
-            mounts: this.parseJsonField(row.mounts as string, []),
+            mounts: (this.parseJsonField(row.mounts as string, []) as Array<{ id?: string; name: string; type: 'local' | 'ssh'; path?: string; rootPath?: string }>).map(m => ({
+                id: m.id ?? uuidv4(),
+                name: m.name,
+                type: m.type,
+                rootPath: m.rootPath ?? m.path ?? ''
+            })),
             chatIds: this.parseJsonField(row.chat_ids as string, []),
             councilConfig: this.parseJsonField(row.council_config as string, { enabled: false, members: [], consensusThreshold: 0.7 }),
             status: String(row.status) as 'active' | 'archived' | 'draft',
@@ -639,7 +658,12 @@ export class DatabaseService extends BaseService {
             title,
             description,
             path: projectPath,
-            mounts: this.parseJsonField(mounts, []),
+            mounts: (this.parseJsonField(mounts, []) as Array<{ id?: string; name: string; type: 'local' | 'ssh'; path?: string; rootPath?: string }>).map(m => ({
+                id: m.id ?? uuidv4(),
+                name: m.name,
+                type: m.type,
+                rootPath: m.rootPath ?? m.path ?? ''
+            })),
             chatIds: [],
             councilConfig: this.parseJsonField(councilConfig, { enabled: false, members: [], consensusThreshold: 0.7 }) as Project['councilConfig'],
             status: 'active',
@@ -704,11 +728,11 @@ export class DatabaseService extends BaseService {
                         metadata, created_at, updated_at
                     ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `).run(...chatData)
-            appLogger.info('DatabaseService', `Created chat: ${chatId} (${chat.title ?? 'New Chat'})`)
+            appLogger.info('DatabaseService', `Created chat: ${chatId} (${chat.title})`)
             return { success: true, id: chatId }
         } catch (error) {
             appLogger.error('DatabaseService', 'Failed to create chat:', error as Error)
-            return { success: false, id: '', error: getErrorMessage(error as Error) }
+            return { success: false, id: '', error: getErrorMessage(error) }
         }
     }
 
@@ -1661,6 +1685,135 @@ export class DatabaseService extends BaseService {
         } catch (error) {
             appLogger.error('DatabaseService', `Failed to get time stats: ${getErrorMessage(error)} `)
             return { totalOnlineTime: 0, totalCodingTime: 0, projectCodingTime: {} }
+        }
+    }
+
+    // --- Token Usage Tracking ---
+
+    async addTokenUsage(record: {
+        messageId?: string
+        chatId: string
+        projectId?: string
+        provider: string
+        model: string
+        tokensSent: number
+        tokensReceived: number
+        costEstimate?: number
+    }): Promise<void> {
+        try {
+            const db = await this.ensureDb()
+            const id = uuidv4()
+            const now = Date.now()
+            const date = new Date(now)
+
+            await db.prepare(`
+                INSERT INTO token_usage (
+                    id, message_id, chat_id, project_id, provider, model,
+                    tokens_sent, tokens_received, cost_estimate,
+                    timestamp, hour, day, month, year, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                id,
+                record.messageId ?? null,
+                record.chatId,
+                record.projectId ?? null,
+                record.provider,
+                record.model,
+                record.tokensSent,
+                record.tokensReceived,
+                record.costEstimate ?? 0,
+                now,
+                date.getHours(),
+                date.getDate(),
+                date.getMonth() + 1,
+                date.getFullYear(),
+                now
+            )
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to add token usage: ${getErrorMessage(error)}`)
+        }
+    }
+
+    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{
+        totalSent: number
+        totalReceived: number
+        totalCost: number
+        timeline: Array<{ timestamp: number; sent: number; received: number }>
+        byProvider: Record<string, { sent: number; received: number; cost: number }>
+        byModel: Record<string, { sent: number; received: number; cost: number }>
+    }> {
+        try {
+            const db = await this.ensureDb()
+            const now = Date.now()
+            const periodMs = this.getPeriodMs(period)
+            const since = now - periodMs
+
+            // Total stats
+            const totalsRow = await db.prepare(`
+                SELECT 
+                    COALESCE(SUM(tokens_sent), 0) as total_sent,
+                    COALESCE(SUM(tokens_received), 0) as total_received,
+                    COALESCE(SUM(cost_estimate), 0) as total_cost
+                FROM token_usage WHERE timestamp >= ?
+            `).get(since) as { total_sent: number; total_received: number; total_cost: number }
+
+            // Timeline data
+            const timelineRows = await db.prepare(`
+                SELECT timestamp, tokens_sent as sent, tokens_received as received
+                FROM token_usage WHERE timestamp >= ?
+                ORDER BY timestamp ASC
+            `).all(since) as Array<{ timestamp: number; sent: number; received: number }>
+
+            // By provider
+            const providerRows = await db.prepare(`
+                SELECT provider,
+                    COALESCE(SUM(tokens_sent), 0) as sent,
+                    COALESCE(SUM(tokens_received), 0) as received,
+                    COALESCE(SUM(cost_estimate), 0) as cost
+                FROM token_usage WHERE timestamp >= ?
+                GROUP BY provider
+            `).all(since) as Array<{ provider: string; sent: number; received: number; cost: number }>
+
+            // By model
+            const modelRows = await db.prepare(`
+                SELECT model,
+                    COALESCE(SUM(tokens_sent), 0) as sent,
+                    COALESCE(SUM(tokens_received), 0) as received,
+                    COALESCE(SUM(cost_estimate), 0) as cost
+                FROM token_usage WHERE timestamp >= ?
+                GROUP BY model
+            `).all(since) as Array<{ model: string; sent: number; received: number; cost: number }>
+
+            const byProvider: Record<string, { sent: number; received: number; cost: number }> = {}
+            for (const row of providerRows) {
+                byProvider[row.provider] = { sent: row.sent, received: row.received, cost: row.cost }
+            }
+
+            const byModel: Record<string, { sent: number; received: number; cost: number }> = {}
+            for (const row of modelRows) {
+                byModel[row.model] = { sent: row.sent, received: row.received, cost: row.cost }
+            }
+
+            return {
+                totalSent: Number(totalsRow.total_sent),
+                totalReceived: Number(totalsRow.total_received),
+                totalCost: Number(totalsRow.total_cost),
+                timeline: timelineRows,
+                byProvider,
+                byModel
+            }
+        } catch (error) {
+            appLogger.error('DatabaseService', `Failed to get token usage stats: ${getErrorMessage(error)}`)
+            return { totalSent: 0, totalReceived: 0, totalCost: 0, timeline: [], byProvider: {}, byModel: {} }
+        }
+    }
+
+    private getPeriodMs(period: 'daily' | 'weekly' | 'monthly'): number {
+        const DAY_MS = 24 * 60 * 60 * 1000
+        switch (period) {
+            case 'daily': return DAY_MS
+            case 'weekly': return 7 * DAY_MS
+            case 'monthly': return 30 * DAY_MS
         }
     }
 

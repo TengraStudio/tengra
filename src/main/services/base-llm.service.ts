@@ -29,14 +29,14 @@ export abstract class BaseLLMService {
      * Ensures MCP tools and native tools are formatted flexibly for diff providers.
      */
     protected prepareTools(tools?: LLMTool[]): LLMTool[] | undefined {
-        if (!tools || tools.length === 0) {return undefined;}
+        if (!tools || tools.length === 0) { return undefined; }
 
         // Common filtering logic can go here if needed
         // For now, we pass them through but ensure structure is clean
         return tools.map(tool => {
             // Ensure strict OpenAI format compatible structure
             return {
-                type: tool.type ?? 'function',
+                type: tool.type,
                 function: {
                     name: tool.function.name,
                     description: tool.function.description,

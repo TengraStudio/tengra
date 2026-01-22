@@ -11,6 +11,7 @@ export function useModelManager(
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null)
     const [selectedModel, setSelectedModel] = useState<string>('')
     const [selectedProvider, setSelectedProvider] = useState<string>('')
+    const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([])
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([])
     const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -38,25 +39,77 @@ export function useModelManager(
     useEffect(() => {
         if (appSettings?.general?.defaultModel) {
             setSelectedModel(appSettings.general.defaultModel)
-            // defaultProvider does not exist, using lastProvider as fallback or just empty
             setSelectedProvider(appSettings.general.lastProvider ?? '')
+            
+            // Initialize selectedModels with the default model if not already set
+            if (selectedModels.length === 0) {
+                setSelectedModels([{
+                    provider: appSettings.general.lastProvider ?? '',
+                    model: appSettings.general.defaultModel
+                }])
+            }
         }
     }, [appSettings])
 
-    const handleSelectModel = useCallback((provider: string, model: string) => {
+    const handleSelectModel = useCallback((provider: string, model: string, isMultiSelect = false) => {
         if (!appSettings) { return }
-        setSelectedModel(model)
-        setSelectedProvider(provider)
-        setAppSettings({
-            ...appSettings,
-            general: {
-                ...appSettings.general,
-                defaultModel: model,
-                lastProvider: provider
-            }
-        })
-        setIsModelMenuOpen(false)
+        
+        if (isMultiSelect) {
+            setSelectedModels(prev => {
+                // Check if already selected
+                const exists = prev.some(m => m.provider === provider && m.model === model)
+                if (exists) {
+                    return prev // Prevent duplicates
+                }
+                
+                // Enforce max 4 models
+                if (prev.length >= 4) {
+                    return prev
+                }
+                
+                return [...prev, { provider, model }]
+            })
+        } else {
+            // Single selection - replace all
+            setSelectedModel(model)
+            setSelectedProvider(provider)
+            setSelectedModels([{ provider, model }])
+            setAppSettings({
+                ...appSettings,
+                general: {
+                    ...appSettings.general,
+                    defaultModel: model,
+                    lastProvider: provider
+                }
+            })
+            setIsModelMenuOpen(false)
+        }
     }, [appSettings, setAppSettings])
+    
+    const removeSelectedModel = useCallback((provider: string, model: string) => {
+        setSelectedModels(prev => {
+            const filtered = prev.filter(m => !(m.provider === provider && m.model === model))
+            // If we removed the last one, keep at least one selected
+            if (filtered.length === 0 && prev.length > 0) {
+                return prev
+            }
+            // Update primary selection to the first remaining model
+            if (filtered.length > 0) {
+                setSelectedModel(filtered[0].model)
+                setSelectedProvider(filtered[0].provider)
+            }
+            return filtered
+        })
+    }, [])
+    
+    const clearMultiSelection = useCallback(() => {
+        if (selectedModels.length > 0) {
+            const first = selectedModels[0]
+            setSelectedModels([first])
+            setSelectedModel(first.model)
+            setSelectedProvider(first.provider)
+        }
+    }, [selectedModels])
 
     const persistLastSelection = useCallback((provider: string, model: string) => {
         if (!appSettings) { return }
@@ -102,6 +155,10 @@ export function useModelManager(
         setSelectedModel,
         selectedProvider,
         setSelectedProvider,
+        selectedModels,
+        setSelectedModels,
+        removeSelectedModel,
+        clearMultiSelection,
         proxyModels,
         isModelMenuOpen,
         setIsModelMenuOpen,
@@ -113,8 +170,8 @@ export function useModelManager(
         toggleFavorite,
         isFavorite
     }), [
-        models, groupedModels, selectedModel, selectedProvider, proxyModels,
-        isModelMenuOpen, isLoading, refreshModels, handleSelectModel,
-        persistLastSelection, toggleFavorite, isFavorite
+        models, groupedModels, selectedModel, selectedProvider, selectedModels,
+        proxyModels, isModelMenuOpen, isLoading, refreshModels, handleSelectModel,
+        persistLastSelection, toggleFavorite, isFavorite, removeSelectedModel, clearMultiSelection
     ])
 }

@@ -341,7 +341,7 @@ export class TerminalService {
      * Get session buffer content
      */
     getSessionBuffer(sessionId: string): string {
-        return (this.sessions.get(sessionId)?.buffer || (this.snapshots.get(sessionId)?.buffer ?? ''))
+        return (this.sessions.get(sessionId)?.buffer ?? (this.snapshots.get(sessionId)?.buffer ?? ''))
     }
 
     /**

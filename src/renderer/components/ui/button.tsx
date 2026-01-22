@@ -46,7 +46,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <Comp
                 className={cn(buttonVariants({ variant, size, className }))}
                 ref={ref}
-                aria-label={props['aria-label'] || (typeof props.children === 'string' ? props.children : undefined)}
+                aria-label={props['aria-label'] ?? (typeof props.children === 'string' ? props.children : undefined)}
                 {...props}
             />
         )

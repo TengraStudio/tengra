@@ -1196,8 +1196,13 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 		if _, used := tried[candidate.ID]; used {
 			continue
 		}
-		if modelKey != "" && registryRef != nil && !registryRef.ClientSupportsModel(candidate.ID, modelKey) {
-			continue
+		// Only filter by model if the client has registered models.
+		// Clients without registered models (e.g., from HTTP API auth sources) are assumed
+		// to support all models for their provider.
+		if modelKey != "" && registryRef != nil {
+			if registryRef.ClientHasRegisteredModels(candidate.ID) && !registryRef.ClientSupportsModel(candidate.ID, modelKey) {
+				continue
+			}
 		}
 		candidates = append(candidates, candidate)
 	}

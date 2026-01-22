@@ -1,6 +1,7 @@
 import { DatabaseService } from '@main/services/data/database.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { SecurityService } from '@main/services/security/security.service'
+import { EventBusService } from '@main/services/system/event-bus.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock dependencies
@@ -16,6 +17,7 @@ vi.mock('@main/logging/logger', () => ({
 describe('AuthService (New Multi-Account System)', () => {
     let mockSecurityService: SecurityService
     let mockDatabaseService: DatabaseService
+    let mockEventBusService: EventBusService
     let authService: AuthService
 
     beforeEach(() => {
@@ -35,7 +37,11 @@ describe('AuthService (New Multi-Account System)', () => {
             setActiveLinkedAccount: vi.fn().mockResolvedValue(undefined),
         } as unknown as DatabaseService
 
-        authService = new AuthService(mockDatabaseService, mockSecurityService)
+        mockEventBusService = {
+            emit: vi.fn()
+        } as unknown as EventBusService
+
+        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService)
     })
 
     describe('Initialization', () => {

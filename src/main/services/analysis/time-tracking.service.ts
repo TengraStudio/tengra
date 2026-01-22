@@ -230,8 +230,8 @@ export class TimeTrackingService extends BaseService {
             }
 
             return {
-                totalOnlineTime: (appOnlineResult.total ?? 0) + currentAppTime,
-                totalCodingTime: (codingResult.total ?? 0) + currentCodingTime,
+                totalOnlineTime: appOnlineResult.total + currentAppTime,
+                totalCodingTime: codingResult.total + currentCodingTime,
                 projectCodingTime
             }
         } catch (error) {

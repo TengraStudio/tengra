@@ -287,24 +287,38 @@ export class McpDispatcher {
         this.bufferMap.set(serverName, lines.pop() ?? '')
 
         for (const line of lines) {
-            if (!line.trim()) { continue }
-            const msg = safeJsonParse<JsonObject>(line, {})
-            if (msg.jsonrpc === '2.0' && msg.id) {
-                const msgId = typeof msg.id === 'string' ? msg.id : (typeof msg.id === 'number' ? String(msg.id) : '')
-                if (!msgId) { continue }
-                const handler = this.requestQueue.get(msgId)
-                if (handler) {
-                    this.requestQueue.delete(msgId)
-                    if (msg.error && typeof msg.error === 'object') {
-                        const message = typeof (msg.error as JsonObject).message === 'string'
-                            ? (msg.error as JsonObject).message as string
-                            : 'Unknown MCP error'
-                        handler.reject(new Error(message))
-                    } else {
-                        handler.resolve((msg.result as McpToolResult | undefined) ?? {})
-                    }
-                }
-            }
+            this.processResponseLine(line)
+        }
+    }
+
+    private processResponseLine(line: string) {
+        if (!line.trim()) { return }
+        const msg = safeJsonParse<JsonObject>(line, {})
+        if (msg.jsonrpc !== '2.0' || !msg.id) { return }
+
+        const msgId = this.getMessageId(msg.id)
+        if (!msgId) { return }
+
+        const handler = this.requestQueue.get(msgId)
+        if (handler) {
+            this.requestQueue.delete(msgId)
+            this.resolveMcpResponse(msg, handler)
+        }
+    }
+
+    private getMessageId(id: unknown): string {
+        if (typeof id === 'string') { return id }
+        if (typeof id === 'number') { return String(id) }
+        return ''
+    }
+
+    private resolveMcpResponse(msg: JsonObject, handler: PendingRequest) {
+        if (msg.error && typeof msg.error === 'object') {
+            const errorObj = msg.error as JsonObject
+            const message = typeof errorObj.message === 'string' ? errorObj.message : 'Unknown MCP error'
+            handler.reject(new Error(message))
+        } else {
+            handler.resolve((msg.result as McpToolResult | undefined) ?? {})
         }
     }
 

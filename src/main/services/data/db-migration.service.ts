@@ -90,10 +90,7 @@ export class MigrationManager {
         if (applied.length === 0) { return }
 
         const lastMigration = applied[applied.length - 1]
-        if (!lastMigration) {
-            throw new Error('No migrations to rollback')
-        }
-        
+
         const migration = this.migrations.find(m => m.id === lastMigration.id)
 
         if (!migration?.down) {

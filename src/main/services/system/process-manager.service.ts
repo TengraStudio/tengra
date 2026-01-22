@@ -28,7 +28,7 @@ export class ProcessManagerService extends EventEmitter {
     }
 
     private getPortFilePath(name: string): string {
-        const appData = process.env.APPDATA || path.join(process.env.HOME ?? '', 'Library', 'Application Support')
+        const appData = process.env.APPDATA ?? path.join(process.env.HOME ?? '', 'Library', 'Application Support')
         return path.join(appData, 'Orbit', 'services', `${name}.port`)
     }
 
@@ -114,14 +114,28 @@ export class ProcessManagerService extends EventEmitter {
             })
 
             child.on('close', (code) => {
+                const isPersistent = this.persistentServices.has(options.name)
+
                 if (code !== 0 && code !== 1) {
                     appLogger.warn('ProcessManager', `Service ${options.name} exited with code ${code}`)
                 } else {
                     appLogger.debug('ProcessManager', `Service ${options.name} exited with code ${code}`)
                 }
+
                 this.processes.delete(options.name)
                 this.servicePorts.delete(options.name)
-                this.persistentServices.delete(options.name)
+                // Don't delete from persistentServices yet if we want to restart
+
+                if (isPersistent && code !== 0) {
+                    appLogger.info('ProcessManager', `Auto-restarting persistent service: ${options.name}`)
+                    setTimeout(() => {
+                        this.startService(options).catch(err => {
+                            appLogger.error('ProcessManager', `Failed to auto-restart ${options.name}: ${getErrorMessage(err)}`)
+                        })
+                    }, 2000) // Delay restart slightly
+                } else {
+                    this.persistentServices.delete(options.name)
+                }
             })
 
             this.processes.set(options.name, child)
@@ -225,7 +239,9 @@ export class ProcessManagerService extends EventEmitter {
         const url = `http://127.0.0.1:${port}${endpoint}`
 
         try {
-            const response = await axios.post(url, data)
+            const response = await axios.post(url, data, {
+                timeout: _timeoutMs
+            })
             return response.data as T
         } catch (error) {
             appLogger.error('ProcessManager', `HTTP request to ${name} failed: ${getErrorMessage(error)}`)
@@ -250,7 +266,9 @@ export class ProcessManagerService extends EventEmitter {
         const url = `http://127.0.0.1:${port}${endpoint}`
 
         try {
-            const response = await axios.get(url)
+            const response = await axios.get(url, {
+                timeout: 10000 // Default 10s for GET
+            })
             return response.data as T
         } catch (error) {
             appLogger.error('ProcessManager', `HTTP GET request to ${name} (${endpoint}) failed: ${getErrorMessage(error)}`)

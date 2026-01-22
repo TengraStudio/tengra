@@ -14,11 +14,9 @@ export function registerUsageIpc(usageTrackingService: UsageTrackingService, set
             try {
                 const copilotQuota = await proxyService.getCopilotQuota()
                 const activeAccount = copilotQuota.accounts[0]
-                if (activeAccount) {
-                    quota = {
-                        remaining: activeAccount.remaining,
-                        limit: activeAccount.limit
-                    }
+                quota = {
+                    remaining: activeAccount.remaining,
+                    limit: activeAccount.limit
                 }
             } catch (error) {
                 appLogger.warn('UsageIPC', `Failed to get copilot quota: ${getErrorMessage(error)}`)

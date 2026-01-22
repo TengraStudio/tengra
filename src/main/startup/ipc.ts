@@ -10,6 +10,7 @@ import { registerFilesIpc } from '@main/ipc/files'
 import { registerGalleryIpc } from '@main/ipc/gallery'
 import { registerGitIpc } from '@main/ipc/git'
 import { registerHistoryIpc } from '@main/ipc/history'
+import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator'
 import { registerHFModelIpc } from '@main/ipc/huggingface'
 import { registerLlamaIpc } from '@main/ipc/llama'
 import { registerLoggingIpc } from '@main/ipc/logging'
@@ -131,4 +132,7 @@ export function registerIpcHandlers(
 
     // Register Gallery IPC
     registerGalleryIpc(services.dataService.getPath('gallery'))
+
+    // Register Idea Generator IPC
+    registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService)
 }

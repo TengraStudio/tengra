@@ -24,6 +24,7 @@ export interface LLMChatOptions {
     apiKey?: string;
     provider?: string;
     n?: number; // Number of completions to generate
+    temperature?: number; // Temperature for response randomness (0-2)
 }
 
 export interface OpenAIModelDefinition {
@@ -319,7 +320,7 @@ export class LLMService {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new ApiError(errorText ?? `HTTP ${response.status}`, 'opencode', response.status);
+            throw new ApiError(errorText || `HTTP ${response.status}`, 'opencode', response.status);
         }
 
         const json = await response.json() as JsonObject;
@@ -352,7 +353,7 @@ export class LLMService {
 
         if (!response.ok) {
             const errorText = await response.text().catch(() => '');
-            throw new ApiError(errorText ?? `HTTP ${response.status}`, 'opencode-stream', response.status);
+            throw new ApiError(errorText || `HTTP ${response.status}`, 'opencode-stream', response.status);
         }
 
         try {
@@ -444,18 +445,19 @@ export class LLMService {
         return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'groq' });
     }
 
-    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string): Promise<OpenAIResponse> {
+    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number }): Promise<OpenAIResponse> {
         const p = (provider ?? '').toLowerCase();
+        const temp = options?.temperature;
         if (p.includes('anthropic') || p.includes('claude')) {
             return this.chatAnthropic(messages, model);
         } else if (p.includes('groq')) {
             return this.chatGroq(messages, model);
         } else if (p.includes('antigravity')) {
-            return this.chatOpenAI(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider });
+            return this.chatOpenAI(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp });
         } else if (p.includes('ollama')) {
-            return this.chatOpenAI(messages, { model, tools, baseUrl: 'http://127.0.0.1:11434/v1', apiKey: 'ollama', provider });
+            return this.chatOpenAI(messages, { model, tools, baseUrl: 'http://127.0.0.1:11434/v1', apiKey: 'ollama', provider, temperature: temp });
         } else {
-            return this.chatOpenAI(messages, { model, tools, provider });
+            return this.chatOpenAI(messages, { model, tools, provider, temperature: temp });
         }
     }
 
@@ -520,7 +522,7 @@ export class LLMService {
         try {
             const response = await this.httpService.fetch(`${baseUrl}/embeddings`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key ?? 'dummy'}` },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
                 body: JSON.stringify({ model, input }),
                 retryCount: 3
             });
@@ -538,7 +540,7 @@ export class LLMService {
         }
 
         const json = await response.json() as { data: Array<{ embedding: number[] }> };
-        return json.data?.[0]?.embedding ?? this.throwNoEmbeddingError();
+        return json.data[0].embedding;
     }
 
     private throwNoEmbeddingError(): never {
@@ -554,7 +556,7 @@ export class LLMService {
     async getOpenAIModels(): Promise<OpenAIModelDefinition[]> {
         try {
             const key = this.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
-            const headers: Record<string, string> = { 'Authorization': `Bearer ${key ?? 'dummy'}` };
+            const headers: Record<string, string> = { 'Authorization': `Bearer ${key}` };
             const response = await this.httpService.fetch(`${this.openaiBaseUrl}/models`, { method: 'GET', headers, retryCount: 1 });
             if (!response.ok) { return []; }
             const json = await response.json() as { data: OpenAIModelDefinition[] };
@@ -580,8 +582,8 @@ export class LLMService {
             // 'antigravity': ['antigravity/']
         };
 
-        const providerPrefixes = prefixes[lowerProvider];
-        if (providerPrefixes) {
+        const providerPrefixes = (prefixes as Record<string, string[] | undefined>)[lowerProvider];
+        if (providerPrefixes !== undefined) {
             for (const prefix of providerPrefixes) {
                 if (target.startsWith(prefix)) {
                     target = target.slice(prefix.length);
@@ -616,8 +618,9 @@ export class LLMService {
         provider?: string;
         stream?: boolean;
         n?: number;
+        temperature?: number;
     }) {
-        const { model, tools, provider, stream = false, n = 1 } = options;
+        const { model, tools, provider, stream = false, n = 1, temperature } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
         let finalModel = this.normalizeModelName(model, provider);
 
@@ -631,6 +634,10 @@ export class LLMService {
             provider,
             stream
         };
+
+        if (temperature !== undefined) {
+            body.temperature = temperature;
+        }
 
         if (n > 1) {
             body.n = n;
@@ -647,7 +654,7 @@ export class LLMService {
         const dispatcher = this.getDispatcher();
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey ?? 'dummy'}`
+            'Authorization': `Bearer ${apiKey}`
         };
 
         const requestInit: RequestInit & { dispatcher?: Agent } = {
@@ -664,7 +671,7 @@ export class LLMService {
         if (response.status === 401 || response.status === 403) {
             this.keyRotationService.rotateKey('openai');
         }
-        throw new ApiError(errorText ?? `HTTP ${response.status}`, 'openai', response.status, response.status >= 500 || response.status === 429);
+        throw new ApiError(errorText || `HTTP ${response.status}`, 'openai', response.status, response.status >= 500 || response.status === 429);
     }
 
     private async saveImagesFromOpenAIMessage(message: OpenAIMessage): Promise<string[]> {
@@ -692,7 +699,7 @@ export class LLMService {
 
     private extractTextFromOpenAIMessage(message: OpenAIMessage): string {
         if (typeof message.content === 'string') {
-            return message.content ?? '';
+            return message.content;
         }
         if (Array.isArray(message.content)) {
             return message.content
@@ -715,7 +722,7 @@ export class LLMService {
             this.logDetailedQuotaError(response, model, provider, errorText);
         }
 
-        throw new ApiError(errorText ?? `HTTP ${response.status}`, 'openai-stream', response.status, response.status >= 500 || response.status === 429);
+        throw new ApiError(errorText || `HTTP ${response.status}`, 'openai-stream', response.status, response.status >= 500 || response.status === 429);
     }
 
     private logDetailedQuotaError(response: Response, model: string, provider: string | undefined, errorText: string) {
@@ -780,9 +787,9 @@ export class LLMService {
         if (Array.isArray(rawContent)) {
             for (const part of rawContent as JsonObject[]) {
                 if (part['type'] === 'output_text') {
-                    content += (part['text'] as string) ?? '';
+                    content += (part['text'] as string);
                 } else if (part['type'] === 'reasoning' || part['type'] === 'summary_text') {
-                    reasoning += (part['text'] as string) ?? '';
+                    reasoning += (part['text'] as string);
                 } else if (part['type'] === 'function_call' && part['function_call']) {
                     tool_calls.push(this.parseOpenCodeToolCall(part['function_call'] as JsonObject));
                 }
@@ -818,7 +825,7 @@ export class LLMService {
     }
 
     private async processOpenAIResponse(json: OpenAIChatCompletion): Promise<OpenAIResponse> {
-        if (json.choices && json.choices.length > 0) {
+        if (json.choices.length > 0) {
             // Primary choice
             const choice = json.choices[0];
             const message = choice.message;
@@ -832,7 +839,7 @@ export class LLMService {
 
             const result: OpenAIResponse = {
                 content: messageContent,
-                role: message.role ?? 'assistant',
+                role: message.role,
                 images: savedImages,
                 variants: variants.length > 1 ? variants : undefined
             };
@@ -855,7 +862,7 @@ export class LLMService {
             // Note: We are not saving images for all variants yet to avoid dupes/spam
             return {
                 content: cContent,
-                role: cMsg.role ?? 'assistant',
+                role: cMsg.role,
                 model
             };
         }));

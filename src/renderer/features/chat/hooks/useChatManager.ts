@@ -10,9 +10,15 @@ import { generateId } from '@/lib/utils'
 import { AppSettings, Chat, Message } from '@/types'
 import { CatchError, IpcValue } from '@/types/common'
 
+interface SelectedModelInfo {
+    provider: string
+    model: string
+}
+
 interface UseChatManagerOptions {
     selectedModel: string
     selectedProvider: string
+    selectedModels?: SelectedModelInfo[]
     language: string
     selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined
     appSettings?: AppSettings | undefined
@@ -46,9 +52,10 @@ export function useChatManager(options: UseChatManagerOptions) {
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager()
 
     const { streamingStates, generateResponse, stopGeneration } = useChatGenerator({
-        chats, setChats, appSettings, selectedModel, selectedProvider, language,
-        selectedPersona, activeWorkspacePath: options.activeWorkspacePath, projectId: options.projectId,
-        t, handleSpeak, autoReadEnabled, formatChatError
+        chats, setChats, appSettings, selectedModel, selectedProvider,
+        selectedModels: options.selectedModels,
+        language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath,
+        projectId: options.projectId, t, handleSpeak, autoReadEnabled, formatChatError
     })
 
     const {

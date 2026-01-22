@@ -1,6 +1,6 @@
 import type { ElectronAPI } from '@renderer/electron.d'
 import type { CouncilSession } from '@shared/types/agent'
-import type { Chat, Folder, Message, ToolCall, ToolDefinition, ToolResult } from '@shared/types/chat'
+import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat'
 import type { AuthStatus, IpcValue } from '@shared/types/common'
 import type { Project, ProjectAnalysis } from '@shared/types/project'
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota'
@@ -162,8 +162,8 @@ export const webElectronMock: ElectronAPI = {
 
     getModels: async () => [],
     chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
-    chatOpenAI: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _projectId?: string) => ({}),
-    chatStream: async (_messages: Message[], _model: string, _tools?: ToolDefinition[], _provider?: string, _options?: Record<string, IpcValue>, _chatId?: string, _projectId?: string) => { },
+    chatOpenAI: async (_request) => ({ content: 'Mock response' }),
+    chatStream: async (_request) => { },
     abortChat: () => { },
     onStreamChunk: (_callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => () => { },
     removeStreamChunkListener: (_callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
@@ -230,6 +230,24 @@ export const webElectronMock: ElectronAPI = {
             totalCodingTime: 0,
             projectCodingTime: {}
         }),
+        getTokenStats: async (_period: 'daily' | 'weekly' | 'monthly') => ({
+            totalSent: 0,
+            totalReceived: 0,
+            totalCost: 0,
+            timeline: [],
+            byProvider: {},
+            byModel: {}
+        }),
+        addTokenUsage: async (_record: {
+            messageId?: string
+            chatId: string
+            projectId?: string
+            provider: string
+            model: string
+            tokensSent: number
+            tokensReceived: number
+            costEstimate?: number
+        }) => ({ success: true }),
         getProjects: async () => [],
         getFolders: async () => [],
         createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => { },
@@ -454,6 +472,23 @@ export const webElectronMock: ElectronAPI = {
         deleteEntity: async (_id: string) => ({ success: true }),
         setEntityFact: async (_entityType: string, _entityName: string, _key: string, _value: string) => ({ success: true, id: '1' }),
         search: async (_query: string) => ({ facts: [], episodes: [] })
+    },
+    ideas: {
+        createSession: async (config) => ({ ...config, id: '1', ideasGenerated: 0, status: 'active', createdAt: Date.now(), updatedAt: Date.now() }),
+        getSession: async (_id) => null,
+        getSessions: async () => [],
+        cancelSession: async (_id) => ({ success: true }),
+        startResearch: async (_sessionId) => ({ success: true }),
+        startGeneration: async (_sessionId) => ({ success: true }),
+        enrichIdea: async (_ideaId) => ({ success: true }),
+        getIdea: async (_id) => null,
+        getIdeas: async (_sessionId) => [],
+        approveIdea: async (_ideaId, _projectPath) => ({ success: true }),
+        rejectIdea: async (_ideaId) => ({ success: true }),
+        canGenerateLogo: async () => false,
+        generateLogo: async (_ideaId, _prompt) => ({ success: true, logoPath: '' }),
+        onResearchProgress: () => () => { },
+        onIdeaProgress: () => () => { }
     },
     ipcRenderer: {
         on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },

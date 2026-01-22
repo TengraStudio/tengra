@@ -160,12 +160,12 @@ export class HistoryImportService {
                 continue
             }
 
-            const createdAtMs = this.toMillis(item.create_time ?? detail.create_time)
-            const updatedAtMs = this.toMillis(item.update_time ?? detail.update_time ?? createdAtMs)
+            const createdAtMs = this.toMillis(item.create_time)
+            const updatedAtMs = this.toMillis(item.update_time)
             const createdAt = new Date(createdAtMs)
             const updatedAt = new Date(updatedAtMs)
-            const model = (detail.model || detail.model_slug || detail.default_model_slug || item.model) ?? ''
-            const title = (item.title || detail.title) ?? 'OpenAI Chat'
+            const model = detail.model || detail.model_slug || detail.default_model_slug || item.model || ''
+            const title = item.title || detail.title || 'OpenAI Chat'
 
             await this.databaseService.createChat({
                 id: chatId,
@@ -220,9 +220,9 @@ export class HistoryImportService {
         if (!authData) { return null }
         const data = authData as JsonObject
         const candidates = [
-            data?.access_token,
-            data?.accessToken,
-            data?.AccessToken
+            data.access_token,
+            data.accessToken,
+            data.AccessToken
         ]
         for (const value of candidates) {
             if (typeof value === 'string' && value.trim()) {
@@ -243,7 +243,7 @@ export class HistoryImportService {
             throw new Error(`status ${response.status}`)
         }
         const data = await response.json() as OpenAIConversationListResponse
-        return Array.isArray(data?.items) ? data.items : []
+        return Array.isArray(data.items) ? data.items : []
     }
 
     private async fetchOpenAIConversationDetail(token: string, conversationId: string): Promise<OpenAIConversationDetail | null> {
@@ -264,7 +264,7 @@ export class HistoryImportService {
 
     private extractOpenAIMessages(detail: OpenAIConversationDetail): ImportedMessage[] {
         const mapping = detail.mapping
-        if (!mapping || typeof mapping !== 'object') {
+        if (typeof mapping !== 'object') {
             return []
         }
 
@@ -298,7 +298,7 @@ export class HistoryImportService {
 
     private extractOpenAIContent(message: OpenAIMessage): string {
         const content = message.content
-        if (!content) { return '' }
+        if (typeof content !== 'object') { return '' }
 
         if (Array.isArray(content.parts)) {
             const parts = content.parts.filter((part): part is string => typeof part === 'string' && part.trim() !== '')
@@ -340,7 +340,7 @@ export class HistoryImportService {
     async importFromJson(jsonContent: string): Promise<ImportResult> {
         try {
             const data = safeJsonParse<ImportJsonChat | ImportJsonChat[] | { chats: ImportJsonChat[] }>(jsonContent, [])
-            if (!data || (Array.isArray(data) && data.length === 0)) {
+            if (Array.isArray(data) && data.length === 0) {
                 return { success: false, message: 'JSON isleme hatasi: Gecersiz veri.' }
             }
             let chatsToImport: ImportJsonChat[] = []

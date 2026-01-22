@@ -66,38 +66,41 @@ export class PageSpeedService {
             const lighthouse = data.lighthouseResult;
 
             const audits = lighthouse.audits as Record<string, LighthouseAudit>;
-
-            const result: PageSpeedResult = {
-                url,
-                performanceScore: lighthouse.categories.performance.score * 100,
-                metrics: {
-                    fcp: audits['first-contentful-paint']?.displayValue ?? '',
-                    lcp: audits['largest-contentful-paint']?.displayValue ?? '',
-                    tbt: audits['total-blocking-time']?.displayValue ?? '',
-                    cls: audits['cumulative-layout-shift']?.displayValue ?? '',
-                    speedIndex: audits['speed-index']?.displayValue ?? ''
-                },
-                opportunities: []
-            };
-
-            // Extract opportunities (suggestions for improvement)
-            const opportunities = Object.values(audits)
-                .filter((audit) => audit.details?.type === 'opportunity' && audit.score < 0.9)
-                .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
-                .slice(0, 5) // Top 5 issues
-                .map((audit) => ({
-                    title: audit.title,
-                    description: audit.description,
-                    savings: audit.details?.overallSavingsMs ? `${Math.round(audit.details.overallSavingsMs)}ms` : ''
-                }));
-
-            result.opportunities = opportunities;
+            const result = this.parseLighthouseResult(url, lighthouse, audits);
+            result.opportunities = this.extractOpportunities(audits);
             return result;
 
         } catch (error) {
-            console.error('[PageSpeedService] Analysis failed:', error);
+            appLogger.error('PageSpeedService', `Analysis failed: ${getErrorMessage(error)}`);
             throw new Error(`PageSpeed analysis failed: ${getErrorMessage(error)}`);
         }
+    }
+
+    private parseLighthouseResult(url: string, lighthouse: { categories: { performance: { score: number } } }, audits: Record<string, LighthouseAudit>): PageSpeedResult {
+        return {
+            url,
+            performanceScore: lighthouse.categories.performance.score * 100,
+            metrics: {
+                fcp: audits['first-contentful-paint'].displayValue ?? '',
+                lcp: audits['largest-contentful-paint'].displayValue ?? '',
+                tbt: audits['total-blocking-time'].displayValue ?? '',
+                cls: audits['cumulative-layout-shift'].displayValue ?? '',
+                speedIndex: audits['speed-index'].displayValue ?? ''
+            },
+            opportunities: []
+        };
+    }
+
+    private extractOpportunities(audits: Record<string, LighthouseAudit>): Array<{ title: string; description: string; savings: string }> {
+        return Object.values(audits)
+            .filter((audit) => audit.details?.type === 'opportunity' && audit.score < 0.9)
+            .sort((a, b) => a.score - b.score)
+            .slice(0, 5)
+            .map((audit) => ({
+                title: audit.title,
+                description: audit.description,
+                savings: audit.details?.overallSavingsMs !== undefined ? `${Math.round(audit.details.overallSavingsMs)}ms` : ''
+            }));
     }
 
     getToolDefinition() {

@@ -71,7 +71,7 @@ export class AgentService extends BaseService {
             name: result.name,
             description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools ?? '[]'),
+            tools: JSON.parse(result.tools),
             parentModel: result.parent_model
         }
     }
@@ -84,7 +84,7 @@ export class AgentService extends BaseService {
             name: result.name,
             description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools ?? '[]'),
+            tools: JSON.parse(result.tools),
             parentModel: result.parent_model
         }))
     }

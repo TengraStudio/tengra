@@ -20,7 +20,9 @@ import { AppSettings, CodexUsage, QuotaResponse } from '@/types'
 interface ModelSelectorProps {
     selectedProvider: string
     selectedModel: string
-    onSelect: (provider: string, model: string) => void
+    selectedModels?: Array<{ provider: string; model: string }>
+    onSelect: (provider: string, model: string, isMultiSelect?: boolean) => void
+    onRemoveModel?: (provider: string, model: string) => void
     settings?: AppSettings | undefined
     groupedModels?: GroupedModels | undefined
     quotas?: { accounts: QuotaResponse[] } | null | undefined
@@ -32,7 +34,22 @@ interface ModelSelectorProps {
     isFavorite?: (modelId: string) => boolean
 }
 
-export function ModelSelector({ selectedProvider, selectedModel, onSelect, settings, groupedModels, quotas = null, codexUsage = null, onOpenChange, contextTokens = 0, language = 'en', toggleFavorite, isFavorite: _isFavorite }: ModelSelectorProps) {
+export function ModelSelector({
+    selectedProvider,
+    selectedModel,
+    selectedModels = [],
+    onSelect,
+    onRemoveModel: _onRemoveModel,
+    settings,
+    groupedModels,
+    quotas = null,
+    codexUsage = null,
+    onOpenChange,
+    contextTokens = 0,
+    language = 'en',
+    toggleFavorite,
+    isFavorite: _isFavorite
+}: ModelSelectorProps) {
     const { t } = useTranslation(language)
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
@@ -451,6 +468,11 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                         <div className="flex items-center justify-between w-full pr-1">
                             <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.05em] truncate">
                                 {currentCategory?.name || (selectedProvider ? selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1) : t('modelSelector.model'))}
+                                {selectedModels.length > 1 && (
+                                    <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[8px]">
+                                        +{selectedModels.length - 1}
+                                    </span>
+                                )}
                             </span>
                             {contextTokens > 0 && (
                                 <span className={cn(
@@ -540,63 +562,85 @@ export function ModelSelector({ selectedProvider, selectedModel, onSelect, setti
                                                 <span>{category.name}</span>
                                             </div>
                                             <div className="px-1">
-                                                {category.models.map(model => (
-                                                    <button
-                                                        key={`${category.id}-${model.provider}-${model.id}`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onSelect(model.provider, model.id);
-                                                            setTimeout(() => {
-                                                                setIsOpen(false);
-                                                                setSearchQuery('');
-                                                            }, 50);
-                                                        }}
-                                                        className={cn(
-                                                            "w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-left text-sm group relative my-0.5",
-                                                            (selectedModel === model.id && selectedProvider === model.provider)
-                                                                ? "bg-white/10 text-white font-bold"
-                                                                : (model.disabled ? "opacity-30 cursor-not-allowed grayscale" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200")
-                                                        )}
-                                                    >
-                                                        <span className="truncate flex-1 flex items-center gap-2">
-                                                            {model.label}
-                                                            {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
-                                                            {(model.contextWindow ?? 0) > 0 && (
-                                                                <span className="text-[9px] text-zinc-600 bg-zinc-800/50 px-1 rounded border border-white/5">
-                                                                    {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
+                                                {category.models.map(model => {
+                                                    const isSelected = selectedModels.some(m => m.provider === model.provider && m.model === model.id)
+                                                    const isPrimary = selectedModel === model.id && selectedProvider === model.provider
+
+                                                    return (
+                                                        <button
+                                                            key={`${category.id}-${model.provider}-${model.id}`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+
+                                                                // Shift+Click for multi-select
+                                                                const isMultiSelect = e.shiftKey
+
+                                                                if (isMultiSelect && selectedModels.length >= 4 && !isSelected) {
+                                                                    // Max 4 models - show feedback (could add toast here)
+                                                                    return
+                                                                }
+
+                                                                onSelect(model.provider, model.id, isMultiSelect);
+
+                                                                if (!isMultiSelect) {
+                                                                    setTimeout(() => {
+                                                                        setIsOpen(false);
+                                                                        setSearchQuery('');
+                                                                    }, 50);
+                                                                }
+                                                            }}
+                                                            className={cn(
+                                                                "w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-left text-sm group relative my-0.5",
+                                                                isSelected
+                                                                    ? "bg-white/10 text-white font-bold border-l-2 border-primary"
+                                                                    : (model.disabled ? "opacity-30 cursor-not-allowed grayscale" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200")
+                                                            )}
+                                                        >
+                                                            <span className="truncate flex-1 flex items-center gap-2">
+                                                                {model.label}
+                                                                {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
+                                                                {(model.contextWindow ?? 0) > 0 && (
+                                                                    <span className="text-[9px] text-zinc-600 bg-zinc-800/50 px-1 rounded border border-white/5">
+                                                                        {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            {model.type === 'image' && (
+                                                                <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded leading-none mr-1">
+                                                                    {t('modelSelector.image')}
                                                                 </span>
                                                             )}
-                                                        </span>
-                                                        {model.type === 'image' && (
-                                                            <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded leading-none mr-1">
-                                                                {t('modelSelector.image')}
-                                                            </span>
-                                                        )}
-                                                        {model.disabled && (
-                                                            <span className="text-[9px] font-black text-red-500 flex items-center gap-1 bg-red-500/10 px-1.5 py-0.5 rounded leading-none">
-                                                                <Info className="w-2.5 h-2.5" />
-                                                                {t('modelSelector.limit')}
-                                                            </span>
-                                                        )}
-                                                        {toggleFavorite && (
-                                                            <div
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    toggleFavorite(model.id)
-                                                                }}
-                                                                className={cn(
-                                                                    "p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1",
-                                                                    model.pinned ? "text-yellow-400 opacity-100" : "text-zinc-600 opacity-0 group-hover:opacity-100"
-                                                                )}
-                                                            >
-                                                                <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />
-                                                            </div>
-                                                        )}
-                                                        {(selectedModel === model.id && selectedProvider === model.provider) && (
-                                                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                                                        )}
-                                                    </button>
-                                                ))}
+                                                            {model.disabled && (
+                                                                <span className="text-[9px] font-black text-red-500 flex items-center gap-1 bg-red-500/10 px-1.5 py-0.5 rounded leading-none">
+                                                                    <Info className="w-2.5 h-2.5" />
+                                                                    {t('modelSelector.limit')}
+                                                                </span>
+                                                            )}
+                                                            {toggleFavorite && (
+                                                                <div
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        toggleFavorite(model.id)
+                                                                    }}
+                                                                    className={cn(
+                                                                        "p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1",
+                                                                        model.pinned ? "text-yellow-400 opacity-100" : "text-zinc-600 opacity-0 group-hover:opacity-100"
+                                                                    )}
+                                                                >
+                                                                    <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />
+                                                                </div>
+                                                            )}
+                                                            {(isPrimary || isSelected) && (
+                                                                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                                            )}
+                                                            {isSelected && selectedModels.length > 1 && (
+                                                                <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded leading-none ml-auto">
+                                                                    {selectedModels.findIndex(m => m.provider === model.provider && m.model === model.id) + 1}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
                                             </div>
                                         </div>
                                     ))

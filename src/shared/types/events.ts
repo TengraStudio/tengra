@@ -1,4 +1,5 @@
 import { JsonValue } from '@shared/types/common'
+import { IdeaProgress, ResearchProgress } from '@shared/types/ideas'
 
 export interface ModelUpdateEvent {
     provider: string
@@ -27,7 +28,11 @@ export interface SystemEvents {
     'proxy:sync-end': { provider: string; success: boolean }
     'token:refreshed': { provider: string; accountId?: string }
     'token:error': { provider: string; error: string }
+    'account:unlinked': { accountId: string; provider: string }
     'settings:changed': { settings: JsonValue }
+    // Ideas feature events
+    'ideas:research-progress': ResearchProgress
+    'ideas:idea-progress': IdeaProgress
 }
 
 export type SystemEventKey = keyof SystemEvents

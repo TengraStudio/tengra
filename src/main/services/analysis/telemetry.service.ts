@@ -36,7 +36,7 @@ export class TelemetryService extends BaseService {
 
     private isTelemetryEnabled(): boolean {
         const settings = this.settingsService.getSettings();
-        const telemetrySettings = settings?.telemetry as { enabled?: boolean } | undefined;
+        const telemetrySettings = settings.telemetry as { enabled?: boolean } | undefined;
         return telemetrySettings?.enabled ?? false;
     }
 

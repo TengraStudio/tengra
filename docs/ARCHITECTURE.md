@@ -1,215 +1,61 @@
-# System & Model Architecture
+# System Architecture
 
-This document provides a comprehensive overview of Orbit's system design, model integration, multi-LLM concurrency, and agent architecture.
+Orbit is built with a multi-process, polyglot architecture designed to maximize security, performance, and developer flexibility. This document provides a detailed look at how the different components of Orbit interact to provide a seamless AI coding experience.
 
----
+## Process Model and Communication
 
-## 1. System Overview
+Orbit utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
 
-Orbit is built as a desktop application using **Electron**, leveraging modern web technologies for the frontend and a robust Node.js environment for the backend processes. The architecture follows a clear separation of concerns between the Renderer (UI) and the Main (System & Logic) processes, communicating via a secure Inter-Process Communication (IPC) bridge.
+### Renderer Process (UI)
+The frontend is a React application that runs in a context-isolated environment. It has no direct access to the operating system or the Node.js runtime. This isolation is a critical security measure against remote code execution via malicious AI outputs.
 
-### High-Level Diagram
+### Main Process (Orchestration)
+The Main process serves as the central hub. It manages the application's lifecycle, coordinates the service layer, and handles communication with external microservices. All high-level business logic resides here, including the agent council and workspace management.
 
-```mermaid
-graph TD
-    User[UserId] --> Renderer[Renderer Process (React)]
-    Renderer -->|IPC Bridge| Main[Main Process (Node.js)]
-    
-    subgraph Main Process
-        Main --> Services[Service Layer]
-        Services --> Proxy[Proxy Service]
-        Services --> LLM[LLM Service (Ollama/OpenAI)]
-        Services --> DB[Database Service (SQLite)]
-        Services --> FS[File System Service]
-        Services --> SSH[SSH Service]
-    end
-    
-    subgraph External
-        Proxy --> CloudAPI[Cloud APIs (Antigravity/OpenAI)]
-        LLM --> LocalModel[Local Ollama Instance]
-        SSH --> RemoteServer[Remote Server]
-    end
-    
-    subgraph Storage
-        DB --> LocalDB[(Local SQLite DB)]
-        FS --> LocalFiles[Local File System]
-    end
-```
+### Inter-Process Communication (IPC)
+Communication between the Renderer and Main process occurs over a secure IPC bridge. We use a strictly whitelisted set of methods to ensure that the UI can only perform authorized actions.
 
-### Component Breakdown
+## Service Oriented Architecture
 
-#### Renderer Process (Frontend)
-The user interface is built with **React**, **TypeScript**, and **Tailwind CSS**. It is designed to be highly responsive and modular.
+The Main process is organized into self-contained services, each responsible for a specific domain. These services are managed through a dependency injection container, which handles their initialization and lifecycle.
 
-*   **ViewManager**: The central router that handles switching between Chat, Projects, Council, and Settings views.
-*   **Context API**: State is managed globally using React Contexts (`AuthContext`, `ModelContext`, `ChatContext`, `ProjectContext`) to avoid prop drilling and ensure data consistency.
-*   **Features**: Logic is grouped by feature folders (e.g., `features/chat`, `features/projects`) which contain their own hooks, components, and utilities.
+### Domain Breakdown
+- **Security and Auth**: Manages encryption, user accounts, and the secure storage of credentials.
+- **LLM Orchestration**: Handles the routing of requests to various AI providers and manages the concurrent execution of multiple models.
+- **Workspace Management**: Indexes the user's project, manages file operations, and provides context to the AI agents.
+- **Microservice Management**: Responsible for starting, stopping, and monitoring our specialized native binaries.
 
-#### Main Process (Backend)
-The heavy lifting is done in the Electron Main process. It manages the application lifecycle, native integrations, and long-running tasks.
+## Native Microservices
 
-*   **Service Layer**: A collection of singleton services instantiated at startup using a Dependency Injection pattern.
-    *   **DatabaseService**: Manages the local SQLite database for storing chats, messages, and settings.
-    *   **OllamaService**: Handles communication with the local Ollama instance.
-    *   **ProxyService**: Manages authentication and request routing to the Antigravity cloud proxy.
-    *   **FileSystemService**: Provides safe abstractions for file operations.
-    *   **SSHService**: Manages secure connections to remote servers.
+To handle tasks that require high performance or low-level networking capabilities, Orbit delegates work to specialized microservices.
 
-#### IPC Bridge
-Communication between the Renderer and Main processes is handled via a strictly typed `window.electron` API. This API exposes specific methods (e.g., `db.getAllChats()`, `llm.generate()`) rather than allowing arbitrary remote execution, ensuring security.
+### Go Proxy (CLIProxy-Embed)
+The Go proxy is the gateway for all external LLM communication. It manages:
+- **Request Routing**: Directing outgoing calls to the correct provider endpoint.
+- **Auth Injection**: Dynamically adding the required authentication headers to requests using tokens retrieved from the Main process.
+- **Streaming Optimization**: Buffering and forwarding model responses to the UI with minimal latency.
 
----
+### Rust Token Service
+This service is dedicated to the background maintenance of authentication tokens. It monitors the expiration of various credentials and executes refresh flows in the background, ensuring that the user's session remains active without manual intervention.
 
-## 2. Model Integration & Authentication
+## Secure Proxy Routing
 
-Orbit supports multiple AI providers, both local and cloud-based.
+Orbit implements a "stateless" approach to credential handling. Tokens are stored in an encrypted database and only decrypted in memory when an outgoing request is initiated. The decrypted tokens are sent to the Go proxy over a localized HTTP interface, which is secured by a system-generated secret key. This design ensures that raw credentials never touch the disk in an unencrypted state.
 
-### Provider Details
+## Data Persistence and Memory
 
-#### 1. ANTIGRAVITY (Google Cloud Code)
-- **Authentication**: Google OAuth 2.0 (Device/Browser Flow).
-- **Token Storage**: `%APPDATA%/orbit-ai/cliproxy-auth-work/antigravity-{email}.json`.
-- **Model Fetching**: `https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels`.
+### PGlite (PostgreSQL)
+We use an embedded version of PostgreSQL (PGlite) for all relational data. This provides a robust and scalable storage layer for user settings, chat histories, and project metadata.
 
-#### 2. GITHUB COPILOT
-- **Authentication**: GitHub OAuth Device Flow.
-- **Token Hierarchy**: GitHub Token → Copilot Session Token (expires in 20 mins).
-- **Model Fetching**: `{baseUrl}/models`.
+### Semantic Memory (Vector Search)
+For long-term agent memory, we utilize vector embeddings stored within our database. This allows the agent to perform semantic searches across the user's codebase, providing relevant context even for large and complex projects.
 
-#### 3. CODEX (OpenAI via ChatGPT.com)
-- **Authentication**: Browser Cookie / Session Token.
-- **Usage Fetching**: `https://chatgpt.com/backend-api/wham/usage`.
+## Agent Lifecycle
 
-#### 4. OPENAI (Direct API)
-- **Authentication**: API Key.
-- **Endpoint**: `https://api.openai.com/v1/chat/completions`.
+1. **Task Decomposition**: When a user submits a complex request, the Planner agent breaks it down into a sequence of actionable steps.
+2. **Context Gathering**: The agent uses tools to read the relevant files, execute discovery commands, and pull information from the semantic memory.
+3. **Execution and Verification**: For each step, the Executor agent modifies code or performs system actions, followed by a verification step where the results are reviewed against the original plan.
+4. **Audit and Refinement**: A Critic agent reviews the final output to ensure it meets quality standards and doesn't introduce regressions.
 
-#### 5. ANTHROPIC, GEMINI, OLLAMA
-- Standard API Key or local hosting integration.
-
----
-
-## 3. Multi-LLM Concurrency System
-
-Orbit enables multiple LLMs to work simultaneously and provides a responsive UI.
-
-### Components
-
-#### MultiLLMOrchestrator (`src/main/services/multi-llm-orchestrator.service.ts`)
-Manages concurrent execution with:
-- **Provider-specific limits**: Cloud (5-10), Local (1-2).
-- **Priority-based queuing**: Optimal resource allocation.
-- **Statistics tracking**: Real-time metrics (latency, errors).
-
-#### Model Collaboration Service (`src/main/services/model-collaboration.service.ts`)
-Enables strategies:
-- **Consensus**: Common themes across responses.
-- **Vote**: Majority-based selection.
-- **Best-of-N**: Quality-scored selection.
-- **Chain-of-Thought**: Sequential refinement.
-
----
-
-## 4. Agent Architecture
-
-Orbit uses a multi-agent system to handle complex tasks.
-
-### Agent Types
-- **Planner Agent**: Decomposes requests into actionable steps.
-- **Executor Agent**: Executes steps using tools (file ops, commands).
-- **Critic Agent**: Reviews and validates outputs.
-- **Memory Agent**: Manages long-term context and historical facts.
-
-### Internal Audit Mechanism
-Agents follow a self-checking pattern:
-1. Create a **TODO list** before execution.
-2. Create a **checklist** with evaluative questions ("Is there a better way?").
-3. Review after each action; don't mark as "done" unless it passes the audit.
-4. Revise approach if the audit fails.
-
----
-
-## 5. Data Flow
-
-1.  **User Action**: User types a message.
-2.  **State Update**: `ChatContext` updates UI immediately.
-3.  **Persistence**: Message saved to local database via `db.addMessage()`.
-4.  **Inference Request**: `useChatManager` triggers generation (Local or Cloud).
-5.  **Streaming**: Response chunks streamed back via IPC.
-6.  **Finalization**: Final message saved to the database.
-
----
-
-## 6. Code Organization
-
-To ensure maintainability and clarity, the codebase follows a modular structure.
-
-### Project Structure
-
-```
-orbit/
-├── src/
-│   ├── main/           # Electron main process
-│   │   ├── services/   # Backend services (organized by domain)
-│   │   ├── ipc/        # IPC handlers
-│   │   ├── startup/    # Application bootstrap
-│   │   └── logging/    # Logger infrastructure
-│   ├── renderer/       # React frontend
-│   ├── shared/         # Shared types and utilities
-│   ├── scripts/        # Build and utility scripts
-│   └── tests/          # All test files
-│       ├── unit/       # Unit tests
-│       ├── integration/# Integration tests
-│       └── e2e/        # End-to-end tests
-├── docs/               # Documentation
-├── logs/               # Log files
-└── vendor/             # Third-party dependencies
-```
-
-### Main Process (`src/main/services`)
-
-Services are grouped by domain:
-
-*   **`llm/`**: AI model integrations (Ollama, Copilot, HuggingFace, ModelRegistry).
-*   **`data/`**: Database, file persistence, backup, and migration services.
-*   **`project/`**: Code analysis, git operations, docker, and project management.
-*   **`security/`**: Authentication, encryption, token refresh (TokenService).
-*   **`system/`**: Core system logic, configuration, command execution.
-*   **`analysis/`**: Metrics, telemetry, and performance monitoring.
-*   **`ui/`**: Theme management, notifications, and clipboard.
-*   **`proxy/`**: Proxy management and quota services.
-
-### Key Services
-
-#### JobSchedulerService
-Handles persistent, configurable recurring tasks:
-- Model cache updates
-- Token refresh cycles
-- Saves state to restore schedules after restart
-
-#### TokenService (formerly TokenRefreshService)
-Unified token management for all providers:
-- Google/Antigravity OAuth
-- Codex/OpenAI OAuth
-- Claude session cookies
-- Copilot GitHub tokens
-
-#### ModelRegistryService
-Centralized model discovery:
-- Fetches from Ollama Library and HuggingFace
-- Caches model data locally
-- Configurable update intervals
-
-### Renderer Process (`src/renderer`)
-
-*   **`features/`**: Contains domain-specific logic, hooks, and UI components (e.g., `chat`, `settings`, `projects`).
-*   **`components/`**: Reusable, generic UI components (buttons, inputs, layout) that are agnostic to business logic.
-
-### Configuration
-
-User-configurable intervals in `settings.ai`:
-- `modelUpdateInterval`: Model cache refresh (default: 1 hour)
-- `tokenRefreshInterval`: OAuth token refresh (default: 5 min)
-- `copilotRefreshInterval`: Copilot session refresh (default: 15 min)
 
 

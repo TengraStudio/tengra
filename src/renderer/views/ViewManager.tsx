@@ -14,13 +14,14 @@ import { cn } from '@/lib/utils'
 const AgentDashboard = lazy(() => import('@/features/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })))
 const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })))
 const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })))
+const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })))
 
 import { ChatViewWrapper } from './ViewManager/ChatViewWrapper'
 import { ProjectsView } from './ViewManager/ProjectsView'
 import { SettingsView } from './ViewManager/SettingsView'
 
 interface ViewManagerProps {
-    currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp' | 'memory'
+    currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp' | 'memory' | 'ideas'
     messagesEndRef: React.RefObject<HTMLDivElement>
     fileInputRef: React.RefObject<HTMLInputElement>
     textareaRef: React.RefObject<HTMLTextAreaElement>
@@ -153,6 +154,12 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                 return (
                     <Suspense fallback={<LoadingState size="md" />}>
                         <MemoryInspector />
+                    </Suspense>
+                )
+            case 'ideas':
+                return (
+                    <Suspense fallback={<LoadingState size="md" />}>
+                        <IdeasPage language={language} />
                     </Suspense>
                 )
             default:

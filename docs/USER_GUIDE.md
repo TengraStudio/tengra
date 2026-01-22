@@ -1,69 +1,44 @@
 # Orbit User Guide
 
-Welcome to Orbit, an advanced AI-powered workspace designed for developers. Orbit balances high-performance cloud models with local-first privacy.
+Welcome to Orbit, a professional AI-powered workspace built to streamline your development workflow. Orbit provides a unified interface for multiple AI providers while maintaining a strong focus on privacy and local execution.
 
----
+## Getting Started
 
-## 1. Getting Started
+### Installation and First Run
+To get started with Orbit, download the appropriate installer for your operating system and follow the standard installation prompts. On the first launch, Orbit will perform a system check to detect local tools like Ollama or Git and configure the internal data directories.
 
-### Installation
-1. **Download**: Get the latest installer for your OS.
-2. **Install**: Run the installer. On Windows, it's a standard `.exe`.
-3. **Setup**: Orbit automatically detects local installations of **Ollama** on first launch.
+### Connecting AI Providers
+Orbit supports a wide range of AI models. You can manage these connections in the Settings menu.
 
-### Configuring AI Models
+- **Local Models**: If you have Ollama installed, Orbit will automatically detect your downloaded models. You can refresh the model list in the Settings dashboard to ensure the latest versions are available.
+- **Cloud Accounts**: To use models from providers like Anthropic or Google, navigate to the Accounts section in Settings. Orbit uses secure OAuth flows for account linking. For providers requiring API keys, your credentials will be encrypted and stored securely in the system keychain.
 
-#### Local Models (Privacy-First)
-1. Ensure **Ollama** is running.
-2. Go to **Settings** > **Models** and click "Refresh".
-3. Your local models (Llama 3, Mistral, etc.) will appear in the chat dropdown.
+## Navigating the Workspace
 
-#### Cloud Models (Power)
-1. Go to **Settings** > **Accounts**.
-2. Log in or enter API keys for **OpenAI**, **Anthropic**, or **Antigravity**.
-3. These models will now be available for selection.
+### The Chat Interface
+The chat represents your primary interaction point with the AI.
+- **Starting a Conversation**: Use the New Chat button to begin a fresh session.
+- **Providing Context**: You can attach specific files to your chat session using the context menu or by dragging files directly into the window. This allows the AI to understand the code you are currently working on.
+- **Model Selection**: Use the dropdown menu at the top of the chat window to switch between different AI models. You can even select multiple models for a collaborative response.
 
----
+### Managing Projects
+The Projects view allows you to organize your work by linking local folders or remote servers.
+- **Local Folders**: Link existing projects on your machine to enable deep semantic indexing and workspace-aware AI suggestions.
+- **Remote SSH Connections**: Orbit includes a built-in SSH manager as well as an SFTP browser. You can connect to remote servers by providing your connection details and credentials.
 
-## 2. Using the Workspace
+### The Agent Council
+For complex tasks that require more than a simple chat, you can utilize the Council. This feature allows you to engage specialized AI personas—such as a Planner, an Executor, or a Critic—that work together to solve a problem.
 
-### Chat Interface
-- **New Chat**: `Ctrl+N` or click the "+" icon.
-- **Context**: Attach files via the paperclip icon or drag-and-drop.
-- **Voice**: Use the microphone icon for voice-to-text input.
-- **Pinning**: Keep important chats at the top using the pin icon.
+## Security and Privacy
 
-### Project Management
-- **Add Connection**: In the Projects view, click "+" to connect a local folder or remote server.
-- **SSH Support**: Connect to remote environments by providing hostname and credentials.
-- **Add to Context**: Right-click files/folders in the explorer to focus the AI's attention on specific parts of your project.
+Orbit is designed with a local-first philosophy.
+- **Data Sovereignty**: When using local models, your code and conversation history never leave your machine.
+- **Secure Persistence**: All sensitive data, including API tokens and session keys, are encrypted at rest using industry-standard AES-256-GCM.
+- **Controlled Access**: The AI agents can only interact with files and directories that you have explicitly granted access to within the project settings.
 
-### The Council
-Specialized AI agents are available in the "Council" tab:
-- **Planner**: Helps decompose complex tasks.
-- **Reviewer**: Analyzes code for bugs and improvements.
-- **Architect**: Designs high-level systems.
+## Troubleshooting Common Issues
 
----
+- **Connection Errors**: Ensure your internet connection is stable when using cloud providers. If you are behind a proxy, verify your system-wide proxy settings.
+- **Model Discovery**: If a local model is not appearing, verify that the Ollama daemon is running and that the model has been successfully pulled to the local library.
+- **Performance**: High-end local models require significant system resources. We recommend a minimum of 16GB of RAM for the best experience with 7B+ parameter models.
 
-## 3. Advanced Features
-
-- **Slash Commands**: Type `/` in the input field to access templates.
-- **Shortcuts**: `Ctrl+/` opens the keyboard shortcut cheat sheet.
-- **Multi-Model Collaboration**: Select multiple models to compare responses or reach a consensus.
-
----
-
-## 4. Privacy & Security
-
-- **Local Processing**: Data sent to local models never leaves your machine.
-- **Encryption**: your API keys and sensitive credentials are encrypted using the OS keychain or local secure store.
-- **File Access**: Orbit only reads files you explicitly add to the context or browse in the project explorer.
-
----
-
-## 5. Troubleshooting
-
-- **Models not appearing**: Verify the provider is authenticated in Settings.
-- **Generation fails**: Check your API quota or internet connection.
-- **Performance**: Large local models require significant RAM; close other applications if you experience lag.

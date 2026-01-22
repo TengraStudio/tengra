@@ -1,42 +1,54 @@
 # Technology Stack
 
-Orbit is a high-performance desktop application built with a modern, polyglot architecture. We leverage the strengths of several languages and frameworks to provide a secure, fast, and feature-rich AI coding environment.
+Orbit is built on a polyglot architecture designed for high performance, security, and extensibility. We choose our tools based on their ability to solve specific domain problems effectively while maintaining a cohesive system.
 
-## 1. Core Runtime
-- **[Electron](https://www.electronjs.org/)**: The backbone of the application, combining Node.js for system access and Chromium for the user interface.
-- **Node.js**: Powers the Main process and the extensive service layer.
+## Core Runtime
 
-## 2. Frontend (Renderer)
-- **[React](https://reactjs.org/)**: UI library used with a functional component approach and Hooks.
-- **[TypeScript](https://www.typescriptlang.org/)**: Strict typing across the entire frontend to prevent common runtime errors.
-- **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first CSS framework for rapid UI development and consistent styling.
-- **[Framer Motion](https://www.framer.com/motion/)**: Powers smooth micro-animations and complex transitions (e.g., 3D card effects).
-- **[Monaco Editor](https://microsoft.github.io/monaco-editor/)**: The code editor engine behind VS Code, used for high-quality code viewing and editing within Orbit.
+### Electron
+Electron serves as our primary application container. It allows us to combine the power of Node.js for low-level system interactions with the flexibility of Chromium for the user interface. By using Electron, we can maintain a single codebase for a cross-platform desktop experience.
 
-## 3. Dedicated Microservices
-Orbit offloads heavy or provider-specific tasks to independent microservices built with systems languages for maximum efficiency.
+### Node.js
+Node.js powers the Main process and our extensive service layer. Its asynchronous, event-driven architecture is ideal for handling concurrent I/O operations, such as managing IPC calls, database transactions, and microservice orchestration.
 
-### Rust Microservices
-All Rust services are built using the **Axum** web framework and **Tokio** runtime. They run as independent HTTP servers on ephemeral ports.
-- **Token Service**: Manages OAuth token refresh cycles and monitoring.
-- **Model Service**: Handles model discovery and metadata aggregation.
-- **Quota Service**: Tracks usage limits across various LLM providers.
-- **Memory Service**: Manages vector-based episodic and semantic memory.
+## Frontend Architecture
 
-### Go Proxy
-- **CLIProxy-Embed**: A high-speed proxy built in Go that handles local-to-cloud request routing, authentication header injection, and response streaming for providers like Antigravity and Claude.
+### React and TypeScript
+We use React for building a modular and reactive user interface. TypeScript is enforced across the entire codebase to provide compile-time safety, which is critical when handling complex state transitions and deep object structures common in AI applications.
 
-## 4. Storage & Persistence
-- **[PGlite](https://pglite.dev/)**: A WASM-based build of PostgreSQL that runs entirely within the Node.js process. It provides the full power of a relational database without requiring a separate server installation.
-- **Vector Extension**: Used for semantic search and AI memory features.
+### Vanilla CSS and Framer Motion
+While we use some utility classes, we prioritize Vanilla CSS for core design tokens to maintain maximum control over the visual output. Framer Motion is our choice for animations because of its declarative syntax and orchestration capabilities, allowing us to create high-end effects like 3D rotations and spring-based physics.
 
-## 5. Development & Tooling
-- **[Vite](https://vitejs.dev/)**: Next-generation frontend tooling for extremely fast development builds and optimized production bundles.
-- **[Vitest](https://vitest.dev/)**: Blazing fast unit test runner used for all service and utility tests.
-- **[Playwright](https://playwright.dev/)**: Used for end-to-end (E2E) testing to ensure critical user flows remain stable.
-- **ESLint & Prettier**: Enforce strict coding standards and consistent code formatting.
+### Monaco Editor
+To provide a code editing experience that feels native to developers, we integrate the Monaco Editor. This gives us access to advanced features like syntax highlighting, IntelliSense, and diff views without reinventing the wheel.
 
-## 6. Communication Architecture
-- **IPC Bridge**: Secure, typed Inter-Process Communication between Renderer and Main.
-- **HTTP/REST**: Bidirectional communication between Orbit Main and the Rust/Go microservices.
-- **WebSockets/SSE**: Used for real-time streaming of AI responses.
+## Specialized Microservices
+
+Orbit offloads specific tasks to independent microservices built with systems-level languages. This isolation prevents the Main process from becoming a bottleneck and allows for easier scaling of intensive tasks.
+
+### Rust Microservices (Axum and Tokio)
+Our Rust services handle computationally heavy or sensitive tasks. Rust was chosen for its memory safety and high concurrency performance.
+- **Token Service**: Handles the lifecycle and monitoring of OAuth tokens. By running this in Rust, we ensure that background refresh tasks are extremely efficient and have a minimal resource footprint.
+- **Quota and Memory Services**: These services manage complex data aggregations and vector-based operations. Using Rust allows us to perform these operations with predictable latency.
+
+### Go Proxy (CLIProxy-Embed)
+The Go proxy acts as our gateway to external LLM providers. Go was selected for its excellent networking primitives and fast execution. It manages request routing, authentication header injection, and response streaming with very low overhead.
+
+## Data and Persistence
+
+### PGlite
+We use PGlite, a WASM-based build of PostgreSQL, for our primary data store. Unlike SQLite, PGlite gives us the full power of a relational database—including advanced types and indexing—directly within the Node.js process. This eliminates the need for an external database installation while providing a robust, ACID-compliant storage layer.
+
+### Vector Storage
+For semantic search and long-term agent memory, we utilize vector extensions within our database. This allows the agent to retrieve relevant context from the user's workspace using embeddings.
+
+## Communication Channels
+
+### Inter-Process Communication (IPC)
+Communication between the Renderer and Main processes is handled via a secure, context-isolated IPC bridge. We use typed wrappers to ensure that messages sent across the bridge are validated at both ends.
+
+### Internal HTTP APIs
+For communication between the Main process and microservices, we use lightweight HTTP APIs. This decoupled approach allows us to restart services independently and facilitates testing.
+
+### Event Streaming
+Server-Sent Events (SSE) and WebSockets are used for real-time streaming of AI responses, ensuring the UI feels responsive as the agent generates text.
+

@@ -1,11 +1,11 @@
-import { Brain, MessageSquare, Rocket, Users } from 'lucide-react'
+import { Brain, Lightbulb, MessageSquare, Rocket, Users } from 'lucide-react'
 import React from 'react'
 
 import { SidebarItem } from './SidebarItem'
 
 interface SidebarNavigationProps {
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory') => void
+    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas'
+    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas') => void
     isCollapsed: boolean
     chatsCount: number
     t: (key: string) => string
@@ -47,6 +47,13 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 label="Memory"
                 active={currentView === 'memory'}
                 onClick={() => onChangeView('memory')}
+                isCollapsed={isCollapsed}
+            />
+            <SidebarItem
+                icon={Lightbulb}
+                label={t('sidebar.ideas')}
+                active={currentView === 'ideas'}
+                onClick={() => onChangeView('ideas')}
                 isCollapsed={isCollapsed}
             />
         </div>

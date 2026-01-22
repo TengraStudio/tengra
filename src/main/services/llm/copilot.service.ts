@@ -15,7 +15,7 @@ const FALLBACK_VSCODE_VERSION = '1.107';
 
 export interface CopilotTokenResponse {
     token: string;
-    expires_at: number;
+    expires_at?: number;
 }
 
 export interface CopilotUsageData {
@@ -118,68 +118,73 @@ export class CopilotService extends BaseService {
 
     public async checkRateLimit(silent: boolean = false): Promise<void> {
         try {
-            if (!silent) {
-                this.logInfo('Checking GitHub API rate limits...');
-            }
-            // Ensure we have the basic token (this.githubToken)
-            if (!this.githubToken && this.authService) {
-                this.githubToken = (await this.authService.getActiveToken('github_token')) ?? null;
-            }
-
-            // If we don't have a github_token, we can try using the copilot_token for rate limit checks
-            // as it is technically a GitHub token with specific scopes
-            const tokenToCheck = this.githubToken;
-
-            if (!tokenToCheck) {
-                this.logWarn('Cannot check rate limit: No github_token available.');
-                return;
-            }
+            const tokenToCheck = await this.getRateLimitToken(silent);
+            if (!tokenToCheck) { return; }
 
             const response = await fetch('https://api.github.com/rate_limit', {
                 headers: {
-                    'Authorization': `token ${this.githubToken ?? ''}`,
+                    'Authorization': `token ${tokenToCheck}`,
                     'Accept': 'application/json',
                     'User-Agent': USER_AGENT
                 }
             });
 
             if (response.ok) {
-                interface RateLimitResponse {
-                    resources: {
-                        core: {
-                            limit: number;
-                            remaining: number;
-                            reset: number;
-                        };
-                    };
-                }
-                const data = await response.json() as RateLimitResponse;
-                const core = data.resources.core;
-                this.remainingCalls = core.remaining;
-
-                if (!silent) {
-                    this.logInfo(`--- GitHub API Rate Limits (Copilot Token) ---\nLimit: ${core.limit}\nRemaining: ${core.remaining}\nReset: ${new Date(core.reset * 1000).toLocaleString()}\n----------------------------------------------`);
-                }
-
-                if (core.remaining === 0) {
-                    if (!this.hasNotifiedExhaustion) {
-                        this.hasNotifiedExhaustion = true;
-                        this.notificationService?.showNotification(
-                            'Copilot Rate Limit Exhausted',
-                            `You have 0 requests remaining. Resets at ${new Date(core.reset * 1000).toLocaleTimeString()}`,
-                            false
-                        );
-                    }
-                } else {
-                    // Reset flag if we have quota again
-                    this.hasNotifiedExhaustion = false;
-                }
+                await this.handleRateLimitResponse(response, silent);
             } else {
                 this.logWarn(`Rate limit check failed: ${response.status} ${response.statusText}`);
-                this.logWarn(`Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
             }
         } catch (error) {
             this.logError(`Failed to check rate limit: ${getErrorMessage(error)}`);
+        }
+    }
+
+    private async getRateLimitToken(silent: boolean): Promise<string | null> {
+        if (!silent) {
+            this.logInfo('Checking GitHub API rate limits...');
+        }
+        if (!this.githubToken && this.authService) {
+            this.githubToken = (await this.authService.getActiveToken('github_token')) ?? null;
+        }
+        if (!this.githubToken) {
+            this.logWarn('Cannot check rate limit: No github_token available.');
+        }
+        return this.githubToken;
+    }
+
+    private async handleRateLimitResponse(response: Response, silent: boolean) {
+        interface RateLimitResponse {
+            resources: {
+                core: {
+                    limit: number;
+                    remaining: number;
+                    reset: number;
+                };
+            };
+        }
+        const data = await response.json() as RateLimitResponse;
+        const core = data.resources.core;
+        this.remainingCalls = core.remaining;
+
+        if (!silent) {
+            this.logInfo(`--- GitHub API Rate Limits (Copilot Token) ---\nLimit: ${core.limit}\nRemaining: ${core.remaining}\nReset: ${new Date(core.reset * 1000).toLocaleString()}\n----------------------------------------------`);
+        }
+
+        if (core.remaining === 0) {
+            this.notifyRateLimitExhausted(core.reset);
+        } else {
+            this.hasNotifiedExhaustion = false;
+        }
+    }
+
+    private notifyRateLimitExhausted(resetTime: number) {
+        if (!this.hasNotifiedExhaustion) {
+            this.hasNotifiedExhaustion = true;
+            this.notificationService?.showNotification(
+                'Copilot Rate Limit Exhausted',
+                `You have 0 requests remaining. Resets at ${new Date(resetTime * 1000).toLocaleTimeString()}`,
+                false
+            );
         }
     }
 
@@ -298,91 +303,15 @@ export class CopilotService extends BaseService {
                 }
 
                 try {
-                    const usageRes = await fetch('https://api.github.com/copilot_internal/user', {
-                        headers: {
-                            'Authorization': `token ${authHeaderToken}`,
-                            'Accept': 'application/json',
-                            'User-Agent': USER_AGENT
-                        }
-                    });
-                    if (usageRes.ok) {
-                        const usageData = await usageRes.json() as CopilotUsageData;
-                        this.accountType = usageData.copilot_plan ?? 'individual';
-                        this.logInfo(`Detected Plan: ${this.accountType} -> Endpoint: ${this.getBaseUrl()}`);
-                    }
+                    await this.detectAccountType(authHeaderToken);
                 } catch (error) {
                     this.logWarn(`Failed to detect account type, defaulting to individual: ${getErrorMessage(error)}`);
                 }
 
-                const response = await fetch('https://api.github.com/copilot_internal/v2/token', {
-                    headers: {
-                        'Authorization': `token ${authHeaderToken}`,
-                        'Accept': 'application/json',
-                        'Editor-Version': `vscode/${this.vsCodeVersion}`,
-                        'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
-                        'User-Agent': USER_AGENT,
-                        'X-GitHub-Api-Version': API_VERSION,
-                    }
-                });
+                const response = await this.fetchCopilotV2Token(authHeaderToken);
 
                 if (!response.ok) {
-                    if (response.status === 404) {
-                        this.logWarn('v2/token 404, attempting fallback to v1/token');
-                        const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
-                            headers: {
-                                'Authorization': `token ${authHeaderToken}`,
-                                'Accept': 'application/json',
-                                'Editor-Version': `vscode/${this.vsCodeVersion}`,
-                                'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
-                                'User-Agent': USER_AGENT,
-                                'X-GitHub-Api-Version': API_VERSION // Ensure version is sent
-                            }
-                        });
-
-                        if (v1Response.ok) {
-                            const data = await v1Response.json() as CopilotTokenResponse;
-                            this.copilotSessionToken = data.token;
-                            this.tokenExpiresAt = (data.expires_at ?? (Date.now() / 1000 + 1200)) * 1000;
-                            return this.copilotSessionToken;
-                        } else {
-                            const v1ErrorText = await v1Response.text();
-                            this.logError(`v1 fallback failed: ${v1Response.status} ${v1ErrorText}`);
-
-                            // 404 on both endpoints usually means token is invalid/expired/revoked or doesn't have Copilot permissions
-                            if (v1Response.status === 404) {
-                                this.logError('Token appears invalid (404 on both v2 and v1 endpoints). This usually means:');
-                                this.logError('1. Token is expired/revoked');
-                                this.logError("2. Token doesn't have Copilot permissions");
-                                this.logError("3. User doesn't have Copilot access");
-                                this.logError('Please re-login to get a new token.');
-                                // Don't clear token automatically - let user re-login manually
-                            }
-                        }
-                    }
-
-                    const errorText = await response.text();
-                    // If Unauthorized (401), the token is definitely bad.
-                    // For 403 (Forbidden) or 404 (Not Found), it might be plan-related or API changes, don't delete yet.
-                    if (response.status === 401) {
-                        this.logWarn('Token unauthorized (401). Clearing token.');
-                        if (authHeaderToken === this.copilotAuthToken) {
-                            this.copilotAuthToken = null;
-                        } else {
-                            this.githubToken = null;
-                        }
-                        this.copilotSessionToken = null;
-                        if (this.authService) {
-                            void this.authService.unlinkAllForProvider('copilot_token');
-                        }
-                    } else if (response.status === 404) {
-                        this.logError('Token not found (404). This usually means:');
-                        this.logError('1. Token is expired/revoked');
-                        this.logError("2. Token doesn't have Copilot permissions");
-                        this.logError("3. User doesn't have Copilot access");
-                        this.logError('Please re-login to get a new token.');
-                    }
-
-                    throw new Error(`Failed to get Copilot token: ${response.status} ${errorText}`);
+                    return await this.handleTokenFetchFailure(response, authHeaderToken);
                 }
 
                 const data = await response.json() as CopilotTokenResponse;
@@ -394,7 +323,85 @@ export class CopilotService extends BaseService {
             }
         })();
 
-        return this.tokenPromise ?? Promise.reject(new Error('Token promise unexpectedly null'));
+        return this.tokenPromise;
+    }
+
+    private async detectAccountType(authHeaderToken: string) {
+        const usageRes = await fetch('https://api.github.com/copilot_internal/user', {
+            headers: {
+                'Authorization': `token ${authHeaderToken}`,
+                'Accept': 'application/json',
+                'User-Agent': USER_AGENT
+            }
+        });
+        if (usageRes.ok) {
+            const usageData = await usageRes.json() as CopilotUsageData;
+            this.accountType = usageData.copilot_plan ?? 'individual';
+            this.logInfo(`Detected Plan: ${this.accountType} -> Endpoint: ${this.getBaseUrl()}`);
+        }
+    }
+
+    private async fetchCopilotV2Token(authHeaderToken: string) {
+        return await fetch('https://api.github.com/copilot_internal/v2/token', {
+            headers: {
+                'Authorization': `token ${authHeaderToken}`,
+                'Accept': 'application/json',
+                'Editor-Version': `vscode/${this.vsCodeVersion}`,
+                'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
+                'User-Agent': USER_AGENT,
+                'X-GitHub-Api-Version': API_VERSION,
+            }
+        });
+    }
+
+    private async handleTokenFetchFailure(response: Response, authHeaderToken: string): Promise<string> {
+        if (response.status === 404) {
+            this.logWarn('v2/token 404, attempting fallback to v1/token');
+            const v1Response = await fetch('https://api.github.com/copilot_internal/token', {
+                headers: {
+                    'Authorization': `token ${authHeaderToken}`,
+                    'Accept': 'application/json',
+                    'Editor-Version': `vscode/${this.vsCodeVersion}`,
+                    'Editor-Plugin-Version': EDITOR_PLUGIN_VERSION,
+                    'User-Agent': USER_AGENT,
+                    'X-GitHub-Api-Version': API_VERSION // Ensure version is sent
+                }
+            });
+
+            if (v1Response.ok) {
+                const data = await v1Response.json() as CopilotTokenResponse;
+                this.copilotSessionToken = data.token;
+                this.tokenExpiresAt = (data.expires_at ?? (Date.now() / 1000 + 1200)) * 1000;
+                return this.copilotSessionToken;
+            }
+
+            const v1ErrorText = await v1Response.text();
+            this.logError(`v1 fallback failed: ${v1Response.status} ${v1ErrorText}`);
+            if (v1Response.status === 404) {
+                this.logError('Token appears invalid (404 on both endpoints). Please re-login.');
+            }
+        }
+
+        const errorText = await response.text();
+        this.handleAuthStatusError(response.status, authHeaderToken);
+        throw new Error(`Failed to get Copilot token: ${response.status} ${errorText}`);
+    }
+
+    private handleAuthStatusError(status: number, authHeaderToken: string) {
+        if (status === 401) {
+            this.logWarn('Token unauthorized (401). Clearing token.');
+            if (authHeaderToken === this.copilotAuthToken) {
+                this.copilotAuthToken = null;
+            } else {
+                this.githubToken = null;
+            }
+            this.copilotSessionToken = null;
+            if (this.authService) {
+                void this.authService.unlinkAllForProvider('copilot_token');
+            }
+        } else if (status === 404) {
+            this.logError('Token not found (404). Please re-login.');
+        }
     }
 
     private getBaseUrl(): string {
@@ -491,8 +498,9 @@ export class CopilotService extends BaseService {
     }
 
     private parseChatResponse(json: CopilotChatResponse): Message {
-        if (json.choices?.[0]?.message) {
-            return json.choices[0].message;
+        const firstChoice = json.choices.length > 0 ? json.choices[0] : null;
+        if (firstChoice) {
+            return firstChoice.message;
         }
 
         if (json.type === 'message' && Array.isArray(json.content)) {
@@ -541,74 +549,95 @@ export class CopilotService extends BaseService {
             const isChatPath = endpoint.includes('/chat/');
             const isResponsesPath = endpoint === '/responses';
 
-            let currentPayload: CopilotPayload;
-            const currentHeaders = { ...headers };
-
-            if (isResponsesPath) {
-                currentPayload = {
-                    model: finalModel,
-                    input: prompt.replace(/Assistant:$/, ''),
-                    stream
-                };
-                currentHeaders['Openai-Intent'] = 'conversation-panel';
-
-                if (tools && tools.length > 0) {
-                    currentPayload.tools = tools.map(t => ({
-                        type: 'function',
-                        function: {
-                            name: t.function.name,
-                            description: t.function.description ?? '',
-                            parameters: t.function.parameters ?? {}
-                        }
-                    }));
-                    currentPayload.tool_choice = 'auto';
-                }
-            } else {
-                currentPayload = isChatPath ? chatPayload : completionPayload;
-                currentHeaders['Openai-Intent'] = isChatPath ? 'conversation-panel' : 'completions';
-
-                if (isChatPath && tools && tools.length > 0) {
-                    currentPayload.tools = this.prepareTools(tools);
-                    currentPayload.tool_choice = 'auto';
-                }
-            }
+            const { payload, headers: currentHeaders } = this.prepareGatewayRequest({
+                endpoint, finalModel, prompt, stream, tools, headers, chatPayload, completionPayload
+            });
 
             const res = await fetch(url, {
                 method: 'POST',
                 headers: currentHeaders,
-                body: JSON.stringify(currentPayload)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
-                if (isResponsesPath) {
-                    if (stream && res.body) {
-                        return res.body;
-                    }
-
-                    const data = await res.json() as DiagnosticResponse;
-                    return this.parseDiagnosticResponse(data);
-                }
-
-                if (stream && res.body) {
-                    return res.body;
-                }
-
-                const json = await res.json() as CopilotChatResponse;
-                const choice = json.choices?.[0];
-                if (isChatPath) {
-                    return choice?.message ?? null;
-                }
-                return {
-                    id: randomUUID(),
-                    role: 'assistant',
-                    content: choice?.text?.trim() ?? '',
-                    timestamp: new Date()
-                };
+                return await this.handleGatewayResponse(res, isResponsesPath, isChatPath, stream);
             }
         } catch (error) {
             this.logInfo(`Gateway ${gateway} endpoint ${endpoint} failed: ${getErrorMessage(error as Error)}`);
         }
         return null;
+    }
+
+    private prepareGatewayRequest(options: {
+        endpoint: string;
+        finalModel: string;
+        prompt: string;
+        stream: boolean;
+        tools: ToolDefinition[] | undefined;
+        headers: Record<string, string>;
+        chatPayload: CopilotPayload;
+        completionPayload: CopilotPayload;
+    }): { payload: CopilotPayload; headers: Record<string, string> } {
+        const { endpoint, finalModel, prompt, stream, tools, headers, chatPayload, completionPayload } = options;
+        const isResponsesPath = endpoint === '/responses';
+        const isChatPath = endpoint.includes('/chat/');
+        const currentHeaders = { ...headers };
+        let currentPayload: CopilotPayload;
+
+        if (isResponsesPath) {
+            currentPayload = {
+                model: finalModel,
+                input: prompt.replace(/Assistant:$/, ''),
+                stream
+            };
+            currentHeaders['Openai-Intent'] = 'conversation-panel';
+            if (tools && tools.length > 0) {
+                currentPayload.tools = this.prepareTools(tools);
+                currentPayload.tool_choice = 'auto';
+            }
+        } else {
+            currentPayload = isChatPath ? chatPayload : completionPayload;
+            currentHeaders['Openai-Intent'] = isChatPath ? 'conversation-panel' : 'completions';
+            if (isChatPath && tools && tools.length > 0) {
+                currentPayload.tools = this.prepareTools(tools);
+                currentPayload.tool_choice = 'auto';
+            }
+        }
+
+        return { payload: currentPayload, headers: currentHeaders };
+    }
+
+    private async handleGatewayResponse(
+        res: Response,
+        isResponsesPath: boolean,
+        isChatPath: boolean,
+        stream: boolean
+    ): Promise<Message | ReadableStream<Uint8Array> | null> {
+        if (stream && res.body) {
+            return res.body;
+        }
+
+        if (isResponsesPath) {
+            const data = await res.json() as DiagnosticResponse;
+            return this.parseDiagnosticResponse(data);
+        }
+
+        return await this.parseStandardGatewayResponse(res, isChatPath);
+    }
+
+    private async parseStandardGatewayResponse(res: Response, isChatPath: boolean): Promise<Message | null> {
+        const json = await res.json() as CopilotChatResponse;
+        const choice = json.choices[0];
+        if (isChatPath) {
+            return choice.message;
+        }
+
+        return {
+            id: randomUUID(),
+            role: 'assistant',
+            content: choice.text?.trim() ?? '',
+            timestamp: new Date()
+        };
     }
 
     private async diagnosticCodexRequest(
@@ -716,32 +745,50 @@ export class CopilotService extends BaseService {
         return { headers, payload, finalModel };
     }
 
-    private async handleCopilotError(
-        response: Response,
-        finalModel: string,
-        messages: Message[],
-        headers: Record<string, string>,
-        payload: CopilotPayload,
-        stream: boolean,
-        tools?: ToolDefinition[]
-    ): Promise<Message | ReadableStream<Uint8Array> | null> {
+    private async handleCopilotError(params: {
+        response: Response;
+        finalModel: string;
+        messages: Message[];
+        headers: Record<string, string>;
+        payload: CopilotPayload;
+        stream: boolean;
+        tools?: ToolDefinition[];
+    }): Promise<Message | ReadableStream<Uint8Array> | null> {
+        const { response, finalModel, messages, headers, payload, stream, tools } = params;
         const errText = await response.text();
-        let errorBody: { error?: { code?: string } } | undefined;
-        try { errorBody = JSON.parse(errText); } catch { /* ignore */ }
 
-        if (errorBody?.error?.code === 'unsupported_api_for_model' || (response.status === 400 && finalModel.toLowerCase().includes('codex'))) {
+        if (this.shouldRequestDiagnostic(response, finalModel, errText)) {
             const result = await this.diagnosticCodexRequest(messages, finalModel, headers, stream, tools);
             if (result) { return result; }
         }
 
         if (response.status === 404 && this.accountType === 'individual') {
-            const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', { method: 'POST', headers, body: JSON.stringify(payload) });
-            if (bizRes.ok) {
-                if (stream) { return bizRes.body; }
-                return ((await bizRes.json()) as CopilotChatResponse).choices[0].message;
-            }
+            return await this.tryBusinessFallback(headers, payload, stream);
         }
         throw new Error(`Copilot API Error: ${response.status} - ${errText}`);
+    }
+
+    private shouldRequestDiagnostic(response: Response, finalModel: string, errText: string): boolean {
+        let errorBody: { error?: { code?: string } } | undefined;
+        try { errorBody = JSON.parse(errText); } catch { /* ignore */ }
+
+        const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
+        const isCodexError = response.status === 400 && finalModel.toLowerCase().includes('codex');
+        return isUnsupported || isCodexError;
+    }
+
+    private async tryBusinessFallback(headers: Record<string, string>, payload: CopilotPayload, stream: boolean): Promise<Message | ReadableStream<Uint8Array> | null> {
+        const bizRes = await fetch('https://api.business.githubcopilot.com/chat/completions', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+        });
+        if (bizRes.ok) {
+            if (stream) { return bizRes.body; }
+            const json = await bizRes.json() as CopilotChatResponse;
+            return json.choices[0].message;
+        }
+        return null;
     }
 
     private async executeChatRequest(
@@ -769,7 +816,7 @@ export class CopilotService extends BaseService {
         });
 
         if (!response.ok) {
-            return this.handleCopilotError(response, finalModel, messages, headers, payload, stream, tools);
+            return this.handleCopilotError({ response, finalModel, messages, headers, payload, stream, tools });
         }
 
         if (stream) {

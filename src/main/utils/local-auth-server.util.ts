@@ -2,6 +2,7 @@ import * as crypto from 'crypto'
 import * as http from 'http'
 import { AddressInfo } from 'net'
 
+import { appLogger } from '@main/logging/logger'
 import { CatchError } from '@shared/types/common'
 import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { net } from 'electron'
@@ -298,8 +299,8 @@ export class LocalAuthServer {
         }
         const body = JSON.stringify(payload)
 
-        console.log('[LocalAuthServer] Token exchange to:', LocalAuthServer.CLAUDE_TOKEN_ENDPOINT)
-        console.log('[LocalAuthServer] Payload:', JSON.stringify({ ...payload, code: '[REDACTED]', code_verifier: '[REDACTED]' }))
+        appLogger.info('LocalAuthServer', `Token exchange to: ${LocalAuthServer.CLAUDE_TOKEN_ENDPOINT}`)
+        appLogger.debug('LocalAuthServer', `Payload: ${JSON.stringify({ ...payload, code: '[REDACTED]', code_verifier: '[REDACTED]' })}`)
 
         return new Promise((resolve, reject) => {
             const request = net.request({
@@ -325,7 +326,7 @@ export class LocalAuthServer {
                     try {
                         const json = safeJsonParse(data, null)
                         if (!json) { throw new Error('Malformed token response') }
-                        console.log('[LocalAuthServer] Token exchange successful')
+                        appLogger.info('LocalAuthServer', 'Token exchange successful')
                         resolve(json)
                     } catch (e) {
                         reject(e)

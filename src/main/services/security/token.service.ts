@@ -26,6 +26,7 @@ export class TokenService extends BaseService {
     private readonly DEFAULT_COPILOT_REFRESH_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
     private readonly REFRESH_THRESHOLD_MS = 30 * 60 * 1000 // 30 minutes
     private legacyIntervals: NodeJS.Timeout[] = []
+    private eventUnsubscribers: Array<() => void> = []
 
     constructor(
         private settingsService: SettingsService,
@@ -47,6 +48,10 @@ export class TokenService extends BaseService {
         this.legacyIntervals.forEach(interval => clearInterval(interval))
         this.legacyIntervals = []
 
+        // Unsubscribe from events
+        this.eventUnsubscribers.forEach(unsub => unsub())
+        this.eventUnsubscribers = []
+
         appLogger.info('TokenService', 'Token refresh service stopped')
     }
 
@@ -65,12 +70,17 @@ export class TokenService extends BaseService {
 
         appLogger.info('TokenService', 'Token service connected')
 
-        // 1. Sync any background refreshed tokens from service API
-        this.syncFromService().catch(err => {
+        // 1. Sync any background refreshed tokens from service API FIRST
+        // This MUST complete before we register tokens, to avoid overwriting
+        // newer refresh tokens with stale ones from the database
+        try {
+            await this.syncFromService()
+            appLogger.info('TokenService', 'Synced tokens from token service')
+        } catch (err) {
             appLogger.error('TokenService', `Failed to sync from token service: ${getErrorMessage(err)}`)
-        })
+        }
 
-        // 2. Register all current tokens for monitoring
+        // 2. Register all current tokens for monitoring (AFTER sync completes)
         this.refreshAllTokens().catch(err => {
             appLogger.error('TokenService', `Initial token registration failed: ${getErrorMessage(err)}`)
         })
@@ -101,12 +111,30 @@ export class TokenService extends BaseService {
                 }
             )
 
+            // Periodically sync tokens FROM the token service back to the database
+            // This ensures any background refreshes are persisted to the database
+            this.system.jobScheduler.registerRecurringJob(
+                'token-sync-from-service',
+                async () => {
+                    await this.syncFromService()
+                },
+                () => 2 * 60 * 1000 // Every 2 minutes
+            )
+
             appLogger.info('TokenService', 'Registered with JobScheduler for persistent scheduling')
         } else {
             // Fallback to simple setInterval (for backward compatibility)
             appLogger.warn('TokenService', 'No JobScheduler provided, using simple intervals')
             this.startLegacyIntervals()
         }
+
+        // Listen for account unlink events to stop refreshing deleted accounts
+        const unsubscribe = this.eventBus.on('account:unlinked', ({ accountId }) => {
+            this.unregisterToken(accountId).catch(err => {
+                appLogger.error('TokenService', `Failed to unregister token: ${getErrorMessage(err)}`)
+            })
+        })
+        this.eventUnsubscribers.push(unsubscribe)
 
         appLogger.info('TokenService', 'Token refresh service started successfully')
     }
@@ -126,9 +154,31 @@ export class TokenService extends BaseService {
             })
         }, this.DEFAULT_COPILOT_REFRESH_INTERVAL_MS)
         this.legacyIntervals.push(copilotInterval)
+
+        // Periodically sync tokens FROM the token service back to the database
+        const syncInterval = setInterval(() => {
+            this.syncFromService().catch(err => {
+                appLogger.error('TokenService', `Token sync from service failed: ${getErrorMessage(err)}`)
+            })
+        }, 2 * 60 * 1000) // Every 2 minutes
+        this.legacyIntervals.push(syncInterval)
     }
 
     // stop() renamed to cleanup() and moved up
+
+    /**
+     * Unregister a token from the native token-service (stop refreshing it)
+     */
+    async unregisterToken(accountId: string): Promise<void> {
+        try {
+            await this.system.processManager.sendRequest<{ success: boolean }>('token-service', {
+                id: accountId
+            }, 5000, '/unregister')
+            appLogger.info('TokenService', `Unregistered token from refresh service: ${accountId}`)
+        } catch (error) {
+            appLogger.warn('TokenService', `Failed to unregister token ${accountId}: ${getErrorMessage(error)}`)
+        }
+    }
 
     async refreshAllTokens() {
         const accounts = await this.authService.getAllAccountsFull()
@@ -154,6 +204,17 @@ export class TokenService extends BaseService {
 
             let updatedCount = 0
             for (const [id, data] of Object.entries(tokens)) {
+                // Verify account still exists in Orbit database
+                const exists = await this.authService.accountExists(id)
+                if (!exists) {
+                    appLogger.warn('TokenService', `Sync: Found monitored token for non-existent account ${id}. Requesting unregister...`)
+                    // Fire and forget unregister
+                    void this.unregisterToken(id).catch(err => {
+                        appLogger.error('TokenService', `Sync: Failed to unregister zombie token ${id}: ${getErrorMessage(err)}`)
+                    })
+                    continue
+                }
+
                 if (data.token.access_token) {
                     await this.authService.updateToken(id, {
                         accessToken: data.token.access_token,

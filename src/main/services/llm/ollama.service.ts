@@ -61,7 +61,7 @@ export class OllamaService {
     constructor(settingsService: SettingsService) {
         this.settingsService = settingsService
         const settings = this.settingsService.getSettings()
-        if (settings.ollama && settings.ollama.url) {
+        if (settings.ollama?.url) {
             try {
                 const url = new URL(settings.ollama.url)
                 this.host = url.hostname

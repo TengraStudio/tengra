@@ -58,8 +58,8 @@ export class PromptTemplatesService extends BaseService {
         const lowerQuery = query.toLowerCase()
         return this.getAllTemplates().filter(t =>
             t.name.toLowerCase().includes(lowerQuery) ||
-            t.description?.toLowerCase().includes(lowerQuery) ||
-            t.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
+            (t.description?.toLowerCase().includes(lowerQuery) ?? false) ||
+            (t.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)) ?? false)
         )
     }
 
