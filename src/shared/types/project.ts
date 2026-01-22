@@ -9,6 +9,7 @@ export interface Project {
     path: string;
     mounts?: WorkspaceMount[];
     createdAt: Date;
+    updatedAt?: Date;
     chatIds: string[];
     councilConfig: {
         enabled: boolean;

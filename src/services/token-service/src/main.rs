@@ -47,6 +47,11 @@ struct RefreshRequest {
     client_secret: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct UnregisterRequest {
+    id: String,
+}
+
 #[derive(Serialize)]
 struct Response {
     success: bool,
@@ -103,6 +108,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .route("/refresh", post(handle_refresh)) // Legacy/Direct refresh
         .route("/monitor", post(handle_monitor)) // Register for background monitoring
+        .route("/unregister", post(handle_unregister)) // Remove token from monitoring
         .route("/sync", get(handle_sync))       // New: Sync tokens from memory
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);
@@ -181,6 +187,35 @@ async fn handle_sync(
 ) -> Json<HashMap<String, MonitoredToken>> {
     let tokens = state.tokens.read().await;
     Json(tokens.clone())
+}
+
+async fn handle_unregister(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<UnregisterRequest>,
+) -> Json<Response> {
+    let mut tokens = state.tokens.write().await;
+    
+    if tokens.remove(&payload.id).is_some() {
+        log(&format!("Unregistered token: {}", payload.id));
+        
+        // Save immediately
+        if let Err(e) = save_state(&state.store_path, &tokens) {
+            log(&format!("Failed to save state after unregister: {}", e));
+        }
+        
+        Json(Response {
+            success: true,
+            token: None,
+            error: None,
+        })
+    } else {
+        log(&format!("Token not found for unregister: {}", payload.id));
+        Json(Response {
+            success: true, // Still success, idempotent operation
+            token: None,
+            error: None,
+        })
+    }
 }
 
 
@@ -379,7 +414,8 @@ fn log(msg: &str) {
         }
     }
     // Also print to stdout/stderr (will be eaten by windows subsystem if no console, but good for debug runs)
-    println!("{}", msg);
+    use std::io::Write;
+    let _ = writeln!(std::io::stdout(), "{}", msg);
 }
 
 fn setup_logging() {

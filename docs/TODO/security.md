@@ -1,40 +1,36 @@
 # Security Roadmap
 
-## 🔴 CRITICAL - Vulnerabilities
+## CRITICAL - Vulnerabilities
 
 ### 1.1 Hardcoded Secrets
-- [x] `token.service.ts`: Client secret removed
-- [x] `quota.service.ts`: Client Secret removed
+- [x] token.service.ts: Client secret removed
+- [x] quota.service.ts: Client Secret removed
 - [ ] Audit remaining codebase for hardcoded keys
 
 ### 1.2 Injection Risks
-- [x] **XSS**: Sanitized `dangerouslySetInnerHTML` with DOMPurify
-- [x] **Shell Injection**: Enforced `shell: false` ✅ Phase 19/21
+- [x] XSS: Sanitized dangerouslySetInnerHTML with DOMPurify
+- [x] Shell Injection: Enforced shell: false - Phase 19/21
 
 ### 1.3 Path Traversal
-- [x] FileSystemService: `isPathAllowed`/`validatePath` protects paths ✅ Phase 21
-- [x] SSHService: `validateRemotePath` protects all file operations ✅
+- [x] FileSystemService: isPathAllowed/validatePath protects paths - Phase 21
+- [x] SSHService: validateRemotePath protects all file operations
 
 ### 1.4 JSON Safety
-- [x] Wrap `JSON.parse` in try-catch blocks (Phase 4/5)
-- [x] Added `safeJsonParse` utility for safe parsing with defaults
-- [ ] Apply `safeJsonParse` to remaining 90+ instances
+- [x] Wrap JSON.parse in try-catch blocks (Phase 4/5)
+- [x] Added safeJsonParse utility for safe parsing with defaults
+- [ ] Apply safeJsonParse to remaining 90+ instances
 
----
-
-## 🟠 HIGH - Data Security
+## HIGH - Data Security
 
 ### 2.1 Auth Migration
 - [ ] Migrate auth tokens from JSON files to Encrypted Database
 - [ ] Implement Session Expiry checks
 
 ### 2.2 Sensitive Data
-- [ ] Ensure passwords in `SSHService` are encrypted at rest
+- [ ] Ensure passwords in SSHService are encrypted at rest
 - [ ] Audit logging for accidental credential leakage
 
----
-
-## 🟡 MEDIUM - Access Control
+## MEDIUM - Access Control
 
 ### 3.1 IPC Security
 - [ ] Add schema validation for all IPC payloads
@@ -45,9 +41,7 @@
 - [ ] Implement Forbidden Tools restrictions
 - [ ] Implement Protected Paths enforcement
 
----
-
-## 🟢 LOW - Hardening
+## LOW - Hardening
 
 - [ ] Add Content Security Policy (CSP) headers
 - [ ] Enable context isolation for all windows (Verified default)

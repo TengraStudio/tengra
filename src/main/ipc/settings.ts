@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger'
 import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { LLMService } from '@main/services/llm/llm.service'
@@ -21,64 +22,81 @@ export function registerSettingsIpc(options: {
         return settings
     }))
 
+    async function auditSensitiveChanges(newSettings: AppSettings, oldSettings: AppSettings, auditService: AuditLogService | undefined) {
+        if (!auditService) { return }
+        const sensitiveChanges: string[] = []
+        const fields = [
+            { key: 'openai', label: 'OpenAI API key' },
+            { key: 'anthropic', label: 'Anthropic API key' },
+            { key: 'groq', label: 'Groq API key' },
+            { key: 'proxy', label: 'Proxy key' }
+        ] as const
+
+        for (const field of fields) {
+            checkSensitiveField(field, newSettings, oldSettings, sensitiveChanges)
+        }
+
+        if (sensitiveChanges.length > 0) {
+            await auditService.log({
+                action: 'Settings updated',
+                category: 'settings',
+                success: true,
+                details: { changes: sensitiveChanges, changedFields: Object.keys(newSettings) }
+            })
+        }
+    }
+
+    function checkSensitiveField(field: { key: 'openai' | 'anthropic' | 'groq' | 'proxy'; label: string }, newSettings: AppSettings, oldSettings: AppSettings, changes: string[]) {
+        const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key
+        const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key
+
+        if (typeof newVal === 'string' && newVal !== oldVal) {
+            changes.push(`${field.label} updated`)
+        }
+    }
+
+    function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
+        updateLlmCredentials(finalSettings, newSettings)
+        updateCopilotCredentials(finalSettings)
+        updateProxyConfig(newSettings)
+    }
+
+    function updateLlmCredentials(finalSettings: AppSettings, newSettings: AppSettings) {
+        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey) }
+        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey) }
+        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
+    }
+
+    function updateCopilotCredentials(finalSettings: AppSettings) {
+        if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token) }
+        if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token) }
+    }
+
+    function updateProxyConfig(newSettings: AppSettings) {
+        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1'
+        const proxyKey = newSettings.proxy?.key ?? 'connected'
+        llmService.setProxySettings(proxyUrl, proxyKey)
+    }
+
     ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
         const oldSettings = settingsService.getSettings()
         // Await the save to get the final merged settings (with preserved secrets)
         const finalSettings = await settingsService.saveSettings(newSettings)
 
         // Audit log for sensitive settings changes
-        if (auditLogService) {
-            const sensitiveChanges: string[] = []
-            if (newSettings.openai?.apiKey && newSettings.openai.apiKey !== oldSettings.openai?.apiKey) {
-                sensitiveChanges.push('OpenAI API key updated')
+        await auditSensitiveChanges(newSettings, oldSettings, auditLogService);
+
+        void (async () => {
+            try {
+                await updateOllamaConnection();
+            } catch (error) {
+                appLogger.error('IPC', 'updateOllamaConnection failed:', error as Error);
             }
-            if (newSettings.anthropic?.apiKey && newSettings.anthropic.apiKey !== oldSettings.anthropic?.apiKey) {
-                sensitiveChanges.push('Anthropic API key updated')
-            }
-            if (newSettings.groq?.apiKey && newSettings.groq.apiKey !== oldSettings.groq?.apiKey) {
-                sensitiveChanges.push('Groq API key updated')
-            }
-            if (newSettings.proxy?.key && newSettings.proxy.key !== oldSettings.proxy?.key) {
-                sensitiveChanges.push('Proxy key updated')
-            }
+        })();
 
-            if (sensitiveChanges.length > 0) {
-                await auditLogService.log({
-                    action: 'Settings updated',
-                    category: 'settings',
-                    success: true,
-                    details: {
-                        changes: sensitiveChanges,
-                        changedFields: Object.keys(newSettings)
-                    }
-                })
-            }
-        }
+        updateServices(finalSettings, newSettings);
+        updateOpenAIConnection();
 
-        if (newSettings.ollama) {
-            void Promise.resolve(updateOllamaConnection()).catch(error =>
-                console.error('[IPC] updateOllamaConnection failed:', error)
-            )
-        }
-        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey) }
-        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey) }
-
-        // Update Copilot Service with split tokens
-        if (finalSettings.copilot?.token) {
-            copilotService.setCopilotToken(finalSettings.copilot.token)
-        }
-        if (finalSettings.github?.token) {
-            copilotService.setGithubToken(finalSettings.github.token)
-        }
-
-        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
-
-        // Update Antigravity proxy settings in LLMService
-        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1'
-        const proxyKey = newSettings.proxy?.key ?? 'connected'
-        llmService.setProxySettings(proxyUrl, proxyKey)
-
-        updateOpenAIConnection()
         return finalSettings
     }))
 }

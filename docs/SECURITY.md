@@ -1,45 +1,46 @@
-# Security & Authentication
+# Security and Authentication
 
-Security is a foundational pillar of Orbit. We implement multiple layers of protection to ensure that user credentials, local data, and cross-process communications remain secure.
+Security is built into every layer of Orbit. We focus on protecting user credentials, securing local data storage, and hardening the communication between our various processes.
 
-## 1. Token Management & Synchronization
+## Token Management and Synchronization
 
-Orbit uses a **Stateless Proxy Architecture**. Unlike legacy systems that write plain-text credentials to the disk, Orbit manages all sensitive tokens in memory or within its encrypted database.
+Orbit utilizes a stateless proxy architecture. This design ensures that sensitive credentials are never stored in plain text on the filesystem and are only held in memory or within an encrypted database.
 
 ### Bidirectional API Synchronization
-As of v1.2.0, synchronization between the Electron app and the Go proxy happens exclusively over a local HTTP interface:
-- **Pull Sync**: The Go proxy requests de-encrypted tokens from Orbit's `AuthAPIService` using a unique `Secret Key`.
-- **Push Persistence**: When a microservice refreshes a token (e.g., Claude or Antigravity), it POSTS the update back to Orbit, which then persists it to the secure database.
-- **Disk Security**: No JSON files containing tokens are written to the filesystem. Legacy `.json` credentials are automatically cleaned up on application startup.
+Communication between the Electron main process and our microservices (Go and Rust) occurs over a secure, localized HTTP interface.
+- **On-Demand Pull**: The Go proxy retrieves decrypted tokens from Orbit's internal `AuthAPIService` only when needed for an outgoing request. This request is authenticated using a system-generated secret key.
+- **Immediate Push Persistence**: When a microservice performs a background token refresh, the updated credentials are immediately pushed back to the Main process via a POST request. The Main process then encrypts and persists the new token to the database.
+- **Zero Disk Footprint**: We have eliminated the use of temporary JSON files for credential storage. All legacy files are purged during the application's initialization phase.
 
-## 2. Encryption Standards
+## Encryption Standards
 
-Orbit employs a two-tier encryption strategy for data at rest.
+We employ a multi-tiered approach to data protection at rest, catering to both modern security requirements and legacy compatibility.
 
-### Orbit V1 (Custom AES-256-GCM)
-- **Algorithm**: AES-256-GCM with a unique PBKDF2-derived master key.
-- **Master Key**: Generated on first run and stored at `runtime/data/config/security.key`.
-- **Prefix**: Tokens stored with this format are prefixed with `orbit:v1:`.
+### Orbit Custom V1 (AES-256-GCM)
+This is our primary encryption tier. It uses the AES-256-GCM algorithm, providing both confidentiality and integrity.
+- **Key Generation**: A master key is generated upon the first run of the application using PBKDF2 with a high iteration count.
+- **Storage**: The master key is stored securely in the local configuration directory, and used to encrypt all high-value tokens.
+- **Validation**: Every decryption attempt includes a tag validation to ensure the data has not been tampered with.
 
-### Legacy Tier (Electron safeStorage)
-- **Fallback**: Uses the operating system's native credential store (DPAPI on Windows, Keychain on macOS).
-- **Prefix**: Tokens stored with this format are prefixed with `v1:`.
+### Legacy Tier (Platform Integration)
+For compatibility and as an additional layer, we integrate with platform-specific secure storage (Electron's `safeStorage`). This utilizes DPAPI on Windows and the Keychain on macOS.
 
-## 3. IPC (Inter-Process Communication) Hardening
+## Hardening Inter-Process Communication (IPC)
 
-The interface between the UI and the system is strictly controlled to prevent unauthorized access to local resources.
+The IPC bridge is the only gateway through which the UI can interact with the system. We harden this interface using several techniques:
+- **Context Isolation**: The Renderer process has no direct access to Node.js APIs. It can only communicate through a strictly defined preload script.
+- **Method Whitelisting**: Only a specific subset of service methods are exposed to the UI, minimizing the attack surface.
+- **Payload Validation**: All data passing through the IPC bridge is validated to prevent injection attacks or malformed data from affecting the system state.
 
-- **Non-Exposable APIs**: Only explicitly mapped methods are exposed via the `window.electron` bridge.
-- **Command Sanitization**: All shell commands executed via IPC are sanitized to block injection sequences (e.g., backticks, subshells, newlines).
-- **Preload Isolation**: The preload script operates in a separate context from the UI, preventing XSS attacks from accessing Node.js internals.
+## Content Security and Sanitization
 
-## 4. Content Security & Sanitization
+AI-generated content and markdown are inherently untrusted.
+- **DOMPurify**: All rendered content is passed through DOMPurify to strip out malicious scripts or dangerous HTML attributes.
+- **Path Validation**: Any tool that interacts with the filesystem (such as the SSH or File service) performs strict validation to prevent path traversal outside of the user's workspace.
 
-- **XSS Protection**: All markdown and AI-generated content (including Mermaid diagrams) is sanitized using **DOMPurify** before rendering.
-- **Path Traversal Protection**: File-related services (SSH, FileSystem) perform strict path validation to ensure operations are confined to authorized directories.
+## Core Security Principles
 
-## 5. Security Principles
+1. **Least Privilege**: Services are designed to only have access to the data and tools necessary for their specific functionality.
+2. **Stateless Ephemeral Data**: We avoid writing sensitive session data to disk whenever possible.
+3. **Internal Auditing**: Security-critical operations, such as authentication attempts and encryption upgrades, are recorded in an internal audit log for diagnostic purposes.
 
-1. **Least Privilege**: Microservices are granted only the permissions required for their specific domain.
-2. **Stateless Operations**: Local disk usage for sensitive ephemeral data is minimized.
-3. **Auditability**: All security-critical events (login, refresh, failed auth) are logged to the internal audit log stored in the database.

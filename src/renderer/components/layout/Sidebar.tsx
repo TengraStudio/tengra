@@ -17,8 +17,8 @@ import { Chat } from '@/types'
 interface SidebarProps {
     isCollapsed: boolean
     toggleSidebar: () => void
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory') => void
+    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas'
+    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas') => void
     onOpenSettings: (category?: SettingsCategory) => void
     onSearch: (query: string) => void
 }

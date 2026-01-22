@@ -1,54 +1,47 @@
-# Services Architecture
+# Service Architecture
 
-Orbit follows a modular, service-oriented architecture in the backend. All services inherit from a `BaseService`, enabling consistent initialization, cleanup, and logging.
+Orbit is built on a modular, service-oriented architecture. By centralizing logic into domain-specific services, we maintain a codebase that is easy to test, debug, and extend.
+
+## BaseService and Lifecycle
+
+All services in Orbit inherit from a central `BaseService` class. This provides a consistent interface and set of utilities for every module in the system.
+
+- **Initialization**: Every service has an `initialize()` method. This is where asynchronous setup—such as connecting to a database or starting a child process—should occur.
+- **Cleanup**: The `cleanup()` method is called when the application is shutting down. Services use this to close file handles, stop timers, or signal microservices to terminate.
+- **Structured Logging**: `BaseService` provides built-in methods for logging (`logInfo`, `logError`, `logWarn`). These methods automatically include the service name in the log output, making it easier to trace events back to their source.
 
 ## Service Domains
 
-Services are organized into domains to ensure high cohesive and low coupling.
+We organize services into logical domains to minimize cross-dependencies and ensure each module has a clear responsibility.
 
-### 1. Security Domain (`security/`)
-Manages the security of user data and authentication state.
-- **`TokenService`**: Handles unified OAuth token refreshes and session monitoring.
-- **`AuthService`**: Manages the multi-account database and token encryption.
-- **`SecurityService`**: Provides AES-256-GCM and safeStorage encryption primitives.
-- **`AuthAPIService`**: Provides an internal HTTP API for secure cross-process token synchronization.
+### Security Domain
+This domain handles the protection of user data and the management of authentication states.
+- **TokenService**: Monitors the health of OAuth tokens and coordinates background refreshes with the Rust microservice.
+- **AuthService**: Manages the local account database and handles the complex logic of token encryption.
+- **SecurityService**: Provides low-level cryptographic primitives, integrating with both Orbit's custom AES implementation and OS-level secure storage.
 
-### 2. LLM Domain (`llm/`)
-Manages interactions with local and cloud AI models.
-- **`OllamaService`**: Communicates with the local Ollama daemon.
-- **`MultiLLMOrchestrator`**: Manages concurrent model requests and prioritization.
-- **`ModelRegistryService`**: Centralized discovery and caching of remote/local models.
-- **`ModelCollaborationService`**: Implements strategies like Consensus and Best-of-N.
+### Data Domain
+Responsible for all persistent storage and data integrity.
+- **DatabaseService**: Manages the lifecycle of the PGlite database, including schema migrations and query execution.
+- **BackupService**: Handles the secure export and import of user data, ensuring that snapshots are consistent.
 
-### 3. Data Domain (`data/`)
-Handles all persistent storage and data migration.
-- **`DatabaseService`**: Wrapper for PGlite, managing the relational schema and migrations.
-- **`DataService`**: Responsible for platform-specific file path resolution.
-- **`BackupService`**: Implements chat and settings export/import.
-- **`ChatEventService`**: Manages real-time persistence of chat streams.
+### System and Proxy Domain
+Handles the execution of external processes and system-level operations.
+- **ProxyProcessManager**: Specifically manages the lifecycle of the Go-based authentication proxy, including configuration generation and error monitoring.
+- **CommandService**: Provides a secured wrapper for executing shell commands, automatically sanitizing inputs to prevent injection attacks.
 
-### 4. System Domain (`system/`)
-Core runtime and OS-level integrations.
-- **`ProcessManagerService`**: Lifecycle management for Go/Rust microservices.
-- **`JobSchedulerService`**: Persistent, cron-like scheduling for background tasks.
-- **`CommandService`**: Secure execution of system commands with sanitization.
+### LLM Domain
+Orchestrates the interaction with various AI models.
+- **MultiLLMOrchestrator**: Acts as a dispatcher, routing chat requests to the appropriate model provider while handling fallbacks and streaming.
+- **ModelRegistryService**: Maintains a cached list of available models and their capabilities across different providers.
 
-### 5. Project Domain (`project/`)
-Logic for local workspace management.
-- **`ProjectService`**: Handles workspace indexing and metadata.
-- **`GitService`**: Integration with local Git repositories.
-- **`DockerService`**: Management of project containers.
-- **`SSHService`**: Manages remote server connections and file transfers.
+## Dependency Injection and Orchestration
 
-## Key Service Patterns
+Orbit uses a centralized dependency injection pattern to manage service relationships. Instead of services instantiating their own dependencies, they are "injected" during the startup sequence.
 
-### Dependency Injection
-Orbit uses a custom DI container (`src/main/startup/services.ts`) to manage service instantiation and dependencies. This ensures that services can be easily mocked during testing.
+### Registration Process
+During application startup, all services are registered in a central container. This process defines the order in which services are initialized, ensuring that low-level services (like `DatabaseService`) are ready before high-level services (like `AuthService`) attempt to use them.
 
-### Lifecycle Management
-Every service inherits `BaseService`, which provides:
-- **`initialize()`**: Called during app startup. All async setup should happen here.
-- **`cleanup()`**: Called during app shutdown. Used for clearing intervals or closing handles.
+### Benefits for Testing
+Because services receive their dependencies through their constructors, we can easily inject "mock" versions of those dependencies during unit testing. This allows us to test a single service in isolation without requiring the entire application to be running.
 
-### Error Handling & Logging
-Services use `this.logError`, `this.logInfo`, and `this.logWarn` to route logs through the structured `appLogger`. All asynchronous operations MUST be wrapped in try-catch blocks to prevent main process crashes.

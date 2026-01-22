@@ -79,7 +79,7 @@ export class HuggingFaceService {
                 .map((f) => ({
                     path: f.path,
                     size: f.size,
-                    oid: f.lfs?.oid || f.oid, // SHA256 usually in lfs.oid
+                    oid: f.lfs?.oid ?? f.oid, // SHA256 usually in lfs.oid
                     quantization: this.extractQuantization(f.path)
                 }))
         } catch (error) {
@@ -126,7 +126,7 @@ export class HuggingFaceService {
             })
 
             const fileStream = fs.createWriteStream(outputPath, { flags: start > 0 ? 'a' : 'w' })
-            const total = parseInt(response.headers['content-length'] || '0', 10) + start
+            const total = parseInt(response.headers['content-length'] ?? '0', 10) + start
 
             let received = start
             response.data.on('data', (chunk: Buffer) => {

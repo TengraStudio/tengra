@@ -231,7 +231,7 @@ export class BackupService {
             const backupContent = await fs.promises.readFile(backupPath, 'utf8');
             const backup = safeJsonParse<Partial<BackupData>>(backupContent, {});
 
-            if (!backup?._metadata) {
+            if (!backup._metadata) {
                 result.errors.push('Invalid backup file: missing metadata');
                 return result;
             }

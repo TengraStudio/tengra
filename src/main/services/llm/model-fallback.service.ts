@@ -349,7 +349,7 @@ export class ModelFallbackService {
 
         for (const attempt of this.attemptHistory) {
             const key = this.getModelKey(attempt.provider, attempt.model);
-            if (!byModel[key]) {
+            if (!(key in byModel)) {
                 byModel[key] = { attempts: 0, successes: 0, totalLatency: 0 };
             }
             byModel[key].attempts++;

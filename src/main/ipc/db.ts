@@ -342,4 +342,22 @@ function registerStatsHandlers(databaseService: DatabaseService, _auditLogServic
     }) => {
         return await databaseService.searchChats(options)
     }, []))
+
+    ipcMain.handle('db:getTokenStats', createSafeIpcHandler('db:getTokenStats', async (_event: IpcMainInvokeEvent, period: 'daily' | 'weekly' | 'monthly') => {
+        return await databaseService.getTokenUsageStats(period)
+    }, { totalSent: 0, totalReceived: 0, totalCost: 0, timeline: [], byProvider: {}, byModel: {} }))
+
+    ipcMain.handle('db:addTokenUsage', createSafeIpcHandler('db:addTokenUsage', async (_event: IpcMainInvokeEvent, record: {
+        messageId?: string
+        chatId: string
+        projectId?: string
+        provider: string
+        model: string
+        tokensSent: number
+        tokensReceived: number
+        costEstimate?: number
+    }) => {
+        await databaseService.addTokenUsage(record)
+        return { success: true }
+    }, { success: false }))
 }

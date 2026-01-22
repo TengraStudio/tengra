@@ -117,7 +117,7 @@ export function registerOllamaIpc(options: {
         const { startOllama } = await import('@main/startup/ollama')
         // Get primary window
         const win = BrowserWindow.getAllWindows()[0]
-        const getWin = () => win ?? null
+        const getWin = () => win as (BrowserWindow | null)
         return await startOllama(getWin, true)
     })
 }

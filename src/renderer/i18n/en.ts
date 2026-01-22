@@ -559,7 +559,8 @@ export const en = {
         copilotActive: 'Active',
         councilReady: 'Ready',
         project: 'Project',
-        moveTo: 'Move to...'
+        moveTo: 'Move to...',
+        ideas: 'Ideas'
     },
     dateGroups: {
         today: 'Today',
@@ -666,7 +667,10 @@ export const en = {
             ollama: 'Ask local LLM...',
             default: 'Type a message...'
         },
-        attachFile: 'Attach file'
+        attachFile: 'Attach file',
+        enhancePrompt: 'Enhance prompt with AI',
+        startListening: 'Start voice input',
+        stopListening: 'Stop voice input'
     },
     workspaceModals: {
         mountTitle: 'Add Existing Folder or Server',
@@ -741,7 +745,8 @@ export const en = {
         thinking: 'Thinking...',
         regenerate: 'Regenerate',
         rating: 'Rate response',
-        actions: 'Message actions'
+        actions: 'Message actions',
+        multiModelResponse: 'Responses from multiple models'
     },
     general: {
         turkish: 'Turkish',
@@ -1118,6 +1123,116 @@ export const en = {
         step: 'Step',
         currentPlan: 'Current Plan',
         selectSession: 'Select a session or create a new one to begin.'
+    },
+    ideas: {
+        title: 'Project Ideas',
+        subtitle: 'AI-powered project idea generation with market research',
+        newSession: 'New Session',
+        selectModel: 'Select AI Model',
+        selectCategories: 'Select Categories',
+        maxIdeas: 'Maximum Ideas',
+        startResearch: 'Start Research',
+        startGeneration: 'Generate Ideas',
+        cancel: 'Cancel',
+
+        // Categories
+        categories: {
+            website: 'Website',
+            mobileApp: 'Mobile App',
+            game: 'Game',
+            cliTool: 'CLI Tool',
+            apiBackend: 'API / Backend',
+            desktop: 'Desktop App',
+            other: 'Other'
+        },
+
+        // Research stages
+        research: {
+            title: 'Research Pipeline',
+            understanding: 'Understanding Categories',
+            sectorAnalysis: 'Sector Analysis',
+            marketResearch: 'Market Research',
+            competitorAnalysis: 'Competitor Analysis',
+            complete: 'Research Complete'
+        },
+
+        // Generation
+        generation: {
+            title: 'Generating Ideas',
+            progress: 'Generating idea {{current}} of {{total}}',
+            enriching: 'Enriching idea details...',
+            complete: 'Generation Complete'
+        },
+
+        // Idea card
+        idea: {
+            viewDetails: 'View Details',
+            approve: 'Approve & Create Project',
+            reject: 'Reject',
+            nameSuggestions: 'Name Suggestions',
+            valueProposition: 'Value Proposition',
+            competitiveAdvantages: 'Competitive Advantages',
+            marketTrends: 'Market Trends',
+            competitors: 'Competitors',
+            selectPath: 'Select Project Path',
+            creating: 'Creating project...'
+        },
+
+        // Logo generation
+        logo: {
+            title: 'Logo Generation',
+            generate: 'Generate Logo',
+            generating: 'Generating logo...',
+            requiresAntigravity: 'Logo generation requires Antigravity connection',
+            promptPlaceholder: 'Describe your logo concept...'
+        },
+
+        // Status
+        status: {
+            active: 'Active',
+            researching: 'Researching',
+            generating: 'Generating',
+            completed: 'Completed',
+            cancelled: 'Cancelled',
+            pending: 'Pending',
+            approved: 'Approved',
+            rejected: 'Rejected'
+        },
+
+        // Errors
+        errors: {
+            modelRequired: 'Please select a model',
+            categoriesRequired: 'Please select at least one category',
+            researchFailed: 'Research failed. Please try again.',
+            generationFailed: 'Idea generation failed. Please try again.',
+            approvalFailed: 'Failed to create project. Please try again.',
+            logoFailed: 'Logo generation failed. Please try again.'
+        },
+
+        // Empty states
+        empty: {
+            noSessions: 'No idea sessions yet',
+            noSessionsDesc: 'Start a new session to generate project ideas',
+            noIdeas: 'No ideas generated',
+            noIdeasDesc: 'Complete the research phase to generate ideas'
+        },
+
+        // History
+        history: {
+            title: 'Idea History',
+            subtitle: 'Browse all your past idea generation sessions',
+            view: 'View History',
+            totalSessions: 'Total Sessions',
+            completed: 'Completed',
+            approvedIdeas: 'Approved Ideas',
+            pendingReview: 'Pending Review',
+            viewDetails: 'View Details',
+            noIdeasYet: 'No ideas generated yet',
+            daysAgo: '{{count}} days ago'
+        },
+
+        // Session setup
+        modelSelectorHint: 'Use the model selector in the top bar to change the AI model.'
     },
     tools: {
         usingTool: 'Using Tool',

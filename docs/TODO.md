@@ -2,65 +2,68 @@
 
 This document serves as the central index for project tasks. Tasks are categorized by domain.
 
-## 📂 Category Indexes
+## Category Indexes
 
-- **[Internationalization (i18n)](./TODO/i18n.md)** 🔴 **Priority**
+- **[Internationalization (i18n)](./TODO/i18n.md)** (Critical Priority)
     - Hardcoded string removal
     - Turkish translation completion
     - Language infrastructure
 
 - **[Security](./TODO/security.md)**
     - Vulnerability fixes
-    - Auth migration
+    - Authentication migration
     - Access control
 
 - **[Features](./TODO/features.md)**
-    - Missing Core Features (Memory, Council)
-    - UI Enhancements (Gallery, Stats)
-    - Project System
+    - Core system extensions (Memory, Council)
+    - UI Enhancements (Gallery, Statistics)
+    - Project management improvements
 
 - **[Architecture](./TODO/architecture.md)**
-    - Service Layer
-    - Event System
-    - Plugin System
-    - MCP Organization
+    - Service layer standardization
+    - Event bus implementation
+    - Plugin system design
+    - Model Context Protocol (MCP) organization
 
-- **[Code Quality & Debt](./TODO/quality.md)**
-    - Type Safety
-    - Testing Coverage
-    - Performance Optimization
+- **[Code Quality and Debt](./TODO/quality.md)**
+    - Type safety and strict mode enforcement
+    - Comprehensive testing coverage
+    - Performance optimization
 
----
+- **[Ideas System](./TODO/ideas.md)** (New)
+    - Bug fixes (10 items)
+    - UX improvements
+    - Feature additions
+    - Technical improvements
 
-## 📊 Status Overview
+## Status Overview
 
-| Category | Status | Blocking |
-|----------|--------|----------|
-| **i18n** | ✅ Done | Expanded Language Support |
-| **Security** | 🔍 Reviewing | Auth Migration |
-| **Features** | ⏳ Backlog | Memory/RAG |
-| **Architecture** | 🔄 Refactoring | Event Bus |
-| **Quality** | ✅ Stable | Test Coverage |
+| Category | Status | Blocking Items |
+|----------|--------|----------------|
+| **i18n** | Completed | None |
+| **Security** | Under Review | Authentication Migration |
+| **Features** | In Backlog | Memory and RAG system |
+| **Architecture** | Refactoring | Event Bus implementation |
+| **Quality** | Stable | Test coverage improvements |
+| **Ideas** | In Review | i18n hardcoded strings |
 
----
+## project Roadmap
 
-## 📅 Roadmap
+### Immediate Tasks
+- [x] Resolution of hardcoded strings (i18n)
+- [x] Completion of Turkish localizations
+- [x] Fix TS5076 error in PromptTemplatesService
+- Accessibility audit and ARIA compliance
 
-### Immediate (Phase 18)
-- [x] Fix Hardcoded Strings (i18n)
-- [x] Complete Turkish Translation
-- Accessibility Audit (ARIA)
+### Short-Term Goals
+- Authentication database migration
+- Gallery prompt storage implementation
+- Service layer standardization
 
-### Short Term (Phase 19)
-- Auth Database Migration
-- Gallery Prompt Storage
-- Service Standardization
+### Medium-Term Goals
+- Development of the Statistics dashboard
+- Implementation of the "Thinking" mode for agents
+- Design and development of a plugin system
+- Refactor database system to a Windows service (Rust-based standalone PGlite host)
 
-### Medium Term
-- Statistics Dashboard
-- Thinking Mode
-- Plugin System
-
----
-
-*Last Updated: 2026-01-16*
+*Last Updated: January 22, 2026*

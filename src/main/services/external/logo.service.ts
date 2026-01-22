@@ -35,8 +35,8 @@ export class LogoService {
         const analysis = await this.projectService.analyzeProject(projectPath);
 
         const context = `
-Project Name: ${pkgData.name || projectPath.split(/[\\/]/).pop() || 'Untitled'}
-Description: ${pkgData.description || analysis.type + ' project'}
+ Project Name: ${pkgData.name ?? projectPath.split(/[\\/]/).pop() ?? 'Untitled'}
+ Description: ${pkgData.description ?? (analysis.type + ' project')}
 Type: ${analysis.type}
 Frameworks: ${analysis.frameworks.join(', ')}
 Main Languages: ${Object.keys(analysis.languages).join(', ')}
@@ -64,8 +64,8 @@ ${context}`;
             if (jsonMatch) {
                 const data = safeJsonParse<JsonObject>(jsonMatch[0], {});
                 return {
-                    suggestedPrompts: (data.concepts as string[]) ?? [],
-                    colors: (data.colors as string[]) ?? []
+                    suggestedPrompts: (data.concepts as string[] | undefined) ?? [],
+                    colors: (data.colors as string[] | undefined) ?? []
                 };
             }
         } catch (error) {

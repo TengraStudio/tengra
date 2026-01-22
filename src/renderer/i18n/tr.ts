@@ -560,7 +560,8 @@ export const tr = {
         copilotActive: 'Aktif',
         councilReady: 'Hazır',
         project: 'Proje',
-        moveTo: 'Taşı...'
+        moveTo: 'Taşı...',
+        ideas: 'Fikirler'
     },
     dateGroups: {
         today: 'Bugün',
@@ -667,7 +668,10 @@ export const tr = {
             ollama: 'Yerel LLM\'e sor...',
             default: 'Bir mesaj yazın...'
         },
-        attachFile: 'Dosya ekle'
+        attachFile: 'Dosya ekle',
+        enhancePrompt: 'Promptu AI ile geliştir',
+        startListening: 'Sesli girişi başlat',
+        stopListening: 'Sesli girişi durdur'
     },
     workspaceModals: {
         mountTitle: 'Mevcut Klasör veya Sunucu Ekle',
@@ -742,7 +746,8 @@ export const tr = {
         orchestrationParallel: 'Paralel (Hepsini Aynı Anda)',
         regenerate: 'Yeniden Oluştur',
         rating: 'Yanıtı değerlendir',
-        actions: 'Mesaj işlemleri'
+        actions: 'Mesaj işlemleri',
+        multiModelResponse: 'Birden fazla modelden yanıtlar'
     },
     general: {
         turkish: 'Türkçe',
@@ -1119,6 +1124,116 @@ export const tr = {
         step: 'Adım',
         currentPlan: 'Mevcut Plan',
         selectSession: 'Başlamak için bir oturum seçin veya yeni bir oturum oluşturun.'
+    },
+    ideas: {
+        title: 'Proje Fikirleri',
+        subtitle: 'Pazar araştırması ile yapay zeka destekli proje fikri üretimi',
+        newSession: 'Yeni Oturum',
+        selectModel: 'AI Model Seç',
+        selectCategories: 'Kategorileri Seç',
+        maxIdeas: 'Maksimum Fikir',
+        startResearch: 'Araştırmayı Başlat',
+        startGeneration: 'Fikirleri Oluştur',
+        cancel: 'İptal',
+
+        // Categories
+        categories: {
+            website: 'Web Sitesi',
+            mobileApp: 'Mobil Uygulama',
+            game: 'Oyun',
+            cliTool: 'CLI Aracı',
+            apiBackend: 'API / Backend',
+            desktop: 'Masaüstü Uygulama',
+            other: 'Diğer'
+        },
+
+        // Research stages
+        research: {
+            title: 'Araştırma Hattı',
+            understanding: 'Kategoriler Anlaşılıyor',
+            sectorAnalysis: 'Sektör Analizi',
+            marketResearch: 'Pazar Araştırması',
+            competitorAnalysis: 'Rakip Analizi',
+            complete: 'Araştırma Tamamlandı'
+        },
+
+        // Generation
+        generation: {
+            title: 'Fikirler Üretiliyor',
+            progress: '{{total}} fikirden {{current}}. üretiliyor',
+            enriching: 'Fikir detayları zenginleştiriliyor...',
+            complete: 'Üretim Tamamlandı'
+        },
+
+        // Idea card
+        idea: {
+            viewDetails: 'Detayları Görüntüle',
+            approve: 'Onayla ve Proje Oluştur',
+            reject: 'Reddet',
+            nameSuggestions: 'İsim Önerileri',
+            valueProposition: 'Değer Önerisi',
+            competitiveAdvantages: 'Rekabet Avantajları',
+            marketTrends: 'Pazar Trendleri',
+            competitors: 'Rakipler',
+            selectPath: 'Proje Yolunu Seç',
+            creating: 'Proje oluşturuluyor...'
+        },
+
+        // Logo generation
+        logo: {
+            title: 'Logo Oluşturma',
+            generate: 'Logo Oluştur',
+            generating: 'Logo oluşturuluyor...',
+            requiresAntigravity: 'Logo oluşturma için Antigravity bağlantısı gereklidir',
+            promptPlaceholder: 'Logo konseptinizi tanımlayın...'
+        },
+
+        // Status
+        status: {
+            active: 'Aktif',
+            researching: 'Araştırılıyor',
+            generating: 'Üretiliyor',
+            completed: 'Tamamlandı',
+            cancelled: 'İptal Edildi',
+            pending: 'Beklemede',
+            approved: 'Onaylandı',
+            rejected: 'Reddedildi'
+        },
+
+        // Errors
+        errors: {
+            modelRequired: 'Lütfen bir model seçin',
+            categoriesRequired: 'Lütfen en az bir kategori seçin',
+            researchFailed: 'Araştırma başarısız. Lütfen tekrar deneyin.',
+            generationFailed: 'Fikir üretimi başarısız. Lütfen tekrar deneyin.',
+            approvalFailed: 'Proje oluşturulamadı. Lütfen tekrar deneyin.',
+            logoFailed: 'Logo oluşturma başarısız. Lütfen tekrar deneyin.'
+        },
+
+        // Empty states
+        empty: {
+            noSessions: 'Henüz fikir oturumu yok',
+            noSessionsDesc: 'Proje fikirleri üretmek için yeni bir oturum başlatın',
+            noIdeas: 'Henüz fikir üretilmedi',
+            noIdeasDesc: 'Fikir üretmek için araştırma aşamasını tamamlayın'
+        },
+
+        // History
+        history: {
+            title: 'Fikir Geçmişi',
+            subtitle: 'Tüm geçmiş fikir üretim oturumlarınızı inceleyin',
+            view: 'Geçmişi Gör',
+            totalSessions: 'Toplam Oturum',
+            completed: 'Tamamlandı',
+            approvedIdeas: 'Onaylanan Fikirler',
+            pendingReview: 'İnceleme Bekleyen',
+            viewDetails: 'Detayları Gör',
+            noIdeasYet: 'Henüz fikir üretilmedi',
+            daysAgo: '{{count}} gün önce'
+        },
+
+        // Session setup
+        modelSelectorHint: 'AI modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.'
     },
     tools: {
         usingTool: 'Araç Kullanılıyor',

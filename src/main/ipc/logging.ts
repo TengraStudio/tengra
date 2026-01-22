@@ -1,6 +1,6 @@
 import { appLogger, LogLevel } from '@main/logging/logger'
 import { JsonValue } from '@shared/types/common'
-import { BrowserWindow,ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 
 // Log buffer for streaming to renderer
 const logBuffer: Array<{
@@ -18,7 +18,7 @@ let streamingEnabled = false
  */
 export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source: string, message: string) {
     const entry = {
-        id: `${ Date.now() } -${ Math.random().toString(36).substr(2, 9) } `,
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         timestamp: new Date(),
         level,
         source,
@@ -44,60 +44,64 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
 }
 
 export function registerLoggingIpc() {
-    // Existing log:write handler
-    ipcMain.on('log:write', (_event, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) => {
-        let level: LogLevel = LogLevel.INFO
-        let message = ''
-        let context = 'renderer'
-        let data: JsonValue | Error | undefined = undefined
+    ipcMain.on('log:write', handleLogWrite);
 
-        if (typeof arg1 === 'string') {
-            // log:write, level, message
-            const upper = arg1.toUpperCase()
-            if (upper === 'DEBUG') {level = LogLevel.DEBUG}
-            else if (upper === 'INFO') {level = LogLevel.INFO}
-            else if (upper === 'WARN') {level = LogLevel.WARN}
-            else if (upper === 'ERROR') {level = LogLevel.ERROR}
-            message = arg2 ?? ''
-        } else if (typeof arg1 === 'object') {
-            // log:write, { level, message, context, data }
-            level = arg1.level ?? LogLevel.INFO
-            message = arg1.message ?? ''
-            context = arg1.context ? `renderer:${ arg1.context } ` : 'renderer'
-            data = arg1.data
-        }
-
-        switch (level) {
-            case LogLevel.DEBUG: appLogger.debug(context, message, data); break
-            case LogLevel.INFO: appLogger.info(context, message, data); break
-            case LogLevel.WARN: appLogger.warn(context, message, data); break
-            case LogLevel.ERROR: appLogger.error(context, message, data); break
-        }
-
-        // Also push to streaming buffer
-        const levelStr = ['debug', 'info', 'warn', 'error'][level] as 'debug' | 'info' | 'warn' | 'error'
-        pushLogEntry(levelStr, context, message)
-    })
-
-    // Enable/disable log streaming
     ipcMain.handle('log:stream:start', () => {
-        streamingEnabled = true
-        return { success: true }
-    })
+        streamingEnabled = true;
+        return { success: true };
+    });
 
     ipcMain.handle('log:stream:stop', () => {
-        streamingEnabled = false
-        return { success: true }
-    })
+        streamingEnabled = false;
+        return { success: true };
+    });
 
-    // Get buffered logs
     ipcMain.handle('log:buffer:get', () => {
-        return logBuffer.slice(-500) // Return last 500 entries
-    })
+        return logBuffer.slice(-500);
+    });
 
-    // Clear log buffer
     ipcMain.handle('log:buffer:clear', () => {
-        logBuffer.length = 0
-        return { success: true }
-    })
+        logBuffer.length = 0;
+        return { success: true };
+    });
+}
+
+function handleLogWrite(_event: unknown, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) {
+    let level: LogLevel = LogLevel.INFO;
+    let message = '';
+    let context = 'renderer';
+    let data: JsonValue | Error | undefined = undefined;
+
+    if (typeof arg1 === 'string') {
+        level = parseLevel(arg1);
+        message = arg2 ?? '';
+    } else {
+        level = arg1.level ?? LogLevel.INFO;
+        message = arg1.message ?? '';
+        context = arg1.context ? `renderer:${arg1.context}` : 'renderer';
+        data = arg1.data;
+    }
+
+    logToApp(level, context, message, data);
+
+    const levelNames: Array<'debug' | 'info' | 'warn' | 'error'> = ['debug', 'info', 'warn', 'error'];
+    const levelStr = levelNames[level] || 'info';
+    pushLogEntry(levelStr, context, message);
+}
+
+function parseLevel(levelStr: string): LogLevel {
+    const upper = levelStr.toUpperCase();
+    if (upper === 'DEBUG') { return LogLevel.DEBUG; }
+    if (upper === 'WARN') { return LogLevel.WARN; }
+    if (upper === 'ERROR') { return LogLevel.ERROR; }
+    return LogLevel.INFO;
+}
+
+function logToApp(level: LogLevel, context: string, message: string, data?: JsonValue | Error) {
+    switch (level) {
+        case LogLevel.DEBUG: appLogger.debug(context, message, data); break;
+        case LogLevel.INFO: appLogger.info(context, message, data); break;
+        case LogLevel.WARN: appLogger.warn(context, message, data); break;
+        case LogLevel.ERROR: appLogger.error(context, message, data); break;
+    }
 }

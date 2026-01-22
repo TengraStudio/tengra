@@ -20,7 +20,7 @@ export class RateLimitService extends BaseService {
 
     setLimit(provider: string, config: RateLimitConfig) {
         this.buckets.set(provider, {
-            tokens: config.maxBurst || config.requestsPerMinute,
+            tokens: config.maxBurst ?? config.requestsPerMinute,
             lastRefill: Date.now(),
             config
         });
@@ -72,7 +72,7 @@ export class RateLimitService extends BaseService {
         const newTokens = Math.floor(elapsed / msPerToken);
 
         if (newTokens > 0) {
-            const maxTokens = bucket.config.maxBurst || bucket.config.requestsPerMinute;
+            const maxTokens = bucket.config.maxBurst ?? bucket.config.requestsPerMinute;
             bucket.tokens = Math.min(bucket.tokens + newTokens, maxTokens);
             bucket.lastRefill = now;
         }

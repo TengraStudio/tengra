@@ -1,70 +1,44 @@
 # Internal API Reference
 
-Orbit communicates with its native microservices (Go/Rust) using high-performance internal APIs. This document tracks the endpoints and communication patterns used for cross-process synchronization.
+Orbit uses internal APIs to coordinate activity between the Electron main process and its native microservices. This document provides a reference for the endpoints used in our bidirectional communication model.
 
-## 1. Auth HTTP API
+## Authentication API (Main Process)
 
-**Service**: `AuthAPIService`
-**Port**: Dynamic (available via `--auth-api-port` flag or discovery file)
-**Security**: Requires `Authorization: Bearer <SecretKey>`
+The `AuthAPIService` acts as a secure gateway for microservices to retrieve or update authentication data.
 
-### GET `/api/auth/accounts`
-Retrieves all linked accounts with decrypted tokens.
-- **Response**:
-  ```json
-  {
-    "accounts": [
-      {
-        "id": "uuid",
-        "provider": "claude",
-        "access_token": "...",
-        "refresh_token": "...",
-        "metadata": { "type": "claude", "email": "..." }
-      }
-    ]
-  }
-  ```
+- **Interface**: Internal HTTP Server.
+- **Port**: Assigned dynamically at startup.
+- **Security**: All requests must include a Bearer token containing the system-generated secret key.
 
-### POST `/api/auth/accounts/:id`
-Updates a specific account's tokens (e.g., after a background refresh).
-- **Body**:
-  ```json
-  {
-    "access_token": "...",
-    "refresh_token": "...",
-    "expires_at": 123456789,
-    "metadata": { ... }
-  }
-  ```
-- **Response**: `{ "success": true }`
+### GET /api/auth/accounts
+Retrieves a list of all linked accounts. The tokens returned by this endpoint are decrypted and ready for use by the proxy microservice.
 
----
+### POST /api/auth/accounts/:id
+Allows a microservice to update the tokens for a specific account. This is primarily used by the token-service after a successful background refresh.
 
-## 2. Token Service API (Rust)
+## Token Service API (Rust)
 
-**Service**: `orbit-token-service`
-**Interface**: HTTP (Ephemeral Port)
+The token service is responsible for the background maintenance of credentials. It runs as an independent Rust process.
 
-### POST `/monitor`
-Registers a token for background monitoring and automated refresh.
-- **Payload**: `AuthToken` struct + Client ID/Secret.
+### POST /monitor
+Registers a token with the service. Once registered, the service will periodically check the token's expiration and execute a refresh flow if necessary.
 
-### GET `/sync`
-Retrieves all currently monitored tokens and their latest status from memory.
+### POST /unregister
+Unregisters a token from monitoring. This is called by the `AuthService` when a user unlinks an account, ensuring that background refresh attempts stop immediately for that ID.
 
----
+### GET /sync
+Returns the current state of all monitored tokens. This is used for diagnostic purposes to verify which accounts are currently being tracked.
 
-## 3. Proxy Discovery Pattern
+## Communication Patterns
 
-Microservices discover Orbit's API port through several channels:
-1. **Command Line Flags**: Passed during spawn (`-auth-api-port`).
-2. **Port Files**: Written to `%APPDATA%\Orbit\services\*.port`.
-3. **Environment Variables**: `ORBIT_AUTH_API_PORT`.
+### Service Discovery
+Microservices identify the correct port for the Main process API through environment variables or command-line flags passed during the spawning process. This ensures that even with dynamic port assignment, the services can always find each other.
 
----
+### Serialization and Protocols
+- **JSON**: We use standardized JSON schemas for all internal requests and responses to ensure compatibility across different languages (TypeScript, Go, Rust).
+- **Timeouts**: Every internal request is subject to a 5-second timeout. If a service does not respond within this window, the requester must handle the failure gracefully.
+- **Error Propagation**: Internal API errors include a structured JSON body with an error code and a human-readable message, which are mapped back to application-level exceptions.
 
-## 4. Communication Guidelines
+### Secure Transport
+While these APIs run on `localhost`, we still enforce authentication using secret keys. This prevents other local applications from interacting with Orbit's internal control plane.
 
-- **Statelessness**: Favor stateless HTTP requests over persistent socket connections where possible.
-- **Serialization**: JSON is the standard serialization format for all internal APIs.
-- **Timeouts**: All internal requests should implement a strict timeout (default: 5000ms) to prevent process stalling.

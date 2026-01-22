@@ -48,7 +48,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 className={cn(inputVariants({ variant, size, className }))}
                 ref={ref}
                 aria-invalid={variant === 'error' ? 'true' : undefined}
-                aria-describedby={props['aria-describedby'] || (variant === 'error' ? `${props.id || 'input'}-error` : undefined)}
+                aria-describedby={props['aria-describedby'] ?? (variant === 'error' ? `${props.id ?? 'input'}-error` : undefined)}
                 {...props}
             />
         )

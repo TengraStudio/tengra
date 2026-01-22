@@ -48,7 +48,7 @@ export class LocalAIService {
 
         try {
             appLogger.info('local-ai.service', '[LocalAI] Attempting to auto-start Ollama headlessly...');
-            const localAppData = process.env.LOCALAPPDATA || join(process.env.USERPROFILE ?? '', 'AppData', 'Local');
+            const localAppData = process.env.LOCALAPPDATA ?? join(process.env.USERPROFILE ?? '', 'AppData', 'Local');
             const ollamaExePath = join(localAppData, 'Programs', 'Ollama', 'ollama.exe');
 
             if (existsSync(ollamaExePath)) {

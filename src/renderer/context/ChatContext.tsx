@@ -34,7 +34,7 @@ const ChatContext = createContext<ChatContextType | null>(null)
 
 export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth()
-    const { selectedModel, selectedProvider } = useModel()
+    const { selectedModel, selectedProvider, selectedModels } = useModel()
     const { t } = useTranslation()
 
     // Project Manager Hook - consumed here to provide project context to chat
@@ -54,6 +54,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const chatManager = useChatManager({
         selectedModel,
         selectedProvider,
+        selectedModels,
         language,
         appSettings: appSettings || undefined,
         autoReadEnabled: false, // Could be moved to settings/context

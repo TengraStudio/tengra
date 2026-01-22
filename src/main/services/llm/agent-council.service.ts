@@ -458,8 +458,7 @@ export class AgentCouncilService {
             web: this.deps.web,
             collaboration: this.deps.collaboration
         }
-        const serviceKey = args.service as keyof typeof services
-        const serviceInstance = services[serviceKey]
+        const serviceInstance = (services as Record<string, unknown>)[args.service]
         if (!serviceInstance) { throw new Error(`Service ${args.service} not found available for agents.`) }
         const methodName = args.method as keyof typeof serviceInstance
         const method = serviceInstance[methodName]
