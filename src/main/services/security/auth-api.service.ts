@@ -3,6 +3,7 @@ import * as http from 'http'
 import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { AuthService } from '@main/services/security/auth.service'
+import { JsonObject } from '@shared/types/common'
 
 /**
  * Auth API Service

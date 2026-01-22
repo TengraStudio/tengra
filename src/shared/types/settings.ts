@@ -16,6 +16,12 @@ export type AppSettings = {
         downloadAutomatically: boolean
         notifyOnly: boolean
     }
+    images?: {
+        provider: 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations'
+        ollamaModel?: string
+        sdWebUIUrl?: string
+        comfyUIUrl?: string
+    }
     activeAccountId?: string
     crashReporting?: {
         enabled: boolean
