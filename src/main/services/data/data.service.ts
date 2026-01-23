@@ -134,41 +134,12 @@ export class DataService extends BaseService {
 
         for (const m of migrations) {
             try {
-                if (fs.existsSync(m.old)) {
-                    if (m.isDir) {
-                        // Move contents of directory
-                        // Ensure destination exists
-                        if (!fs.existsSync(m.new)) {
-                            fs.mkdirSync(m.new, { recursive: true })
-                        }
+                if (!fs.existsSync(m.old)) { continue }
 
-                        const files = fs.readdirSync(m.old)
-                        for (const file of files) {
-                            const oldFile = path.join(m.old, file)
-                            const newFile = path.join(m.new, file)
-                            if (!fs.existsSync(newFile)) {
-                                appLogger.info('DataService', `Migrating file ${file} to ${m.new}`)
-                                fs.renameSync(oldFile, newFile)
-                            }
-                        }
-                        // Try to remove old dir if empty
-                        try {
-                            if (fs.readdirSync(m.old).length === 0) {
-                                fs.rmdirSync(m.old)
-                            }
-                        } catch {
-                            // Ignore error during cleanup of empty dir
-                        }
-                    } else {
-                        // Move single file
-                        if (!fs.existsSync(m.new) && fs.existsSync(m.old)) {
-                            appLogger.info('DataService', `Migrating ${path.basename(m.old)} to ${m.new}`)
-                            // Ensure destination dir exists
-                            const destDir = path.dirname(m.new)
-                            if (!fs.existsSync(destDir)) {fs.mkdirSync(destDir, { recursive: true })}
-                            fs.renameSync(m.old, m.new)
-                        }
-                    }
+                if (m.isDir) {
+                    this.migrateDirectory(m.old, m.new)
+                } else {
+                    this.migrateFile(m.old, m.new)
                 }
             } catch (error) {
                 appLogger.error('DataService', `Failed to migrate ${m.old}: ${getErrorMessage(error as Error)}`)
@@ -185,5 +156,39 @@ export class DataService extends BaseService {
         } catch (e) {
             appLogger.error('DataService', `Failed to cleanup legacy folder: ${getErrorMessage(e as Error)}`)
         }
+    }
+
+    private migrateDirectory(oldPath: string, newPath: string): void {
+        if (!fs.existsSync(newPath)) {
+            fs.mkdirSync(newPath, { recursive: true })
+        }
+
+        const files = fs.readdirSync(oldPath)
+        for (const file of files) {
+            const oldFile = path.join(oldPath, file)
+            const newFile = path.join(newPath, file)
+            if (fs.existsSync(newFile)) { continue }
+            appLogger.info('DataService', `Migrating file ${file} to ${newPath}`)
+            fs.renameSync(oldFile, newFile)
+        }
+
+        // Try to remove old dir if empty
+        try {
+            if (fs.readdirSync(oldPath).length === 0) {
+                fs.rmdirSync(oldPath)
+            }
+        } catch {
+            // Ignore error during cleanup of empty dir
+        }
+    }
+
+    private migrateFile(oldPath: string, newPath: string): void {
+        if (fs.existsSync(newPath)) { return }
+        appLogger.info('DataService', `Migrating ${path.basename(oldPath)} to ${newPath}`)
+        const destDir = path.dirname(newPath)
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true })
+        }
+        fs.renameSync(oldPath, newPath)
     }
 }

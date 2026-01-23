@@ -1,24 +1,25 @@
+import { LoadingState } from '@/components/ui/LoadingState'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@renderer/context/AuthContext'
 import { useChat } from '@renderer/context/ChatContext'
 import { useModel } from '@renderer/context/ModelContext'
 import { useProject } from '@renderer/context/ProjectContext'
 import { ChatTemplate } from '@renderer/features/chat/types'
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
-import React, { lazy, Suspense } from 'react'
-
-import { LoadingState } from '@/components/ui/LoadingState'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import React, { lazy, Suspense, useEffect } from 'react'
 
 // Lazy load feature modules for better performance
+// These are large components that shouldn't block the initial render
 const AgentDashboard = lazy(() => import('@/features/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })))
 const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })))
 const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })))
 const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })))
 
-import { ChatViewWrapper } from './ViewManager/ChatViewWrapper'
-import { ProjectsView } from './ViewManager/ProjectsView'
-import { SettingsView } from './ViewManager/SettingsView'
+// Core views lazy loaded to improve startup time and tab switching smoothness
+const ChatViewWrapper = lazy(() => import('./ViewManager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })))
+const ProjectsView = lazy(() => import('./ViewManager/ProjectsView').then(m => ({ default: m.ProjectsView })))
+const SettingsView = lazy(() => import('./ViewManager/SettingsView').then(m => ({ default: m.SettingsView })))
 
 interface ViewManagerProps {
     currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp' | 'memory' | 'ideas'
@@ -31,6 +32,8 @@ interface ViewManagerProps {
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
     templates: ChatTemplate[]
+    /** Callback to navigate to a project (used by Ideas page after project creation) */
+    onNavigateToProject?: (projectId: string) => void | Promise<void>
 }
 
 export const ViewManager: React.FC<ViewManagerProps> = ({
@@ -43,7 +46,8 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     setShowScrollButton,
     showFileMenu,
     setShowFileMenu,
-    templates
+    templates,
+    onNavigateToProject
 }) => {
     // Context Consumption
     const { language, settingsCategory, appSettings, quotas, codexUsage } = useAuth()
@@ -73,7 +77,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
     } = useChat()
 
     // Global Shortcut for Model Menu
-    React.useEffect(() => {
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey && e.key === 'm') {
                 setIsModelMenuOpen(prev => !prev)
@@ -159,7 +163,7 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             case 'ideas':
                 return (
                     <Suspense fallback={<LoadingState size="md" />}>
-                        <IdeasPage language={language} />
+                        <IdeasPage language={language} onNavigateToProject={onNavigateToProject} />
                     </Suspense>
                 )
             default:
@@ -175,13 +179,15 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
                     "h-full overflow-hidden",
                     currentView === 'memory' && "h-[calc(100vh-64px)]"
                 )}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }} // Optimized for 120fps feel
             >
                 <Suspense fallback={<LoadingState size="md" />}>
                     {renderView()}
                 </Suspense>
             </motion.div>
-
-            {/* Global Mic Indicator */}
 
             {/* Global Mic Indicator */}
             {isListening && (

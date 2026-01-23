@@ -250,6 +250,7 @@ const TerminalSession = memo(({
                 console.error('[TerminalSession] Error disposing terminal:', err)
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab.id, projectPath]) // Only depend on tab.id and projectPath
 
     // Helper to safely fit terminal
@@ -451,6 +452,7 @@ export function TerminalPanel({
         if (isOpen) {
             void loadShells()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, tabs.length]) // Removed createTerminal from dependencies to prevent infinite loop
 
     const closeTab = useCallback((id: string) => {

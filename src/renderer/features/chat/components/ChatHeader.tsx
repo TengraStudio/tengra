@@ -57,3 +57,4 @@ export const ChatHeader = memo(({
         </div>
     );
 });
+ChatHeader.displayName = 'ChatHeader'

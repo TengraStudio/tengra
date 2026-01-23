@@ -3,7 +3,7 @@
 }
 
 .settings-header {
-    @apply px-8 py-6 border-b border-white/5 shrink-0;
+    @apply px-8 py-6 border-b border-border shrink-0;
 }
 
 .settings-content {
@@ -11,7 +11,7 @@
 }
 
 .settings-sidebar {
-    @apply w-64 border-r border-white/5 p-4 space-y-1 overflow-y-auto;
+    @apply w-64 border-r border-border p-4 space-y-1 overflow-y-auto;
 }
 
 .settings-main {
@@ -27,7 +27,7 @@
 }
 
 .settings-tab-btn-inactive {
-    @apply text-muted-foreground hover:text-foreground hover:bg-white/5;
+    @apply text-muted-foreground hover:text-foreground hover:bg-accent;
 }
 
 .settings-section {
@@ -43,5 +43,5 @@
 }
 
 .settings-card {
-    @apply bg-white/[0.02] border border-white/5 rounded-2xl p-6 transition-all hover:bg-white/[0.04];
+    @apply bg-card border border-border rounded-2xl p-6 transition-all hover:bg-accent/50;
 }

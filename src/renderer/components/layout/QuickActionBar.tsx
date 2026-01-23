@@ -1,13 +1,13 @@
-import { Copy, Globe, Sparkles,X } from 'lucide-react'
-import { useEffect, useRef,useState } from 'react'
+import { Copy, Globe, Sparkles, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
-import { useTranslation } from '@/i18n'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { Language, useTranslation } from '@/i18n'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 
 interface QuickActionBarProps {
     onExplain: (text: string) => void
     onTranslate: (text: string) => void
-    language: 'tr' | 'en'
+    language: Language
 }
 
 export function QuickActionBar({ onExplain, onTranslate, language }: QuickActionBarProps) {
@@ -45,7 +45,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 if (isVisible) {
                     setTimeout(() => {
                         const activeSelection = window.getSelection()?.toString().trim()
-                        if (!activeSelection) {setIsVisible(false)}
+                        if (!activeSelection) { setIsVisible(false) }
                     }, 100)
                 }
             }
@@ -64,7 +64,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
         setIsVisible(false)
     }
 
-    if (!isVisible) {return null}
+    if (!isVisible) { return null }
 
     return (
         <AnimatePresence>

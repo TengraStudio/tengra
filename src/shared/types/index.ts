@@ -1,6 +1,7 @@
 export * from '@/types/agent'
 export * from '@/types/ai'
 export * from '@/types/chat'
+export * from '@/types/file-diff'
 export * from '@/types/ideas'
 export * from '@/types/llm-provider-types'
 export * from '@/types/memory';

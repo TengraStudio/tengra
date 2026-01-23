@@ -1,11 +1,14 @@
+import { de } from '@renderer/i18n/de'
 import { en } from '@renderer/i18n/en'
+import { es } from '@renderer/i18n/es'
+import { fr } from '@renderer/i18n/fr'
 import { tr } from '@renderer/i18n/tr'
 import { JsonValue } from '@shared/types/common'
 
-export type Language = 'tr' | 'en'
+export type Language = 'tr' | 'en' | 'de' | 'fr' | 'es'
 export type TranslationKeys = typeof tr
 
-const translations: Record<Language, TranslationKeys> = { tr, en }
+const translations: Record<Language, TranslationKeys> = { tr, en, de: de as TranslationKeys, fr: fr as TranslationKeys, es: es as TranslationKeys }
 
 /**
  * Hook for using translations in components.

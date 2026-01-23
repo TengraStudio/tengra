@@ -7,9 +7,9 @@ export interface Project {
     title: string;
     description: string;
     path: string;
-    mounts?: WorkspaceMount[];
-    createdAt: Date;
-    updatedAt?: Date;
+    mounts: WorkspaceMount[];
+    createdAt: number;
+    updatedAt: number;
     chatIds: string[];
     councilConfig: {
         enabled: boolean;
@@ -20,6 +20,28 @@ export interface Project {
     logo?: string;
     metadata?: JsonObject;
     type?: string;
+    // Build Configuration
+    buildConfig?: {
+        buildCommand?: string;      // e.g. "npm run build"
+        testCommand?: string;       // e.g. "npm test"
+        lintCommand?: string;       // e.g. "npm run lint"
+        outputDir?: string;         // e.g. "dist"
+        envFile?: string;           // e.g. ".env.local"
+    };
+    // Development Server
+    devServer?: {
+        command?: string;           // e.g. "npm run dev"
+        port?: number;              // e.g. 3000
+        autoStart?: boolean;        // Start on project open
+    };
+    // Advanced Options
+    advancedOptions?: {
+        fileWatchEnabled?: boolean;     // Enable file change detection
+        fileWatchIgnore?: string[];     // Patterns to ignore (e.g. ["node_modules", ".git"])
+        indexingEnabled?: boolean;      // Enable code indexing for AI
+        indexingInterval?: number;      // Re-index interval in minutes
+        autoSave?: boolean;             // Auto-save files
+    };
 }
 
 export interface CouncilMessage extends Message {
@@ -32,6 +54,13 @@ export interface ProjectStats {
     totalSize: number
     loc: number // approximate
     lastModified: number
+}
+
+export interface ProjectIssue {
+    type: 'error' | 'warning'
+    message: string
+    file: string
+    line: number
 }
 
 export interface ProjectAnalysis {
@@ -47,4 +76,5 @@ export interface ProjectAnalysis {
         packages: string[];
     }
     todos: string[]
+    issues?: ProjectIssue[]
 }

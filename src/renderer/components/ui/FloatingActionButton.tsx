@@ -113,7 +113,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                             'absolute w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
                             'transition-all duration-300 ease-out',
                             'hover:scale-110 ripple',
-                            action.color || 'bg-primary text-primary-foreground',
+                            action.color ?? 'bg-primary text-primary-foreground',
                             isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                         )}
                         style={{

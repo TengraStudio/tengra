@@ -32,7 +32,6 @@ export class EmbeddingService {
         // Ensure settings are synced
         const settings = this.settingsService.getSettings();
         return settings.embeddings.provider;
-        return this.currentProvider;
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
@@ -41,18 +40,44 @@ export class EmbeddingService {
         this.currentProvider = settings.embeddings.provider;
         if (settings.embeddings.model) { this.model = settings.embeddings.model; }
 
-        switch (this.currentProvider) {
-            case 'ollama':
-                return await this.ollama.getEmbeddings(this.model, text);
-            case 'openai':
-                return await this.llm.getEmbeddings(text, this.model);
-            case 'llama':
-                return await this.llama.getEmbeddings(text);
-            case 'none':
-                return [];
-            default:
-                throw new Error('Unsupported embedding provider');
+        let vector: number[] | undefined;
+
+        try {
+            switch (this.currentProvider) {
+                case 'ollama':
+                    vector = await this.ollama.getEmbeddings(this.model, text);
+                    break;
+                case 'openai':
+                    vector = await this.llm.getEmbeddings(text, this.model);
+                    break;
+                case 'llama':
+                    vector = await this.llama.getEmbeddings(text);
+                    break;
+                case 'none':
+                default:
+                    // Return zero vector
+                    break;
+            }
+        } catch (error) {
+            console.error(`[EmbeddingService] Failed to generate embedding with ${this.currentProvider}:`, error);
         }
+
+        // Final check: Guarantee non-empty vector with correct dimensions for the database
+        // Currently migrations define vector(1536) for semantic storage
+        const REQUIRED_DIMENSION = 1536;
+
+        if (!vector || vector.length === 0) {
+            return new Array(REQUIRED_DIMENSION).fill(0);
+        }
+
+        if (vector.length !== REQUIRED_DIMENSION) {
+            console.warn(`[EmbeddingService] Dimension mismatch: Got ${vector.length}, expected ${REQUIRED_DIMENSION}. Returning zero vector fallback to maintain stability.`);
+            // Note: Padding/Truncating is possible but risky for semantic quality.
+            // For now, we return zero vector to ensure DB consistency.
+            return new Array(REQUIRED_DIMENSION).fill(0);
+        }
+
+        return vector;
     }
 
     // Indexing and Search moved to CodeIntelligenceService / RAGService

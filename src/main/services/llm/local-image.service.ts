@@ -1,9 +1,10 @@
+import * as fs from 'fs'
+import * as path from 'path'
+
 import { appLogger } from '@main/logging/logger'
 import { SettingsService } from '@main/services/system/settings.service'
 import { getErrorMessage } from '@shared/utils/error.util'
 import axios from 'axios'
-import * as fs from 'fs'
-import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface ImageGenerationOptions {
@@ -65,7 +66,7 @@ export class LocalImageService {
         try {
             // Ollama image generation is usually via a POST to /api/generate or /api/chat if it's a multimodal model
             // But for dedicated SD models in Ollama, it follows a specific schema
-            const response = await axios.post(`${baseUrl}/api/generate`, {
+            await axios.post(`${baseUrl}/api/generate`, {
                 model,
                 prompt: options.prompt,
                 stream: false
@@ -107,7 +108,7 @@ export class LocalImageService {
         }
     }
 
-    private async generateWithComfyUI(options: ImageGenerationOptions): Promise<string> {
+    private async generateWithComfyUI(_options: ImageGenerationOptions): Promise<string> {
         // Implementation for ComfyUI API (WebSocket + HTTP)
         throw new Error('ComfyUI integration is coming soon.')
     }

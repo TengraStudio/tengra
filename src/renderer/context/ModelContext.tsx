@@ -1,6 +1,6 @@
 import { useAuth } from '@renderer/context/AuthContext'
 import { useModelManager } from '@renderer/features/models/hooks/useModelManager'
-import { createContext, ReactNode,useContext } from 'react'
+import { createContext, ReactNode, useContext, useMemo } from 'react'
 
 type ModelContextType = ReturnType<typeof useModelManager>
 
@@ -10,8 +10,11 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     const { appSettings, setAppSettings } = useAuth()
     const modelManager = useModelManager(appSettings, setAppSettings)
 
+    // Memoize the context value to prevent unnecessary re-renders
+    const value = useMemo(() => modelManager, [modelManager])
+
     return (
-        <ModelContext.Provider value={modelManager}>
+        <ModelContext.Provider value={value}>
             {children}
         </ModelContext.Provider>
     )

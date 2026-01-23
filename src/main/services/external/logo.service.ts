@@ -2,8 +2,8 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 
 import { appLogger } from '@main/logging/logger'
-import { LocalImageService } from '@main/services/llm/local-image.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ProjectService } from '@main/services/project/project.service';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';

@@ -56,9 +56,11 @@ function useWorkflowSync(currentSession: IdeaSession | null) {
 
 interface IdeasPageProps {
     language: string
+    /** Callback to navigate to a newly created project */
+    onNavigateToProject?: (projectId: string) => void
 }
 
-export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language }) => {
+export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNavigateToProject }) => {
     const { t } = useTranslation()
 
     // Hooks
@@ -125,10 +127,16 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language }) => 
             const project = await approveIdea(selectedIdea.id, projectPath, selectedName)
             if (project) {
                 setSelectedIdea(null)
-                void loadIdeas(currentSession.id)
+                // Navigate to the newly created project
+                if (onNavigateToProject) {
+                    onNavigateToProject(project.id)
+                } else {
+                    // Fallback: just reload ideas if no navigation callback provided
+                    void loadIdeas(currentSession.id)
+                }
             }
         },
-        [selectedIdea, approveIdea, currentSession, loadIdeas]
+        [selectedIdea, approveIdea, currentSession, loadIdeas, onNavigateToProject]
     )
 
     // Handle rejection

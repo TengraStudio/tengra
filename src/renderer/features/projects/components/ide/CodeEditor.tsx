@@ -107,7 +107,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                             let start = pos, end = pos
                             while (start > from && /\w/.test(text[start - from - 1] || '')) { start-- }
                             while (end < to && /\w/.test(text[end - from] || '')) { end++ }
-                            if (start == end) { return null }
+                            if (start === end) { return null }
 
                             const word = text.slice(start - from, end - from)
 
@@ -148,16 +148,9 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 view.destroy()
             }
         }
+        // Note: content and onChange are intentionally excluded to avoid recreating editor on every change
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [language, readonly])
-
-    // Update content if it changes externally
-    useEffect(() => {
-        if (viewRef.current && content !== viewRef.current.state.doc.toString()) {
-            viewRef.current.dispatch({
-                changes: { from: 0, to: viewRef.current.state.doc.length, insert: content }
-            })
-        }
-    }, [content])
 
     if (error) {
         return (

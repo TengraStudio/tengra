@@ -49,7 +49,7 @@ export function useModelManager(
                 }])
             }
         }
-    }, [appSettings])
+    }, [appSettings, selectedModels.length])
 
     const handleSelectModel = useCallback((provider: string, model: string, isMultiSelect = false) => {
         if (!appSettings) { return }

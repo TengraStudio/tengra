@@ -1,4 +1,5 @@
 import { Container } from '@main/core/container'
+import { lazyServiceRegistry, createLazyServiceProxy } from '@main/core/lazy-services'
 import { appLogger } from '@main/logging/logger'
 import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { MonitoringService } from '@main/services/analysis/monitoring.service'
@@ -13,6 +14,7 @@ import { ChatEventService } from '@main/services/data/chat-event.service'
 import { DataService } from '@main/services/data/data.service'
 import { DatabaseService } from '@main/services/data/database.service'
 import { FileManagementService } from '@main/services/data/file.service'
+import { FileChangeTracker } from '@main/services/data/file-change-tracker.service'
 import { FileSystemService } from '@main/services/data/filesystem.service'
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service'
 import { CollaborationService } from '@main/services/external/collaboration.service'
@@ -29,9 +31,9 @@ import { AgentService } from '@main/services/llm/agent.service'
 import { AgentCouncilService } from '@main/services/llm/agent-council.service'
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service'
 import { CopilotService } from '@main/services/llm/copilot.service'
-import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
 import { HuggingFaceService } from '@main/services/llm/huggingface.service'
+import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service'
 import { LlamaService } from '@main/services/llm/llama.service'
 import { LLMService } from '@main/services/llm/llm.service'
 import { LocalAIService } from '@main/services/llm/local-ai.service'
@@ -47,8 +49,8 @@ import { PromptTemplatesService } from '@main/services/llm/prompt-templates.serv
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
 import { DockerService } from '@main/services/project/docker.service'
 import { GitService } from '@main/services/project/git.service'
-import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service'
 import { ProjectService } from '@main/services/project/project.service'
+import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service'
 import { SSHService } from '@main/services/project/ssh.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
@@ -169,6 +171,9 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
     registerLLMServices();
     registerProjectServices();
     registerAnalysisServices();
+    
+    // Register lazy services that are loaded on-demand
+    registerLazyServices();
 
     // 3. Initialize Container (calls init on all LifecycleAware singletons)
     try {
@@ -217,7 +222,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('updateService', (ss, ds) => new UpdateService(ss as SettingsService, ds as DataService), ['settingsService', 'dataService']);
     container.register('configService', (ss) => new ConfigService(ss as SettingsService), ['settingsService']);
     container.register('jobSchedulerService', (dbs) => new JobSchedulerService(dbs as DatabaseService), ['databaseService']);
-    container.register('fileSystemService', () => new FileSystemService(Array.from(allowedFileRoots)));
+    container.register('fileSystemService', (fct) => new FileSystemService(Array.from(allowedFileRoots), fct as FileChangeTracker), ['fileChangeTracker']);
     container.register('httpService', () => new HttpService());
     container.register('rateLimitService', () => new RateLimitService());
     container.register('utilityService', (dbs, scs, es) => new UtilityService(dbs as DatabaseService, scs as ScannerService, es as EmbeddingService), ['databaseService', 'scannerService', 'embeddingService']);
@@ -225,6 +230,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
 function registerDataServices() {
     container.register('databaseService', (ds, ebs) => new DatabaseService(ds as DataService, ebs as EventBusService), ['dataService', 'eventBusService']);
+    container.register('fileChangeTracker', (dbs, ebs) => new FileChangeTracker(dbs as DatabaseService, ebs as EventBusService), ['databaseService', 'eventBusService']);
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
     container.register('fileManagementService', () => new FileManagementService());
     container.register('imagePersistenceService', (ds) => new ImagePersistenceService(ds as DataService), ['dataService']);
@@ -287,26 +293,69 @@ function registerLLMServices() {
     }, ['modelRegistryDeps', 'authService', 'tokenService']);
 }
 
+function registerLazyServices() {
+    // Register services that are only needed conditionally
+    lazyServiceRegistry.register('dockerService', async () => {
+        const commandService = container.resolve<CommandService>('commandService');
+        const sshService = await lazyServiceRegistry.get<SSHService>('sshService');
+        const { DockerService } = await import('@main/services/project/docker.service');
+        return new DockerService(commandService, sshService);
+    });
+
+    lazyServiceRegistry.register('sshService', async () => {
+        const dataService = container.resolve<DataService>('dataService');
+        const { SSHService } = await import('@main/services/project/ssh.service');
+        return new SSHService(dataService.getPath('config'));
+    });
+
+    lazyServiceRegistry.register('marketResearchService', async () => {
+        const webService = container.resolve<WebService>('webService');
+        const { MarketResearchService } = await import('@main/services/external/market-research.service');
+        return new MarketResearchService(webService);
+    });
+
+    lazyServiceRegistry.register('logoService', async () => {
+        const llmService = container.resolve<LLMService>('llmService');
+        const projectService = container.resolve<ProjectService>('projectService');
+        const localImageService = container.resolve<LocalImageService>('localImageService');
+        const { LogoService } = await import('@main/services/external/logo.service');
+        return new LogoService(llmService, projectService, localImageService);
+    });
+
+    lazyServiceRegistry.register('scannerService', async () => {
+        const dataService = container.resolve<DataService>('dataService');
+        const { ScannerService } = await import('@main/services/analysis/scanner.service');
+        return new ScannerService(dataService);
+    });
+
+    lazyServiceRegistry.register('pageSpeedService', async () => {
+        const { PageSpeedService } = await import('@main/services/analysis/pagespeed.service');
+        return new PageSpeedService();
+    });
+}
+
 function registerProjectServices() {
     container.register('projectService', () => new ProjectService());
     container.register('gitService', () => new GitService());
-    container.register('sshService', (ds) => new SSHService((ds as DataService).getPath('config')), ['dataService']);
-    container.register('dockerService', (cs, ssh) => new DockerService(cs as CommandService, ssh as SSHService), ['commandService', 'sshService']);
+    // SSH and Docker services are now lazy-loaded
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
     container.register('localImageService', (ss) => new LocalImageService(ss as SettingsService), ['settingsService']);
-    container.register('logoService', (ls, ps, lis) => new LogoService(ls as LLMService, ps as ProjectService, lis as LocalImageService), ['llmService', 'projectService', 'localImageService']);
+    // Logo and Market Research services are now lazy-loaded
     container.register('projectScaffoldService', () => new ProjectScaffoldService());
-    container.register('marketResearchService', (ws) => new MarketResearchService(ws as WebService), ['webService']);
-    container.register('ideaGeneratorService', (dbs, ls, mrs, pss, as, ebs, lis) =>
-        new IdeaGeneratorService({
+    
+    // Note: IdeaGeneratorService dependencies updated to use lazy services when needed
+    container.register('ideaGeneratorService', (...deps) => {
+        const [dbs, ls, pss, as, ebs, lis] = deps
+        return new IdeaGeneratorService({
             databaseService: dbs as DatabaseService,
             llmService: ls as LLMService,
-            marketResearchService: mrs as MarketResearchService,
+            marketResearchService: null, // Will be lazy-loaded when needed
             projectScaffoldService: pss as ProjectScaffoldService,
             authService: as as AuthService,
             eventBus: ebs as EventBusService,
             localImageService: lis as LocalImageService
-        }), ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
+        })
+    }, ['databaseService', 'llmService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
@@ -359,8 +408,7 @@ function registerProjectServices() {
 
 function registerAnalysisServices() {
     container.register('monitoringService', () => new MonitoringService());
-    container.register('pageSpeedService', () => new PageSpeedService());
-    container.register('scannerService', () => new ScannerService());
+    // PageSpeed and Scanner services are now lazy-loaded
     container.register('sentryService', (ss) => new SentryService(ss as SettingsService), ['settingsService']);
     container.register('telemetryService', (ss) => new TelemetryService(ss as SettingsService), ['settingsService']);
     container.register('usageTrackingService', (dbs) => new UsageTrackingService(dbs as DatabaseService), ['databaseService']);

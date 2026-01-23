@@ -41,24 +41,21 @@ export class ScannerService {
             const fullPath = path.join(dir, file.name);
 
             if (file.isDirectory()) {
-                if (this.ignoreList.includes(file.name)) {continue;}
+                if (this.ignoreList.includes(file.name)) { continue }
                 await this.walk(fullPath, results);
-            } else {
-                const ext = path.extname(file.name).toLowerCase();
-                if (this.allowedExtensions.includes(ext)) {
-                    try {
-                        const content = await fs.readFile(fullPath, 'utf8');
-                        if (content.length > 0) {
-                            results.push({
-                                path: fullPath,
-                                content,
-                                chunks: this.chunkText(content)
-                            });
-                        }
-                    } catch (e) {
-                        console.error(`Error reading file ${fullPath}:`, getErrorMessage(e as Error));
-                    }
+                continue
+            }
+
+            const ext = path.extname(file.name).toLowerCase();
+            if (!this.allowedExtensions.includes(ext)) { continue }
+
+            try {
+                const content = await fs.readFile(fullPath, 'utf8');
+                if (content.length > 0) {
+                    results.push({ path: fullPath, content, chunks: this.chunkText(content) });
                 }
+            } catch (e) {
+                console.error(`Error reading file ${fullPath}:`, getErrorMessage(e as Error));
             }
         }
     }

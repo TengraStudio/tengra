@@ -55,7 +55,7 @@ export const webElectronMock: ElectronAPI = {
     code: {
         scanTodos: async (_rootPath: string) => [],
         findSymbols: async (_rootPath: string, _query: string) => [],
-        searchFiles: async (_rootPath: string, _query: string, _isRegex?: boolean) => [],
+        searchFiles: async (_rootPath: string, _query: string, _projectId?: string, _isRegex?: boolean) => [],
         indexProject: async (_rootPath: string, _projectId: string) => { },
         queryIndexedSymbols: async (_query: string) => []
     },
@@ -252,8 +252,10 @@ export const webElectronMock: ElectronAPI = {
         getFolders: async () => [],
         createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => { },
         updateProject: async (_id: string, _updates: Partial<Project>) => { },
-        deleteProject: async (_id: string) => { },
+        deleteProject: async (_id: string, _deleteFiles?: boolean) => { },
         archiveProject: async (_id: string, _isArchived: boolean) => { },
+        bulkDeleteProjects: async (_ids: string[], _deleteFiles?: boolean) => { },
+        bulkArchiveProjects: async (_ids: string[], _isArchived: boolean) => { },
         createFolder: async (_name: string, _color?: string) => ({ id: '1', name: _name, color: _color ?? 'blue', createdAt: new Date(), updatedAt: new Date() } as Folder),
         deleteFolder: async (_id: string) => { },
         updateFolder: async (_id: string, _updates: Partial<Folder>) => { },
@@ -488,8 +490,25 @@ export const webElectronMock: ElectronAPI = {
         canGenerateLogo: async () => false,
         generateLogo: async (_ideaId, _prompt) => ({ success: true, logoPath: '' }),
         queryResearch: async (_ideaId, _question) => ({ success: true, answer: 'Mock research answer' }),
+        // Deep research handlers
+        deepResearch: async (_topic: string, _category: string) => ({ success: true }),
+        validateIdea: async (_title: string, _description: string, _category: string) => ({ success: true }),
+        clearResearchCache: async () => ({ success: true }),
+        // Scoring handlers
+        scoreIdea: async (_ideaId: string) => ({ success: true, score: 75 }),
+        rankIdeas: async (_ideaIds: string[]) => ({ success: true, ranked: [] }),
+        compareIdeas: async (_ideaId1: string, _ideaId2: string) => ({ success: true }),
+        quickScore: async (_title: string, _description: string, _category: string) => ({ success: true, score: 50 }),
+        // Data management handlers
+        deleteIdea: async (_ideaId: string) => ({ success: true }),
+        deleteSession: async (_sessionId: string) => ({ success: true }),
+        archiveIdea: async (_ideaId: string) => ({ success: true }),
+        restoreIdea: async (_ideaId: string) => ({ success: true }),
+        getArchivedIdeas: async (_sessionId?: string) => [],
+        // Progress events
         onResearchProgress: () => () => { },
-        onIdeaProgress: () => () => { }
+        onIdeaProgress: () => () => { },
+        onDeepResearchProgress: () => () => { }
     },
     ipcRenderer: {
         on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },

@@ -2,13 +2,14 @@ import { IdeaCategory, IdeaSessionConfig } from '@shared/types/ideas'
 import { Loader2, Sparkles } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { useModel } from '@/context/ModelContext'
 import { useAuth } from '@/context/AuthContext'
+import { useModel } from '@/context/ModelContext'
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-import { CategorySelector } from './CategorySelector'
 import { ModelSelector } from '../../models/components/ModelSelector'
+
+import { CategorySelector } from './CategorySelector'
 
 interface SessionSetupProps {
     onCreateSession: (config: IdeaSessionConfig) => Promise<void>

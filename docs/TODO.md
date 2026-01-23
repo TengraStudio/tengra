@@ -67,5 +67,6 @@ This document serves as the central index for project tasks. Tasks are categoriz
 - [ ] Design and development of a plugin system
 - [ ] Refactor database system to a Windows service (Rust-based standalone PGlite host)
 - [ ] Local AI Hardware Optimization & Management UI
+- [ ] Local Hugging Face Model Support (Inference API & Local GGUF/Transformers.js)
 
 *Last Updated: January 22, 2026*

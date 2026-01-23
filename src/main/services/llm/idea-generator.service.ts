@@ -1198,11 +1198,7 @@ Respond in JSON format:
 
         this.logInfo(`Project created: ${project.id} from idea ${ideaId}`)
 
-        return {
-            ...project,
-            createdAt: new Date(project.createdAt),
-            updatedAt: project.updatedAt ? new Date(project.updatedAt) : undefined
-        } as Project
+        return project
     }
 
     /**
@@ -1672,7 +1668,7 @@ Respond ONLY with valid JSON:
             }
 
             const mapTechChoices = (arr?: Array<{ name?: string; reason?: string; alternatives?: string[] }>): TechChoice[] => {
-                if (!Array.isArray(arr)) return []
+                if (!Array.isArray(arr)) { return [] }
                 return arr.map(t => ({
                     name: t.name ?? 'Unknown',
                     reason: t.reason ?? 'Recommended for this project',
@@ -1789,7 +1785,7 @@ Respond in JSON:
     private async stageGenerateBusinessStrategy(session: IdeaSession, idea: ProjectIdea): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
         const prompt = `Develop a SWOT analysis and business model for:
 Title: ${idea.title}
-Target Market: ${idea.marketResearch?.targetAudience || idea.category}
+Target Market: ${idea.marketResearch?.targetAudience ?? idea.category}
 
 Requirements:
 - Detailed SWOT matrix
@@ -1852,7 +1848,7 @@ Respond in JSON:
     async queryIdeaResearch(ideaId: string, question: string): Promise<string> {
         const db = await this.getDb()
         const row = await db.prepare('SELECT * FROM project_ideas WHERE id = ?').get<JsonObject>(ideaId)
-        if (!row) throw new Error('Idea not found')
+        if (!row) { throw new Error('Idea not found') }
         const idea = this.mapRowToIdea(row)
 
         const context = `
@@ -1919,10 +1915,10 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
 
     private parsePersonasResponse(content: string): { personas: UserPersona[]; journey: JourneyStep[] } {
         try {
-            const parsed = safeJsonParse(content, {}) as any
+            const parsed = safeJsonParse(content, {}) as { personas?: UserPersona[]; journey?: JourneyStep[] }
             return {
-                personas: Array.isArray(parsed?.personas) ? parsed.personas : [],
-                journey: Array.isArray(parsed?.journey) ? parsed.journey : []
+                personas: Array.isArray(parsed.personas) ? parsed.personas : [],
+                journey: Array.isArray(parsed.journey) ? parsed.journey : []
             }
         } catch {
             return { personas: [], journey: [] }
@@ -1931,10 +1927,10 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
 
     private parseBusinessResponse(content: string): { swot: SWOTAnalysis; businessModel: BusinessModel } {
         try {
-            const parsed = safeJsonParse(content, {}) as any
+            const parsed = safeJsonParse(content, {}) as { swot?: SWOTAnalysis; businessModel?: BusinessModel }
             return {
-                swot: parsed?.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] },
-                businessModel: parsed?.businessModel || { monetizationType: '', revenueStreams: [], costStructure: [], breakEvenStrategy: '' }
+                swot: parsed.swot ?? { strengths: [], weaknesses: [], opportunities: [], threats: [] },
+                businessModel: parsed.businessModel ?? { monetizationType: '', revenueStreams: [], costStructure: [], breakEvenStrategy: '' }
             }
         } catch {
             return {
@@ -1946,15 +1942,83 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
 
     private parseMarketingResponse(content: string): MarketingPlan {
         try {
-            const parsed = safeJsonParse(content, {}) as any
+            const parsed = safeJsonParse(content, {}) as {
+                channels?: MarketingPlan['channels']
+                first100UsersActionableSteps?: string[]
+                contentStrategy?: string
+                launchChecklist?: string[]
+            }
             return {
-                channels: Array.isArray(parsed?.channels) ? parsed.channels : [],
-                first100UsersActionableSteps: Array.isArray(parsed?.first100UsersActionableSteps) ? parsed.first100UsersActionableSteps : [],
-                contentStrategy: parsed?.contentStrategy || '',
-                launchChecklist: Array.isArray(parsed?.launchChecklist) ? parsed.launchChecklist : []
+                channels: Array.isArray(parsed.channels) ? parsed.channels : [],
+                first100UsersActionableSteps: Array.isArray(parsed.first100UsersActionableSteps) ? parsed.first100UsersActionableSteps : [],
+                contentStrategy: parsed.contentStrategy ?? '',
+                launchChecklist: Array.isArray(parsed.launchChecklist) ? parsed.launchChecklist : []
             }
         } catch {
             return { channels: [], first100UsersActionableSteps: [], contentStrategy: '', launchChecklist: [] }
         }
+    }
+
+    // ==================== Data Management Methods ====================
+
+    /**
+     * Delete a single idea permanently
+     */
+    async deleteIdea(ideaId: string): Promise<void> {
+        const db = await this.getDb()
+        await db.prepare('DELETE FROM project_ideas WHERE id = ?').run(ideaId)
+        this.logInfo(`Idea deleted: ${ideaId}`)
+    }
+
+    /**
+     * Delete an entire session and all its ideas
+     */
+    async deleteSession(sessionId: string): Promise<void> {
+        const db = await this.getDb()
+
+        // First delete all ideas in the session
+        await db.prepare('DELETE FROM project_ideas WHERE session_id = ?').run(sessionId)
+
+        // Then delete the session itself
+        await db.prepare('DELETE FROM idea_sessions WHERE id = ?').run(sessionId)
+
+        this.logInfo(`Session deleted with all ideas: ${sessionId}`)
+    }
+
+    /**
+     * Archive an idea (soft delete)
+     * Changes status to 'archived' instead of deleting
+     */
+    async archiveIdea(ideaId: string): Promise<void> {
+        const db = await this.getDb()
+        await db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
+            .run('archived', Date.now(), ideaId)
+        this.logInfo(`Idea archived: ${ideaId}`)
+    }
+
+    /**
+     * Restore an archived idea back to pending status
+     */
+    async restoreIdea(ideaId: string): Promise<void> {
+        const db = await this.getDb()
+        await db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
+            .run('pending', Date.now(), ideaId)
+        this.logInfo(`Idea restored: ${ideaId}`)
+    }
+
+    /**
+     * Get archived ideas, optionally filtered by session
+     */
+    async getArchivedIdeas(sessionId?: string): Promise<ProjectIdea[]> {
+        const db = await this.getDb()
+        const sql = sessionId
+            ? 'SELECT * FROM project_ideas WHERE session_id = ? AND status = ? ORDER BY updated_at DESC'
+            : 'SELECT * FROM project_ideas WHERE status = ? ORDER BY updated_at DESC'
+
+        const rows = sessionId
+            ? await db.prepare(sql).all<JsonObject>(sessionId, 'archived')
+            : await db.prepare(sql).all<JsonObject>('archived')
+
+        return rows.map(row => this.mapRowToIdea(row))
     }
 }

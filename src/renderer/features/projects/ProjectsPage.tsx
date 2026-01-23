@@ -2,7 +2,6 @@ import { ProjectWizardModal } from '@renderer/features/projects/components/Proje
 import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace'
 import { AppSettings } from '@shared/types'
 import { CodexUsage, QuotaResponse } from '@shared/types/quota'
-import { ProjectMount } from '@shared/types/renderer'
 import { Monitor } from 'lucide-react'
 import React, { memo, useState } from 'react'
 
@@ -13,10 +12,10 @@ import { Message, Project, TerminalTab } from '@/types'
 import { ProjectCard } from './components/ProjectCard'
 import { ProjectModals } from './components/ProjectModals'
 import { ProjectsHeader } from './components/ProjectsHeader'
+import { useProjectListStateMachine } from './hooks/useProjectListStateMachine'
 
 interface ProjectsPageProps {
     projects: Project[]
-    onRefresh: () => void
     selectedProject?: Project | null
     onSelectProject?: (project: Project | null) => void
     language: Language
@@ -37,76 +36,32 @@ interface ProjectsPageProps {
 }
 
 export const ProjectsPage: React.FC<ProjectsPageProps> = ({
-    projects, onRefresh, selectedProject, onSelectProject, language, tabs, activeTabId, setTabs, setActiveTabId,
+    projects, selectedProject, onSelectProject, language, tabs, activeTabId, setTabs, setActiveTabId,
     selectedProvider, selectedModel, onSelectModel, groupedModels, quotas, codexUsage, settings,
     sendMessage, messages, isLoading
 }) => {
     const { t } = useTranslation(language)
     const [searchQuery, setSearchQuery] = useState('')
-
-    const [editingProject, setEditingProject] = useState<Project | null>(null)
-    const [deletingProject, setDeletingProject] = useState<Project | null>(null)
-    const [editForm, setEditForm] = useState({ title: '', description: '' })
-    const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null)
     const [showWizard, setShowWizard] = useState(false)
+    const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null)
 
-    // Wizard Callbacks
-    const handleWizardCreate = async (path: string, name: string, description: string, userMounts?: ProjectMount[]) => {
-        try {
-            const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
-                id: `local-${Date.now()}`,
-                name: name,
-                type: 'local',
-                rootPath: path
-            }]
-            await window.electron.db.createProject(
-                name,
-                path,
-                description,
-                JSON.stringify(mounts)
-            )
-            onRefresh()
-            setShowWizard(false)
-        } catch (error) {
-            console.error('Failed to register project:', error)
-        }
-    }
+    const filteredProjects = React.useMemo(() => projects.filter(p =>
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    ), [projects, searchQuery])
 
-    // Handlers for Edit/Delete
-    const handleEditClick = (project: Project, e: React.MouseEvent) => {
-        e.stopPropagation()
-        setEditingProject(project)
-        setEditForm({ title: project.title, description: project.description })
-        setShowProjectMenu(null)
-    }
+    // Use state machine for coordinated state management
+    const sm = useProjectListStateMachine({
+        filteredProjects,
+        onError: (error) => console.error('[ProjectsPage] Operation failed:', error)
+    })
 
-    const handleDeleteClick = (project: Project, e: React.MouseEvent) => {
-        e.stopPropagation()
-        setDeletingProject(project)
-        setShowProjectMenu(null)
-    }
-
-    const handleUpdateProject = async () => {
-        if (!editingProject) { return }
-        try {
-            await window.electron.db.updateProject(editingProject.id, editForm)
-            setEditingProject(null)
-            onRefresh()
-        } catch (error) {
-            console.error('Failed to update project:', error)
-        }
-    }
-
-    const handleDeleteProject = async () => {
-        if (!deletingProject) { return }
-        try {
-            await window.electron.db.deleteProject(deletingProject.id)
-            setDeletingProject(null)
-            onRefresh()
-        } catch (error) {
-            console.error('Failed to delete project:', error)
-        }
-    }
+    // Adapter: Map state machine state to modal props
+    const editingProject = sm.state.status === 'editing' ? sm.state.targetProject : null
+    const deletingProject = sm.state.status === 'deleting' ? sm.state.targetProject : null
+    const isArchiving = sm.state.status === 'archiving' ? sm.state.targetProject : null
+    const isBulkDeleting = sm.state.status === 'bulk_deleting'
+    const isBulkArchiving = sm.state.status === 'bulk_archiving'
 
     if (selectedProject) {
         return (
@@ -114,7 +69,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <ProjectWorkspace
                     project={selectedProject}
                     onBack={() => onSelectProject?.(null)}
-                    onDeleteProject={() => setDeletingProject(selectedProject)}
+                    onDeleteProject={() => sm.startDelete(selectedProject)}
                     language={language}
                     tabs={tabs}
                     activeTabId={activeTabId}
@@ -135,21 +90,26 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     editingProject={null}
                     setEditingProject={() => { }}
                     deletingProject={deletingProject}
-                    setDeletingProject={setDeletingProject}
-                    editForm={editForm}
-                    setEditForm={setEditForm}
-                    handleUpdateProject={handleUpdateProject}
-                    handleDeleteProject={handleDeleteProject}
+                    setDeletingProject={(p) => p ? sm.startDelete(p) : sm.cancelDelete()}
+                    isArchiving={isArchiving}
+                    setIsArchiving={(p) => p ? sm.startArchive(p) : sm.cancelArchive()}
+                    isBulkDeleting={isBulkDeleting}
+                    setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
+                    isBulkArchiving={isBulkArchiving}
+                    setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
+                    selectedCount={sm.state.selectedProjectIds.size}
+                    editForm={sm.state.editForm}
+                    setEditForm={sm.updateEditForm}
+                    handleUpdateProject={sm.executeUpdate}
+                    handleDeleteProject={sm.executeDelete}
+                    handleArchiveProject={sm.executeArchive}
+                    handleBulkDelete={sm.executeBulkDelete}
+                    handleBulkArchive={sm.executeBulkArchive}
                     t={t}
                 />
             </>
         )
     }
-
-    const filteredProjects = projects.filter(p =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
 
     return (
         <div className="h-full flex flex-col bg-background p-8 overflow-y-auto">
@@ -164,6 +124,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     onNewProject={() => setShowWizard(true)}
+                    // Selection props
+                    selectedCount={sm.state.selectedProjectIds.size}
+                    totalCount={filteredProjects.length}
+                    onToggleSelectAll={sm.toggleSelectAll}
+                    onBulkDelete={sm.startBulkDelete}
+                    onBulkArchive={sm.startBulkArchive}
+                    t={t}
                 />
 
                 {/* Grid */}
@@ -176,21 +143,35 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             onSelect={(p) => onSelectProject?.(p)}
                             showMenu={showProjectMenu === project.id}
                             setShowMenu={setShowProjectMenu}
-                            onEdit={handleEditClick}
-                            onDelete={handleDeleteClick}
+                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e) }}
+                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e) }}
+                            onArchive={(p) => sm.startArchive(p)}
+                            // Selection
+                            isSelected={sm.state.selectedProjectIds.has(project.id)}
+                            onToggleSelection={() => sm.toggleSelection(project.id)}
                             t={t}
                         />
                     ))}
 
                     <ProjectModals
                         editingProject={editingProject}
-                        setEditingProject={setEditingProject}
+                        setEditingProject={(p) => p ? sm.startEdit(p) : sm.cancelEdit()}
                         deletingProject={deletingProject}
-                        setDeletingProject={setDeletingProject}
-                        editForm={editForm}
-                        setEditForm={setEditForm}
-                        handleUpdateProject={handleUpdateProject}
-                        handleDeleteProject={handleDeleteProject}
+                        setDeletingProject={(p) => p ? sm.startDelete(p) : sm.cancelDelete()}
+                        isArchiving={isArchiving}
+                        setIsArchiving={(p) => p ? sm.startArchive(p) : sm.cancelArchive()}
+                        isBulkDeleting={isBulkDeleting}
+                        setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
+                        isBulkArchiving={isBulkArchiving}
+                        setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
+                        selectedCount={sm.state.selectedProjectIds.size}
+                        editForm={sm.state.editForm}
+                        setEditForm={sm.updateEditForm}
+                        handleUpdateProject={sm.executeUpdate}
+                        handleDeleteProject={sm.executeDelete}
+                        handleArchiveProject={sm.executeArchive}
+                        handleBulkDelete={sm.executeBulkDelete}
+                        handleBulkArchive={sm.executeBulkArchive}
                         t={t}
                     />
 
@@ -198,7 +179,11 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     <ProjectWizardModal
                         isOpen={showWizard}
                         onClose={() => setShowWizard(false)}
-                        onProjectCreated={(...args) => { void handleWizardCreate(...args) }}
+                        onProjectCreated={(...args) => {
+                            void sm.executeCreate(...args).then((success: boolean) => {
+                                if (success) { setShowWizard(false) }
+                            })
+                        }}
                         language={language}
                     />
 
@@ -217,3 +202,4 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 }
 
 export const MemoizedProjectsPage = memo(ProjectsPage)
+

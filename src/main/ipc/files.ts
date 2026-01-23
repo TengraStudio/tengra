@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 
 import { FileSystemService } from '@main/services/data/filesystem.service'
+import { AISystemType } from '@shared/types/file-diff'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 
 export function registerFilesIpc(
@@ -35,8 +36,18 @@ export function registerFilesIpc(
         return await fileSystemService.readImage(filePath)
     })
 
-    ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string) => {
-        return await fileSystemService.writeFile(filePath, content)
+    ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => {
+        if (context?.aiSystem) {
+            // Use tracking-enabled writeFile for AI-initiated changes
+            return await fileSystemService.writeFileWithTracking(filePath, content, {
+                aiSystem: context.aiSystem as AISystemType,
+                chatSessionId: context.chatSessionId,
+                changeReason: context.changeReason || 'AI file modification'
+            })
+        } else {
+            // Regular user-initiated file write
+            return await fileSystemService.writeFile(filePath, content)
+        }
     })
 
     ipcMain.handle('files:createDirectory', async (_event, dirPath: string) => {

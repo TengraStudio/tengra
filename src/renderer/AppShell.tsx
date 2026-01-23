@@ -16,7 +16,7 @@ import { useAppState } from '@renderer/hooks/useAppState'
 import { AppView } from '@renderer/hooks/useAppState'
 import { useTranslation } from '@renderer/i18n'
 import { ViewManager } from '@renderer/views/ViewManager'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
@@ -39,7 +39,7 @@ export function AppShell() {
     const {
         models, loadModels, selectedModel, setSelectedModel
     } = useModel()
-    const { projects, setSelectedProject } = useProject()
+    const { projects, setSelectedProject, loadProjects } = useProject()
 
     const { t } = useTranslation(language ?? 'en')
     const { isListening, stopListening, startListening } = useVoiceInput(() => { })
@@ -58,6 +58,19 @@ export function AppShell() {
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
         return !localStorage.getItem('orbit-onboarding-complete')
     })
+
+    // Handle navigation to a newly created project from Ideas page
+    const handleNavigateToProject = useCallback(async (projectId: string) => {
+        // Reload projects to ensure the new project is in the list
+        await loadProjects()
+        // Find and select the project
+        const project = projects.find(p => p.id === projectId)
+        if (project) {
+            setSelectedProject(project)
+        }
+        // Navigate to projects view
+        setCurrentView('projects')
+    }, [loadProjects, projects, setSelectedProject, setCurrentView])
 
     const sidebar = (
         <Sidebar
@@ -97,6 +110,7 @@ export function AppShell() {
                         showFileMenu={showFileMenu}
                         setShowFileMenu={setShowFileMenu}
                         templates={[]}
+                        onNavigateToProject={handleNavigateToProject}
                     />
                 </AnimatePresence>
             </main>

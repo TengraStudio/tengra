@@ -64,6 +64,19 @@ export const migration_v4_add_memory_system: Migration = {
 }
 
 /**
+ * Migration v5: Add file diff tracking
+ * - Creates file_diffs table for tracking AI file changes
+ */
+export const migration_v5_add_file_diff_tracking: Migration = {
+    version: 5,
+    name: 'add_file_diff_tracking',
+    up: async () => {
+        appLogger.info('Migration', '[Migration v5] File diff tracking table initialized')
+        // Table creation is handled by FileChangeTracker.ensureDiffTable()
+    }
+}
+
+/**
  * Get all registered migrations
  */
 export function getAllMigrations(): Migration[] {
@@ -71,6 +84,7 @@ export function getAllMigrations(): Migration[] {
         migration_v1_initial_setup,
         migration_v2_add_chat_pinned,
         migration_v3_add_folders,
-        migration_v4_add_memory_system
+        migration_v4_add_memory_system,
+        migration_v5_add_file_diff_tracking
     ]
 }

@@ -58,22 +58,8 @@ export interface EntityKnowledge { id: string; entityType: string; entityName: s
 export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' }
 export interface AgentProfile { id: string; name: string; role: string; description: string }
 export interface CouncilSession { id: string; goal: string; status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string | undefined; solution?: string | undefined; createdAt: number; updatedAt: number }
-import { WorkspaceMount } from '@shared/types/workspace'
+import { Project } from '@shared/types/project'
 
-export interface Project {
-    id: string
-    title: string
-    description: string
-    path: string
-    mounts: WorkspaceMount[]
-    chatIds: string[]
-    councilConfig: { enabled: boolean; members: string[]; consensusThreshold: number }
-    status: 'active' | 'archived' | 'draft'
-    logo?: string
-    metadata?: JsonObject
-    createdAt: number
-    updatedAt: number
-}
 export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined }
 // Need to import WorkspaceMount properly or redefine it matching shared/types/workspace
 // Assuming local redefinition or import if accessible. Importing 'WorkspaceMount' was in original.
@@ -603,23 +589,29 @@ export class DatabaseService extends BaseService {
             path: String(row.path),
             mounts: (this.parseJsonField(row.mounts as string, []) as Array<{ id?: string; name: string; type: 'local' | 'ssh'; path?: string; rootPath?: string }>).map(m => ({
                 id: m.id ?? uuidv4(),
-                name: m.name,
-                type: m.type,
+                name: m.name ?? 'Untitled Mount',
+                type: (m.type as 'local' | 'ssh') ?? 'local',
                 rootPath: m.rootPath ?? m.path ?? ''
             })),
             chatIds: this.parseJsonField(row.chat_ids as string, []),
             councilConfig: this.parseJsonField(row.council_config as string, { enabled: false, members: [], consensusThreshold: 0.7 }),
-            status: String(row.status) as 'active' | 'archived' | 'draft',
+            status: (String(row.status) as 'active' | 'archived' | 'draft') || 'active',
             logo: row.logo as string | undefined,
             metadata: this.parseJsonField(row.metadata as string, {}),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
+            createdAt: Number(row.created_at ?? row.createdAt ?? Date.now()),
+            updatedAt: Number(row.updated_at ?? row.updatedAt ?? Date.now())
         }
     }
 
     private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
-        if (!json) { return defaultValue }
-        return safeJsonParse<T>(json, defaultValue)
+        if (typeof json !== 'string' || json.trim() === '') {
+            return defaultValue
+        }
+        const first = safeJsonParse<unknown>(json, defaultValue as unknown)
+        if (typeof first === 'string') {
+            return safeJsonParse<T>(first, defaultValue)
+        }
+        return first as T
     }
 
     async getProjects(): Promise<Project[]> {
@@ -632,6 +624,12 @@ export class DatabaseService extends BaseService {
         const db = await this.ensureDb()
         const row = await db.prepare('SELECT * FROM projects WHERE id = ?').get<JsonObject>(id)
         return row ? this.mapRowToProject(row) : undefined
+    }
+
+    async hasIndexedSymbols(projectId: string): Promise<boolean> {
+        const db = await this.ensureDb()
+        const row = await db.prepare('SELECT COUNT(*) as count FROM code_symbols WHERE project_path = ?').get<{ count: number }>(projectId)
+        return (row?.count ?? 0) > 0
     }
 
     async createProject(title: string, projectPath: string, description: string = '', mountsJson?: string, councilConfigJson?: string): Promise<Project> {
@@ -704,14 +702,44 @@ export class DatabaseService extends BaseService {
         if (updates.metadata !== undefined) { fields.push('metadata = ?'); values.push(JSON.stringify(updates.metadata)) }
     }
 
-    async deleteProject(id: string): Promise<void> {
+    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> {
         const db = await this.ensureDb()
+
+        // If deleteFiles is true, get the project path first and delete the folder
+        if (deleteFiles) {
+            const project = await this.getProject(id)
+            if (project?.path) {
+                try {
+                    // Check if path exists before attempting deletion
+                    if (fs.existsSync(project.path)) {
+                        await fs.promises.rm(project.path, { recursive: true, force: true })
+                        appLogger.info('DatabaseService', `Deleted project files at: ${project.path}`)
+                    }
+                } catch (error) {
+                    appLogger.error('DatabaseService', `Failed to delete project files at ${project.path}`, error as Error)
+                    // Continue to delete the database record even if file deletion fails
+                }
+            }
+        }
+
         await db.prepare('DELETE FROM projects WHERE id = ?').run(id)
     }
 
     async archiveProject(id: string, isArchived: boolean): Promise<void> {
         const status = isArchived ? 'archived' : 'active'
         await this.updateProject(id, { status })
+    }
+
+    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false): Promise<void> {
+        for (const id of ids) {
+            await this.deleteProject(id, deleteFiles)
+        }
+    }
+
+    async bulkArchiveProjects(ids: string[], isArchived: boolean): Promise<void> {
+        for (const id of ids) {
+            await this.archiveProject(id, isArchived)
+        }
     }
 
     // ... Chats ...
@@ -810,10 +838,9 @@ export class DatabaseService extends BaseService {
         }))
     }
 
-    // Vectors (Code Symbols)
     async findCodeSymbolsByName(projectId: string, name: string): Promise<CodeSymbolSearchResult[]> {
         const db = await this.ensureDb()
-        const rows = await db.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name ILIKE ? LIMIT 50").all<JsonObject>(projectId, `% ${name}% `)
+        const rows = await db.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name ILIKE ? LIMIT 50").all<JsonObject>(projectId, `%${name}%`)
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -822,7 +849,23 @@ export class DatabaseService extends BaseService {
             kind: String(r.kind ?? ''),
             signature: String(r.signature ?? ''),
             docstring: String(r.docstring ?? ''),
-            score: 1
+            score: 0.9 // High score for direct name match
+        }))
+    }
+
+    async searchCodeContentByText(projectId: string, query: string): Promise<CodeSymbolSearchResult[]> {
+        const db = await this.ensureDb()
+        // Search in semantic_fragments for text content
+        const rows = await db.prepare("SELECT * FROM semantic_fragments WHERE project_id = ? AND content ILIKE ? LIMIT 50").all<JsonObject>(projectId, `%${query}%`)
+        return rows.map(r => ({
+            id: String(r.id),
+            name: String(r.content).substring(0, 50),
+            path: String(r.source_id ?? ''),
+            line: 1, // Fragments don't always have precise line
+            kind: 'content',
+            signature: '',
+            docstring: String(r.content).substring(0, 200),
+            score: 0.7
         }))
     }
 
@@ -2284,5 +2327,158 @@ export class DatabaseService extends BaseService {
             createdAt: Number(row.created_at),
             updatedAt: Number(row.updated_at)
         }
+    }
+
+    // --- File Diff Methods ---
+
+    async ensureFileDiffTable(): Promise<void> {
+        const db = await this.ensureDb()
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS file_diffs (
+                id TEXT PRIMARY KEY,
+                chat_session_id TEXT,
+                ai_system TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                before_content TEXT NOT NULL,
+                after_content TEXT NOT NULL,
+                diff_content TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                change_reason TEXT,
+                metadata TEXT DEFAULT '{}'
+            )
+        `)
+
+        // Create indexes for performance
+        await db.exec(`CREATE INDEX IF NOT EXISTS idx_file_diffs_file_path ON file_diffs(file_path)`)
+        await db.exec(`CREATE INDEX IF NOT EXISTS idx_file_diffs_timestamp ON file_diffs(timestamp)`)
+        await db.exec(`CREATE INDEX IF NOT EXISTS idx_file_diffs_chat_session ON file_diffs(chat_session_id)`)
+        await db.exec(`CREATE INDEX IF NOT EXISTS idx_file_diffs_ai_system ON file_diffs(ai_system)`)
+    }
+
+    async storeFileDiff(fileDiff: import('@shared/types/file-diff').FileDiff): Promise<void> {
+        const db = await this.ensureDb()
+        await db.prepare(`
+            INSERT INTO file_diffs (
+                id, chat_session_id, ai_system, file_path, before_content, 
+                after_content, diff_content, timestamp, change_reason, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            fileDiff.id,
+            fileDiff.chatSessionId || null,
+            fileDiff.aiSystem,
+            fileDiff.filePath,
+            fileDiff.beforeContent,
+            fileDiff.afterContent,
+            fileDiff.diffContent,
+            fileDiff.timestamp,
+            fileDiff.changeReason || null,
+            JSON.stringify(fileDiff.metadata || {})
+        )
+    }
+
+    async getFileDiff(diffId: string): Promise<import('@shared/types/file-diff').FileDiff | null> {
+        const db = await this.ensureDb()
+        const row = await db.prepare('SELECT * FROM file_diffs WHERE id = ?').get<JsonObject>(diffId)
+        if (!row) { return null }
+
+        return {
+            id: String(row.id),
+            chatSessionId: row.chat_session_id as string | undefined,
+            aiSystem: String(row.ai_system) as import('@shared/types/file-diff').AISystemType,
+            filePath: String(row.file_path),
+            beforeContent: String(row.before_content),
+            afterContent: String(row.after_content),
+            diffContent: String(row.diff_content),
+            timestamp: Number(row.timestamp),
+            changeReason: row.change_reason as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        }
+    }
+
+    async getFileDiffHistory(filePath: string, limit: number = 50): Promise<import('@shared/types/file-diff').FileDiff[]> {
+        const db = await this.ensureDb()
+        const rows = await db.prepare(
+            'SELECT * FROM file_diffs WHERE file_path = ? ORDER BY timestamp DESC LIMIT ?'
+        ).all<JsonObject>(filePath, limit)
+
+        return rows.map(row => ({
+            id: String(row.id),
+            chatSessionId: row.chat_session_id as string | undefined,
+            aiSystem: String(row.ai_system) as import('@shared/types/file-diff').AISystemType,
+            filePath: String(row.file_path),
+            beforeContent: String(row.before_content),
+            afterContent: String(row.after_content),
+            diffContent: String(row.diff_content),
+            timestamp: Number(row.timestamp),
+            changeReason: row.change_reason as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        }))
+    }
+
+    async getRecentFileDiffs(limit: number = 100): Promise<import('@shared/types/file-diff').FileDiff[]> {
+        const db = await this.ensureDb()
+        const rows = await db.prepare(
+            'SELECT * FROM file_diffs ORDER BY timestamp DESC LIMIT ?'
+        ).all<JsonObject>(limit)
+
+        return rows.map(row => ({
+            id: String(row.id),
+            chatSessionId: row.chat_session_id as string | undefined,
+            aiSystem: String(row.ai_system) as import('@shared/types/file-diff').AISystemType,
+            filePath: String(row.file_path),
+            beforeContent: String(row.before_content),
+            afterContent: String(row.after_content),
+            diffContent: String(row.diff_content),
+            timestamp: Number(row.timestamp),
+            changeReason: row.change_reason as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        }))
+    }
+
+    async getFileDiffsBySession(chatSessionId: string): Promise<import('@shared/types/file-diff').FileDiff[]> {
+        const db = await this.ensureDb()
+        const rows = await db.prepare(
+            'SELECT * FROM file_diffs WHERE chat_session_id = ? ORDER BY timestamp ASC'
+        ).all<JsonObject>(chatSessionId)
+
+        return rows.map(row => ({
+            id: String(row.id),
+            chatSessionId: row.chat_session_id as string | undefined,
+            aiSystem: String(row.ai_system) as import('@shared/types/file-diff').AISystemType,
+            filePath: String(row.file_path),
+            beforeContent: String(row.before_content),
+            afterContent: String(row.after_content),
+            diffContent: String(row.diff_content),
+            timestamp: Number(row.timestamp),
+            changeReason: row.change_reason as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        }))
+    }
+
+    async getFileDiffsBySystem(aiSystem: string, limit: number = 100): Promise<import('@shared/types/file-diff').FileDiff[]> {
+        const db = await this.ensureDb()
+        const rows = await db.prepare(
+            'SELECT * FROM file_diffs WHERE ai_system = ? ORDER BY timestamp DESC LIMIT ?'
+        ).all<JsonObject>(aiSystem, limit)
+
+        return rows.map(row => ({
+            id: String(row.id),
+            chatSessionId: row.chat_session_id as string | undefined,
+            aiSystem: String(row.ai_system) as import('@shared/types/file-diff').AISystemType,
+            filePath: String(row.file_path),
+            beforeContent: String(row.before_content),
+            afterContent: String(row.after_content),
+            diffContent: String(row.diff_content),
+            timestamp: Number(row.timestamp),
+            changeReason: row.change_reason as string | undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        }))
+    }
+
+    async cleanupOldFileDiffs(maxAgeMs: number): Promise<number> {
+        const db = await this.ensureDb()
+        const cutoffTime = Date.now() - maxAgeMs
+        const result = await db.prepare('DELETE FROM file_diffs WHERE timestamp < ?').run(cutoffTime)
+        return result.rowsAffected || 0
     }
 }
