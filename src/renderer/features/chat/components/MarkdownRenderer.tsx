@@ -1,8 +1,7 @@
 import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock'
 import DOMPurify from 'dompurify'
 import { Code2 } from 'lucide-react'
-import mermaid from 'mermaid'
-import React, { isValidElement, useEffect, useId, useState } from 'react'
+import React, { isValidElement, memo, useEffect, useId, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
@@ -13,32 +12,57 @@ import { cn } from '@/lib/utils'
 
 import 'katex/dist/katex.min.css'
 
-// Initialize mermaid
-mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    securityLevel: 'loose',
-    fontFamily: 'inherit'
-})
+// Dynamic mermaid loader
+const loadMermaid = async () => {
+    const mermaid = await import('mermaid');
+    
+    // Initialize mermaid only once per session
+    if (!mermaid.default.mermaidAPI.getConfig().startOnLoad) {
+        mermaid.default.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            fontFamily: 'inherit'
+        });
+    }
+    
+    return mermaid.default;
+};
 
 const MermaidDiagram = ({ code }: { code: string }) => {
     const [svg, setSvg] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
     const id = useId()
 
     useEffect(() => {
         const render = async () => {
             try {
+                setLoading(true)
+                const mermaid = await loadMermaid();
                 const { svg } = await mermaid.render(id, code)
                 setSvg(DOMPurify.sanitize(svg))
                 setError(null)
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err)
                 setError(message)
+            } finally {
+                setLoading(false)
             }
         }
         void render()
     }, [code, id])
+
+    if (loading) {
+        return (
+            <div className="my-4 flex justify-center bg-white/5 p-8 rounded-xl border border-white/10">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Loading diagram...</span>
+                </div>
+            </div>
+        )
+    }
 
     if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />
@@ -54,7 +78,7 @@ interface MarkdownRendererProps {
     language?: Language | undefined
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+export const MarkdownRenderer = memo<MarkdownRendererProps>(({
     content,
     isSpeaking,
     onSpeak,
@@ -132,4 +156,4 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             </ReactMarkdown>
         </div>
     )
-}
+})

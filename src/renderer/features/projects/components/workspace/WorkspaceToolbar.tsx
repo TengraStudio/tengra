@@ -4,7 +4,7 @@ import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Project } from '@/types';
+import { Project, WorkspaceDashboardTab } from '@/types';
 
 import { DashboardTabs } from './DashboardTabs';
 
@@ -16,8 +16,8 @@ interface WorkspaceToolbarProps {
     toggleSidebar: () => void;
     sidebarCollapsed: boolean;
     language: Language;
-    dashboardTab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor';
-    onDashboardTabChange?: (tab: 'overview' | 'terminal' | 'files' | 'tasks' | 'search' | 'council' | 'git' | 'editor') => void;
+    dashboardTab: WorkspaceDashboardTab;
+    onDashboardTabChange?: (tab: WorkspaceDashboardTab) => void;
     handleRunProject: () => void;
     showAgentPanel: boolean;
     toggleAgentPanel: () => void;

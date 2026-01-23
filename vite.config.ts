@@ -134,25 +134,23 @@ export default defineConfig({
                 // Better code splitting for faster builds
                 manualChunks: (id) => {
                     if (id.includes('node_modules')) {
-                        if (id.includes('monaco-editor') || id.includes('@monaco-editor')) {
-                            return 'monaco-editor';
+                        const chunks = [
+                            { name: 'react-vendor', patterns: ['react', 'react-dom', 'scheduler'] },
+                            { name: 'monaco-editor', patterns: ['monaco-editor', '@monaco-editor'] },
+                            { name: 'mermaid', patterns: ['mermaid'] },
+                            { name: 'katex', patterns: ['katex'] },
+                            { name: 'framer-motion', patterns: ['framer-motion'] },
+                            { name: 'ssh-vendor', patterns: ['ssh2', 'xterm'] },
+                            { name: 'codemirror', patterns: ['@codemirror', '@lezer'] },
+                            { name: 'icons', patterns: ['lucide-react'] },
+                            { name: 'ui-vendor', patterns: ['@radix-ui', '@floating-ui'] }
+                        ]
+                        for (const chunk of chunks) {
+                            if (chunk.patterns.some(p => id.includes(p))) {
+                                return chunk.name
+                            }
                         }
-                        if (id.includes('framer-motion')) {
-                            return 'framer-motion';
-                        }
-                        if (id.includes('ssh2') || id.includes('xterm')) {
-                            return 'ssh-vendor';
-                        }
-                        if (id.includes('@codemirror') || id.includes('@lezer')) {
-                            return 'codemirror';
-                        }
-                        if (id.includes('lucide-react')) {
-                            return 'icons';
-                        }
-                        if (id.includes('@radix-ui') || id.includes('@floating-ui')) {
-                            return 'ui-vendor';
-                        }
-                        return 'vendor';
+                        return 'vendor'
                     }
                 }
             }

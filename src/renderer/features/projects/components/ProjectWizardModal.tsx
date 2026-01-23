@@ -5,12 +5,12 @@ import { Modal } from '@/components/ui/modal'
 import { Language, useTranslation } from '@/i18n'
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
-import { ProjectMount, SSHFile } from '@/types'
+import { SSHFile, WorkspaceMount } from '@/types'
 
 interface ProjectWizardModalProps {
     isOpen: boolean
     onClose: () => void
-    onProjectCreated: (path: string, name: string, description: string, mounts?: ProjectMount[]) => void
+    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void
     language: Language
 }
 
@@ -26,7 +26,7 @@ const CATEGORIES = [
 
 export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
     const { t } = useTranslation(language)
-    const [step, setStep] = useState<Step>('details')
+    const [step, setStep] = useState<Step>('selection')
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -78,7 +78,13 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         try {
             const result = await window.electron.selectDirectory()
             if (result.success && result.path) {
-                onProjectCreated(result.path, formData.name, formData.description)
+                const mounts: WorkspaceMount[] = [{
+                    id: `local-${Date.now()}`,
+                    name: formData.name || result.path.split(/[/\\]/).pop() || 'Project',
+                    type: 'local',
+                    rootPath: result.path
+                }]
+                onProjectCreated(result.path, formData.name || mounts[0]?.name || '', formData.description, mounts)
                 onClose()
             }
         } catch (err) {
@@ -536,13 +542,27 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             {step === 'ssh-browser' && (
                                 <button
                                     onClick={() => {
-                                        const remotePath = `ssh://${sshForm.username}@${sshForm.host}:${sshPath}`
-                                        onProjectCreated(remotePath, formData.name, formData.description)
+                                        const sshMount: WorkspaceMount = {
+                                            id: sshConnectionId || `ssh-${Date.now()}`,
+                                            name: formData.name || `${sshForm.username}@${sshForm.host}`,
+                                            type: 'ssh',
+                                            rootPath: sshPath,
+                                            ssh: {
+                                                host: sshForm.host,
+                                                port: parseInt(sshForm.port) || 22,
+                                                username: sshForm.username,
+                                                authType: sshForm.authType,
+                                                password: sshForm.authType === 'password' ? sshForm.password : undefined,
+                                                privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
+                                                passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
+                                            }
+                                        }
+                                        onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount])
                                         onClose()
                                     }}
                                     className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
                                 >
-                                    {t('projectWizard.select')}
+                                    {t('projectWizard.selectFolder')}
                                     <Check className="w-4 h-4" />
                                 </button>
                             )}

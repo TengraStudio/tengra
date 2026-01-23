@@ -9,87 +9,293 @@ interface ProjectModalsProps {
     setEditingProject: (p: Project | null) => void
     deletingProject: Project | null
     setDeletingProject: (p: Project | null) => void
+    isArchiving: Project | null
+    setIsArchiving: (p: Project | null) => void
+    isBulkDeleting: boolean
+    setIsBulkDeleting: (b: boolean) => void
+    isBulkArchiving: boolean
+    setIsBulkArchiving: (b: boolean) => void
+    selectedCount: number
     editForm: { title: string; description: string }
     setEditForm: (f: { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })) => void
     handleUpdateProject: () => Promise<void>
-    handleDeleteProject: () => Promise<void>
+    handleDeleteProject: (deleteFiles: boolean) => Promise<void>
+    handleArchiveProject: () => Promise<void>
+    handleBulkDelete: (deleteFiles: boolean) => Promise<void>
+    handleBulkArchive: (isArchived: boolean) => Promise<void>
     t: (key: string) => string
 }
 
-export const ProjectModals: React.FC<ProjectModalsProps> = ({
-    editingProject, setEditingProject, deletingProject, setDeletingProject,
-    editForm, setEditForm, handleUpdateProject, handleDeleteProject, t
-}) => {
-    return (
-        <>
-            <AnimatePresence>
-                {editingProject && (
-                    <Modal isOpen={!!editingProject} onClose={() => setEditingProject(null)} title={t('projects.editProject')}>
-                        <div className="space-y-4 pt-2">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.nameLabel')}</label>
-                                <input
-                                    value={editForm.title}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
-                                    placeholder={t('projects.namePlaceholder')}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.description')}</label>
-                                <textarea
-                                    value={editForm.description}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-h-[80px] resize-none"
-                                    placeholder={t('projects.projectDescPlaceholder')}
-                                />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    onClick={() => setEditingProject(null)}
-                                    className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
-                                >
-                                    {t('common.cancel')}
-                                </button>
-                                <button
-                                    onClick={() => { void handleUpdateProject() }}
-                                    disabled={!editForm.title.trim()}
-                                    className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                                >
-                                    {t('common.save')}
-                                </button>
-                            </div>
-                        </div>
-                    </Modal>
-                )}
-            </AnimatePresence>
+const EditProjectModal: React.FC<{
+    project: Project | null;
+    onClose: () => void;
+    form: { title: string; description: string };
+    setForm: (f: { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })) => void;
+    onSubmit: () => Promise<void>;
+    t: (key: string) => string;
+}> = ({ project, onClose, form, setForm, onSubmit, t }) => (
+    <AnimatePresence>
+        {project && (
+            <Modal isOpen={!!project} onClose={onClose} title={t('projects.editProject')}>
+                <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.nameLabel')}</label>
+                        <input
+                            value={form.title}
+                            onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                            placeholder={t('projects.namePlaceholder')}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('projects.description')}</label>
+                        <textarea
+                            value={form.description}
+                            onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-h-[80px] resize-none"
+                            placeholder={t('projects.projectDescPlaceholder')}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                            {t('common.cancel')}
+                        </button>
+                        <button
+                            onClick={() => { void onSubmit() }}
+                            disabled={!form.title.trim()}
+                            className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                            {t('common.save')}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        )}
+    </AnimatePresence>
+)
 
-            <AnimatePresence>
-                {deletingProject && (
-                    <Modal isOpen={!!deletingProject} onClose={() => setDeletingProject(null)} title={t('projects.deleteProject')}>
-                        <div className="space-y-4 pt-2">
-                            <p className="text-sm text-muted-foreground">
-                                {t('projects.deleteConfirmation')} <span className="text-foreground font-medium">{deletingProject.title}</span>.
-                                {t('projects.deleteWarning')}
+const DeleteProjectModal: React.FC<{
+    project: Project | null;
+    onClose: () => void;
+    onSubmit: (deleteFiles: boolean) => Promise<void>;
+    t: (key: string) => string;
+}> = ({ project, onClose, onSubmit, t }) => {
+    const [deleteFiles, setDeleteFiles] = React.useState(false)
+    React.useEffect(() => { if (!project) { setDeleteFiles(false) } }, [project])
+
+    return (
+        <AnimatePresence>
+            {project && (
+                <Modal isOpen={!!project} onClose={onClose} title={t('projects.deleteProject')}>
+                    <div className="space-y-4 pt-2">
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <p className="text-sm text-red-100">
+                                {t('projects.deleteConfirmation')} <span className="font-bold text-white">{project.title}</span>?
+                                <span className="block mt-1 text-xs text-red-400 font-medium italic">{t('projects.deleteWarning')}</span>
                             </p>
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    onClick={() => setDeletingProject(null)}
-                                    className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
-                                >
-                                    {t('common.cancel')}
-                                </button>
-                                <button
-                                    onClick={() => { void handleDeleteProject() }}
-                                    className="px-4 py-2 rounded-lg text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-                                >
-                                    {t('common.delete')}
-                                </button>
-                            </div>
                         </div>
-                    </Modal>
-                )}
-            </AnimatePresence>
-        </>
+                        <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                onClick={() => { void onSubmit(deleteFiles) }}
+                                className="px-6 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-900/20"
+                            >
+                                {t('common.delete')}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </AnimatePresence>
     )
 }
+
+const ArchiveProjectModal: React.FC<{
+    project: Project | null;
+    onClose: () => void;
+    onSubmit: () => Promise<void>;
+    t: (key: string) => string;
+}> = ({ project, onClose, onSubmit, t }) => (
+    <AnimatePresence>
+        {project && (
+            <Modal isOpen={!!project} onClose={onClose} title={t('projects.archiveProject')}>
+                <div className="space-y-4 pt-2">
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-sm text-emerald-100/90 leading-relaxed font-light">
+                            {t('projects.archiveConfirmation')} <span className="font-semibold text-white">{project.title}</span>?
+                            <span className="block mt-1 text-xs text-emerald-400 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light">
+                            {t('common.cancel')}
+                        </button>
+                        <button
+                            onClick={() => { void onSubmit() }}
+                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                        >
+                            {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        )}
+    </AnimatePresence>
+)
+
+const BulkArchiveModal: React.FC<{
+    isOpen: boolean;
+    count: number;
+    onClose: () => void;
+    onSubmit: () => Promise<void>;
+    t: (key: string) => string;
+}> = ({ isOpen, count, onClose, onSubmit, t }) => (
+    <AnimatePresence>
+        {isOpen && (
+            <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
+                <div className="space-y-4 pt-2">
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-sm text-emerald-100/90 leading-relaxed font-light">
+                            {t('projects.archiveConfirmation')} <span className="font-semibold text-white">{count} {t('sidebar.projects').toLowerCase()}</span>?
+                            <span className="block mt-1 text-xs text-emerald-400 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light">
+                            {t('common.cancel')}
+                        </button>
+                        <button
+                            onClick={() => { void onSubmit() }}
+                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                        >
+                            {t('projects.bulkArchive')}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        )}
+    </AnimatePresence>
+)
+
+const BulkDeleteModal: React.FC<{
+    isOpen: boolean;
+    count: number;
+    onClose: () => void;
+    onSubmit: (deleteFiles: boolean) => Promise<void>;
+    t: (key: string) => string;
+}> = ({ isOpen, count, onClose, onSubmit, t }) => {
+    const [deleteFiles, setDeleteFiles] = React.useState(false)
+    React.useEffect(() => { if (!isOpen) { setDeleteFiles(false) } }, [isOpen])
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkDelete')}>
+                    <div className="space-y-4 pt-2">
+                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <p className="text-sm text-red-100/90 leading-relaxed font-light">
+                                {t('projects.deleteConfirmation')} <span className="font-semibold text-white">{count} {t('sidebar.projects').toLowerCase()}</span>?
+                                <span className="block mt-1 text-xs text-red-400 font-normal italic opacity-80">{t('projects.deleteWarning')}</span>
+                            </p>
+                        </div>
+                        <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light">
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                onClick={() => { void onSubmit(deleteFiles) }}
+                                className="px-6 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-900/20"
+                            >
+                                {t('projects.bulkDelete')}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </AnimatePresence>
+    )
+}
+
+const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) => void; t: (key: string) => string }> = ({ checked, onChange, t }) => (
+    <label className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group">
+        <div className="relative flex items-center justify-center w-5 h-5">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+                className="peer appearance-none w-5 h-5 border border-white/20 rounded bg-black/40 checked:bg-red-500 checked:border-red-500 transition-all cursor-pointer"
+            />
+            <svg
+                className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+        <div className="flex flex-col">
+            <span className="text-sm font-medium text-foreground group-hover:text-red-400 transition-colors">
+                {t('projects.deleteProjectFiles')}
+            </span>
+            {checked && (
+                <span className="text-[10px] text-red-500 font-bold uppercase animate-pulse">
+                    ⚠️ Permanent Deletion
+                </span>
+            )}
+        </div>
+    </label>
+)
+
+export const ProjectModals: React.FC<ProjectModalsProps> = ({
+    editingProject, setEditingProject, deletingProject, setDeletingProject,
+    isArchiving, setIsArchiving, isBulkDeleting, setIsBulkDeleting,
+    isBulkArchiving, setIsBulkArchiving, selectedCount,
+    editForm, setEditForm, handleUpdateProject, handleDeleteProject,
+    handleArchiveProject, handleBulkDelete, handleBulkArchive, t
+}) => (
+    <>
+        <EditProjectModal
+            project={editingProject}
+            onClose={() => setEditingProject(null)}
+            form={editForm}
+            setForm={setEditForm}
+            onSubmit={handleUpdateProject}
+            t={t}
+        />
+        <DeleteProjectModal
+            project={deletingProject}
+            onClose={() => setDeletingProject(null)}
+            onSubmit={handleDeleteProject}
+            t={t}
+        />
+        <ArchiveProjectModal
+            project={isArchiving}
+            onClose={() => setIsArchiving(null)}
+            onSubmit={handleArchiveProject}
+            t={t}
+        />
+        <BulkArchiveModal
+            isOpen={isBulkArchiving}
+            count={selectedCount}
+            onClose={() => setIsBulkArchiving(false)}
+            onSubmit={() => handleBulkArchive(true)}
+            t={t}
+        />
+        <BulkDeleteModal
+            isOpen={isBulkDeleting}
+            count={selectedCount}
+            onClose={() => setIsBulkDeleting(false)}
+            onSubmit={handleBulkDelete}
+            t={t}
+        />
+    </>
+)

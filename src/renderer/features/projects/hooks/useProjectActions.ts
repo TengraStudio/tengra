@@ -1,46 +1,56 @@
 import { ActivityEntry, CouncilSession, Project } from '@/types'
 
-interface UseProjectActionsProps {
+export interface ProjectActionsProps {
     project: Project
     notify: (type: 'success' | 'error' | 'info', message: string) => void
     t: (key: string) => string
     onUpdateProject?: (updates: Partial<Project>) => Promise<void>
-    agentChatMessage: string
+    agentChatMessage?: string
     setCouncilSession: (session: CouncilSession | null) => void
-    setActivityLog: (logs: ActivityEntry[]) => void
+    setActivityLog: (log: ActivityEntry[] | ((prev: ActivityEntry[]) => ActivityEntry[])) => void
 }
 
 export function useProjectActions({
-    project: _project,
+    project,
     notify,
     t,
     onUpdateProject,
     agentChatMessage,
     setCouncilSession,
     setActivityLog
-}: UseProjectActionsProps) {
+}: ProjectActionsProps) {
     const handleUpdateProject = async (updates: Partial<Project>) => {
-        if (onUpdateProject) {
-            await onUpdateProject(updates)
-            notify('success', t('workspace.projectUpdated'))
+        try {
+            if (onUpdateProject) {
+                await onUpdateProject(updates)
+            }
+        } catch (error) {
+            console.error('[ProjectActions] Update failed:', error)
+            notify('error', t('projectDashboard.updateFailed') || 'Failed to update project')
         }
     }
 
     const runCouncil = async () => {
-        if (!agentChatMessage.trim()) { return }
+        if (!agentChatMessage) {
+            notify('error', 'Please provide a message for the agents')
+            return
+        }
+
         try {
-            notify('info', 'Initializing Council Session...')
-            const session = await window.electron.council.createSession(agentChatMessage)
-            if (session) {
-                setCouncilSession(session)
-                setActivityLog([])
-                window.electron.council.startLoop(session.id)
-                notify('success', 'Council started.')
-            }
-        } catch (e: unknown) {
-            notify('error', 'Failed to start council: ' + (e instanceof Error ? e.message : 'Unknown error'))
+            notify('info', t('projectDashboard.startingCouncil') || 'Starting Council AI session...')
+            const session = await window.electron.ipcRenderer.invoke('council:create', agentChatMessage) as CouncilSession
+            setCouncilSession(session)
+            setActivityLog([])
+            window.electron.ipcRenderer.send('council:start-loop', session.id)
+            notify('success', t('projectDashboard.councilStarted') || 'Council AI session started')
+        } catch (error) {
+            console.error('[ProjectActions] Start Council failed:', error)
+            notify('error', t('projectDashboard.councilFailed') || 'Failed to start Council session')
         }
     }
 
-    return { handleUpdateProject, runCouncil }
+    return {
+        handleUpdateProject,
+        runCouncil
+    }
 }

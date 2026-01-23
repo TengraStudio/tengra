@@ -4,7 +4,7 @@
 
 /* === Base Sidebar === */
 .sidebar {
-    @apply w-64 h-full border-r border-white/5 bg-black/20 backdrop-blur-xl flex flex-col shrink-0 relative transition-all duration-300;
+    @apply w-64 h-full border-r border-border bg-background/95 backdrop-blur-xl flex flex-col shrink-0 relative transition-all duration-300;
 }
 
 .sidebar-collapsed {
@@ -13,7 +13,7 @@
 
 /* === Navigation Items === */
 .nav-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 w-full justify-start;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 w-full justify-start;
 }
 
 .nav-item-active {
@@ -30,7 +30,7 @@
 }
 
 .sidebar-brand-name {
-    @apply text-xl font-black tracking-tighter text-white uppercase;
+    @apply text-xl font-black tracking-tighter text-foreground uppercase;
 }
 
 /* === Section Headers === */
@@ -38,9 +38,7 @@
     @apply flex items-center justify-between;
     @apply text-[11px] font-semibold uppercase tracking-wider;
     @apply text-muted-foreground/60 hover:text-muted-foreground;
-    @apply hover:bg-white/[0.02] active:bg-white/[0.04];
-    @apply transition-all duration-150;
-    @apply hover:bg-white/[0.02] active:bg-white/[0.04];
+    @apply hover:bg-accent/50 active:bg-accent/70;
     @apply transition-all duration-150;
     @apply cursor-pointer select-none;
 }
@@ -68,7 +66,7 @@
     @apply flex items-center gap-3;
     @apply text-sm font-medium;
     @apply text-muted-foreground/80 hover:text-foreground;
-    @apply hover:bg-white/[0.03] active:bg-white/[0.05];
+    @apply hover:bg-accent active:bg-accent/80;
     @apply transition-all duration-150;
     @apply cursor-pointer select-none;
     @apply relative;

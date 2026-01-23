@@ -24,7 +24,8 @@ interface TodoFile {
     items: TodoItem[]
 }
 
-const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage']
+const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage', '.orbit', 'vendor']
+const TODO_FILENAMES = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md']
 
 export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }) => {
     const [todoFiles, setTodoFiles] = useState<TodoFile[]>([])
@@ -49,7 +50,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                 if (entry.isDirectory) {
                     const subFiles = await scanDirectory(fullPath)
                     foundFiles.push(...subFiles)
-                } else if (entry.name.toLowerCase() === 'todo.md') {
+                } else if (TODO_FILENAMES.includes(entry.name.toLowerCase())) {
                     foundFiles.push(fullPath)
                 }
             }
@@ -68,20 +69,22 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
 
             lines.forEach((line, index) => {
                 const trimmed = line.trim()
-                if (trimmed.startsWith('- [ ]')) {
+                const match = trimmed.match(/^[-*+]\s*\[([ xX-])\]\s*(.*)/)
+                if (match) {
+                    const status = match[1].toLowerCase()
                     items.push({
                         id: `${filePath}-${index}`,
-                        text: trimmed.replace('- [ ]', '').trim(),
-                        completed: false,
+                        text: match[2].trim() || '',
+                        completed: status === 'x',
                         line: index + 1,
                         filePath,
                         relativePath
                     })
-                } else if (trimmed.startsWith('- [x]')) {
+                } else if (trimmed.startsWith('TODO:') || trimmed.startsWith('FIXME:')) {
                     items.push({
                         id: `${filePath}-${index}`,
-                        text: trimmed.replace('- [x]', '').trim(),
-                        completed: true,
+                        text: trimmed.replace(/^(TODO|FIXME):?\s*/, '').trim(),
+                        completed: false,
                         line: index + 1,
                         filePath,
                         relativePath
@@ -215,9 +218,9 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                     <div>
                         <h2 className="text-sm font-bold text-white">{t('projectDashboard.projectTasks')}</h2>
                         <div className="text-xs text-muted-foreground flex gap-2">
-                            <span className="text-emerald-400">{totalStats.completed} {t('common.done') || 'done'}</span>
+                            <span className="text-emerald-400">{totalStats.completed} {t('common.done')}</span>
                             <span className="text-white/20">•</span>
-                            <span className="text-white/60">{totalStats.pending} {t('common.pending') || 'pending'}</span>
+                            <span className="text-white/60">{totalStats.pending} {t('projectDashboard.pending')}</span>
                         </div>
                     </div>
                 </div>

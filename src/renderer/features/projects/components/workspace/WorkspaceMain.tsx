@@ -4,13 +4,13 @@ import React from 'react'
 import { TerminalPanel } from '@/features/terminal/TerminalPanel'
 import { Language } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { EditorTab, Project, ProjectDashboardTab, TerminalTab } from '@/types'
+import { EditorTab, Project, ProjectDashboardTab, TerminalTab, WorkspaceDashboardTab } from '@/types'
 
 import { EditorTabs } from './EditorTabs'
 import { WorkspaceEditor } from './WorkspaceEditor'
 
 interface WorkspaceMainProps {
-    dashboardTab: string
+    dashboardTab: WorkspaceDashboardTab
     openTabs: EditorTab[]
     activeTabId: string | null
     setActiveEditorTabId: (id: string | null) => void
@@ -31,6 +31,8 @@ interface WorkspaceMainProps {
     activeTabIdTerminal: string | null
     setTabsTerminal: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void
     setActiveTabIdTerminal: (id: string | null) => void
+    selectedEntry?: { path: string; isDirectory: boolean } | null
+    onOpenFile?: (path: string) => void
 }
 
 export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
@@ -38,7 +40,8 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     activeTab, updateTabContent, project, handleUpdateProject,
     setShowLogoModal, language, setDashboardTab, onDeleteProject,
     showTerminal, setShowTerminal, terminalHeight, setTerminalHeight,
-    tabs, activeTabIdTerminal, setTabsTerminal, setActiveTabIdTerminal
+    tabs, activeTabIdTerminal, setTabsTerminal, setActiveTabIdTerminal,
+    selectedEntry, onOpenFile
 }) => {
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
@@ -72,6 +75,8 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                             activeTab={dashboardTab as ProjectDashboardTab}
                             onTabChange={setDashboardTab}
                             onDelete={onDeleteProject}
+                            selectedEntry={selectedEntry}
+                            onOpenFile={onOpenFile}
                         />
                     </div>
                 )}

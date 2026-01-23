@@ -2,6 +2,7 @@
 import React from 'react'
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown'
+import { Language } from '@/i18n'
 import { AppSettings } from '@/types/settings'
 
 interface GeneralTabProps {
@@ -14,16 +15,19 @@ interface GeneralTabProps {
 export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral, handleSave, t }) => {
     const languageOptions = [
         { value: 'tr', label: t('general.turkish') },
-        { value: 'en', label: t('general.english') }
+        { value: 'en', label: t('general.english') },
+        { value: 'de', label: t('general.german') },
+        { value: 'fr', label: t('general.french') },
+        { value: 'es', label: t('general.spanish') }
     ]
 
     const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
-        if (!settings) {return}
-        const current = settings.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
+        if (!settings) { return }
+        const current = settings.autoUpdate ?? { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
         void handleSave({ ...settings, autoUpdate: { ...current, ...patch } })
     }
 
-    const autoUpdate = settings?.autoUpdate || { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
+    const autoUpdate = settings?.autoUpdate ?? { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false }
 
     return (
         <div className="space-y-6">
@@ -33,9 +37,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <Globe className="w-3 h-3" /> {t('settings.language')}
                     </label>
                     <SelectDropdown
-                        value={settings?.general?.language || 'en'}
+                        value={settings?.general?.language ?? 'en'}
                         options={languageOptions}
-                        onChange={(val) => updateGeneral({ language: val as 'tr' | 'en' })}
+                        onChange={(val) => updateGeneral({ language: val as Language })}
                         className="mt-2"
                     />
                 </div>
@@ -45,7 +49,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                     </label>
                     <input
                         type="number"
-                        value={settings?.general?.contextMessageLimit || 50}
+                        value={settings?.general?.contextMessageLimit ?? 50}
                         onChange={e => updateGeneral({ contextMessageLimit: parseInt(e.target.value) })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 mt-2 font-mono text-primary"
                     />
@@ -124,8 +128,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                             </div>
                             <div
                                 onClick={() => {
-                                    if (!settings) {return}
-                                    const current = settings.crashReporting || { enabled: false }
+                                    if (!settings) { return }
+                                    const current = settings.crashReporting ?? { enabled: false }
                                     void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } })
                                 }}
                                 className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${settings?.crashReporting?.enabled ? 'bg-primary' : 'bg-gray-600'}`}

@@ -195,8 +195,6 @@ export class ContextWindowService {
 let instance: ContextWindowService | null = null
 
 export function getContextWindowService(): ContextWindowService {
-    if (!instance) {
-        instance = new ContextWindowService()
-    }
+    instance ??= new ContextWindowService()
     return instance
 }

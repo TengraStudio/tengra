@@ -1,5 +1,5 @@
 import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react'
-import React from 'react'
+import React, { memo } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Chat, Folder } from '@/types'
@@ -16,7 +16,7 @@ interface ChatListItemProps {
     t: (key: string) => string;
 }
 
-export const ChatListItem: React.FC<ChatListItemProps> = ({
+export const ChatListItem = memo<ChatListItemProps>(({
     chat, currentChatId, isGenerating, onSelect, onDelete, onTogglePin,
     onMoveToFolder, folders, t
 }) => {
@@ -64,4 +64,4 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
             </div>
         </div>
     )
-}
+})

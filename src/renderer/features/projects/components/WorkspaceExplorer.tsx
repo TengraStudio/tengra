@@ -1,7 +1,7 @@
 ﻿import { FileNode, WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem'
 import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
 import { ChevronDown, ChevronRight, FilePlus, Folder, FolderPlus, Pencil, Plus, Server, Trash2, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { Language, useTranslation } from '@/i18n'
@@ -57,7 +57,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({})
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 
-    const loadRoot = async (mount: WorkspaceMount) => {
+    const loadRoot = useCallback(async (mount: WorkspaceMount) => {
         setLoadingMounts((prev) => ({ ...prev, [mount.id]: true }))
         const isReady = onEnsureMount ? await onEnsureMount(mount) : true
         if (!isReady) {
@@ -86,7 +86,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         } finally {
             setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }))
         }
-    }
+    }, [onEnsureMount])
 
     useEffect(() => {
         mounts.forEach((mount) => {
@@ -94,13 +94,13 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             const shouldLoad = expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local')
 
             if (shouldLoad) {
-                // Avoid reloading if already loaded and no refresh signal? 
+                // Avoid reloading if already loaded and no refresh signal?
                 // Actually loadRoot handles re-fetching.
                 // We want to fetch on mount.
                 void loadRoot(mount)
             }
         })
-    }, [refreshSignal, mounts])
+    }, [refreshSignal, mounts, expandedMounts, loadRoot])
 
     // Close context menu when clicking outside
     useEffect(() => {

@@ -5,16 +5,25 @@ import * as https from 'https'
 import * as path from 'path'
 
 import { appLogger } from '@main/logging/logger'
+import { AISystemType } from '@shared/types/file-diff'
 import { ServiceResponse } from '@shared/types/index'
 import { getErrorMessage } from '@shared/utils/error.util'
 
+import type { FileChangeTracker } from './file-change-tracker.service'
+
 export class FileSystemService {
     private allowedRoots: string[] = []
+    private fileChangeTracker?: FileChangeTracker
 
-    constructor(allowedRoots?: string[]) {
+    constructor(allowedRoots?: string[], fileChangeTracker?: FileChangeTracker) {
         if (allowedRoots) {
             this.allowedRoots = allowedRoots.map(r => path.resolve(r))
         }
+        this.fileChangeTracker = fileChangeTracker
+    }
+
+    setFileChangeTracker(tracker: FileChangeTracker) {
+        this.fileChangeTracker = tracker
     }
 
     updateAllowedRoots(allowedRoots: string[]) {
@@ -126,6 +135,47 @@ export class FileSystemService {
             const dir = path.dirname(absolutePath)
             await fs.mkdir(dir, { recursive: true })
             await fs.writeFile(absolutePath, content, 'utf-8')
+            return { success: true }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) }
+        }
+    }
+
+    /**
+     * Write file with AI change tracking
+     */
+    async writeFileWithTracking(
+        filePath: string, 
+        content: string, 
+        context: {
+            aiSystem: AISystemType
+            chatSessionId?: string
+            changeReason?: string
+            metadata?: Record<string, unknown>
+        }
+    ): Promise<ServiceResponse> {
+        try {
+            this.validatePath(filePath)
+            const absolutePath = path.resolve(filePath)
+            
+            // Get current content if file exists
+            let beforeContent = ''
+            try {
+                beforeContent = await fs.readFile(absolutePath, 'utf-8')
+            } catch {
+                // File doesn't exist, beforeContent stays empty
+            }
+
+            // Write the new content
+            const dir = path.dirname(absolutePath)
+            await fs.mkdir(dir, { recursive: true })
+            await fs.writeFile(absolutePath, content, 'utf-8')
+
+            // Track the change if tracker is available
+            if (this.fileChangeTracker) {
+                await this.fileChangeTracker.trackFileChange(absolutePath, beforeContent, content, context)
+            }
+
             return { success: true }
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) }

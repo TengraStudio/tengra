@@ -14,7 +14,7 @@ export function useProjectManager() {
         const id = uuidv4()
         const newTab: TerminalTab = {
             id,
-            name: name ?? 'Terminal',
+            name: name,
             type: 'bash',
             status: 'idle',
             history: [],
@@ -38,7 +38,7 @@ export function useProjectManager() {
             const data = await window.electron.db.getProjects()
             // Database now returns properly typed Project data
             // Only need to convert timestamp to Date for frontend use
-            const projects = (Array.isArray(data) ? data : []).map((project) => ({
+            const loadedProjects = (Array.isArray(data) ? data : []).map((project) => ({
                 ...project,
                 createdAt: project.createdAt instanceof Date
                     ? project.createdAt
@@ -50,11 +50,19 @@ export function useProjectManager() {
                         ? [{ id: `local-${project.id}`, name: 'Local', type: 'local' as const, rootPath: project.path }]
                         : []
             }))
-            setProjects(projects)
+            setProjects(loadedProjects)
+
+            // Sync selectedProject if it exists
+            if (selectedProject) {
+                const updated = loadedProjects.find(p => p.id === selectedProject.id)
+                if (updated) {
+                    setSelectedProject(updated)
+                }
+            }
         } catch (e) {
             console.error('Failed to load projects:', e)
         }
-    }, [])
+    }, [selectedProject])
 
     const handleCreateFolder = useCallback(async (name: string) => {
         try {
@@ -75,6 +83,17 @@ export function useProjectManager() {
             console.error('Failed to delete folder:', e)
         }
     }, [loadFolders])
+
+    useEffect(() => {
+        const handleProjectUpdated = (_event: unknown, _data?: { id?: string }) => {
+            void loadProjects()
+        }
+
+        window.electron.ipcRenderer.on('project:updated', handleProjectUpdated)
+        return () => {
+            window.electron.ipcRenderer.off('project:updated', handleProjectUpdated)
+        }
+    }, [loadProjects])
 
     useEffect(() => {
         const fetchInitialData = async () => {

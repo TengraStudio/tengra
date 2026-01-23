@@ -82,7 +82,7 @@ export interface ElectronAPI {
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>
         findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>
-        searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<FileSearchResult[]>
+        searchFiles: (rootPath: string, query: string, projectId?: string, isRegex?: boolean) => Promise<FileSearchResult[]>
         indexProject: (rootPath: string, projectId: string) => Promise<void>
         queryIndexedSymbols: (query: string) => Promise<{ name: string; path: string; line: number }[]>
     }
@@ -222,7 +222,7 @@ export interface ElectronAPI {
         getProjects: () => Promise<Project[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
         updateProject: (id: string, updates: Partial<Project>) => Promise<void>
-        deleteProject: (id: string) => Promise<void>
+        deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
         createFolder: (name: string, color?: string) => Promise<Folder>
         deleteFolder: (id: string) => Promise<void>
@@ -541,8 +541,25 @@ export interface ElectronAPI {
         canGenerateLogo: () => Promise<boolean>
         generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
         queryResearch: (ideaId: string, question: string) => Promise<{ success: boolean; answer: string }>
+        // Deep research handlers
+        deepResearch: (topic: string, category: string) => Promise<{ success: boolean; report?: IpcValue }>
+        validateIdea: (title: string, description: string, category: string) => Promise<{ success: boolean; validation?: IpcValue }>
+        clearResearchCache: () => Promise<{ success: boolean }>
+        // Scoring handlers
+        scoreIdea: (ideaId: string) => Promise<{ success: boolean; score?: IpcValue }>
+        rankIdeas: (ideaIds: string[]) => Promise<{ success: boolean; ranked?: IpcValue[] }>
+        compareIdeas: (ideaId1: string, ideaId2: string) => Promise<{ success: boolean; comparison?: IpcValue }>
+        quickScore: (title: string, description: string, category: string) => Promise<{ success: boolean; score?: number }>
+        // Data management handlers
+        deleteIdea: (ideaId: string) => Promise<{ success: boolean }>
+        deleteSession: (sessionId: string) => Promise<{ success: boolean }>
+        archiveIdea: (ideaId: string) => Promise<{ success: boolean }>
+        restoreIdea: (ideaId: string) => Promise<{ success: boolean }>
+        getArchivedIdeas: (sessionId?: string) => Promise<IpcValue[]>
+        // Progress events
         onResearchProgress: (callback: (progress: IpcValue) => void) => () => void
         onIdeaProgress: (callback: (progress: IpcValue) => void) => () => void
+        onDeepResearchProgress: (callback: (progress: IpcValue) => void) => () => void
     }
 }
 
@@ -578,7 +595,7 @@ const api: ElectronAPI = {
     code: {
         scanTodos: (rootPath) => ipcRenderer.invoke('code:scanTodos', rootPath),
         findSymbols: (rootPath, query) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
-        searchFiles: (rootPath, query, isRegex) => ipcRenderer.invoke('code:searchFiles', rootPath, query, isRegex),
+        searchFiles: (rootPath, query, projectId, isRegex) => ipcRenderer.invoke('code:searchFiles', rootPath, query, projectId, isRegex),
         indexProject: (rootPath, projectId) => ipcRenderer.invoke('code:indexProject', rootPath, projectId),
         queryIndexedSymbols: (query) => ipcRenderer.invoke('code:queryIndexedSymbols', query)
     },
@@ -693,7 +710,7 @@ const api: ElectronAPI = {
         getProjects: () => ipcRenderer.invoke('db:getProjects'),
         createProject: (name, path, desc, mounts) => ipcRenderer.invoke('db:createProject', name, path, desc, mounts),
         updateProject: (id, updates) => ipcRenderer.invoke('db:updateProject', id, updates),
-        deleteProject: (id: string) => ipcRenderer.invoke('db:deleteProject', id),
+        deleteProject: (id: string, deleteFiles?: boolean) => ipcRenderer.invoke('db:deleteProject', id, deleteFiles),
         archiveProject: (id: string, isArchived: boolean) => ipcRenderer.invoke('db:archiveProject', id, isArchived),
         getFolders: () => ipcRenderer.invoke('db:getFolders'),
         createFolder: (name: string, color?: string) => ipcRenderer.invoke('db:createFolder', name, color),
@@ -841,7 +858,8 @@ const api: ElectronAPI = {
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
     listDirectory: (path) => ipcRenderer.invoke('files:listDirectory', path),
     readFile: (path) => ipcRenderer.invoke('files:readFile', path),
-    writeFile: (path, content) => ipcRenderer.invoke('files:writeFile', path, content),
+    writeFile: (path: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => ipcRenderer.invoke('files:writeFile', path, content, context),
+    
     createDirectory: (path) => ipcRenderer.invoke('files:createDirectory', path),
     deleteFile: (path) => ipcRenderer.invoke('files:deleteFile', path),
     deleteDirectory: (path) => ipcRenderer.invoke('files:deleteDirectory', path),
@@ -879,7 +897,7 @@ const api: ElectronAPI = {
         listDirectory: (path: string) => ipcRenderer.invoke('files:listDirectory', path).then(r => r.data),
         readFile: (filePath: string) => ipcRenderer.invoke('files:readFile', filePath).then(r => r.data),
         readImage: (filePath: string) => ipcRenderer.invoke('files:readImage', filePath).then(r => r.data),
-        writeFile: (filePath: string, content: string) => ipcRenderer.invoke('files:writeFile', filePath, content).then(r => r.data),
+        writeFile: (filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => ipcRenderer.invoke('files:writeFile', filePath, content, context).then(r => r.data),
         exists: (path: string) => ipcRenderer.invoke('files:exists', path).then(r => r.data)
     },
 
@@ -1072,6 +1090,22 @@ const api: ElectronAPI = {
         canGenerateLogo: () => ipcRenderer.invoke('ideas:canGenerateLogo'),
         generateLogo: (ideaId, prompt) => ipcRenderer.invoke('ideas:generateLogo', ideaId, prompt),
         queryResearch: (ideaId, question) => ipcRenderer.invoke('ideas:queryResearch', ideaId, question),
+        // Deep research handlers
+        deepResearch: (topic: string, category: string) => ipcRenderer.invoke('ideas:deepResearch', topic, category),
+        validateIdea: (title: string, description: string, category: string) => ipcRenderer.invoke('ideas:validateIdea', title, description, category),
+        clearResearchCache: () => ipcRenderer.invoke('ideas:clearResearchCache'),
+        // Scoring handlers
+        scoreIdea: (ideaId: string) => ipcRenderer.invoke('ideas:scoreIdea', ideaId),
+        rankIdeas: (ideaIds: string[]) => ipcRenderer.invoke('ideas:rankIdeas', ideaIds),
+        compareIdeas: (ideaId1: string, ideaId2: string) => ipcRenderer.invoke('ideas:compareIdeas', ideaId1, ideaId2),
+        quickScore: (title: string, description: string, category: string) => ipcRenderer.invoke('ideas:quickScore', title, description, category),
+        // Data management handlers
+        deleteIdea: (ideaId: string) => ipcRenderer.invoke('ideas:deleteIdea', ideaId),
+        deleteSession: (sessionId: string) => ipcRenderer.invoke('ideas:deleteSession', sessionId),
+        archiveIdea: (ideaId: string) => ipcRenderer.invoke('ideas:archiveIdea', ideaId),
+        restoreIdea: (ideaId: string) => ipcRenderer.invoke('ideas:restoreIdea', ideaId),
+        getArchivedIdeas: (sessionId?: string) => ipcRenderer.invoke('ideas:getArchivedIdeas', sessionId),
+        // Progress events
         onResearchProgress: (callback) => {
             const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
             ipcRenderer.on('ideas:research-progress', listener)
@@ -1081,6 +1115,11 @@ const api: ElectronAPI = {
             const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
             ipcRenderer.on('ideas:idea-progress', listener)
             return () => ipcRenderer.removeListener('ideas:idea-progress', listener)
+        },
+        onDeepResearchProgress: (callback) => {
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
+            ipcRenderer.on('ideas:deep-research-progress', listener)
+            return () => ipcRenderer.removeListener('ideas:deep-research-progress', listener)
         }
     }
 }

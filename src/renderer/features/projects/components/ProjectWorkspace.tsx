@@ -10,7 +10,7 @@ import React from 'react'
 import { GroupedModels } from '@/features/models/utils/model-fetcher'
 import { Language } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types'
+import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab, WorkspaceDashboardTab } from '@/types'
 
 import { WorkspaceMain } from './workspace/WorkspaceMain'
 import { WorkspaceNotifications } from './workspace/WorkspaceNotifications'
@@ -21,7 +21,6 @@ import { WorkspaceSidebar } from './workspace/WorkspaceSidebar'
 interface ProjectWorkspaceProps {
     project: Project
     onBack: () => void
-    onUpdateProject?: (updates: Partial<Project>) => Promise<void>
     onDeleteProject?: () => void
     language: Language
     // Terminal props passed from parent
@@ -40,12 +39,14 @@ interface ProjectWorkspaceProps {
     sendMessage?: (content?: string) => void
     messages?: Message[]
     isLoading?: boolean
+    // Optional external control
+    activeDashboardTab?: WorkspaceDashboardTab
+    onDashboardTabChange?: (tab: WorkspaceDashboardTab) => void
 }
 
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     project,
     onBack,
-    onUpdateProject,
     onDeleteProject,
     language,
     tabs,
@@ -66,7 +67,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const {
         ps, wm, activityLog, setActivityLog,
         handleUpdateProject, runCouncil, toggleAgent, t
-    } = useProjectWorkspaceController({ project, language, onUpdateProject })
+    } = useProjectWorkspaceController({ project, language })
 
 
 
@@ -118,6 +119,16 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     activeTabIdTerminal={activeTabId}
                     setTabsTerminal={setTabs}
                     setActiveTabIdTerminal={setActiveTabId}
+                    selectedEntry={ps.selectedEntry}
+                    onOpenFile={(path: string, line?: number) => {
+                        const name = path.split(/[\\/]/).pop() ?? 'file'
+                        const mountId = wm.mounts[0]?.id
+                        if (mountId) {
+                            const entry = { mountId, path, name, isDirectory: false, initialLine: line }
+                            void wm.openFile(entry)
+                            ps.setSelectedEntry(entry)
+                        }
+                    }}
                 />
 
                 <WorkspaceSidebar

@@ -1,6 +1,7 @@
 ﻿import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { cn } from '@/lib/utils';
 import { EditorTab } from '@/types';
 import { getLanguageFromExtension } from '@/utils/language-map';
 
@@ -23,29 +24,28 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     updateTabContent,
     emptyState
 }) => {
-    if (!activeTab) { return <>{emptyState}</>; }
-
-    if (activeTab.type === 'image') {
-        return (
-            <div className="absolute inset-0 flex items-center justify-center p-8 bg-[#09090b] overflow-auto">
-                <div className="relative max-w-full max-h-full shadow-2xl bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMxMTEiLz48cGF0aCBkPSJNMCAwSDhWOFMwIDAgMCAweiIgZmlsbD0iIzIyMiIvPjwvc3ZnPg==')] rounded-lg border border-white/10 p-1">
-                    <img src={activeTab.content} alt={activeTab.name} className="max-w-full max-h-[80vh] object-contain rounded" />
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="absolute inset-0 overflow-hidden">
-            <CodeEditor
-                value={activeTab.content}
-                language={getLanguageFromExtension(activeTab.name)}
-                onChange={(val) => updateTabContent(val || '')}
-                className="h-full w-full"
-                showMinimap={true}
-                fontSize={16}
-                initialLine={activeTab.initialLine}
-            />
+            {activeTab?.type === 'image' ? (
+                <div className="absolute inset-0 flex items-center justify-center p-8 bg-[#09090b] overflow-auto z-10">
+                    <div className="relative max-w-full max-h-full shadow-2xl bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMxMTEiLz48cGF0aCBkPSJNMCAwSDhWOFMwIDAgMCAweiIgZmlsbD0iIzIyMiIvPjwvc3ZnPg==')] rounded-lg border border-white/10 p-1">
+                        <img src={activeTab.content} alt={activeTab.name} className="max-w-full max-h-[80vh] object-contain rounded" />
+                    </div>
+                </div>
+            ) : (
+                <div className={cn("absolute inset-0 transition-opacity duration-300", !activeTab && "opacity-0 pointer-events-none")}>
+                    <CodeEditor
+                        value={activeTab?.content ?? ''}
+                        language={activeTab ? getLanguageFromExtension(activeTab.name) : 'typescript'}
+                        onChange={(val) => activeTab && updateTabContent(val || '')}
+                        className="h-full w-full"
+                        showMinimap={true}
+                        fontSize={16}
+                        initialLine={activeTab?.initialLine}
+                    />
+                </div>
+            )}
+            {!activeTab && emptyState}
         </div>
     );
-};
+}

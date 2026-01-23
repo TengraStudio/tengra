@@ -6,6 +6,273 @@ Track the evolution of Orbit.
 
 ## Recent Updates
 
+### 2026-01-23: Design System Overhaul & Hardcoded Color Removal
+
+**Status**: In Progress
+
+**Features**:
+- **Simplified Theme System**: Restricted application themes to a clean "Orbit White" (Light) and "Orbit Black" (Dark) model, enforcing consistency.
+- **Typography Standardization**: Introduced `typography.css` to unify font usage (Inter for UI, JetBrains Mono for code) across the renderer.
+- **Color Token Migration**: Started a massive migration of hardcoded colors (`bg-white`, `bg-black`, `text-gray-300`) to semantic theme tokens (`bg-card`, `bg-background`, `text-muted-foreground`), enabling true dark/light mode compatibility.
+- **Project Dashboard Refresh**: Updated `ProjectDashboard.tsx` to use the new design tokens, fixing invisible text issues in light mode.
+
+**Technical Changes**:
+- **CSS**: Overhauled `index.css` with a new HSL-based color palette for the dual-theme system.
+- **Components**: Updated `Sidebar.css`, `SettingsPage.css`, `ThemeStore.tsx`, and `ThemeContext.tsx` to align with the new design system.
+- **Performance**: Validated lazy loading of heavy views (Chat, Projects, Settings).
+
+**Files Modified**:
+- `src/renderer/index.css`
+- `src/renderer/typography.css` [NEW]
+- `src/renderer/context/ThemeContext.tsx`
+- `src/renderer/features/themes/ThemeStore.tsx`
+- `src/renderer/features/projects/components/ProjectDashboard.tsx`
+- `src/renderer/components/layout/Sidebar.css`
+- `src/renderer/features/settings/SettingsPage.css`
+
+### 2026-01-23: Project State Machine Implementation (PROJ-CRIT-003)
+
+**Status**: Completed
+
+**Problem Solved**:
+- Race conditions in project list operations (edit, delete, archive, bulk operations)
+- Multiple operations could be triggered simultaneously, causing UI inconsistencies
+- State could become out of sync during rapid user interactions
+
+**Solution**:
+- **New Hook**: Created `useProjectListStateMachine` - a reducer-based state machine for project list operations
+- **Explicit States**: Defined clear states (`idle`, `editing`, `deleting`, `archiving`, `bulk_deleting`, `bulk_archiving`, `loading`, `error`)
+- **Guarded Transitions**: Operations can only start from `idle` state, preventing overlapping actions
+- **Coordinated Async**: All async operations go through a central dispatcher with proper loading/success/error handling
+
+**Files Added/Modified**:
+- `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [NEW] - State machine implementation
+- `src/renderer/features/projects/ProjectsPage.tsx` - Migrated to use state machine
+
+### 2026-01-23: Project Settings Panel Enhancement (PROJ-HIGH-005)
+
+**Status**: Completed
+
+**Features**:
+- **Expanded Settings**: Added dedicated sections for Build & Test, Dev Server, and Advanced Options.
+- **Refactored UI**: Improved `ProjectSettingsPanel` by extracting state management into a custom `useProjectSettingsForm` hook and splitting UI into modular section components.
+- **Form Handling**: Implemented robust dirty state checking, form reset, and split-view sections.
+
+**Files Modified**:
+- `src/renderer/features/projects/components/ProjectSettingsPanel.tsx`
+- `src/shared/types/project.ts` (extended Project interface)
+
+### 2026-01-23: Performance Optimizations (120fps Target)
+
+**Status**: Completed
+
+**Optimizations**:
+- **Code Splitting**: Implemented lazy loading for all core views (`ChatView`, `ProjectsView`, `SettingsView`) to reduce initial bundle size.
+- **Render Performance**: Memoized expensive project filtering operations in `ProjectsPage` to prevent unnecessary re-computations.
+- **Animation Tuning**: Optimized view transitions for smoother (120fps feel) interaction.
+- **Dynamic Imports**: Lazy loaded `mermaid.js` in chat bubbles, reducing initial bundle size by ~1MB.
+- **Granular Chunking**: Refined `vite.config.ts` to split React, Monaco, and heavy libs into separate chunks for better caching.
+
+**Files Modified**:
+- `src/renderer/views/ViewManager.tsx`
+- `src/renderer/features/projects/ProjectsPage.tsx`
+
+### 2026-01-23: Project Dashboard Modularization & Git Tab Extraction
+
+**Status**: Completed
+
+**Refactoring**:
+- **ProjectDashboard Modularization**: Extracted the Git integration logic into a dedicated `ProjectGitTab` component, significantly reducing the complexity of the main `ProjectDashboard` component.
+- **Custom Hook**: Implemented `useGitData` hook to encapsulate all Git-related state management (fetching, staging, committing, pushing, pulling), improving separation of concerns.
+- **Linting Fixes**: Resolved numerous ESLint warnings in `ProjectDashboard.tsx` and `ProjectGitTab.tsx`, including:
+    - Fixed promise-returning functions in attributes (added `void` operator).
+    - Replaced unsafe `||` operators with nullish coalescing `??`.
+    - Removed unused imports and variables.
+    - Fixed parsing errors and JSX nesting issues.
+- **Performance**: Optimized re-renders by moving complex Git logic out of the main dashboard rendering path.
+
+**Files Modified**:
+- `src/renderer/features/projects/components/ProjectDashboard.tsx` - Removed Git logic, integrated `ProjectGitTab`.
+- `src/renderer/features/projects/components/ProjectGitTab.tsx` [NEW] - Dedicated Git interface component.
+- `src/renderer/features/projects/hooks/useGitData.ts` [NEW] - Git state management hook.
+
+### 2026-01-23: Project System Improvements (Batch Operations & Refactoring)
+
+**Status**: Completed (Phase 1 & Phase 2 Early Items)
+
+**New Features**:
+- **Multi-Selection System**: Added checkboxes to project cards for selecting multiple projects.
+- **Bulk Actions**: Implemented "Archive Selected" and "Delete Selected" with batch processing.
+- **Improved Confirmations**: Added specific confirmation modals for single and bulk delete/archive actions, including a "Delete project files" option.
+- **Progress Tracking**: Added loading states and success notifications for batch operations.
+
+**Technical Changes**:
+- **Component Refactoring**: 
+    - Split `ProjectCard.tsx` into smaller, focused sub-components.
+    - Split `ProjectModals.tsx` into specialized modal components to reduce complexity.
+- **Action Decoupling**: Created `useProjectListActions` hook to isolate list-level logic from workspace-level logic.
+- **Type Safety**: 
+    - Hardened project-related interfaces and eliminated unsafe type assertions.
+    - Fixed pre-existing type mismatch in `idea-generator.service.ts` where Date objects were incorrectly used as timestamps.
+- **Internationalization**: Added 10+ new translation keys for bulk operations and confirmation dialogs.
+
+**Files Added/Modified**:
+- `src/renderer/features/projects/ProjectsPage.tsx` - Integrated multi-selection and bulk actions.
+- `src/renderer/features/projects/components/ProjectCard.tsx` - Modularized card UI.
+- `src/renderer/features/projects/components/ProjectModals.tsx` - Modularized modal components.
+- `src/renderer/features/projects/components/ProjectsHeader.tsx` [NEW] - Bulk action controls.
+- `src/renderer/features/projects/hooks/useProjectListActions.ts` [NEW] - List management logic.
+- `src/renderer/features/projects/hooks/useProjectActions.ts` - Restored to original workspace scope.
+- `src/main/services/llm/idea-generator.service.ts` - Fixed type mismatch in project approval.
+- `src/renderer/i18n/en.ts` / `tr.ts` - Added new operation strings.
+
+---
+
+
+**Status**: Completed
+
+**New Features**:
+- **New Language Support**: Added German (de), French (fr), and Spanish (es) language files
+- **Enhanced Translation Keys**: Added memory, terminal, and auth sections to translation files
+- **CHANGELOG Consolidation**: Merged `docs/CHANGELOG.md` into root `CHANGELOG.md`
+
+**Technical Changes**:
+- Added `de.ts`, `fr.ts`, `es.ts` language files with comprehensive translations
+- Updated `index.ts` to export new languages and support 5 languages total (en, tr, de, fr, es)
+- Added `memory` section: inspector, facts, episodes, entities translations
+- Added `terminal` section: shell, session status translations
+- Added `auth` section: session key modal, device code modal translations
+- Added missing `mcp` keys: noServers, remove, official, byAuthor
+
+**Files Added/Modified**:
+- `src/renderer/i18n/de.ts` [NEW] - German translations
+- `src/renderer/i18n/fr.ts` [NEW] - French translations
+- `src/renderer/i18n/es.ts` [NEW] - Spanish translations
+- `src/renderer/i18n/en.ts` - Added memory, terminal, auth sections
+- `src/renderer/i18n/tr.ts` - Added memory, terminal, auth sections
+- `src/renderer/i18n/index.ts` - Export new languages
+- `CHANGELOG.md` - Consolidated from docs/CHANGELOG.md
+
+### 2026-01-23: Project System Bug Fixes
+
+**Status**: Fixed Critical Issues
+
+**Issues Resolved**:
+
+#### **Bug #1: Sidebar Links Disappearing** ✅
+- **Problem**: When user selected a project, entire sidebar disappeared, preventing navigation back to other views
+- **Root Cause**: Conditional rendering in App.tsx completely hid sidebar when `currentView === 'projects' && selectedProject`
+- **Fix**: Removed conditional logic - sidebar now always visible, allowing users to navigate between views even while in project workspace
+- **File**: `src/renderer/App.tsx` - Simplified sidebar rendering logic
+
+#### **Bug #2: Vector Dimension Error in Code Intelligence** ✅  
+- **Problem**: Project analysis failed with "vector must have at least 1 dimension" error during code indexing
+- **Root Cause**: When embedding provider set to 'none', service returned empty array `[]` which database rejected (PostgreSQL vector type requires 1+ dimensions)
+- **Fix**: Return 384-dimensional zero vector `new Array(384).fill(0)` instead of empty array for 'none' provider
+- **File**: `src/main/services/llm/embedding.service.ts` - Replaced empty array with proper default vector
+- **Additional**: Fixed unreachable code (duplicate return statement) in getCurrentProvider()
+
+**Technical Details**:
+- **Sidebar Fix**: Users can now access all navigation options while viewing projects, maintaining consistent UX
+- **Vector Fix**: Code intelligence indexing will work with 'none' embedding provider using zero vectors, preventing database constraint violations
+- **Database Compatibility**: Zero vectors maintain proper dimensions for PostgreSQL vector operations while indicating no semantic meaning
+
+**Files Modified**:
+- `src/renderer/App.tsx` - Removed problematic conditional sidebar rendering
+- `src/main/services/llm/embedding.service.ts` - Fixed vector dimension issue and unreachable code
+- `CHANGELOG.md` - Added fix documentation
+
+**Testing Status**: TypeScript compilation successful, no type errors found
+
+**User Impact**: 
+- Project navigation now works properly without losing sidebar access
+- Code analysis/indexing will complete successfully regardless of embedding provider choice
+- Improved reliability and user experience in project management workflow
+
+---
+
+### 2026-01-23: Agent Council System Comprehensive Review & Roadmap
+
+**Status**: Analysis Completed
+
+**Review Findings**:
+- **Strengths Identified**: Solid multi-agent architecture with three-phase workflow (Planning→Execution→Review), autonomous execution with safety limits, comprehensive tool system (6 tools + service invocation), real-time WebSocket integration
+- **Critical Issues Found**: Hardcoded model/provider configuration, security vulnerabilities in tool system, no error recovery mechanisms, limited collaboration patterns
+- **Missing Features**: Custom agent creation, advanced workflows (parallel execution, voting), enhanced UI controls, specialized agent library
+
+**Major Concerns Discovered**:
+- **Security Risk**: `callSystem` tool can invoke any service method without restrictions - potential system damage
+- **Configuration Lock**: Hardcoded to `gpt-4o`+`openai` with TODO comment in code (line 193)
+- **Poor Error Recovery**: Step failure stops entire session with no retry logic
+- **Limited Agent Types**: Only 3 fixed agents (planner, executor, reviewer) - no customization
+
+**Strategic Roadmap Created**:
+- **Phase 1** (Critical): Fix model configuration, implement tool security, add error recovery
+- **Phase 2** (High Priority): Custom agent system, enhanced UI controls, session templates
+- **Phase 3** (Advanced): Multi-agent workflows, specialized agents, advanced planning
+- **Phase 4** (Platform): Analytics, integrations, cloud-native features
+
+**Documentation Added**:
+- `docs/TODO/council.md` - Comprehensive 30+ item roadmap with security analysis and implementation phases
+
+### 2026-01-23: Project System Comprehensive Review & Roadmap
+
+**Status**: Analysis Completed
+
+**Review Findings**:
+- **Strengths Identified**: Intelligent project analysis (40+ languages), rich scaffolding system (6 categories), advanced workspace integration with multi-mount support, robust PGlite database persistence
+- **Critical Issues Found**: Type safety problems, missing confirmation dialogs, state management race conditions, limited batch operations
+- **Missing Features**: Custom templates, project exports, environment variable management, advanced Git integration
+
+**Strategic Roadmap Created**:
+- **Phase 1** (Critical): Fix type safety, add confirmations, proper state management
+- **Phase 2** (High Priority): Batch operations, environment manager, project settings panel
+- **Phase 3** (Advanced): Custom templates, export system, AI-driven scaffolding
+- **Phase 4** (Platform): Dependency management, analytics dashboard, Git integration
+
+**Documentation Added**:
+- `docs/TODO/projects.md` - Comprehensive 50+ item roadmap with priorities and implementation phases
+
+### 2026-01-23: Deep Research & Idea Scoring Services
+
+**Status**: Completed
+
+**New Features**:
+- **Deep Research Service**: Multi-source research system performing 13 targeted queries per topic with credibility scoring and AI synthesis
+- **AI-Powered Idea Scoring**: 6-dimension scoring system (innovation, market need, feasibility, business potential, target clarity, competitive moat) with detailed breakdowns
+- **Idea Management**: Complete CRUD operations including delete, archive, restore functionality for ideas and sessions
+
+**API Enhancements**:
+- New IPC handlers: `ideas:deepResearch`, `ideas:validateIdea`, `ideas:scoreIdea`, `ideas:rankIdeas`, `ideas:compareIdeas`
+- Data management handlers: `ideas:deleteIdea`, `ideas:deleteSession`, `ideas:archiveIdea`, `ideas:restoreIdea`
+
+### 2026-01-23: Ideas to Project Navigation & Missing IPC Handlers
+
+**Status**: Completed
+
+**New Features**:
+- **Automatic Project Navigation**: When users approve an idea and create a project, they are now automatically navigated to the newly created project page instead of staying on the Ideas page. This provides a seamless workflow from idea generation to project development.
+- **Complete IPC Handler Coverage**: Added missing IPC handlers for the Ideas system that were implemented in the backend but not exposed to the renderer process.
+
+**Technical Changes**:
+- **IdeasPage**: Added `onNavigateToProject` callback prop to handle navigation after project creation
+- **ViewManager**: Updated to accept and pass navigation callback to IdeasPage
+- **AppShell**: Added `handleNavigateToProject` callback that reloads projects, selects the new project, and navigates to the projects view
+- **Preload Bridge**: Added 13 missing IPC handlers:
+  - Deep Research: `deepResearch`, `validateIdea`, `clearResearchCache`
+  - Scoring: `scoreIdea`, `rankIdeas`, `compareIdeas`, `quickScore`
+  - Data Management: `deleteIdea`, `deleteSession`, `archiveIdea`, `restoreIdea`, `getArchivedIdeas`
+  - Events: `onDeepResearchProgress`
+
+**Files Modified**:
+- `src/renderer/features/ideas/IdeasPage.tsx`
+- `src/renderer/views/ViewManager.tsx`
+- `src/renderer/AppShell.tsx`
+- `src/main/preload.ts`
+- `src/renderer/electron.d.ts`
+- `src/renderer/web-bridge.ts`
+- `CHANGELOG.md`
+
 ### 2026-01-23: Strategic Research System & Local Image Generation
 
 **Status**: Completed

@@ -27,7 +27,7 @@ export type AppSettings = {
         enabled: boolean
     }
     general: {
-        language: 'tr' | 'en'
+        language: 'tr' | 'en' | 'de' | 'fr' | 'es'
         theme: string
         resolution: string
         fontSize: number

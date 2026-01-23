@@ -339,6 +339,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
             }
             terminalInstanceRef.current = null
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []) // Remove dependencies to prevent re-initialization on prop changes
 
     return (
