@@ -47,9 +47,10 @@ export interface AgentCouncilDependencies {
 }
 
 export class AgentCouncilService {
-    constructor(private deps: AgentCouncilDependencies) { }
-
     private activeLoops = new Set<string>()
+    private currentSessionId: string | null = null
+
+    constructor(private deps: AgentCouncilDependencies) { }
 
     /**
      * Starts an autonomous execution loop for a given session.
@@ -88,6 +89,9 @@ export class AgentCouncilService {
      * @private
      */
     private async runLoop(sessionId: string) {
+        // Set current session context for diff tracking
+        this.currentSessionId = sessionId
+        
         const MAX_SESSION_ITERATIONS = 20;
         let safetyLimit = MAX_SESSION_ITERATIONS
         let iterations = 0;
@@ -97,6 +101,7 @@ export class AgentCouncilService {
 
             if (session.status === 'completed' || session.status === 'failed') {
                 this.activeLoops.delete(sessionId)
+                this.currentSessionId = null
                 break
             }
 
@@ -107,6 +112,7 @@ export class AgentCouncilService {
                 await this.deps.db.addCouncilLog(sessionId, 'system', `Step failed: ${msg}`, 'error')
                 // decide whether to stop or retry. for now stop.
                 this.activeLoops.delete(sessionId)
+                this.currentSessionId = null
                 break
             }
 
@@ -121,6 +127,9 @@ export class AgentCouncilService {
             await this.deps.db.addCouncilLog(sessionId, 'system', `Loop safety limit reached (${MAX_SESSION_ITERATIONS} steps). Pausing.`, 'error')
             this.activeLoops.delete(sessionId)
         }
+        
+        // Clear session context
+        this.currentSessionId = null
     }
 
     /**
@@ -422,7 +431,18 @@ export class AgentCouncilService {
 
     private async toolWriteFile(args: ToolCallArgs): Promise<string> {
         if (!args.path || !args.content) { throw new Error('Missing path or content') }
-        const writeRes = await this.deps.fs.writeFile(args.path, args.content)
+        
+        // Use tracking-enabled writeFile for Council system
+        const writeRes = await this.deps.fs.writeFileWithTracking(args.path, args.content, {
+            aiSystem: 'council',
+            chatSessionId: this.currentSessionId || undefined,
+            changeReason: 'Council agent file modification',
+            metadata: {
+                toolName: 'writeFile',
+                councilSessionId: this.currentSessionId
+            }
+        })
+        
         if (!writeRes.success) { throw new Error(writeRes.error ?? 'Failed to write file') }
         return `File written to ${args.path}`
     }

@@ -72,7 +72,7 @@ export default function App() {
     const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput)
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking } = useTextToSpeech()
     const { models, loadModels, selectedModel, setSelectedModel } = useModel()
-    const { projects, setSelectedProject, selectedProject } = useProject()
+    const { projects, setSelectedProject } = useProject()
     const appState = useAppState()
 
     useEffect(() => { window.orbitSpeak = handleSpeak }, [handleSpeak])
@@ -153,7 +153,7 @@ export default function App() {
                 <div className="absolute inset-0 flex flex-col overflow-hidden">
                     <LayoutManager
                         isSidebarCollapsed={appState.isSidebarCollapsed} setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
-                        sidebarContent={!(appState.currentView === 'projects' && selectedProject) ? (
+                        sidebarContent={
                             <Sidebar
                                 currentView={appState.currentView} onChangeView={appState.setCurrentView} isCollapsed={appState.isSidebarCollapsed}
                                 toggleSidebar={() => { appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed) }}
@@ -163,7 +163,7 @@ export default function App() {
                                 }}
                                 onSearch={() => { }}
                             />
-                        ) : null}
+                        }
                         mainContent={<>
                             <AppHeader currentView={appState.currentView} />
                             <DragDropWrapper isDragging={appState.isDragging} setIsDragging={appState.setIsDragging} onFileDrop={(file) => { void processFile(file) }}>

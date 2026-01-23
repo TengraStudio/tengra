@@ -183,7 +183,7 @@ export const ActivityBarLayout: React.FC<{
                         {/* Sidebar header */}
                         <div className="flex items-center justify-between px-4 py-2 border-b border-border/20">
                             <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                                {activityItems?.find(i => i.id === activeItem)?.label || activeItem}
+                                {activityItems?.find(i => i.id === activeItem)?.label ?? activeItem}
                             </span>
                             <button
                                 onClick={() => setCollapsed(true)}

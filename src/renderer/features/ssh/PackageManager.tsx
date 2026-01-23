@@ -1,6 +1,6 @@
 
 import { Layers,RefreshCw, Search } from 'lucide-react'
-import { useEffect,useState } from 'react'
+import { useCallback, useEffect,useState } from 'react'
 
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,7 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
     const [search, setSearch] = useState('')
     const [loading, setLoading] = useState(false)
 
-    const fetchPackages = async () => {
+    const fetchPackages = useCallback(async () => {
         setLoading(true)
         setPackages([])
         try {
@@ -28,11 +28,11 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [connectionId, manager])
 
     useEffect(() => {
         void fetchPackages()
-    }, [connectionId, manager])
+    }, [fetchPackages])
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
 

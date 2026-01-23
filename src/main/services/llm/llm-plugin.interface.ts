@@ -207,9 +207,7 @@ export class LLMProviderRegistry implements ILLMProviderRegistry {
 
     register(provider: ILLMProvider): void {
         this.providers.set(provider.id, provider);
-        if (!this.defaultProviderId) {
-            this.defaultProviderId = provider.id;
-        }
+        this.defaultProviderId ??= provider.id;
     }
 
     unregister(providerId: string): void {

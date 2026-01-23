@@ -118,7 +118,7 @@ describe('TokenService', () => {
             await legacyService.initialize();
             expect(setIntervalSpy).toHaveBeenCalledTimes(2);
             expect(appLogger.warn).toHaveBeenCalledWith('TokenService', expect.stringContaining('No JobScheduler provided'));
-            legacyService.cleanup();
+            void legacyService.cleanup();
         });
     });
 

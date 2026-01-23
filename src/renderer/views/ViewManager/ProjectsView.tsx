@@ -55,7 +55,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <Suspense fallback={<LoadingState size="md" />}>
             <ProjectsPage
                 projects={projects}
-                onRefresh={loadProjects}
                 selectedProject={selectedProject}
                 onSelectProject={setSelectedProject}
                 language={language}

@@ -1,10 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-export type Theme =
-    | 'graphite' | 'obsidian' | 'midnight' | 'deep-forest' | 'dracula' | 'cyberpunk'
-    | 'matrix' | 'synthwave' | 'lava' | 'aurora' | 'snow' | 'sand' | 'sky'
-    | 'minimal' | 'paper' | 'gold' | 'ocean' | 'rose' | 'coffee' | 'neon-pulse'
-    | 'cyber-future' | 'soft-velvet';
+export type Theme = 'black' | 'white';
 
 interface ThemeContextType {
     theme: Theme;
@@ -17,21 +13,20 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setThemeState] = useState<Theme>(() => {
         const saved = localStorage.getItem('orbit-theme');
-        if (saved) {
-            return saved as Theme;
+        if (saved === 'black' || saved === 'white') {
+            return saved;
         }
-        return 'graphite';
+        return 'black';
     });
 
-    const setTheme = (newTheme: Theme) => {
+    const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme);
         localStorage.setItem('orbit-theme', newTheme);
-    };
+    }, []);
 
-    const toggleTheme = () => {
-        // Basic cycle for demo, though usually themes are selected from a list
-        setTheme(theme === 'graphite' ? 'snow' : 'graphite');
-    };
+    const toggleTheme = useCallback(() => {
+        setTheme(theme === 'black' ? 'white' : 'black');
+    }, [theme, setTheme]);
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -48,8 +43,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, []);
 
+    // Memoize the context value to prevent unnecessary re-renders
+    const value = useMemo(() => ({
+        theme,
+        setTheme,
+        toggleTheme
+    }), [theme, setTheme, toggleTheme])
+
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );

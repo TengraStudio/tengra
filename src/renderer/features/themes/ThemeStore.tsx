@@ -29,93 +29,26 @@ interface Theme {
 
 const BUILT_IN_THEMES: Theme[] = [
     {
-        id: 'dark-default',
-        name: 'Dark Default',
+        id: 'black',
+        name: 'Orbit Black',
         author: 'Orbit Team',
-        description: 'The default dark theme with purple accents',
-        preview: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-        colors: { primary: '#8b5cf6', background: '#0f0f14', foreground: '#f4f4f5', accent: '#6366f1' },
-        downloads: 10000,
-        rating: 4.8,
+        description: 'The default pure black theme',
+        preview: '#000000',
+        colors: { primary: '#0ea5e9', background: '#000000', foreground: '#ffffff', accent: '#0c4a6e' },
+        downloads: 0,
+        rating: 5.0,
         isInstalled: true
     },
     {
-        id: 'light-default',
-        name: 'Light Default',
+        id: 'white',
+        name: 'Orbit White',
         author: 'Orbit Team',
-        description: 'A clean light theme for daytime use',
-        preview: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        colors: { primary: '#6366f1', background: '#ffffff', foreground: '#1f2937', accent: '#8b5cf6' },
-        downloads: 5000,
-        rating: 4.5,
-        isInstalled: false
-    },
-    {
-        id: 'nord',
-        name: 'Nord',
-        author: 'Arctic Ice Studio',
-        description: 'An arctic, north-bluish color palette',
-        preview: 'linear-gradient(135deg, #2e3440 0%, #3b4252 100%)',
-        colors: { primary: '#88c0d0', background: '#2e3440', foreground: '#eceff4', accent: '#81a1c1' },
-        downloads: 8500,
-        rating: 4.9,
-        isInstalled: false
-    },
-    {
-        id: 'dracula',
-        name: 'Dracula',
-        author: 'Dracula Theme',
-        description: 'A dark theme with vibrant colors',
-        preview: 'linear-gradient(135deg, #282a36 0%, #44475a 100%)',
-        colors: { primary: '#bd93f9', background: '#282a36', foreground: '#f8f8f2', accent: '#ff79c6' },
-        downloads: 12000,
-        rating: 4.7,
-        isInstalled: false
-    },
-    {
-        id: 'monokai',
-        name: 'Monokai Pro',
-        author: 'Monokai',
-        description: 'Professional dark theme with warm accents',
-        preview: 'linear-gradient(135deg, #2d2a2e 0%, #403e41 100%)',
-        colors: { primary: '#ffd866', background: '#2d2a2e', foreground: '#fcfcfa', accent: '#a9dc76' },
-        downloads: 7200,
-        rating: 4.6,
-        isInstalled: false,
-        isPremium: true
-    },
-    {
-        id: 'github-dark',
-        name: 'GitHub Dark',
-        author: 'GitHub',
-        description: 'The official GitHub dark theme',
-        preview: 'linear-gradient(135deg, #0d1117 0%, #161b22 100%)',
-        colors: { primary: '#58a6ff', background: '#0d1117', foreground: '#c9d1d9', accent: '#238636' },
-        downloads: 9800,
-        rating: 4.8,
-        isInstalled: false
-    },
-    {
-        id: 'solarized-dark',
-        name: 'Solarized Dark',
-        author: 'Ethan Schoonover',
-        description: 'Precision colors for machines and people',
-        preview: 'linear-gradient(135deg, #002b36 0%, #073642 100%)',
-        colors: { primary: '#268bd2', background: '#002b36', foreground: '#839496', accent: '#2aa198' },
-        downloads: 6100,
-        rating: 4.4,
-        isInstalled: false
-    },
-    {
-        id: 'tokyo-night',
-        name: 'Tokyo Night',
-        author: 'enkia',
-        description: 'A clean theme celebrating the lights of Tokyo',
-        preview: 'linear-gradient(135deg, #1a1b26 0%, #24283b 100%)',
-        colors: { primary: '#7aa2f7', background: '#1a1b26', foreground: '#a9b1d6', accent: '#bb9af7' },
-        downloads: 11000,
-        rating: 4.9,
-        isInstalled: false
+        description: 'Clean and minimal white theme',
+        preview: '#ffffff',
+        colors: { primary: '#4f46e5', background: '#ffffff', foreground: '#000000', accent: '#eef2ff' },
+        downloads: 0,
+        rating: 5.0,
+        isInstalled: true
     }
 ]
 

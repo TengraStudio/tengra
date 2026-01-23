@@ -533,7 +533,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
     const [isLoading, setIsLoading] = useState(false)
 
     const handleAsk = async () => {
-        if (!question.trim() || isLoading) return
+        if (!question.trim() || isLoading) {return}
         const currentQ = question
         setQuestion('')
         setChat(prev => [...prev, { q: currentQ }])

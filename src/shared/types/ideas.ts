@@ -23,7 +23,7 @@ export type IdeaSessionStatus =
     | 'cancelled'
 
 // Individual idea status
-export type IdeaStatus = 'pending' | 'approved' | 'rejected'
+export type IdeaStatus = 'pending' | 'approved' | 'rejected' | 'archived'
 
 // Research pipeline stages (category-level)
 export type ResearchStage =

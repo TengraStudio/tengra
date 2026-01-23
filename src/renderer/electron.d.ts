@@ -188,7 +188,7 @@ export interface ElectronAPI {
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>
         findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>
-        searchFiles: (rootPath: string, query: string, isRegex?: boolean) => Promise<FileSearchResult[]>
+        searchFiles: (rootPath: string, query: string, projectId?: string, isRegex?: boolean) => Promise<FileSearchResult[]>
         indexProject: (rootPath: string, projectId: string) => Promise<void>
         queryIndexedSymbols: (query: string) => Promise<{ name: string; path: string; line: number }[]>
     }
@@ -358,8 +358,10 @@ export interface ElectronAPI {
         getFolders: () => Promise<Folder[]>
         createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
         updateProject: (id: string, updates: Partial<Project>) => Promise<void>
-        deleteProject: (id: string) => Promise<void>
+        deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
+        bulkDeleteProjects: (ids: string[], deleteFiles?: boolean) => Promise<void>
+        bulkArchiveProjects: (ids: string[], isArchived: boolean) => Promise<void>
         createFolder: (name: string, color?: string) => Promise<Folder>
         deleteFolder: (id: string) => Promise<void>
         updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>
@@ -476,7 +478,8 @@ export interface ElectronAPI {
     selectDirectory: () => Promise<{ success: boolean; path?: string }>
     listDirectory: (path: string) => Promise<{ success: boolean; files?: FileEntry[]; error?: string }>
     readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
-    writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>
+    writeFile: (path: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => Promise<{ success: boolean; error?: string }>
+
     createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>
     deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>
     deleteDirectory: (path: string) => Promise<{ success: boolean; error?: string }>
@@ -528,8 +531,25 @@ export interface ElectronAPI {
         canGenerateLogo: () => Promise<boolean>
         generateLogo: (ideaId: string, prompt: string) => Promise<{ success: boolean; logoPath?: string }>
         queryResearch: (ideaId: string, question: string) => Promise<{ success: boolean; answer: string }>
+        // Deep research handlers
+        deepResearch: (topic: string, category: string) => Promise<{ success: boolean; report?: IpcValue }>
+        validateIdea: (title: string, description: string, category: string) => Promise<{ success: boolean; validation?: IpcValue }>
+        clearResearchCache: () => Promise<{ success: boolean }>
+        // Scoring handlers
+        scoreIdea: (ideaId: string) => Promise<{ success: boolean; score?: IpcValue }>
+        rankIdeas: (ideaIds: string[]) => Promise<{ success: boolean; ranked?: IpcValue[] }>
+        compareIdeas: (ideaId1: string, ideaId2: string) => Promise<{ success: boolean; comparison?: IpcValue }>
+        quickScore: (title: string, description: string, category: string) => Promise<{ success: boolean; score?: number }>
+        // Data management handlers
+        deleteIdea: (ideaId: string) => Promise<{ success: boolean }>
+        deleteSession: (sessionId: string) => Promise<{ success: boolean }>
+        archiveIdea: (ideaId: string) => Promise<{ success: boolean }>
+        restoreIdea: (ideaId: string) => Promise<{ success: boolean }>
+        getArchivedIdeas: (sessionId?: string) => Promise<ProjectIdea[]>
+        // Progress events
         onResearchProgress: (callback: (progress: ResearchProgress) => void) => () => void
         onIdeaProgress: (callback: (progress: IdeaProgress) => void) => () => void
+        onDeepResearchProgress: (callback: (progress: { stage: string; progress: number }) => void) => () => void
     }
 
     getUserDataPath: () => Promise<string>

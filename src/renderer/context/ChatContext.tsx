@@ -100,7 +100,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (chatManager.chats && chatManager.chats.length >= 0) {
             historyManager.saveState(chatManager.chats, chatManager.currentChatId)
         }
-    }, [chatManager.chats, chatManager.currentChatId])
+    }, [chatManager.chats, chatManager.currentChatId, historyManager])
 
     // Handle undo/redo keyboard shortcuts
     useEffect(() => {

@@ -2,7 +2,7 @@
 
 This document tracks bugs, improvements, and feature enhancements for the AI-powered project idea generation system.
 
-*Last Updated: January 22, 2026*
+*Last Updated: January 23, 2026*
 
 ---
 
@@ -213,6 +213,323 @@ This document tracks bugs, improvements, and feature enhancements for the AI-pow
 - [ ] **ARCH-IDX-003**: Add event sourcing for idea history
   - Track all modifications as events for better auditability
 
+- [x] **ARCH-IDX-004**: Make IdeaGeneratorService modular
+  - Extract sub-services: ResearchPipelineService, IdeaEnrichmentService, LogoGenerationService
+  - Created: `DeepResearchService` for advanced multi-source research
+  - Created: `IdeaScoringService` for AI-powered idea scoring/ranking
+  - Each module should be independently testable and replaceable
+  - Use dependency injection for all sub-services
+  - Priority: High
+
+- [x] **ARCH-IDX-005**: Create dedicated IdeaStorageService
+  - Handle all CRUD operations for ideas in a separate service
+  - ~~Support soft-delete with restore capability~~ Done (archiveIdea, restoreIdea)
+  - ~~Add bulk operations (delete multiple, archive session)~~ Partial (deleteSession added)
+  - Priority: High
+
+---
+
+## Data Management
+
+- [x] **DATA-IDX-001**: Add idea deletion functionality
+  - Location: `idea-generator.service.ts`, `IdeasPage.tsx`, `IdeaDetailsModal.tsx`
+  - Description: Allow users to permanently delete individual ideas
+  - ~~Add confirmation dialog with "Are you sure?"~~ Backend ready, UI pending
+  - ~~Consider soft-delete first (archive) with permanent delete option~~ Done
+  - Priority: High
+
+- [x] **DATA-IDX-002**: Add session deletion functionality
+  - Description: Allow deleting entire sessions with all their ideas
+  - ~~Add cascade delete for all associated ideas~~ Done (deleteSession method)
+  - Preserve audit log of deleted sessions
+  - Priority: High
+
+- [x] **DATA-IDX-003**: Add idea archiving
+  - Description: Archive ideas instead of rejecting (keep for later review)
+  - ~~Add "Archive" button alongside Approve/Reject~~ Backend ready
+  - ~~Add filter to show/hide archived ideas~~ getArchivedIdeas method added
+  - Priority: Medium
+
+- [ ] **DATA-IDX-004**: Add batch operations
+  - Description: Select multiple ideas for bulk approve/reject/delete/archive
+  - Add checkbox selection in review view
+  - Add "Select All" / "Deselect All" controls
+  - Priority: Medium
+
+- [x] **DATA-IDX-005**: Add idea restore functionality
+  - Description: Restore deleted/archived ideas
+  - ~~Add "Trash" section in session history~~ Backend ready (restoreIdea method)
+  - Auto-purge after 30 days (configurable)
+  - Priority: Low
+
+---
+
+## Advanced Research System (NEW)
+
+- [x] **ADV-IDX-001**: Deep Research Service
+  - Location: `src/main/services/external/deep-research.service.ts`
+  - Description: Multi-source research with citations and credibility scoring
+  - Features:
+    - 13 different research queries per topic (trends, competitors, market size, user needs, etc.)
+    - Credibility scoring for sources (0-100 based on domain authority)
+    - Full content fetching for top sources
+    - AI-powered synthesis of findings with citations
+    - Research caching (30 min TTL) to avoid redundant queries
+    - Metrics: trend momentum, competitor density, opportunity score
+  - IPC Handlers: `ideas:deepResearch`, `ideas:validateIdea`, `ideas:clearResearchCache`
+  - Priority: High
+
+- [x] **ADV-IDX-002**: Idea Scoring Service
+  - Location: `src/main/services/llm/idea-scoring.service.ts`
+  - Description: AI-powered scoring and ranking of project ideas
+  - Features:
+    - 6-dimension scoring (innovation, market need, feasibility, business potential, target clarity, competitive moat)
+    - Detailed breakdown with strengths, weaknesses, improvements
+    - Quick score mode for fast evaluation
+    - Idea comparison (head-to-head)
+    - Batch ranking of multiple ideas
+  - IPC Handlers: `ideas:scoreIdea`, `ideas:rankIdeas`, `ideas:compareIdeas`, `ideas:quickScore`
+  - Priority: High
+
+- [ ] **ADV-IDX-003**: Research Quality Improvements
+  - Add Tavily "advanced" search depth mode (deeper content)
+  - Add source validation with fact-checking
+  - Add trend momentum scoring based on search volume
+  - Implement RAG with vector storage for research data
+  - Priority: Medium
+
+- [ ] **ADV-IDX-004**: Feasibility Analysis Stage
+  - Add technical feasibility assessment
+  - Add resource requirement estimation
+  - Add timeline estimation based on tech stack
+  - Add team size recommendations
+  - Priority: Medium
+
+## Next-Generation Features (NEW)
+
+### AI & Machine Learning Enhancements
+
+- [ ] **ML-IDX-001**: Idea Success Prediction Model
+  - Description: Train ML model on historical data to predict idea success probability
+  - Features:
+    - Analyze patterns from approved vs rejected ideas
+    - Factor in user behavior, development time, project completion rates
+    - Provide success probability score (0-100%)
+    - Learn from user feedback and project outcomes
+  - Priority: High
+
+- [ ] **ML-IDX-002**: Personalized Idea Generation
+  - Description: Learn from user preferences to generate more relevant ideas
+  - Features:
+    - Track which ideas users approve/reject and why
+    - Analyze preferred categories, technologies, business models
+    - Adapt generation prompts based on user profile
+    - Suggest categories user is most likely to enjoy
+  - Priority: Medium
+
+- [ ] **ML-IDX-003**: Market Trend Prediction
+  - Description: Use historical trend data to predict upcoming opportunities
+  - Features:
+    - Analyze 5+ years of tech trend data
+    - Identify cyclical patterns in technology adoption
+    - Predict emerging technologies 6-12 months early
+    - Generate "future-ready" ideas based on predictions
+  - Priority: Medium
+
+### Advanced Research & Data Mining
+
+- [ ] **RES-IDX-001**: Patent Analysis Integration
+  - Description: Analyze patent filings to identify innovation gaps
+  - Features:
+    - Search patent databases for related technologies
+    - Identify expired patents for potential revival
+    - Find patent gaps that suggest opportunities
+    - Warning system for heavily patented areas
+  - Priority: Medium
+
+- [ ] **RES-IDX-002**: Social Media Sentiment Analysis
+  - Description: Analyze social platforms for pain points and needs
+  - Features:
+    - Monitor Twitter, Reddit, HN for user complaints
+    - Identify trending frustrations and unmet needs
+    - Track discussion volume around topics over time
+    - Generate ideas based on community pain points
+  - Priority: Medium
+
+- [ ] **RES-IDX-003**: GitHub Activity Mining
+  - Description: Analyze open source activity for emerging trends
+  - Features:
+    - Track new repository creation patterns
+    - Identify rapidly growing programming languages/frameworks
+    - Analyze issue reports for common developer problems
+    - Suggest tooling ideas based on developer pain points
+  - Priority: Low
+
+- [ ] **RES-IDX-004**: Economic Data Integration
+  - Description: Factor economic indicators into idea evaluation
+  - Features:
+    - Track GDP, employment rates, consumer spending
+    - Identify recession-proof business models
+    - Adjust idea scoring based on economic climate
+    - Suggest timing for launching different types of products
+  - Priority: Low
+
+### Collaboration & Team Features
+
+- [ ] **TEAM-IDX-001**: Multi-User Idea Sessions
+  - Description: Allow teams to collaborate on idea generation
+  - Features:
+    - Real-time collaborative sessions with multiple participants
+    - Voting system for ideas (like/dislike, star ratings)
+    - Role-based permissions (generator, reviewer, approver)
+    - Team decision tracking and consensus building
+  - Priority: High
+
+- [ ] **TEAM-IDX-002**: Expert Review Network
+  - Description: Connect with domain experts for idea validation
+  - Features:
+    - Network of verified industry experts
+    - Submit ideas for expert review (anonymous or credited)
+    - Expert scoring and feedback integration
+    - Reputation system for expert reviewers
+  - Priority: Low
+
+- [ ] **TEAM-IDX-003**: Idea Marketplace
+  - Description: Platform for sharing and discovering ideas
+  - Features:
+    - Public idea sharing (with permission controls)
+    - Browse ideas by category, technology, difficulty
+    - Collaboration matching (find co-founders for ideas)
+    - License framework for idea sharing/selling
+  - Priority: Low
+
+### Advanced Analytics & Insights
+
+- [ ] **ANAL-IDX-001**: Idea Lifecycle Analytics
+  - Description: Track ideas from generation to project completion
+  - Features:
+    - Success rate tracking by category, complexity, team size
+    - Time-to-market analysis for different idea types
+    - Abandonment pattern analysis
+    - ROI prediction based on historical project data
+  - Priority: Medium
+
+- [ ] **ANAL-IDX-002**: Market Timing Optimization
+  - Description: Analyze optimal timing for different types of ideas
+  - Features:
+    - Seasonal trend analysis (when to launch different products)
+    - Technology maturity cycle tracking
+    - Market saturation indicators
+    - Competitive landscape evolution patterns
+  - Priority: Medium
+
+- [ ] **ANAL-IDX-003**: Portfolio Optimization
+  - Description: Help users balance their idea portfolio
+  - Features:
+    - Risk/reward analysis across multiple ideas
+    - Diversification recommendations
+    - Resource allocation suggestions
+    - Timeline conflict detection and resolution
+  - Priority: Low
+
+### Integration & Ecosystem
+
+- [ ] **INT-IDX-001**: No-Code Platform Integration
+  - Description: Generate ideas specifically for no-code platforms
+  - Features:
+    - Bubble, Webflow, Zapier-specific idea templates
+    - Feasibility analysis for no-code implementation
+    - Template generation for popular no-code tools
+    - Complexity scoring for no-code viability
+  - Priority: Medium
+
+- [ ] **INT-IDX-002**: Startup Ecosystem Integration
+  - Description: Connect with startup tools and platforms
+  - Features:
+    - AngelList integration for team matching
+    - ProductHunt submission automation
+    - Y Combinator application helper
+    - Pitch deck generation from idea data
+  - Priority: Low
+
+- [ ] **INT-IDX-003**: Development Tool Integration
+  - Description: Generate project scaffolding and tooling
+  - Features:
+    - GitHub repository creation with README, issues, milestones
+    - CI/CD pipeline templates based on tech stack
+    - Docker configuration generation
+    - Database schema suggestions and migration files
+  - Priority: Medium
+
+### Quality & Refinement
+
+- [ ] **QUAL-IDX-001**: Idea Stress Testing
+  - Description: Simulate various scenarios to test idea robustness
+  - Features:
+    - Economic downturn impact simulation
+    - Technology disruption scenarios
+    - Competitive response modeling
+    - Scalability bottleneck identification
+  - Priority: Medium
+
+- [ ] **QUAL-IDX-002**: Regulatory Compliance Analysis
+  - Description: Identify potential regulatory challenges early
+  - Features:
+    - GDPR, CCPA compliance requirements analysis
+    - Industry-specific regulation identification
+    - International market entry requirements
+    - Legal risk assessment and mitigation suggestions
+  - Priority: Low
+
+- [ ] **QUAL-IDX-003**: Accessibility & Inclusion Scoring
+  - Description: Evaluate ideas for accessibility and inclusivity
+  - Features:
+    - WCAG compliance requirements analysis
+    - Diverse user group consideration scoring
+    - Internationalization complexity assessment
+    - Social impact potential evaluation
+  - Priority: Medium
+
+### Gamification & Motivation
+
+- [ ] **GAME-IDX-001**: Achievement System
+  - Description: Gamify the idea generation process
+  - Features:
+    - Badges for generating ideas, completing research, launching projects
+    - Streak tracking for consistent idea generation
+    - Leaderboards for most innovative ideas
+    - Progress tracking toward personal goals
+  - Priority: Low
+
+- [ ] **GAME-IDX-002**: Idea Challenges
+  - Description: Structured challenges to stimulate creativity
+  - Features:
+    - Weekly/monthly themed challenges (e.g., "Climate Tech Week")
+    - Constraint-based challenges (build with specific tech stack)
+    - Time-boxed rapid idea generation sessions
+    - Community voting on challenge winners
+  - Priority: Low
+
+### Research Export & Documentation
+
+- [ ] **DOC-IDX-001**: Executive Summary Generator
+  - Description: Auto-generate professional summaries of ideas
+  - Features:
+    - One-page executive summary with key metrics
+    - Investment pitch formatting
+    - Technical specification documents
+    - Market analysis reports
+  - Priority: High
+
+- [ ] **DOC-IDX-002**: Research Citation Management
+  - Description: Proper academic-style citation of research sources
+  - Features:
+    - APA, MLA, Chicago style citation generation
+    - Bibliography management for all research sources
+    - Source credibility indicators in citations
+    - Export to reference managers (Zotero, Mendeley)
+  - Priority: Medium
+
 ---
 
 ## Notes
@@ -220,3 +537,6 @@ This document tracks bugs, improvements, and feature enhancements for the AI-pow
 - The idea generation system is a key feature for project bootstrapping
 - Logo generation requires Antigravity authentication
 - Research pipeline integrates with MarketResearchService for real market data
+- **New services created:**
+  - `DeepResearchService` - Advanced research with citations, credibility scoring, and AI synthesis
+  - `IdeaScoringService` - AI-powered idea evaluation and ranking

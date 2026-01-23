@@ -5,13 +5,19 @@ import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat'
 import { JsonObject } from '@shared/types/common'
 import { Project } from '@shared/types/project'
-import { WorkspaceMount } from '@shared/types/workspace'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
-export function registerDbIpc(databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
+export function registerDbIpc(getWindow: () => Electron.BrowserWindow | null, databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
+    const notifyUpdate = (id?: string) => {
+        const win = getWindow()
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('project:updated', { id })
+        }
+    }
+
     registerChatHandlers(databaseService, auditLogService)
     registerMessageHandlers(databaseService, embeddingService, auditLogService)
-    registerProjectHandlers(databaseService, auditLogService)
+    registerProjectHandlers(databaseService, notifyUpdate, auditLogService)
     registerFolderHandlers(databaseService)
     registerPromptHandlers(databaseService)
     registerStatsHandlers(databaseService, auditLogService)
@@ -218,13 +224,15 @@ async function attachEmbeddingToMessage(message: Message & { vector?: number[] }
     }
 }
 
-function registerProjectHandlers(databaseService: DatabaseService, auditLogService?: AuditLogService) {
+function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate: (id?: string) => void, auditLogService?: AuditLogService) {
     ipcMain.handle('db:getProjects', createSafeIpcHandler('db:getProjects', async () => {
         return await databaseService.getProjects()
     }, []))
 
-    ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mounts: WorkspaceMount[]) => {
-        return await databaseService.createProject(name, path, desc, JSON.stringify(mounts), undefined)
+    ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mountsJson?: string) => {
+        const result = await databaseService.createProject(name, path, desc, mountsJson, undefined)
+        notifyUpdate()
+        return result
     }))
 
     ipcMain.handle('db:updateProject', createSafeIpcHandler('db:updateProject', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Project>) => {
@@ -237,26 +245,29 @@ function registerProjectHandlers(databaseService: DatabaseService, auditLogServi
                 dbUpdates[key] = value
             }
         }
-        return await databaseService.updateProject(id, dbUpdates as JsonObject)
+        const result = await databaseService.updateProject(id, dbUpdates as JsonObject)
+        notifyUpdate(id)
+        return result
     }, undefined))
 
-    ipcMain.handle('db:deleteProject', createIpcHandler('db:deleteProject', async (_event: IpcMainInvokeEvent, id: string) => {
+    ipcMain.handle('db:deleteProject', createIpcHandler('db:deleteProject', async (_event: IpcMainInvokeEvent, id: string, deleteFiles: boolean = false) => {
         try {
-            await databaseService.deleteProject(id)
+            await databaseService.deleteProject(id, deleteFiles)
             if (auditLogService) {
                 await auditLogService.log({
                     action: 'deleteProject',
                     category: 'data',
-                    details: { projectId: id },
+                    details: { projectId: id, deleteFiles },
                     success: true
                 })
             }
+            notifyUpdate()
         } catch (error) {
             if (auditLogService) {
                 await auditLogService.log({
                     action: 'deleteProject',
                     category: 'data',
-                    details: { projectId: id },
+                    details: { projectId: id, deleteFiles },
                     success: false,
                     error: error instanceof Error ? error.message : String(error)
                 })
@@ -266,7 +277,61 @@ function registerProjectHandlers(databaseService: DatabaseService, auditLogServi
     }))
 
     ipcMain.handle('db:archiveProject', createIpcHandler('db:archiveProject', async (_event: IpcMainInvokeEvent, id: string, isArchived: boolean) => {
-        return await databaseService.archiveProject(id, isArchived)
+        const result = await databaseService.archiveProject(id, isArchived)
+        notifyUpdate(id)
+        return result
+    }))
+
+    ipcMain.handle('db:bulkDeleteProjects', createIpcHandler('db:bulkDeleteProjects', async (_event: IpcMainInvokeEvent, ids: string[], deleteFiles: boolean = false) => {
+        try {
+            await databaseService.bulkDeleteProjects(ids, deleteFiles)
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkDeleteProjects',
+                    category: 'data',
+                    details: { projectIds: ids, deleteFiles },
+                    success: true
+                })
+            }
+            notifyUpdate()
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkDeleteProjects',
+                    category: 'data',
+                    details: { projectIds: ids, deleteFiles },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
+    }))
+
+    ipcMain.handle('db:bulkArchiveProjects', createIpcHandler('db:bulkArchiveProjects', async (_event: IpcMainInvokeEvent, ids: string[], isArchived: boolean) => {
+        try {
+            await databaseService.bulkArchiveProjects(ids, isArchived)
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkArchiveProjects',
+                    category: 'data',
+                    details: { projectIds: ids, isArchived },
+                    success: true
+                })
+            }
+            notifyUpdate()
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkArchiveProjects',
+                    category: 'data',
+                    details: { projectIds: ids, isArchived },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                })
+            }
+            throw error
+        }
     }))
 }
 

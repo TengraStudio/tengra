@@ -239,8 +239,6 @@ export class ModelRouter {
 let instance: ModelRouter | null = null
 
 export function getModelRouter(): ModelRouter {
-    if (!instance) {
-        instance = new ModelRouter()
-    }
+    instance ??= new ModelRouter()
     return instance
 }

@@ -1,7 +1,6 @@
 import { safeJsonParse } from '@shared/utils/sanitize.util'
 import DOMPurify from 'dompurify'
 import { AlertCircle, Bookmark, Brain, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Code2, Copy, Eye, FileCode, ListTodo, Smile, Sparkles, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
-import mermaid from 'mermaid'
 import { Highlight, themes } from 'prism-react-renderer'
 import { isValidElement, memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -20,14 +19,6 @@ import { Message, MessageVariant } from '@/types'
 
 import 'katex/dist/katex.min.css'
 import '@renderer/features/chat/components/MessageBubble.css'
-
-// Initialize mermaid
-mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    securityLevel: 'loose',
-    fontFamily: 'inherit'
-})
 
 const COLLAPSE_THRESHOLD = 30
 
@@ -226,16 +217,29 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
     const [error, setError] = useState<string | null>(null)
     const id = useId()
     useEffect(() => {
+        let mounted = true
         const render = async () => {
             try {
-                const { svg: renderedSvg } = await mermaid.render(id, code)
-                setSvg(DOMPurify.sanitize(renderedSvg))
-                setError(null)
-            } catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+                const m = await import('mermaid')
+                const mermaid = m.default || m
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: 'dark',
+                    securityLevel: 'loose',
+                    fontFamily: 'inherit'
+                })
+                const { svg: renderedSvg } = await mermaid.render(id.replace(/:/g, ''), code)
+                if (mounted) {
+                    setSvg(DOMPurify.sanitize(renderedSvg))
+                    setError(null)
+                }
+            } catch (err) { if (mounted) setError(err instanceof Error ? err.message : String(err)) }
         }
         void render()
+        return () => { mounted = false }
     }, [code, id])
     if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
+    if (!svg) { return <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-white/5 animate-pulse"><div className="text-xs text-muted-foreground">Rendering Diagram...</div></div> }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />
 })
 MermaidDiagram.displayName = 'MermaidDiagram'
@@ -383,7 +387,7 @@ const PlanAndThought = memo(({ plan, thought, isLast, isStreaming, onApprovePlan
 PlanAndThought.displayName = 'PlanAndThought'
 
 const MessageBubbleContent = memo(({ showRawMarkdown, quotaDetails, thought, displayContent, images, isStreaming, visibleContent, onSpeak, onStop, isSpeaking, onCodeConvert, t }: {
-    showRawMarkdown: boolean; quotaDetails: any; thought: string | null; displayContent: string; images: string[]; isStreaming?: boolean; visibleContent: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: (key: string) => string;
+    showRawMarkdown: boolean; quotaDetails: { message: string; resets_at: number | null; model: string | null } | null; thought: string | null; displayContent: string; images: string[]; isStreaming?: boolean; visibleContent: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: (key: string) => string;
 }) => {
     if (quotaDetails) { return <QuotaErrorCard details={quotaDetails} t={t} /> }
     if (!thought && !displayContent && images.length === 0) { return isStreaming ? <TypingDots t={t} /> : <span className="italic opacity-50">...</span> }

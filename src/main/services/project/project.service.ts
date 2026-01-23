@@ -13,6 +13,13 @@ export interface ProjectStats {
     lastModified: number
 }
 
+export interface ProjectIssue {
+    type: 'error' | 'warning'
+    message: string
+    file: string
+    line: number
+}
+
 export interface ProjectAnalysis {
     type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string
     frameworks: string[]
@@ -26,14 +33,16 @@ export interface ProjectAnalysis {
         packages: string[];
     }
     todos: string[]
+    issues?: ProjectIssue[]
 }
 
 const LOG_CONTEXT = 'ProjectService'
 
 export class ProjectService {
-    constructor() { }
-
     private watchers: Map<string, import('fs').FSWatcher> = new Map()
+    private analysisCache: Map<string, { data: ProjectAnalysis; timestamp: number }> = new Map()
+
+    constructor() { }
 
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
         appLogger.info(LOG_CONTEXT, `Starting watch on ${rootPath}`)
@@ -76,6 +85,14 @@ export class ProjectService {
             rootPath = rootPath.slice(1)
         }
         rootPath = path.resolve(rootPath)
+
+        // Cache Check (5 min TTL)
+        const cached = this.analysisCache.get(rootPath)
+        if (cached && (Date.now() - cached.timestamp < 300000)) {
+            appLogger.debug(LOG_CONTEXT, 'Returning cached project analysis for:', rootPath)
+            return cached.data
+        }
+
         appLogger.info(LOG_CONTEXT, 'Analyzing project at (normalized):', { rootPath })
         const runStart = Date.now()
 
@@ -88,10 +105,11 @@ export class ProjectService {
         const languages = this.calculateLanguages(files)
         const monorepo = await this.detectMonorepo(rootPath, files)
         const todos = await this.findTodos(rootPath, files)
+        const issues = await this.findIssues(rootPath, files)
 
         appLogger.info(LOG_CONTEXT, `Analysis complete in ${Date.now() - runStart}ms`)
 
-        return {
+        const analysis: ProjectAnalysis = {
             type,
             frameworks,
             dependencies,
@@ -100,8 +118,12 @@ export class ProjectService {
             languages,
             files: files.slice(0, 1000), // Limit file list for performance in IPC
             monorepo,
-            todos
+            todos,
+            issues
         }
+
+        this.analysisCache.set(rootPath, { data: analysis, timestamp: Date.now() })
+        return analysis
     }
 
     private async detectMonorepo(rootPath: string, files: string[]): Promise<ProjectAnalysis['monorepo'] | undefined> {
@@ -150,7 +172,7 @@ export class ProjectService {
             const moduleMatches = content.matchAll(/include\s*\(?([\s\S]*?)\)?(?:\n|$)/g)
             const packages: string[] = []
             for (const m of moduleMatches) {
-                const block = m[1] ?? ''
+                const block = m[1]
                 const names = block.matchAll(/['"]:?([^'"]+)['"]/g)
                 for (const n of names) {
                     if (n[1]) { packages.push(n[1]) }
@@ -184,8 +206,13 @@ export class ProjectService {
             const lines = content.split('\n')
             const tasks = lines
                 .map(l => l.trim())
-                .filter(l => /^[-*+]\s*\[[ xX]?\]/.test(l) || /^[-*+]\s+/.test(l))
-                .map(l => l.replace(/^[-*+]\s*\[[ xX]?\]\s*/, '').replace(/^[-*+]\s+/, ''))
+                .map(l => {
+                    const match = l.match(/^[-*+]\s*\[([ xX-])\]\s*(.*)/)
+                    if (match) { return match[2].trim() }
+                    if (l.startsWith('TODO:') || l.startsWith('FIXME:')) { return l.replace(/^(TODO|FIXME):?\s*/, '').trim() }
+                    return null
+                })
+                .filter((t): t is string => t !== null && t.length > 0)
 
             if (tasks.length > 0) { return tasks }
             // If no checklist, just return first non-empty 10 lines
@@ -202,7 +229,7 @@ export class ProjectService {
         for (const file of codeFiles) {
             try {
                 const content = await fs.readFile(file, 'utf-8')
-                this.extractTodosFromContent(content, todoComments)
+                this.extractTodosFromContent(content, todoComments, file)
                 if (todoComments.length >= 10) { break }
             } catch { /* ignore */ }
             if (todoComments.length >= 10) { break }
@@ -210,19 +237,59 @@ export class ProjectService {
         return todoComments
     }
 
-    private extractTodosFromContent(content: string, todoComments: string[]) {
+    private extractTodosFromContent(content: string, todoComments: string[], filePath?: string) {
         const lines = content.split('\n')
-        for (const line of lines) {
+        const fileName = filePath ? path.basename(filePath) : ''
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
             if (line.includes('TODO:') || line.includes('FIXME:')) {
-                const todoParts = line.split('TODO:')
-                const fixmeParts = line.split('FIXME:')
-                const comment = (todoParts.length > 1 ? todoParts[1] : fixmeParts.length > 1 ? fixmeParts[1] : undefined)?.trim()
-                if (comment) {
-                    todoComments.push(comment)
+                const match = line.match(/(TODO|FIXME):?\s*(.*)/)
+                if (match?.[2]) {
+                    const text = match[2].trim()
+                    todoComments.push(fileName ? `[${fileName}:${i + 1}] ${text}` : text)
                 }
                 if (todoComments.length >= 10) { break }
             }
         }
+    }
+
+    private async findIssues(rootPath: string, files: string[]): Promise<ProjectIssue[]> {
+        const issues: ProjectIssue[] = []
+        const codeFiles = files.filter(f => /\.(ts|tsx|js|jsx|py|go|rs|kt|java|cpp|h)$/.test(f)).slice(0, 100)
+
+        for (const file of codeFiles) {
+            try {
+                const content = await fs.readFile(file, 'utf-8')
+                const lines = content.split('\n')
+                const fileName = path.relative(rootPath, file)
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i]
+                    const lowerLine = line.toLowerCase()
+
+                    // Scan for errors
+                    if (lowerLine.includes('console.error(') || lowerLine.includes('fixme:') || lowerLine.includes('bug:')) {
+                        issues.push({
+                            type: 'error',
+                            message: line.trim(),
+                            file: fileName,
+                            line: i + 1
+                        })
+                    } else if (lowerLine.includes('console.warn(') || lowerLine.includes('warning:')) {
+                        issues.push({
+                            type: 'warning',
+                            message: line.trim(),
+                            file: fileName,
+                            line: i + 1
+                        })
+                    }
+
+                    if (issues.length >= 50) { break }
+                }
+            } catch { /* ignore */ }
+            if (issues.length >= 50) { break }
+        }
+        return issues
     }
 
     private async findPackages(_rootPath: string, _configType: string): Promise<string[]> {
@@ -384,7 +451,25 @@ export class ProjectService {
     }
 
     private shouldIgnore(name: string): boolean {
-        return name === 'node_modules' || name === '.git' || name === 'dist' || name === 'build' || name === '.orbit' || name === '.vscode' || name === 'coverage'
+        const lowerName = name.toLowerCase()
+        const ignoredNames = [
+            'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.orbit',
+            '.vscode', '.idea', 'coverage', '.nyc_output', 'target', 'bin', 'obj',
+            '.next', '.nuxt', '.cache', '__pycache__', '.pytest_cache', '.output',
+            '.yarn', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'composer.lock',
+            'cargo.lock', 'go.sum', '.ds_store', 'thumbs.db', '.parcel-cache', '.turbo'
+        ]
+        if (ignoredNames.includes(lowerName)) { return true }
+
+        // Also ignore common binary or large asset extensions
+        const ignoredExtensions = [
+            '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.o', '.a', '.lib',
+            '.pyc', '.pyo', '.pyd', '.class', '.jar', '.war', '.ear',
+            '.zip', '.tar', '.gz', '.7z', '.rar',
+            '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.svg',
+            '.mp3', '.mp4', '.wav', '.mov', '.pdf', '.doc', '.docx'
+        ]
+        return ignoredExtensions.some(ext => lowerName.endsWith(ext))
     }
 
     private async detectType(files: string[]): Promise<ProjectAnalysis['type'] | string> {
@@ -434,8 +519,8 @@ export class ProjectService {
             const content = await fs.readFile(pkgPath, 'utf-8')
             const pkg = safeJsonParse<JsonObject>(content, {})
 
-            result.dependencies = (pkg.dependencies as Record<string, string>) ?? {}
-            result.devDependencies = (pkg.devDependencies as Record<string, string>) ?? {}
+            result.dependencies = pkg.dependencies ? (pkg.dependencies as Record<string, string>) : {}
+            result.devDependencies = pkg.devDependencies ? (pkg.devDependencies as Record<string, string>) : {}
 
             this.detectNodeFrameworks(pkg, result.frameworks)
         } catch (error) {
@@ -445,7 +530,7 @@ export class ProjectService {
     }
 
     private detectNodeFrameworks(pkg: JsonObject, frameworks: string[]) {
-        const deps = { ...(pkg.dependencies as JsonObject ?? {}), ...(pkg.devDependencies as JsonObject ?? {}) }
+        const deps = { ...(pkg.dependencies as JsonObject || {}), ...(pkg.devDependencies as JsonObject || {}) }
         const depKeys = Object.keys(deps)
 
         const FRAMEWORK_MAP: Record<string, string> = {
@@ -708,7 +793,7 @@ export class ProjectService {
                 const depRegex = /<dependency>[\s\S]*?<artifactId>([^<]+)<\/artifactId>[\s\S]*?(?:<version>([^<]+)<\/version>)?[\s\S]*?<\/dependency>/g
                 let match
                 while ((match = depRegex.exec(content)) !== null) {
-                    if (match[1]) { result.dependencies[match[1]] = match[2] ?? '*' }
+                    if (match[1]) { result.dependencies[match[1]] = match[2] || '*' }
                 }
                 if (content.includes('spring-boot')) { result.frameworks.push('Spring Boot') }
             } catch (error) {
@@ -722,7 +807,6 @@ export class ProjectService {
         if (depKeys.some(d => d.includes('hibernate'))) { frameworks.push('Hibernate') }
         if (depKeys.some(d => d.includes('dagger')) || depKeys.some(d => d.includes('hilt'))) { frameworks.push('Dagger/Hilt') }
         if (depKeys.some(d => d.includes('retrofit'))) { frameworks.push('Retrofit') }
-        if (depKeys.some(d => d.includes('base09'))) { frameworks.push('Base09') }
     }
 
     private async calculateStats(files: string[], runStart: number): Promise<ProjectStats> {
@@ -756,6 +840,46 @@ export class ProjectService {
             totalSize,
             loc: Math.round(totalBytes / 50), // Rough estimate: 50 bytes per line avg
             lastModified
+        }
+    }
+
+    async getEnvVars(rootPath: string): Promise<Record<string, string>> {
+        const envPath = path.join(rootPath, '.env')
+        try {
+            const content = await fs.readFile(envPath, 'utf-8')
+            const lines = content.split(/\r?\n/)
+            const result: Record<string, string> = {}
+            for (const line of lines) {
+                const trimmed = line.trim()
+                if (!trimmed || trimmed.startsWith('#')) { continue }
+                const firstEquals = trimmed.indexOf('=')
+                if (firstEquals === -1) { continue }
+                const key = trimmed.slice(0, firstEquals).trim()
+                let value = trimmed.slice(firstEquals + 1).trim()
+                // Remove quotes
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1)
+                }
+                result[key] = value
+            }
+            return result
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, `Failed to read .env file at ${envPath}: ${getErrorMessage(error as Error)}`)
+            return {}
+        }
+    }
+
+    async saveEnvVars(rootPath: string, vars: Record<string, string>): Promise<void> {
+        const envPath = path.join(rootPath, '.env')
+        try {
+            const content = Object.entries(vars)
+                .map(([key, value]) => `${key}=${value}`)
+                .join('\n')
+            await fs.writeFile(envPath, content, 'utf-8')
+            appLogger.info(LOG_CONTEXT, `Successfully saved .env vars to ${envPath}`)
+        } catch (error) {
+            appLogger.error(LOG_CONTEXT, `Failed to save .env file at ${envPath}:`, error as Error)
+            throw error
         }
     }
 }

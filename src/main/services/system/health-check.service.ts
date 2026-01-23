@@ -261,8 +261,6 @@ export class HealthCheckService extends BaseService {
 let instance: HealthCheckService | null = null
 
 export function getHealthCheckService(): HealthCheckService {
-    if (!instance) {
-        instance = new HealthCheckService()
-    }
+    instance ??= new HealthCheckService()
     return instance
 }

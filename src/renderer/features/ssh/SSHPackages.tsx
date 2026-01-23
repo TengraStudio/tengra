@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import { useTranslation } from '@/i18n'
 import type { SSHPackageInfo } from '@/types/ssh'
@@ -15,13 +15,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
     const [loading, setLoading] = useState(false)
     const [search, setSearch] = useState('')
 
-    useEffect(() => {
-        if (active && packages.length === 0) {
-            void loadPackages()
-        }
-    }, [active, connectionId])
-
-    const loadPackages = async () => {
+    const loadPackages = useCallback(async () => {
         setLoading(true)
         try {
             const data = await window.electron.ssh.getInstalledPackages(connectionId)
@@ -31,7 +25,13 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
         } finally {
             setLoading(false)
         }
-    }
+    }, [connectionId])
+
+    useEffect(() => {
+        if (active && packages.length === 0) {
+            void loadPackages()
+        }
+    }, [active, packages.length, loadPackages])
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
 

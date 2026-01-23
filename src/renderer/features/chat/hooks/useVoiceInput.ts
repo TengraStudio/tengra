@@ -82,7 +82,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
 
             recognitionRef.current = recognitionInstance
         }
-    }, [language, onFinalResult, isListening]) // isListening dependency is tricky here
+    }, [language, onFinalResult, isListening, isSupported])
 
     const startListening = useCallback(() => {
         if (recognitionRef.current) {

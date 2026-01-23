@@ -30,4 +30,6 @@ export interface FileSearchResult {
     file: string;
     line: number;
     text: string;
+    type?: string;
+    name?: string;
 }

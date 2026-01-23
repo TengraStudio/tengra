@@ -9,9 +9,9 @@ import { useTranslation } from '@/i18n'
  */
 const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) => {
     const { language } = useAuth()
-    const { t } = useTranslation(language || 'en')
-    const loadingMessage = message || t('common.loading')
-    
+    const { t } = useTranslation(language ?? 'en')
+    const loadingMessage = message ?? t('common.loading')
+
     return (
         <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3 text-muted-foreground" role="status" aria-live="polite">
             <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
@@ -19,6 +19,7 @@ const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) 
         </div>
     )
 })
+LoadingSpinner.displayName = 'LoadingSpinner'
 
 // Code editor loading skeleton
 export const CodeEditorSkeleton: React.FC = React.memo(() => (
@@ -38,6 +39,7 @@ export const CodeEditorSkeleton: React.FC = React.memo(() => (
         </div>
     </div>
 ))
+CodeEditorSkeleton.displayName = 'CodeEditorSkeleton'
 
 // Chart loading skeleton
 export const ChartSkeleton: React.FC = React.memo(() => (
@@ -54,6 +56,7 @@ export const ChartSkeleton: React.FC = React.memo(() => (
         </div>
     </div>
 ))
+ChartSkeleton.displayName = 'ChartSkeleton'
 
 // Import prop types for explicit casting
 import type { CodeEditorProps } from '@/components/ui/CodeEditor'

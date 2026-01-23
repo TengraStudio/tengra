@@ -201,7 +201,7 @@ const PanelGroupView: React.FC<{
     className?: string
 }> = ({ group, style, className }) => {
     const { toggleCollapse } = usePanelLayout()
-    const activePanel = group.panels.find(p => p.id === group.activePanel) || group.panels[0]
+    const activePanel = group.panels.find(p => p.id === group.activePanel) ?? group.panels[0]
 
     if (group.panels.length === 0) { return null }
 
@@ -246,7 +246,7 @@ export const PanelLayoutProvider: React.FC<{
             const group = groups[panel.position]
             if (group) {
                 group.panels.push(panel)
-                if (!group.activePanel) { group.activePanel = panel.id }
+                group.activePanel ??= panel.id
             }
         }
 

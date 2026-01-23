@@ -223,8 +223,6 @@ export class TokenEstimationService {
 let instance: TokenEstimationService | null = null
 
 export function getTokenEstimationService(): TokenEstimationService {
-    if (!instance) {
-        instance = new TokenEstimationService()
-    }
+    instance ??= new TokenEstimationService()
     return instance
 }

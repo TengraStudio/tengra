@@ -28,7 +28,7 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
             })
         }
         return results
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:watch', createIpcHandler('project:watch', async (_event, rootPath: string) => {
         const win = getWindow()
@@ -56,36 +56,36 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
             })()
         })
         return { success: true }
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:unwatch', createIpcHandler('project:unwatch', async (_event, rootPath: string) => {
         await projectService.stopWatch(rootPath)
         return { success: true }
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:generateLogo', createIpcHandler('project:generateLogo', async (_event, projectPath: string, prompt: string, style: string) => {
         return await logoService.generateLogo(projectPath, prompt, style)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:analyzeIdentity', createIpcHandler('project:analyzeIdentity', async (_event, projectPath: string) => {
         return await logoService.analyzeProjectIdentity(projectPath)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:analyzeDirectory', createIpcHandler('project:analyzeDirectory', async (_event, dirPath: string) => {
         return await projectService.analyzeDirectory(dirPath)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:applyLogo', createIpcHandler('project:applyLogo', async (_event, projectPath: string, tempLogoPath: string) => {
         return await logoService.applyLogo(projectPath, tempLogoPath)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:getCompletion', createIpcHandler('project:getCompletion', async (_event, text: string) => {
         return await logoService.getCompletion(text)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:improveLogoPrompt', createIpcHandler('project:improveLogoPrompt', async (_event, prompt: string) => {
         return await logoService.improveLogoPrompt(prompt)
-    }))
+    }, { wrapResponse: true }))
 
     ipcMain.handle('project:uploadLogo', createIpcHandler('project:uploadLogo', async (_event, projectPath: string) => {
         const result = await dialog.showOpenDialog({
@@ -100,5 +100,15 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
         }
 
         return await logoService.applyLogo(projectPath, result.filePaths[0] || '')
-    }))
+    }, { wrapResponse: true }))
+
+    // Environment Manager
+    ipcMain.handle('project:getEnv', createIpcHandler('project:getEnv', async (_event, rootPath: string) => {
+        return await projectService.getEnvVars(rootPath)
+    }, { wrapResponse: true }))
+
+    ipcMain.handle('project:saveEnv', createIpcHandler('project:saveEnv', async (_event, rootPath: string, vars: Record<string, string>) => {
+        await projectService.saveEnvVars(rootPath, vars)
+        return { success: true }
+    }, { wrapResponse: true }))
 }

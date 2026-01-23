@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/utils'
@@ -42,7 +42,7 @@ export function Tooltip({
         setIsVisible(false)
     }
 
-    const updatePosition = () => {
+    const updatePosition = useCallback(() => {
         if (!triggerRef.current || !tooltipRef.current) { return }
 
         const triggerRect = triggerRef.current.getBoundingClientRect()
@@ -85,7 +85,7 @@ export function Tooltip({
         }
 
         setPosition({ top, left })
-    }
+    }, [side])
 
     useEffect(() => {
         if (isVisible) {
@@ -100,7 +100,7 @@ export function Tooltip({
             }
         }
         return undefined
-    }, [isVisible, side])
+    }, [isVisible, side, updatePosition])
 
     useEffect(() => {
         return () => {

@@ -91,7 +91,7 @@ export function registerAllIpc(
     });
 
     // Content & Data
-    registerDbIpc(services.databaseService, services.embeddingService, services.auditLogService);
+    registerDbIpc(getWin, services.databaseService, services.embeddingService, services.auditLogService);
     registerFilesIpc(getWin, services.fileSystemService, allowedFileRoots);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);

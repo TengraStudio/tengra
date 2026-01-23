@@ -20,7 +20,11 @@ export const en = {
         hour: 'hour',
         hours: 'hours',
         clear: 'Clear',
-        add: 'Add'
+        add: 'Add',
+        done: 'Done',
+        pending: 'Pending',
+        selectAll: 'Select All',
+        itemsSelected: '{{count}} items selected'
     },
     themeStore: {
         title: 'Theme Store',
@@ -130,7 +134,13 @@ export const en = {
         projectDescPlaceholder: 'Brief information about the project...',
         deleteProject: 'Delete Project',
         deleteConfirmation: 'Are you sure you want to delete this project:',
-        deleteWarning: ' This action cannot be undone.',
+        deleteWarning: ' This action is irreversible.',
+        deleteProjectFiles: 'Also delete project files from disk',
+        archiveProject: 'Archive Project',
+        archiveConfirmation: 'Are you sure you want to archive this project:',
+        archiveWarning: ' Archived projects will be hidden from the active list.',
+        bulkDelete: 'Bulk Delete',
+        bulkArchive: 'Bulk Archive',
         noProjects: 'No projects found.',
         startNewProject: 'Start by creating a new project.',
         aiLogoGenerator: 'AI Logo Generator',
@@ -210,6 +220,9 @@ export const en = {
         search: 'Search',
         council: 'Council',
         git: 'Git',
+        issues: 'Issues',
+        environment: 'Environment',
+        logs: 'Logs',
         fileCount: 'FILE COUNT',
         loc: 'LINES OF CODE',
         modules: 'MODULES',
@@ -258,10 +271,34 @@ export const en = {
         noRemote: 'No remote',
         pull: 'Pull',
         push: 'Push',
+        indexingComplete: 'Indexing complete!',
+        indexingFailed: 'Indexing failed.',
+        indexingStarted: 'Starting project indexing...',
+        totalSize: 'TOTAL SIZE',
+        todoList: 'Upcoming Tasks',
         gitStatus: {
             pulling: 'Pulling...',
             pushing: 'Pushing...'
-        }
+        },
+        noIssues: 'No significant issues found in the project. Good job!',
+        issuesDescription: 'Orbit scans your project for potential errors, warnings, and code smells.',
+        issueType: 'TYPE',
+        issueMessage: 'MESSAGE',
+        issueLocation: 'LOCATION',
+        // Environment Tab
+        envDescription: 'Manage your project environment variables.',
+        envKey: 'KEY',
+        envValue: 'VALUE',
+        envNoVars: 'No environment variables found. Create a .env file to get started.',
+        envAddVar: 'Add Variable',
+        envSave: 'Save Changes',
+        envHideValue: 'Hide Value',
+        envShowValue: 'Show Value',
+        // Logs Tab
+        logsDescription: 'Real-time application logs.',
+        logsEmpty: 'No logs available. Run your project to generate log output.',
+        logsClear: 'Clear Logs',
+        logsFilter: 'Filter logs...'
     },
     git: {
         commitGenerator: 'Git Commit Generator',
@@ -589,6 +626,7 @@ export const en = {
         storeTitle: 'MCP Tool Store',
         toolsInstalled: '{{count}} tools installed • Browse Model Context Protocol servers',
         noTools: 'No tools found',
+        noServers: 'No servers connected',
         features: 'FEATURES',
         rating: 'rating',
         downloads: 'downloads',
@@ -596,6 +634,9 @@ export const en = {
         uninstall: 'Uninstall',
         install: 'Install Tool',
         close: 'Close',
+        remove: 'Remove',
+        official: 'Official',
+        byAuthor: 'by {{author}}',
         categories: {
             all: 'All Tools',
             filesystem: 'Filesystem',
@@ -604,6 +645,37 @@ export const en = {
             development: 'Development',
             ai: 'AI'
         }
+    },
+    memory: {
+        title: 'Memory Inspector',
+        subtitle: 'Visualize and manage what Orbit knows and remembers.',
+        searchPlaceholder: 'Search memory...',
+        totalFacts: 'Total Facts',
+        episodes: 'Episodes',
+        entities: 'Entities',
+        facts: 'Facts',
+        addFact: 'Add Fact',
+        addManualFact: 'Add Manual Fact',
+        addMemory: 'Add Memory',
+        factPlaceholder: 'e.g. User likes React and prefers TypeScript for frontend development...',
+        noFactsFound: 'No facts found',
+        factsDescription: 'Semantic knowledge will appear here as you interact with the agent.',
+        noEpisodesRecorded: 'No episodes recorded',
+        episodesDescription: 'Chat summaries are generated after long conversations.',
+        noEntitiesDetected: 'No entities detected',
+        entitiesDescription: 'Structured knowledge about people, places and tools will show up here.',
+        confidence: 'Confidence',
+        ago: 'ago',
+        via: 'via',
+        chatId: 'Chat ID'
+    },
+    terminal: {
+        noShellsFound: 'No shells found',
+        noActiveSessions: 'No active terminal sessions',
+        startNewSession: 'Start New Session',
+        sessionFailed: 'Terminal session failed to start',
+        closeAndCreate: 'Close this tab and create a new terminal session',
+        exitedWithCode: 'Terminal exited with code {{code}}'
     },
     workspace: {
         editor: 'Editor',
@@ -637,7 +709,7 @@ export const en = {
         previewArea: 'Preview Area',
         convertToCode: 'Convert to Code',
         placeholders: {
-            rootPath: 'C:\\Users\\Project',
+            rootPath: 'C:\\\\Users\\\\Project',
             name: 'Name...'
         },
         run: 'Run Project',
@@ -751,6 +823,9 @@ export const en = {
     general: {
         turkish: 'Turkish',
         english: 'English',
+        german: 'German',
+        french: 'French',
+        spanish: 'Spanish',
         contextMessageLimit: 'Context Message Limit',
         database: 'DATABASE',
         databaseDesc: 'Manage application data and cache.',
@@ -1039,7 +1114,32 @@ export const en = {
     auth: {
         authError: 'Authentication Error',
         goToAccounts: 'Go to Accounts',
-        connectionFailed: 'Connection to Antigravity server failed. Please sign in or check your API key.'
+        connectionFailed: 'Connection to Antigravity server failed. Please sign in or check your API key.',
+        // Manual Session Modal
+        sessionKeyRequired: 'Claude Session Key Required',
+        completeConnection: 'Complete Connection for {{email}}',
+        sessionKeyDescription: 'To enable quota tracking and direct interaction, Orbit needs your Claude session key. We encrypt and store this key locally on your device.',
+        howToFindKey: 'How to find your session key',
+        sessionKeyInstructions: {
+            step1: 'Open claude.ai and log in',
+            step2: 'Right-click anywhere and select Inspect',
+            step3: 'Go to the Application tab (or Storage)',
+            step4: 'Expand Cookies and select https://claude.ai',
+            step5: 'Find sessionKey and copy its value (starts with sk-ant-sid)'
+        },
+        sessionKeyLabel: 'Session Key',
+        sessionKeyPlaceholder: 'sk-ant-sid-...',
+        enterSessionKey: 'Please enter a session key',
+        invalidSessionFormat: 'Invalid format. Key must start with "sk-ant-sid"',
+        saveSessionKey: 'Save Session Key',
+        validatedAndSaved: 'Validated & Saved',
+        // Device Code Modal
+        enterCodeOnGithub: 'Enter the following code on GitHub to complete the connection:',
+        copyCode: 'Copy code',
+        openGithubToEnter: 'Open GitHub to enter code',
+        waitingForLogin: 'Waiting for login...',
+        connectedSuccessfully: 'Connected successfully!',
+        connectionFailedGeneric: 'Connection failed'
     },
     logging: {
         title: 'Logging Dashboard',

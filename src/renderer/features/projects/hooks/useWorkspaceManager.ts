@@ -205,10 +205,10 @@ export function useWorkspaceManager({
         }
     }, [project.id, notify])
 
-    const createFile = useCallback(async (path: string) => {
-        const mount = mounts[0] // Assume first mount for now if not specified
-        if (!mount) { return }
-        const result = mount.type === 'local' ? await window.electron.writeFile(path, '') : await window.electron.ssh.writeFile(mount.id, path, '')
+    const createFile = useCallback(async (path: string, mount?: WorkspaceMount) => {
+        const targetMount = mount ?? mounts[0]
+        if (!targetMount) { return }
+        const result = targetMount.type === 'local' ? await window.electron.writeFile(path, '') : await window.electron.ssh.writeFile(targetMount.id, path, '')
         if (result?.success) {
             setRefreshSignal(s => s + 1)
             logActivity('Created file', path)
@@ -217,10 +217,10 @@ export function useWorkspaceManager({
         }
     }, [mounts, logActivity, notify])
 
-    const createFolder = useCallback(async (path: string) => {
-        const mount = mounts[0]
-        if (!mount) { return }
-        const result = mount.type === 'local' ? await window.electron.createDirectory(path) : await window.electron.ssh.mkdir(mount.id, path)
+    const createFolder = useCallback(async (path: string, mount?: WorkspaceMount) => {
+        const targetMount = mount ?? mounts[0]
+        if (!targetMount) { return }
+        const result = targetMount.type === 'local' ? await window.electron.createDirectory(path) : await window.electron.ssh.mkdir(targetMount.id, path)
         if (result?.success) {
             setRefreshSignal(s => s + 1)
             logActivity('Created folder', path)

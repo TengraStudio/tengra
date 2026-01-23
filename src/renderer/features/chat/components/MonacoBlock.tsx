@@ -1,5 +1,5 @@
 import { Check, Copy, ExternalLink, Play, Save, Square, Volume2, VolumeX } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { memo, useState } from 'react'
 
 import { CodeEditor } from '@/components/ui/CodeEditor'
 import { Language, useTranslation } from '@/i18n'
@@ -16,7 +16,7 @@ interface MonacoBlockProps {
     i18nLanguage?: Language | undefined
 }
 
-export const MonacoBlock: React.FC<MonacoBlockProps> = ({
+export const MonacoBlock = memo<MonacoBlockProps>(({
     language, code, isSpeaking, onSpeak, onStop, i18nLanguage = 'en'
 }) => {
     const { t } = useTranslation(i18nLanguage)
@@ -53,7 +53,7 @@ export const MonacoBlock: React.FC<MonacoBlockProps> = ({
             <ExecutionOverlay result={executionResult} onClose={() => setExecutionResult(null)} />
         </div>
     )
-}
+})
 
 const BlockHeader: React.FC<{
     language: string

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 interface SSHLogsProps {
     connectionId: string
@@ -11,22 +11,29 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
     const [content, setContent] = useState('')
     const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        if (active && logFiles.length === 0) {
-            void loadFiles()
-        }
-    }, [active, connectionId])
-
-    const loadFiles = async () => {
+    const loadFiles = useCallback(async () => {
         const files = await window.electron.ssh.getLogFiles(connectionId)
         setLogFiles(files)
         if (files.length > 0 && !selectedLog) {
             const firstFile = files[0]
             if (firstFile !== undefined) {
-                void selectLog(firstFile)
+                setSelectedLog(firstFile)
+                setLoading(true)
+                try {
+                    const data = await window.electron.ssh.readLogFile(connectionId, firstFile, 100)
+                    setContent(data)
+                } finally {
+                    setLoading(false)
+                }
             }
         }
-    }
+    }, [connectionId, selectedLog])
+
+    useEffect(() => {
+        if (active && logFiles.length === 0) {
+            void loadFiles()
+        }
+    }, [active, logFiles.length, loadFiles])
 
     const selectLog = async (path: string) => {
         setSelectedLog(path)

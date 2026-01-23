@@ -10,8 +10,8 @@ import { registerFilesIpc } from '@main/ipc/files'
 import { registerGalleryIpc } from '@main/ipc/gallery'
 import { registerGitIpc } from '@main/ipc/git'
 import { registerHistoryIpc } from '@main/ipc/history'
-import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator'
 import { registerHFModelIpc } from '@main/ipc/huggingface'
+import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator'
 import { registerLlamaIpc } from '@main/ipc/llama'
 import { registerLoggingIpc } from '@main/ipc/logging'
 import { registerMcpIpc } from '@main/ipc/mcp'
@@ -79,7 +79,7 @@ export function registerIpcHandlers(
     setupProcessEvents(services.processService)
     registerCodeIntelligenceIpc(services.codeIntelligenceService)
 
-    registerDbIpc(services.databaseService, services.embeddingService)
+    registerDbIpc(getMainWindow, services.databaseService, services.embeddingService)
     registerLlamaIpc(services.llamaService)
     registerMemoryIpc(services.memoryService)
     registerGitIpc(services.gitService)
