@@ -45,7 +45,7 @@ This document serves as the central index for project tasks. Tasks are categoriz
 | **Features** | In Backlog | Memory and RAG system |
 | **Architecture** | Refactoring | Event Bus implementation |
 | **Quality** | Stable | Test coverage improvements |
-| **Ideas** | In Review | i18n hardcoded strings |
+| **Ideas** | Completed | None |
 
 ## project Roadmap
 
@@ -59,7 +59,33 @@ This document serves as the central index for project tasks. Tasks are categoriz
 - Authentication database migration
 - [ ] Gallery prompt storage implementation
 - [ ] Service layer standardization
+- [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
 - [ ] Exportable Research Briefs (PDF/Markdown)
+
+### Autonomous Project System (New)
+Implement the "Project System" for long-running autonomous tasks (replacing `build_project_system_prompt.md`).
+
+#### Backend Service (`ProjectAgentService`)
+- [ ] Create `src/main/services/project/project-agent.service.ts` extending `BaseService`.
+- [ ] Implement `Think -> Plan -> Act -> Observe` loop.
+- [ ] **State Persistence**: Save `currentTask`, `plan`, `history` to `project-state.json`.
+- [ ] **Tools**: Wrap `run_command`, `read_file`, etc.
+- [ ] **Resilience**:
+    - [ ] Intercept 429/Quota errors.
+    - [ ] Auto-rotate accounts via `AuthService`.
+    - [ ] Retry 5xx errors with exponential backoff.
+
+#### User Interface (`src/renderer/features/project/`)
+- [ ] Create Project View.
+- [ ] **Mission Input**: Large text area.
+- [ ] **Live Dashboard**:
+    - [ ] Activity Stream (scrolling logs).
+    - [ ] Planner View (checklist).
+- [ ] **Controls**: Start, Pause, Stop.
+
+#### Integration
+- [ ] Register IPC: `project:start`, `project:stop`, `project:update`.
+- [ ] Inject System Prompt from `docs/prompts/project_agent_system_prompt.md`.
 
 ### Medium-Term Goals
 - Development of the Statistics dashboard
@@ -69,4 +95,7 @@ This document serves as the central index for project tasks. Tasks are categoriz
 - [ ] Local AI Hardware Optimization & Management UI
 - [ ] Local Hugging Face Model Support (Inference API & Local GGUF/Transformers.js)
 
-*Last Updated: January 22, 2026*
+- [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
+- [x] Turkish localizations completed for migrated modules
+- [x] Build and lint verification passed
+*Last Updated: January 23, 2026*

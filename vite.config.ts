@@ -125,7 +125,8 @@ export default defineConfig({
         // Shim Node.js globals for dependencies that expect them in browser context
         '__dirname': '""',
         '__filename': '""',
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+        '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
     },
     build: {
         outDir: 'dist/renderer',
@@ -134,22 +135,6 @@ export default defineConfig({
                 // Better code splitting for faster builds
                 manualChunks: (id) => {
                     if (id.includes('node_modules')) {
-                        const chunks = [
-                            { name: 'react-vendor', patterns: ['react', 'react-dom', 'scheduler'] },
-                            { name: 'monaco-editor', patterns: ['monaco-editor', '@monaco-editor'] },
-                            { name: 'mermaid', patterns: ['mermaid'] },
-                            { name: 'katex', patterns: ['katex'] },
-                            { name: 'framer-motion', patterns: ['framer-motion'] },
-                            { name: 'ssh-vendor', patterns: ['ssh2', 'xterm'] },
-                            { name: 'codemirror', patterns: ['@codemirror', '@lezer'] },
-                            { name: 'icons', patterns: ['lucide-react'] },
-                            { name: 'ui-vendor', patterns: ['@radix-ui', '@floating-ui'] }
-                        ]
-                        for (const chunk of chunks) {
-                            if (chunk.patterns.some(p => id.includes(p))) {
-                                return chunk.name
-                            }
-                        }
                         return 'vendor'
                     }
                 }

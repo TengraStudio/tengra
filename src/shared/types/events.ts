@@ -29,7 +29,10 @@ export interface SystemEvents {
     'token:refreshed': { provider: string; accountId?: string }
     'token:error': { provider: string; error: string }
     'account:unlinked': { accountId: string; provider: string }
+    'account:linked': { accountId: string; provider: string }
+    'account:updated': { accountId: string; provider: string }
     'settings:changed': { settings: JsonValue }
+    'system:error': { error: string; fatal?: boolean; stack?: string }
     // Ideas feature events
     'ideas:research-progress': ResearchProgress
     'ideas:idea-progress': IdeaProgress

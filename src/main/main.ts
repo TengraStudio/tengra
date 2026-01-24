@@ -7,6 +7,8 @@ dotenv.config()
 
 import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell, Tray } from 'electron'
 
+declare const __BUILD_TIME__: string
+
 // Suppress Electron security warnings in development (CSP warnings due to Monaco Editor requiring unsafe-eval)
 // These warnings don't appear in packaged apps
 if (!app.isPackaged) {
@@ -183,6 +185,7 @@ app.whenReady().then(async () => {
 
     appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']} `)
     appLogger.info('Startup', `app.isPackaged: ${app.isPackaged} `)
+    appLogger.info('Startup', `Build Time: ${typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'N/A'} `)
     appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'} `)
 
     // Migration from orbit-ai to Orbit

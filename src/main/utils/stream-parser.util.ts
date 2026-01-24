@@ -10,6 +10,11 @@ export interface StreamChunk {
     images?: Array<string | { image_url: { url: string } }>
     type?: string
     tool_calls?: ToolCall[]
+    usage?: {
+        prompt_tokens: number
+        completion_tokens: number
+        total_tokens: number
+    }
 }
 
 type OpenAIStreamDelta = {
@@ -48,10 +53,8 @@ export class StreamParser {
             if ('getReader' in body && typeof body.getReader === 'function') {
                 // Web Standard ReadableStream
                 const reader = body.getReader();
-                const MAX_STREAM_ITERATIONS = 10000;
-                let iterations = 0;
                 try {
-                    while (iterations < MAX_STREAM_ITERATIONS) {
+                    while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
                             appLogger.info('stream-parser.util', '[StreamParser] Reader done');
@@ -60,10 +63,6 @@ export class StreamParser {
                         appLogger.debug('stream-parser.util', `[StreamParser] Received ${value.length} bytes`);
                         buffer += decoder.decode(value, { stream: true });
                         yield* this.processBuffer(buffer, (newBuf) => buffer = newBuf);
-                        iterations++;
-                    }
-                    if (iterations >= MAX_STREAM_ITERATIONS) {
-                        throw new Error('Stream parsing exceeded maximum iterations');
                     }
                 } finally {
                     reader.releaseLock();
@@ -97,11 +96,8 @@ export class StreamParser {
 
             // Handle nested data: prefix issue
             let jsonData = data;
-            const MAX_DATA_PREFIX_ITERATIONS = 100;
-            let prefixIterations = 0;
-            while (jsonData.startsWith('data:') && prefixIterations < MAX_DATA_PREFIX_ITERATIONS) {
+            while (jsonData.startsWith('data:')) {
                 jsonData = jsonData.slice(5).trim();
-                prefixIterations++;
             }
             if (jsonData === '[DONE]') { continue; }
 
@@ -120,6 +116,11 @@ export class StreamParser {
                 };
                 response_id?: string;
                 name?: string;
+                usage?: {
+                    prompt_tokens: number;
+                    completion_tokens: number;
+                    total_tokens: number;
+                };
             };
 
             try {
@@ -176,6 +177,17 @@ export class StreamParser {
 
                 // 2. STANDARD OpenAI format
                 const choices = json.choices ?? [];
+
+                // Handle usage-only chunks (common with stream_options: { include_usage: true })
+                if (json.usage && choices.length === 0) {
+                    yield {
+                        index: 0,
+                        content: '',
+                        usage: json.usage
+                    };
+                    continue;
+                }
+
                 for (const choice of choices) {
                     const delta = choice.delta;
                     if (!delta) { continue; }
@@ -184,14 +196,15 @@ export class StreamParser {
                     const reasoning = (delta.reasoning_content || delta.reasoning) ?? '';
                     const images = Array.isArray(delta.images) ? delta.images : [];
 
-                    if (content || reasoning || images.length > 0 || delta.tool_calls) {
+                    if (content || reasoning || images.length > 0 || delta.tool_calls || json.usage) {
                         yield {
                             index: choice.index ?? 0,
                             content,
                             reasoning,
                             images,
                             type: delta.tool_calls ? 'tool_calls' : undefined,
-                            tool_calls: delta.tool_calls
+                            tool_calls: delta.tool_calls,
+                            usage: json.usage
                         };
                     }
                 }

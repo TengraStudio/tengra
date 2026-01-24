@@ -15,7 +15,7 @@ const BackButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white"
+        className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
         title="Back to Setup"
     >
         <ArrowLeft className="w-5 h-5" />
@@ -26,7 +26,7 @@ const HistoryButton: React.FC<{ onClick: () => void; label: string }> = ({ onCli
     <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors"
     >
         <History className="w-4 h-4" />
         {label}
@@ -37,7 +37,7 @@ const NewSessionButton: React.FC<{ onClick: () => void; label: string }> = ({ on
     <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-purple-500 hover:bg-purple-600 text-white"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg shadow-primary/20"
     >
         <Plus className="w-4 h-4" />
         {label}
@@ -48,7 +48,7 @@ const RefreshButton: React.FC<{ onClick: () => void; label: string }> = ({ onCli
     <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors"
     >
         <RefreshCw className="w-4 h-4" />
         {label}
@@ -99,11 +99,11 @@ export const IdeasHeader: React.FC<IdeasHeaderProps> = ({
             <div className="flex items-center gap-4">
                 {showBackButton && <BackButton onClick={handleNewSession} />}
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-                        <Lightbulb className="w-7 h-7 text-yellow-400" />
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                        <Lightbulb className="w-7 h-7 text-amber-500" />
                         {isHistoryView ? t('ideas.history.title') : t('ideas.title')}
                     </h1>
-                    <p className="text-white/50 mt-1">
+                    <p className="text-muted-foreground mt-1">
                         {isHistoryView ? t('ideas.history.subtitle') : t('ideas.subtitle')}
                     </p>
                 </div>

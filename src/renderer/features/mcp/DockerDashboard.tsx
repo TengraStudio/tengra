@@ -118,22 +118,22 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
     if (!isOpen) { return null }
 
     return (
-        <div className="flex flex-col h-full bg-gradient-to-b from-zinc-900 to-black">
+        <div className="flex flex-col h-full bg-background">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
+            <div className="flex items-center justify-between p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30">
                         <Box size={20} className="text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="font-semibold text-white">{t('docker.title')}</h2>
+                        <h2 className="font-semibold text-foreground">{t('docker.title')}</h2>
                         <p className="text-xs text-zinc-500">{containers.length} {t('docker.containers')}</p>
                     </div>
                 </div>
                 <button
                     onClick={loadContainers}
                     disabled={isLoading}
-                    className="p-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white"
+                    className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 >
                     <RefreshCw size={18} className={cn(isLoading && "animate-spin")} />
                 </button>
@@ -148,7 +148,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
             {/* Container List */}
             <div className="flex-1 flex overflow-hidden">
-                <div className="w-1/2 border-r border-white/5 overflow-y-auto p-4 space-y-2">
+                <div className="w-1/2 border-r border-border/50 overflow-y-auto p-4 space-y-2">
                     {containers.length === 0 && !isLoading && (
                         <div className="text-center text-zinc-500 text-sm py-8">
                             {t('docker.noContainers')}
@@ -162,11 +162,11 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                 "p-3 rounded-xl border cursor-pointer transition-all",
                                 selectedContainer === container.id
                                     ? "bg-blue-500/10 border-blue-500/30"
-                                    : "bg-white/5 border-white/10 hover:bg-white/10"
+                                    : "bg-muted/30 border-border/50 hover:bg-muted/50"
                             )}
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-white text-sm truncate">
+                                <span className="font-medium text-foreground text-sm truncate">
                                     {container.name}
                                 </span>
                                 <span className={cn(
@@ -224,7 +224,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
                 {/* Logs Panel */}
                 <div className="w-1/2 flex flex-col overflow-hidden">
-                    <div className="p-3 border-b border-white/5 flex items-center gap-2">
+                    <div className="p-3 border-b border-border/50 flex items-center gap-2">
                         <Terminal size={14} className="text-zinc-400" />
                         <span className="text-sm text-zinc-400">{t('docker.logs')}</span>
                     </div>

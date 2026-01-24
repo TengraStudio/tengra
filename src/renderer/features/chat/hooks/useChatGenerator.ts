@@ -38,10 +38,11 @@ interface PrepareMessagesOptions {
     selectedProvider: string
     language: string
     selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined
+    systemMode: 'thinking' | 'agent' | 'fast'
 }
 
 const prepareMessages = (options: PrepareMessagesOptions) => {
-    const { chatId, chats, userMessage, appSettings, selectedModel, selectedProvider, language, selectedPersona } = options
+    const { chatId, chats, userMessage, appSettings, selectedModel, selectedProvider, language, selectedPersona, systemMode } = options
     const dbRefChat = chats.find(c => c.id === chatId)
     const contextMessages = (dbRefChat?.messages ?? []).slice(-15)
 
@@ -61,11 +62,11 @@ const prepareMessages = (options: PrepareMessagesOptions) => {
     return { allMessages: [systemMessage, ...chatMessages], presetOptions }
 }
 
-export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined }) => {
+export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPersona?: { id: string, name: string, description: string, prompt: string } | null | undefined, systemMode: 'thinking' | 'agent' | 'fast' }) => {
     const {
         chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels,
         language, selectedPersona, activeWorkspacePath, projectId, t, handleSpeak,
-        autoReadEnabled, formatChatError
+        autoReadEnabled, formatChatError, systemMode
     } = props
 
     const [streamingStates, setStreamingStates] = useState<Record<string, {
@@ -106,7 +107,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                     provider: m.provider,
                     timestamp: new Date(),
                     label: m.model,
-                    isSelected: idx === 0
+                    isSelected: false
                 })) : undefined
             }
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, tempMsg] } : c))
@@ -121,30 +122,104 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                 // Single model: use existing stream logic
                 const tools = allTools.filter((tDefinition) => {
                     if (selectedProvider === 'opencode') { return true }
-                    return tDefinition.function.name === 'generate_image' && selectedProvider === 'antigravity'
+                    if (selectedProvider === 'antigravity') { return true }
+                    return tDefinition.function.name === 'generate_image'
                 })
 
                 const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: activeModel,
-                    selectedProvider, language, selectedPersona
+                    selectedProvider, language, selectedPersona, systemMode
                 })
 
-                const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath }
-                const stream = chatStream({
-                    messages: allMessages,
-                    model: activeModel,
-                    tools,
-                    provider: selectedProvider,
-                    options: fullOptions,
-                    chatId,
-                    projectId
-                })
-                const streamStartTime = performance.now()
+                const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath, systemMode }
 
-                await processChatStream({
-                    stream, chatId, assistantId, setStreamingStates, setChats, streamStartTime,
-                    activeModel, selectedProvider, t, autoReadEnabled, handleSpeak
-                })
+                let currentMessages = [...allMessages]
+                let currentAssistantId = assistantId
+                let toolIterations = 0
+                const MAX_TOOL_ITERATIONS = 5
+
+                while (toolIterations < MAX_TOOL_ITERATIONS) {
+                    const stream = chatStream({
+                        messages: currentMessages,
+                        model: activeModel,
+                        tools,
+                        provider: selectedProvider,
+                        options: fullOptions,
+                        chatId,
+                        projectId,
+                        systemMode
+                    })
+                    const streamStartTime = performance.now()
+
+                    const result = await processChatStream({
+                        stream, chatId, assistantId: currentAssistantId, setStreamingStates, setChats, streamStartTime,
+                        activeModel, selectedProvider, t, autoReadEnabled, handleSpeak
+                    })
+
+                    if (result.finalToolCalls && result.finalToolCalls.length > 0) {
+                        // Create assistant message with tool calls
+                        const assistantMsg: Message = {
+                            id: currentAssistantId,
+                            role: 'assistant',
+                            content: result.finalContent,
+                            timestamp: new Date(),
+                            provider: selectedProvider,
+                            model: activeModel,
+                            toolCalls: result.finalToolCalls
+                        }
+                        currentMessages.push(assistantMsg)
+
+                        // Execute tools
+                        const toolResults: Message[] = []
+                        for (const tc of result.finalToolCalls) {
+                            try {
+                                const toolArgs = typeof tc.function.arguments === 'string'
+                                    ? JSON.parse(tc.function.arguments)
+                                    : tc.function.arguments
+
+                                const toolExecResult = await window.electron.executeTools(tc.function.name, toolArgs, tc.id)
+
+                                const toolMsg: Message = {
+                                    id: generateId(),
+                                    role: 'tool' as const,
+                                    content: JSON.stringify(toolExecResult),
+                                    toolCallId: tc.id,
+                                    timestamp: new Date()
+                                }
+                                currentMessages.push(toolMsg)
+                                toolResults.push(toolMsg)
+
+                                // Save tool message to DB
+                                void window.electron.db.addMessage({ ...toolMsg, chatId, timestamp: Date.now() })
+                            } catch (err) {
+                                console.error('Tool execution error:', err)
+                            }
+                        }
+
+                        // Update chats with tool results so they appear in UI
+                        setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, ...toolResults] } : c))
+
+                        // Prepare for next turn
+                        currentAssistantId = generateId()
+
+                        // Add a placeholder for the next assistant response
+                        const nextAssistantPlaceholder: Message = {
+                            id: currentAssistantId,
+                            role: 'assistant',
+                            content: '',
+                            timestamp: new Date(),
+                            provider: selectedProvider,
+                            model: activeModel
+                        }
+                        setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, nextAssistantPlaceholder] } : c))
+                        void window.electron.db.addMessage({ ...nextAssistantPlaceholder, chatId, timestamp: Date.now() })
+
+                        toolIterations++
+                    } else {
+                        // No more tool calls, we are done
+                        break
+                    }
+                }
             }
         } catch (e) {
             console.error('[generateResponse] Error:', e)
@@ -172,157 +247,20 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
         allTools: ToolDefinition[]
     ) => {
         const streamStartTime = performance.now()
-        const results: Array<{ model: string; provider: string; content: string; reasoning?: string; error?: string }> = []
-
-        // Create promises for all model responses
-        const promises = models.map(async (modelInfo, index) => {
-            try {
-                const tools = allTools.filter((tDefinition) => {
-                    if (modelInfo.provider === 'opencode') { return true }
-                    return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity'
-                })
-
-                const { allMessages, presetOptions } = prepareMessages({
-                    chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
-                    selectedProvider: modelInfo.provider, language, selectedPersona
-                })
-
-                const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath }
-
-                // Use non-streaming chatOpenAI for multi-model (simpler to aggregate)
-                const response = await window.electron.chatOpenAI({
-                    messages: allMessages,
-                    model: modelInfo.model,
-                    tools,
-                    provider: modelInfo.provider,
-                    options: fullOptions
-                })
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const responseData = response as { content?: string; reasoning?: string } | any
-                results[index] = {
-                    model: modelInfo.model,
-                    provider: modelInfo.provider,
-                    content: (responseData?.content as string) || '',
-                    reasoning: responseData?.reasoning as string | undefined
-                }
-
-                // Update streaming state with this model's response
-                setStreamingStates(prev => {
-                    const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} }
-                    const variants = { ...state.variants }
-                    variants[index] = { content: response.content || '', reasoning: response.reasoning || '' }
-
-                    return {
-                        ...prev,
-                        [chatId]: {
-                            ...state,
-                            content: index === 0 ? response.content || '' : state.content,
-                            reasoning: index === 0 ? response.reasoning : state.reasoning,
-                            variants
-                        }
-                    }
-                })
-
-                // Update chat message with this variant's content
-                setChats(prev => prev.map(c => {
-                    if (c.id !== chatId) { return c }
-                    return {
-                        ...c,
-                        messages: c.messages.map(m => {
-                            if (m.id !== assistantId) { return m }
-                            const updatedVariants = [...(m.variants || [])]
-                            if (updatedVariants[index]) {
-                                updatedVariants[index] = {
-                                    ...updatedVariants[index],
-                                    content: response.content || '',
-                                }
-                            }
-                            return {
-                                ...m,
-                                content: index === 0 ? response.content || '' : m.content,
-                                reasoning: index === 0 ? response.reasoning : m.reasoning,
-                                variants: updatedVariants.length > 0 ? updatedVariants : undefined
-                            }
-                        })
-                    }
-                }))
-
-            } catch (e) {
-                const errText = formatChatError(e as CatchError)
-                results[index] = {
-                    model: modelInfo.model,
-                    provider: modelInfo.provider,
-                    content: `${t('common.error')}: ${errText}`,
-                    error: errText
-                }
-            }
+        await orchestrationMultiModelStreams({
+            chatId, assistantId, userMessage, models, allTools,
+            chats, setChats, appSettings, language, selectedPersona,
+            activeWorkspacePath, projectId, setStreamingStates, streamStartTime,
+            autoReadEnabled, handleSpeak, t, formatChatError, systemMode
         })
-
-        // Wait for all responses
-        await Promise.all(promises)
-
-        // Build final message with all variants
-        const responseTime = Math.round(performance.now() - streamStartTime)
-        const finalVariants = results.map((r, idx) => ({
-            id: `${assistantId}-v${idx}`,
-            content: r.content,
-            model: r.model,
-            provider: r.provider,
-            timestamp: new Date(),
-            label: r.model,
-            isSelected: idx === 0
-        }))
-
-        const finalContent = results[0]?.content || ''
-        const finalReasoning = results[0]?.reasoning
-
-        // Generate smart title from first response
-        let generatedTitle = ''
-        if (finalContent) {
-            generatedTitle = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
-        }
-
-        // Update chat with final state
-        setChats(prev => prev.map(c => {
-            if (c.id !== chatId) { return c }
-            const shouldUpdateTitle = c.messages.length <= 2 && generatedTitle
-            return {
-                ...c,
-                title: shouldUpdateTitle ? generatedTitle : c.title,
-                messages: c.messages.map(m => {
-                    if (m.id !== assistantId) { return m }
-                    return {
-                        ...m,
-                        content: finalContent,
-                        reasoning: finalReasoning,
-                        responseTime,
-                        variants: finalVariants.length > 1 ? finalVariants : undefined
-                    }
-                }),
-                isGenerating: false
-            }
-        }))
-
-        // Save to database
-        await window.electron.db.updateMessage(assistantId, {
-            content: finalContent,
-            reasoning: finalReasoning,
-            responseTime,
-            variants: finalVariants.length > 1 ? finalVariants : undefined
-        })
-
-        if (autoReadEnabled && finalContent) {
-            handleSpeak(assistantId, finalContent)
-        }
     }
 
     const stopGeneration = async () => {
         try {
-            window.electron.abortChat()
+            await window.electron.abortChat()
             setStreamingStates({})
         } catch (e) {
-            console.error(e)
+            console.error('Failed to stop generation:', e)
         }
     }
 
@@ -330,5 +268,182 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
         streamingStates,
         generateResponse,
         stopGeneration
+    }
+}
+
+interface OrchestrationParams {
+    chatId: string
+    assistantId: string
+    userMessage: Message
+    models: SelectedModelInfo[]
+    allTools: ToolDefinition[]
+    chats: Chat[]
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>
+    appSettings: AppSettings | undefined
+    language: string
+    selectedPersona: { id: string, name: string, description: string, prompt: string } | null | undefined
+    activeWorkspacePath: string | undefined
+    projectId: string | undefined
+    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, any>>>
+    streamStartTime: number
+    autoReadEnabled: boolean
+    handleSpeak: (id: string, content: string) => void
+    t: (key: string) => string
+    formatChatError: (err: CatchError) => string
+    systemMode: 'thinking' | 'agent' | 'fast'
+}
+
+/**
+ * Orchestrates multiple model streams in parallel
+ */
+async function orchestrationMultiModelStreams(params: OrchestrationParams) {
+    const {
+        chatId, assistantId, userMessage, models, allTools,
+        chats, setChats, appSettings, language, selectedPersona,
+        activeWorkspacePath, projectId, setStreamingStates, streamStartTime,
+        autoReadEnabled, handleSpeak, t, formatChatError, systemMode
+    } = params
+
+    const promises = models.map(async (modelInfo: SelectedModelInfo, index: number) => {
+        const streamId = `${chatId}-model-${index}-${Date.now()}`
+        try {
+            const tools = allTools.filter((tDefinition: ToolDefinition) => {
+                if (modelInfo.provider === 'opencode') { return true }
+                return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity'
+            })
+
+            const { allMessages, presetOptions } = prepareMessages({
+                chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
+                selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
+            })
+
+            const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath, systemMode }
+            const stream = chatStream({
+                messages: allMessages, model: modelInfo.model, tools,
+                provider: modelInfo.provider, options: fullOptions,
+                chatId: streamId, projectId, systemMode
+            })
+
+            let variantContent = ''
+            let variantReasoning = ''
+            let lastUpdate = 0
+
+            for await (const chunk of stream) {
+                if (chunk.content) { variantContent += chunk.content }
+                if (chunk.reasoning) { variantReasoning += chunk.reasoning }
+
+                setStreamingStates((prev: any) => {
+                    const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} }
+                    const variants = { ...state.variants }
+                    variants[index] = { content: variantContent, reasoning: variantReasoning }
+                    const isMain = index === 0
+                    return {
+                        ...prev,
+                        [chatId]: {
+                            ...state,
+                            content: isMain ? variantContent : state.content,
+                            reasoning: isMain ? variantReasoning : state.reasoning,
+                            variants
+                        }
+                    }
+                })
+
+                const now = Date.now()
+                if (now - lastUpdate > 200 || !chunk.content) {
+                    lastUpdate = now
+                    setChats((prev: Chat[]) => prev.map(c => {
+                        if (c.id !== chatId) { return c }
+                        return {
+                            ...c,
+                            messages: c.messages.map(m => {
+                                if (m.id !== assistantId) { return m }
+                                const currentVariants = [...(m.variants ?? [])]
+                                if (!currentVariants[index]) {
+                                    currentVariants[index] = {
+                                        id: `${assistantId}-v${index}`,
+                                        content: '',
+                                        model: modelInfo.model,
+                                        provider: modelInfo.provider,
+                                        timestamp: new Date(),
+                                        label: modelInfo.model,
+                                        isSelected: index === 0
+                                    }
+                                }
+                                currentVariants[index] = { ...currentVariants[index], content: variantContent }
+                                const isMain = index === 0
+                                return {
+                                    ...m,
+                                    content: isMain ? variantContent : m.content,
+                                    reasoning: isMain ? variantReasoning : m.reasoning,
+                                    variants: currentVariants
+                                }
+                            })
+                        }
+                    }))
+                }
+            }
+
+            return {
+                model: modelInfo.model, provider: modelInfo.provider,
+                content: variantContent, reasoning: variantReasoning,
+                responseTime: Math.round(performance.now() - streamStartTime)
+            }
+        } catch (e) {
+            const errText = formatChatError(e as CatchError)
+            return {
+                model: modelInfo.model, provider: modelInfo.provider,
+                content: `${t('common.error')}: ${errText}`, error: errText
+            }
+        }
+    })
+
+    const results = await Promise.all(promises)
+    const finalResponseTime = Math.round(performance.now() - streamStartTime)
+    const finalVariants = results.map((r, idx) => ({
+        id: `${assistantId}-v${idx}`,
+        content: r.content,
+        model: r.model,
+        provider: r.provider,
+        timestamp: new Date(),
+        label: r.model,
+        isSelected: idx === 0,
+        error: r.error
+    }))
+
+    const finalContent = results[0]?.content || ''
+    const finalReasoning = results[0]?.reasoning
+
+    setChats((prev: Chat[]) => prev.map(c => {
+        if (c.id !== chatId) { return c }
+        let title = c.title
+        if (c.messages.length <= 2 && finalContent) {
+            title = finalContent.split('\n')[0].replace(/[#*`]/g, '').trim().slice(0, 50) || t('sidebar.newChat')
+        }
+        return {
+            ...c,
+            title,
+            messages: c.messages.map(m => {
+                if (m.id !== assistantId) { return m }
+                return {
+                    ...m,
+                    content: finalContent,
+                    reasoning: finalReasoning,
+                    responseTime: finalResponseTime,
+                    variants: finalVariants.length > 1 ? finalVariants : undefined
+                }
+            }),
+            isGenerating: false
+        }
+    }))
+
+    await window.electron.db.updateMessage(assistantId, {
+        content: finalContent,
+        reasoning: finalReasoning,
+        responseTime: finalResponseTime,
+        variants: finalVariants.length > 1 ? finalVariants : undefined
+    })
+
+    if (autoReadEnabled && finalContent) {
+        handleSpeak(assistantId, finalContent)
     }
 }

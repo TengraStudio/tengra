@@ -1,6 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
+import { appLogger } from '@main/logging/logger';
 
 /**
  * Service for managing configuration values with priority-based resolution.
@@ -15,6 +16,32 @@ export class ConfigService extends BaseService {
 
     constructor(private settingsService: SettingsService) {
         super('ConfigService');
+    }
+
+    /**
+     * Initialize the ConfigService
+     */
+    async initialize(): Promise<void> {
+        appLogger.info(this.name, 'Initializing configuration service...');
+        
+        // Pre-load common configuration values
+        const commonKeys = ['DATABASE_PATH', 'NODE_ENV', 'LOG_LEVEL', 'API_TIMEOUT'];
+        for (const key of commonKeys) {
+            if (process.env[key]) {
+                this.cache.set(key, process.env[key]);
+            }
+        }
+        
+        appLogger.info(this.name, `Initialized with ${this.cache.size} cached config values`);
+    }
+
+    /**
+     * Cleanup the ConfigService
+     */
+    async cleanup(): Promise<void> {
+        appLogger.info(this.name, 'Cleaning up configuration service...');
+        this.cache.clear();
+        appLogger.info(this.name, 'Configuration cache cleared');
     }
 
     /**

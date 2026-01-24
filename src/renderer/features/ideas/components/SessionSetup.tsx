@@ -53,8 +53,8 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
     return (
         <form onSubmit={handleSubmit} className="space-y-6 text-left">
             {/* Model selection */}
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-5">
-                <h3 className="text-sm font-semibold text-white/80 mb-3">
+            <div className="bg-muted/20 backdrop-blur-sm rounded-xl border border-border p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-3">
                     {t('ideas.selectModel')}
                 </h3>
                 <ModelSelector
@@ -69,14 +69,14 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
                     toggleFavorite={toggleFavorite}
                     isFavorite={isFavorite}
                 />
-                <p className="text-xs text-white/40 mt-3">
+                <p className="text-xs text-muted-foreground/60 mt-3">
                     {t('ideas.modelSelectorHint')}
                 </p>
             </div>
 
             {/* Category selection */}
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-5">
-                <h3 className="text-sm font-semibold text-white/80 mb-3">
+            <div className="bg-muted/20 backdrop-blur-sm rounded-xl border border-border p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-3">
                     {t('ideas.selectCategories')}
                 </h3>
                 <CategorySelector
@@ -87,12 +87,12 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
             </div>
 
             {/* Max ideas slider */}
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-5">
+            <div className="bg-muted/20 backdrop-blur-sm rounded-xl border border-border p-5">
                 <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-semibold text-white/80">
+                    <h3 className="text-sm font-semibold text-foreground">
                         {t('ideas.maxIdeas')}
                     </h3>
-                    <span className="text-sm font-bold text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                         {maxIdeas}
                     </span>
                 </div>
@@ -103,9 +103,9 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
                     value={maxIdeas}
                     onChange={e => setMaxIdeas(Number(e.target.value))}
                     disabled={isLoading}
-                    className="w-full accent-purple-500"
+                    className="w-full accent-primary"
                 />
-                <div className="flex justify-between text-[10px] text-white/40 mt-1">
+                <div className="flex justify-between text-[10px] text-muted-foreground/60 mt-1 font-medium">
                     <span>1</span>
                     <span>25</span>
                     <span>50</span>
@@ -119,10 +119,10 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
                 type="submit"
                 disabled={!isValid || isLoading}
                 className={cn(
-                    'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+                    'w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2',
                     isValid && !isLoading
-                        ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                        : 'bg-white/10 text-white/40 cursor-not-allowed'
+                        ? 'bg-primary text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20 scale-100 hover:scale-[1.01] active:scale-[0.99]'
+                        : 'bg-muted/50 text-muted-foreground/40 cursor-not-allowed'
                 )}
             >
                 {isLoading ? (

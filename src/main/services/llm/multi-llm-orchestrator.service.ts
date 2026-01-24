@@ -70,9 +70,9 @@ export class MultiLLMOrchestrator extends EventEmitter {
 
         // Local providers are more resource-constrained
         this.setProviderConfig('ollama', {
-            maxConcurrent: 2,
+            maxConcurrent: 10,
             priority: 5,
-            rateLimitPerMinute: 10
+            rateLimitPerMinute: 60
         })
         this.setProviderConfig('llama', {
             maxConcurrent: 1,

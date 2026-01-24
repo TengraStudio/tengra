@@ -20,7 +20,8 @@ const IdeasError: React.FC<{ error: string | null }> = ({ error }) => {
         return null
     }
     return (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400">
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-medium flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
             {error}
         </div>
     )

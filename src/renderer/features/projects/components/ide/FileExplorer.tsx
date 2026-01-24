@@ -1,5 +1,5 @@
-﻿import { ChevronDown,ChevronRight } from 'lucide-react'
-import { useEffect,useState } from 'react'
+﻿import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { useTranslation } from '@/i18n'
 import { renderIcon } from '@/lib/file-icons'
@@ -39,7 +39,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                         path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
                         isDirectory: f.isDirectory
                     })).sort((a: FileNode, b: FileNode) => {
-                        if (a.isDirectory === b.isDirectory) {return a.name.localeCompare(b.name)}
+                        if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name) }
                         return a.isDirectory ? -1 : 1
                     })
                     setChildren(nodes)
@@ -64,8 +64,8 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
         <div>
             <div
                 className={cn(
-                    "flex items-center gap-1.5 py-1 px-2 hover:bg-white/5 cursor-pointer select-none transition-colors rounded-sm",
-                    "text-sm text-gray-300 hover:text-white"
+                    "flex items-center gap-1.5 py-1 px-2 hover:bg-accent/50 cursor-pointer select-none transition-colors rounded-sm",
+                    "text-sm text-muted-foreground hover:text-foreground"
                 )}
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
                 onClick={handleToggle}
@@ -100,7 +100,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
 
     useEffect(() => {
         const loadRoot = async () => {
-            if (!rootPath) {return}
+            if (!rootPath) { return }
             setLoading(true)
             try {
                 const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
@@ -111,7 +111,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                     path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
                     isDirectory: f.isDirectory
                 })).sort((a: FileNode, b: FileNode) => {
-                    if (a.isDirectory === b.isDirectory) {return a.name.localeCompare(b.name)}
+                    if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name) }
                     return a.isDirectory ? -1 : 1
                 })
                 setRootNodes(nodes)
@@ -124,10 +124,10 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
         void loadRoot()
     }, [rootPath])
 
-    if (loading) {return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>}
+    if (loading) { return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div> }
 
     return (
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
             {rootNodes.map(node => (
                 <FileTreeItem key={node.path} node={node} onSelect={onFileSelect || (() => { })} onFolderSelect={onFolderSelect} />
             ))}

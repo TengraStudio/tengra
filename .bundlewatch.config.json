@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "path": "dist/renderer/assets/*.js",
+      "maxSize": "2MB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/main/main.js",
+      "maxSize": "500KB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/preload/preload.js", 
+      "maxSize": "100KB",
+      "compression": "gzip"
+    }
+  ],
+  "ci": {
+    "trackBranches": ["main"],
+    "repoBranchBase": "main"
+  }
+}

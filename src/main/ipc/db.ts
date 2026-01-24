@@ -1,6 +1,7 @@
 import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { Chat as DbChat, DatabaseService } from '@main/services/data/database.service'
 import { EmbeddingService } from '@main/services/llm/embedding.service'
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat'
 import { JsonObject } from '@shared/types/common'
@@ -21,6 +22,48 @@ export function registerDbIpc(getWindow: () => Electron.BrowserWindow | null, da
     registerFolderHandlers(databaseService)
     registerPromptHandlers(databaseService)
     registerStatsHandlers(databaseService, auditLogService)
+
+    // Register frequently batched database operations
+    registerBatchableHandler('db:getAllChats', async () => {
+        return await databaseService.getAllChats() as any
+    })
+
+    registerBatchableHandler('db:getMessages', async (_event, ...args) => {
+        const chatId = args[0] as string
+        return await databaseService.getMessages(chatId) as any
+    })
+
+    registerBatchableHandler('db:getProjects', async () => {
+        return await databaseService.getProjects() as any
+    })
+
+    registerBatchableHandler('db:getFolders', async () => {
+        return await databaseService.getFolders() as any
+    })
+
+    registerBatchableHandler('db:getStats', async () => {
+        return await databaseService.getStats() as any
+    })
+
+    registerBatchableHandler('db:getChat', async (_event, ...args) => {
+        const chatId = args[0] as string
+        return await databaseService.getChat(chatId) as any
+    })
+
+    registerBatchableHandler('db:updateChat', async (_event, ...args) => {
+        const [chatId, updates] = args as [string, Partial<any>]
+        return await databaseService.updateChat(chatId, updates) as any
+    })
+
+    registerBatchableHandler('db:deleteChat', async (_event, ...args) => {
+        const chatId = args[0] as string
+        return await databaseService.deleteChat(chatId) as any
+    })
+
+    registerBatchableHandler('db:addMessage', async (_event, ...args) => {
+        const message = args[0] as any
+        return await databaseService.addMessage(message) as any
+    })
 }
 
 function registerChatHandlers(databaseService: DatabaseService, auditLogService?: AuditLogService) {

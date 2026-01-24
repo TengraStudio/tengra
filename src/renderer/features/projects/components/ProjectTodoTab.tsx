@@ -210,17 +210,17 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
     return (
         <div className="h-full overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0 bg-background/50 backdrop-blur-sm z-10">
+            <div className="p-4 border-b border-border/50 flex items-center justify-between shrink-0 bg-background/50 backdrop-blur-sm z-10">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
                         <CheckSquare className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-bold text-white">{t('projectDashboard.projectTasks')}</h2>
+                        <h2 className="text-sm font-bold text-foreground">{t('projectDashboard.projectTasks')}</h2>
                         <div className="text-xs text-muted-foreground flex gap-2">
-                            <span className="text-emerald-400">{totalStats.completed} {t('common.done')}</span>
-                            <span className="text-white/20">•</span>
-                            <span className="text-white/60">{totalStats.pending} {t('projectDashboard.pending')}</span>
+                            <span className="text-emerald-500">{totalStats.completed} {t('common.done')}</span>
+                            <span className="text-muted-foreground/20">•</span>
+                            <span className="text-muted-foreground/60">{totalStats.pending} {t('projectDashboard.pending')}</span>
                         </div>
                     </div>
                 </div>
@@ -229,7 +229,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                         onClick={() => setIsAdding(!isAdding)}
                         className={cn(
                             "p-2 rounded-lg transition-colors",
-                            isAdding ? "bg-primary text-primary-foreground" : "hover:bg-white/10 text-muted-foreground hover:text-white"
+                            isAdding ? "bg-primary text-primary-foreground" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                         )}
                         title={t('common.add') || 'Add Task'}
                     >
@@ -237,7 +237,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                     </button>
                     <button
                         onClick={() => void fetchTodos()}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-muted-foreground hover:text-white"
+                        className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                         title={t('common.refresh') || 'Refresh'}
                     >
                         <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -248,7 +248,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {error && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         {error}
                     </div>
@@ -271,7 +271,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                         onChange={e => setNewTaskText(e.target.value)}
                                         onKeyDown={e => { if (e.key === 'Enter') { void handleAddTask() } }}
                                         placeholder={t('projects.todoPlaceholder')}
-                                        className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder:text-muted-foreground/50"
+                                        className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
                                     />
                                     <button
                                         onClick={() => void handleAddTask()}
@@ -305,13 +305,13 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                 <div key={file.path} className="space-y-2">
                                     <button
                                         onClick={() => setExpandedFiles(p => ({ ...p, [file.path]: !p[file.path] }))}
-                                        className="w-full flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground hover:text-white transition-colors group select-none"
+                                        className="w-full flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground hover:text-foreground transition-colors group select-none"
                                     >
                                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         <FileText className="w-3 h-3" />
                                         <span className="truncate">{file.relativePath}</span>
-                                        <div className="h-px bg-white/5 flex-1 group-hover:bg-white/10 transition-colors" />
-                                        <span className={cn("px-1.5 py-0.5 rounded text-[10px]", pendingCount > 0 ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground")}>
+                                        <div className="h-px bg-muted/20 flex-1 group-hover:bg-muted/40 transition-colors" />
+                                        <span className={cn("px-1.5 py-0.5 rounded text-[10px]", pendingCount > 0 ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground")}>
                                             {pendingCount} {t('projectDashboard.pending')}
                                         </span>
                                     </button>
@@ -330,8 +330,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                                         className={cn(
                                                             "group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden",
                                                             todo.completed
-                                                                ? "bg-card/30 border-white/5 hover:bg-card/50 opacity-60 hover:opacity-100"
-                                                                : "bg-card border-white/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                                                                ? "bg-muted/10 border-border/20 hover:bg-muted/20 opacity-60 hover:opacity-100"
+                                                                : "bg-card border-border/50 hover:border-primary/30 hover:shadow-md hover:shadow-primary/5"
                                                         )}
                                                         onClick={() => void handleToggle(todo)}
                                                     >
@@ -344,7 +344,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                                         <div className="flex-1 min-w-0">
                                                             <p className={cn(
                                                                 "text-sm leading-relaxed break-words transition-colors",
-                                                                todo.completed ? "text-muted-foreground line-through decoration-white/20" : "text-gray-200"
+                                                                todo.completed ? "text-muted-foreground line-through decoration-muted-foreground/20" : "text-foreground/90"
                                                             )}>
                                                                 {todo.text}
                                                             </p>

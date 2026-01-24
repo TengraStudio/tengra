@@ -372,7 +372,8 @@ export const webElectronMock: ElectronAPI = {
             staged: { added: 0, deleted: 0, files: 0 },
             unstaged: { added: 0, deleted: 0, files: 0 },
             total: { added: 0, deleted: 0, files: 0 }
-        })
+        }),
+        getCommitDiff: async (_cwd: string, _hash: string) => ({ success: true, diff: '' })
     },
 
     executeTools: async (_toolName: string, _args: Record<string, IpcValue>, _toolCallId?: string) => ({
@@ -510,6 +511,19 @@ export const webElectronMock: ElectronAPI = {
         onIdeaProgress: () => () => { },
         onDeepResearchProgress: () => () => { }
     },
+
+    batch: {
+        invoke: async (_requests: Array<{ channel: string; args: any[] }>) => ({
+            results: [],
+            timing: { startTime: Date.now(), endTime: Date.now(), totalMs: 0 }
+        }),
+        invokeSequential: async (_requests: Array<{ channel: string; args: any[] }>) => ({
+            results: [],
+            timing: { startTime: Date.now(), endTime: Date.now(), totalMs: 0 }
+        }),
+        getChannels: async () => []
+    },
+
     ipcRenderer: {
         on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },
         off: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => { },

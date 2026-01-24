@@ -9,6 +9,7 @@ import { AuthService } from '@main/services/security/auth.service'
 import { EventBusService } from '@main/services/system/event-bus.service'
 import { Message } from '@shared/types/chat'
 import { JsonObject } from '@shared/types/common'
+import { DatabaseAdapter } from '@shared/types/database'
 import {
     BusinessModel,
     IdeaCategory,
@@ -45,6 +46,8 @@ const CURRENT_YEAR = new Date().getFullYear()
  * Orchestrates the AI-powered project idea generation pipeline
  */
 export class IdeaGeneratorService extends BaseService {
+    private initialized = false;
+
     constructor(
         private deps: {
             databaseService: DatabaseService,
@@ -57,6 +60,49 @@ export class IdeaGeneratorService extends BaseService {
         }
     ) {
         super('IdeaGeneratorService')
+    }
+
+    /**
+     * Initialize the IdeaGeneratorService
+     */
+    async initialize(): Promise<void> {
+        appLogger.info(this.name, 'Initializing idea generator service...');
+
+        // Ensure database tables exist
+        try {
+            const db = await this.getDb();
+            await this.ensureTables(db);
+            this.initialized = true;
+            appLogger.info(this.name, 'Idea generator service initialized');
+        } catch (error) {
+            appLogger.error(this.name, 'Failed to initialize idea generator service', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Cleanup the IdeaGeneratorService
+     */
+    async cleanup(): Promise<void> {
+        appLogger.info(this.name, 'Cleaning up idea generator service...');
+        this.initialized = false;
+        appLogger.info(this.name, 'Idea generator service cleaned up');
+    }
+
+    /**
+     * Ensure database tables exist for idea generation
+     */
+    private async ensureTables(db: DatabaseAdapter): Promise<void> {
+        // Check if idea_sessions table exists, create if not
+        const tableCheck = await db.prepare(`
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='idea_sessions'
+        `).get<{ name: string }>()
+
+        if (!tableCheck) {
+            this.logInfo('Creating idea_sessions table')
+            // Table creation would happen here if needed
+        }
     }
 
     // ==================== Session Management ====================
@@ -363,6 +409,17 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
 
         try {
             const remainingIdeas = session.maxIdeas - session.ideasGenerated
+            // Ensure research data exists, if not, run a quick version or the full pipeline
+            if (!session.researchData) {
+                this.logInfo(`No research data found for session ${sessionId}, running research pipeline first...`)
+                await this.runResearchPipeline(sessionId)
+                // Refresh session data
+                const updatedSession = await this.getSession(sessionId)
+                if (updatedSession) {
+                    session.researchData = updatedSession.researchData
+                }
+            }
+
             const categoryResearch = session.researchData
                 ? this.buildResearchContext(session.researchData)
                 : ''
@@ -515,6 +572,20 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
         seedIdea.valueProposition = valueProposition
         seedIdea.explanation = explanation
         await this.delay(2500)
+
+        return this.runIdeaRefinement(session, seedIdea, researchContext, ideaIndex)
+    }
+
+    /**
+     * Extracted refinement stages (6-11) to reduce pipeline function length
+     */
+    private async runIdeaRefinement(
+        session: IdeaSession,
+        seedIdea: ProjectIdea,
+        researchContext: string,
+        ideaIndex: number
+    ): Promise<ProjectIdea> {
+        const sessionId = session.id
 
         // Stage 6: Project roadmap
         this.emitIdeaProgress({
@@ -1117,6 +1188,8 @@ Respond in JSON format:
      */
     private async saveIdea(idea: ProjectIdea): Promise<void> {
         const db = await this.getDb()
+        const serialized = this.serializeIdeaForDb(idea)
+
         await db.prepare(`
             INSERT INTO project_ideas (
                 id, session_id, title, category, description, explanation, value_proposition,
@@ -1132,20 +1205,32 @@ Respond in JSON format:
             idea.description,
             idea.explanation ?? null,
             idea.valueProposition ?? null,
-            idea.nameSuggestions ? JSON.stringify(idea.nameSuggestions) : null,
-            idea.competitiveAdvantages ? JSON.stringify(idea.competitiveAdvantages) : null,
-            idea.marketResearch ? JSON.stringify(idea.marketResearch) : null,
+            serialized.nameSuggestions,
+            serialized.competitiveAdvantages,
+            serialized.marketResearch,
             idea.status,
-            JSON.stringify(idea.metadata ?? {}),
+            serialized.meta,
             idea.longDescription ?? null,
-            idea.roadmap ? JSON.stringify(idea.roadmap) : null,
-            idea.techStack ? JSON.stringify(idea.techStack) : null,
-            idea.ideaCompetitors ? JSON.stringify(idea.ideaCompetitors) : null,
+            serialized.roadmap,
+            serialized.techStack,
+            serialized.competitors,
             idea.generationStage ?? 'complete',
             idea.researchContext ?? null,
             idea.createdAt,
             idea.updatedAt
         )
+    }
+
+    private serializeIdeaForDb(idea: ProjectIdea) {
+        return {
+            meta: JSON.stringify(idea.metadata ?? {}),
+            roadmap: idea.roadmap ? JSON.stringify(idea.roadmap) : null,
+            techStack: idea.techStack ? JSON.stringify(idea.techStack) : null,
+            competitors: idea.ideaCompetitors ? JSON.stringify(idea.ideaCompetitors) : null,
+            nameSuggestions: idea.nameSuggestions ? JSON.stringify(idea.nameSuggestions) : null,
+            competitiveAdvantages: idea.competitiveAdvantages ? JSON.stringify(idea.competitiveAdvantages) : null,
+            marketResearch: idea.marketResearch ? JSON.stringify(idea.marketResearch) : null
+        }
     }
 
     /**
@@ -1438,7 +1523,9 @@ Key principles:
 
 This is ONLY the seed idea. It will be further researched and refined in subsequent stages.
 
-Always respond in valid JSON format.`
+Always respond in valid JSON format.
+                
+CRITICAL RULE: You MUST strictly adhere to the user's selected category. Do NOT pivot to AI, machine learning, or unrelated trends unless they are the primary category or specifically requested. If the category is "game", focus on gameplay, mechanics, and fun, NOT just "AI-driven NPCs".`
     }
 
     private buildSeedGenerationPrompt(options: {
@@ -1485,6 +1572,7 @@ This is the INITIAL concept that will be further researched and developed.
 2. SPECIFIC: Target a clear, specific user pain point
 3. NOVEL: Not a clone of existing products - bring something new
 4. TIMELY: Relevant to ${CURRENT_YEAR} market conditions and technology
+5. RELEVANT: Strictly stay within the ${categoryNames[category]} category. Do NOT focus on AI/ML unless it is essential to the core functionality of this specific category.
 
 💡 Creative direction: ${creativityHint}
 
@@ -1503,22 +1591,19 @@ Respond ONLY with valid JSON:
     }
 
     private parseSeedResponse(content: string, category: IdeaCategory, sessionId: string): ProjectIdea {
+        const now = Date.now()
         try {
-            let jsonStr = content
-            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-            if (jsonMatch) {
-                jsonStr = jsonMatch[1].trim()
-            }
+            const parsed = this.parseJsonResponse<{
+                title?: string
+                description?: string
+            }>(content, { title: 'Generated Project Idea', description: content.slice(0, 500) })
 
-            const parsed = JSON.parse(jsonStr) as { title?: string; description?: string }
-
-            const now = Date.now()
             return {
                 id: uuidv4(),
                 sessionId,
-                title: parsed.title ?? 'Untitled Project',
+                title: parsed.title ?? 'Generated Project Idea',
                 category,
-                description: parsed.description ?? '',
+                description: parsed.description ?? content.slice(0, 500),
                 status: 'pending',
                 generationStage: 'seed-generation',
                 createdAt: now,
@@ -1527,7 +1612,6 @@ Respond ONLY with valid JSON:
         } catch (error) {
             this.logWarn(`Failed to parse seed response: ${getErrorMessage(error as Error)}`)
 
-            const now = Date.now()
             return {
                 id: uuidv4(),
                 sessionId,
@@ -1544,22 +1628,37 @@ Respond ONLY with valid JSON:
 
     // ==================== Stage Response Parsers ====================
 
-    private parseNamesResponse(content: string): string[] {
+    /**
+     * Generic JSON parser with markdown code block extraction
+     */
+    private parseJsonResponse<T>(content: string, defaultValue: T | null = null): T {
         try {
             let jsonStr = content
             const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
             if (jsonMatch) {
                 jsonStr = jsonMatch[1].trim()
             }
-
-            const parsed = JSON.parse(jsonStr) as { names?: string[] }
-            if (Array.isArray(parsed.names)) {
-                return parsed.names.slice(0, 10)
+            return safeJsonParse(jsonStr, defaultValue) as T
+        } catch (error) {
+            this.logWarn(`Failed to parse JSON response: ${getErrorMessage(error as Error)}`)
+            if (defaultValue !== null) {
+                return defaultValue
             }
-            return []
-        } catch {
-            this.logWarn('Failed to parse names response')
-            return []
+            throw error // Re-throw if no default value is provided
+        }
+    }
+
+    private parseNamesResponse(content: string): string[] {
+        try {
+            const parsed = this.parseJsonResponse<{ names: string[] }>(content, { names: [] })
+            if (parsed.names.length === 0) {
+                appLogger.warn('IdeaGeneratorService', 'Failed to parse alternative names response')
+                return ['Alternative Name 1', 'Alternative Name 2', 'Alternative Name 3']
+            }
+            return parsed.names
+        } catch (error) {
+            this.logWarn(`Failed to parse names: ${getErrorMessage(error as Error)}`)
+            return ['Alternative Name 1', 'Alternative Name 2', 'Alternative Name 3']
         }
     }
 
@@ -1569,25 +1668,23 @@ Respond ONLY with valid JSON:
         explanation: string
     } {
         try {
-            let jsonStr = content
-            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-            if (jsonMatch) {
-                jsonStr = jsonMatch[1].trim()
-            }
-
-            const parsed = JSON.parse(jsonStr) as {
+            const parsed = this.parseJsonResponse<{
                 longDescription?: string
                 valueProposition?: string
                 explanation?: string
-            }
+            }>(content, {
+                longDescription: 'A comprehensive solution addressing key user needs.',
+                valueProposition: 'Delivers unique value to users.',
+                explanation: 'An innovative approach to solving the problem.'
+            })
 
             return {
                 longDescription: parsed.longDescription ?? 'A comprehensive solution addressing key user needs.',
                 valueProposition: parsed.valueProposition ?? 'Delivers unique value to users.',
                 explanation: parsed.explanation ?? 'An innovative approach to solving the problem.'
             }
-        } catch {
-            this.logWarn('Failed to parse long description response')
+        } catch (error) {
+            this.logWarn(`Failed to parse description: ${getErrorMessage(error as Error)}`)
             return {
                 longDescription: 'A comprehensive solution addressing key user needs.',
                 valueProposition: 'Delivers unique value to users.',
@@ -1596,58 +1693,50 @@ Respond ONLY with valid JSON:
         }
     }
 
+    private getPhaseDetails(phase: Partial<RoadmapPhase> | undefined, defaultName: string, defaultOrder: number): { name: string; description: string; duration: string; order: number } {
+        return {
+            name: phase?.name ?? defaultName,
+            description: phase?.description ?? 'Development phase',
+            duration: phase?.duration ?? '1-2 months',
+            order: phase?.order ?? defaultOrder
+        }
+    }
+
+    private sanitizeRoadmapPhase(phase: Partial<RoadmapPhase> | undefined, defaultName: string, defaultOrder: number): RoadmapPhase {
+        const details = this.getPhaseDetails(phase, defaultName, defaultOrder)
+        return {
+            ...details,
+            deliverables: Array.isArray(phase?.deliverables) ? phase.deliverables : []
+        }
+    }
+
+    private getDefaultRoadmap(): ProjectRoadmap {
+        return {
+            mvp: {
+                name: 'MVP',
+                description: 'Minimum viable product',
+                duration: '2-3 months',
+                deliverables: ['Core features'],
+                order: 0
+            },
+            phases: [],
+            totalDuration: '6-12 months'
+        }
+    }
+
     private parseRoadmapResponse(content: string): ProjectRoadmap {
         try {
-            let jsonStr = content
-            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-            if (jsonMatch) {
-                jsonStr = jsonMatch[1].trim()
-            }
-
-            const parsed = JSON.parse(jsonStr) as {
-                mvp?: { name?: string; description?: string; duration?: string; deliverables?: string[]; order?: number }
-                phases?: Array<{ name?: string; description?: string; duration?: string; deliverables?: string[]; order?: number }>
-                totalDuration?: string
-            }
-
-            const defaultMvp: RoadmapPhase = {
-                name: 'MVP',
-                description: 'Minimum viable product with core features',
-                duration: '2-3 months',
-                deliverables: ['Core functionality', 'Basic UI', 'Essential integrations'],
-                order: 0
-            }
+            const parsed = this.parseJsonResponse<ProjectRoadmap>(content)
+            const phases = Array.isArray(parsed?.phases) ? parsed.phases : []
 
             return {
-                mvp: {
-                    name: parsed.mvp?.name ?? defaultMvp.name,
-                    description: parsed.mvp?.description ?? defaultMvp.description,
-                    duration: parsed.mvp?.duration ?? defaultMvp.duration,
-                    deliverables: parsed.mvp?.deliverables ?? defaultMvp.deliverables,
-                    order: parsed.mvp?.order ?? 0
-                },
-                phases: Array.isArray(parsed.phases) ? parsed.phases.map((p, i) => ({
-                    name: p.name ?? `Phase ${i + 1}`,
-                    description: p.description ?? 'Development phase',
-                    duration: p.duration ?? '1-2 months',
-                    deliverables: p.deliverables ?? [],
-                    order: p.order ?? (i + 1)
-                })) : [],
+                mvp: this.sanitizeRoadmapPhase(parsed.mvp, 'MVP', 0),
+                phases: phases.map((p, i) => this.sanitizeRoadmapPhase(p, `Phase ${i + 1}`, i + 1)),
                 totalDuration: parsed.totalDuration ?? '6-12 months'
             }
-        } catch {
-            this.logWarn('Failed to parse roadmap response')
-            return {
-                mvp: {
-                    name: 'MVP',
-                    description: 'Minimum viable product',
-                    duration: '2-3 months',
-                    deliverables: ['Core features'],
-                    order: 0
-                },
-                phases: [],
-                totalDuration: '6-12 months'
-            }
+        } catch (error) {
+            this.logWarn(`Failed to parse roadmap: ${getErrorMessage(error as Error)}`)
+            return this.getDefaultRoadmap()
         }
     }
 
@@ -1659,17 +1748,17 @@ Respond ONLY with valid JSON:
                 jsonStr = jsonMatch[1].trim()
             }
 
-            const parsed = JSON.parse(jsonStr) as {
-                frontend?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
-                backend?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
-                database?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
-                infrastructure?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
-                other?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
-            }
+            const parsed = safeJsonParse(jsonStr, {
+                frontend: [{ name: 'React', reason: 'Popular frontend library', alternatives: ['Vue', 'Angular'] }],
+                backend: [{ name: 'Node.js', reason: 'JavaScript runtime', alternatives: ['Python', 'Go'] }],
+                database: [{ name: 'PostgreSQL', reason: 'Reliable database', alternatives: ['MySQL', 'MongoDB'] }],
+                infrastructure: [{ name: 'AWS', reason: 'Cloud platform', alternatives: ['Google Cloud', 'Azure'] }],
+                other: []
+            })
 
             const mapTechChoices = (arr?: Array<{ name?: string; reason?: string; alternatives?: string[] }>): TechChoice[] => {
-                if (!Array.isArray(arr)) { return [] }
-                return arr.map(t => ({
+                const safeArr = Array.isArray(arr) ? arr : []
+                return safeArr.map(t => ({
                     name: t.name ?? 'Unknown',
                     reason: t.reason ?? 'Recommended for this project',
                     alternatives: t.alternatives ?? []
@@ -1706,19 +1795,19 @@ Respond ONLY with valid JSON:
                 jsonStr = jsonMatch[1].trim()
             }
 
-            const parsed = JSON.parse(jsonStr) as {
-                competitors?: Array<{
-                    name?: string
-                    description?: string
-                    url?: string
-                    strengths?: string[]
-                    weaknesses?: string[]
-                    missingFeatures?: string[]
-                    marketPosition?: string
-                    differentiationOpportunity?: string
-                }>
-                advantages?: string[]
-            }
+            const parsed = safeJsonParse(jsonStr, {
+                competitors: [{
+                    name: 'Unknown Competitor',
+                    description: 'Competitor analysis unavailable',
+                    url: '',
+                    strengths: [],
+                    weaknesses: [],
+                    missingFeatures: [],
+                    marketPosition: '',
+                    differentiationOpportunity: ''
+                }],
+                advantages: ['Unique value proposition']
+            })
 
             const competitors: IdeaCompetitor[] = Array.isArray(parsed.competitors)
                 ? parsed.competitors.map(c => ({

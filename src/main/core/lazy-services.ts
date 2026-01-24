@@ -93,7 +93,7 @@ export const lazyServiceRegistry = new LazyServiceRegistry()
 /**
  * Lazy service proxy that loads the service on first access
  */
-export function createLazyServiceProxy<T>(serviceName: string): T {
+export function createLazyServiceProxy<T extends object>(serviceName: string): T {
     return new Proxy({} as T, {
         get(target, prop, receiver) {
             // Handle async service loading

@@ -32,6 +32,7 @@ export interface OpenAIMessage {
     role: 'system' | 'user' | 'assistant' | 'tool';
     content: string | null | OpenAIContentPart[];
     tool_calls?: OpenAIToolCall[];
+    tool_call_id?: string;
     reasoning_content?: string; // DeepSeek/Reasoning models
     reasoning?: string; // Alternate reasoning field
 }

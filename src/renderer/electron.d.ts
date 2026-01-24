@@ -259,6 +259,7 @@ export interface ElectronAPI {
         getTrackingInfo: (cwd: string) => Promise<{ success: boolean; tracking?: string | null; ahead?: number; behind?: number }>
         getCommitStats: (cwd: string, days?: number) => Promise<{ success: boolean; commitCounts?: Record<string, number>; error?: string }>
         getDiffStats: (cwd: string) => Promise<{ success: boolean; staged?: { added: number; deleted: number; files: number }; unstaged?: { added: number; deleted: number; files: number }; total?: { added: number; deleted: number; files: number }; error?: string }>
+        getCommitDiff: (cwd: string, hash: string) => Promise<{ diff: string; success: boolean; error?: string }>
     }
 
     // LLM chat
@@ -597,6 +598,37 @@ export interface ElectronAPI {
         deleteEntity: (id: string) => Promise<{ success: boolean; error?: string }>
         setEntityFact: (entityType: string, entityName: string, key: string, value: string) => Promise<{ success: boolean; id?: string; error?: string }>
         search: (query: string) => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[] }>
+    }
+
+    // IPC Batching API
+    batch: {
+        invoke: (requests: Array<{ channel: string; args: any[] }>) => Promise<{
+            results: Array<{
+                channel: string
+                success: boolean
+                data?: any
+                error?: string
+            }>
+            timing: {
+                startTime: number
+                endTime: number
+                totalMs: number
+            }
+        }>
+        invokeSequential: (requests: Array<{ channel: string; args: any[] }>) => Promise<{
+            results: Array<{
+                channel: string
+                success: boolean
+                data?: any
+                error?: string
+            }>
+            timing: {
+                startTime: number
+                endTime: number
+                totalMs: number
+            }
+        }>
+        getChannels: () => Promise<string[]>
     }
 
     // Explicit ipcRenderer exposure for flexible components

@@ -17,11 +17,11 @@ const LogoPreview: React.FC<{ logoPath: string | null }> = ({ logoPath }) => {
         return null
     }
     return (
-        <div className="mb-4 p-4 bg-black/40 rounded-lg flex items-center justify-center">
+        <div className="mb-4 p-4 bg-muted/20 border border-border/50 rounded-lg flex items-center justify-center backdrop-blur-sm">
             <img
                 src={`file://${logoPath}`}
                 alt="Generated logo"
-                className="max-w-[200px] max-h-[200px] object-contain"
+                className="max-w-[200px] max-h-[200px] object-contain drop-shadow-2xl"
             />
         </div>
     )
@@ -32,7 +32,8 @@ const LogoError: React.FC<{ error: string | null }> = ({ error }) => {
         return null
     }
     return (
-        <div className="mb-4 p-3 bg-red-500/20 text-red-400 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg text-xs font-bold flex items-center gap-2">
+            <Sparkles className="w-3 h-3 animate-pulse" />
             {error}
         </div>
     )
@@ -55,16 +56,16 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     }
 
     return (
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+        <div className="bg-muted/10 rounded-xl border border-border/50 p-4 backdrop-blur-md">
             <div className="flex items-center justify-between mb-4">
-                <h4 className="flex items-center gap-2 font-medium text-white">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
+                <h4 className="flex items-center gap-2 font-bold text-foreground">
+                    <Sparkles className="w-4 h-4 text-primary" />
                     {t('ideas.logo.title')}
                 </h4>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white"
+                    className="p-1 rounded-lg hover:bg-muted/30 text-muted-foreground/60 hover:text-foreground transition-colors"
                 >
                     <X className="w-4 h-4" />
                 </button>
@@ -77,9 +78,9 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                     placeholder={t('ideas.logo.promptPlaceholder')}
                     rows={2}
                     className={cn(
-                        'w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg',
-                        'text-white placeholder-white/30 resize-none',
-                        'focus:outline-none focus:border-purple-500/50'
+                        'w-full px-4 py-3 bg-muted/20 border border-border/50 rounded-lg',
+                        'text-foreground placeholder:text-muted-foreground/30 resize-none',
+                        'focus:outline-none focus:border-primary/50 transition-all text-sm'
                     )}
                 />
             </div>
@@ -94,8 +95,8 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                 }}
                 disabled={isGenerating || !prompt.trim()}
                 className={cn(
-                    'w-full py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2',
-                    'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400',
+                    'w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2',
+                    'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
             >

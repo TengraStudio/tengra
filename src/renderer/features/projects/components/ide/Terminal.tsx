@@ -345,16 +345,16 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
     return (
         <div className="w-full h-full relative group" style={{ minHeight: '300px' }}>
             {/* Modern terminal container with gradient border effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-cyan-500/5 rounded-xl blur-xl opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 rounded-xl blur-xl opacity-30" />
             <div
                 ref={terminalRef}
-                className="relative w-full h-full bg-[#0a0a0f] rounded-xl overflow-hidden border border-white/5 shadow-2xl backdrop-blur-sm"
+                className="relative w-full h-full bg-card rounded-xl overflow-hidden border border-border/50 shadow-2xl backdrop-blur-sm"
                 style={{
-                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+                    boxShadow: 'inset 0 1px 0 0 hsl(var(--border) / 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
                 }}
             />
             {/* Subtle top gradient overlay */}
-            <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/5 to-transparent pointer-events-none rounded-t-xl" />
+            <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-muted/30 to-transparent pointer-events-none rounded-t-xl" />
         </div>
     )
 }

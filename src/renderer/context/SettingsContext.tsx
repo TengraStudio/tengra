@@ -66,6 +66,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         return () => clearTimeout(timeout)
     }, [settings, originalSettings])
 
+    // Apply global appearances settings
+    useEffect(() => {
+        if (settings?.general?.fontSize) {
+            document.documentElement.style.setProperty('--font-size-base', `${settings.general.fontSize}px`)
+        }
+        if (settings?.general?.theme) {
+            document.documentElement.setAttribute('data-theme', settings.general.theme)
+        }
+    }, [settings?.general?.fontSize, settings?.general?.theme])
+
     const value = useMemo(() => ({
         settings,
         isLoading,

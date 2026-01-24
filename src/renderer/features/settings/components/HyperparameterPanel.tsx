@@ -1,4 +1,4 @@
-import { ChevronDown,ChevronUp, Settings2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { motion } from '@/lib/framer-motion-compat'
@@ -70,7 +70,7 @@ export function HyperparameterPanel({
         <div className="glass-card rounded-lg overflow-hidden">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors"
             >
                 <div className="flex items-center gap-2">
                     <Settings2 className="w-4 h-4 text-purple-400" />
@@ -96,7 +96,7 @@ export function HyperparameterPanel({
                                 <label className="text-xs font-medium text-muted-foreground">
                                     {slider.label}
                                 </label>
-                                <span className="text-xs font-mono bg-white/5 px-2 py-0.5 rounded">
+                                <span className="text-xs font-mono bg-muted/30 px-2 py-0.5 rounded">
                                     {slider.value.toFixed(slider.step < 1 ? 2 : 0)}
                                 </span>
                             </div>
@@ -109,7 +109,7 @@ export function HyperparameterPanel({
                                 onChange={(e) => slider.onChange(parseFloat(e.target.value))}
                                 className={cn(
                                     "w-full h-2 rounded-full appearance-none cursor-pointer",
-                                    "bg-white/10",
+                                    "bg-muted/50",
                                     "[&::-webkit-slider-thumb]:appearance-none",
                                     "[&::-webkit-slider-thumb]:w-4",
                                     "[&::-webkit-slider-thumb]:h-4",

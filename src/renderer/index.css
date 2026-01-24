@@ -1,5 +1,6 @@
 @import './typography.css';
 
+/* stylelint-disable */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -230,6 +231,14 @@
     --ring: 190 100% 60%;
 
     --glow-color: 190 100% 60%;
+    --premium-gradient: linear-gradient(135deg, hsl(190 100% 60%) 0%, hsl(250 100% 65%) 100%);
+  }
+
+  /* Utility for logos that should be white in dark mode and original in light mode */
+  [data-theme="black"] .theme-logo-invert,
+  .dark .theme-logo-invert {
+    filter: grayscale(100%) brightness(0) invert(1);
+    opacity: 0.9;
   }
 }
 
@@ -262,12 +271,66 @@
       linear-gradient(to bottom, hsl(var(--border) / 0.08) 1px, transparent 1px);
   }
 
-  .tech-border-r {
-    border-right: 1px solid hsl(var(--border) / 0.5);
-  }
-
   .tech-border-b {
     border-bottom: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  /* Premium Glassmorphism */
+  .premium-glass {
+    background: linear-gradient(135deg, hsl(var(--background) / 0.7) 0%, hsl(var(--background) / 0.4) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .premium-glass-light {
+    background: linear-gradient(135deg, hsla(0, 0%, 100%, 0.1) 0%, hsla(0, 0%, 100%, 0.05) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid hsla(0, 0%, 100%, 0.1);
+  }
+
+  /* Vibrant Mesh Gradients */
+  .bg-mesh {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(at 0% 0%, hsla(250, 100%, 65%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(190, 100%, 60%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(320, 100%, 60%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(150, 100%, 60%, 0.1) 0px, transparent 50%);
+  }
+
+  /* Micro-animations */
+  .hover-vibrate:hover {
+    animation: vibrate 0.3s cubic-bezier(.36, .07, .19, .97) both;
+  }
+
+  @keyframes vibrate {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    25% {
+      transform: translateX(-1px);
+    }
+
+    50% {
+      transform: translateX(1px);
+    }
+
+    75% {
+      transform: translateX(-1px);
+    }
+  }
+
+  .premium-shadow {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05),
+      0 0 0 1px hsl(var(--border) / 0.1);
   }
 }
 
@@ -279,8 +342,8 @@
   html {
     font-family: var(--font-family);
     letter-spacing: -0.015em;
-    /* Responsive Scaling: Min 15px, Preferred 1.05vw, Max 18px */
-    font-size: clamp(15px, 1.05vw, 18px);
+    /* Responsive Scaling: Min 15px, Preferred 1.05vw, Max 18px (User setting overrides) */
+    font-size: var(--font-size-base, clamp(15px, 1.05vw, 18px));
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -360,25 +423,98 @@
   }
 
 
-  /* Markdown Tables */
+  /* --- ENHANCED MARKDOWN STYLING --- */
+  .markdown-body {
+    @apply text-foreground/90 leading-relaxed break-words;
+    font-size: 0.95em;
+  }
+
+  .markdown-body p {
+    @apply my-3 first:mt-0 last:mb-0;
+  }
+
+  .markdown-body h1 {
+    @apply text-2xl font-black mt-8 mb-4 tracking-tight border-b border-border/30 pb-2;
+  }
+
+  .markdown-body h2 {
+    @apply text-xl font-bold mt-7 mb-4 tracking-tight;
+  }
+
+  .markdown-body h3 {
+    @apply text-lg font-bold mt-6 mb-3 tracking-tight;
+  }
+
+  .markdown-body h4 {
+    @apply text-base font-bold mt-5 mb-2;
+  }
+
+  .markdown-body ul,
+  .markdown-body ol {
+    @apply my-4 pl-6 space-y-2;
+  }
+
+  .markdown-body ul {
+    @apply list-disc;
+  }
+
+  .markdown-body ol {
+    @apply list-decimal;
+  }
+
+  .markdown-body li {
+    @apply pl-1;
+  }
+
+  /* Fix for misaligned bullets when content is wrapped in paragraphs */
+  .markdown-body li>p {
+    display: inline-block;
+    margin: 0 !important;
+    vertical-align: top;
+  }
+
+  .markdown-body li>ul,
+  .markdown-body li>ol {
+    @apply mt-2 mb-0;
+  }
+
+  .markdown-body blockquote {
+    @apply border-l-4 border-primary/40 pl-4 py-1 my-4 italic bg-muted/20 rounded-r-lg text-muted-foreground;
+  }
+
+  /* Inline Code */
+  .markdown-body code:not(pre code) {
+    @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono text-[0.85em] font-medium border border-border/20 whitespace-nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Code Blocks */
+  .markdown-body pre {
+    @apply my-4 overflow-hidden rounded-xl border border-border/50 bg-black/40;
+  }
+
   .markdown-body table {
-    @apply w-full border-collapse my-4 text-sm overflow-hidden rounded-lg border border-border/50;
+    @apply w-full border-collapse my-6 text-sm overflow-hidden rounded-xl border border-border/30;
   }
 
   .markdown-body th {
-    @apply bg-secondary/50 p-2 text-left font-semibold text-muted-foreground border-b border-border/50;
+    @apply bg-muted/40 p-3 text-left font-bold text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border/30;
   }
 
   .markdown-body td {
-    @apply p-2 border-b border-border/10 text-foreground/80;
+    @apply p-3 border-b border-border/20 text-foreground/80 leading-normal;
   }
 
   .markdown-body tr:last-child td {
     @apply border-b-0;
   }
 
-  .markdown-body blockquote {
-    @apply border-l-2 border-primary/50 pl-4 my-2 italic text-muted-foreground;
+  .markdown-body a {
+    @apply text-primary hover:text-primary/80 transition-colors underline underline-offset-4 decoration-primary/30 hover:decoration-primary;
+  }
+
+  .markdown-body hr {
+    @apply my-8 border-0 border-t border-border/30;
   }
 
   /* Scrollbar - Subtle */

@@ -1,5 +1,5 @@
 import { Minus, Square, X } from 'lucide-react'
-import { type CSSProperties,ReactNode } from 'react'
+import { type CSSProperties, ReactNode } from 'react'
 
 import { useTranslation } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -18,7 +18,7 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
     return (
         <header
             className={cn(
-                "h-12 border-b border-white/5 flex items-center justify-between px-6 bg-black/20 backdrop-blur-md z-40 select-none",
+                "h-12 border-b border-border/40 flex items-center justify-between px-6 bg-card/40 backdrop-blur-md z-40 select-none",
                 className
             )}
             style={dragStyle}
@@ -38,14 +38,14 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
                 <div className="flex gap-2 titlebar-controls px-2">
                     <button
                         onClick={() => window.electron.minimize()}
-                        className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                        className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
                         title={t('titleBar.minimize')}
                     >
                         <Minus className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => window.electron.maximize()}
-                        className="p-1.5 hover:bg-white/10 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
+                        className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
                         title={t('titleBar.maximize')}
                     >
                         <Square className="w-3.5 h-3.5" />

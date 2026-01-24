@@ -58,9 +58,9 @@ const getStatusIcon = (status: string) => {
             return <XCircle className="w-4 h-4 text-red-400" />
         case 'generating':
         case 'researching':
-            return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+            return <Loader2 className="w-4 h-4 text-primary animate-spin" />
         default:
-            return <Clock className="w-4 h-4 text-white/40" />
+            return <Clock className="w-4 h-4 text-muted-foreground/40" />
     }
 }
 
@@ -102,7 +102,7 @@ const IdeaRow: React.FC<{ idea: ProjectIdea; onSelect: (idea: ProjectIdea) => vo
         <button
             type="button"
             onClick={() => onSelect(idea)}
-            className="w-full flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg transition-colors text-left group"
+            className="w-full flex items-center gap-3 p-3 hover:bg-muted/20 rounded-lg transition-colors text-left group"
         >
             <div
                 className={cn(
@@ -114,10 +114,10 @@ const IdeaRow: React.FC<{ idea: ProjectIdea; onSelect: (idea: ProjectIdea) => vo
                 <Icon className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate group-hover:text-purple-300 transition-colors">
+                <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                     {idea.title}
                 </p>
-                <p className="text-xs text-white/40 truncate">{idea.description}</p>
+                <p className="text-xs text-muted-foreground/40 truncate">{idea.description}</p>
             </div>
             {getIdeaStatusBadge(idea.status, t)}
         </button>
@@ -135,32 +135,32 @@ const SessionRow: React.FC<{
     const { session, ideas, isExpanded, isLoading } = sessionData
 
     return (
-        <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
             {/* Session Header */}
             <button
                 type="button"
                 onClick={() => { void onToggle(session.id) }}
-                className="w-full flex items-center gap-4 p-4 hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors"
             >
                 <div className="shrink-0">
                     {isExpanded ? (
-                        <ChevronDown className="w-5 h-5 text-white/60" />
+                        <ChevronDown className="w-5 h-5 text-muted-foreground/60" />
                     ) : (
-                        <ChevronRight className="w-5 h-5 text-white/60" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground/60" />
                     )}
                 </div>
 
                 <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
                         {getStatusIcon(session.status)}
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-foreground">
                             {session.categories.map(c => {
                                 const meta = getCategoryMeta(c)
                                 return meta.label
                             }).join(', ')}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground/40">
                         <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {formatDate(session.createdAt, t)}
@@ -169,7 +169,7 @@ const SessionRow: React.FC<{
                             <Lightbulb className="w-3 h-3" />
                             {session.ideasGenerated} / {session.maxIdeas} {t('ideas.idea.viewDetails').split(' ')[0].toLowerCase()}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                        <span className="px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground/60">
                             {session.model}
                         </span>
                     </div>
@@ -182,7 +182,7 @@ const SessionRow: React.FC<{
                             e.stopPropagation()
                             void onSelectSession(session.id)
                         }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all"
                     >
                         {t('ideas.history.viewDetails')}
                     </button>
@@ -191,13 +191,13 @@ const SessionRow: React.FC<{
 
             {/* Ideas List (Expandable) */}
             {isExpanded && (
-                <div className="border-t border-white/10 p-2">
+                <div className="border-t border-border/50 p-2">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-4">
-                            <Loader2 className="w-5 h-5 animate-spin text-white/40" />
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/40" />
                         </div>
                     ) : ideas.length === 0 ? (
-                        <p className="text-center text-sm text-white/40 py-4">
+                        <p className="text-center text-sm text-muted-foreground/40 py-4">
                             {t('ideas.history.noIdeasYet')}
                         </p>
                     ) : (
@@ -362,13 +362,13 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
     if (sessions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4">
-                    <Lightbulb className="w-8 h-8 text-purple-400" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 border border-primary/20">
+                    <Lightbulb className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                     {t('ideas.empty.noSessions')}
                 </h3>
-                <p className="text-white/50 max-w-sm">
+                <p className="text-muted-foreground max-w-sm">
                     {t('ideas.empty.noSessionsDesc')}
                 </p>
             </div>
@@ -379,28 +379,28 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
         <div className="space-y-6">
             {/* Stats Overview */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
-                    <p className="text-2xl font-bold text-white">{stats.totalSessions}</p>
-                    <p className="text-xs text-white/50 mt-1">Total Sessions</p>
+                <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
+                    <p className="text-2xl font-bold text-foreground">{stats.totalSessions}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total Sessions</p>
                 </div>
-                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
-                    <p className="text-2xl font-bold text-purple-400">{stats.completedSessions}</p>
-                    <p className="text-xs text-white/50 mt-1">Completed</p>
+                <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
+                    <p className="text-2xl font-bold text-primary">{stats.completedSessions}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Completed</p>
                 </div>
-                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
-                    <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
-                    <p className="text-xs text-white/50 mt-1">Approved Ideas</p>
+                <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
+                    <p className="text-2xl font-bold text-green-500">{stats.approved}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Approved Ideas</p>
                 </div>
-                <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4">
-                    <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
-                    <p className="text-xs text-white/50 mt-1">Pending Review</p>
+                <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
+                    <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Pending Review</p>
                 </div>
             </div>
 
             {/* Grouped Sessions */}
             {groupedSessions.map(group => (
                 <div key={group.label}>
-                    <h3 className="text-sm font-semibold text-white/60 mb-3 px-1">
+                    <h3 className="text-sm font-semibold text-muted-foreground/60 mb-3 px-1">
                         {group.label}
                     </h3>
                     <div className="space-y-3">

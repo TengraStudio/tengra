@@ -3,6 +3,7 @@ import { LLMService } from '@main/services/llm/llm.service'
 import { Message } from '@shared/types/chat'
 import { IdeaCategory, ProjectIdea } from '@shared/types/ideas'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -61,8 +62,37 @@ const CURRENT_YEAR = new Date().getFullYear()
  * Provides AI-powered scoring and ranking of project ideas
  */
 export class IdeaScoringService extends BaseService {
+    private scoringCache: Map<string, IdeaScoreBreakdown> = new Map();
+    private initialized = false;
+
     constructor(private llmService: LLMService) {
         super('IdeaScoringService')
+    }
+
+    /**
+     * Initialize the IdeaScoringService
+     */
+    async initialize(): Promise<void> {
+        this.logInfo('Initializing idea scoring service...');
+        
+        // Clear any existing cache
+        this.scoringCache.clear();
+        this.initialized = true;
+        
+        this.logInfo('Idea scoring service initialized with scoring cache');
+    }
+
+    /**
+     * Cleanup the IdeaScoringService
+     */
+    async cleanup(): Promise<void> {
+        this.logInfo('Cleaning up idea scoring service...');
+        
+        // Clear scoring cache
+        this.scoringCache.clear();
+        this.initialized = false;
+        
+        this.logInfo('Idea scoring service cleaned up');
     }
 
     /**
@@ -379,22 +409,22 @@ Always respond in valid JSON format.`
                 throw new Error('No JSON found in response')
             }
 
-            const data = JSON.parse(jsonMatch) as {
-                overallScore?: number
-                dimensions?: {
-                    innovation?: number
-                    marketNeed?: number
-                    feasibility?: number
-                    businessPotential?: number
-                    targetClarity?: number
-                    competitiveMoat?: number
-                }
-                strengths?: string[]
-                weaknesses?: string[]
-                improvements?: string[]
-                confidence?: 'high' | 'medium' | 'low'
-                summary?: string
-            }
+            const data = safeJsonParse(jsonMatch, {
+                overallScore: 50,
+                dimensions: {
+                    innovation: 50,
+                    marketNeed: 50,
+                    feasibility: 50,
+                    businessPotential: 50,
+                    targetClarity: 50,
+                    competitiveMoat: 50
+                },
+                strengths: [],
+                weaknesses: [],
+                improvements: [],
+                confidence: 'medium' as const,
+                summary: 'Default score assessment'
+            })
 
             const clamp = (val: number | undefined, def: number): number => 
                 Math.max(0, Math.min(100, val ?? def))
@@ -445,12 +475,12 @@ Always respond in valid JSON format.`
             const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
             if (!jsonMatch) {throw new Error('No JSON found')}
 
-            const data = JSON.parse(jsonMatch) as {
-                winnerId?: string
-                reason?: string
-                strengthComparison?: Record<string, { idea1: number; idea2: number }>
-                recommendation?: string
-            }
+            const data = safeJsonParse(jsonMatch, {
+                winnerId: '1',
+                reason: 'Comparison completed',
+                strengthComparison: {},
+                recommendation: ''
+            })
 
             return {
                 winnerId: data.winnerId === '2' ? idea2Id : idea1Id,

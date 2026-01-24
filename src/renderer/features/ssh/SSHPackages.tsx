@@ -35,7 +35,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
 
     const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
 
-    if (!active) {return null}
+    if (!active) { return null }
 
     return (
         <div className="flex flex-col h-full">
@@ -43,7 +43,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{t('ssh.installedPackages')}</h3>
                     <button
-                        onClick={loadPackages}
+                        onClick={() => void loadPackages()}
                         className="text-xs px-2 py-1 bg-muted hover:bg-muted/80 rounded"
                         disabled={loading}
                     >
@@ -51,9 +51,9 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                     </button>
                 </div>
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground/50" />
                     <input
-                        className="w-full bg-muted/20 border border-border rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full bg-muted/20 border border-border/50 rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                         placeholder={t('ssh.searchPackages')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
@@ -81,7 +81,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                                     <td className="p-3 font-medium">{pkg.name}</td>
                                     <td className="p-3 text-muted-foreground font-mono text-xs">{pkg.version}</td>
                                     <td className="p-3">
-                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs border border-emerald-500/20">
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] uppercase font-bold border border-emerald-500/20">
                                             {pkg.status}
                                         </span>
                                     </td>

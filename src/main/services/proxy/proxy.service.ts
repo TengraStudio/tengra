@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 
+import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { LinkedAccount } from '@main/services/data/database.service'
@@ -72,7 +73,7 @@ export interface TokenResponse {
 
 const GITHUB_CLIENTS = {
   profile: { id: '01ab8ac9400c4e429b23', scope: 'read:user user:email repo' }, // Use Copilot ID for universal access
-  copilot: { id: '01ab8ac9400c4e429b23', scope: 'read:user' }
+  copilot: { id: '01ab8ac9400c4e429b23', scope: 'read:user user:email' }
 }
 
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
@@ -796,6 +797,85 @@ export class ProxyService extends BaseService {
 
       request.on('error', () => resolve(undefined))
       request.write(body)
+      request.end()
+    })
+  }
+
+  async fetchGitHubProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
+    appLogger.info('ProxyService', 'Fetching GitHub user profile...')
+    return new Promise((resolve) => {
+      const request = net.request({
+        method: 'GET',
+        url: 'https://api.github.com/user'
+      })
+
+      request.setHeader('Authorization', `Bearer ${accessToken}`)
+      request.setHeader('Accept', 'application/vnd.github+json')
+      request.setHeader('User-Agent', 'Orbit-App/1.0.0')
+
+      request.on('response', (response) => {
+        let data = ''
+        response.on('data', chunk => data += chunk)
+        response.on('end', () => {
+          appLogger.debug('ProxyService', `GitHub /user response status: ${response.statusCode}`)
+          if (response.statusCode >= 400) {
+            appLogger.error('ProxyService', `GitHub profile fetch failed: ${response.statusCode} - ${data}`)
+            resolve({})
+            return
+          }
+          const json = safeJsonParse<{ email?: string; name?: string; login?: string; avatar_url?: string }>(data, {})
+          appLogger.debug('ProxyService', `GitHub profile data: ${JSON.stringify({ ...json, email: json.email ? '[PRESENT]' : '[MISSING]' })}`)
+
+          resolve({
+            email: json.email ?? undefined,
+            displayName: json.name ?? json.login ?? undefined,
+            avatarUrl: json.avatar_url ?? undefined,
+            login: json.login ?? undefined
+          })
+        })
+      })
+
+      request.on('error', (err) => {
+        appLogger.error('ProxyService', 'GitHub profile fetch network error', err)
+        resolve({})
+      })
+      request.end()
+    })
+  }
+
+  async fetchGitHubEmails(accessToken: string): Promise<string | undefined> {
+    appLogger.info('ProxyService', 'Fetching GitHub user emails...')
+    return new Promise((resolve) => {
+      const request = net.request({
+        method: 'GET',
+        url: 'https://api.github.com/user/emails'
+      })
+
+      request.setHeader('Authorization', `Bearer ${accessToken}`)
+      request.setHeader('Accept', 'application/vnd.github+json')
+      request.setHeader('User-Agent', 'Orbit-App/1.0.0')
+
+      request.on('response', (response) => {
+        let data = ''
+        response.on('data', chunk => data += chunk)
+        response.on('end', () => {
+          appLogger.debug('ProxyService', `GitHub /user/emails response status: ${response.statusCode}`)
+          if (response.statusCode >= 400) {
+            appLogger.error('ProxyService', `GitHub emails fetch failed: ${response.statusCode} - ${data}`)
+            resolve(undefined)
+            return
+          }
+          const emails = safeJsonParse<Array<{ email: string; primary: boolean; verified: boolean }>>(data, [])
+          appLogger.debug('ProxyService', `GitHub emails count: ${emails.length}`)
+          const primary = emails.find(e => e.primary && e.verified) ?? emails.find(e => e.primary) ?? emails[0]
+          resolve(primary?.email)
+        })
+      })
+
+      request.on('error', (err) => {
+        appLogger.error('ProxyService', 'GitHub emails fetch network error', err)
+        resolve(undefined)
+      })
       request.end()
     })
   }

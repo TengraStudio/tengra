@@ -115,7 +115,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                         {t('ssh.nginx.preview')}
                     </button>
                     <button
-                        onClick={handleApply}
+                        onClick={() => void handleApply()}
                         disabled={isGenerating || !domain}
                         className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
                     >
@@ -125,9 +125,9 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 </div>
 
                 {status && (
-                    <div className={`p-4 rounded-lg text-sm flex items-start gap-3 border ${status.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                        status.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                            'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                    <div className={`p-4 rounded-lg text-sm flex items-start gap-3 border ${status.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                        status.type === 'error' ? 'bg-destructive/10 border-destructive/20 text-destructive' :
+                            'bg-primary/10 border-primary/20 text-primary'
                         }`}>
                         {status.type === 'success' && <ShieldCheck className="w-5 h-5 flex-shrink-0" />}
                         <p>{status.message}</p>
@@ -137,7 +137,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 {config && (
                     <div className="space-y-2 pt-4">
                         <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">{t('ssh.nginx.configPreview')}</label>
-                        <pre className="p-4 bg-black/40 border border-border rounded-xl font-mono text-xs overflow-x-auto text-emerald-300/80">
+                        <pre className="p-4 bg-muted/30 border border-border/50 rounded-xl font-mono text-xs overflow-x-auto text-primary/80">
                             {config}
                         </pre>
                     </div>

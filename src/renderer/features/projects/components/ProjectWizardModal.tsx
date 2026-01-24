@@ -171,10 +171,10 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         <Modal isOpen={isOpen} onClose={onClose} title={t('projectWizard.title')} size="3xl">
             <div className="relative min-h-[500px] flex flex-col">
                 {isLoading && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-50 flex items-center justify-center rounded-2xl">
                         <div className="flex flex-col items-center gap-4">
                             <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                            <span className="text-sm font-medium text-white/80 animate-pulse tracking-widest uppercase">
+                            <span className="text-sm font-medium text-foreground animate-pulse tracking-widest uppercase">
                                 {step === 'creating' ? t('projectWizard.creating') : t('common.loading')}
                             </span>
                         </div>
@@ -198,7 +198,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             autoFocus
                                             value={formData.name}
                                             onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                             placeholder={t('projectWizard.namePlaceholder')}
                                         />
                                     </div>
@@ -213,7 +213,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                                         "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden",
                                                         formData.category === cat.id
                                                             ? "bg-primary/20 border-primary shadow-lg shadow-primary/10"
-                                                            : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                                                            : "bg-muted/30 border-border/50 hover:bg-muted/50 hover:border-border"
                                                     )}
                                                 >
                                                     {formData.category === cat.id && (
@@ -237,7 +237,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                         <textarea
                                             value={formData.description}
                                             onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                                            className="w-full h-24 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none text-white"
+                                            className="w-full h-24 bg-muted/10 border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none text-foreground"
                                             placeholder={t('projectWizard.descPlaceholder')}
                                         />
                                     </div>
@@ -323,7 +323,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             autoFocus
                                             value={sshForm.host}
                                             onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
-                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                             placeholder={t('projectWizard.placeholder.example')}
                                         />
                                     </div>
@@ -332,7 +332,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                         <input
                                             value={sshForm.port}
                                             onChange={e => setSshForm(p => ({ ...p, port: e.target.value }))}
-                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                             placeholder={t('ssh.placeholders.port')}
                                         />
                                     </div>
@@ -343,19 +343,19 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     <input
                                         value={sshForm.username}
                                         onChange={e => setSshForm(p => ({ ...p, username: e.target.value }))}
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                        className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                         placeholder={t('ssh.placeholders.username')}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.authType')}</label>
-                                    <div className="flex bg-black/20 rounded-lg p-1 border border-white/10">
+                                    <div className="flex bg-muted/10 rounded-lg p-1 border border-border/50">
                                         <button
                                             onClick={() => setSshForm(p => ({ ...p, authType: 'password' }))}
                                             className={cn(
                                                 "flex-1 py-2 rounded-md text-xs font-medium transition-all",
-                                                sshForm.authType === 'password' ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                                                sshForm.authType === 'password' ? "bg-muted/40 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
                                             Password
@@ -364,7 +364,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             onClick={() => setSshForm(p => ({ ...p, authType: 'key' }))}
                                             className={cn(
                                                 "flex-1 py-2 rounded-md text-xs font-medium transition-all",
-                                                sshForm.authType === 'key' ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                                                sshForm.authType === 'key' ? "bg-muted/40 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
                                             Private Key
@@ -379,7 +379,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             type="password"
                                             value={sshForm.password}
                                             onChange={e => setSshForm(p => ({ ...p, password: e.target.value }))}
-                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                             placeholder="••••••••"
                                         />
                                     </div>
@@ -390,7 +390,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             <textarea
                                                 value={sshForm.privateKey}
                                                 onChange={e => setSshForm(p => ({ ...p, privateKey: e.target.value }))}
-                                                className="w-full h-24 bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white font-mono text-xs resize-none"
+                                                className="w-full h-24 bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground font-mono text-xs resize-none"
                                                 placeholder={t('ssh.placeholders.privateKey')}
                                             />
                                         </div>
@@ -400,7 +400,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                                 type="password"
                                                 value={sshForm.passphrase}
                                                 onChange={e => setSshForm(p => ({ ...p, passphrase: e.target.value }))}
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-white"
+                                                className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
                                                 placeholder="••••••••"
                                             />
                                         </div>
@@ -418,7 +418,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             exit={{ opacity: 0, x: -20 }}
                             className="space-y-4 flex-1 pt-4 flex flex-col min-h-0"
                         >
-                            <div className="flex items-center gap-2 p-3 bg-black/20 rounded-lg border border-white/10">
+                            <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
                                 <Terminal className="w-4 h-4 text-purple-400 shrink-0" />
                                 <input
                                     value={sshPath}
@@ -428,27 +428,27 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             void loadRemoteDirectory(sshConnectionId, sshPath)
                                         }
                                     }}
-                                    className="flex-1 bg-transparent text-sm text-white focus:outline-none font-mono"
+                                    className="flex-1 bg-transparent text-sm text-foreground focus:outline-none font-mono"
                                 />
                                 <button
                                     onClick={() => sshConnectionId && loadRemoteDirectory(sshConnectionId, sshPath)}
-                                    className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                                    className="p-1 hover:bg-muted/40 rounded-md transition-colors"
                                 >
-                                    <ArrowRight className="w-4 h-4 text-white/50" />
+                                    <ArrowRight className="w-4 h-4 text-foreground/50" />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto bg-black/20 rounded-xl border border-white/10 p-2 space-y-1">
+                            <div className="flex-1 overflow-y-auto bg-muted/10 rounded-xl border border-border/50 p-2 space-y-1">
                                 {sshPath !== '/' && (
                                     <button
                                         onClick={() => {
                                             const parent = sshPath.split('/').slice(0, -1).join('/') || '/'
                                             if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent) }
                                         }}
-                                        className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg text-left transition-colors group"
+                                        className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
                                     >
                                         <FolderOpen className="w-4 h-4 text-yellow-500/70 group-hover:text-yellow-400" />
-                                        <span className="text-sm text-white/70 group-hover:text-white">..</span>
+                                        <span className="text-sm text-foreground/70 group-hover:text-foreground">..</span>
                                     </button>
                                 )}
                                 {sshFiles.map((file, i) => (
@@ -461,16 +461,16 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                             }
                                         }}
                                         className={cn(
-                                            "w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg text-left transition-colors group",
+                                            "w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group",
                                             !file.isDirectory && "opacity-50 cursor-default"
                                         )}
                                     >
                                         {file.isDirectory ? (
                                             <FolderOpen className="w-4 h-4 text-blue-400/70 group-hover:text-blue-400" />
                                         ) : (
-                                            <Code className="w-4 h-4 text-white/30" />
+                                            <Code className="w-4 h-4 text-foreground/30" />
                                         )}
-                                        <span className="text-sm text-white/80 group-hover:text-white truncate">{file.name}</span>
+                                        <span className="text-sm text-foreground/80 group-hover:text-foreground truncate">{file.name}</span>
                                     </button>
                                 ))}
                             </div>
@@ -490,7 +490,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                 <Check className="w-6 h-6 text-primary absolute inset-0 m-auto opacity-0 animate-pulse" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-light text-white">{t('projectWizard.creating')}</h3>
+                                <h3 className="text-2xl font-light text-foreground">{t('projectWizard.creating')}</h3>
                                 <p className="text-muted-foreground mt-2 max-w-[280px] mx-auto text-sm">
                                     {t('projectWizard.configuring')}
                                 </p>
@@ -500,7 +500,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 </AnimatePresence>
 
                 {step !== 'creating' && (
-                    <div className="flex justify-between items-center pt-6 border-t border-white/5 mt-auto">
+                    <div className="flex justify-between items-center pt-6 border-t border-border/20 mt-auto">
                         <button
                             onClick={() => {
                                 if (step === 'selection') { setStep('details') }

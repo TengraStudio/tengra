@@ -88,7 +88,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                                     'border text-sm font-medium',
                                     isSelected
                                         ? `${meta.bgColor} ${meta.color} border-current`
-                                        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white/80',
+                                        : 'bg-muted/30 text-muted-foreground/60 border-border/50 hover:bg-muted/50 hover:text-muted-foreground',
                                     isDisabled && !isSelected && 'opacity-30 cursor-not-allowed grayscale'
                                 )}
                             >
@@ -112,7 +112,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             </div>
 
             {selected.length > 0 && (
-                <p className="text-[10px] text-white/40 italic">
+                <p className="text-[10px] text-muted-foreground/40 italic">
                     {selected.length}/3 categories selected
                 </p>
             )}

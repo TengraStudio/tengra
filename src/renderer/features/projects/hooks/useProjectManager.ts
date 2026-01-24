@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { Folder, Project, TerminalTab } from '@/types'
@@ -84,16 +84,21 @@ export function useProjectManager() {
         }
     }, [loadFolders])
 
+    const loadProjectsRef = useRef(loadProjects)
+    useEffect(() => {
+        loadProjectsRef.current = loadProjects
+    }, [loadProjects])
+
     useEffect(() => {
         const handleProjectUpdated = (_event: unknown, _data?: { id?: string }) => {
-            void loadProjects()
+            void loadProjectsRef.current()
         }
 
-        window.electron.ipcRenderer.on('project:updated', handleProjectUpdated)
+        const unsubscribe = window.electron.ipcRenderer.on('project:updated', handleProjectUpdated)
         return () => {
-            window.electron.ipcRenderer.off('project:updated', handleProjectUpdated)
+            unsubscribe()
         }
-    }, [loadProjects])
+    }, [])
 
     useEffect(() => {
         const fetchInitialData = async () => {

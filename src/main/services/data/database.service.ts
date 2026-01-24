@@ -1580,24 +1580,55 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    async getDetailedStats(_period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') {
+    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') {
         try {
             const db = await this.ensureDb()
             const stats = await this.getCoreCountStats(db)
-            const messages = await db.prepare('SELECT metadata, timestamp FROM messages').all<JsonObject>()
 
-            const usage = this.calculateTokenAndTimelineStats(messages)
+            // Get tokens from token_usage table for higher accuracy
+            const usageRows = await db.prepare('SELECT tokens_sent, tokens_received, timestamp, model FROM token_usage').all<{ tokens_sent: number, tokens_received: number, timestamp: number, model: string }>()
+
+            let promptTokens = 0
+            let completionTokens = 0
+            const tokenTimelineMap = new Map<number, { prompt: number; completion: number; breakdown: Record<string, { prompt: number; completion: number }> }>()
+            const now = Date.now()
+            const dayMs = 86400000
+
+            for (const row of usageRows) {
+                promptTokens += row.tokens_sent
+                completionTokens += row.tokens_received
+                this.updateTokenTimeline(tokenTimelineMap, {
+                    timestamp: row.timestamp,
+                    p: row.tokens_sent,
+                    c: row.tokens_received,
+                    period,
+                    model: row.model
+                })
+            }
+
+            // Still get activity from messages for now
+            const messages = await db.prepare('SELECT timestamp FROM messages').all<{ timestamp: number }>()
+            const activity = new Array(30).fill(0)
+            for (const msg of messages) {
+                this.updateActivity(activity, Number(msg.timestamp), now, dayMs)
+            }
 
             return {
                 ...stats,
-                totalPromptTokens: usage.totalPromptTokens,
-                totalCompletionTokens: usage.totalCompletionTokens,
-                tokenTimeline: usage.tokenTimeline,
-                activity: usage.activity
+                promptTokens,
+                completionTokens,
+                totalTokens: promptTokens + completionTokens,
+                tokenTimeline: Array.from(tokenTimelineMap.entries()).map(([timestamp, data]) => ({
+                    timestamp,
+                    promptTokens: data.prompt,
+                    completionTokens: data.completion,
+                    modelBreakdown: data.breakdown
+                })),
+                activity
             }
         } catch (error) {
-            appLogger.error('DatabaseService', `Failed to get detailed stats: ${getErrorMessage(error)} `)
-            return { chatCount: 0, messageCount: 0, dbSize: 0, totalPromptTokens: 0, totalCompletionTokens: 0, tokenTimeline: [], activity: [] }
+            appLogger.error('DatabaseService', `Failed to get detailed stats: ${getErrorMessage(error as Error)} `)
+            return { chatCount: 0, messageCount: 0, dbSize: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, tokenTimeline: [], activity: [] }
         }
     }
 
@@ -1614,7 +1645,7 @@ export class DatabaseService extends BaseService {
     private calculateTokenAndTimelineStats(messages: JsonObject[]) {
         let totalPromptTokens = 0
         let totalCompletionTokens = 0
-        const tokenTimelineMap = new Map<number, { prompt: number; completion: number }>()
+        const tokenTimelineMap = new Map<number, { prompt: number; completion: number; breakdown: Record<string, { prompt: number; completion: number }> }>()
         const activity = new Array(30).fill(0)
         const now = Date.now()
         const dayMs = 86400000
@@ -1624,12 +1655,23 @@ export class DatabaseService extends BaseService {
             totalPromptTokens += usage.p
             totalCompletionTokens += usage.c
 
-            this.updateTokenTimeline(tokenTimelineMap, Number(msg.timestamp), usage.p, usage.c)
+            this.updateTokenTimeline(tokenTimelineMap, {
+                timestamp: Number(msg.timestamp),
+                p: usage.p,
+                c: usage.c,
+                period: 'daily',
+                model: usage.m
+            })
             this.updateActivity(activity, Number(msg.timestamp), now, dayMs)
         }
 
         const tokenTimeline = Array.from(tokenTimelineMap.entries())
-            .map(([timestamp, tokens]) => ({ timestamp, promptTokens: tokens.prompt, completionTokens: tokens.completion }))
+            .map(([timestamp, tokens]) => ({
+                timestamp,
+                promptTokens: tokens.prompt,
+                completionTokens: tokens.completion,
+                modelBreakdown: tokens.breakdown
+            }))
             .sort((a, b) => a.timestamp - b.timestamp)
 
         return { totalPromptTokens, totalCompletionTokens, tokenTimeline, activity }
@@ -1640,17 +1682,53 @@ export class DatabaseService extends BaseService {
         const usage = (metadata.usage ?? {}) as JsonObject
         return {
             p: Number(metadata.promptTokens ?? usage.prompt_tokens ?? 0),
-            c: Number(metadata.completionTokens ?? usage.completion_tokens ?? 0)
+            c: Number(metadata.completionTokens ?? usage.completion_tokens ?? 0),
+            m: (msg.model as string) || (metadata.model as string) || 'unknown'
         }
     }
 
-    private updateTokenTimeline(map: Map<number, { prompt: number; completion: number }>, timestamp: number, p: number, c: number) {
+    private updateTokenTimeline(
+        map: Map<number, { prompt: number; completion: number; breakdown: Record<string, { prompt: number; completion: number }> }>,
+        params: {
+            timestamp: number;
+            p: number;
+            c: number;
+            period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+            model?: string;
+        }
+    ) {
+        const { timestamp, p, c, period = 'daily', model } = params
         if (p > 0 || c > 0) {
-            const dayTimestamp = new Date(timestamp).setHours(0, 0, 0, 0)
-            const existing = map.get(dayTimestamp) ?? { prompt: 0, completion: 0 }
-            map.set(dayTimestamp, {
+            let groupTimestamp: number
+            const date = new Date(timestamp)
+
+            if (period === 'daily') {
+                groupTimestamp = date.setMinutes(0, 0, 0) // Group by hour
+            } else if (period === 'weekly') {
+                groupTimestamp = date.setHours(0, 0, 0, 0) // Group by day
+            } else if (period === 'monthly') {
+                groupTimestamp = date.setHours(0, 0, 0, 0) // Group by day (or maybe week)
+            } else {
+                // Yearly: Group by month
+                date.setDate(1)
+                groupTimestamp = date.setHours(0, 0, 0, 0)
+            }
+
+            const existing = map.get(groupTimestamp) ?? { prompt: 0, completion: 0, breakdown: {} }
+
+            // Add to model breakdown
+            if (model) {
+                const modelData = existing.breakdown[model] ?? { prompt: 0, completion: 0 }
+                existing.breakdown[model] = {
+                    prompt: modelData.prompt + p,
+                    completion: modelData.completion + c
+                }
+            }
+
+            map.set(groupTimestamp, {
                 prompt: existing.prompt + p,
-                completion: existing.completion + c
+                completion: existing.completion + c,
+                breakdown: existing.breakdown
             })
         }
     }

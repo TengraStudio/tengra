@@ -10,7 +10,7 @@ import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, NetworkError } from '@main/utils/error.util';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { StreamParser } from '@main/utils/stream-parser.util';
-import { Message, ToolDefinition } from '@shared/types/chat';
+import { Message, ToolDefinition, SystemMode } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -25,6 +25,8 @@ export interface LLMChatOptions {
     provider?: string;
     n?: number; // Number of completions to generate
     temperature?: number; // Temperature for response randomness (0-2)
+    systemMode?: SystemMode;
+    projectRoot?: string;
 }
 
 export interface OpenAIModelDefinition {
@@ -175,7 +177,7 @@ export class LLMService {
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken('openai');
+        await this.rateLimitService.waitForToken(provider || 'openai');
 
         const execute = async () => {
             const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: false, n });
@@ -185,7 +187,7 @@ export class LLMService {
                 this.httpService.fetch(endpoint, {
                     ...requestInit,
                     retryCount: 2,
-                    timeoutMs: 60000
+                    timeoutMs: 300000
                 } as HttpRequestOptions)
             );
 
@@ -198,7 +200,7 @@ export class LLMService {
                         const retryResponse = await this.httpService.fetch(endpoint, {
                             ...requestInit,
                             retryCount: 1,
-                            timeoutMs: 60000
+                            timeoutMs: 300000
                         } as HttpRequestOptions);
                         if (retryResponse.ok) {
                             const json = await retryResponse.json() as OpenAIChatCompletion;
@@ -224,16 +226,16 @@ export class LLMService {
         }
     }
 
-    async *chatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions = {}): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
+    async *chatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions = {}): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
         yield* this.executeChatOpenAIStream(messages, options);
     }
 
-    private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
+    private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
         const { model = 'gpt-4o', tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider } = options;
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken('openai');
+        await this.rateLimitService.waitForToken(provider || 'openai');
 
         const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: true });
         const requestInit = this.createOpenAIRequest(body, config.apiKey);
@@ -241,7 +243,7 @@ export class LLMService {
         const response = await this.httpService.fetch(endpoint, {
             ...requestInit,
             retryCount: 2,
-            timeoutMs: 60000
+            timeoutMs: 300000
         });
 
         if (!response.ok) {
@@ -253,7 +255,7 @@ export class LLMService {
                     const retryResponse = await this.httpService.fetch(endpoint, {
                         ...requestInit,
                         retryCount: 1,
-                        timeoutMs: 60000
+                        timeoutMs: 300000
                     });
                     if (retryResponse.ok) {
                         yield* this.handleOpenAIStreamResponse(retryResponse);
@@ -281,7 +283,8 @@ export class LLMService {
                     ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
                     images: savedImages,
                     ...(chunk.type ? { type: chunk.type } : {}),
-                    ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {})
+                    ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
+                    ...(chunk.usage ? { usage: chunk.usage } : {})
                 };
             }
         } catch (e) {
@@ -348,7 +351,7 @@ export class LLMService {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify(body),
             retryCount: 2,
-            timeoutMs: 60000
+            timeoutMs: 300000
         });
 
         if (!response.ok) {
@@ -619,8 +622,9 @@ export class LLMService {
         stream?: boolean;
         n?: number;
         temperature?: number;
+        systemMode?: SystemMode;
     }) {
-        const { model, tools, provider, stream = false, n = 1, temperature } = options;
+        const { model, tools, provider, stream = false, n = 1, temperature, systemMode } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
         let finalModel = this.normalizeModelName(model, provider);
 
@@ -634,6 +638,21 @@ export class LLMService {
             provider,
             stream
         };
+
+        // Reasoning Effort Logic for 'o1' and 'o3' class models
+        if (finalModel.startsWith('o1') || finalModel.startsWith('o3')) {
+            if (systemMode === 'thinking') {
+                body.reasoning_effort = 'high';
+            } else if (systemMode === 'fast') {
+                body.reasoning_effort = 'low';
+            } else {
+                body.reasoning_effort = 'medium'; // Default for Agent or unspecified
+            }
+        }
+
+        if (stream) {
+            body.stream_options = { include_usage: true };
+        }
 
         if (temperature !== undefined) {
             body.temperature = temperature;
@@ -845,7 +864,11 @@ export class LLMService {
             };
 
             if (message.tool_calls) { result.tool_calls = message.tool_calls; }
-            if (json.usage?.completion_tokens) { result.completionTokens = json.usage.completion_tokens; }
+            if (json.usage) {
+                result.promptTokens = json.usage.prompt_tokens;
+                result.completionTokens = json.usage.completion_tokens;
+                result.totalTokens = json.usage.total_tokens;
+            }
 
             const reasoning = message.reasoning_content ?? message.reasoning;
             if (reasoning) { result.reasoning_content = reasoning; }

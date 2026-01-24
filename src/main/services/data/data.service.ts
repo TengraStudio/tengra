@@ -36,8 +36,22 @@ export class DataService extends BaseService {
             galleryImages: path.join(this.baseDir, 'gallery', 'images'),
             galleryVideos: path.join(this.baseDir, 'gallery', 'videos')
         }
+    }
 
-        this.ensureDirectories()
+    async initialize(): Promise<void> {
+        this.logInfo('Initializing data service and ensuring directory structure...')
+        
+        try {
+            this.ensureDirectories()
+            this.logInfo('Data service initialized successfully')
+        } catch (error) {
+            this.logError('Failed to initialize data service', error)
+            throw error
+        }
+    }
+
+    async cleanup(): Promise<void> {
+        this.logInfo('Data service cleanup - no resources to clean')
     }
 
     private ensureDirectories() {

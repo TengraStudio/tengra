@@ -1,6 +1,6 @@
 
-import { Activity, Clock,Cpu, HardDrive } from 'lucide-react'
-import { useEffect,useState } from 'react'
+import { Activity, Clock, Cpu, HardDrive } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTranslation } from '@/i18n'
@@ -31,7 +31,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
         const load = async () => {
             try {
                 const data = await window.electron.ssh.getSystemStats(connectionId) as SystemStats
-                if (isMounted && data && !data.error) {
+                if (isMounted && data) {
                     setStats(data)
                 }
             } catch (e) {
@@ -47,23 +47,23 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
         }
     }, [connectionId])
 
-    if (!stats) {return <div className="flex items-center justify-center p-8 text-zinc-500">{t('ssh.loadingStats')}</div>}
+    if (!stats) { return <div className="flex items-center justify-center p-8 text-muted-foreground/50">{t('ssh.loadingStats')}</div> }
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
             {/* CPU */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card/40 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">{t('ssh.cpuUsage')}</CardTitle>
-                    <Cpu size={16} className="text-blue-400" />
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.cpuUsage')}</CardTitle>
+                    <Cpu size={16} className="text-primary" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold text-white">{stats.cpu}%</span>
+                        <span className="text-2xl font-bold text-foreground">{stats.cpu}%</span>
                     </div>
-                    <div className="mt-3 h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
-                            className="h-full bg-blue-500"
+                            className="h-full bg-primary"
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min(stats.cpu, 100)}%` }}
                         />
@@ -72,40 +72,40 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             </Card>
 
             {/* RAM */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card/40 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">{t('ssh.memoryUsage')}</CardTitle>
-                    <Activity size={16} className="text-purple-400" />
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.memoryUsage')}</CardTitle>
+                    <Activity size={16} className="text-primary/80" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold text-white">{stats.memory?.percent}%</span>
-                        <span className="text-xs text-zinc-500 mb-1">{stats.memory?.used} / {stats.memory?.total} MB</span>
+                        <span className="text-2xl font-bold text-foreground">{stats.memory.percent}%</span>
+                        <span className="text-xs text-muted-foreground/40 mb-1">{stats.memory.used} / {stats.memory.total} MB</span>
                     </div>
-                    <div className="mt-3 h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
-                            className="h-full bg-purple-500"
+                            className="h-full bg-primary/80"
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(stats.memory?.percent ?? 0, 100)}%` }}
+                            animate={{ width: `${Math.min(stats.memory.percent, 100)}%` }}
                         />
                     </div>
                 </CardContent>
             </Card>
 
             {/* Disk */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card/40 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">{t('ssh.diskUsage')}</CardTitle>
-                    <HardDrive size={16} className="text-emerald-400" />
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.diskUsage')}</CardTitle>
+                    <HardDrive size={16} className="text-emerald-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
-                        <span className="text-2xl font-bold text-white">{stats.disk}%</span>
-                        <span className="text-xs text-zinc-500 mb-1">{t('ssh.rootPartition')}</span>
+                        <span className="text-2xl font-bold text-foreground">{stats.disk}%</span>
+                        <span className="text-xs text-muted-foreground/40 mb-1">{t('ssh.rootPartition')}</span>
                     </div>
-                    <div className="mt-3 h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
-                            className="h-full bg-emerald-500"
+                            className="h-full bg-emerald-500/80"
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min(stats.disk, 100)}%` }}
                         />
@@ -114,16 +114,16 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             </Card>
 
             {/* Uptime */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card/40 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">{t('ssh.uptime')}</CardTitle>
-                    <Clock size={16} className="text-orange-400" />
+                    <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.uptime')}</CardTitle>
+                    <Clock size={16} className="text-primary/70" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-lg font-bold text-white truncate" title={stats.uptime}>
+                    <div className="text-lg font-bold text-foreground truncate" title={stats.uptime}>
                         {stats.uptime || t('ssh.unknown')}
                     </div>
-                    <p className="text-xs text-zinc-500 mt-1">{t('ssh.serverUptime')}</p>
+                    <p className="text-xs text-muted-foreground/40 mt-1">{t('ssh.serverUptime')}</p>
                 </CardContent>
             </Card>
         </div>

@@ -224,6 +224,18 @@ export function ModelSelector({
             }
         }
 
+        // 2.1 Check Anthropic (Claude) Quotas - disable if utilization is 100%
+        if (provider === 'claude' || provider === 'anthropic') {
+            const claudeQuota = quotas?.accounts?.find(a => a.claudeQuota)?.claudeQuota || (quotas as Record<string, unknown>)?.claudeQuota;
+            if (claudeQuota) {
+                const q = claudeQuota as { fiveHour?: { utilization: number }; sevenDay?: { utilization: number } };
+                // 100% utilization (1.0) means no quota remaining
+                if ((q.fiveHour && q.fiveHour.utilization >= 1.0) || (q.sevenDay && q.sevenDay.utilization >= 1.0)) {
+                    return true;
+                }
+            }
+        }
+
         // 3. Antigravity Quota Handling - disable if percentage is 0-5% or below user-defined limit
         if (provider === 'antigravity') {
             // Check user-defined usage limits from settings
@@ -458,15 +470,15 @@ export function ModelSelector({
                     e.stopPropagation()
                     setIsOpen(!isOpen)
                 }}
-                className="flex items-center gap-2.5 bg-muted/30 hover:bg-muted/40 border border-white/5 hover:border-white/20 rounded-xl px-3 py-1.5 transition-all outline-none min-w-[150px] justify-between group/sel shadow-sm"
+                className="flex items-center gap-2.5 bg-muted/30 hover:bg-muted/40 border border-border/50 hover:border-border rounded-xl px-3 py-1.5 transition-all outline-none min-w-[150px] justify-between group/sel shadow-sm"
             >
                 <div className="flex items-center gap-2.5 overflow-hidden flex-1">
-                    <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-inner", currentCategory?.bg || 'bg-zinc-800')}>
-                        {currentCategory?.icon && <currentCategory.icon className={cn("w-3.5 h-3.5", currentCategory?.color || 'text-zinc-400')} />}
+                    <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-inner", currentCategory?.bg || 'bg-muted/50')}>
+                        {currentCategory?.icon && <currentCategory.icon className={cn("w-3.5 h-3.5", currentCategory?.color || 'text-muted-foreground')} />}
                     </div>
                     <div className="flex flex-col items-start leading-none overflow-hidden flex-1">
                         <div className="flex items-center justify-between w-full pr-1">
-                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.05em] truncate">
+                            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.05em] truncate">
                                 {currentCategory?.name || (selectedProvider ? selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1) : t('modelSelector.model'))}
                                 {selectedModels.length > 1 && (
                                     <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[8px]">
@@ -495,7 +507,7 @@ export function ModelSelector({
                             )}
                         </div>
                         {contextTokens > 0 && (
-                            <div className="w-full h-[2px] bg-white/5 rounded-full mt-1.5 overflow-hidden">
+                            <div className="w-full h-[2px] bg-border/30 rounded-full mt-1.5 overflow-hidden">
                                 <div
                                     className={cn(
                                         "h-full transition-all duration-500",
@@ -508,7 +520,7 @@ export function ModelSelector({
                         )}
                     </div>
                 </div>
-                <ChevronDown className={cn("w-3.5 h-3.5 text-zinc-500 transition-transform shrink-0 ml-1 group-hover/sel:text-zinc-300", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform shrink-0 ml-1 group-hover/sel:text-foreground", isOpen && "rotate-180")} />
             </button>
 
             <AnimatePresence>
@@ -527,18 +539,18 @@ export function ModelSelector({
                                 left: x ?? 0,
                                 zIndex: 9999
                             }}
-                            className="w-72 max-h-[70vh] flex flex-col bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+                            className="w-72 max-h-[70vh] flex flex-col bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
                         >
-                            <div className="p-2 border-b border-white/5 bg-white/5 sticky top-0 z-10">
-                                <div className="flex items-center gap-2 bg-black/50 rounded-lg px-2 py-1.5 border border-white/5 focus-within:border-white/20 transition-colors">
-                                    <Search className="w-3.5 h-3.5 text-zinc-500" />
+                            <div className="p-2 border-b border-border/50 bg-muted/30 sticky top-0 z-10">
+                                <div className="flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1.5 border border-border/50 focus-within:border-primary/50 transition-colors">
+                                    <Search className="w-3.5 h-3.5 text-muted-foreground" />
                                     <input
                                         type="text"
                                         placeholder={t('modelSelector.searchModels')}
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
-                                        className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-zinc-600 outline-none text-zinc-300"
+                                        className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/30 outline-none text-foreground"
                                         autoFocus
                                     />
                                 </div>
@@ -558,7 +570,7 @@ export function ModelSelector({
                                 ) : (
                                     categories.map(category => (
                                         <div key={category.id} className="mb-1">
-                                            <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-zinc-500 flex items-center gap-2 bg-[#0A0A0A]/95 sticky top-0 z-5 border-b border-white/5 shadow-sm">
+                                            <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2 bg-popover/95 sticky top-0 z-5 border-b border-border/50 shadow-sm">
                                                 <span>{category.name}</span>
                                             </div>
                                             <div className="px-1">
@@ -592,15 +604,15 @@ export function ModelSelector({
                                                             className={cn(
                                                                 "w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-left text-sm group relative my-0.5",
                                                                 isSelected
-                                                                    ? "bg-white/10 text-white font-bold border-l-2 border-primary"
-                                                                    : (model.disabled ? "opacity-30 cursor-not-allowed grayscale" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200")
+                                                                    ? "bg-primary/20 text-foreground font-bold border-l-2 border-primary"
+                                                                    : (model.disabled ? "opacity-30 cursor-not-allowed grayscale" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground")
                                                             )}
                                                         >
                                                             <span className="truncate flex-1 flex items-center gap-2">
                                                                 {model.label}
                                                                 {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
                                                                 {(model.contextWindow ?? 0) > 0 && (
-                                                                    <span className="text-[9px] text-zinc-600 bg-zinc-800/50 px-1 rounded border border-white/5">
+                                                                    <span className="text-[9px] text-muted-foreground bg-muted/50 px-1 rounded border border-border/50">
                                                                         {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
                                                                     </span>
                                                                 )}
@@ -623,8 +635,8 @@ export function ModelSelector({
                                                                         toggleFavorite(model.id)
                                                                     }}
                                                                     className={cn(
-                                                                        "p-1 rounded hover:bg-white/10 transition-colors cursor-pointer mr-1",
-                                                                        model.pinned ? "text-yellow-400 opacity-100" : "text-zinc-600 opacity-0 group-hover:opacity-100"
+                                                                        "p-1 rounded hover:bg-muted/50 transition-colors cursor-pointer mr-1",
+                                                                        model.pinned ? "text-yellow-400 opacity-100" : "text-muted-foreground/50 opacity-0 group-hover:opacity-100"
                                                                     )}
                                                                 >
                                                                     <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />

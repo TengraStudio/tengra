@@ -108,7 +108,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                     "group relative rounded-xl overflow-hidden border transition-all cursor-pointer",
                     isActive
                         ? "border-primary ring-2 ring-primary/20"
-                        : "border-border/30 hover:border-border/60"
+                        : "border-border/50 hover:border-border transition-all duration-200"
                 )}
             >
                 {/* Preview */}
@@ -118,7 +118,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 >
                     <div className="absolute top-2 right-2 flex gap-1">
                         {theme.isPremium && (
-                            <span className="px-2 py-0.5 bg-amber-500/90 text-white text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>
+                            <span className="px-2 py-0.5 bg-amber-500/90 text-primary-foreground text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>
                         )}
                         {isActive && (
                             <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center gap-1">
@@ -132,7 +132,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                         {Object.values(theme.colors).map((color, i) => (
                             <div
                                 key={i}
-                                className="w-4 h-4 rounded-full border border-white/20 shadow-sm"
+                                className="w-4 h-4 rounded-full border border-border/20 shadow-sm"
                                 style={{ background: color }}
                             />
                         ))}
@@ -140,7 +140,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 </div>
 
                 {/* Info */}
-                <div className="p-3 bg-card/50">
+                <div className="p-3 bg-card/40 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-1">
                         <h3 className="font-medium text-sm truncate">{theme.name}</h3>
                         <div className="flex items-center gap-1 text-amber-500">
@@ -158,7 +158,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation()
-                                    onApplyTheme?.(theme.id)
+                                    void onApplyTheme?.(theme.id)
                                 }}
                                 className="px-2 py-1 text-[10px] font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
                             >
@@ -174,7 +174,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-border/30">
+            <div className="p-4 border-b border-border/50 bg-card/40 backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-4">
                     <Palette className="w-6 h-6 text-primary" />
                     <div>
@@ -239,7 +239,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
             {/* Theme Preview Modal */}
             {selectedTheme && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+                    className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
                     onClick={() => setSelectedTheme(null)}
                 >
                     <div

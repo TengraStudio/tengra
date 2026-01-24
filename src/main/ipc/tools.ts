@@ -13,10 +13,10 @@ export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: Com
         return commandService.killCommand(toolCallId)
     })
 
-    ipcMain.handle('tools:getDefinitions', () => {
+    ipcMain.handle('tools:getDefinitions', async () => {
         appLogger.info('tools', '[Main] tools:getDefinitions called')
         try {
-            const defs = toolExecutor.getToolDefinitions()
+            const defs = await toolExecutor.getToolDefinitions()
             appLogger.info('tools', '[Main] tool definitions returned:', defs.length)
             return defs
         } catch (e) {

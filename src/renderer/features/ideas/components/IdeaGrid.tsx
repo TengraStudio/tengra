@@ -20,13 +20,13 @@ export const IdeaGrid: React.FC<IdeaGridProps> = ({ ideas, onSelectIdea }) => {
     if (ideas.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                    <Lightbulb className="w-8 h-8 text-white/30" />
+                <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4 border border-border/10">
+                    <Lightbulb className="w-8 h-8 text-muted-foreground/30" />
                 </div>
-                <h3 className="text-lg font-medium text-white/60">
+                <h3 className="text-lg font-bold text-foreground/60 tracking-tight">
                     {t('ideas.empty.noIdeas')}
                 </h3>
-                <p className="text-sm text-white/40 mt-1">
+                <p className="text-sm text-muted-foreground/40 mt-1 font-medium italic">
                     {t('ideas.empty.noIdeasDesc')}
                 </p>
             </div>

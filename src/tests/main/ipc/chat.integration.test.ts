@@ -48,7 +48,8 @@ describe('Chat IPC Integration', () => {
             llmService: mockLLMService as any,
             proxyService: mockProxyService as any,
             codeIntelligenceService: mockCodeIntelligenceService as any,
-            contextRetrievalService: mockContextRetrievalService as any
+            contextRetrievalService: mockContextRetrievalService as any,
+            databaseService: { addTokenUsage: vi.fn() } as any
         });
     };
 
