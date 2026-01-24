@@ -103,10 +103,10 @@ export function ParameterPresets({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-zinc-200">{t('ssh.presets.title')}</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t('ssh.presets.title')}</h3>
                 <button
                     onClick={handleCreateCustom}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/20 border border-border/50 text-xs text-muted-foreground/60 hover:text-foreground hover:bg-muted/30 transition-colors"
                 >
                     <Plus size={12} />
                     {t('ssh.presets.custom')}

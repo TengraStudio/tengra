@@ -5,7 +5,7 @@ import { SettingsSectionProps } from './types'
 export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-            <h3 className="text-lg font-semibold text-white mb-1">{t('projects.devServer') || 'Development Server'}</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{t('projects.devServer') || 'Development Server'}</h3>
             <p className="text-sm text-muted-foreground">{t('projects.devServerDesc') || 'Configure your local development environment.'}</p>
         </div>
 
@@ -18,7 +18,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                         type="text"
                         value={formData.devCommand}
                         onChange={e => setFormData(prev => ({ ...prev, devCommand: e.target.value }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
                         placeholder="npm run dev"
                     />
                 </div>
@@ -31,7 +31,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                         type="number"
                         value={formData.devPort}
                         onChange={e => setFormData(prev => ({ ...prev, devPort: parseInt(e.target.value) || 3000 }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                        className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
                         placeholder="3000"
                     />
                 </div>
@@ -41,9 +41,9 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                             type="checkbox"
                             checked={formData.devAutoStart}
                             onChange={e => setFormData(prev => ({ ...prev, devAutoStart: e.target.checked }))}
-                            className="rounded border-white/10 bg-white/5 text-primary focus:ring-primary"
+                            className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary"
                         />
-                        <span className="text-sm text-white">{t('projects.autoStart') || 'Auto-start on load'}</span>
+                        <span className="text-sm text-foreground">{t('projects.autoStart') || 'Auto-start on load'}</span>
                     </label>
                 </div>
             </div>

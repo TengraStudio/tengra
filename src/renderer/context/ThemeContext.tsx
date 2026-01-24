@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-export type Theme = 'black' | 'white';
+export type Theme = string;
 
 interface ThemeContextType {
     theme: Theme;
@@ -10,28 +10,43 @@ interface ThemeContextType {
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+import { useSettings } from '@/context/SettingsContext';
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [theme, setThemeState] = useState<Theme>(() => {
-        const saved = localStorage.getItem('orbit-theme');
-        if (saved === 'black' || saved === 'white') {
-            return saved;
-        }
-        return 'black';
+    const { settings, updateSettings } = useSettings();
+
+    // Initialize from localStorage as immediate fallback before settings load
+    const [localTheme, setLocalTheme] = useState<Theme>(() => {
+        return localStorage.getItem('orbit-theme') || 'black';
     });
 
+    // Prefer settings if available, otherwise local state
+    const theme = settings?.general?.theme || localTheme;
+
     const setTheme = useCallback((newTheme: Theme) => {
-        setThemeState(newTheme);
+        setLocalTheme(newTheme);
         localStorage.setItem('orbit-theme', newTheme);
-    }, []);
+
+        if (settings) {
+            updateSettings({
+                ...settings,
+                general: { ...settings.general, theme: newTheme }
+            }, true);
+        }
+    }, [settings, updateSettings]);
 
     const toggleTheme = useCallback(() => {
         setTheme(theme === 'black' ? 'white' : 'black');
     }, [theme, setTheme]);
 
+    // DOM update is handled by SettingsContext for settings-based changes,
+    // but we keep this for immediate local-only updates (e.g. before settings load)
     useEffect(() => {
-        const root = window.document.documentElement;
-        root.setAttribute('data-theme', theme);
-    }, [theme]);
+        if (!settings) {
+            const root = window.document.documentElement;
+            root.setAttribute('data-theme', theme);
+        }
+    }, [theme, settings]);
 
     // Handle system preference changes if needed (optional for curated themes)
     useEffect(() => {

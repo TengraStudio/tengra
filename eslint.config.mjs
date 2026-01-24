@@ -48,7 +48,6 @@ export default tseslint.config(
             '@typescript-eslint/no-unnecessary-condition': 'warn',
             '@typescript-eslint/no-floating-promises': 'warn',
             '@typescript-eslint/await-thenable': 'warn',
-            '@typescript-eslint/no-explicit-any': 'warn',
             'no-empty': 'warn',
             '@typescript-eslint/no-misused-promises': 'warn',
             // NASA Power of Ten Rules

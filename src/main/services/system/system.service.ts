@@ -6,13 +6,41 @@ import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { ServiceResponse, SystemInfo } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-
+import { appLogger } from '@main/logging/logger';
 
 const execAsync = promisify(exec);
 
 export class SystemService extends BaseService implements ISystemService {
+    private systemInfo?: SystemInfo;
+
     constructor() {
         super('SystemService');
+    }
+
+    /**
+     * Initialize the SystemService
+     */
+    async initialize(): Promise<void> {
+        appLogger.info(this.name, 'Initializing system service...');
+        
+        // Cache system info at startup
+        try {
+            this.systemInfo = await this.getSystemInfo();
+            appLogger.info(this.name, `System info cached: ${this.systemInfo?.platform || 'unknown'} ${this.systemInfo?.release || 'unknown'}`);
+        } catch (error) {
+            appLogger.error(this.name, 'Failed to cache system info', error as Error);
+        }
+        
+        appLogger.info(this.name, 'System service initialized');
+    }
+
+    /**
+     * Cleanup the SystemService
+     */
+    async cleanup(): Promise<void> {
+        appLogger.info(this.name, 'Cleaning up system service...');
+        this.systemInfo = undefined;
+        appLogger.info(this.name, 'System service cleaned up');
     }
 
     async setVolume(percent: number): Promise<ServiceResponse> {

@@ -68,11 +68,11 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-2">
-                <button onClick={() => setModelsTab('installed')} className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-2", modelsTab === 'installed' ? "bg-primary/20 text-primary border-primary/30" : "bg-white/5 text-muted-foreground border-white/10")}>
+                <button onClick={() => setModelsTab('installed')} className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-2", modelsTab === 'installed' ? "bg-primary/20 text-primary border-primary/30" : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50")}>
                     <span>{t('projects.myModels')}</span>
                     <span className="opacity-50 text-[10px] bg-primary/10 px-1.5 py-0.5 rounded-md">{installedModels.length}</span>
                 </button>
-                <button onClick={() => setModelsTab('discover')} className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors", modelsTab === 'discover' ? "bg-primary/20 text-primary border-primary/30" : "bg-white/5 text-muted-foreground border-white/10")}>{t('projects.discover')}</button>
+                <button onClick={() => setModelsTab('discover')} className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors", modelsTab === 'discover' ? "bg-primary/20 text-primary border-primary/30" : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50")}>{t('projects.discover')}</button>
             </div>
 
             {modelsTab === 'installed' ? (

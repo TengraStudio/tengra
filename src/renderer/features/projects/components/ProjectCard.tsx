@@ -59,8 +59,8 @@ const ProjectCardMenu: React.FC<{
                 setShowMenu(showMenu ? null : project.id)
             }}
             className={cn(
-                "p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-white transition-colors",
-                showMenu ? "opacity-100 bg-white/10 text-white" : "opacity-0 group-hover:opacity-100"
+                "p-1.5 rounded-md hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors",
+                showMenu ? "opacity-100 bg-muted/30 text-foreground" : "opacity-0 group-hover:opacity-100"
             )}
         >
             <MoreVertical className="w-4 h-4" />
@@ -70,19 +70,19 @@ const ProjectCardMenu: React.FC<{
             <>
                 <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(null) }} />
                 <div
-                    className="absolute right-0 top-full mt-1 w-40 bg-[#121212] border border-white/10 rounded-lg shadow-xl z-50 py-1"
+                    className="absolute right-0 top-full mt-1 w-40 bg-card border border-border/50 rounded-lg shadow-xl z-50 py-1"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <button
                         onClick={(e) => onEdit(project, e)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Pencil className="w-3.5 h-3.5 text-blue-400" />
                         {t('common.edit')}
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Archive className="w-3.5 h-3.5 text-emerald-400" />
                         {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
@@ -140,7 +140,7 @@ export const ProjectCard = memo<ProjectCardProps>(({
             <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
             <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-white/5 ml-6">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6">
                     {project.logo ? (
                         <img src={`safe-file://${project.logo}`} alt={project.title} className="w-full h-full object-cover" />
                     ) : (

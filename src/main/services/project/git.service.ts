@@ -163,4 +163,16 @@ export class GitService {
     async unstageFile(cwd: string, filePath: string) {
         return await this.execute(`reset HEAD-- "${filePath}"`, cwd);
     }
+
+    async getCommitDiff(cwd: string, hash: string): Promise<{ diff: string; success: boolean; error?: string }> {
+        try {
+            const { stdout, stderr, success } = await this.execute(`show ${hash}`, cwd)
+            if (!success && stderr && !stdout) {
+                return { diff: '', success: false, error: stderr }
+            }
+            return { diff: stdout ?? '', success: true }
+        } catch (error) {
+            return { diff: '', success: false, error: getErrorMessage(error) }
+        }
+    }
 }

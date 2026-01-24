@@ -47,8 +47,8 @@ export const StageResearch: React.FC<StageResearchProps> = ({
                 }}
                 disabled={isGenerating}
                 className={cn(
-                    'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
-                    'bg-purple-500 hover:bg-purple-600 text-white',
+                    'w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2',
+                    'bg-primary text-primary-foreground hover:brightness-110 shadow-lg shadow-primary/20',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
             >

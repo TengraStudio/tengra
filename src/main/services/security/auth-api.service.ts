@@ -4,6 +4,7 @@ import { appLogger } from '@main/logging/logger'
 import { BaseService } from '@main/services/base.service'
 import { AuthService } from '@main/services/security/auth.service'
 import { JsonObject } from '@shared/types/common'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 /**
  * Auth API Service
@@ -129,7 +130,7 @@ export class AuthAPIService extends BaseService {
                         provider: providerForGo,
                         type: providerForGo,
                         email: acc.email,
-                        label: acc.displayName || acc.email || acc.provider,
+                        label: acc.displayName ?? acc.email ?? acc.provider,
                         access_token: acc.accessToken,
                         refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
                         session_token: acc.sessionToken,
@@ -166,17 +167,28 @@ export class AuthAPIService extends BaseService {
                 body += chunk
             }
 
-            const data = JSON.parse(body)
+            const data = safeJsonParse(body, {} as JsonObject)
+            if (!data || Object.keys(data).length === 0) {
+                res.writeHead(400, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ error: 'Invalid JSON body' }))
+                return
+            }
             appLogger.info('AuthAPIService', `Received update for account ${accountId}`)
+
+            const metadata = data.metadata as JsonObject | undefined
 
             // Map from Go proxy fields back to Orbit internal fields if needed
             // Currently updateToken accepts Partial<TokenData>
             await this.authService.updateToken(accountId, {
-                accessToken: data.access_token ?? data.accessToken,
-                refreshToken: data.refresh_token ?? data.refreshToken,
-                sessionToken: data.session_token ?? data.sessionToken,
-                expiresAt: data.expires_at ?? data.expiresAt,
-                metadata: data.metadata
+                accessToken: (data.access_token ?? data.accessToken) as string | undefined,
+                refreshToken: (data.refresh_token ?? data.refreshToken) as string | undefined,
+                sessionToken: (data.session_token ?? data.sessionToken) as string | undefined,
+                expiresAt: (data.expires_at ?? data.expiresAt) as number | undefined,
+                // Fallback to metadata for profile fields if top-level is missing
+                email: (data.email ?? metadata?.email) as string | undefined,
+                displayName: (data.label ?? data.displayName ?? metadata?.label ?? metadata?.displayName) as string | undefined,
+                avatarUrl: (data.avatar_url ?? data.avatarUrl ?? metadata?.avatar_url ?? metadata?.avatarUrl) as string | undefined,
+                metadata
             })
 
             res.writeHead(200, { 'Content-Type': 'application/json' })

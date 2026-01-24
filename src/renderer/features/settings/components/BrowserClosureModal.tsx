@@ -9,10 +9,10 @@ interface BrowserClosureModalProps {
 }
 
 export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen, onClose, onConfirm, providerName }) => {
-    if (!isOpen) {return null}
+    if (!isOpen) { return null }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
@@ -56,7 +56,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                             onConfirm()
                             onClose()
                         }}
-                        className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all"
+                        className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-500 hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20 transition-all"
                     >
                         Close Browser & Connect
                     </button>

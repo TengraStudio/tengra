@@ -1,7 +1,9 @@
+import { appLogger } from '@main/logging/logger'
 import { CopilotService } from '@main/services/llm/copilot.service'
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { AuthService, TokenData } from '@main/services/security/auth.service'
 import { SettingsService } from '@main/services/system/settings.service'
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 
@@ -21,22 +23,23 @@ export function registerAuthIpc(
         try {
             const response = await proxyService.waitForGitHubToken(deviceCode, interval, appId)
             const token = response.access_token
-
-            // Determine provider based on appId
             const provider = appId === 'copilot' ? 'copilot' : 'github'
 
-            // Create token data for linking
+            const { email, displayName, avatarUrl } = await fetchGitHubIdentity(proxyService, token)
+
             const tokenData: TokenData = {
                 accessToken: token,
                 refreshToken: response.refresh_token,
                 expiresAt: response.expires_in ? Date.now() + (response.expires_in * 1000) : undefined,
-                scope: appId === 'copilot' ? 'read:user' : 'read:user user:email repo'
+                scope: appId === 'copilot' ? 'read:user user:email' : 'read:user user:email repo',
+                email,
+                displayName,
+                avatarUrl
             }
 
-            // Link the account using new auth system
+            appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`)
             await authService.linkAccount(provider, tokenData)
 
-            // Update copilot service if needed
             if (appId === 'copilot') {
                 copilotService.setGithubToken(token)
             }
@@ -46,8 +49,6 @@ export function registerAuthIpc(
             return { success: false, error: getErrorMessage(error as Error) }
         }
     })
-
-    // --- New Linked Accounts API ---
 
     ipcMain.handle('auth:get-linked-accounts', async (_event, provider?: string) => {
         try {
@@ -118,4 +119,76 @@ export function registerAuthIpc(
             return false
         }
     })
+
+    // Register commonly batched handlers
+    registerBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
+        const provider = args[0] as string | undefined
+        try {
+            if (provider) {
+                return (await authService.getAccountsByProvider(provider)) as unknown as import('@shared/types/common').JsonValue
+            }
+            return (await authService.getAllAccounts()) as unknown as import('@shared/types/common').JsonValue
+        } catch (error) {
+            console.error('Failed to get linked accounts:', error)
+            return []
+        }
+    })
+
+    registerBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
+        const provider = args[0] as string
+        try {
+            return (await authService.getActiveAccount(provider)) as unknown as import('@shared/types/common').JsonValue
+        } catch (error) {
+            console.error('Failed to get active linked account:', error)
+            return null
+        }
+    })
+
+    registerBatchableHandler('auth:has-linked-account', async (_event, ...args) => {
+        const provider = args[0] as string
+        try {
+            return await authService.hasLinkedAccount(provider)
+        } catch (error) {
+            console.error('Failed to check linked account:', error)
+            return false
+        }
+    })
+}
+
+/**
+ * Helper to fetch GitHub identity (email, name, avatar) from a token
+ * Extracted to reduce cyclomatic complexity in IPC handlers
+ */
+async function fetchGitHubIdentity(proxyService: ProxyService, token: string): Promise<{
+    email?: string,
+    displayName?: string,
+    avatarUrl?: string
+}> {
+    let email: string | undefined
+    let displayName: string | undefined
+    let avatarUrl: string | undefined
+
+    try {
+        const profile = await proxyService.fetchGitHubProfile(token)
+        displayName = profile.displayName
+        avatarUrl = profile.avatarUrl
+        email = profile.email
+        appLogger.info('AuthIPC', `GitHub profile fetch result: ${displayName}, email=${email ? '[PRESENT]' : '[MISSING]'}`)
+
+        // If email still missing, fetch specifically
+        if (!email) {
+            email = await proxyService.fetchGitHubEmails(token)
+            appLogger.info('AuthIPC', `GitHub email fallback fetch result: ${email ? '[PRESENT]' : '[MISSING]'}`)
+        }
+
+        // Final fallback for user identity: use login (username) if email is still missing
+        if (!email && profile.login) {
+            email = `${profile.login}@github.com`
+            appLogger.info('AuthIPC', `Using GitHub login as identity fallback: ${email}`)
+        }
+    } catch (err) {
+        appLogger.error('AuthIPC', 'Failed to fetch GitHub identity', err as Error)
+    }
+
+    return { email, displayName, avatarUrl }
 }

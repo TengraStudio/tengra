@@ -500,6 +500,7 @@ export const tr = {
         accountCount: '{{count}} hesap',
         accountCountPlural: '{{count}} hesap',
         noAccounts: 'Bağlı hesap yok',
+        noEmail: 'E-posta belirtilmemiş',
 
         // Ollama settings
         serverAddress: 'SUNUCU ADRESİ',
@@ -846,6 +847,12 @@ export const tr = {
     },
     statistics: {
         title: 'İstatistikler',
+        tokenUsageOverTime: 'Zamanla Token Kullanımı',
+        visualizeTokenConsumption: 'Yapay zeka model kullanım trendlerinizi görselleştirin.',
+        totalPrompt: 'Toplam İstek',
+        totalCompletion: 'Toplam Tamamlama',
+        cost: 'Tahmini Maliyet',
+        modelDistribution: 'Model Dağılımı',
         subtitle: 'Kullanım metrikleri ve token tüketim analizi.',
         daily: 'Günlük',
         weekly: 'Haftalık',

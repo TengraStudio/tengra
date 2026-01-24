@@ -51,7 +51,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
         <div className="space-y-6">
             <div className="bg-card p-6 rounded-xl border border-border space-y-6">
                 <div className="flex items-center justify-between">
-                    <div><h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('advancedTab.modelConfiguration')}</h3><p className="text-xs text-muted-foreground mt-1">{t('advancedTab.modelConfigurationDesc')}</p></div>
+                    <div><h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('advancedTab.modelConfiguration')}</h3><p className="text-xs text-muted-foreground mt-1">{t('advancedTab.modelConfigurationDesc')}</p></div>
                     <SelectDropdown
                         value={currentModelId}
                         options={modelOptions}
@@ -59,16 +59,16 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         className="w-48"
                     />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border/50">
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-white uppercase tracking-wider">{t('advancedTab.customSystemMessage')}</span></div>
+                        <div className="flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-foreground uppercase tracking-wider">{t('advancedTab.customSystemMessage')}</span></div>
                         <textarea value={modelSettings.systemPrompt || ''} onChange={e => updateModelSetting({ systemPrompt: e.target.value })} placeholder={t('advancedTab.systemPromptPlaceholder')} className="w-full h-32 bg-muted/10 border border-border/50 rounded-xl p-3 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none resize-none font-medium leading-relaxed" />
                     </div>
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2"><Sliders className="w-4 h-4 text-emerald-400" /><span className="text-xs font-bold text-white uppercase tracking-wider">{t('advancedTab.parameterPreset')}</span></div>
+                        <div className="flex items-center gap-2"><Sliders className="w-4 h-4 text-emerald-400" /><span className="text-xs font-bold text-foreground uppercase tracking-wider">{t('advancedTab.parameterPreset')}</span></div>
                         <div className="grid grid-cols-1 gap-2">
                             {modelPresets.map(p => (
-                                <button key={p.id} onClick={() => updateModelSetting({ presetId: p.id })} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all text-left", modelSettings.presetId === p.id ? "bg-primary/10 border-primary/30 text-primary" : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10")}>
+                                <button key={p.id} onClick={() => updateModelSetting({ presetId: p.id })} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all text-left", modelSettings.presetId === p.id ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/50")}>
                                     <div><div className="text-xs font-bold">{p.name}</div><div className="text-[10px] opacity-60">Temp: {p.temperature} • TopP: {p.topP}</div></div>
                                     {modelSettings.presetId === p.id && <Zap className="w-4 h-4 animate-pulse" />}
                                 </button>
@@ -82,7 +82,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     <div className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-purple-400" />
                         <div>
-                            <h3 className="text-sm font-bold text-white">{t('advanced.orchestration')}</h3>
+                            <h3 className="text-sm font-bold text-foreground">{t('advanced.orchestration')}</h3>
                             <p className="text-xs text-muted-foreground">{t('advanced.orchestrationDesc')}</p>
                         </div>
                     </div>
@@ -106,11 +106,11 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
             <div className="bg-card p-6 rounded-xl border border-border space-y-4">
                 {benchmarkResult && (
                     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4">
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center gap-1">
-                            <Thermometer className="w-5 h-5 text-primary" /><div className="text-xl font-black text-white">{benchmarkResult.tokensPerSec} t/s</div><div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.tokensPerSec')}</div>
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
+                            <Thermometer className="w-5 h-5 text-primary" /><div className="text-xl font-black text-foreground">{benchmarkResult.tokensPerSec} t/s</div><div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.tokensPerSec')}</div>
                         </div>
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center gap-1">
-                            <Activity className="w-5 h-5 text-emerald-400" /><div className="text-xl font-black text-white">{benchmarkResult.latency}ms</div><div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.latency')}</div>
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
+                            <Activity className="w-5 h-5 text-emerald-400" /><div className="text-xl font-black text-foreground">{benchmarkResult.latency}ms</div><div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.latency')}</div>
                         </div>
                     </div>
                 )}
@@ -121,15 +121,15 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-5 h-5 text-blue-400" />
                     <div>
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('advanced.serviceIntervals')}</h3>
+                        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('advanced.serviceIntervals')}</h3>
                         <p className="text-xs text-muted-foreground">{t('advanced.serviceIntervalsDesc')}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Model Update Interval */}
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
-                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
                             <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
                             {t('advanced.modelUpdateInterval')}
                         </label>
@@ -157,8 +157,8 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     </div>
 
                     {/* Token Refresh Interval */}
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
-                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
                             <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
                             {t('advanced.tokenRefreshInterval')}
                         </label>
@@ -186,8 +186,8 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                     </div>
 
                     {/* Copilot Refresh Interval */}
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
-                        <label className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
                             <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
                             {t('advanced.copilotRefreshInterval')}
                         </label>

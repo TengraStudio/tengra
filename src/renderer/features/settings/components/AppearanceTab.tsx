@@ -12,14 +12,8 @@ interface AppearanceTabProps {
 
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGeneral, t }) => {
     const themeOptions = [
-        { id: 'graphite', label: t('appearance.themes.graphite') }, { id: 'obsidian', label: t('appearance.themes.obsidian') }, { id: 'midnight', label: t('appearance.themes.midnight') },
-        { id: 'deep-forest', label: t('appearance.themes.deepForest') }, { id: 'dracula', label: t('appearance.themes.dracula') }, { id: 'cyberpunk', label: t('appearance.themes.cyberpunk') },
-        { id: 'matrix', label: t('appearance.themes.matrix') }, { id: 'synthwave', label: t('appearance.themes.synthwave') }, { id: 'lava', label: t('appearance.themes.lava') },
-        { id: 'aurora', label: t('appearance.themes.aurora') }, { id: 'snow', label: t('appearance.themes.snow') }, { id: 'sand', label: t('appearance.themes.sand') },
-        { id: 'sky', label: t('appearance.themes.sky') }, { id: 'minimal', label: t('appearance.themes.minimal') }, { id: 'paper', label: t('appearance.themes.paper') },
-        { id: 'gold', label: t('appearance.themes.gold') }, { id: 'ocean', label: t('appearance.themes.ocean') }, { id: 'rose', label: t('appearance.themes.rose') },
-        { id: 'coffee', label: t('appearance.themes.coffee') }, { id: 'serenity', label: t('appearance.themes.serenity') }, { id: 'neon-pulse', label: t('appearance.themes.neonPulse') },
-        { id: 'cyber-future', label: t('appearance.themes.cyberFuture') }, { id: 'soft-velvet', label: t('appearance.themes.softVelvet') }
+        { id: 'black', label: 'Black' },
+        { id: 'white', label: 'White' }
     ]
 
     const fontOptions = [

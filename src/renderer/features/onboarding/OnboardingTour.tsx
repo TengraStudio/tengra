@@ -120,7 +120,7 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
                             </div>
 
                             <div className="text-center space-y-3">
-                                <h2 className="text-2xl font-black tracking-tight text-white uppercase italic">
+                                <h2 className="text-2xl font-black tracking-tight text-foreground uppercase italic">
                                     {steps[currentStep]?.title}
                                 </h2>
                                 <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
@@ -134,7 +134,7 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
                                 onClick={handleBack}
                                 className={cn(
                                     "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-xl",
-                                    currentStep === 0 ? "opacity-0 pointer-events-none" : "text-muted-foreground hover:text-white hover:bg-white/5"
+                                    currentStep === 0 ? "opacity-0 pointer-events-none" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                                 )}
                             >
                                 <ChevronLeft className="w-4 h-4" />

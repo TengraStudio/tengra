@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react'
 
 import { Modal } from '@/components/ui/modal'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@renderer/i18n'
 
 export interface ManualSessionModalState {
     isOpen: boolean
@@ -26,6 +27,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
     email,
     accountId
 }) => {
+    const { t } = useTranslation()
     const [sessionKey, setSessionKey] = useState('')
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -33,12 +35,12 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
 
     const handleSave = useCallback(async () => {
         if (!sessionKey.trim()) {
-            setError('Please enter a session key')
+            setError(t('auth.enterSessionKey'))
             return
         }
 
         if (!sessionKey.startsWith('sk-ant-sid')) {
-            setError('Invalid format. Key must start with "sk-ant-sid"')
+            setError(t('auth.invalidSessionFormat'))
             return
         }
 
@@ -73,7 +75,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Claude Session Key Required"
+            title={t('auth.sessionKeyRequired')}
             size="md"
             preventClose={isSaving}
         >
@@ -98,21 +100,21 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                 <div className="space-y-3">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                         <AlertCircle className="w-3 h-3" />
-                        How to find your session key
+                        {t('auth.howToFindKey')}
                     </h4>
                     <ul className="text-xs text-muted-foreground space-y-2 list-decimal list-inside px-1">
-                        <li>Open <button onClick={handleOpenClaude} className="text-primary hover:underline inline-flex items-center gap-0.5">claude.ai <ExternalLink className="w-2.4 h-2.4" /></button> and log in</li>
-                        <li>Right-click anywhere and select <strong>Inspect</strong></li>
-                        <li>Go to the <strong>Application</strong> tab (or Storage)</li>
-                        <li>Expand <strong>Cookies</strong> and select <strong>https://claude.ai</strong></li>
-                        <li>Find <strong>sessionKey</strong> and copy its value (starts with <code className="text-primary">sk-ant-sid</code>)</li>
+                        <li>{t('auth.sessionKeyInstructions.step1')}</li>
+                        <li>{t('auth.sessionKeyInstructions.step2')}</li>
+                        <li>{t('auth.sessionKeyInstructions.step3')}</li>
+                        <li>{t('auth.sessionKeyInstructions.step4')}</li>
+                        <li>{t('auth.sessionKeyInstructions.step5')}</li>
                     </ul>
                 </div>
 
                 {/* Input Field */}
                 <div className="space-y-2">
                     <label htmlFor="sessionKey" className="text-xs font-medium text-muted-foreground ml-1">
-                        Session Key
+                        {t('auth.sessionKeyLabel')}
                     </label>
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
@@ -121,13 +123,13 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         <input
                             id="sessionKey"
                             type="password"
-                            placeholder="sk-ant-sid-..."
+                            placeholder={t('auth.sessionKeyPlaceholder')}
                             value={sessionKey}
                             onChange={(e) => setSessionKey(e.target.value)}
                             disabled={isSaving || success}
                             className={cn(
-                                "w-full pl-10 pr-4 py-3 bg-white/5 border rounded-xl outline-none transition-all font-mono text-sm",
-                                error ? "border-destructive/50 focus:border-destructive" : "border-white/10 focus:border-primary/50 focus:bg-white/10"
+                                "w-full pl-10 pr-4 py-3 bg-muted/30 border rounded-xl outline-none transition-all font-mono text-sm",
+                                error ? "border-destructive/50 focus:border-destructive" : "border-border/50 focus:border-primary/50 focus:bg-muted/50"
                             )}
                         />
                     </div>
@@ -144,9 +146,9 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                     <button
                         onClick={onClose}
                         disabled={isSaving || success}
-                        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all disabled:opacity-50"
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all disabled:opacity-50"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={() => void handleSave()}
@@ -163,10 +165,10 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         ) : success ? (
                             <>
                                 <Check className="w-4 h-4" />
-                                Validated & Saved
+                                {t('auth.validatedAndSaved')}
                             </>
                         ) : (
-                            'Save Session Key'
+                            t('auth.saveSessionKey')
                         )}
                     </button>
                 </div>

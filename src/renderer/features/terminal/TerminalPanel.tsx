@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
 import { cn } from '@/lib/utils'
 import { TerminalTab } from '@/types'
+import { useTranslation } from '@renderer/i18n'
 
 import 'xterm/css/xterm.css'
 
@@ -42,6 +43,7 @@ const TerminalSession = memo(({
     onClose: () => void,
     projectPath?: string
 }) => {
+    const { t } = useTranslation()
     const containerRef = useRef<HTMLDivElement>(null)
     const xtermRef = useRef<XTerm | null>(null)
     const fitAddonRef = useRef<FitAddon | null>(null)
@@ -53,26 +55,26 @@ const TerminalSession = memo(({
 
     // Theme definitions
     const getTheme = useCallback((isDark: boolean) => ({
-        background: isDark ? '#09090b' : '#ffffff',
+        background: isDark ? '#000000' : '#ffffff',
         foreground: isDark ? '#e4e4e7' : '#18181b',
         cursor: isDark ? '#ffffff' : '#000000',
-        selectionBackground: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+        selectionBackground: isDark ? 'hsla(0, 0%, 100%, 0.15)' : 'hsla(0, 0%, 0%, 0.1)',
         black: isDark ? '#000000' : '#000000',
-        red: isDark ? '#ef4444' : '#ef4444',
-        green: isDark ? '#22c55e' : '#22c55e',
-        yellow: isDark ? '#eab308' : '#eab308',
-        blue: isDark ? '#3b82f6' : '#3b82f6',
-        magenta: isDark ? '#ec4899' : '#ec4899',
-        cyan: isDark ? '#06b6d4' : '#06b6d4',
-        white: isDark ? '#ffffff' : '#ffffff',
-        brightBlack: isDark ? '#71717a' : '#71717a',
-        brightRed: isDark ? '#f87171' : '#f87171',
-        brightGreen: isDark ? '#4ade80' : '#4ade80',
-        brightYellow: isDark ? '#facc15' : '#facc15',
-        brightBlue: isDark ? '#60a5fa' : '#60a5fa',
-        brightMagenta: isDark ? '#f472b6' : '#f472b6',
-        brightCyan: isDark ? '#22d3ee' : '#22d3ee',
-        brightWhite: isDark ? '#ffffff' : '#ffffff'
+        red: '#ef4444',
+        green: '#22c55e',
+        yellow: '#f59e0b',
+        blue: '#3b82f6',
+        magenta: '#d946ef',
+        cyan: '#06b6d4',
+        white: isDark ? '#ffffff' : '#e4e4e7',
+        brightBlack: '#71717a',
+        brightRed: '#f87171',
+        brightGreen: '#4ade80',
+        brightYellow: '#fbbf24',
+        brightBlue: '#60a5fa',
+        brightMagenta: '#e879f9',
+        brightCyan: '#22d3ee',
+        brightWhite: '#ffffff'
     }), [])
 
     // Update theme on change
@@ -331,14 +333,14 @@ const TerminalSession = memo(({
 
     return (
         <div
-            className={cn("h-full w-full bg-zinc-950", isActive ? "block" : "hidden")}
+            className={cn("h-full w-full bg-background", isActive ? "block" : "hidden")}
             style={{ paddingLeft: '8px' }}
         >
             {hasError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                     <div className="text-center px-4">
-                        <p className="text-red-400 text-sm mb-1">Terminal session failed to start</p>
-                        <p className="text-muted-foreground text-xs">Close this tab and create a new terminal session</p>
+                        <p className="text-destructive text-sm mb-1">{t('terminal.sessionFailed')}</p>
+                        <p className="text-muted-foreground text-xs">{t('terminal.closeAndCreate')}</p>
                     </div>
                 </div>
             )}
@@ -359,6 +361,7 @@ export function TerminalPanel({
     setTabs,
     setActiveTabId
 }: TerminalPanelProps) {
+    const { t } = useTranslation()
     const [isResizing, setIsResizing] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [showNewTerminalMenu, setShowNewTerminalMenu] = useState(false)
@@ -515,7 +518,7 @@ export function TerminalPanel({
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             style={{ height: isMaximized ? '70vh' : height }}
-            className="flex flex-col bg-zinc-950 border-t border-white/10 overflow-hidden shadow-2xl h-full"
+            className="flex flex-col bg-background border-t border-border overflow-hidden shadow-2xl h-full"
         >
             {/* Resize Handle */}
             <div
@@ -527,7 +530,7 @@ export function TerminalPanel({
             />
 
             {/* Header / Tabs */}
-            <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/80 border-b border-white/5 backdrop-blur-sm">
+            <div className="flex items-center justify-between px-2 py-1.5 bg-card/40 border-b border-border backdrop-blur-sm">
                 <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar no-thumb">
                     {tabs.map(tab => (
                         <button
@@ -536,15 +539,15 @@ export function TerminalPanel({
                             className={cn(
                                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap border border-transparent",
                                 activeTabId === tab.id
-                                    ? "bg-zinc-800 text-white border-white/10 shadow-sm"
-                                    : "text-muted-foreground hover:text-zinc-300 hover:bg-white/5"
+                                    ? "bg-accent text-foreground border-border shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                             )}
                         >
                             <TerminalSquare className={cn("w-3.5 h-3.5", activeTabId === tab.id ? "text-primary" : "opacity-70")} />
                             {tab.name}
                             <div
                                 onClick={(e) => { e.stopPropagation(); closeTab(tab.id) }}
-                                className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-red-400 transition-colors"
+                                className="ml-1 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                             >
                                 <X className="w-3 h-3" />
                             </div>
@@ -554,7 +557,7 @@ export function TerminalPanel({
                     <div className="relative ml-1">
                         <button
                             onClick={() => setShowNewTerminalMenu(!showNewTerminalMenu)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                         >
                             <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -564,19 +567,19 @@ export function TerminalPanel({
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className="absolute bottom-full left-0 mb-2 py-1 bg-[#18181b] border border-white/10 rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden"
+                                    className="absolute bottom-full left-0 mb-2 py-1 bg-popover border border-border rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden"
                                 >
                                     {availableShells.length > 0 ? availableShells.map(shell => (
                                         <button
                                             key={shell.id}
                                             onClick={() => createTerminal(shell.id)}
-                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-white/5 transition-colors flex items-center gap-2 text-zinc-300"
+                                            className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground"
                                         >
                                             <span className="opacity-50">&gt;_</span>
                                             {shell.name}
                                         </button>
                                     )) : (
-                                        <div className="px-3 py-2 text-xs text-muted-foreground">No shells found</div>
+                                        <div className="px-3 py-2 text-xs text-muted-foreground">{t('terminal.noShellsFound')}</div>
                                     )}
                                 </motion.div>
                             )}
@@ -585,17 +588,17 @@ export function TerminalPanel({
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <button onClick={() => setIsMaximized(!isMaximized)} className="p-1.5 text-muted-foreground hover:text-white transition-colors">
+                    <button onClick={() => setIsMaximized(!isMaximized)} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                         {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                     </button>
-                    <button onClick={onToggle} className="p-1.5 text-muted-foreground hover:text-white transition-colors">
+                    <button onClick={onToggle} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                         <ChevronDown className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>
 
             {/* Terminal Sessions Container */}
-            <div className="flex-1 overflow-hidden relative bg-zinc-950">
+            <div className="flex-1 overflow-hidden relative bg-background">
                 {tabs.map(tab => (
                     <TerminalSession
                         key={tab.id}
@@ -609,12 +612,12 @@ export function TerminalPanel({
                 {tabs.length === 0 && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50">
                         <Terminal className="w-12 h-12 mb-4 opacity-20" />
-                        <p className="text-sm">No active terminal sessions</p>
+                        <p className="text-sm">{t('terminal.noActiveSessions')}</p>
                         <button
                             onClick={() => createTerminal(availableShells[0]?.id || 'powershell')}
-                            className="mt-4 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors"
+                            className="mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-xs font-bold transition-all border border-primary/30"
                         >
-                            Start New Session
+                            {t('terminal.startNewSession')}
                         </button>
                     </div>
                 )}

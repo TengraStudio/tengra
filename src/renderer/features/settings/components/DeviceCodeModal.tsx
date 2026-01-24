@@ -79,8 +79,8 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                         className={cn(
                             "absolute -right-2 -top-2 p-2.5 rounded-lg border transition-all duration-200",
                             copied
-                                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                                : "bg-white/5 border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10"
+                                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-500"
+                                : "bg-muted/30 border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50"
                         )}
                         title="Copy code"
                     >
@@ -111,8 +111,8 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     )}
                     {isSuccess && (
                         <>
-                            <Check className="w-4 h-4 text-emerald-400" />
-                            <span className="text-sm text-emerald-400 font-semibold">Connected successfully!</span>
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            <span className="text-sm text-emerald-500 font-semibold">Connected successfully!</span>
                         </>
                     )}
                     {isError && (
@@ -127,7 +127,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                 {!isPending && (
                     <button
                         onClick={onClose}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors text-sm font-medium"
+                        className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors text-sm font-medium"
                     >
                         Close
                     </button>

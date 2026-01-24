@@ -92,6 +92,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 import { BaseService } from '@main/services/base.service'
 import { DataService } from '@main/services/data/data.service'
 import { AuthService } from '@main/services/security/auth.service'
+import { LinkedAccount } from '@main/services/data/database.service'
 
 export class SettingsService extends BaseService {
     private settingsPath: string
@@ -128,6 +129,23 @@ export class SettingsService extends BaseService {
         this.settings = await this.loadSettings()
         this.initialized = true
         appLogger.info('SettingsService', 'Initialized successfully')
+    }
+
+    async cleanup(): Promise<void> {
+        if (this.saveInProgress) {
+            appLogger.info('SettingsService', 'Waiting for pending save to complete before cleanup...')
+            // Wait for any pending save to complete
+            while (this.saveInProgress) {
+                await new Promise(resolve => setTimeout(resolve, 100))
+            }
+        }
+        
+        // Save any pending changes before cleanup
+        if (this.pendingSave) {
+            await this.saveSettings(this.pendingSave)
+        }
+        
+        appLogger.info('SettingsService', 'Settings service cleanup complete')
     }
 
     /**
@@ -214,9 +232,9 @@ export class SettingsService extends BaseService {
 
     private async mergeWithDefaults(loaded: Partial<AppSettings>): Promise<AppSettings> {
         // Merge tokens from AuthService (always do this if authService is available)
-        let authAccounts: Array<Record<string, unknown>> = []
+        let authAccounts: LinkedAccount[] = []
         if (this.authService) {
-            authAccounts = (await this.authService.getAllAccountsFull()) as unknown as Record<string, unknown>[]
+            authAccounts = await this.authService.getAllAccountsFull()
             appLogger.info('SettingsService', `Loaded auth accounts count: ${authAccounts.length}`)
         }
 
@@ -514,7 +532,7 @@ export class SettingsService extends BaseService {
         return this.settings
     }
 
-    private findTokenInAuth(authAccounts: Array<Record<string, unknown>>, provider: string, fallbackKeys: string[] = []): string {
+    private findTokenInAuth(authAccounts: LinkedAccount[], provider: string, fallbackKeys: string[] = []): string {
         const providers: Record<string, string[]> = {
             github: ['proxy-auth-token', 'proxy_auth_token', 'github_token', 'github', 'github.token'],
             copilot: ['proxy-auth-token', 'proxy_auth_token', 'copilot_token', 'copilot', 'copilot.token', 'github_token'],
@@ -530,7 +548,7 @@ export class SettingsService extends BaseService {
         for (const p of searchProviders) {
             const acc = authAccounts.find(a => a.provider === p);
             if (acc) {
-                return ((acc.accessToken as string) || (acc.sessionToken as string) || '');
+                return acc.accessToken || acc.sessionToken || '';
             }
         }
 

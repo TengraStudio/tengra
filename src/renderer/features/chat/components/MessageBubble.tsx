@@ -253,7 +253,7 @@ const CodeBlock = memo(({ className, children, isSpeaking, onStop, onSpeak, t }:
     if (!match) { return <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80">{children}</code> }
     const language = match[1]
     return (
-        <div className="not-prose my-3 rounded-xl overflow-hidden border border-border/30 bg-[#0d1117] group/code transition-premium">
+        <div className="not-prose my-3 rounded-xl overflow-hidden border border-border/30 bg-muted/30 group/code transition-premium">
             <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/20 backdrop-blur-sm">
                 <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">{language}</span>
                 <div className="flex items-center gap-1.5">
@@ -386,13 +386,13 @@ const PlanAndThought = memo(({ plan, thought, isLast, isStreaming, onApprovePlan
 ))
 PlanAndThought.displayName = 'PlanAndThought'
 
-const MessageBubbleContent = memo(({ showRawMarkdown, quotaDetails, thought, displayContent, images, isStreaming, visibleContent, onSpeak, onStop, isSpeaking, onCodeConvert, t }: {
-    showRawMarkdown: boolean; quotaDetails: { message: string; resets_at: number | null; model: string | null } | null; thought: string | null; displayContent: string; images: string[]; isStreaming?: boolean; visibleContent: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: (key: string) => string;
+const MessageBubbleContent = memo(({ showRawMarkdown, quotaDetails, thought, displayContent, images, isStreaming, visibleContent, onSpeak, onStop, isSpeaking, onCodeConvert, t, isUser }: {
+    showRawMarkdown: boolean; quotaDetails: { message: string; resets_at: number | null; model: string | null } | null; thought: string | null; displayContent: string; images: string[]; isStreaming?: boolean; visibleContent: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: (key: string) => string; isUser?: boolean;
 }) => {
     if (quotaDetails) { return <QuotaErrorCard details={quotaDetails} t={t} /> }
     if (!thought && !displayContent && images.length === 0) { return isStreaming ? <TypingDots t={t} /> : <span className="italic opacity-50">...</span> }
     if (!displayContent) { return null }
-    if (showRawMarkdown) { return <pre className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">{visibleContent}</pre> }
+    if (showRawMarkdown || isUser) { return <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">{visibleContent}</div> }
     return <MarkdownContent content={visibleContent} onSpeak={onSpeak} onStop={onStop} isSpeaking={isSpeaking} onCodeConvert={onCodeConvert} t={t} />
 })
 MessageBubbleContent.displayName = 'MessageBubbleContent'
@@ -410,7 +410,7 @@ const MessageActions = memo(({ displayContent, message, isSpeaking, onStop, onSp
         <BookmarkButton active={!!message.isBookmarked} onClick={() => onBookmark?.(!message.isBookmarked)} t={t} />
         <div className="relative group/react">
             <button className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm" title={t('messageBubble.react')}><Smile className="w-3.5 h-3.5" /></button>
-            <div className="absolute bottom-full mb-2 bg-[#1a1b26] border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom">
+            <div className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom">
                 {['👍', '👎', '❤️', '🎉', '🚀'].map(emoji => (<button key={emoji} onClick={() => onReact?.(emoji)} className="hover:scale-125 transition-transform text-sm p-1">{emoji}</button>))}
             </div>
         </div>
@@ -518,7 +518,7 @@ const MessageBubbleInner = memo(({ isUser, isStreaming, displayContent, quotaDet
             <div className="flex flex-col gap-2">
                 <MessageImages images={images} t={t} />
                 {showToggle && <RawToggle active={showRawMarkdown} onClick={() => setShowRawMarkdown(!showRawMarkdown)} t={t} />}
-                <MessageBubbleContent showRawMarkdown={showRawMarkdown} quotaDetails={quotaDetails} thought={thought} displayContent={displayContent} images={images} isStreaming={isStreaming} visibleContent={visibleContent} onSpeak={onSpeak} onStop={onStop} isSpeaking={isSpeaking} onCodeConvert={onCodeConvert} t={t} />
+                <MessageBubbleContent showRawMarkdown={showRawMarkdown} quotaDetails={quotaDetails} thought={thought} displayContent={displayContent} images={images} isStreaming={isStreaming} visibleContent={visibleContent} onSpeak={onSpeak} onStop={onStop} isSpeaking={isSpeaking} onCodeConvert={onCodeConvert} t={t} isUser={isUser} />
                 <MessageSources sources={message.sources ?? []} onSourceClick={onSourceClick} t={t} />
                 {showMore && <MoreLines expanded={isContentExpanded} count={lineCount - COLLAPSE_THRESHOLD} onClick={() => setIsContentExpanded(!isContentExpanded)} t={t} />}
             </div>
@@ -556,38 +556,145 @@ const useQuotaDetails = (is429: boolean, content: string, t: (key: string) => st
     return { message: t('messageBubble.quotaMessage'), resets_at: null, model: null }
 }, [is429, content, t])
 
+const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: (key: string) => string; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean }) => {
+    const { thought, plan, displayContent } = useMessageContent(variant.content, undefined, undefined)
+    const [showRawMarkdown, setShowRawMarkdown] = useState(false)
+    const [isContentExpanded, setIsContentExpanded] = useState(false)
+    const lineCount = displayContent.split('\n').length
+    const visibleContent = (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded) ? displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...' : displayContent
+    const is429 = displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED')
+    const quota = useQuotaDetails(is429, displayContent, t)
+
+    return (
+        <div
+            onClick={onClick}
+            className={cn(
+                "relative flex flex-col gap-2 p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+                isSelected ? "bg-card border-primary/50 ring-1 ring-primary/20 shadow-sm" : "bg-card/50 border-border/40 hover:bg-card hover:border-primary/30"
+            )}
+        >
+            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/20">
+                <div className="flex items-center gap-2">
+                    <AssistantLogo displayModel={variant.model} provider={variant.provider} />
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-foreground/90">{variant.model || 'Unknown Model'}</span>
+                        <span className="text-[10px] text-muted-foreground">{variant.provider}</span>
+                    </div>
+                </div>
+                {isSelected && <div className="bg-primary/10 text-primary p-1 rounded-full"><Check className="w-3 h-3" /></div>}
+            </div>
+
+            <div className="flex-1 min-h-[100px]">
+                <MessageBubbleContent
+                    showRawMarkdown={showRawMarkdown}
+                    quotaDetails={quota}
+                    thought={thought}
+                    displayContent={displayContent}
+                    images={[]}
+                    isStreaming={isStreaming}
+                    visibleContent={visibleContent}
+                    onSpeak={onSpeak}
+                    onStop={onStop}
+                    isSpeaking={isSpeaking}
+                    t={t}
+                    isUser={isUser}
+                />
+            </div>
+
+            <div className="mt-2 text-[10px] text-muted-foreground/40 font-medium flex justify-between items-center">
+                <span>{new Date(variant.timestamp).toLocaleTimeString()}</span>
+                {lineCount > COLLAPSE_THRESHOLD && (
+                    <button onClick={(e) => { e.stopPropagation(); setIsContentExpanded(!isContentExpanded); }} className="flex items-center gap-1 hover:text-primary transition-colors bg-accent/30 hover:bg-accent/50 px-2 py-1 rounded">
+                        {isContentExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        {isContentExpanded ? t('chat.collapse') : t('chat.readMore')}
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+})
+MessageVariantCard.displayName = 'MessageVariantCard'
+
 export const MessageBubble = memo(({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) => {
     const { t } = useTranslation(language)
     const isUser = message.role === 'user'
     const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
     const [showRawMarkdown, setShowRawMarkdown] = useState(false)
     const [isContentExpanded, setIsContentExpanded] = useState(false)
-    const [variantIndex, setVariantIndex] = useState(0)
+
+    // Multi-Model State
     const variants = message.variants ?? []
-    const activeV = variants.length > 1 ? variants[variantIndex] : null
-    const { thought, plan, displayContent } = useMessageContent(activeV?.content ?? message.content, message.reasoning, streamingReasoning)
+    const hasVariants = variants.length > 1
+    const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
+
+    // Determine active content
+    // If we have variants, we prioritize the selected one, or the one marked isSelected, or the first one.
+    // However, for the LIST view, we render the grid.
+    // For single view (no variants), we rely on message.content.
+
+    // We only use this for Single View fallback
+    const activeVariant = selectedVariantId ? variants.find(v => v.id === selectedVariantId) : (variants.find(v => v.isSelected) || variants[0])
+    const rawContent = hasVariants ? (activeVariant?.content || '') : message.content
+    const rawReasoning = hasVariants ? undefined : message.reasoning // Variants don't have reasoning in current UI logic separate from content usually, but hook splits it.
+
+    const { thought, plan, displayContent } = useMessageContent(rawContent, rawReasoning, streamingReasoning)
+
     const autoExpandDone = useRef(false)
     useEffect(() => {
-        if (isLast && thought && !displayContent && !isThoughtExpanded && !autoExpandDone.current) {
+        if (isLast && thought && !displayContent && !isThoughtExpanded && !autoExpandDone.current && !hasVariants) {
             setTimeout(() => { setIsThoughtExpanded(true) }, 0)
             autoExpandDone.current = true
         }
-    }, [isLast, thought, displayContent, isThoughtExpanded])
+    }, [isLast, thought, displayContent, isThoughtExpanded, hasVariants])
+
     const lineCount = displayContent.split('\n').length
     const visibleContent = (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded && !isUser) ? displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...' : displayContent
     const is429 = displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED') || displayContent.includes('Rate limit') || displayContent.includes('quota')
     const quota = useQuotaDetails(is429, displayContent, t)
     const images = (message.images ?? []).filter((img): img is string => typeof img === 'string')
+
+    const handleVariantClick = (vId: string) => {
+        setSelectedVariantId(vId)
+        // Optionally update DB to mark as selected?
+    }
+
+    if (hasVariants && !isUser) {
+        return (
+            <div id={id} className={cn("w-full animate-fade-in py-2 group", isFocused && "bg-primary/5 ring-1 ring-primary/20 rounded-xl")}>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="bg-primary/10 p-1.5 rounded-lg"><Sparkles className="w-4 h-4 text-primary" /></div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('chat.modelComparison')}</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {variants.map((variant) => (
+                        <MessageVariantCard
+                            key={variant.id}
+                            variant={variant}
+                            isSelected={!!(selectedVariantId === variant.id || (!selectedVariantId && variant.isSelected))}
+                            onClick={() => handleVariantClick(variant.id)}
+                            t={t}
+                            isUser={isUser}
+                            isStreaming={Boolean(isStreaming && (variant.model === backend))}
+                            onSpeak={onSpeak}
+                            onStop={onStop}
+                            isSpeaking={isSpeaking}
+                        />
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div id={id} className={cn("flex w-full animate-fade-in group transition-all duration-300 rounded-2xl p-2", isUser ? "justify-end" : "justify-start", isFocused && "bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5")}>
             <div className={cn("flex max-w-[85%] md:max-w-[75%] gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
-                {!isUser && <AssistantLogo displayModel={activeV?.model ?? message.model} provider={message.provider} backend={backend} />}
+                {!isUser && <AssistantLogo displayModel={message.model} provider={message.provider} backend={backend} />}
                 <div className={cn("flex flex-col gap-1 min-w-0", isUser ? "items-end" : "items-start")}>
                     <PlanAndThought plan={plan} thought={thought} isLast={isLast} isStreaming={isStreaming} onApprovePlan={onApprovePlan} isThoughtExpanded={isThoughtExpanded} setIsThoughtExpanded={setIsThoughtExpanded} t={t} />
                     <MessageBubbleInner isUser={isUser} isStreaming={isStreaming} displayContent={displayContent} quotaDetails={quota} images={images} showRawMarkdown={showRawMarkdown} visibleContent={visibleContent} thought={thought} onSpeak={onSpeak} onStop={onStop} isSpeaking={isSpeaking} onCodeConvert={onCodeConvert} message={message} onBookmark={onBookmark} onReact={onReact} onRate={onRate} onSourceClick={onSourceClick} setIsContentExpanded={setIsContentExpanded} isContentExpanded={isContentExpanded} lineCount={lineCount} setShowRawMarkdown={setShowRawMarkdown} t={t} />
                     {message.reactions && message.reactions.length > 0 && (<div className="flex flex-wrap gap-1 mt-1 mb-1 px-1">{message.reactions.map((e, idx) => (<button key={idx} onClick={() => onReact?.(e)} className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] hover:bg-primary/20 transition-colors">{e}</button>))}</div>)}
                     {!isUser && displayContent && !quota && (<div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/40 font-medium"><span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span>~{Math.ceil(displayContent.length / 4)} token</span>{message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}{message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-emerald-400/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}{message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-amber-400/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /> {t('messageBubble.favorite')}</span></>)}{isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}</div>)}
-                    {variants.length > 1 && !isUser && (<MessageVariants variants={variants} variantIndex={variantIndex} setVariantIndex={setVariantIndex} t={t} />)}
                 </div>
             </div>
         </div>

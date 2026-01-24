@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 
 import { BaseService } from '@main/services/base.service'
 import { DatabaseService } from '@main/services/data/database.service'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 
 export interface AgentDefinition {
     id?: string
@@ -71,7 +72,7 @@ export class AgentService extends BaseService {
             name: result.name,
             description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools),
+            tools: safeJsonParse(result.tools, []),
             parentModel: result.parent_model
         }
     }
@@ -84,7 +85,7 @@ export class AgentService extends BaseService {
             name: result.name,
             description: 'Agent',
             systemPrompt: result.system_prompt,
-            tools: JSON.parse(result.tools),
+            tools: safeJsonParse(result.tools, []),
             parentModel: result.parent_model
         }))
     }

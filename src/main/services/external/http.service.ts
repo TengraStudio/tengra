@@ -160,7 +160,17 @@ export class HttpService extends BaseService {
         for (let attempt = 0; attempt <= retryCount; attempt++) {
             const isLastAttempt = (attempt === retryCount);
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            // Respect external signal if present
+            const externalSignal = fetchOptions.signal;
+            if (externalSignal) {
+                if (externalSignal.aborted) {
+                    throw externalSignal.reason || new Error('Aborted');
+                }
+                externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+            }
+
+            const timeoutId = setTimeout(() => controller.abort(new Error('Request timed out')), timeoutMs);
 
             try {
                 const response = await fetch(url, { ...fetchOptions, signal: controller.signal });

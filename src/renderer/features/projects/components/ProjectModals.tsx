@@ -43,7 +43,7 @@ const EditProjectModal: React.FC<{
                         <input
                             value={form.title}
                             onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                            className="w-full bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
                             placeholder={t('projects.namePlaceholder')}
                         />
                     </div>
@@ -52,12 +52,12 @@ const EditProjectModal: React.FC<{
                         <textarea
                             value={form.description}
                             onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-h-[80px] resize-none"
+                            className="w-full bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 min-h-[80px] resize-none"
                             placeholder={t('projects.projectDescPlaceholder')}
                         />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-muted/50 transition-colors">
                             {t('common.cancel')}
                         </button>
                         <button
@@ -88,10 +88,10 @@ const DeleteProjectModal: React.FC<{
             {project && (
                 <Modal isOpen={!!project} onClose={onClose} title={t('projects.deleteProject')}>
                     <div className="space-y-4 pt-2">
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                            <p className="text-sm text-red-100">
-                                {t('projects.deleteConfirmation')} <span className="font-bold text-white">{project.title}</span>?
-                                <span className="block mt-1 text-xs text-red-400 font-medium italic">{t('projects.deleteWarning')}</span>
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <p className="text-sm text-destructive">
+                                {t('projects.deleteConfirmation')} <span className="font-bold text-foreground">{project.title}</span>?
+                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">{t('projects.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
@@ -101,7 +101,7 @@ const DeleteProjectModal: React.FC<{
                             </button>
                             <button
                                 onClick={() => { void onSubmit(deleteFiles) }}
-                                className="px-6 py-2 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-900/20"
+                                className="px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
                                 {t('common.delete')}
                             </button>
@@ -124,9 +124,9 @@ const ArchiveProjectModal: React.FC<{
             <Modal isOpen={!!project} onClose={onClose} title={t('projects.archiveProject')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-sm text-emerald-100/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')} <span className="font-semibold text-white">{project.title}</span>?
-                            <span className="block mt-1 text-xs text-emerald-400 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                        <p className="text-sm text-emerald-500/90 leading-relaxed font-light">
+                            {t('projects.archiveConfirmation')} <span className="font-semibold text-foreground">{project.title}</span>?
+                            <span className="block mt-1 text-xs text-emerald-500 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
@@ -158,9 +158,9 @@ const BulkArchiveModal: React.FC<{
             <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-sm text-emerald-100/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')} <span className="font-semibold text-white">{count} {t('sidebar.projects').toLowerCase()}</span>?
-                            <span className="block mt-1 text-xs text-emerald-400 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                        <p className="text-sm text-emerald-500/90 leading-relaxed font-light">
+                            {t('projects.archiveConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
+                            <span className="block mt-1 text-xs text-emerald-500 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
@@ -195,10 +195,10 @@ const BulkDeleteModal: React.FC<{
             {isOpen && (
                 <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkDelete')}>
                     <div className="space-y-4 pt-2">
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                            <p className="text-sm text-red-100/90 leading-relaxed font-light">
-                                {t('projects.deleteConfirmation')} <span className="font-semibold text-white">{count} {t('sidebar.projects').toLowerCase()}</span>?
-                                <span className="block mt-1 text-xs text-red-400 font-normal italic opacity-80">{t('projects.deleteWarning')}</span>
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <p className="text-sm text-destructive/90 leading-relaxed font-light">
+                                {t('projects.deleteConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
+                                <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">{t('projects.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
@@ -208,7 +208,7 @@ const BulkDeleteModal: React.FC<{
                             </button>
                             <button
                                 onClick={() => { void onSubmit(deleteFiles) }}
-                                className="px-6 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-900/20"
+                                className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
                                 {t('projects.bulkDelete')}
                             </button>
@@ -221,13 +221,13 @@ const BulkDeleteModal: React.FC<{
 }
 
 const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) => void; t: (key: string) => string }> = ({ checked, onChange, t }) => (
-    <label className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group">
+    <label className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group">
         <div className="relative flex items-center justify-center w-5 h-5">
             <input
                 type="checkbox"
                 checked={checked}
                 onChange={(e) => onChange(e.target.checked)}
-                className="peer appearance-none w-5 h-5 border border-white/20 rounded bg-black/40 checked:bg-red-500 checked:border-red-500 transition-all cursor-pointer"
+                className="peer appearance-none w-5 h-5 border border-border/50 rounded bg-muted/20 checked:bg-destructive checked:border-destructive transition-all cursor-pointer"
             />
             <svg
                 className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"

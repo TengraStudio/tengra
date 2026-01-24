@@ -2,6 +2,7 @@ import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
 import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch'
 import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem'
 import { SidebarDivider } from '@renderer/components/layout/sidebar-components'
+import { useTranslation } from '@renderer/i18n'
 import { History, Pin } from 'lucide-react'
 import React, { useState } from 'react'
 
@@ -90,7 +91,7 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                             if (e.key === 'Escape') { setIsCreatingFolder(false) }
                         }}
                         className="w-full bg-muted/20 border border-primary/30 text-xs rounded-md px-2 py-1 outline-none"
-                        placeholder="Folder Name..."
+                        placeholder={t('sidebar.newFolderPlaceholder')}
                     />
                 </div>
             )}

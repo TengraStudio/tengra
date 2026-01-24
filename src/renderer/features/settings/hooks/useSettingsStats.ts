@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CommonBatches } from '@renderer/utils/ipc-batch.util'
 
 import { DetailedStats } from '../types'
 
@@ -19,20 +20,18 @@ export function useSettingsStats() {
         const loadStats = async () => {
             setStatsLoading(true)
             try {
-                const [statsData, quotaData, copilotQuota, codexUsage, claudeQuota] = await Promise.all([
-                    window.electron.db.getDetailedStats(statsPeriod).catch(() => null),
-                    window.electron.getQuota().catch(() => null),
-                    window.electron.getCopilotQuota().catch(() => null),
-                    window.electron.getCodexUsage().catch(() => null),
-                    window.electron.getClaudeQuota().catch(() => null)
-                ])
+                // Use batching for efficient loading of all settings data
+                const batchedData = await CommonBatches.loadSettingsData()
+                
+                // Load detailed stats separately as it needs the period parameter
+                const statsData = await window.electron.db.getDetailedStats(statsPeriod).catch(() => null)
 
                 setData({
-                    statsData: statsData,
-                    quotaData,
-                    copilotQuota,
-                    codexUsage,
-                    claudeQuota
+                    statsData,
+                    quotaData: batchedData.quota,
+                    copilotQuota: batchedData.copilotQuota,
+                    codexUsage: batchedData.codexUsage,
+                    claudeQuota: batchedData.claudeQuota
                 })
             } catch (error) {
                 console.error('Failed to load stats:', error)

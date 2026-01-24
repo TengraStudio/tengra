@@ -246,7 +246,6 @@ export class LocalAuthServer {
             code_verifier: verifier
         })
 
-        // If a secret is present in env, include it (just in case it's a web client ID)
         if (process.env.ANTIGRAVITY_CLIENT_SECRET) {
             body.append('client_secret', process.env.ANTIGRAVITY_CLIENT_SECRET)
         }
@@ -271,8 +270,22 @@ export class LocalAuthServer {
                         return
                     }
                     try {
-                        const json = safeJsonParse(data, null)
-                        if (!json) { throw new Error('Malformed token response') }
+                        const json = safeJsonParse<AuthCallbackData & { id_token?: string }>(data, {} as AuthCallbackData)
+                        if (!json || Object.keys(json).length === 0) { throw new Error('Malformed token response') }
+
+                        // Extract email from id_token if present (Google/Antigravity)
+                        if (json.id_token) {
+                            try {
+                                const claims = LocalAuthServer.decodeJwt(json.id_token)
+                                if (claims['email']) {
+                                    json.email = String(claims['email'])
+                                    appLogger.info('LocalAuthServer', `Captured email from id_token: ${json.email}`)
+                                }
+                            } catch {
+                                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT')
+                            }
+                        }
+
                         resolve(json)
                     } catch (e) {
                         reject(e)
@@ -281,10 +294,25 @@ export class LocalAuthServer {
             })
 
             request.on('error', (err) => reject(err))
-
             request.write(body.toString())
             request.end()
         })
+    }
+
+    /**
+     * Decodes basic JWT payload without signature verification (we trust the HTTPS source).
+     */
+    private static decodeJwt(token: string): Record<string, unknown> {
+        try {
+            const parts = token.split('.')
+            if (parts.length < 2) { return {} }
+            const payload = parts[1]
+            if (!payload) { return {} }
+            const decoded = Buffer.from(payload, 'base64').toString('utf8')
+            return JSON.parse(decoded) as Record<string, unknown>
+        } catch {
+            return {}
+        }
     }
 
     private static async exchangeCodeForClaudeToken(code: string, verifier: string, redirectUri: string, state: string): Promise<AuthCallbackData> {
@@ -324,9 +352,33 @@ export class LocalAuthServer {
                         return
                     }
                     try {
-                        const json = safeJsonParse(data, null)
-                        if (!json) { throw new Error('Malformed token response') }
+                        const json = safeJsonParse<AuthCallbackData & { account?: { email_address?: string }; id_token?: string }>(data, {} as AuthCallbackData)
+                        if (!json || Object.keys(json).length === 0) { throw new Error('Malformed token response') }
                         appLogger.info('LocalAuthServer', 'Token exchange successful')
+
+                        // Handle Claude's nested email field
+                        if (json.account?.email_address) {
+                            json.email = json.account.email_address
+                            appLogger.info('LocalAuthServer', `Captured email from Claude account info: ${json.email}`)
+                        }
+
+                        // Fallback to id_token decoding (used by Codex/OpenAI and others)
+                        if (!json.email && json.id_token) {
+                            try {
+                                const claims = LocalAuthServer.decodeJwt(json.id_token)
+                                if (claims['email']) {
+                                    json.email = String(claims['email'])
+                                    appLogger.info('LocalAuthServer', `Captured email from decoded id_token: ${json.email}`)
+                                }
+                            } catch {
+                                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT in Claude flow')
+                            }
+                        }
+
+                        if (json.email) {
+                            appLogger.info('LocalAuthServer', `Captured email directly from response: ${json.email}`)
+                        }
+
                         resolve(json)
                     } catch (e) {
                         reject(e)

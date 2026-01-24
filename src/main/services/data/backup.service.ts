@@ -150,7 +150,8 @@ export class BackupService {
                         }
                     })
 
-                    backup.chats = fullChats as unknown as JsonObject[]
+                    // Safely serialize chats for backup - convert non-JSON types
+                    backup.chats = JSON.parse(JSON.stringify(fullChats)) as JsonObject[]
                     includes.push('chats')
                 } catch (e) {
                     appLogger.error('BackupService', 'Failed to export chats from DB:', e as Error)
@@ -161,7 +162,8 @@ export class BackupService {
             if (opts.includePrompts) {
                 try {
                     const prompts = await this.databaseService.getPrompts()
-                    backup.prompts = prompts as unknown as JsonObject[]
+                    // Safely serialize prompts for backup - convert non-JSON types
+                    backup.prompts = JSON.parse(JSON.stringify(prompts)) as JsonObject[]
                     includes.push('prompts')
                 } catch (e) {
                     appLogger.error('BackupService', 'Failed to export prompts from DB:', e as Error)
@@ -171,7 +173,8 @@ export class BackupService {
             // Folders (From DB)
             try {
                 const folders = await this.databaseService.getFolders()
-                backup.folders = folders as unknown as JsonObject[]
+                // Safely serialize folders for backup - convert non-JSON types
+                backup.folders = JSON.parse(JSON.stringify(folders)) as JsonObject[]
                 includes.push('folders')
             } catch (e) {
                 appLogger.error('BackupService', 'Failed to export folders from DB:', e as Error)
@@ -266,7 +269,22 @@ export class BackupService {
     private async handleRestoreChats(backup: BackupData, opts: { restoreChats: boolean; mergeChats: boolean }, result: RestoreResult): Promise<void> {
         if (!opts.restoreChats || !backup.chats) { return; }
         try {
-            const chats = backup.chats as unknown as RestoreChatData[];
+            // Type-safe conversion from JsonObject[] to RestoreChatData[]
+            const chats: RestoreChatData[] = backup.chats.map(chatObj => ({
+                id: String(chatObj.id),
+                title: String(chatObj.title || 'Untitled Chat'),
+                model: chatObj.model ? String(chatObj.model) : undefined,
+                backend: chatObj.backend ? String(chatObj.backend) : undefined,
+                messages: Array.isArray(chatObj.messages) ? chatObj.messages as ChatMessage[] : [],
+                createdAt: chatObj.createdAt ? new Date(chatObj.createdAt as string) : new Date(),
+                updatedAt: chatObj.updatedAt ? new Date(chatObj.updatedAt as string) : new Date(),
+                isPinned: Boolean(chatObj.isPinned),
+                isFavorite: Boolean(chatObj.isFavorite),
+                folderId: chatObj.folderId ? String(chatObj.folderId) : undefined,
+                projectId: chatObj.projectId ? String(chatObj.projectId) : undefined,
+                isGenerating: Boolean(chatObj.isGenerating),
+                metadata: chatObj.metadata as JsonObject || {}
+            }))
             for (const chat of chats) {
                 await this.restoreSingleChat(chat, opts.mergeChats);
             }
@@ -282,8 +300,23 @@ export class BackupService {
             const existing = await this.databaseService.getChat(chatId);
 
             if (existing && !merge) {
-                // Cast to Partial<Chat> because DatabaseService.updateChat expects that
-                await this.databaseService.updateChat(chatId, chat as unknown as Partial<Chat>);
+                // Convert RestoreChatData to proper Chat update format
+                const chatUpdate: Partial<Chat> = {
+                    title: chat.title,
+                    model: chat.model,
+                    backend: chat.backend,
+                    createdAt: typeof chat.createdAt === 'string' ? new Date(chat.createdAt) : 
+                              chat.createdAt instanceof Date ? chat.createdAt : new Date(),
+                    updatedAt: typeof chat.updatedAt === 'string' ? new Date(chat.updatedAt) :
+                              chat.updatedAt instanceof Date ? chat.updatedAt : new Date(),
+                    isPinned: chat.isPinned,
+                    isFavorite: chat.isFavorite,
+                    folderId: chat.folderId,
+                    projectId: chat.projectId,
+                    isGenerating: chat.isGenerating,
+                    metadata: chat.metadata
+                }
+                await this.databaseService.updateChat(chatId, chatUpdate);
             } else if (!existing) {
                 // Map RestoreChatData to Chat
                 const newChat: Chat = {

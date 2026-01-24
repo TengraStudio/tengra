@@ -14,12 +14,14 @@ import { Input } from '@/components/ui/input';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@renderer/i18n';
 
 import { useMemory } from '../hooks/useMemory';
 
 type TabType = 'facts' | 'episodes' | 'entities';
 
 export const MemoryInspector: React.FC = () => {
+    const { t } = useTranslation();
     const {
         facts, episodes, entities, isLoading, error,
         refresh, deleteFact, deleteEntity, addFact, search
@@ -85,21 +87,21 @@ export const MemoryInspector: React.FC = () => {
             {/* Stats & Search */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="p-4 bg-muted/30 border-white/5 flex flex-col gap-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Total Facts</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.totalFacts')}</p>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-black">{facts.length}</span>
                         <Brain className="w-4 h-4 mb-1 text-primary/50" />
                     </div>
                 </Card>
                 <Card className="p-4 bg-muted/30 border-white/5 flex flex-col gap-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Episodes</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.episodes')}</p>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-black">{episodes.length}</span>
                         <History className="w-4 h-4 mb-1 text-emerald-500/50" />
                     </div>
                 </Card>
                 <Card className="p-4 bg-muted/30 border-white/5 flex flex-col gap-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Entities</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.entities')}</p>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-black">{entities.length}</span>
                         <User className="w-4 h-4 mb-1 text-purple-500/50" />
@@ -110,13 +112,13 @@ export const MemoryInspector: React.FC = () => {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                         <Input
-                            placeholder="Search memory..."
+                            placeholder={t('memory.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 bg-muted/30 border-white/5"
                         />
                     </div>
-                    <Button type="submit" variant="secondary">Go</Button>
+                    <Button type="submit" variant="secondary">{t('common.search')}</Button>
                 </form>
             </div>
 
@@ -150,7 +152,7 @@ export const MemoryInspector: React.FC = () => {
                             {activeTab === 'facts' && (
                                 <>
                                     {facts.length === 0 ? (
-                                        <EmptyState icon={Brain} title="No facts found" description="Semantic knowledge will appear here as you interact with the agent." />
+                                        <EmptyState icon={Brain} title={t('memory.noFactsFound')} description={t('memory.factsDescription')} />
                                     ) : (
                                         facts.map(fact => (
                                             <FactCard key={fact.id} fact={fact} onDelete={() => deleteFact(fact.id)} />
@@ -162,7 +164,7 @@ export const MemoryInspector: React.FC = () => {
                             {activeTab === 'episodes' && (
                                 <>
                                     {episodes.length === 0 ? (
-                                        <EmptyState icon={History} title="No episodes recorded" description="Chat summaries are generated after long conversations." />
+                                        <EmptyState icon={History} title={t('memory.noEpisodesRecorded')} description={t('memory.episodesDescription')} />
                                     ) : (
                                         episodes.map(episode => (
                                             <EpisodeCard key={episode.id} episode={episode} />
@@ -174,7 +176,7 @@ export const MemoryInspector: React.FC = () => {
                             {activeTab === 'entities' && (
                                 <>
                                     {entities.length === 0 ? (
-                                        <EmptyState icon={User} title="No entities detected" description="Structured knowledge about people, places and tools will show up here." />
+                                        <EmptyState icon={User} title={t('memory.noEntitiesDetected')} description={t('memory.entitiesDescription')} />
                                     ) : (
                                         entities.map(entity => (
                                             <EntityCard key={entity.id} entity={entity} onDelete={() => deleteEntity(entity.id)} />
@@ -199,11 +201,11 @@ export const MemoryInspector: React.FC = () => {
                             value={newFactContent}
                             onChange={(e) => setNewFactContent(e.target.value)}
                             className="w-full h-32 bg-muted/50 border border-white/5 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
-                            placeholder="e.g. User likes React and prefers TypeScript for frontend development..."
+                            placeholder={t('memory.factPlaceholder')}
                         />
                         <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={() => setShowAddFact(false)}>Cancel</Button>
-                            <Button onClick={handleAddFact} disabled={!newFactContent.trim()}>Add Memory</Button>
+                            <Button variant="ghost" onClick={() => setShowAddFact(false)}>{t('common.cancel')}</Button>
+                            <Button onClick={handleAddFact} disabled={!newFactContent.trim()}>{t('memory.addMemory')}</Button>
                         </div>
                     </Card>
                 </div>

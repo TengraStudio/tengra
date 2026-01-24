@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, memo } from 'react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTranslation } from '@/i18n'
@@ -15,6 +15,7 @@ import { CodexCard } from './statistics/CodexCard'
 import { CopilotCard } from './statistics/CopilotCard'
 import { OverviewCards } from './statistics/OverviewCards'
 import { ProjectBarChart } from './statistics/ProjectBarChart'
+import { TokenUsageChart } from './statistics/TokenUsageChart'
 
 interface StatisticsTabProps {
     statsLoading: boolean
@@ -30,7 +31,7 @@ interface StatisticsTabProps {
     setReloadTrigger?: (v: number | ((prev: number) => number)) => void
 }
 
-export const StatisticsTab: React.FC<StatisticsTabProps> = ({
+export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
     statsLoading, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, statsPeriod, setStatsPeriod, settings, setReloadTrigger
 }) => {
     const { t } = useTranslation(settings?.general?.language || 'en')
@@ -135,7 +136,10 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
 
             <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg font-semibold">Activity Overview</CardTitle>
+                    <div>
+                        <CardTitle className="text-lg font-semibold">{t('statistics.tokenUsageOverTime')}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">{t('statistics.visualizeTokenConsumption')}</p>
+                    </div>
                     <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
                         {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
                             <button
@@ -153,10 +157,22 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = ({
                         ))}
                     </div>
                 </CardHeader>
-                <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground border-t border-border/40">
-                    Chart visualization coming soon
+                <CardContent className="min-h-[300px]">
+                    {statsLoading ? (
+                        <div className="h-64 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <TokenUsageChart
+                            tokenTimeline={statsData?.tokenTimeline ?? []}
+                            t={t}
+                            period={statsPeriod}
+                        />
+                    )}
                 </CardContent>
             </Card>
         </div>
     )
-}
+})
+
+StatisticsTab.displayName = 'StatisticsTab'

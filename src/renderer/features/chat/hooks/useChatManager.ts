@@ -51,11 +51,14 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager()
 
+    const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent')
+
     const { streamingStates, generateResponse, stopGeneration } = useChatGenerator({
         chats, setChats, appSettings, selectedModel, selectedProvider,
         selectedModels: options.selectedModels,
         language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath,
-        projectId: options.projectId, t, handleSpeak, autoReadEnabled, formatChatError
+        projectId: options.projectId, t, handleSpeak, autoReadEnabled, formatChatError,
+        systemMode
     })
 
     const {
@@ -127,7 +130,7 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     // Lazy load messages for current active chat
     useEffect(() => {
-        if (!currentChatId) {return}
+        if (!currentChatId) { return }
 
         // Check if we already have messages for this chat (length > 0)
         // Note: New empty chats might have 0 messages, but they usually don't exist in DB yet or are just created.
@@ -240,7 +243,9 @@ export function useChatManager(options: UseChatManagerOptions) {
         processFile,
         removeAttachment,
         t,
-        handleSpeak
+        handleSpeak,
+        systemMode,
+        setSystemMode
     }), [
         chats, currentChatId, messages, displayMessages,
         searchTerm, input, isLoading,
@@ -251,6 +256,6 @@ export function useChatManager(options: UseChatManagerOptions) {
         isListening, startListening, stopListening,
         updateChat, togglePin, toggleFavorite,
         attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak // handleSpeak depends on props but is stable if props are stable
+        t, handleSpeak, systemMode
     ])
 }

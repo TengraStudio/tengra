@@ -1,5 +1,6 @@
 
 import React from 'react'
+import { cn } from '@/lib/utils'
 
 interface SSHTerminalProps {
     terminalOutput: string
@@ -16,17 +17,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
 }) => {
     return (
         <div className="flex h-full p-4 flex-col bg-background">
-            <div style={{
-                flex: 1,
-                backgroundColor: 'var(--terminal-bg, #000)',
-                color: 'var(--terminal-fg, #0f0)',
-                fontFamily: 'monospace',
-                padding: '10px',
-                borderRadius: '4px',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                marginBottom: '10px'
-            }}>
+            <div className="flex-1 bg-black rounded-lg p-3 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap mb-3 border border-border/30 text-[#0f0]">
                 {terminalOutput || t('ssh.terminalOutput')}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>

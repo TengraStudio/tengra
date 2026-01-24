@@ -49,11 +49,11 @@ const ValueProposition: React.FC<{ value?: string }> = ({ value }) => {
     if (!value) { return null }
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <Sparkles className="w-4 h-4 text-amber-500" />
                 {t('ideas.idea.valueProposition')}
             </h3>
-            <p className="text-white/70 bg-white/5 rounded-lg p-4 leading-relaxed">{value}</p>
+            <p className="text-foreground/70 bg-muted/20 rounded-lg p-4 leading-relaxed border border-border/10 italic">{value}</p>
         </div>
     )
 }
@@ -67,8 +67,8 @@ const NameSuggestions: React.FC<{
     if (names.length === 0) { return null }
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <Trophy className="w-4 h-4 text-purple-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <Trophy className="w-4 h-4 text-primary" />
                 {t('ideas.idea.nameSuggestions')}
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -78,10 +78,10 @@ const NameSuggestions: React.FC<{
                         type="button"
                         onClick={() => onSelect(name)}
                         className={cn(
-                            'px-3 py-1.5 rounded-lg text-sm transition-all border',
+                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
                             selectedName === name
-                                ? 'bg-purple-500 text-white border-purple-500 shadow-lg shadow-purple-500/20'
-                                : 'bg-purple-500/10 text-purple-300 border-purple-500/20 hover:bg-purple-500/20'
+                                ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105'
+                                : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'
                         )}
                     >
                         {name}
@@ -97,14 +97,14 @@ const CompetitiveAdvantages: React.FC<{ advantages: string[] }> = ({ advantages 
     if (advantages.length === 0) { return null }
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <TrendingUp className="w-4 h-4 text-green-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <TrendingUp className="w-4 h-4 text-green-500" />
                 {t('ideas.idea.competitiveAdvantages')}
             </h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {advantages.map((adv, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-white/70 text-sm bg-white/5 p-3 rounded-lg">
-                        <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                    <li key={idx} className="flex items-start gap-2 text-foreground/70 text-sm bg-muted/20 p-3 rounded-lg border border-border/10">
+                        <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         <span>{adv}</span>
                     </li>
                 ))}
@@ -118,15 +118,15 @@ const MarketTrends: React.FC<{ trends: MarketTrend[] }> = ({ trends }) => {
     if (trends.length === 0) { return null }
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
                 {t('ideas.idea.marketTrends')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {trends.slice(0, 4).map((trend, idx) => (
-                    <div key={idx} className="bg-white/5 rounded-lg p-3">
-                        <p className="text-sm font-medium text-white">{trend.title}</p>
-                        <p className="text-xs text-white/50 mt-1">{trend.description}</p>
+                    <div key={idx} className="bg-muted/20 border border-border/10 rounded-lg p-3">
+                        <p className="text-sm font-medium text-foreground">{trend.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{trend.description}</p>
                     </div>
                 ))}
             </div>
@@ -152,22 +152,22 @@ const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => 
 
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
                 <Map className="w-4 h-4 text-indigo-400" />
                 {t('ideas.idea.roadmap')}
-                <span className="text-xs text-white/40 ml-auto">{roadmap.totalDuration}</span>
+                <span className="text-xs text-muted-foreground/40 ml-auto">{roadmap.totalDuration}</span>
             </h3>
             <div className="space-y-3">
                 {/* MVP Phase */}
-                <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg p-4 border border-purple-500/30">
+                <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-4 border border-primary/20">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-purple-300">{roadmap.mvp.name}</span>
-                        <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded">{roadmap.mvp.duration}</span>
+                        <span className="text-sm font-bold text-primary uppercase tracking-wider">{roadmap.mvp.name}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground/60 bg-muted/50 px-2 py-0.5 rounded border border-border/50">{roadmap.mvp.duration}</span>
                     </div>
-                    <p className="text-xs text-white/60 mb-2">{roadmap.mvp.description}</p>
+                    <p className="text-xs text-foreground/70 mb-2 leading-relaxed">{roadmap.mvp.description}</p>
                     <div className="flex flex-wrap gap-1.5">
                         {roadmap.mvp.deliverables.map((d: string, i: number) => (
-                            <span key={i} className="text-xs bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded">
+                            <span key={i} className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/20">
                                 {d}
                             </span>
                         ))}
@@ -180,23 +180,23 @@ const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => 
                         <button
                             type="button"
                             onClick={() => togglePhase(idx)}
-                            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between p-3 hover:bg-muted/20 transition-colors"
                         >
                             <div className="flex items-center gap-2">
                                 <ChevronRight className={cn(
-                                    'w-4 h-4 text-white/40 transition-transform',
+                                    'w-4 h-4 text-muted-foreground/40 transition-transform',
                                     expandedPhase === idx && 'rotate-90'
                                 )} />
-                                <span className="text-sm font-medium text-white">{phase.name}</span>
+                                <span className="text-sm font-medium text-foreground">{phase.name}</span>
                             </div>
-                            <span className="text-xs text-white/40">{phase.duration}</span>
+                            <span className="text-xs text-muted-foreground/40">{phase.duration}</span>
                         </button>
                         {expandedPhase === idx && (
                             <div className="px-3 pb-3 pt-0">
-                                <p className="text-xs text-white/60 mb-2 ml-6">{phase.description}</p>
+                                <p className="text-xs text-foreground/60 mb-2 ml-6">{phase.description}</p>
                                 <div className="flex flex-wrap gap-1.5 ml-6">
                                     {phase.deliverables.map((d: string, i: number) => (
-                                        <span key={i} className="text-xs bg-white/10 text-white/70 px-2 py-0.5 rounded">
+                                        <span key={i} className="text-xs bg-muted/50 text-foreground/70 px-2 py-0.5 rounded">
                                             {d}
                                         </span>
                                     ))}
@@ -226,29 +226,29 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
 
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <Code2 className="w-4 h-4 text-emerald-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <Code2 className="w-4 h-4 text-primary" />
                 {t('ideas.idea.techStack')}
             </h3>
             <div className="space-y-3">
                 {categories.map(({ key, label, icon: Icon, color, items }) => (
-                    <div key={key} className="bg-white/5 rounded-lg p-3">
+                    <div key={key} className="bg-muted/20 border border-border/10 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <Icon className={cn('w-4 h-4', color)} />
-                            <span className="text-xs font-semibold text-white/70 uppercase tracking-wide">{label}</span>
+                            <span className="text-xs font-bold text-foreground/70 uppercase tracking-widest">{label}</span>
                         </div>
                         <div className="space-y-2">
                             {items.map((tech, idx) => (
-                                <div key={idx} className="bg-black/20 rounded p-2">
+                                <div key={idx} className="bg-muted/10 rounded p-2 border border-border/5">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-white">{tech.name}</span>
+                                        <span className="text-sm font-medium text-foreground">{tech.name}</span>
                                         {tech.alternatives && tech.alternatives.length > 0 && (
-                                            <span className="text-xs text-white/40">
+                                            <span className="text-xs text-muted-foreground/40">
                                                 Alt: {tech.alternatives.slice(0, 2).join(', ')}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-white/50 mt-1">{tech.reason}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{tech.reason}</p>
                                 </div>
                             ))}
                         </div>
@@ -267,44 +267,44 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
 
     return (
         <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-3">
-                <Target className="w-4 h-4 text-red-400" />
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
+                <Target className="w-4 h-4 text-primary" />
                 {t('ideas.idea.competitorAnalysis')}
             </h3>
             <div className="space-y-3">
                 {competitors.map((comp, idx) => (
-                    <div key={idx} className="bg-white/5 rounded-lg overflow-hidden">
+                    <div key={idx} className="bg-muted/10 rounded-lg overflow-hidden border border-border/50">
                         <button
                             type="button"
                             onClick={() => setExpandedComp(expandedComp === idx ? null : idx)}
-                            className="w-full flex items-start justify-between p-3 hover:bg-white/5 transition-colors text-left"
+                            className="w-full flex items-start justify-between p-3 hover:bg-muted/30 transition-colors text-left"
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-white">{comp.name}</span>
+                                    <span className="text-sm font-medium text-foreground">{comp.name}</span>
                                     {comp.marketPosition && (
-                                        <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-white/60">
+                                        <span className="text-xs px-2 py-0.5 rounded bg-muted/50 text-muted-foreground/60">
                                             {comp.marketPosition}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-xs text-white/50 mt-1">{comp.description}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{comp.description}</p>
                             </div>
                             <ChevronRight className={cn(
-                                'w-4 h-4 text-white/40 transition-transform shrink-0 ml-2',
+                                'w-4 h-4 text-muted-foreground/40 transition-transform shrink-0 ml-2',
                                 expandedComp === idx && 'rotate-90'
                             )} />
                         </button>
                         {expandedComp === idx && (
-                            <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
+                            <div className="px-3 pb-3 space-y-3 border-t border-border/10 pt-3">
                                 {/* Strengths */}
                                 {comp.strengths.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-green-400">{t('ideas.competitor.strengths')}</span>
+                                        <span className="text-xs font-semibold text-green-500">{t('ideas.competitor.strengths')}</span>
                                         <ul className="mt-1 space-y-1">
                                             {comp.strengths.map((s, i) => (
-                                                <li key={i} className="text-xs text-white/60 flex items-start gap-1.5">
-                                                    <CheckCircle className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
+                                                <li key={i} className="text-xs text-foreground/60 flex items-start gap-1.5">
+                                                    <CheckCircle className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
                                                     {s}
                                                 </li>
                                             ))}
@@ -314,11 +314,11 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Weaknesses */}
                                 {comp.weaknesses.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-red-400">{t('ideas.competitor.weaknesses')}</span>
+                                        <span className="text-xs font-semibold text-red-500">{t('ideas.competitor.weaknesses')}</span>
                                         <ul className="mt-1 space-y-1">
                                             {comp.weaknesses.map((w, i) => (
-                                                <li key={i} className="text-xs text-white/60 flex items-start gap-1.5">
-                                                    <span className="w-3 h-3 flex items-center justify-center shrink-0 text-red-400">−</span>
+                                                <li key={i} className="text-xs text-foreground/60 flex items-start gap-1.5">
+                                                    <span className="w-3 h-3 flex items-center justify-center shrink-0 text-red-500">−</span>
                                                     {w}
                                                 </li>
                                             ))}
@@ -328,7 +328,7 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Missing Features */}
                                 {comp.missingFeatures.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-yellow-400">{t('ideas.competitor.missingFeatures')}</span>
+                                        <span className="text-xs font-semibold text-yellow-500">{t('ideas.competitor.missingFeatures')}</span>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {comp.missingFeatures.map((f, i) => (
                                                 <span key={i} className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded">
@@ -340,9 +340,9 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 )}
                                 {/* Differentiation Opportunity */}
                                 {comp.differentiationOpportunity && (
-                                    <div className="bg-purple-500/10 rounded p-2 border border-purple-500/20">
-                                        <span className="text-xs font-semibold text-purple-400">{t('ideas.competitor.opportunity')}</span>
-                                        <p className="text-xs text-white/70 mt-1">{comp.differentiationOpportunity}</p>
+                                    <div className="bg-primary/10 rounded p-2 border border-primary/20">
+                                        <span className="text-xs font-bold text-primary uppercase tracking-widest">{t('ideas.competitor.opportunity')}</span>
+                                        <p className="text-xs text-foreground/70 mt-1 italic">{comp.differentiationOpportunity}</p>
                                     </div>
                                 )}
                             </div>
@@ -360,29 +360,29 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
     return (
         <div className="space-y-8">
             <div>
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-4">
-                    <Users className="w-4 h-4 text-purple-400" />
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
+                    <Users className="w-4 h-4 text-primary" />
                     Target Personas
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {personas.map((p, i) => (
-                        <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col group hover:bg-white/[0.08] transition-colors">
+                        <div key={i} className="bg-muted/20 border border-border/50 rounded-xl p-4 flex flex-col group hover:bg-primary/5 hover:border-primary/20 transition-all">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-xl">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-xl grayscale-[0.5] group-hover:grayscale-0 transition-all">
                                     {p.avatarEmoji || '👤'}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-white">{p.name}</p>
-                                    <p className="text-[10px] text-white/40 uppercase tracking-wider">{p.role}</p>
+                                    <p className="text-sm font-bold text-foreground">{p.name}</p>
+                                    <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">{p.role}</p>
                                 </div>
                             </div>
                             <div className="space-y-3 flex-1">
                                 <div>
-                                    <p className="text-[10px] font-bold text-purple-400 uppercase mb-1">Pain Points</p>
+                                    <p className="text-[10px] font-bold text-primary uppercase mb-1">Pain Points</p>
                                     <ul className="space-y-1">
                                         {p.painPoints.slice(0, 2).map((pt, j) => (
-                                            <li key={j} className="text-[11px] text-white/60 leading-tight flex items-start gap-1">
-                                                <span className="text-purple-400">•</span> {pt}
+                                            <li key={j} className="text-[11px] text-foreground/80 leading-tight flex items-start gap-1">
+                                                <span className="text-primary font-bold">•</span> {pt}
                                             </li>
                                         ))}
                                     </ul>
@@ -395,26 +395,26 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
 
             {journey && journey.length > 0 && (
                 <div>
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-4">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Map className="w-4 h-4 text-blue-400" />
                         User Journey Map
                     </h3>
                     <div className="relative flex flex-col space-y-4">
-                        <div className="absolute left-4 top-2 bottom-2 w-px bg-white/10" />
+                        <div className="absolute left-4 top-2 bottom-2 w-px bg-border/50" />
                         {journey.map((step, i) => (
                             <div key={i} className="relative pl-10">
                                 <div className={cn(
-                                    "absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-black z-10",
-                                    step.emotion === 'excited' ? 'bg-green-400' :
-                                        step.emotion === 'happy' ? 'bg-blue-400' :
-                                            step.emotion === 'neutral' ? 'bg-white/40' : 'bg-red-400'
+                                    "absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-background z-10",
+                                    step.emotion === 'excited' ? 'bg-green-500' :
+                                        step.emotion === 'happy' ? 'bg-blue-500' :
+                                            step.emotion === 'neutral' ? 'bg-muted-foreground/40' : 'bg-red-500'
                                 )} />
-                                <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                                <div className="bg-muted/30 rounded-lg p-3 border border-border/20">
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-white uppercase tracking-wider">{step.stage}</span>
-                                        <span className="text-[10px] text-white/30">{step.emotion}</span>
+                                        <span className="text-xs font-bold text-foreground uppercase tracking-wider">{step.stage}</span>
+                                        <span className="text-[10px] text-muted-foreground/30">{step.emotion}</span>
                                     </div>
-                                    <p className="text-sm text-white/80 mb-1">{step.action}</p>
+                                    <p className="text-sm text-foreground/80 mb-1">{step.action}</p>
                                     <p className="text-[11px] text-blue-400/80 font-medium italic">Benefit: {step.benefit}</p>
                                 </div>
                             </div>
@@ -433,22 +433,22 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
             {/* SWOT Matrix */}
             {swot && (
                 <div>
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-4">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Target className="w-4 h-4 text-orange-400" />
                         SWOT Analysis
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         {[
-                            { label: 'Strengths', items: swot.strengths, color: 'text-green-400', bg: 'bg-green-400/5', border: 'border-green-400/20' },
-                            { label: 'Weaknesses', items: swot.weaknesses, color: 'text-red-400', bg: 'bg-red-400/5', border: 'border-red-400/20' },
-                            { label: 'Opportunities', items: swot.opportunities, color: 'text-blue-400', bg: 'bg-blue-400/5', border: 'border-blue-400/20' },
-                            { label: 'Threats', items: swot.threats, color: 'text-orange-400', bg: 'bg-orange-400/5', border: 'border-orange-400/20' }
+                            { label: 'Strengths', items: swot.strengths, color: 'text-primary', bg: 'bg-primary/5', border: 'border-primary/20' },
+                            { label: 'Weaknesses', items: swot.weaknesses, color: 'text-destructive', bg: 'bg-destructive/5', border: 'border-destructive/20' },
+                            { label: 'Opportunities', items: swot.opportunities, color: 'text-accent', bg: 'bg-accent/5', border: 'border-accent/20' },
+                            { label: 'Threats', items: swot.threats, color: 'text-amber-500', bg: 'bg-amber-500/5', border: 'border-amber-500/20' }
                         ].map((cell, i) => (
                             <div key={i} className={cn("p-4 rounded-xl border", cell.bg, cell.border)}>
                                 <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-3", cell.color)}>{cell.label}</p>
                                 <ul className="space-y-2">
                                     {cell.items.slice(0, 3).map((item, j) => (
-                                        <li key={j} className="text-xs text-white/70 flex items-start gap-2">
+                                        <li key={j} className="text-xs text-foreground/70 flex items-start gap-2">
                                             <div className={cn("w-1 h-1 rounded-full mt-1.5 shrink-0", cell.color.replace('text', 'bg'))} />
                                             {item}
                                         </li>
@@ -462,35 +462,35 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
 
             {/* Business Model */}
             {businessModel && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                    <h3 className="text-xs font-bold text-purple-400 uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                <div className="bg-muted/20 border border-border/50 rounded-2xl p-6">
+                    <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
                         Revenue Model
-                        <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-[10px] normal-case tracking-normal">
+                        <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] normal-case tracking-normal border border-primary/20">
                             {businessModel.monetizationType}
                         </span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             {businessModel.revenueStreams.map((rs, i) => (
-                                <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5">
+                                <div key={i} className="bg-muted/10 rounded-xl p-4 border border-border/10">
                                     <div className="flex items-center justify-between mb-1">
-                                        <p className="text-sm font-bold text-white">{rs.name}</p>
-                                        <p className="text-xs font-black text-green-400">{rs.pricePoint}</p>
+                                        <p className="text-sm font-bold text-foreground">{rs.name}</p>
+                                        <p className="text-xs font-black text-primary">{rs.pricePoint}</p>
                                     </div>
-                                    <p className="text-xs text-white/50">{rs.description}</p>
+                                    <p className="text-xs text-muted-foreground">{rs.description}</p>
                                 </div>
                             ))}
                         </div>
-                        <div className="bg-purple-500/5 rounded-xl p-5 border border-purple-500/10">
-                            <p className="text-[10px] font-bold text-purple-400 uppercase mb-3">Break-even Strategy</p>
-                            <p className="text-xs text-white/70 leading-relaxed font-sans italic">
+                        <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
+                            <p className="text-[10px] font-bold text-primary uppercase mb-3">Break-even Strategy</p>
+                            <p className="text-xs text-foreground/70 leading-relaxed font-sans italic">
                                 "{businessModel.breakEvenStrategy}"
                             </p>
-                            <div className="mt-4 pt-4 border-t border-white/5">
-                                <p className="text-[10px] font-bold text-white/40 uppercase mb-2">Cost Structure</p>
+                            <div className="mt-4 pt-4 border-t border-border/20">
+                                <p className="text-[10px] font-bold text-foreground/40 uppercase mb-2">Cost Structure</p>
                                 <div className="flex flex-wrap gap-2">
                                     {businessModel.costStructure.map((c, i) => (
-                                        <span key={i} className="text-[10px] bg-white/5 text-white/50 px-2 py-1 rounded">
+                                        <span key={i} className="text-[10px] bg-muted/50 text-muted-foreground/50 px-2 py-1 rounded border border-border/10">
                                             {c}
                                         </span>
                                     ))}
@@ -508,15 +508,15 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                         <Globe className="w-4 h-4 text-emerald-400" />
                         Go-To-Market Plan
                     </h3>
-                    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6">
-                        <p className="text-[10px] font-bold text-emerald-400 uppercase mb-4 tracking-widest">First 100 Users Strategy</p>
+                    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
+                        <p className="text-[10px] font-bold text-primary uppercase mb-4 tracking-widest">First 100 Users Strategy</p>
                         <div className="space-y-3">
                             {marketingPlan.first100UsersActionableSteps.map((step, i) => (
-                                <div key={i} className="flex items-center gap-3 bg-white/5 p-3 rounded-lg group">
-                                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px] font-bold text-emerald-400 shrink-0">
+                                <div key={i} className="flex items-center gap-3 bg-muted/20 p-3 rounded-lg group border border-border/5">
+                                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                                         {i + 1}
                                     </div>
-                                    <p className="text-xs text-white/80">{step}</p>
+                                    <p className="text-xs text-foreground/80">{step}</p>
                                 </div>
                             ))}
                         </div>
@@ -533,7 +533,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
     const [isLoading, setIsLoading] = useState(false)
 
     const handleAsk = async () => {
-        if (!question.trim() || isLoading) {return}
+        if (!question.trim() || isLoading) { return }
         const currentQ = question
         setQuestion('')
         setChat(prev => [...prev, { q: currentQ }])
@@ -550,16 +550,16 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
     }
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
-            <div className="p-4 border-b border-white/10 bg-white/5 flex items-center gap-2">
+        <div className="bg-muted/30 border border-border/50 rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
+            <div className="p-4 border-b border-border/50 bg-muted/30 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-bold text-white/80 uppercase tracking-widest">Research Assistant</span>
+                <span className="text-xs font-bold text-foreground/80 uppercase tracking-widest">Research Assistant</span>
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
                 {chat.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                        <p className="text-white/40 text-xs leading-relaxed max-w-[200px]">
+                        <p className="text-muted-foreground/60 text-xs leading-relaxed max-w-[200px] font-medium italic">
                             Ask me anything about the market research, competition, or tech stack for this idea!
                         </p>
                     </div>
@@ -567,13 +567,13 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                 {chat.map((m, i) => (
                     <div key={i} className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className="flex justify-end">
-                            <div className="bg-purple-600/20 text-purple-200 text-xs py-2 px-3 rounded-2xl rounded-tr-none border border-purple-500/30">
+                            <div className="bg-primary/20 text-primary text-xs py-2 px-3 rounded-2xl rounded-tr-none border border-primary/30 font-medium">
                                 {m.q}
                             </div>
                         </div>
                         {m.a && (
                             <div className="flex justify-start">
-                                <div className="bg-white/10 text-white/80 text-xs py-3 px-4 rounded-2xl rounded-tl-none border border-white/10 max-w-[85%] leading-relaxed font-sans">
+                                <div className="bg-muted/50 text-foreground/90 text-xs py-3 px-4 rounded-2xl rounded-tl-none border border-border/50 max-w-[85%] leading-relaxed">
                                     {m.a}
                                 </div>
                             </div>
@@ -582,12 +582,12 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                 ))}
                 {isLoading && (
                     <div className="flex justify-start animate-pulse">
-                        <div className="bg-white/5 w-12 h-6 rounded-full" />
+                        <div className="bg-muted/30 w-12 h-6 rounded-full" />
                     </div>
                 )}
             </div>
 
-            <div className="p-4 border-t border-white/10 bg-black/20">
+            <div className="p-4 border-t border-border/50 bg-muted/10">
                 <div className="relative">
                     <input
                         type="text"
@@ -595,12 +595,12 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                         onChange={(e) => setQuestion(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
                         placeholder="Ask about competitors, gaps, or logic..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-4 pr-12 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50 transition-colors"
+                        className="w-full bg-muted/20 border border-border/50 rounded-xl py-2.5 pl-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                     <button
                         onClick={() => { void handleAsk() }}
                         disabled={!question.trim() || isLoading}
-                        className="absolute right-2 top-1.5 p-1.5 rounded-lg bg-purple-500 text-white hover:bg-purple-400 disabled:opacity-50 disabled:hover:bg-purple-500 transition-colors"
+                        className="absolute right-2 top-1.5 p-1.5 rounded-lg bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 transition-colors"
                     >
                         <ChevronRight className="w-4 h-4" />
                     </button>
@@ -631,12 +631,12 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
             case 'overview':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                        <div className="bg-muted/20 border border-border/50 rounded-2xl p-6 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Sparkles className="w-32 h-32 text-purple-400" />
+                                <Sparkles className="w-32 h-32 text-primary" />
                             </div>
-                            <h3 className="text-xs font-bold text-purple-400 uppercase tracking-[0.2em] mb-4">Core Concept</h3>
-                            <p className="text-lg text-white font-medium leading-relaxed relative z-10">
+                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Core Concept</h3>
+                            <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">
                                 {idea.description}
                             </p>
                         </div>
@@ -651,8 +651,8 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                             />
                             {canGenerateLogo && idea.status === 'pending' && (
                                 <div className="space-y-3">
-                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80">
-                                        <Sparkles className="w-4 h-4 text-purple-400" />
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
+                                        <Sparkles className="w-4 h-4 text-primary" />
                                         Visual Identity
                                     </h3>
                                     {showLogoGenerator ? (
@@ -665,12 +665,12 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                                         <button
                                             type="button"
                                             onClick={() => setShowLogoGenerator(true)}
-                                            className="w-full aspect-[16/9] rounded-xl border border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group relative overflow-hidden flex flex-col items-center justify-center gap-3 bg-white/[0.02]"
+                                            className="w-full aspect-[16/9] rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted/10"
                                         >
-                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-purple-500/20 to-blue-500/20 text-purple-400">
+                                            <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-primary/20 to-accent/20 text-primary">
                                                 <Sparkles className="w-5 h-5" />
                                             </div>
-                                            <span className="text-xs font-bold text-white/60 group-hover:text-white transition-colors">{t('ideas.logo.generate')}</span>
+                                            <span className="text-xs font-bold text-muted-foreground/60 group-hover:text-foreground transition-colors">{t('ideas.logo.generate')}</span>
                                         </button>
                                     )}
                                 </div>
@@ -681,9 +681,9 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
             case 'market':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
                             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
-                            <p className="text-sm text-white/70 leading-relaxed font-sans">
+                            <p className="text-sm text-foreground/70 leading-relaxed font-sans">
                                 {idea.marketResearch?.categoryAnalysis || 'Analysis pending deep dive...'}
                             </p>
                         </div>

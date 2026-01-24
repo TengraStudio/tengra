@@ -19,7 +19,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center justify-between">
             <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-1 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                     <Bot className="w-4 h-4 text-primary" />
                     {t('projects.councilAI') || 'Council AI Configuration'}
                 </h3>
@@ -55,7 +55,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     step="0.1"
                     value={formData.consensusThreshold}
                     onChange={e => setFormData(prev => ({ ...prev, consensusThreshold: parseFloat(e.target.value) }))}
-                    className="w-full accent-primary bg-white/10 rounded-lg h-1.5 appearance-none cursor-pointer"
+                    className="w-full accent-primary bg-muted/30 rounded-lg h-1.5 appearance-none cursor-pointer"
                 />
                 <p className="text-[10px] text-muted-foreground italic">
                     Higher thresholds require more agents to agree before a step is considered final.
@@ -73,24 +73,24 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                                 "flex items-center justify-between p-3 rounded-lg border transition-all group",
                                 formData.councilMembers.includes(agent.id)
                                     ? "bg-primary/10 border-primary/40 text-primary"
-                                    : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                    : "bg-muted/20 border-border/50 text-muted-foreground hover:bg-muted/30"
                             )}
                         >
                             <div className="flex items-center gap-3">
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase transition-colors",
-                                    formData.councilMembers.includes(agent.id) ? "bg-primary text-primary-foreground" : "bg-white/10"
+                                    formData.councilMembers.includes(agent.id) ? "bg-primary text-primary-foreground" : "bg-muted/30"
                                 )}>
                                     {agent.name.charAt(0)}
                                 </div>
                                 <div className="text-left">
-                                    <div className="text-sm font-medium text-white group-hover:text-primary transition-colors">{agent.name}</div>
+                                    <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{agent.name}</div>
                                     <div className="text-[10px] opacity-60">{agent.description ?? 'General AI'}</div>
                                 </div>
                             </div>
                             <div className={cn(
                                 "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
-                                formData.councilMembers.includes(agent.id) ? "bg-primary border-primary text-white" : "border-white/20"
+                                formData.councilMembers.includes(agent.id) ? "bg-primary border-primary text-primary-foreground" : "border-border/50"
                             )}>
                                 {formData.councilMembers.includes(agent.id) && <Save className="w-3 h-3" />}
                             </div>

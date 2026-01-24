@@ -1,6 +1,6 @@
 
 import React from 'react'
-
+import { cn } from '@/lib/utils'
 import { SSHConnection } from '@/types'
 
 interface SSHConnectionListProps {
@@ -25,7 +25,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
     t
 }) => {
     return (
-        <div className="border-r border-border/50 p-4 flex flex-col bg-muted/10 w-[250px]">
+        <div className="border-r border-border/50 p-4 flex flex-col bg-muted/20 w-[250px]">
             <button
                 className="primary-btn"
                 style={{ marginBottom: '16px' }}
@@ -36,24 +36,22 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
 
             <div className="connection-list" style={{ overflowY: 'auto', flex: 1 }}>
                 {connections.map(conn => (
-                    <div key={conn.id} className="connection-item" style={{
-                        padding: '10px',
-                        border: '1px solid var(--border-secondary)',
-                        borderRadius: '8px',
-                        marginBottom: '8px',
-                        backgroundColor: conn.id === selectedId ? 'var(--primary-transparent, rgba(16, 163, 127, 0.1))' : 'transparent',
-                        cursor: 'pointer'
-                    }}
+                    <div key={conn.id} className={cn(
+                        "p-3 border rounded-lg mb-2 cursor-pointer transition-all",
+                        conn.id === selectedId
+                            ? "bg-primary/10 border-primary/40"
+                            : "bg-transparent border-border hover:bg-muted/30"
+                    )}
                         onClick={() => conn.status === 'connected' && onSelect(conn.id)}
                     >
-                        <div style={{ fontWeight: 'bold' }}>{conn.name || conn.host}</div>
+                        <div className="font-bold text-foreground">{conn.name || conn.host}</div>
                         <div style={{ fontSize: '0.8em', opacity: 0.7 }}>{conn.username}@{conn.host}</div>
                         <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{
-                                fontSize: '0.8em',
-                                color: conn.status === 'connected' ? '#4CAF50' :
-                                    conn.status === 'connecting' ? '#FFC107' : '#9E9E9E'
-                            }}>
+                            <span className={cn(
+                                "text-[10px] font-bold uppercase tracking-wider",
+                                conn.status === 'connected' ? "text-primary" :
+                                    conn.status === 'connecting' ? "text-amber-500" : "text-muted-foreground"
+                            )}>
                                 ● {conn.status}
                             </span>
                             {conn.status === 'connected' ? (

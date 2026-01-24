@@ -87,68 +87,70 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [setIsModelMenuOpen])
 
+    const renderChatView = () => (
+        <ChatViewWrapper
+            templates={templates}
+            messagesEndRef={messagesEndRef}
+            fileInputRef={fileInputRef}
+            textareaRef={textareaRef}
+            onScrollToBottom={onScrollToBottom}
+            showScrollButton={showScrollButton}
+            setShowScrollButton={setShowScrollButton}
+            showFileMenu={showFileMenu}
+            setShowFileMenu={setShowFileMenu}
+        />
+    )
+
+    const renderProjectsView = () => (
+        <ProjectsView
+            projects={projects}
+            loadProjects={() => { void loadProjects() }}
+            selectedProject={selectedProject}
+            setSelectedProject={setSelectedProject}
+            language={language}
+            terminalTabs={terminalTabs}
+            activeTerminalId={activeTerminalId}
+            setTerminalTabs={setTerminalTabs}
+            setActiveTabId={setActiveTerminalId}
+            selectedProvider={selectedProvider}
+            selectedModel={selectedModel}
+            onSelectModel={(p, m) => {
+                setSelectedProvider(p)
+                setSelectedModel(m)
+                void persistLastSelection(p, m)
+            }}
+            groupedModels={groupedModels}
+            quotas={quotas}
+            codexUsage={codexUsage}
+            appSettings={appSettings}
+            onSendMessage={(text) => {
+                setInput(text ?? '')
+                void sendMessage(text ?? '')
+            }}
+            displayMessages={displayMessages}
+            isLoading={isLoading}
+        />
+    )
+
+    const renderSettingsView = () => (
+        <SettingsView
+            installedModels={installedModels}
+            proxyModels={proxyModels}
+            loadModels={() => void loadModels()}
+            settingsCategory={settingsCategory}
+            groupedModels={groupedModels}
+        />
+    )
+
     const renderView = () => {
         switch (currentView) {
-            case 'chat':
-                return (
-                    <ChatViewWrapper
-                        templates={templates}
-                        messagesEndRef={messagesEndRef}
-                        fileInputRef={fileInputRef}
-                        textareaRef={textareaRef}
-                        onScrollToBottom={onScrollToBottom}
-                        showScrollButton={showScrollButton}
-                        setShowScrollButton={setShowScrollButton}
-                        showFileMenu={showFileMenu}
-                        setShowFileMenu={setShowFileMenu}
-                    />
-                )
-            case 'projects':
-                return (
-                    <ProjectsView
-                        projects={projects}
-                        loadProjects={() => { void loadProjects() }}
-                        selectedProject={selectedProject}
-                        setSelectedProject={setSelectedProject}
-                        language={language}
-                        terminalTabs={terminalTabs}
-                        activeTerminalId={activeTerminalId}
-                        setTerminalTabs={setTerminalTabs}
-                        setActiveTabId={setActiveTerminalId}
-                        selectedProvider={selectedProvider}
-                        selectedModel={selectedModel}
-                        onSelectModel={(p, m) => {
-                            setSelectedProvider(p)
-                            setSelectedModel(m)
-                            void persistLastSelection(p, m)
-                        }}
-                        groupedModels={groupedModels}
-                        quotas={quotas}
-                        codexUsage={codexUsage}
-                        appSettings={appSettings}
-                        onSendMessage={(text) => {
-                            setInput(text ?? '')
-                            void sendMessage(text ?? '')
-                        }}
-                        displayMessages={displayMessages}
-                        isLoading={isLoading}
-                    />
-                )
-            case 'council':
-                return <AgentDashboard language={language} />
-            case 'settings':
-                return (
-                    <SettingsView
-                        installedModels={installedModels}
-                        proxyModels={proxyModels}
-                        loadModels={loadModels}
-                        settingsCategory={settingsCategory}
-                        groupedModels={groupedModels}
-                    />
-                )
+            case 'chat': return renderChatView()
+            case 'projects': return renderProjectsView()
+            case 'council': return <AgentDashboard language={language} />
+            case 'settings': return renderSettingsView()
             case 'mcp':
                 return (
-                    <div className="h-full p-6 overflow-y-auto">
+                    <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
                         <Suspense fallback={<LoadingState size="md" />}>
                             <DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} />
                         </Suspense>
@@ -163,11 +165,10 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
             case 'ideas':
                 return (
                     <Suspense fallback={<LoadingState size="md" />}>
-                        <IdeasPage language={language} onNavigateToProject={onNavigateToProject} />
+                        <IdeasPage language={language} onNavigateToProject={(id) => void onNavigateToProject?.(id)} />
                     </Suspense>
                 )
-            default:
-                return null
+            default: return null
         }
     }
 
@@ -191,8 +192,8 @@ export const ViewManager: React.FC<ViewManagerProps> = ({
 
             {/* Global Mic Indicator */}
             {isListening && (
-                <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer hover:bg-red-600 transition-colors flex items-center gap-2 bg-red-500/80 text-white px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse">
-                    <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer hover:bg-destructive/80 transition-colors flex items-center gap-2 bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-current animate-ping" />
                     <span className="text-xs font-bold uppercase tracking-wider">Listening</span>
                 </div>
             )}

@@ -61,11 +61,11 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative w-full max-w-5xl max-h-[90vh] overflow-hidden bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl flex flex-col shadow-2xl shadow-purple-500/10">
+            <div className="relative w-full max-w-5xl max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl flex flex-col shadow-2xl shadow-primary/10">
                 {/* Header Section */}
-                <div className="flex items-center gap-4 p-6 border-b border-white/10 shrink-0 bg-gradient-to-r from-white/5 to-transparent">
+                <div className="flex items-center gap-4 p-6 border-b border-border/50 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
                     <div
                         className={cn(
                             'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg',
@@ -81,26 +81,26 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
                                 type="text"
                                 value={selectedName}
                                 onChange={(e) => setSelectedName(e.target.value)}
-                                className="bg-transparent border-none p-0 text-2xl font-black text-white placeholder:text-white/10 focus:ring-0 outline-none w-full max-w-md"
+                                className="bg-transparent border-none p-0 text-2xl font-black text-foreground placeholder:text-muted-foreground/20 focus:ring-0 outline-none w-full max-w-md"
                                 placeholder="Project Name"
                             />
                             {selectedName !== idea.title && (
                                 <button
                                     onClick={() => setSelectedName(idea.title)}
-                                    className="text-[10px] text-purple-400 hover:text-purple-300 uppercase tracking-widest font-bold"
+                                    className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold"
                                 >
                                     Reset
                                 </button>
                             )}
                         </div>
-                        <p className="text-white/40 text-xs font-medium uppercase tracking-[0.15em] mt-1 flex items-center gap-2">
+                        <p className="text-muted-foreground/60 text-xs font-medium uppercase tracking-[0.15em] mt-1 flex items-center gap-2">
                             {idea.category} • {new Date(idea.createdAt).toLocaleDateString()}
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                        className="p-2 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -108,7 +108,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
 
                 <div className="flex-1 overflow-hidden flex">
                     {/* Side Navigation */}
-                    <div className="w-64 border-r border-white/5 p-4 flex flex-col gap-1 bg-white/[0.02]">
+                    <div className="w-64 border-r border-border/50 p-4 flex flex-col gap-1 bg-muted/10">
                         {[
                             { id: 'overview', label: 'Overview', icon: Sparkles },
                             { id: 'market', label: 'Market Analysis', icon: Globe },
@@ -127,28 +127,28 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
                                     className={cn(
                                         'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group',
                                         isActive
-                                            ? 'bg-purple-500/10 text-purple-400'
-                                            : 'text-white/40 hover:text-white/80 hover:bg-white/5'
+                                            ? 'bg-primary/10 text-primary'
+                                            : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/30'
                                     )}
                                 >
                                     <TabIcon className={cn(
                                         'w-4 h-4 transition-colors',
-                                        isActive ? 'text-purple-400' : 'text-white/20 group-hover:text-white/40'
+                                        isActive ? 'text-primary' : 'text-muted-foreground/30 group-hover:text-muted-foreground/50'
                                     )} />
                                     {tab.label}
                                     {isActive && (
-                                        <div className="ml-auto w-1 h-4 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                        <div className="ml-auto w-1 h-4 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
                                     )}
                                 </button>
                             )
                         })}
 
-                        <div className="mt-auto pt-4 border-t border-white/5">
-                            <div className="px-4 py-2 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
-                                <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest leading-relaxed">
+                        <div className="mt-auto pt-4 border-t border-border/50">
+                            <div className="px-4 py-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20">
+                                <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-relaxed">
                                     Status
                                 </p>
-                                <p className="text-white font-bold text-sm mt-0.5">
+                                <p className="text-foreground font-bold text-sm mt-0.5">
                                     {idea.status === 'pending' ? 'Ready for Pilot' : 'Project Created'}
                                 </p>
                             </div>
@@ -156,7 +156,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 overflow-hidden flex flex-col bg-gradient-to-b from-white/[0.01] to-transparent">
+                    <div className="flex-1 overflow-hidden flex flex-col bg-gradient-to-b from-muted/5 to-transparent">
                         <IdeaDetailsContent
                             idea={idea}
                             activeTab={activeTab}
