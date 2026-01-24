@@ -9,13 +9,62 @@ interface RateLimitConfig {
 export class RateLimitService extends BaseService {
     // Simple Token Bucket state: provider -> { tokens: number, lastRefill: number }
     private buckets: Map<string, { tokens: number; lastRefill: number; config: RateLimitConfig }> = new Map();
+    private cleanupInterval?: NodeJS.Timer;
 
     constructor() {
         super('RateLimitService');
-        // Default limits (can be overridden or loaded from config)
+    }
+
+    /**
+     * Initialize the RateLimitService
+     */
+    async initialize(): Promise<void> {
+        appLogger.info(this.name, 'Initializing rate limit service...');
+        
+        // Set default limits for providers
         this.setLimit('openai', { requestsPerMinute: 60, maxBurst: 10 });
         this.setLimit('anthropic', { requestsPerMinute: 50, maxBurst: 5 });
         this.setLimit('gemini', { requestsPerMinute: 60, maxBurst: 10 });
+        
+        // Start cleanup interval to remove old buckets
+        this.cleanupInterval = setInterval(() => {
+            this.cleanupOldBuckets();
+        }, 5 * 60 * 1000); // 5 minutes
+        
+        appLogger.info(this.name, `Rate limiting initialized for ${this.buckets.size} providers`);
+    }
+
+    /**
+     * Cleanup the RateLimitService
+     */
+    async cleanup(): Promise<void> {
+        appLogger.info(this.name, 'Cleaning up rate limit service...');
+        
+        // Stop cleanup interval
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval as any);
+            this.cleanupInterval = undefined;
+        }
+        
+        // Clear all buckets
+        this.buckets.clear();
+        
+        appLogger.info(this.name, 'Rate limit service cleaned up');
+    }
+
+    /**
+     * Clean up old unused buckets
+     */
+    private cleanupOldBuckets(): void {
+        const now = Date.now();
+        const maxAge = 30 * 60 * 1000; // 30 minutes
+        
+        for (const [provider, bucket] of this.buckets) {
+            if (now - bucket.lastRefill > maxAge) {
+                this.buckets.delete(provider);
+                appLogger.debug(this.name, `Cleaned up unused bucket for provider: ${provider}`);
+            }
+        }
     }
 
     setLimit(provider: string, config: RateLimitConfig) {

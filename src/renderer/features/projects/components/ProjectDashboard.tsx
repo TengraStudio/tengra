@@ -221,7 +221,7 @@ export const ProjectDashboard = ({
 
                                     <button
                                         onClick={() => { void onOpenLogoGenerator?.() }}
-                                        className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-white"
+                                        className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                                     >
                                         <Camera className="w-6 h-6" />
                                         <span className="text-[10px] font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
@@ -286,7 +286,7 @@ export const ProjectDashboard = ({
                                 <div className="flex items-center gap-4 pt-2">
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{type}</span>
+                                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{type}</span>
                                     </div>
                                     <div className="text-[10px] font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                                         {projectRoot}
@@ -294,7 +294,7 @@ export const ProjectDashboard = ({
                                     <button
                                         onClick={() => { void analyzeProject() }}
                                         disabled={loading}
-                                        className="p-2 rounded-lg bg-accent/50 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all flex items-center gap-2 text-xs"
+                                        className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 text-xs"
                                         title={t('common.refresh')}
                                     >
                                         <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
@@ -337,7 +337,7 @@ export const ProjectDashboard = ({
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {(analysis?.frameworks ?? []).map((fw: string) => (
-                                        <span key={fw} className="px-3 py-1 bg-accent/50 border border-border rounded-full text-xs text-primary font-medium">
+                                        <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full text-xs text-primary font-medium">
                                             {fw}
                                         </span>
                                     ))}
@@ -351,7 +351,7 @@ export const ProjectDashboard = ({
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                     {t('projectDashboard.langDist')}
                                 </h3>
-                                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
+                                <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                                     {Object.entries(analysis?.languages ?? {})
                                         .sort(([, a], [, b]) => (b as number) - (a as number))
                                         .slice(0, 15)
@@ -360,10 +360,10 @@ export const ProjectDashboard = ({
                                             return (
                                                 <div key={lang} className="space-y-1">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold tracking-tight">
-                                                        <span className="text-gray-300">{lang}</span>
+                                                        <span className="text-foreground/80">{lang}</span>
                                                         <span className="text-muted-foreground">{percentage}%</span>
                                                     </div>
-                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
                                                         <div
                                                             className="h-full bg-emerald-500/50 rounded-full"
                                                             style={{ width: `${percentage}%` }}
@@ -378,16 +378,16 @@ export const ProjectDashboard = ({
 
                         {/* TODO List Section */}
                         {(analysis?.todos?.length ?? 0) > 0 && (
-                            <div className="bg-card/40 rounded-2xl border border-white/5 p-5 space-y-4">
-                                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                            <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
+                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
                                     {t('projectDashboard.todoList')}
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {analysis.todos.map((todo: string, i: number) => (
-                                        <div key={i} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                                            <div className="w-4 h-4 rounded border border-white/20 mt-0.5 flex-shrink-0" />
-                                            <span className="text-xs text-zinc-300 line-clamp-2">{todo}</span>
+                                        <div key={i} className="flex items-start gap-3 p-3 bg-muted/10 rounded-xl border border-border/50 hover:bg-muted/20 transition-colors">
+                                            <div className="w-4 h-4 rounded border border-border/50 mt-0.5 flex-shrink-0" />
+                                            <span className="text-xs text-foreground/80 line-clamp-2">{todo}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -395,19 +395,19 @@ export const ProjectDashboard = ({
                         )}
 
                         {/* Danger Zone */}
-                        <div className="mt-12 pt-8 border-t border-red-500/20">
-                            <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
+                        <div className="mt-12 pt-8 border-t border-destructive/20">
+                            <h3 className="text-lg font-bold text-destructive mb-4 flex items-center gap-2">
                                 <Trash2 className="w-5 h-5" />
                                 {t('projects.dangerZone') || 'Danger Zone'}
                             </h3>
-                            <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-6 flex items-center justify-between">
+                            <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
                                 <div>
-                                    <h4 className="text-white font-medium mb-1">{t('projects.deleteProject') || 'Delete Project'}</h4>
+                                    <h4 className="text-foreground font-medium mb-1">{t('projects.deleteProject') || 'Delete Project'}</h4>
                                     <p className="text-sm text-muted-foreground">{t('projects.deleteWarning') || 'This action cannot be undone.'}</p>
                                 </div>
                                 <button
                                     onClick={() => { void onDelete?.() }}
-                                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg border border-red-500/20 transition-colors text-sm font-medium"
+                                    className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg border border-destructive/20 transition-colors text-sm font-medium"
                                 >
                                     {t('common.delete') || 'Delete'}
                                 </button>
@@ -417,7 +417,7 @@ export const ProjectDashboard = ({
                 )}
 
                 {activeTab === 'terminal' && (
-                    <div className="h-full bg-black rounded-xl border border-white/10 overflow-hidden p-1">
+                    <div className="h-full bg-black/40 rounded-xl border border-border/50 overflow-hidden p-1">
                         <TerminalComponent cwd={projectRoot} />
                     </div>
                 )}
@@ -434,7 +434,7 @@ export const ProjectDashboard = ({
                             <input
                                 type="text"
                                 placeholder={t('projectDashboard.searchInProject')}
-                                className="flex-1 bg-black/20 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
+                                className="flex-1 bg-muted/20 border border-border/50 rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => {
@@ -506,17 +506,17 @@ export const ProjectDashboard = ({
                 {activeTab === 'files' && (
                     <div className="h-full flex gap-4 transition-all duration-300">
                         {/* Editor Area */}
-                        <div className="flex-1 bg-card rounded-xl border border-white/10 flex flex-col overflow-hidden min-w-0">
+                        <div className="flex-1 bg-card rounded-xl border border-border/50 flex flex-col overflow-hidden min-w-0">
                             {openFiles.length > 0 ? (
                                 <>
-                                    <div className="flex items-center overflow-x-auto border-b border-white/10 bg-black/20 scrollbar-none">
+                                    <div className="flex items-center overflow-x-auto border-b border-border/50 bg-muted/20 scrollbar-none">
                                         {openFiles.map(file => (
                                             <div
                                                 key={file.path}
                                                 onClick={() => setActiveFile(file.path)}
                                                 className={`
-                                                    group flex items-center gap-2 px-3 py-2 text-xs border-r border-white/5 cursor-pointer min-w-[120px] max-w-[200px]
-                                                    ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-white/5'}
+                                                    group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/20 cursor-pointer min-w-[120px] max-w-[200px]
+                                                    ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'}
                                                 `}
                                             >
                                                 <FileCode size={12} className={activeFile === file.path ? 'text-primary' : 'opacity-50'} />
@@ -553,7 +553,7 @@ export const ProjectDashboard = ({
 
                         {/* Folder Inspector */}
                         <div className={cn(
-                            "w-80 flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-l border-white/10",
+                            "w-80 flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-l border-border/50",
                             selectedFolder ? "opacity-100 mr-0" : "opacity-0 w-0 border-0 pointer-events-none"
                         )}>
                             <FolderInspector folderPath={selectedFolder} rootPath={projectRoot} />
@@ -577,9 +577,9 @@ const SearchResults = ({ results, projectRoot, onSelect, t }: { results: FileSea
     if (results.length === 0) { return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div> }
 
     return (
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 space-y-2">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 space-y-2">
             {results.map((res, i) => (
-                <div key={i} onClick={() => onSelect(res.file, res.line)} className="p-2 hover:bg-white/5 rounded cursor-pointer group">
+                <div key={i} onClick={() => onSelect(res.file, res.line)} className="p-2 hover:bg-muted/20 rounded cursor-pointer group">
                     <div className="flex items-center gap-2 text-xs text-blue-400 mb-0.5">
                         <span className="font-mono">{res.file.replace(projectRoot, '')}:{res.line}</span>
                         {res.type && <span className="px-1.5 py-0.5 bg-blue-500/10 rounded-full text-[10px] uppercase tracking-wider">{res.type}</span>}

@@ -19,12 +19,12 @@ export default defineConfig({
                 'src/main/**/*.d.ts',
                 'src/main/preload.ts'
             ],
-            // Coverage thresholds - aim for 80%
+            // Coverage thresholds - increased to 75% target
             thresholds: {
-                statements: 60,
-                branches: 50,
-                functions: 60,
-                lines: 60
+                statements: 75,
+                branches: 65,
+                functions: 75,
+                lines: 75
             }
         },
         testTimeout: 10000,

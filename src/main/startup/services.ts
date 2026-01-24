@@ -1,5 +1,5 @@
 import { Container } from '@main/core/container'
-import { lazyServiceRegistry, createLazyServiceProxy } from '@main/core/lazy-services'
+import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services'
 import { appLogger } from '@main/logging/logger'
 import { AuditLogService } from '@main/services/analysis/audit-log.service'
 import { MonitoringService } from '@main/services/analysis/monitoring.service'
@@ -171,9 +171,12 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
     registerLLMServices();
     registerProjectServices();
     registerAnalysisServices();
-    
+
     // Register lazy services that are loaded on-demand
     registerLazyServices();
+
+    // Register proxies in container for services that depend on lazy services
+    registerLazyProxies();
 
     // 3. Initialize Container (calls init on all LifecycleAware singletons)
     try {
@@ -254,7 +257,10 @@ function registerSecurityServices() {
         const d = base as { ss: SettingsService, cs: CopilotService, as: AuthService, ebs: EventBusService }
         return new TokenService(
             d.ss, d.cs, d.as, d.ebs,
-            { processManager: pm as ProcessManagerService, jobScheduler: js as JobSchedulerService }
+            {
+                processManager: pm as ProcessManagerService,
+                jobScheduler: js as JobSchedulerService
+            }
         )
     }, ['tokenDepsBase', 'processManagerService', 'jobSchedulerService']);
 }
@@ -308,12 +314,6 @@ function registerLazyServices() {
         return new SSHService(dataService.getPath('config'));
     });
 
-    lazyServiceRegistry.register('marketResearchService', async () => {
-        const webService = container.resolve<WebService>('webService');
-        const { MarketResearchService } = await import('@main/services/external/market-research.service');
-        return new MarketResearchService(webService);
-    });
-
     lazyServiceRegistry.register('logoService', async () => {
         const llmService = container.resolve<LLMService>('llmService');
         const projectService = container.resolve<ProjectService>('projectService');
@@ -323,15 +323,22 @@ function registerLazyServices() {
     });
 
     lazyServiceRegistry.register('scannerService', async () => {
-        const dataService = container.resolve<DataService>('dataService');
         const { ScannerService } = await import('@main/services/analysis/scanner.service');
-        return new ScannerService(dataService);
+        return new ScannerService();
     });
 
     lazyServiceRegistry.register('pageSpeedService', async () => {
         const { PageSpeedService } = await import('@main/services/analysis/pagespeed.service');
         return new PageSpeedService();
     });
+}
+
+function registerLazyProxies() {
+    container.register('dockerService', () => createLazyServiceProxy<DockerService>('dockerService'));
+    container.register('sshService', () => createLazyServiceProxy<SSHService>('sshService'));
+    container.register('logoService', () => createLazyServiceProxy<LogoService>('logoService'));
+    container.register('scannerService', () => createLazyServiceProxy<ScannerService>('scannerService'));
+    container.register('pageSpeedService', () => createLazyServiceProxy<PageSpeedService>('pageSpeedService'));
 }
 
 function registerProjectServices() {
@@ -342,20 +349,19 @@ function registerProjectServices() {
     container.register('localImageService', (ss) => new LocalImageService(ss as SettingsService), ['settingsService']);
     // Logo and Market Research services are now lazy-loaded
     container.register('projectScaffoldService', () => new ProjectScaffoldService());
-    
-    // Note: IdeaGeneratorService dependencies updated to use lazy services when needed
+    container.register('marketResearchService', (ws) => new MarketResearchService(ws as WebService), ['webService']);
     container.register('ideaGeneratorService', (...deps) => {
-        const [dbs, ls, pss, as, ebs, lis] = deps
+        const [dbs, ls, mrs, pss, as, ebs, lis] = deps
         return new IdeaGeneratorService({
             databaseService: dbs as DatabaseService,
             llmService: ls as LLMService,
-            marketResearchService: null, // Will be lazy-loaded when needed
+            marketResearchService: mrs as MarketResearchService,
             projectScaffoldService: pss as ProjectScaffoldService,
             authService: as as AuthService,
             eventBus: ebs as EventBusService,
             localImageService: lis as LocalImageService
         })
-    }, ['databaseService', 'llmService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
+    }, ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
@@ -445,7 +451,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         fileSystemService: container.resolve<FileSystemService>('fileSystemService'),
         commandService: container.resolve<CommandService>('commandService'),
         databaseService: container.resolve<DatabaseService>('databaseService'),
-        sshService: container.resolve<SSHService>('sshService'),
+        sshService: createLazyServiceProxy<SSHService>('sshService'),
         proxyService: container.resolve<ProxyService>('proxyService'),
         copilotService: container.resolve<CopilotService>('copilotService'),
         systemService: container.resolve<SystemService>('systemService'),
@@ -459,13 +465,13 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         historyImportService: container.resolve<HistoryImportService>('historyImportService'),
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         utilityService: container.resolve<UtilityService>('utilityService'),
-        dockerService: container.resolve<DockerService>('dockerService'),
+        dockerService: createLazyServiceProxy<DockerService>('dockerService'),
         screenshotService: container.resolve<ScreenshotService>('screenshotService'),
         agentCouncilService: container.resolve<AgentCouncilService>('agentCouncilService'),
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
-        logoService: container.resolve<LogoService>('logoService'),
+        logoService: createLazyServiceProxy<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         processManagerService: container.resolve<ProcessManagerService>('processManagerService'),
         codeIntelligenceService: container.resolve<CodeIntelligenceService>('codeIntelligenceService'),
@@ -473,13 +479,13 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
         webService: container.resolve<WebService>('webService'),
         memoryService: container.resolve<MemoryService>('memoryService'),
-        pageSpeedService: container.resolve<PageSpeedService>('pageSpeedService'),
+        pageSpeedService: createLazyServiceProxy<PageSpeedService>('pageSpeedService'),
         ruleService: container.resolve<RuleService>('ruleService'),
         agentService: container.resolve<AgentService>('agentService'),
         updateService: container.resolve<UpdateService>('updateService'),
         sentryService: container.resolve<SentryService>('sentryService'),
         healthCheckService: getHealthCheckService(),
-        scannerService: container.resolve<ScannerService>('scannerService'),
+        scannerService: createLazyServiceProxy<ScannerService>('scannerService'),
         fileManagementService: container.resolve<FileManagementService>('fileManagementService'),
         featureFlagService: container.resolve<FeatureFlagService>('featureFlagService'),
         chatEventService: container.resolve<ChatEventService>('chatEventService'),

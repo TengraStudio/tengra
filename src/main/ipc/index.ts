@@ -108,7 +108,8 @@ export function registerAllIpc(
         llmService: services.llmService,
         proxyService: services.proxyService,
         codeIntelligenceService: services.codeIntelligenceService,
-        contextRetrievalService: services.contextRetrievalService
+        contextRetrievalService: services.contextRetrievalService,
+        databaseService: services.databaseService
     });
     registerOllamaIpc({
         localAIService: services.localAIService,

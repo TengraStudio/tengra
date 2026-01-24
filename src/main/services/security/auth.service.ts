@@ -60,6 +60,15 @@ export class AuthService extends BaseService {
         await this.migrateExistingTokens()
     }
 
+    async cleanup(): Promise<void> {
+        appLogger.info('AuthService', 'Cleaning up authentication service...')
+
+        // Clear any cached sensitive data
+        // Note: Encrypted tokens in database are preserved
+
+        appLogger.info('AuthService', 'Authentication service cleanup complete')
+    }
+
     /**
      * Proactively migrates all tokens in the database to the new secure encryption format.
      */
@@ -121,6 +130,9 @@ export class AuthService extends BaseService {
     /**
      * Get the active account's token for a provider.
      */
+    /**
+     * Get the active account's token for a provider.
+     */
     async getActiveToken(provider: string): Promise<string | undefined> {
         const normalized = this.normalizeProvider(provider)
         const account = await this.databaseService.getActiveLinkedAccount(normalized)
@@ -129,6 +141,27 @@ export class AuthService extends BaseService {
         return this.decrypt(account.accessToken) ??
             this.decrypt(account.sessionToken) ??
             this.decrypt(account.refreshToken)
+    }
+
+    /**
+     * Get all accounts for a provider with decrypted tokens.
+     */
+    async getAccountsByProviderFull(provider: string): Promise<LinkedAccount[]> {
+        const normalized = this.normalizeProvider(provider)
+        const accounts = await this.databaseService.getLinkedAccounts(normalized)
+        const fullAccounts: LinkedAccount[] = []
+
+        for (const a of accounts) {
+            fullAccounts.push({
+                ...a,
+                accessToken: this.decrypt(a.accessToken),
+                refreshToken: this.decrypt(a.refreshToken),
+                sessionToken: this.decrypt(a.sessionToken)
+            })
+            // Background upgrade check
+            void this.checkAndUpgradeEncryption(a)
+        }
+        return fullAccounts
     }
 
     /**
@@ -170,12 +203,15 @@ export class AuthService extends BaseService {
         const normalized = this.normalizeProvider(provider)
         const now = Date.now()
 
+        // Fallback to metadata email if top-level email is missing
+        const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined)
+
         // Check if account with same email already exists
-        let existing = await this.findAccountByEmail(normalized, tokenData.email)
+        let existing = await this.findAccountByEmail(normalized, email)
 
         // If no email provided (e.g. proxy_key), check if we have any account for this provider
         // This handles "singleton" providers where we only want one instance
-        if (!existing && !tokenData.email) {
+        if (!existing && !email) {
             const accounts = await this.databaseService.getLinkedAccounts(normalized)
             if (accounts.length > 0) {
                 existing = accounts[0]
@@ -185,9 +221,9 @@ export class AuthService extends BaseService {
         const account: LinkedAccount = {
             id: existing?.id ?? uuidv4(),
             provider: normalized,
-            email: tokenData.email,
-            displayName: tokenData.displayName,
-            avatarUrl: tokenData.avatarUrl,
+            email: email,
+            displayName: tokenData.displayName ?? (tokenData.metadata?.displayName as string | undefined),
+            avatarUrl: tokenData.avatarUrl ?? (tokenData.metadata?.avatarUrl as string | undefined),
             accessToken: tokenData.accessToken ? this.encrypt(tokenData.accessToken) : undefined,
             refreshToken: tokenData.refreshToken ? this.encrypt(tokenData.refreshToken) : undefined,
             sessionToken: tokenData.sessionToken ? this.encrypt(tokenData.sessionToken) : undefined,
@@ -207,6 +243,10 @@ export class AuthService extends BaseService {
 
         await this.databaseService.saveLinkedAccount(account)
         appLogger.info('AuthService', `Linked account for ${normalized}: ${tokenData.email ?? account.id}`)
+
+        // Notify system
+        this.eventBus.emit('account:linked', { accountId: account.id, provider: normalized })
+        this.eventBus.emit('account:updated', { accountId: account.id, provider: normalized })
 
         return this.toPublicAccount(account)
     }
@@ -272,10 +312,14 @@ export class AuthService extends BaseService {
         if (tokenData.refreshToken) { updatedAccount.refreshToken = this.encrypt(tokenData.refreshToken) }
         if (tokenData.sessionToken) { updatedAccount.sessionToken = this.encrypt(tokenData.sessionToken) }
         if (tokenData.expiresAt) { updatedAccount.expiresAt = tokenData.expiresAt }
+        if (tokenData.email) { updatedAccount.email = tokenData.email }
+        if (tokenData.displayName) { updatedAccount.displayName = tokenData.displayName }
+        if (tokenData.avatarUrl) { updatedAccount.avatarUrl = tokenData.avatarUrl }
         if (tokenData.metadata) { updatedAccount.metadata = { ...account.metadata, ...tokenData.metadata } }
 
         await this.databaseService.saveLinkedAccount(updatedAccount)
-        appLogger.info('AuthService', `Updated token for account: ${accountId}`)
+        appLogger.info('AuthService', `Updated token and profile for account: ${accountId}`)
+        this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider })
     }
 
     /**

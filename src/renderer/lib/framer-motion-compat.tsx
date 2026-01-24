@@ -3,7 +3,7 @@
  * Uses CSS transitions instead of JS animations
  */
 
-import * as React from 'react'
+import React, { FC, ForwardRefExoticComponent, memo, RefAttributes } from 'react'
 
 // Type definitions matching framer-motion's API
 export interface MotionProps extends React.HTMLAttributes<HTMLElement> {
@@ -52,20 +52,20 @@ const createMotionComponent = (tag: string) => {
 }
 
 // Cache for motion components
-const motionComponentCache: Record<string, React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>> = {}
+const motionComponentCache: Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>> = {}
 
 // Motion proxy that creates components on demand
-export const motion = new Proxy({} as Record<string, React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>>, {
+export const motion = new Proxy({} as Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>>, {
     get: (_, tag: string) => {
         if (!motionComponentCache[tag]) {
-            motionComponentCache[tag] = createMotionComponent(tag) as unknown as React.ForwardRefExoticComponent<MotionProps & React.RefAttributes<HTMLElement>>
+            motionComponentCache[tag] = createMotionComponent(tag) as unknown as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>
         }
         return motionComponentCache[tag]
     }
 })
 
 // Simple AnimatePresence - just renders children directly
-export const AnimatePresence: React.FC<AnimatePresenceProps> = React.memo(({ children, mode: _mode = 'sync', initial: _initial = true, onExitComplete: _onExitComplete }) => {
+export const AnimatePresence: FC<AnimatePresenceProps> = memo(({ children, mode: _mode = 'sync', initial: _initial = true, onExitComplete: _onExitComplete }) => {
     return <>{children}</>
 })
 

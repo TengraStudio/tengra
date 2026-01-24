@@ -43,7 +43,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             setContent(data)
         } catch {
             setContent('Failed to read log file (Permissions denied or empty).')
-        }finally {
+        } finally {
             setLoading(false)
         }
     }
@@ -53,7 +53,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
     return (
         <div className="flex h-full">
             {/* Sidebar list */}
-            <div className="w-1/3 border-r border-border bg-muted/10 flex flex-col">
+            <div className="w-1/3 border-r border-border bg-muted/20 flex flex-col">
                 <div className="p-3 border-b border-border font-medium text-sm flex justify-between items-center">
                     <span>Log Files</span>
                     <button onClick={loadFiles} className="text-xs opacity-70 hover:opacity-100">Refresh</button>
@@ -72,8 +72,8 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             </div>
 
             {/* Viewer */}
-            <div className="flex-1 flex flex-col bg-[#1e1e1e] text-white">
-                <div className="p-2 bg-white/5 border-b border-white/10 text-xs font-mono text-muted-foreground flex justify-between">
+            <div className="flex-1 flex flex-col bg-background text-foreground">
+                <div className="p-2 bg-muted/30 border-b border-border text-xs font-mono text-muted-foreground flex justify-between">
                     <span>{selectedLog || 'Select a log file'}</span>
                     <span>{loading ? 'Reading...' : 'Last 100 lines'}</span>
                 </div>

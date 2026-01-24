@@ -3,7 +3,7 @@ import { useModel } from '@renderer/context/ModelContext'
 import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory'
 import { useChatManager } from '@renderer/features/chat/hooks/useChatManager'
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
-import { useProjectManager } from '@renderer/features/projects/hooks/useProjectManager'
+import { useProject } from '@renderer/context/ProjectContext'
 import { useTranslation } from '@renderer/i18n'
 import { CatchError } from '@shared/types/common'
 import { safeJsonParse } from '@shared/utils/sanitize.util'
@@ -28,6 +28,8 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     canRedo: boolean
     undo: () => void
     redo: () => void
+    systemMode: 'thinking' | 'agent' | 'fast'
+    setSystemMode: (mode: 'thinking' | 'agent' | 'fast') => void
 }
 
 const ChatContext = createContext<ChatContextType | null>(null)
@@ -37,10 +39,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const { selectedModel, selectedProvider, selectedModels } = useModel()
     const { t } = useTranslation()
 
-    // Project Manager Hook - consumed here to provide project context to chat
+    // Consume Project Context instead of re-instantiating the manager
     const {
         projects, selectedProject, setSelectedProject, loadProjects
-    } = useProjectManager()
+    } = useProject()
 
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech()
 
@@ -168,11 +170,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         canUndo: historyManager.canUndo,
         canRedo: historyManager.canRedo,
         undo,
-        redo
+        redo,
+        systemMode: chatManager.systemMode,
+        setSystemMode: chatManager.setSystemMode
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
         projects, selectedProject, setSelectedProject, loadProjects,
-        historyManager.canUndo, historyManager.canRedo, undo, redo
+        historyManager.canUndo, historyManager.canRedo, undo, redo,
+        chatManager.systemMode, chatManager.setSystemMode
     ])
 
     return (

@@ -129,14 +129,45 @@ export class TokenService extends BaseService {
         }
 
         // Listen for account unlink events to stop refreshing deleted accounts
-        const unsubscribe = this.eventBus.on('account:unlinked', ({ accountId }) => {
+        const unsubscribeUnlink = this.eventBus.on('account:unlinked', ({ accountId }) => {
             this.unregisterToken(accountId).catch(err => {
                 appLogger.error('TokenService', `Failed to unregister token: ${getErrorMessage(err)}`)
             })
         })
-        this.eventUnsubscribers.push(unsubscribe)
+        this.eventUnsubscribers.push(unsubscribeUnlink)
+
+        // Listen for account updates (link/login/refresh) to immediately register with native service
+        const unsubscribeUpdate = this.eventBus.on('account:updated', ({ accountId }) => {
+            this.handleAccountUpdate(accountId).catch(err => {
+                appLogger.error('TokenService', `Failed to handle account update: ${getErrorMessage(err)}`)
+            })
+        })
+        this.eventUnsubscribers.push(unsubscribeUpdate)
+
+        const unsubscribeLink = this.eventBus.on('account:linked', ({ accountId }) => {
+            this.handleAccountUpdate(accountId).catch(err => {
+                appLogger.error('TokenService', `Failed to handle account link: ${getErrorMessage(err)}`)
+            })
+        })
+        this.eventUnsubscribers.push(unsubscribeLink)
 
         appLogger.info('TokenService', 'Token refresh service started successfully')
+    }
+
+    private async handleAccountUpdate(accountId: string) {
+        // We need to find the account. Since we don't know the provider cheaply, we search all? 
+        // Or we use a helper. accounts are usually cached or fastDB.
+        // Actually, internal databaseService has getLinkedAccountById? 
+        // AuthService doesn't expose getAccountByIdFull publicly.
+        // But getAllAccountsFull gets all. 
+        // Optimally, we loop all accounts to find one? Or add getAccountByIdFull to AuthService?
+        // Let's iterate getAllAccountsFull for now, it's not resource intensive for 2-5 accounts.
+        const accounts = await this.authService.getAllAccountsFull()
+        const account = accounts.find(a => a.id === accountId)
+        if (account && this.isNativeProvider(account)) {
+            appLogger.info('TokenService', `Immediate update/registration for ${account.provider} account ${account.id}`)
+            await this.registerToken(account)
+        }
     }
 
     private startLegacyIntervals() {
@@ -241,15 +272,18 @@ export class TokenService extends BaseService {
      * @param force If true, forces a refresh regardless of expiry time
      */
     async ensureFreshToken(provider: string, force: boolean = false): Promise<void> {
-        const account = await this.authService.getActiveAccountFull(provider)
-        if (!account) { return }
+        // Check ALL accounts for this provider, not just the active one
+        const accounts = await this.authService.getAccountsByProviderFull(provider)
+        if (accounts.length === 0) { return }
 
-        // Refresh if expired or expiring within threshold
-        const isExpiring = account.expiresAt && (account.expiresAt - Date.now()) < this.REFRESH_THRESHOLD_MS
+        for (const account of accounts) {
+            // Refresh if expired or expiring within threshold
+            const isExpiring = account.expiresAt && (account.expiresAt - Date.now()) < this.REFRESH_THRESHOLD_MS
 
-        if (!account.accessToken || isExpiring || force) {
-            appLogger.info('TokenService', `Proactively refreshing token for ${provider} (expiring: ${isExpiring}, forced: ${force})`)
-            await this.refreshSingleToken(account, force)
+            if (!account.accessToken || isExpiring || force) {
+                appLogger.info('TokenService', `Proactively refreshing token for ${provider}:${account.id} (expiring: ${isExpiring}, forced: ${force})`)
+                await this.refreshSingleToken(account, force)
+            }
         }
     }
 
@@ -339,6 +373,25 @@ export class TokenService extends BaseService {
                 this.eventBus.emit('token:refreshed', { provider: account.provider, accountId: account.id })
             }
         }
+
+        // Always register for monitoring as well
+        await this.registerToken(account)
+    }
+
+    private async registerToken(account: LinkedAccount) {
+        if (!this.isNativeProvider(account)) return
+
+        const nativeToken = {
+            id: account.id,
+            provider: account.provider,
+            access_token: account.accessToken,
+            refresh_token: account.refreshToken,
+            expires_at: account.expiresAt,
+            scope: account.scope,
+            email: account.email
+        }
+        const clientId = this.getClientId(account)
+        const clientSecret = this.getClientSecret(account)
 
         void this.system.processManager.sendRequest('token-service', {
             token: nativeToken,
@@ -439,6 +492,7 @@ export class TokenService extends BaseService {
 
     private getClientSecret(account: LinkedAccount): string | undefined {
         if (this.isGoogleProvider(account)) { return process.env.ANTIGRAVITY_CLIENT_SECRET }
+        if (this.isClaudeProvider(account)) { return process.env.ANTHROPIC_CLIENT_SECRET }
         return undefined
     }
 
@@ -460,12 +514,6 @@ export class TokenService extends BaseService {
         return provider.startsWith('claude') || provider.startsWith('anthropic') || id.startsWith('claude') || id.startsWith('anthropic')
     }
 
-    // Copilot remains internal logic for now as it interacts with local Github state complexly
-    // or we can move it later. Keeping it here for safety as it wasn't requested explicitly?
-    // User asked for "process names like...". Copilot refresh logic is simple HTTP but also
-    // session state. The native service doesn't have Copilot logic implemented yet.
-    // I will keep Copilot logic here but methods are unused by refreshSingleToken.
-    // Wait, Copilot is refreshed via refreshCopilotToken which is separate loop.
     private async refreshCopilotToken(): Promise<void> {
         try {
             appLogger.debug('TokenService', 'Checking Copilot session token...')

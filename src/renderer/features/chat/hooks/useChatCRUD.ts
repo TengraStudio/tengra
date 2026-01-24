@@ -1,5 +1,6 @@
 import { generateId } from '@/lib/utils'
 import { Chat, Message } from '@/types'
+import { CommonBatches } from '@renderer/utils/ipc-batch.util'
 
 interface UseChatCRUDProps {
     currentChatId: string | null
@@ -80,6 +81,31 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
         await updateChat(id, { isFavorite })
     }
 
+    // Batch operations for efficiency
+    const bulkUpdateChats = async (updates: Array<{ id: string; updates: Partial<Chat> }>) => {
+        try {
+            await CommonBatches.updateChatsBatch(updates)
+            setChats(prev => prev.map(c => {
+                const update = updates.find(u => u.id === c.id)
+                return update ? { ...c, ...update.updates } : c
+            }))
+        } catch (error) {
+            console.error('Failed to bulk update chats:', error)
+        }
+    }
+
+    const bulkDeleteChats = async (chatIds: string[]) => {
+        try {
+            await CommonBatches.deleteChatsBatch(chatIds)
+            setChats(prev => prev.filter(c => !chatIds.includes(c.id)))
+            if (currentChatId && chatIds.includes(currentChatId)) {
+                createNewChat()
+            }
+        } catch (error) {
+            console.error('Failed to bulk delete chats:', error)
+        }
+    }
+
     return {
         createNewChat,
         deleteChat,
@@ -89,6 +115,8 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
         addMessage,
         updateChat,
         togglePin,
-        toggleFavorite
+        toggleFavorite,
+        bulkUpdateChats,
+        bulkDeleteChats
     }
 }

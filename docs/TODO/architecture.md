@@ -10,15 +10,16 @@
 
 ### 1.2 BaseService Adoption
 - [x] Extend BaseService for all services (30+ verified)
-- [ ] Ensure strict lifecycle management (initialize/dispose)
+- [ ] Ensure strict lifecycle management (initialize/dispose) - 20/39 complete (51%)
 
 ## HIGH - Event System
 
 ### 2.1 Central Event Bus
-- [ ] Create EventBusService
-- [ ] Define global event types OrbitEvent
+- [x] Create EventBusService with enhanced features
+- [x] Define global event types OrbitEvent  
+- [x] Add subscription management with IDs and cleanup
+- [x] Add event persistence for debugging
 - [ ] Replace scattered IPC events with central bus
-- [ ] Add event persistence for debugging
 
 ## MEDIUM - Plugin Architecture
 
@@ -28,9 +29,9 @@
 - [ ] Create Plugin Registry
 
 ### 3.2 MCP System
-- [ ] Reorganize src/main/mcp into proper module structure
-- [ ] Extract tools into mcp/servers/ (FileSystem, Git, etc.)
-- [ ] Create mcp/index.ts aggregator
+- [x] Reorganize src/main/mcp into proper module structure
+- [x] Create mcp/index.ts aggregator
+- [ ] Extract tools into mcp/servers/ (FileSystem, Git, etc.) [SKIPPED - too risky to refactor]
 
 ## LOW - Infrastructure
 

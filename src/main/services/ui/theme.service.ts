@@ -34,10 +34,23 @@ export class ThemeService extends BaseService {
         this.storePath = path.join(app.getPath('userData'), 'theme-store.json')
     }
 
-    async init() {
+    async initialize(): Promise<void> {
         if (this.initialized) { return }
         this.store = await this.loadStore()
         this.initialized = true
+        this.logInfo('Theme service initialized successfully')
+    }
+
+    async cleanup(): Promise<void> {
+        if (this.initialized) {
+            await this.saveStore()
+            this.logInfo('Theme service cleanup completed')
+        }
+    }
+
+    async init() {
+        // Legacy method for backward compatibility
+        await this.initialize()
     }
 
     private async loadStore(): Promise<ThemeStoreData> {

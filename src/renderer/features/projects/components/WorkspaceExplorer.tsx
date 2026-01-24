@@ -145,19 +145,19 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     return (
         <div className={cn(
             "flex flex-col h-full overflow-hidden relative transition-all duration-300",
-            variant === 'panel' ? "bg-background/40 backdrop-blur-xl border-r border-white/5 w-72" : "bg-transparent border-0 w-full"
+            variant === 'panel' ? "bg-background/40 backdrop-blur-xl border-r border-border/50 w-72" : "bg-transparent border-0 w-full"
         )}>
             <div className={cn(
                 "p-4 pb-2 flex items-center justify-between",
-                variant === 'panel' ? "border-b border-white/5 bg-transparent" : "border-b border-white/5 bg-transparent"
+                variant === 'panel' ? "border-b border-border/50 bg-transparent" : "border-b border-border/50 bg-transparent"
             )}>
                 <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/50">{t('workspace.files')}</span>
                 <button
                     onClick={onAddMount}
-                    className="p-1.5 hover:bg-white/5 rounded-md transition-colors group"
+                    className="p-1.5 hover:bg-muted/30 rounded-md transition-colors group"
                     title={t('workspace.addConnection')}
                 >
-                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />
+                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </button>
             </div>
 
@@ -168,7 +168,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent px-0">
+            <div className="flex-1 overflow-y-auto py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent px-0">
                 {mounts.map((mount) => (
                     <div key={mount.id} className="group/mount">
                         {/* Only show mount header if there are multiple mounts or it's an SSH mount */}
@@ -176,7 +176,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             <div
                                 className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-all duration-200 border-l-2 border-transparent",
-                                    "hover:bg-white/5 text-muted-foreground hover:text-white group-hover/mount:bg-white/[0.02]",
+                                    "hover:bg-muted/30 text-muted-foreground hover:text-foreground group-hover/mount:bg-muted/10",
                                     expandedMounts[mount.id] ? "text-foreground" : ""
                                 )}
                                 onClick={() => toggleMount(mount)}
@@ -253,7 +253,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             {/* Context Menu - rendered via portal for proper z-stacking */}
             {contextMenu && createPortal(
                 <div
-                    className="fixed bg-[#0A0A0A]/95 border border-white/10 rounded-xl shadow-2xl py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+                    className="fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
                     style={{
                         left: contextMenu.x,
                         top: contextMenu.y,
@@ -284,24 +284,24 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 <>
                                     <button
                                         onClick={() => handleContextAction('createFile')}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
                                     >
                                         <FilePlus className="w-3.5 h-3.5" />
                                         {t('workspace.newFile')}
                                     </button>
                                     <button
                                         onClick={() => handleContextAction('createFolder')}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
                                     >
                                         <FolderPlus className="w-3.5 h-3.5" />
                                         {t('workspace.newFolder')}
                                     </button>
-                                    <div className="h-px bg-white/5 my-1 mx-2" />
+                                    <div className="h-px bg-border/50 my-1 mx-2" />
                                 </>
                             )}
                             <button
                                 onClick={() => handleContextAction('rename')}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <Pencil className="w-3.5 h-3.5" />
                                 {t('workspace.rename')}

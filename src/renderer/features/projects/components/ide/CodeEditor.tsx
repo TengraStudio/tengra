@@ -93,7 +93,8 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                         oneDark,
                         EditorView.theme({
                             "&": { height: "100%" },
-                            ".cm-scroller": { overflow: "auto" }
+                            ".cm-scroller": { overflow: "auto" },
+                            ".cm-tooltip": { zIndex: "9999 !important" }
                         }),
                         EditorState.readOnly.of(readonly),
                         EditorView.updateListener.of((update) => {
@@ -117,7 +118,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                                 above: true,
                                 create() {
                                     const dom = document.createElement("div")
-                                    dom.className = "p-2 bg-black border border-white/20 rounded text-xs text-white"
+                                    dom.className = "p-2 bg-popover border border-border/50 rounded text-xs text-foreground shadow-xl backdrop-blur-md"
                                     dom.textContent = `Symbol: ${word}`
                                     return { dom }
                                 }

@@ -31,12 +31,12 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     const startXRef = useRef(0);
     const startWidthRef = useRef(0);
 
-    React.useLayoutEffect(() => {
+    useEffect(() => {
         const targetWidth = isSidebarCollapsed ? 60 : (parseInt(localStorage.getItem('sidebarWidth') ?? '280', 10));
-        if (sidebarWidth !== targetWidth) {
-            setSidebarWidth(targetWidth);
-        }
-    }, [isSidebarCollapsed, sidebarWidth]);
+        startWidthRef.current = targetWidth;
+        setSidebarWidth(prev => prev !== targetWidth ? targetWidth : prev);
+    }, [isSidebarCollapsed]);
+
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         e.preventDefault();

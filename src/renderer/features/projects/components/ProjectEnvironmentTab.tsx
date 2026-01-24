@@ -96,7 +96,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
+                    <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
                         <Settings className="w-8 h-8 text-primary" />
                         {t('projectDashboard.environment')}
                     </h2>
@@ -107,7 +107,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                 <div className="flex gap-2">
                     <button
                         onClick={addVar}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-sm font-medium transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         {t('projectDashboard.envAddVar')}
@@ -117,7 +117,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                         disabled={!hasChanges || saving}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                            hasChanges ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-white/5 text-muted-foreground cursor-not-allowed"
+                            hasChanges ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted/20 text-muted-foreground cursor-not-allowed"
                         )}
                     >
                         <Save className="w-4 h-4" />
@@ -127,27 +127,27 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
             </div>
 
             {/* Variables Table */}
-            <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-white/5 overflow-hidden flex flex-col shadow-2xl">
-                <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+            <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-6 border-b border-border/50 bg-muted/20">
                     <div className="grid grid-cols-12 gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
                         <div className="col-span-4">{t('projectDashboard.envKey')}</div>
                         <div className="col-span-6">{t('projectDashboard.envValue')}</div>
                         <div className="col-span-2 text-right">Actions</div>
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-white/10">
+                <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                     {envVars.length > 0 ? (
                         envVars.map((envVar, idx) => (
                             <div
                                 key={idx}
-                                className="grid grid-cols-12 gap-4 p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 transition-all group"
+                                className="grid grid-cols-12 gap-4 p-4 rounded-2xl bg-muted/10 hover:bg-muted/20 border border-border/50 transition-all group"
                             >
                                 <div className="col-span-4">
                                     <input
                                         type="text"
                                         value={envVar.key}
                                         onChange={(e) => updateVar(idx, 'key', e.target.value)}
-                                        className="w-full bg-transparent border-b border-white/10 focus:border-primary/50 outline-none text-sm font-mono text-white py-1"
+                                        className="w-full bg-transparent border-b border-border/50 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
                                         placeholder="VARIABLE_NAME"
                                     />
                                 </div>
@@ -161,7 +161,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                     />
                                     <button
                                         onClick={() => toggleVisibility(idx)}
-                                        className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-white transition-colors"
+                                        className="p-1.5 hover:bg-muted/30 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                         title={envVar.visible ? t('projectDashboard.envHideValue') : t('projectDashboard.envShowValue')}
                                     >
                                         {envVar.visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -170,7 +170,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                 <div className="col-span-2 flex items-center justify-end">
                                     <button
                                         onClick={() => removeVar(idx)}
-                                        className="p-1.5 hover:bg-red-500/10 rounded-md text-muted-foreground hover:text-red-400 transition-colors"
+                                        className="p-1.5 hover:bg-destructive/10 rounded-md text-muted-foreground hover:text-destructive transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -183,7 +183,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                 <Settings className="w-8 h-8 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">{t('projectDashboard.envNoVars')}</h3>
+                                <h3 className="text-lg font-bold text-foreground">{t('projectDashboard.envNoVars')}</h3>
                             </div>
                         </div>
                     )}

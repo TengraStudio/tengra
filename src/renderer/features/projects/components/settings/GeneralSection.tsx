@@ -6,7 +6,7 @@ import { SettingsSectionProps } from './types'
 export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />
                 {t('projects.basicInfo') || 'Basic Information'}
             </h3>
@@ -20,7 +20,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                     type="text"
                     value={formData.title}
                     onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
             </div>
             <div className="grid gap-2">
@@ -29,7 +29,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                     value={formData.description}
                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={4}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
                 />
             </div>
             <div className="grid gap-2">
@@ -37,7 +37,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                 <select
                     value={formData.status}
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as Project['status'] }))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
+                    className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
                 >
                     <option value="active">Active</option>
                     <option value="archived">Archived</option>

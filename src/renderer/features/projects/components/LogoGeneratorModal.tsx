@@ -139,7 +139,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         <textarea
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:border-primary/50 transition-colors outline-none"
+                            className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
                             placeholder={t('projects.logoPromptPlaceholder') || 'Describe your vision...'}
                         />
                     </div>
@@ -153,7 +153,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     onClick={() => setStyle(s)}
                                     className={cn(
                                         "px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-tight border transition-all text-center truncate",
-                                        style === s ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]" : "bg-black/40 border-white/10 text-muted-foreground hover:border-white/20 hover:bg-black/60"
+                                        style === s ? "bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]" : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
                                     )}
                                 >
                                     {s}
@@ -170,7 +170,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     <button
                                         key={i}
                                         onClick={() => selectIdea(s)}
-                                        className="text-left p-2 bg-white/5 hover:bg-white/10 rounded-lg text-[11px] text-zinc-400 hover:text-white transition-all border border-transparent hover:border-white/10"
+                                        className="text-left p-2 bg-muted/20 hover:bg-muted/30 rounded-lg text-[11px] text-muted-foreground/60 hover:text-foreground transition-all border border-transparent hover:border-border/50"
                                     >
                                         {s}
                                     </button>
@@ -190,7 +190,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                         className="group relative"
                                         title={c}
                                     >
-                                        <div className="w-8 h-8 rounded-full border border-white/10 shadow-lg transition-transform hover:scale-110 active:scale-90" style={{ backgroundColor: c }} />
+                                        <div className="w-8 h-8 rounded-full border border-border/50 shadow-md transition-transform hover:scale-110 active:scale-90" style={{ backgroundColor: c }} />
                                         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">{c}</div>
                                     </button>
                                 ))}
@@ -201,12 +201,12 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                 {/* Preview */}
                 <div className="flex flex-col gap-4">
-                    <div className="aspect-square w-full rounded-2xl bg-black/40 border-2 border-dashed border-white/10 flex items-center justify-center relative overflow-hidden group shadow-2xl">
+                    <div className="aspect-square w-full rounded-2xl bg-muted/30 border-2 border-dashed border-border/50 flex items-center justify-center relative overflow-hidden group shadow-2xl">
                         {isGenerating ? (
                             <div className="text-center space-y-3 p-8">
                                 <Sparkles className="w-12 h-12 mx-auto animate-bounce text-primary" />
                                 <div className="space-y-1">
-                                    <p className="text-xs font-bold text-white uppercase tracking-widest">{t('projects.generating') || 'Crafting...'}</p>
+                                    <p className="text-xs font-bold text-foreground uppercase tracking-widest">{t('projects.generating') || 'Crafting...'}</p>
                                     <p className="text-[10px] text-muted-foreground italic">Bringing your vision to life</p>
                                 </div>
                             </div>
@@ -218,7 +218,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 <p className="text-xs uppercase font-bold tracking-widest mb-4">{t('projects.preview') || 'Preview Area'}</p>
                                 <button
                                     onClick={handleManualUpload}
-                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                                    className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                                 >
                                     {t('projects.uploadOriginal') || 'Upload Manual Image'}
                                 </button>
@@ -240,7 +240,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                             <button
                                 onClick={handleApply}
                                 disabled={isGenerating}
-                                className="flex items-center justify-center px-6 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                className="flex items-center justify-center px-6 bg-emerald-600 text-foreground rounded-xl hover:bg-emerald-700 transition-all active:scale-95 shadow-md shadow-emerald-500/20 disabled:opacity-50"
                                 title={t('workspace.applyLogo')}
                             >
                                 {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
@@ -248,7 +248,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         ) : (
                             <button
                                 onClick={handleManualUpload}
-                                className="flex items-center justify-center px-6 bg-white/5 text-muted-foreground hover:text-white border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95"
+                                className="flex items-center justify-center px-6 bg-muted/20 text-muted-foreground hover:text-foreground border border-border/50 rounded-xl hover:bg-muted/30 transition-all active:scale-95"
                                 title={t('workspace.uploadImage')}
                             >
                                 <ImageIcon className="w-6 h-6" />

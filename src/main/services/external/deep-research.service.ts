@@ -4,6 +4,7 @@ import { LLMService } from '@main/services/llm/llm.service'
 import { Message } from '@shared/types/chat'
 import { IdeaCategory } from '@shared/types/ideas'
 import { getErrorMessage } from '@shared/utils/error.util'
+import { safeJsonParse } from '@shared/utils/sanitize.util'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -435,23 +436,23 @@ Respond in JSON:
                 throw new Error('No JSON found in response')
             }
 
-            const data = JSON.parse(jsonMatch) as {
-                findings?: Array<{
-                    insight: string
-                    confidence: 'high' | 'medium' | 'low'
-                    category: ResearchFinding['category']
-                    sourceRefs?: number[]
-                }>
-                marketSizeEstimate?: string
-            }
+            const data = safeJsonParse(jsonMatch, {
+                findings: [{
+                    insight: 'Research data unavailable',
+                    confidence: 'low',
+                    category: 'opportunity',
+                    sourceRefs: []
+                }],
+                marketSizeEstimate: 'Unable to estimate market size'
+            })
 
             const findings: ResearchFinding[] = (data.findings ?? []).map(f => ({
                 insight: f.insight,
-                confidence: f.confidence || 'medium',
-                category: f.category || 'opportunity',
+                confidence: (f.confidence || 'medium') as 'low' | 'medium' | 'high',
+                category: (f.category || 'opportunity') as ResearchFinding['category'],
                 sources: (f.sourceRefs ?? [])
-                    .filter(ref => ref > 0 && ref <= sources.length)
-                    .map(ref => sources[ref - 1])
+                    .filter((ref: any) => ref > 0 && ref <= sources.length)
+                    .map((ref: any) => sources[ref - 1])
             }))
 
             return {
@@ -662,13 +663,13 @@ Respond in JSON:
             const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
             if (!jsonMatch) {throw new Error('No JSON found')}
 
-            const data = JSON.parse(jsonMatch) as {
-                feasibilityScore?: number
-                marketFitScore?: number
-                competitionLevel?: 'low' | 'medium' | 'high'
-                recommendations?: string[]
-                concerns?: string[]
-            }
+            const data = safeJsonParse(jsonMatch, {
+                feasibilityScore: 50,
+                marketFitScore: 50,
+                competitionLevel: 'medium' as const,
+                recommendations: [],
+                concerns: []
+            })
 
             return {
                 feasibilityScore: Math.max(0, Math.min(100, data.feasibilityScore ?? 50)),

@@ -1,4 +1,4 @@
-import { Mic, MicOff, Paperclip, Send, Sparkles, Square, X } from 'lucide-react'
+import { Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap, Cpu, Bot } from 'lucide-react'
 import { File as FileIcon, FileCode, FileText, Image as ImageIcon } from 'lucide-react'
 import React, { memo, useEffect, useRef } from 'react'
 
@@ -74,8 +74,8 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
     return (
         <div
             className={cn(
-                "p-4 border-t border-white/5 bg-zinc-950/50 backdrop-blur-sm relative z-30",
-                ctrl.isDragging && "ring-2 ring-purple-500/50 border-purple-500/50"
+                "p-4 border-t border-border/50 bg-background/50 backdrop-blur-sm relative z-30",
+                ctrl.isDragging && "ring-2 ring-primary/50 border-primary/50"
             )}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(true); }}
             onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(false); }}
@@ -96,12 +96,12 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                 }}
             />
 
-            <div className="relative flex items-end gap-2 bg-zinc-900 border border-white/10 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-purple-500/50 focus-within:border-purple-500/50 transition-all">
+            <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
                 <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                     <div className="relative">
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
                             title={ctrl.t('input.attachFile')}
                             aria-label={ctrl.t('input.attachFile')}
                         >
@@ -120,7 +120,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                         onClick={ctrl.isListening ? ctrl.stopListening : ctrl.startListening}
                         className={cn(
                             "p-2 rounded-lg transition-all",
-                            ctrl.isListening ? "bg-red-500/20 text-red-500 animate-pulse" : "text-zinc-400 hover:text-white hover:bg-white/5"
+                            ctrl.isListening ? "bg-destructive/20 text-destructive animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                         title={ctrl.isListening ? ctrl.t('input.stopListening') : ctrl.t('input.startListening')}
                         aria-label={ctrl.isListening ? ctrl.t('input.stopListening') : ctrl.t('input.startListening')}
@@ -129,8 +129,11 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                         {ctrl.isListening ? <MicOff size={20} aria-hidden="true" /> : <Mic size={20} aria-hidden="true" />}
                     </button>
 
-                    <div className="h-8 w-px bg-white/5 mx-1" />
+                    <div className="h-8 w-px bg-border/50 mx-1" />
 
+                    <div className="h-8 w-px bg-border/50 mx-1" />
+
+                    <SystemModeSelector ctrl={ctrl} />
                     <ModelSelectorWrapper ctrl={ctrl} />
                 </div>
 
@@ -141,7 +144,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     placeholder={ctrl.t('input.placeholder.default')}
-                    className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-zinc-100 placeholder:text-zinc-600 resize-none py-2.5 max-h-[200px]"
+                    className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-[200px]"
                     rows={1}
                     aria-label={ctrl.t('input.placeholder.default')}
                     aria-describedby="chat-input-hint"
@@ -151,7 +154,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                 <SendButton ctrl={ctrl} />
             </div>
 
-            <div className="absolute bottom-1 right-4 text-[10px] text-zinc-700 pointer-events-none select-none">
+            <div className="absolute bottom-1 right-4 text-[10px] text-muted-foreground/30 pointer-events-none select-none">
                 {ctrl.selectedProvider}
             </div>
         </div>
@@ -181,15 +184,15 @@ const AttachmentList: React.FC<{ attachments: Attachment[], onRemove: (i: number
                     className="flex flex-wrap gap-2 mb-3 px-2"
                 >
                     {attachments.map((att, i) => (
-                        <div key={i} className="group relative flex items-center gap-2 bg-zinc-800/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-300 pr-8">
-                            <span className={cn("p-1.5 rounded-md", att.type.startsWith('image/') ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400")}>
+                        <div key={i} className="group relative flex items-center gap-2 bg-muted/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground pr-8">
+                            <span className={cn("p-1.5 rounded-md", att.type.startsWith('image/') ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent-foreground")}>
                                 {getFileIcon(att.type)}
                             </span>
                             <span className="truncate max-w-[150px]">{att.name}</span>
                             <span className="text-zinc-600 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
                             <button
                                 onClick={() => onRemove(i)}
-                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                 aria-label={`Remove ${att.name}`}
                             >
                                 <X size={12} aria-hidden="true" />
@@ -210,14 +213,14 @@ const PromptCommandMenu: React.FC<{
         {show && (
             <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                className="absolute bottom-full left-0 mb-2 w-64 bg-zinc-900 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
+                className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border/50 rounded-lg shadow-xl overflow-hidden z-50"
                 role="listbox" aria-label="Prompt suggestions"
             >
-                <div className="text-[10px] uppercase font-bold text-zinc-500 px-3 py-1.5 bg-black/20" role="heading" aria-level={3}>Prompts</div>
+                <div className="text-[10px] uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30" role="heading" aria-level={3}>Prompts</div>
                 {prompts.map((prompt, i) => (
                     <button
                         key={prompt.id} onClick={() => onSelect(prompt)}
-                        className={cn("w-full text-left px-3 py-2 text-xs transition-colors block", i === selectedIndex ? "bg-purple-500/20 text-purple-200" : "hover:bg-white/5 text-zinc-300")}
+                        className={cn("w-full text-left px-3 py-2 text-xs transition-colors block", i === selectedIndex ? "bg-primary/20 text-primary" : "hover:bg-accent/50 text-foreground")}
                         aria-label={`Use prompt: ${prompt.title}`} aria-selected={i === selectedIndex} role="option"
                     >
                         <div className="font-medium">{prompt.title}</div>
@@ -245,12 +248,49 @@ const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
     </div>
 );
 
+const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
+    const modes = [
+        { id: 'fast', label: 'Fast', icon: Zap, color: 'text-yellow-500' },
+        { id: 'agent', label: 'Agent', icon: Bot, color: 'text-blue-500' },
+        { id: 'thinking', label: 'Thinking', icon: Cpu, color: 'text-purple-500' }
+    ] as const;
+
+    const current = modes.find(m => m.id === ctrl.systemMode) ?? modes[1];
+
+    return (
+        <div className="flex items-center gap-1 mr-2">
+            <div className="flex bg-muted/50 rounded-lg p-0.5 border border-border/30">
+                {modes.map(mode => {
+                    const Icon = mode.icon;
+                    const isActive = ctrl.systemMode === mode.id;
+                    return (
+                        <button
+                            key={mode.id}
+                            onClick={() => ctrl.setSystemMode(mode.id)}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                                isActive
+                                    ? "bg-background shadow-sm text-foreground ring-1 ring-border/5"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                            title={`${mode.label} Mode`}
+                        >
+                            <Icon size={12} className={isActive ? mode.color : ""} />
+                            {isActive && <span>{mode.label}</span>}
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    );
+};
+
 const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const isEnhancable = ctrl.input.trim() !== '' && !ctrl.isLoading;
     const isEnhancing = ctrl.isEnhancing;
     const btnClass = cn(
         "p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5",
-        isEnhancing ? "bg-amber-500/20 text-amber-400 animate-pulse" : (isEnhancable ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300" : "bg-white/5 text-zinc-600 cursor-not-allowed")
+        isEnhancing ? "bg-amber-500/20 text-amber-400 animate-pulse" : (isEnhancable ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300" : "bg-muted/30 text-muted-foreground/50 cursor-not-allowed")
     );
     return (
         <button onClick={() => { void ctrl.handleEnhancePrompt(); }} disabled={!isEnhancable || isEnhancing} className={btnClass} title={ctrl.t('input.enhancePrompt')} aria-label={ctrl.t('input.enhancePrompt')}>
@@ -264,7 +304,7 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const isLoading = ctrl.isLoading;
     const btnClass = cn(
         "p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5",
-        isLoading ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" : (hasContent ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500" : "bg-white/5 text-zinc-600 cursor-not-allowed")
+        isLoading ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : (hasContent ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity" : "bg-muted/30 text-muted-foreground/50 cursor-not-allowed")
     );
     return (
         <button onClick={isLoading ? ctrl.stopGeneration : () => { void ctrl.sendMessage(); }} disabled={!isLoading && !hasContent} className={btnClass} aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}>

@@ -1,9 +1,27 @@
 import { ProxyService } from '@main/services/proxy/proxy.service'
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { AuthService } from '@main/services/security/auth.service'
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
 import { ipcMain } from 'electron'
 
 export function registerProxyIpc(proxyService: ProxyService, _processManager?: ProxyProcessManager, _authService?: AuthService) {
+    // Register batchable quota handlers for efficient batch loading
+    registerBatchableHandler('getQuota', async () => {
+        return await proxyService.getQuota() as any
+    })
+
+    registerBatchableHandler('getCopilotQuota', async () => {
+        return await proxyService.getCopilotQuota() as any
+    })
+
+    registerBatchableHandler('getCodexUsage', async () => {
+        return await proxyService.getCodexUsage() as any
+    })
+
+    registerBatchableHandler('getClaudeQuota', async () => {
+        return await proxyService.getClaudeQuota() as any
+    })
+
     ipcMain.handle('proxy:antigravityLogin', async () => {
         return await proxyService.getAntigravityAuthUrl()
     })

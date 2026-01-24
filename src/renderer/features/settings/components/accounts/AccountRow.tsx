@@ -27,13 +27,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({
         >
             {/* Avatar */}
             <div className={cn(
-                "h-9 w-9 rounded-full flex items-center justify-center overflow-hidden shrink-0",
-                account.isActive ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-background" : "bg-muted"
+                "h-9 w-9 rounded-full flex items-center justify-center overflow-hidden shrink-0 transition-all",
+                account.isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105" : "bg-muted/80"
             )}>
                 {account.avatarUrl ? (
                     <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <User className="h-4 w-4 text-muted-foreground/70" />
                 )}
             </div>
 

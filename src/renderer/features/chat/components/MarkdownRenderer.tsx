@@ -15,7 +15,7 @@ import 'katex/dist/katex.min.css'
 // Dynamic mermaid loader
 const loadMermaid = async () => {
     const mermaid = await import('mermaid');
-    
+
     // Initialize mermaid only once per session
     if (!mermaid.default.mermaidAPI.getConfig().startOnLoad) {
         mermaid.default.initialize({
@@ -25,7 +25,7 @@ const loadMermaid = async () => {
             fontFamily: 'inherit'
         });
     }
-    
+
     return mermaid.default;
 };
 
@@ -96,12 +96,11 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                 components={{
                     code({ className, children, ...props }) {
                         const match = /language-(\w+)/.exec(className ?? '')
-                        const isInline = !match
                         const codeString = String(children).replace(/\n$/, '')
                         if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} /> }
 
-                        return (isInline || !match) ? (
-                            <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80" {...props}>
+                        return !match ? (
+                            <code {...props}>
                                 {children}
                             </code>
                         ) : (
@@ -117,7 +116,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => src && window.electron?.openExternal(src)} />
+                            <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button
@@ -134,7 +133,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                         </span>
                     ),
                     a: ({ href, children }) => (
-                        <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) { window.electron?.openExternal(href) } }}>{children}</a>
+                        <a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) { window.electron.openExternal(href); } }}>{children}</a>
                     ),
                     li: ({ children }) => {
                         const isCheckbox = Array.isArray(children) && children.some(c => {
@@ -142,14 +141,14 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                             const element = c as React.ReactElement<{ type?: string }>
                             return element.props?.type === 'checkbox'
                         })
-                        return <li className={cn(isCheckbox ? "list-none -ml-4" : "list-disc", "my-1")}>{children}</li>
+                        return <li className={cn(isCheckbox ? "list-none -ml-4" : "")}>{children}</li>
                     },
                     input: ({ type, checked, ...props }) => {
                         if (type === 'checkbox') { return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} /> }
                         return <input {...props} />
                     },
-                    ul: ({ children }) => <ul className="pl-4 my-2 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-4 my-2 space-y-1">{children}</ol>,
+                    ul: ({ children }) => <ul>{children}</ul>,
+                    ol: ({ children }) => <ol>{children}</ol>,
                 }}
             >
                 {content}
@@ -157,3 +156,4 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
         </div>
     )
 })
+MarkdownRenderer.displayName = 'MarkdownRenderer'

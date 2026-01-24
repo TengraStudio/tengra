@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CommonBatches } from '@/utils/ipc-batch.util';
 
 interface AuthAccount {
     id: string;
@@ -32,15 +33,15 @@ export const AccountManager: React.FC = () => {
 
     const loadAccounts = async () => {
         try {
-            const accs = await window.electron.ipcRenderer.invoke('auth:get-accounts');
-            const active = await window.electron.ipcRenderer.invoke('auth:get-active-account');
-            setAccounts(accs ?? []);
-            setActiveAccountId(active);
+            // Use batching to load accounts and active account in one call
+            const { accounts, activeAccount } = await CommonBatches.loadAuthState()
+            setAccounts(accounts)
+            setActiveAccountId(activeAccount)
         } catch (error) {
-            console.error('Failed to load accounts', error);
-            showMessage('Failed to load accounts', 'error');
+            console.error('Failed to load accounts', error)
+            showMessage('Failed to load accounts', 'error')
         }
-    };
+    }
 
     const handleCreateAccount = async () => {
         if (!newAccountName.trim()) { return; }

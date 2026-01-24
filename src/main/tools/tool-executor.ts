@@ -61,7 +61,7 @@ export class ToolExecutor {
         private options: ToolExecutorOptions,
     ) { }
 
-    getToolDefinitions(): ToolDefinition[] {
+    async getToolDefinitions(): Promise<ToolDefinition[]> {
         const nativeTools = toolDefinitions as ToolDefinition[]
         let mcpTools: ToolDefinition[] = []
         try {
@@ -69,7 +69,20 @@ export class ToolExecutor {
         } catch (e) {
             appLogger.error('ToolExecutor', `Failed to get MCP tool definitions: ${e}`)
         }
-        return [...nativeTools, ...mcpTools, this.options.pageSpeed.getToolDefinition() as ToolDefinition]
+
+        let pageSpeedTool: ToolDefinition | undefined;
+        try {
+            // Accessing the proxy method returns a promise
+            pageSpeedTool = await this.options.pageSpeed.getToolDefinition() as ToolDefinition;
+        } catch (e) {
+            appLogger.error('ToolExecutor', `Failed to get PageSpeed tool definition: ${e}`);
+        }
+
+        const tools = [...nativeTools, ...mcpTools];
+        if (pageSpeedTool) {
+            tools.push(pageSpeedTool);
+        }
+        return tools;
     }
 
     private asString(value: JsonValue | undefined): string {

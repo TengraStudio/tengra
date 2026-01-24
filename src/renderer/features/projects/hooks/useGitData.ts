@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Project } from '@shared/types/project'
+import { CommonBatches } from '@renderer/utils/ipc-batch.util'
 
 export function useGitData(project: Project) {
     const [gitData, setGitData] = useState<{
@@ -65,14 +66,13 @@ export function useGitData(project: Project) {
                 return
             }
 
-            // Fetch all git data in parallel
-            const [branchResult, statusResult, lastCommitResult, recentCommitsResult, detailedStatus, branchesResult, remotesResult, trackingResult, diffStatsResult, commitStatsResult] = await Promise.all([
-                window.electron.git.getBranch(project.path),
-                window.electron.git.getStatus(project.path),
-                window.electron.git.getLastCommit(project.path),
+            // Use batching for efficient git data loading
+            const batchedGitData = await CommonBatches.loadProjectData(project.path)
+
+            // Load additional data that requires parameters
+            const [recentCommitsResult, detailedStatus, remotesResult, trackingResult, diffStatsResult, commitStatsResult] = await Promise.all([
                 window.electron.git.getRecentCommits(project.path, 10),
                 window.electron.git.getDetailedStatus(project.path),
-                window.electron.git.getBranches(project.path),
                 window.electron.git.getRemotes(project.path),
                 window.electron.git.getTrackingInfo(project.path),
                 window.electron.git.getDiffStats(project.path),
@@ -80,14 +80,14 @@ export function useGitData(project: Project) {
             ])
 
             setGitData({
-                branch: branchResult.success ? (branchResult.branch ?? null) : null,
-                isClean: statusResult.success ? (statusResult.isClean ?? null) : null,
-                lastCommit: lastCommitResult.success && lastCommitResult.hash
+                branch: batchedGitData.branch?.success ? (batchedGitData.branch.branch ?? null) : null,
+                isClean: batchedGitData.status?.success ? (batchedGitData.status.isClean ?? null) : null,
+                lastCommit: batchedGitData.lastCommit?.success && batchedGitData.lastCommit.hash
                     ? {
-                        hash: lastCommitResult.hash,
-                        message: lastCommitResult.message ?? '',
-                        author: lastCommitResult.author ?? '',
-                        relativeTime: lastCommitResult.relativeTime ?? ''
+                        hash: batchedGitData.lastCommit.hash,
+                        message: batchedGitData.lastCommit.message ?? '',
+                        author: batchedGitData.lastCommit.author ?? '',
+                        relativeTime: batchedGitData.lastCommit.relativeTime ?? ''
                     }
                     : null,
                 recentCommits: recentCommitsResult.success ? (recentCommitsResult.commits ?? []) : [],
@@ -98,7 +98,7 @@ export function useGitData(project: Project) {
                 unstagedFiles: detailedStatus.success ? (detailedStatus.unstagedFiles ?? []) : []
             })
 
-            setBranches(branchesResult.success ? (branchesResult.branches ?? []) : [])
+            setBranches(batchedGitData.branches?.success ? (batchedGitData.branches.branches ?? []) : [])
             setRemotes(remotesResult.success ? (remotesResult.remotes ?? []) : [])
             setTrackingInfo(trackingResult.success ? { tracking: trackingResult.tracking ?? null, ahead: trackingResult.ahead ?? 0, behind: trackingResult.behind ?? 0 } : null)
             setDiffStats(diffStatsResult.success ? {
@@ -246,10 +246,31 @@ export function useGitData(project: Project) {
         }
     }, [project.path, fetchGitData])
 
+    const [selectedCommit, setSelectedCommit] = useState<{ hash: string; message: string; author: string; date: string } | null>(null)
+    const [commitDiff, setCommitDiff] = useState<string | null>(null)
+
+    const handleCommitSelect = useCallback(async (commit: { hash: string; message: string; author: string; date: string }) => {
+        if (!project.path) { return }
+        setSelectedCommit(commit)
+        setLoadingDiff(true)
+        try {
+            const result = await window.electron.git.getCommitDiff(project.path, commit.hash)
+            if (result.success) {
+                setCommitDiff(result.diff)
+            }
+        } catch (error) {
+            console.error('Failed to load commit diff:', error)
+        } finally {
+            setLoadingDiff(false)
+        }
+    }, [project.path])
+
     return {
         gitData,
         selectedFile,
         fileDiff,
+        selectedCommit,
+        commitDiff,
         loadingDiff,
         branches,
         remotes,
@@ -269,6 +290,7 @@ export function useGitData(project: Project) {
         handleCheckout,
         handleCommit,
         handlePush,
-        handlePull
+        handlePull,
+        handleCommitSelect
     }
 }

@@ -102,7 +102,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                     <div className="w-px h-4 bg-border/50 mx-0.5" />
                     <button
                         onClick={handleCopy}
-                        className="p-1.5 hover:bg-white/10 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
                         title={t('common.copy')}
                     >
                         <Copy className="w-3.5 h-3.5" />

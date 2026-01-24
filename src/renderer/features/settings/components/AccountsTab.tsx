@@ -96,7 +96,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                         alt=""
                         className={cn(
                             "h-7 w-7 object-contain",
-                            ["anthropic", "github", "ollama", "deepseek", "claude", "antigravity"].includes(provider.id) && "dark:invert"
+                            ["anthropic", "github", "ollama", "deepseek", "claude", "antigravity", "codex", "copilot"].includes(provider.id) && "theme-logo-invert"
                         )}
                     />
                 </div>
@@ -251,7 +251,7 @@ const OllamaSection = React.memo(({
             <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="p-4 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={ollamaLogo} alt="Ollama" className="h-7 w-7 object-contain" />
+                        <img src={ollamaLogo} alt="Ollama" className="h-7 w-7 object-contain theme-logo-invert" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-foreground">{t('accounts.providers.ollama.name')}</div>

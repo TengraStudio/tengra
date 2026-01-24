@@ -499,6 +499,7 @@ export const en = {
         accountCount: '{{count}} account',
         accountCountPlural: '{{count}} accounts',
         noAccounts: 'No accounts linked',
+        noEmail: 'No email provided',
 
         // Ollama settings
         serverAddress: 'SERVER ADDRESS',
@@ -876,6 +877,12 @@ export const en = {
     },
     statistics: {
         title: 'Statistics',
+        tokenUsageOverTime: 'Token Usage Over Time',
+        visualizeTokenConsumption: 'Visualize your AI model usage trends over time.',
+        totalPrompt: 'Total Prompt',
+        totalCompletion: 'Total Completion',
+        cost: 'Estimated Cost',
+        modelDistribution: 'Model Distribution',
         subtitle: 'Usage metrics and token consumption analysis.',
         daily: 'Daily',
         weekly: 'Weekly',

@@ -4,6 +4,7 @@ import { CopilotService } from '@main/services/llm/copilot.service'
 import { LLMService } from '@main/services/llm/llm.service'
 import { SettingsService } from '@main/services/system/settings.service'
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
 import { AppSettings } from '@shared/types/settings'
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 
@@ -16,6 +17,17 @@ export function registerSettingsIpc(options: {
     updateOllamaConnection: () => void | Promise<void>
 }) {
     const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options
+
+    // Register batchable settings handlers
+    registerBatchableHandler('getSettings', async () => {
+        return settingsService.getSettings() as any
+    })
+
+    registerBatchableHandler('saveSettings', async (_event, ...args) => {
+        const settings = args[0] as AppSettings
+        settingsService.saveSettings(settings)
+        return { success: true } as any
+    })
 
     ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
         const settings = settingsService.getSettings()

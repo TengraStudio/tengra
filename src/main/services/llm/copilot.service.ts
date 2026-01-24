@@ -102,18 +102,34 @@ export class CopilotService extends BaseService {
         private notificationService?: { showNotification: (t: string, b: string, silent?: boolean) => void }
     ) {
         super('CopilotService');
+    }
+
+    async initialize(): Promise<void> {
+        this.logInfo('Initializing Copilot service...')
+
         // Delay VSCode version fetch to avoid startup rate limiting
         setTimeout(() => { void this.fetchVsCodeVersion(); }, 5000);
+
         // Start monitoring after initial delay
         setTimeout(() => { void this.startRateLimitMonitoring(); }, 10000);
+
+        this.logInfo('Copilot service initialized successfully')
     }
 
     async cleanup(): Promise<void> {
+        this.logInfo('Cleaning up Copilot service...')
+
         if (this.rateLimitInterval) {
             clearInterval(this.rateLimitInterval);
             this.rateLimitInterval = null;
         }
-        this.logInfo('Cleanup complete');
+
+        // Clear any pending token promises
+        this.tokenPromise = null;
+        this.copilotAuthToken = null;
+        this.copilotSessionToken = null;
+
+        this.logInfo('Copilot service cleanup complete');
     }
 
     public async checkRateLimit(silent: boolean = false): Promise<void> {
@@ -742,6 +758,12 @@ export class CopilotService extends BaseService {
             payload.tool_choice = 'auto';
         }
 
+        if (stream) {
+            // measurable impact? unsure, but standard OpenAI supports it
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (payload as any).stream_options = { include_usage: true };
+        }
+
         return { headers, payload, finalModel };
     }
 
@@ -769,8 +791,7 @@ export class CopilotService extends BaseService {
     }
 
     private shouldRequestDiagnostic(response: Response, finalModel: string, errText: string): boolean {
-        let errorBody: { error?: { code?: string } } | undefined;
-        try { errorBody = JSON.parse(errText); } catch { /* ignore */ }
+        const errorBody = safeJsonParse(errText, { error: { code: '' } }) as { error?: { code?: string } }
 
         const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
         const isCodexError = response.status === 400 && finalModel.toLowerCase().includes('codex');

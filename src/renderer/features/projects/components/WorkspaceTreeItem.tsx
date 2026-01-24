@@ -102,7 +102,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
             <div
                 className={cn(
                     "flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all select-none group border border-transparent",
-                    isSelected ? "bg-primary/10 text-primary border-primary/20" : "hover:bg-white/5 text-muted-foreground/80 hover:text-white"
+                    isSelected ? "bg-primary/10 text-primary border-primary/20" : "hover:bg-muted/20 text-muted-foreground/80 hover:text-foreground"
                 )}
                 style={{ paddingLeft: `${level * 12 + 8}px` }}
                 onClick={handleClick}
@@ -111,7 +111,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 {node.isDirectory ? (
                     <span className="opacity-70 group-hover:opacity-100">
                         {loading ? (
-                            <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                            <div className="w-3 h-3 border border-border/50 border-t-foreground/60 rounded-full animate-spin" />
                         ) : expanded ? (
                             <ChevronDown className="w-3 h-3" />
                         ) : (

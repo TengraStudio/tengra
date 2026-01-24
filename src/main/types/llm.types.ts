@@ -61,7 +61,9 @@ export interface OpenAIResponse {
     content: string;
     role: string;
     tool_calls?: ToolCall[] | undefined;
+    promptTokens?: number | undefined;
     completionTokens?: number | undefined;
+    totalTokens?: number | undefined;
     reasoning_content?: string | undefined;
     images?: string[] | undefined;
     variants?: Array<{

@@ -25,10 +25,10 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
     const { t } = useTranslation()
 
     return (
-        <div className="p-6 border-t border-white/10 bg-black/40">
+        <div className="p-6 border-t border-border/50 bg-background/50 backdrop-blur-md">
             <div className="flex items-end gap-4">
                 <div className="flex-1">
-                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-2 block">
+                    <label className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] mb-2 block">
                         {t('ideas.idea.selectPath')}
                     </label>
                     <div className="flex gap-2">
@@ -37,14 +37,14 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                             value={projectPath}
                             onChange={e => setProjectPath(e.target.value)}
                             placeholder="C:\Projects\my-project"
-                            className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/60 placeholder-white/10 focus:outline-none focus:border-purple-500/30 transition-all font-mono text-xs"
+                            className="flex-1 px-4 py-2 bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-all font-mono text-xs"
                         />
                         <button
                             type="button"
                             onClick={() => {
                                 void handleSelectFolder()
                             }}
-                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                            className="px-4 py-2 bg-muted/30 hover:bg-muted/50 text-foreground rounded-lg transition-colors border border-border/50"
                         >
                             <FolderOpen className="w-5 h-5" />
                         </button>
@@ -58,7 +58,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                             void onReject()
                         }}
                         disabled={isRejecting || isApproving}
-                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm"
                     >
                         <XCircle className="w-4 h-4" />
                         {t('ideas.idea.reject')}
@@ -69,7 +69,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                             void handleApprove()
                         }}
                         disabled={!projectPath || isApproving || isRejecting}
-                        className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm"
                     >
                         <CheckCircle className="w-4 h-4" />
                         {isApproving ? t('ideas.idea.creating') : t('ideas.idea.approve')}

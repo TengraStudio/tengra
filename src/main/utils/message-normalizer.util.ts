@@ -81,7 +81,9 @@ export class MessageNormalizer {
 
         return {
             role: message.role as OpenAIMessage['role'],
-            content: contentParts
+            content: contentParts,
+            tool_calls: (message as Message).toolCalls,
+            tool_call_id: (message as Message).toolCallId
         }
     }
 
@@ -107,7 +109,9 @@ export class MessageNormalizer {
 
         return {
             role: message.role as OpenAIMessage['role'],
-            content: parts
+            content: parts,
+            tool_calls: (message as Message).toolCalls,
+            tool_call_id: (message as Message).toolCallId
         }
     }
 
@@ -120,6 +124,7 @@ export class MessageNormalizer {
 
     private static isValidOpenAIMessage(m: OpenAIMessage): boolean {
         if (!m) { return false; }
+        if (m.role === 'tool' && m.tool_call_id) { return true; }
         if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) { return true; }
         if (typeof m.content === 'string' && m.content.trim() !== '') { return true; }
         if (Array.isArray(m.content) && m.content.length > 0) { return true; }

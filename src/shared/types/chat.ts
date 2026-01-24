@@ -52,12 +52,13 @@ export interface MessageVariant {
 export interface Message {
     id: string
     chatId?: string | undefined // Reference to parent chat
-    role: 'user' | 'assistant' | 'system'
+    role: 'user' | 'assistant' | 'system' | 'tool'
     content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
     timestamp: Date
     images?: string[] | undefined
     reasoning?: string | undefined
     toolCalls?: ToolCall[] | undefined
+    toolCallId?: string | undefined
     toolResults?: ToolResult[] | string | undefined // Can be string in DB
     isPinned?: boolean | undefined
     isBookmarked?: boolean | undefined
@@ -109,6 +110,8 @@ export interface Toast {
     type: 'info' | 'success' | 'error' | 'warning'
 }
 
+export type SystemMode = 'thinking' | 'agent' | 'fast';
+
 export interface ChatRequest {
     messages: Message[]
     model: string
@@ -116,6 +119,7 @@ export interface ChatRequest {
     provider?: string
     options?: JsonObject
     projectId?: string
+    systemMode?: SystemMode
 }
 
 export interface ChatStreamRequest extends ChatRequest {

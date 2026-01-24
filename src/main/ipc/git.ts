@@ -1,4 +1,5 @@
 import { GitService } from '@main/services/project/git.service'
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
 import { getErrorMessage } from '@shared/utils/error.util'
 import { ipcMain } from 'electron'
 
@@ -7,6 +8,67 @@ export function registerGitIpc(gitService: GitService) {
     registerHistoryHandlers(gitService)
     registerDiffHandlers(gitService)
     registerActionHandlers(gitService)
+    registerGitBatchHandlers(gitService)
+}
+
+function registerGitBatchHandlers(gitService: GitService) {
+    // Register commonly batched git operations
+    registerBatchableHandler('git:getBranch', async (_event, ...args) => {
+        const cwd = args[0] as string
+        try {
+            const result = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD')
+            if (result.success && result.stdout) {
+                return { success: true, branch: result.stdout.trim() } as any
+            }
+            return { success: false, error: 'Not a git repository' } as any
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) } as any
+        }
+    })
+
+    registerBatchableHandler('git:getStatus', async (_event, ...args) => {
+        const cwd = args[0] as string
+        try {
+            const result = await gitService.getStatus(cwd)
+            const isClean = result.length === 0
+            return {
+                success: true,
+                isClean,
+                changes: result.length,
+                files: result.map(file => ({ path: file.path, status: file.status || 'unknown' }))
+            } as any
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) } as any
+        }
+    })
+
+    registerBatchableHandler('git:getLastCommit', async (_event, ...args) => {
+        const cwd = args[0] as string
+        try {
+            const result = await gitService.executeRaw(cwd, 'log -1 --pretty=format:"%H|%s|%an|%ar|%aI"')
+            if (result.success && result.stdout) {
+                const [hash, message, author, relativeTime, date] = result.stdout.trim().split('|')
+                return { success: true, hash, message, author, relativeTime, date } as any
+            }
+            return { success: false, error: 'No commits found' } as any
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) } as any
+        }
+    })
+
+    registerBatchableHandler('git:getBranches', async (_event, ...args) => {
+        const cwd = args[0] as string
+        try {
+            const result = await gitService.executeRaw(cwd, 'branch -a --format="%(refname:short)"')
+            if (result.success && result.stdout) {
+                const branches = result.stdout.trim().split('\n').filter(b => b.length > 0)
+                return { success: true, branches } as any
+            }
+            return { success: true, branches: [] } as any
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) } as any
+        }
+    })
 }
 
 function registerStatusHandlers(gitService: GitService) {
@@ -216,6 +278,16 @@ function registerDiffHandlers(gitService: GitService) {
     ipcMain.handle('git:getUnifiedDiff', async (_event, cwd: string, filePath: string, staged: boolean = false) => {
         try {
             const result = await gitService.getUnifiedDiff(cwd, filePath, staged)
+            return result
+        } catch (error) {
+            return { diff: '', success: false, error: getErrorMessage(error as Error) }
+        }
+    })
+
+    // Get commit diff
+    ipcMain.handle('git:getCommitDiff', async (_event, cwd: string, hash: string) => {
+        try {
+            const result = await gitService.getCommitDiff(cwd, hash)
             return result
         } catch (error) {
             return { diff: '', success: false, error: getErrorMessage(error as Error) }

@@ -33,6 +33,7 @@ import { appLogger } from '@main/logging/logger'
 import { McpDispatcher } from '@main/mcp/dispatcher'
 import { Services } from '@main/startup/services'
 import { ToolExecutor } from '@main/tools/tool-executor'
+import { registerBatchIpc } from '@main/utils/ipc-batch.util'
 import { BrowserWindow } from 'electron'
 
 export function registerIpcHandlers(
@@ -55,7 +56,8 @@ export function registerIpcHandlers(
         llmService: services.llmService,
         proxyService: services.proxyService,
         codeIntelligenceService: services.codeIntelligenceService,
-        contextRetrievalService: services.contextRetrievalService
+        contextRetrievalService: services.contextRetrievalService,
+        databaseService: services.databaseService
     })
 
     registerOllamaIpc({
@@ -135,4 +137,7 @@ export function registerIpcHandlers(
 
     // Register Idea Generator IPC
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService)
+
+    // Register Batch IPC
+    registerBatchIpc()
 }

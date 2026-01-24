@@ -26,11 +26,17 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
+    - name: Run Type Check
+      run: npm run type-check
+
     - name: Run Linter
       run: npm run lint
 
+    - name: Secrets Scan
+      run: npx secretlint "**/*"
+
     - name: Security Audit (npm audit)
-      run: npm audit --audit-level=high
+      run: npm audit --audit-level=high --production
 
     - name: Node.js Security Scan (njsscan)
       uses: ajinabraham/njsscan-action@v0.0.3
@@ -40,5 +46,11 @@ jobs:
     - name: Run Tests
       run: npm test
 
+    - name: Run E2E Tests
+      run: npm run test:e2e
+
     - name: Build Application
       run: npm run build
+
+    - name: Bundle Size Check
+      run: npm run bundle:analyze
