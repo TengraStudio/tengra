@@ -1,9 +1,9 @@
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export interface SidebarSectionProps {
     /** Unique identifier for persistence */
@@ -47,31 +47,31 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
     tooltip
 }) => {
     // State management with localStorage persistence
-    const storageKey = `sidebar-section-${id}`
+    const storageKey = `sidebar-section-${id}`;
     const [isExpanded, setIsExpanded] = useState(() => {
         if (persistState && typeof window !== 'undefined') {
-            const stored = localStorage.getItem(storageKey)
-            return stored !== null ? safeJsonParse<boolean>(stored, defaultExpanded) : defaultExpanded
+            const stored = localStorage.getItem(storageKey);
+            return stored !== null ? safeJsonParse<boolean>(stored, defaultExpanded) : defaultExpanded;
         }
-        return defaultExpanded
-    })
+        return defaultExpanded;
+    });
 
-    const contentRef = useRef<HTMLDivElement>(null)
+    const contentRef = useRef<HTMLDivElement>(null);
 
     // Persist state
     useEffect(() => {
         if (persistState && typeof window !== 'undefined') {
-            localStorage.setItem(storageKey, JSON.stringify(isExpanded))
+            localStorage.setItem(storageKey, JSON.stringify(isExpanded));
         }
-    }, [isExpanded, persistState, storageKey])
+    }, [isExpanded, persistState, storageKey]);
 
     const toggleExpanded = useCallback(() => {
         setIsExpanded((prev: boolean) => {
-            const newState = !prev
-            onExpandedChange?.(newState)
-            return newState
-        })
-    }, [onExpandedChange])
+            const newState = !prev;
+            onExpandedChange?.(newState);
+            return newState;
+        });
+    }, [onExpandedChange]);
 
     // Badge styling
     const badgeClasses = {
@@ -79,7 +79,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
         warning: 'bg-amber-500/20 text-amber-500',
         error: 'bg-red-500/20 text-red-500',
         success: 'bg-emerald-500/20 text-emerald-500'
-    }
+    };
 
     // Collapsed mode - render as icon button with flyout
     if (isCollapsed) {
@@ -91,7 +91,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
             >
                 {children}
             </SidebarCollapsedSection>
-        )
+        );
     }
 
     return (
@@ -160,7 +160,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
                 </div>
             </div>
         </div>
-    )
+    );
 }, (prev, next) => {
     // Custom comparison to prevent re-renders from unstable children references
     // if the actual functional state hasn't changed.
@@ -174,8 +174,8 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
         prev.className === next.className &&
         // If children reference is the same, we're definitely good
         (prev.children === next.children)
-    )
-})
+    );
+});
 
 // Collapsed mode component with flyout
 const SidebarCollapsedSection: React.FC<{
@@ -184,9 +184,9 @@ const SidebarCollapsedSection: React.FC<{
     badge?: number | string
     children: React.ReactNode
 }> = React.memo(({ icon, tooltip, badge, children }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const buttonRef = useRef<HTMLButtonElement>(null)
-    const flyoutRef = useRef<HTMLDivElement>(null)
+    const [isOpen, setIsOpen] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const flyoutRef = useRef<HTMLDivElement>(null);
 
     // Close on outside click
     useEffect(() => {
@@ -197,16 +197,16 @@ const SidebarCollapsedSection: React.FC<{
                 !flyoutRef.current.contains(event.target as Node) &&
                 !buttonRef.current.contains(event.target as Node)
             ) {
-                setIsOpen(false)
+                setIsOpen(false);
             }
-        }
+        };
 
         if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
-            return () => document.removeEventListener('mousedown', handleClickOutside)
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-        return undefined
-    }, [isOpen])
+        return undefined;
+    }, [isOpen]);
 
     return (
         <div className="relative">
@@ -256,8 +256,8 @@ const SidebarCollapsedSection: React.FC<{
                 )}
             </AnimatePresence>
         </div>
-    )
-})
+    );
+});
 
-SidebarCollapsedSection.displayName = 'SidebarCollapsedSection'
-SidebarSection.displayName = 'SidebarSection'
+SidebarCollapsedSection.displayName = 'SidebarCollapsedSection';
+SidebarSection.displayName = 'SidebarSection';

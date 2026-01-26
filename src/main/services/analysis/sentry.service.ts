@@ -1,47 +1,47 @@
 // Defer Sentry import to handle Electron's readiness
 let Sentry: typeof import('@sentry/electron/main') | null = null;
 
-import { appLogger } from '@main/logging/logger'
-import { SettingsService } from '@main/services/system/settings.service'
-import { JsonValue } from '@shared/types/common'
-import { app } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { SettingsService } from '@main/services/system/settings.service';
+import { JsonValue } from '@shared/types/common';
+import { app } from 'electron';
 
 // IMPORTANT: Replace this with your actual Sentry DSN
-const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000'
+const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000';
 
 export class SentryService {
-    private settingsService: SettingsService
-    private isInitialized = false
+    private settingsService: SettingsService;
+    private isInitialized = false;
 
     constructor(settingsService: SettingsService) {
-        this.settingsService = settingsService
+        this.settingsService = settingsService;
     }
 
     async init() {
-        const settings = this.settingsService.getSettings()
+        const settings = this.settingsService.getSettings();
 
         // Respect user privacy settings
         if (!settings.crashReporting?.enabled) {
-            appLogger.info('SentryService', 'Crash reporting is disabled by user.')
-            return
+            appLogger.info('SentryService', 'Crash reporting is disabled by user.');
+            return;
         }
 
         // Don't initialize in development unless forced
         if (!app.isPackaged && !process.env.FORCE_SENTRY_DEV) {
-            appLogger.info('SentryService', 'Skiing Sentry in development mode.')
-            return
+            appLogger.info('SentryService', 'Skiing Sentry in development mode.');
+            return;
         }
 
         if (this.isInitialized) {
-            appLogger.info('SentryService', 'Already initialized.')
-            return
+            appLogger.info('SentryService', 'Already initialized.');
+            return;
         }
 
         try {
             // Lazy load Sentry only when needed and app is ready
             if (!Sentry) {
-                const SentryModule = await import('@sentry/electron/main')
-                Sentry = SentryModule
+                const SentryModule = await import('@sentry/electron/main');
+                Sentry = SentryModule;
             }
 
             Sentry.init({
@@ -51,34 +51,34 @@ export class SentryService {
                 // User-centric data is stripped by default
                 beforeSend(event) {
                     // Optionally strip PII or sensitive data here
-                    return event
+                    return event;
                 },
                 // integrations: [Sentry.mainProcessIntegration()]
-            })
-            this.isInitialized = true
-            appLogger.info('SentryService', 'Initialized for main process.')
+            });
+            this.isInitialized = true;
+            appLogger.info('SentryService', 'Initialized for main process.');
         } catch (error) {
-            appLogger.error('SentryService', 'Failed to initialize:', error as Error)
+            appLogger.error('SentryService', 'Failed to initialize:', error as Error);
         }
     }
 
     captureException(error: Error, context?: Record<string, JsonValue | Error>) {
-        if (!this.isInitialized || !Sentry) { return }
-        Sentry.captureException(error, { extra: context })
+        if (!this.isInitialized || !Sentry) { return; }
+        Sentry.captureException(error, { extra: context });
     }
 
     captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
-        if (!this.isInitialized || !Sentry) { return }
-        Sentry.captureMessage(message, level)
+        if (!this.isInitialized || !Sentry) { return; }
+        Sentry.captureMessage(message, level);
     }
 
     setUser(id: string | null) {
-        if (!this.isInitialized || !Sentry) { return }
-        Sentry.setUser(id ? { id } : null)
+        if (!this.isInitialized || !Sentry) { return; }
+        Sentry.setUser(id ? { id } : null);
     }
 
     addBreadcrumb(message: string, category?: string, data?: Record<string, JsonValue | Error>) {
-        if (!this.isInitialized || !Sentry) { return }
-        Sentry.addBreadcrumb({ message, category, data })
+        if (!this.isInitialized || !Sentry) { return; }
+        Sentry.addBreadcrumb({ message, category, data });
     }
 }

@@ -1,25 +1,25 @@
-import { Loader2 } from 'lucide-react'
-import React, { lazy,Suspense } from 'react'
+import { Loader2 } from 'lucide-react';
+import React, { lazy,Suspense } from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useTranslation } from '@/i18n'
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/i18n';
 
 /**
  * Loading skeleton component with i18n support.
  */
 const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) => {
-    const { language } = useAuth()
-    const { t } = useTranslation(language ?? 'en')
-    const loadingMessage = message ?? t('common.loading')
+    const { language } = useAuth();
+    const { t } = useTranslation(language ?? 'en');
+    const loadingMessage = message ?? t('common.loading');
 
     return (
         <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3 text-muted-foreground" role="status" aria-live="polite">
             <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
             <span className="text-sm">{loadingMessage}</span>
         </div>
-    )
-})
-LoadingSpinner.displayName = 'LoadingSpinner'
+    );
+});
+LoadingSpinner.displayName = 'LoadingSpinner';
 
 // Code editor loading skeleton
 export const CodeEditorSkeleton: React.FC = React.memo(() => (
@@ -38,8 +38,8 @@ export const CodeEditorSkeleton: React.FC = React.memo(() => (
             ))}
         </div>
     </div>
-))
-CodeEditorSkeleton.displayName = 'CodeEditorSkeleton'
+));
+CodeEditorSkeleton.displayName = 'CodeEditorSkeleton';
 
 // Chart loading skeleton
 export const ChartSkeleton: React.FC = React.memo(() => (
@@ -55,13 +55,13 @@ export const ChartSkeleton: React.FC = React.memo(() => (
             ))}
         </div>
     </div>
-))
-ChartSkeleton.displayName = 'ChartSkeleton'
+));
+ChartSkeleton.displayName = 'ChartSkeleton';
 
 // Import prop types for explicit casting
-import type { CodeEditorProps } from '@/components/ui/CodeEditor'
-import type { WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor'
-import type { SettingsPageProps } from '@/features/settings/SettingsPage'
+import type { CodeEditorProps } from '@/components/ui/CodeEditor';
+import type { WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor';
+import type { SettingsPageProps } from '@/features/settings/SettingsPage';
 
 /**
  * Creates a lazily-loaded component with proper React.Suspense wrapping.
@@ -72,31 +72,31 @@ import type { SettingsPageProps } from '@/features/settings/SettingsPage'
 
 // Pre-configured lazy components with explicit prop types
 export const LazyCodeEditor: React.FC<CodeEditorProps> = (props) => {
-    const Component = lazy(() => import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor })))
+    const Component = lazy(() => import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor })));
     return (
         <Suspense fallback={<CodeEditorSkeleton />}>
             <Component {...props} />
         </Suspense>
-    )
-}
+    );
+};
 
 export const LazyWorkspaceEditor: React.FC<WorkspaceEditorProps> = (props) => {
-    const Component = lazy(() => import('@/features/projects/components/workspace/WorkspaceEditor').then(m => ({ default: m.WorkspaceEditor })))
+    const Component = lazy(() => import('@/features/projects/components/workspace/WorkspaceEditor').then(m => ({ default: m.WorkspaceEditor })));
     return (
         <Suspense fallback={<CodeEditorSkeleton />}>
             <Component {...props} />
         </Suspense>
-    )
-}
+    );
+};
 
 // Settings page lazy loaded
 export const LazySettingsPage: React.FC<SettingsPageProps> = (props) => {
-    const Component = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
+    const Component = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
     return (
         <Suspense fallback={<LoadingSpinner />}>
             <Component {...props} />
         </Suspense>
-    )
-}
+    );
+};
 
-export { LoadingSpinner }
+export { LoadingSpinner };

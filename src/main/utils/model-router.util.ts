@@ -3,8 +3,8 @@
  * Automatically routes requests to the best available provider
  */
 
-import { getHealthCheckService } from '@main/services/system/health-check.service'
-import { getRateLimiter } from '@main/utils/rate-limiter.util'
+import { getHealthCheckService } from '@main/services/system/health-check.service';
+import { getRateLimiter } from '@main/utils/rate-limiter.util';
 
 export interface ModelInfo {
     id: string
@@ -56,7 +56,7 @@ const MODEL_REGISTRY: ModelInfo[] = [
     // Copilot
     { id: 'gpt-5.1-codex', provider: 'copilot', priority: 95, contextWindow: 128000 },
     { id: 'gpt-5.1-codex-mini', provider: 'copilot', priority: 90, contextWindow: 128000 },
-]
+];
 
 // Provider fallback chains
 const FALLBACK_CHAINS: Record<string, string[]> = {
@@ -65,7 +65,7 @@ const FALLBACK_CHAINS: Record<string, string[]> = {
     groq: ['openai', 'anthropic'],
     copilot: ['openai', 'anthropic'],
     ollama: [] // No fallback for local models
-}
+};
 
 // Model equivalence mappings for fallback
 const MODEL_EQUIVALENTS: Record<string, Record<string, string>> = {
@@ -81,71 +81,71 @@ const MODEL_EQUIVALENTS: Record<string, Record<string, string>> = {
         openai: 'gpt-4o',
         groq: 'llama-3.3-70b-versatile'
     }
-}
+};
 
 export class ModelRouter {
-    private customModels: ModelInfo[] = []
+    private customModels: ModelInfo[] = [];
 
     /**
      * Register a custom model
      */
     registerModel(model: ModelInfo) {
-        this.customModels.push(model)
+        this.customModels.push(model);
     }
 
     /**
      * Find the best provider for a model
      */
     route(modelId: string, options: RouterOptions = {}): RouteResult {
-        const allModels = [...MODEL_REGISTRY, ...this.customModels]
+        const allModels = [...MODEL_REGISTRY, ...this.customModels];
 
         // Direct match
-        const directMatch = allModels.find(m => m.id === modelId)
+        const directMatch = allModels.find(m => m.id === modelId);
         if (directMatch) {
             // Check if we should use preferred provider
             if (options.preferredProvider && directMatch.provider !== options.preferredProvider) {
-                const equivalent = this.findEquivalent(modelId, options.preferredProvider)
+                const equivalent = this.findEquivalent(modelId, options.preferredProvider);
                 if (equivalent) {
                     return {
                         provider: options.preferredProvider,
                         model: equivalent,
                         originalModel: modelId,
                         reason: 'Routed to preferred provider'
-                    }
+                    };
                 }
             }
 
             // Check provider health if requested
             if (options.checkHealth) {
-                const health = getHealthCheckService()
-                const status = health.getStatus()
-                const providerHealth = status.services.find(s => s.name.toLowerCase() === directMatch.provider.toLowerCase())
+                const health = getHealthCheckService();
+                const status = health.getStatus();
+                const providerHealth = status.services.find(s => s.name.toLowerCase() === directMatch.provider.toLowerCase());
 
                 if (providerHealth?.status === 'unhealthy' && options.fallbackEnabled) {
-                    const fallback = this.findFallback(modelId, directMatch.provider)
+                    const fallback = this.findFallback(modelId, directMatch.provider);
                     if (fallback) {
                         return {
                             provider: fallback.provider,
                             model: fallback.model,
                             originalModel: modelId,
                             reason: `Primary provider unhealthy, using fallback`
-                        }
+                        };
                     }
                 }
             }
 
             // Check rate limits if requested
             if (options.checkQuota) {
-                const limiter = getRateLimiter(directMatch.provider)
+                const limiter = getRateLimiter(directMatch.provider);
                 if (limiter.getAvailableTokens() < 1 && options.fallbackEnabled) {
-                    const fallback = this.findFallback(modelId, directMatch.provider)
+                    const fallback = this.findFallback(modelId, directMatch.provider);
                     if (fallback) {
                         return {
                             provider: fallback.provider,
                             model: fallback.model,
                             originalModel: modelId,
                             reason: 'Rate limited, using fallback'
-                        }
+                        };
                     }
                 }
             }
@@ -155,18 +155,18 @@ export class ModelRouter {
                 model: modelId,
                 originalModel: modelId,
                 reason: 'Direct match'
-            }
+            };
         }
 
         // Try to infer provider from model name
-        const inferred = this.inferProvider(modelId)
+        const inferred = this.inferProvider(modelId);
         if (inferred) {
             return {
                 provider: inferred,
                 model: modelId,
                 originalModel: modelId,
                 reason: 'Inferred from model name'
-            }
+            };
         }
 
         // Default to OpenAI-compatible
@@ -175,70 +175,70 @@ export class ModelRouter {
             model: modelId,
             originalModel: modelId,
             reason: 'Default routing'
-        }
+        };
     }
 
     /**
      * Find an equivalent model on a different provider
      */
     private findEquivalent(modelId: string, targetProvider: string): string | null {
-        const equivalents = MODEL_EQUIVALENTS[modelId]
+        const equivalents = MODEL_EQUIVALENTS[modelId];
         if (equivalents?.[targetProvider]) {
-            return equivalents[targetProvider]
+            return equivalents[targetProvider];
         }
-        return null
+        return null;
     }
 
     /**
      * Find a fallback model when primary provider is unavailable
      */
     private findFallback(modelId: string, currentProvider: string): { provider: string; model: string } | null {
-        const fallbackProviders = FALLBACK_CHAINS[currentProvider] ?? []
+        const fallbackProviders = FALLBACK_CHAINS[currentProvider] ?? [];
 
         for (const provider of fallbackProviders) {
-            const equivalent = this.findEquivalent(modelId, provider)
+            const equivalent = this.findEquivalent(modelId, provider);
             if (equivalent) {
-                return { provider, model: equivalent }
+                return { provider, model: equivalent };
             }
         }
 
-        return null
+        return null;
     }
 
     /**
      * Infer provider from model name
      */
     private inferProvider(modelId: string): string | null {
-        const lower = modelId.toLowerCase()
+        const lower = modelId.toLowerCase();
 
-        if (lower.includes('gpt') || lower.includes('o1')) { return 'openai' }
-        if (lower.includes('claude')) { return 'anthropic' }
+        if (lower.includes('gpt') || lower.includes('o1')) { return 'openai'; }
+        if (lower.includes('claude')) { return 'anthropic'; }
 
-        if (lower.includes('llama') || lower.includes('mixtral')) { return 'groq' }
-        if (lower.includes('codex')) { return 'copilot' }
+        if (lower.includes('llama') || lower.includes('mixtral')) { return 'groq'; }
+        if (lower.includes('codex')) { return 'copilot'; }
 
-        return null
+        return null;
     }
 
     /**
      * Get all registered models
      */
     getAllModels(): ModelInfo[] {
-        return [...MODEL_REGISTRY, ...this.customModels]
+        return [...MODEL_REGISTRY, ...this.customModels];
     }
 
     /**
      * Get models for a specific provider
      */
     getModelsForProvider(provider: string): ModelInfo[] {
-        return this.getAllModels().filter(m => m.provider === provider)
+        return this.getAllModels().filter(m => m.provider === provider);
     }
 }
 
 // Singleton
-let instance: ModelRouter | null = null
+let instance: ModelRouter | null = null;
 
 export function getModelRouter(): ModelRouter {
-    instance ??= new ModelRouter()
-    return instance
+    instance ??= new ModelRouter();
+    return instance;
 }

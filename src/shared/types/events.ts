@@ -1,5 +1,6 @@
-import { JsonValue } from '@shared/types/common'
-import { IdeaProgress, ResearchProgress } from '@shared/types/ideas'
+import { JsonValue } from '@shared/types/common';
+import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
+import { ProjectState } from '@shared/types/project-agent';
 
 export interface ModelUpdateEvent {
     provider: string
@@ -36,6 +37,10 @@ export interface SystemEvents {
     // Ideas feature events
     'ideas:research-progress': ResearchProgress
     'ideas:idea-progress': IdeaProgress
+    'idea:regenerated': { ideaId: string }
+    'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
+    // Project Agent
+    'project:update': ProjectState
 }
 
 export type SystemEventKey = keyof SystemEvents

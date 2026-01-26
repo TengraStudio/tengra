@@ -19,15 +19,15 @@ export class GitService {
 
     async getStatus(cwd: string): Promise<{ path: string, status: string }[]> {
         const { stdout } = await this.execute('status --short', cwd);
-        if (!stdout) { return [] }
+        if (!stdout) { return []; }
 
         return stdout.split('\n')
             .filter(line => line.trim())
             .map(line => {
-                const status = line.substring(0, 2)
-                const path = line.substring(3)
-                return { path, status }
-            })
+                const status = line.substring(0, 2);
+                const path = line.substring(3);
+                return { path, status };
+            });
     }
 
     async add(cwd: string, files: string = '.') {
@@ -48,14 +48,14 @@ export class GitService {
 
     async getLog(cwd: string, count: number = 10) {
         const { stdout } = await this.execute(`log - n ${count} --pretty=format: "%h|%s|%an|%cI"`, cwd);
-        if (!stdout) { return [] }
+        if (!stdout) { return []; }
 
         return stdout.split('\n')
             .filter(line => line.trim())
             .map(line => {
-                const [hash, message, author, date] = line.split('|')
-                return { hash, message, author, date }
-            })
+                const [hash, message, author, date] = line.split('|');
+                return { hash, message, author, date };
+            });
     }
 
     async getBranches(cwd: string) {
@@ -72,85 +72,85 @@ export class GitService {
 
     async getFileDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ original: string; modified: string; success: boolean; error?: string }> {
         try {
-            const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`
-            const result = await this.execute(command, cwd)
+            const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`;
+            const result = await this.execute(command, cwd);
 
             if (!result.success || !result.stdout) {
-                return await this.getFallbackDiff(cwd, filePath, staged)
+                return await this.getFallbackDiff(cwd, filePath, staged);
             }
 
-            return this.parseUnifiedDiff(result.stdout)
+            return this.parseUnifiedDiff(result.stdout);
         } catch (error) {
-            return { original: '', modified: '', success: false, error: getErrorMessage(error) }
+            return { original: '', modified: '', success: false, error: getErrorMessage(error) };
         }
     }
 
     private async getFallbackDiff(cwd: string, filePath: string, staged: boolean): Promise<{ original: string; modified: string; success: boolean }> {
         if (staged) {
-            const contentResult = await this.execute(`show : "${filePath}"`, cwd)
+            const contentResult = await this.execute(`show : "${filePath}"`, cwd);
             if (contentResult.success && contentResult.stdout) {
-                return { original: '', modified: contentResult.stdout, success: true }
+                return { original: '', modified: contentResult.stdout, success: true };
             }
         }
 
-        const fullPath = join(cwd, filePath)
+        const fullPath = join(cwd, filePath);
         try {
-            const currentContent = await fs.readFile(fullPath, 'utf8')
-            const headResult = await this.execute(`show HEAD: "${filePath}"`, cwd)
+            const currentContent = await fs.readFile(fullPath, 'utf8');
+            const headResult = await this.execute(`show HEAD: "${filePath}"`, cwd);
 
             return {
                 original: (headResult.success && headResult.stdout) ? headResult.stdout : '',
                 modified: currentContent,
                 success: true
-            }
+            };
         } catch {
-            return { original: '', modified: '', success: false }
+            return { original: '', modified: '', success: false };
         }
     }
 
     private parseUnifiedDiff(stdout: string): { original: string; modified: string; success: boolean } {
-        const lines = stdout.split('\n')
-        let original = ''
-        let modified = ''
-        let inOriginal = false
-        let inModified = false
+        const lines = stdout.split('\n');
+        let original = '';
+        let modified = '';
+        let inOriginal = false;
+        let inModified = false;
 
         for (const line of lines) {
-            if (line.startsWith('---') || line.startsWith('+++')) { continue }
+            if (line.startsWith('---') || line.startsWith('+++')) { continue; }
             if (line.startsWith('@@')) {
-                inOriginal = true
-                inModified = true
-                continue
+                inOriginal = true;
+                inModified = true;
+                continue;
             }
 
             if (inOriginal && inModified) {
                 if (line.startsWith('-') && !line.startsWith('--')) {
-                    original += line.substring(1) + '\n'
+                    original += line.substring(1) + '\n';
                 } else if (line.startsWith('+') && !line.startsWith('++')) {
-                    modified += line.substring(1) + '\n'
+                    modified += line.substring(1) + '\n';
                 } else if (line.startsWith(' ')) {
-                    const context = line.substring(1)
-                    original += context + '\n'
-                    modified += context + '\n'
+                    const context = line.substring(1);
+                    original += context + '\n';
+                    modified += context + '\n';
                 }
             }
         }
 
-        return { original: original.trim(), modified: modified.trim(), success: true }
+        return { original: original.trim(), modified: modified.trim(), success: true };
     }
 
     async getUnifiedDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ diff: string; success: boolean; error?: string }> {
         try {
-            const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`
+            const command = staged ? `diff --cached -- "${filePath}"` : `diff -- "${filePath}"`;
 
-            const { stdout, stderr, success } = await this.execute(command, cwd)
+            const { stdout, stderr, success } = await this.execute(command, cwd);
 
             if (!success && stderr && !stdout) {
                 // File might be newly added - return empty diff for now
-                return { diff: '', success: true }
+                return { diff: '', success: true };
             }
 
-            return { diff: stdout ?? '', success: true }
+            return { diff: stdout ?? '', success: true };
         } catch (error) {
             return { diff: '', success: false, error: getErrorMessage(error) };
         }
@@ -166,13 +166,13 @@ export class GitService {
 
     async getCommitDiff(cwd: string, hash: string): Promise<{ diff: string; success: boolean; error?: string }> {
         try {
-            const { stdout, stderr, success } = await this.execute(`show ${hash}`, cwd)
+            const { stdout, stderr, success } = await this.execute(`show ${hash}`, cwd);
             if (!success && stderr && !stdout) {
-                return { diff: '', success: false, error: stderr }
+                return { diff: '', success: false, error: stderr };
             }
-            return { diff: stdout ?? '', success: true }
+            return { diff: stdout ?? '', success: true };
         } catch (error) {
-            return { diff: '', success: false, error: getErrorMessage(error) }
+            return { diff: '', success: false, error: getErrorMessage(error) };
         }
     }
 }

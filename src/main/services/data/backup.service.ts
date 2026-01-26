@@ -3,15 +3,15 @@
  * Backup and restore application settings and data
  */
 
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { appLogger } from '@main/logging/logger'
-import { DataService } from '@main/services/data/data.service'
-import { Chat, ChatMessage, DatabaseService } from '@main/services/data/database.service'
-import { JsonObject, JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { appLogger } from '@main/logging/logger';
+import { DataService } from '@main/services/data/data.service';
+import { Chat, ChatMessage, DatabaseService } from '@main/services/data/database.service';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface BackupMetadata {
     version: string
@@ -72,29 +72,29 @@ const DEFAULT_AUTO_BACKUP_CONFIG: AutoBackupConfig = {
     intervalHours: 24,
     maxBackups: 10,
     lastBackup: null
-}
+};
 
 export class BackupService {
-    private backupDir: string
-    private autoBackupTimer: ReturnType<typeof setInterval> | null = null
-    private autoBackupConfig: AutoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG }
-    private configPath: string
+    private backupDir: string;
+    private autoBackupTimer: ReturnType<typeof setInterval> | null = null;
+    private autoBackupConfig: AutoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG };
+    private configPath: string;
 
     constructor(
         private dataService: DataService,
         private databaseService: DatabaseService
     ) {
-        this.backupDir = path.join(dataService.getPath('data'), 'backups')
-        this.configPath = path.join(dataService.getPath('config'), 'backup-config.json')
-        void this.ensureBackupDir()
-        void this.loadAutoBackupConfig()
+        this.backupDir = path.join(dataService.getPath('data'), 'backups');
+        this.configPath = path.join(dataService.getPath('config'), 'backup-config.json');
+        void this.ensureBackupDir();
+        void this.loadAutoBackupConfig();
     }
 
     private async ensureBackupDir() {
         try {
-            await fs.promises.mkdir(this.backupDir, { recursive: true })
+            await fs.promises.mkdir(this.backupDir, { recursive: true });
         } catch (error) {
-            appLogger.error('BackupService', 'Failed to ensure backup dir:', error as Error)
+            appLogger.error('BackupService', 'Failed to ensure backup dir:', error as Error);
         }
     }
 
@@ -113,71 +113,71 @@ export class BackupService {
             includeSettings: true,
             includePrompts: true,
             ...options
-        }
+        };
 
         try {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-            const backupName = `backup-${timestamp}`
-            const backupPath = path.join(this.backupDir, `${backupName}.json`)
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const backupName = `backup-${timestamp}`;
+            const backupPath = path.join(this.backupDir, `${backupName}.json`);
 
-            const backup: Partial<BackupData> = {}
-            const includes: string[] = []
+            const backup: Partial<BackupData> = {};
+            const includes: string[] = [];
 
             // Settings (Still read from file as it's the source of truth for settings)
             if (opts.includeSettings) {
-                const settingsPath = path.join(this.dataService.getPath('config'), 'settings.json')
+                const settingsPath = path.join(this.dataService.getPath('config'), 'settings.json');
                 try {
-                    const settingsContent = await fs.promises.readFile(settingsPath, 'utf8')
-                    backup.settings = safeJsonParse<JsonObject>(settingsContent, {})
-                    includes.push('settings')
+                    const settingsContent = await fs.promises.readFile(settingsPath, 'utf8');
+                    backup.settings = safeJsonParse<JsonObject>(settingsContent, {});
+                    includes.push('settings');
                 } catch (e) {
-                    appLogger.warn('BackupService', 'Could not read settings:', e as Error)
+                    appLogger.warn('BackupService', 'Could not read settings:', e as Error);
                 }
             }
 
             // Chats (From DB)
             if (opts.includeChats) {
                 try {
-                    const chats = await this.databaseService.getAllChats()
-                    const messages = await this.databaseService.getAllMessages()
+                    const chats = await this.databaseService.getAllChats();
+                    const messages = await this.databaseService.getAllMessages();
 
                     // Reassemble chat objects with their messages
                     const fullChats = chats.map(chat => {
-                        const chatMessages = messages.filter((m) => m.chatId === chat.id)
+                        const chatMessages = messages.filter((m) => m.chatId === chat.id);
                         return {
                             ...chat,
                             messages: chatMessages
-                        }
-                    })
+                        };
+                    });
 
                     // Safely serialize chats for backup - convert non-JSON types
-                    backup.chats = JSON.parse(JSON.stringify(fullChats)) as JsonObject[]
-                    includes.push('chats')
+                    backup.chats = JSON.parse(JSON.stringify(fullChats)) as JsonObject[];
+                    includes.push('chats');
                 } catch (e) {
-                    appLogger.error('BackupService', 'Failed to export chats from DB:', e as Error)
+                    appLogger.error('BackupService', 'Failed to export chats from DB:', e as Error);
                 }
             }
 
             // Prompts (From DB)
             if (opts.includePrompts) {
                 try {
-                    const prompts = await this.databaseService.getPrompts()
+                    const prompts = await this.databaseService.getPrompts();
                     // Safely serialize prompts for backup - convert non-JSON types
-                    backup.prompts = JSON.parse(JSON.stringify(prompts)) as JsonObject[]
-                    includes.push('prompts')
+                    backup.prompts = JSON.parse(JSON.stringify(prompts)) as JsonObject[];
+                    includes.push('prompts');
                 } catch (e) {
-                    appLogger.error('BackupService', 'Failed to export prompts from DB:', e as Error)
+                    appLogger.error('BackupService', 'Failed to export prompts from DB:', e as Error);
                 }
             }
 
             // Folders (From DB)
             try {
-                const folders = await this.databaseService.getFolders()
+                const folders = await this.databaseService.getFolders();
                 // Safely serialize folders for backup - convert non-JSON types
-                backup.folders = JSON.parse(JSON.stringify(folders)) as JsonObject[]
-                includes.push('folders')
+                backup.folders = JSON.parse(JSON.stringify(folders)) as JsonObject[];
+                includes.push('folders');
             } catch (e) {
-                appLogger.error('BackupService', 'Failed to export folders from DB:', e as Error)
+                appLogger.error('BackupService', 'Failed to export folders from DB:', e as Error);
             }
 
             // Metadata
@@ -187,27 +187,27 @@ export class BackupService {
                 appVersion: process.env.npm_package_version ?? '1.0.0',
                 platform: process.platform,
                 includes
-            }
+            };
 
-            backup._metadata = metadata
+            backup._metadata = metadata;
 
             // Write backup
-            await fs.promises.writeFile(backupPath, JSON.stringify(backup, null, 2))
+            await fs.promises.writeFile(backupPath, JSON.stringify(backup, null, 2));
 
-            appLogger.info('BackupService', `Created backup at ${backupPath}`)
+            appLogger.info('BackupService', `Created backup at ${backupPath}`);
 
             return {
                 success: true,
                 path: backupPath,
                 metadata
-            }
+            };
         } catch (error) {
-            const msg = getErrorMessage(error as Error)
-            appLogger.error('BackupService', `Backup failed: ${msg}`)
+            const msg = getErrorMessage(error as Error);
+            appLogger.error('BackupService', `Backup failed: ${msg}`);
             return {
                 success: false,
                 error: msg
-            }
+            };
         }
     }
 
@@ -272,7 +272,7 @@ export class BackupService {
             // Type-safe conversion from JsonObject[] to RestoreChatData[]
             const chats: RestoreChatData[] = backup.chats.map(chatObj => ({
                 id: String(chatObj.id),
-                title: String(chatObj.title || 'Untitled Chat'),
+                title: String(chatObj.title ?? 'Untitled Chat'),
                 model: chatObj.model ? String(chatObj.model) : undefined,
                 backend: chatObj.backend ? String(chatObj.backend) : undefined,
                 messages: Array.isArray(chatObj.messages) ? chatObj.messages as ChatMessage[] : [],
@@ -283,8 +283,8 @@ export class BackupService {
                 folderId: chatObj.folderId ? String(chatObj.folderId) : undefined,
                 projectId: chatObj.projectId ? String(chatObj.projectId) : undefined,
                 isGenerating: Boolean(chatObj.isGenerating),
-                metadata: chatObj.metadata as JsonObject || {}
-            }))
+                metadata: chatObj.metadata as JsonObject ?? {}
+            }));
             for (const chat of chats) {
                 await this.restoreSingleChat(chat, opts.mergeChats);
             }
@@ -305,17 +305,17 @@ export class BackupService {
                     title: chat.title,
                     model: chat.model,
                     backend: chat.backend,
-                    createdAt: typeof chat.createdAt === 'string' ? new Date(chat.createdAt) : 
-                              chat.createdAt instanceof Date ? chat.createdAt : new Date(),
+                    createdAt: typeof chat.createdAt === 'string' ? new Date(chat.createdAt) :
+                        chat.createdAt instanceof Date ? chat.createdAt : new Date(),
                     updatedAt: typeof chat.updatedAt === 'string' ? new Date(chat.updatedAt) :
-                              chat.updatedAt instanceof Date ? chat.updatedAt : new Date(),
+                        chat.updatedAt instanceof Date ? chat.updatedAt : new Date(),
                     isPinned: chat.isPinned,
                     isFavorite: chat.isFavorite,
                     folderId: chat.folderId,
                     projectId: chat.projectId,
                     isGenerating: chat.isGenerating,
                     metadata: chat.metadata
-                }
+                };
                 await this.databaseService.updateChat(chatId, chatUpdate);
             } else if (!existing) {
                 // Map RestoreChatData to Chat
@@ -406,29 +406,29 @@ export class BackupService {
      * List available backups
      */
     async listBackups(): Promise<Array<{ name: string; path: string; metadata?: BackupMetadata }>> {
-        const backups: Array<{ name: string; path: string; metadata?: BackupMetadata }> = []
+        const backups: Array<{ name: string; path: string; metadata?: BackupMetadata }> = [];
 
         try {
-            await fs.promises.access(this.backupDir)
+            await fs.promises.access(this.backupDir);
         } catch {
-            return backups
+            return backups;
         }
 
         try {
-            const files = (await fs.promises.readdir(this.backupDir)).filter(f => f.endsWith('.json'))
+            const files = (await fs.promises.readdir(this.backupDir)).filter(f => f.endsWith('.json'));
 
             for (const file of files) {
-                const filePath = path.join(this.backupDir, file)
+                const filePath = path.join(this.backupDir, file);
                 try {
-                    const content = await fs.promises.readFile(filePath, 'utf8')
-                    const json = safeJsonParse<Record<string, unknown>>(content, {})
+                    const content = await fs.promises.readFile(filePath, 'utf8');
+                    const json = safeJsonParse<Record<string, unknown>>(content, {});
                     backups.push({
                         name: file,
                         path: filePath,
                         metadata: json._metadata as BackupMetadata | undefined
-                    })
+                    });
                 } catch {
-                    backups.push({ name: file, path: filePath })
+                    backups.push({ name: file, path: filePath });
                 }
             }
 
@@ -438,8 +438,8 @@ export class BackupService {
                 return bTime.localeCompare(aTime);
             });
         } catch (error) {
-            appLogger.error('BackupService', 'Failed to list backups:', error as Error)
-            return []
+            appLogger.error('BackupService', 'Failed to list backups:', error as Error);
+            return [];
         }
     }
 
@@ -448,10 +448,10 @@ export class BackupService {
      */
     async deleteBackup(backupPath: string): Promise<boolean> {
         try {
-            await fs.promises.unlink(backupPath)
-            return true
+            await fs.promises.unlink(backupPath);
+            return true;
         } catch {
-            return false
+            return false;
         }
     }
 
@@ -459,7 +459,7 @@ export class BackupService {
      * Get backup directory path
      */
     getBackupDir(): string {
-        return this.backupDir
+        return this.backupDir;
     }
 
     /**
@@ -468,21 +468,21 @@ export class BackupService {
     private async loadAutoBackupConfig(): Promise<void> {
         try {
             try {
-                await fs.promises.access(this.configPath)
+                await fs.promises.access(this.configPath);
             } catch {
-                return
+                return;
             }
 
-            const content = await fs.promises.readFile(this.configPath, 'utf8')
-            const loaded = safeJsonParse<Partial<AutoBackupConfig>>(content, {})
-            this.autoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG, ...loaded }
+            const content = await fs.promises.readFile(this.configPath, 'utf8');
+            const loaded = safeJsonParse<Partial<AutoBackupConfig>>(content, {});
+            this.autoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG, ...loaded };
 
             // Start auto-backup if enabled
             if (this.autoBackupConfig.enabled) {
-                this.startAutoBackup()
+                this.startAutoBackup();
             }
         } catch (error) {
-            appLogger.error('BackupService', `Failed to load auto-backup config: ${getErrorMessage(error as Error)}`)
+            appLogger.error('BackupService', `Failed to load auto-backup config: ${getErrorMessage(error as Error)}`);
         }
     }
 
@@ -491,11 +491,11 @@ export class BackupService {
      */
     private async saveAutoBackupConfig(): Promise<void> {
         try {
-            const configDir = path.dirname(this.configPath)
-            await fs.promises.mkdir(configDir, { recursive: true })
-            await fs.promises.writeFile(this.configPath, JSON.stringify(this.autoBackupConfig, null, 2))
+            const configDir = path.dirname(this.configPath);
+            await fs.promises.mkdir(configDir, { recursive: true });
+            await fs.promises.writeFile(this.configPath, JSON.stringify(this.autoBackupConfig, null, 2));
         } catch (error) {
-            appLogger.error('BackupService', `Failed to save auto-backup config: ${getErrorMessage(error as Error)}`)
+            appLogger.error('BackupService', `Failed to save auto-backup config: ${getErrorMessage(error as Error)}`);
         }
     }
 
@@ -503,7 +503,7 @@ export class BackupService {
      * Get auto-backup status
      */
     getAutoBackupStatus(): AutoBackupConfig {
-        return { ...this.autoBackupConfig }
+        return { ...this.autoBackupConfig };
     }
 
     /**
@@ -514,29 +514,29 @@ export class BackupService {
         intervalHours?: number
         maxBackups?: number
     }): void {
-        const wasEnabled = this.autoBackupConfig.enabled
+        const wasEnabled = this.autoBackupConfig.enabled;
 
-        this.autoBackupConfig.enabled = config.enabled
+        this.autoBackupConfig.enabled = config.enabled;
         if (config.intervalHours !== undefined) {
-            this.autoBackupConfig.intervalHours = Math.max(1, config.intervalHours) // Minimum 1 hour
+            this.autoBackupConfig.intervalHours = Math.max(1, config.intervalHours); // Minimum 1 hour
         }
         if (config.maxBackups !== undefined) {
-            this.autoBackupConfig.maxBackups = Math.max(1, config.maxBackups) // Minimum 1 backup
+            this.autoBackupConfig.maxBackups = Math.max(1, config.maxBackups); // Minimum 1 backup
         }
 
         this.saveAutoBackupConfig().catch(err => {
-            appLogger.error('BackupService', 'Failed to save auto-backup config', err as Error)
-        })
+            appLogger.error('BackupService', 'Failed to save auto-backup config', err as Error);
+        });
 
         // Handle timer based on enabled state change
         if (config.enabled && !wasEnabled) {
-            this.startAutoBackup()
+            this.startAutoBackup();
         } else if (!config.enabled && wasEnabled) {
-            this.stopAutoBackup()
+            this.stopAutoBackup();
         } else if (config.enabled && wasEnabled && config.intervalHours !== undefined) {
             // Restart with new interval
-            this.stopAutoBackup()
-            this.startAutoBackup()
+            this.stopAutoBackup();
+            this.startAutoBackup();
         }
     }
 
@@ -545,18 +545,18 @@ export class BackupService {
      */
     private startAutoBackup(): void {
         if (this.autoBackupTimer) {
-            return // Already running
+            return; // Already running
         }
 
-        const intervalMs = this.autoBackupConfig.intervalHours * 60 * 60 * 1000
-        appLogger.info('BackupService', `Starting auto-backup every ${this.autoBackupConfig.intervalHours} hours`)
+        const intervalMs = this.autoBackupConfig.intervalHours * 60 * 60 * 1000;
+        appLogger.info('BackupService', `Starting auto-backup every ${this.autoBackupConfig.intervalHours} hours`);
 
         // Check if we need to run a backup immediately (if last backup is too old)
-        void this.checkAndRunBackup()
+        void this.checkAndRunBackup();
 
         this.autoBackupTimer = setInterval(() => {
-            void this.checkAndRunBackup()
-        }, intervalMs)
+            void this.checkAndRunBackup();
+        }, intervalMs);
     }
 
     /**
@@ -564,9 +564,9 @@ export class BackupService {
      */
     private stopAutoBackup(): void {
         if (this.autoBackupTimer) {
-            clearInterval(this.autoBackupTimer)
-            this.autoBackupTimer = null
-            appLogger.info('BackupService', 'Stopped auto-backup')
+            clearInterval(this.autoBackupTimer);
+            this.autoBackupTimer = null;
+            appLogger.info('BackupService', 'Stopped auto-backup');
         }
     }
 
@@ -574,27 +574,27 @@ export class BackupService {
      * Check if a backup is needed and run it
      */
     private async checkAndRunBackup(): Promise<void> {
-        const lastBackup = this.autoBackupConfig.lastBackup
-        const intervalMs = this.autoBackupConfig.intervalHours * 60 * 60 * 1000
+        const lastBackup = this.autoBackupConfig.lastBackup;
+        const intervalMs = this.autoBackupConfig.intervalHours * 60 * 60 * 1000;
 
         if (lastBackup) {
-            const lastBackupTime = new Date(lastBackup).getTime()
-            const now = Date.now()
+            const lastBackupTime = new Date(lastBackup).getTime();
+            const now = Date.now();
             if (now - lastBackupTime < intervalMs) {
                 // Not time for a backup yet
-                return
+                return;
             }
         }
 
-        appLogger.info('BackupService', 'Running scheduled auto-backup')
-        const result = await this.createBackup()
+        appLogger.info('BackupService', 'Running scheduled auto-backup');
+        const result = await this.createBackup();
 
         if (result.success) {
-            this.autoBackupConfig.lastBackup = new Date().toISOString()
-            await this.saveAutoBackupConfig()
+            this.autoBackupConfig.lastBackup = new Date().toISOString();
+            await this.saveAutoBackupConfig();
 
             // Clean up old backups
-            await this.cleanupOldBackups()
+            await this.cleanupOldBackups();
         }
     }
 
@@ -602,31 +602,31 @@ export class BackupService {
      * Clean up old backups, keeping only the configured number of most recent backups
      */
     async cleanupOldBackups(): Promise<number> {
-        const backups = await this.listBackups()
-        const maxBackups = this.autoBackupConfig.maxBackups
+        const backups = await this.listBackups();
+        const maxBackups = this.autoBackupConfig.maxBackups;
 
         if (backups.length <= maxBackups) {
-            return 0
+            return 0;
         }
 
         // Backups are sorted by date (newest first), so delete from the end
-        const toDelete = backups.slice(maxBackups)
-        let deleted = 0
+        const toDelete = backups.slice(maxBackups);
+        let deleted = 0;
 
         for (const backup of toDelete) {
             if (await this.deleteBackup(backup.path)) {
-                deleted++
-                appLogger.info('BackupService', `Deleted old backup: ${backup.name}`)
+                deleted++;
+                appLogger.info('BackupService', `Deleted old backup: ${backup.name}`);
             }
         }
 
-        return deleted
+        return deleted;
     }
 
     /**
      * Stop the service and clean up resources
      */
     dispose(): void {
-        this.stopAutoBackup()
+        this.stopAutoBackup();
     }
 }

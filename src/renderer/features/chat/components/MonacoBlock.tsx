@@ -1,11 +1,11 @@
-import { Check, Copy, ExternalLink, Play, Save, Square, Volume2, VolumeX } from 'lucide-react'
-import React, { memo, useState } from 'react'
+import { Check, Copy, ExternalLink, Play, Save, Square, Volume2, VolumeX } from 'lucide-react';
+import React, { memo, useState } from 'react';
 
-import { CodeEditor } from '@/components/ui/CodeEditor'
-import { Language, useTranslation } from '@/i18n'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { normalizeLanguage } from '@/utils/language-map'
+import { CodeEditor } from '@/components/ui/CodeEditor';
+import { Language, useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { normalizeLanguage } from '@/utils/language-map';
 
 interface MonacoBlockProps {
     language: string
@@ -19,29 +19,29 @@ interface MonacoBlockProps {
 export const MonacoBlock = memo<MonacoBlockProps>(({
     language, code, isSpeaking, onSpeak, onStop, i18nLanguage = 'en'
 }) => {
-    const { t } = useTranslation(i18nLanguage)
-    const [copied, setCopied] = useState(false)
-    const [isExecuting, setIsExecuting] = useState(false)
-    const [executionResult, setExecutionResult] = useState<{ output: string, error?: boolean } | null>(null)
+    const { t } = useTranslation(i18nLanguage);
+    const [copied, setCopied] = useState(false);
+    const [isExecuting, setIsExecuting] = useState(false);
+    const [executionResult, setExecutionResult] = useState<{ output: string, error?: boolean } | null>(null);
 
     const handleCopy = () => {
-        void navigator.clipboard.writeText(code)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
+        void navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const handleExecute = () => {
-        setIsExecuting(true)
-        setExecutionResult(null)
+        setIsExecuting(true);
+        setExecutionResult(null);
         setTimeout(() => {
-            setIsExecuting(false)
-            setExecutionResult({ output: `Executed ${language} block successfully.` })
-        }, 1500)
-    }
+            setIsExecuting(false);
+            setExecutionResult({ output: `Executed ${language} block successfully.` });
+        }, 1500);
+    };
 
-    const lines = code.split('\n').length
-    const height = Math.min(Math.max(lines * 19 + 20, 100), 600)
-    const canExecute = ['javascript', 'typescript', 'python', 'sh', 'bash', 'powershell'].includes(normalizeLanguage(language))
+    const lines = code.split('\n').length;
+    const height = Math.min(Math.max(lines * 19 + 20, 100), 600);
+    const canExecute = ['javascript', 'typescript', 'python', 'sh', 'bash', 'powershell'].includes(normalizeLanguage(language));
 
     return (
         <div className="not-prose my-4 rounded-xl overflow-hidden border border-border/30 bg-[#1e1e1e] group/code transition-all duration-300 shadow-xl relative">
@@ -52,8 +52,8 @@ export const MonacoBlock = memo<MonacoBlockProps>(({
             </div>
             <ExecutionOverlay result={executionResult} onClose={() => setExecutionResult(null)} />
         </div>
-    )
-})
+    );
+});
 
 const BlockHeader: React.FC<{
     language: string
@@ -90,7 +90,7 @@ const BlockHeader: React.FC<{
             </button>
         </div>
     </div>
-)
+);
 
 const FloatingActions: React.FC<{
     canExecute: boolean
@@ -109,7 +109,7 @@ const FloatingActions: React.FC<{
             <ActionButton icon={<ExternalLink className="w-3 h-3" />} label="Open in Editor" delay={0.1} />
         </AnimatePresence>
     </div>
-)
+);
 
 const ActionButton: React.FC<{
     icon: React.ReactNode
@@ -117,11 +117,11 @@ const ActionButton: React.FC<{
     delay: number
     primary?: boolean
 }> = ({ icon, label, delay, primary }) => (
-    <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg", primary ? "bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10")}>
+    <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg", primary ? "bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30" : "bg-white/5 border-white/10 text-foreground/70 hover:bg-white/10")}>
         {icon}
         <span>{label}</span>
     </motion.button>
-)
+);
 
 const ExecutionOverlay: React.FC<{
     result: { output: string; error?: boolean } | null
@@ -138,4 +138,4 @@ const ExecutionOverlay: React.FC<{
             </motion.div>
         )}
     </AnimatePresence>
-)
+);

@@ -1,5 +1,5 @@
-import { LinkedAccountInfo } from '@renderer/electron.d'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LinkedAccountInfo } from '@renderer/electron.d';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface UseLinkedAccountsResult {
     accounts: LinkedAccountInfo[]
@@ -17,61 +17,70 @@ export interface UseLinkedAccountsResult {
  * Memoized to prevent excessive re-renders.
  */
 export function useLinkedAccounts(): UseLinkedAccountsResult {
-    const [accounts, setAccounts] = useState<LinkedAccountInfo[]>([])
-    const [loading, setLoading] = useState(true)
-    const initialFetchDone = useRef(false)
+    const [accounts, setAccounts] = useState<LinkedAccountInfo[]>([]);
+    const [loading, setLoading] = useState(true);
+    const initialFetchDone = useRef(false);
 
     const refreshAccounts = useCallback(async () => {
         try {
-            setLoading(true)
-            const linkedAccounts = await window.electron.getLinkedAccounts()
-            setAccounts(linkedAccounts)
+            setLoading(true);
+            const linkedAccounts = await window.electron.getLinkedAccounts();
+            setAccounts(linkedAccounts);
         } catch (error) {
-            console.error('Failed to fetch linked accounts:', error)
-            setAccounts([])
+            console.error('Failed to fetch linked accounts:', error);
+            setAccounts([]);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [])
+    }, []);
 
     // Only fetch once on mount
     useEffect(() => {
         if (!initialFetchDone.current) {
-            initialFetchDone.current = true
-            void refreshAccounts()
+            initialFetchDone.current = true;
+            void refreshAccounts();
         }
-    }, [refreshAccounts])
+
+        // Listen for account change events from main process (e.g. multi-account linking)
+        const removeListener = window.electron.ipcRenderer.on('auth:account-changed', () => {
+            void refreshAccounts();
+        });
+
+        return () => {
+            removeListener();
+        };
+    }, [refreshAccounts]);
 
     // Memoize these functions to prevent re-renders
     const getAccountsByProvider = useCallback((provider: string): LinkedAccountInfo[] => {
-        return accounts.filter(a => a.provider === provider)
-    }, [accounts])
+        return accounts.filter(a => a.provider === provider);
+    }, [accounts]);
 
     const getActiveAccount = useCallback((provider: string): LinkedAccountInfo | undefined => {
-        return accounts.find(a => a.provider === provider && a.isActive)
-    }, [accounts])
+        return accounts.find(a => a.provider === provider && a.isActive);
+    }, [accounts]);
 
     const hasAccount = useCallback((provider: string): boolean => {
-        return accounts.some(a => a.provider === provider)
-    }, [accounts])
+        return accounts.some(a => a.provider === provider);
+    }, [accounts]);
 
     const unlinkAccount = useCallback(async (accountId: string) => {
         try {
-            await window.electron.unlinkAccount(accountId)
-            await refreshAccounts()
+            await window.electron.unlinkAccount(accountId);
+            await refreshAccounts();
         } catch (error) {
-            console.error('Failed to unlink account:', error)
+            console.error('Failed to unlink account:', error);
         }
-    }, [refreshAccounts])
+    }, [refreshAccounts]);
 
     const setActiveAccount = useCallback(async (provider: string, accountId: string) => {
         try {
-            await window.electron.setActiveLinkedAccount(provider, accountId)
-            await refreshAccounts()
+            await window.electron.setActiveLinkedAccount(provider, accountId);
+            await refreshAccounts();
         } catch (error) {
-            console.error('Failed to set active account:', error)
+            console.error('Failed to set active account:', error);
         }
-    }, [refreshAccounts])
+    }, [refreshAccounts]);
 
     // Memoize the entire return object to prevent unnecessary re-renders
     return useMemo(() => ({
@@ -83,5 +92,5 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
         refreshAccounts,
         unlinkAccount,
         setActiveAccount
-    }), [accounts, loading, getAccountsByProvider, getActiveAccount, hasAccount, refreshAccounts, unlinkAccount, setActiveAccount])
+    }), [accounts, loading, getAccountsByProvider, getActiveAccount, hasAccount, refreshAccounts, unlinkAccount, setActiveAccount]);
 }

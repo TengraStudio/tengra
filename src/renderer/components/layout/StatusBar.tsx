@@ -6,10 +6,10 @@
 import {
 AlertCircle, Bell,
     GitBranch, Loader2,     Wifi, WifiOff, Zap
-} from 'lucide-react'
-import React, { createContext, useCallback,useContext, useState } from 'react'
+} from 'lucide-react';
+import React, { createContext, useCallback,useContext, useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 export interface StatusBarItem {
     id: string
@@ -29,13 +29,13 @@ interface StatusBarContextType {
     updateItem: (id: string, updates: Partial<StatusBarItem>) => void
 }
 
-const StatusBarContext = createContext<StatusBarContextType | null>(null)
+const StatusBarContext = createContext<StatusBarContextType | null>(null);
 
 export const useStatusBar = () => {
-    const context = useContext(StatusBarContext)
-    if (!context) {throw new Error('useStatusBar must be used within StatusBarProvider')}
-    return context
-}
+    const context = useContext(StatusBarContext);
+    if (!context) {throw new Error('useStatusBar must be used within StatusBarProvider');}
+    return context;
+};
 
 // Status Bar Provider
 export const StatusBarProvider: React.FC<{
@@ -43,43 +43,43 @@ export const StatusBarProvider: React.FC<{
     defaultLeftItems?: StatusBarItem[]
     defaultRightItems?: StatusBarItem[]
 }> = ({ children, defaultLeftItems = [], defaultRightItems = [] }) => {
-    const [leftItems, setLeftItems] = useState<StatusBarItem[]>(defaultLeftItems)
-    const [rightItems, setRightItems] = useState<StatusBarItem[]>(defaultRightItems)
+    const [leftItems, setLeftItems] = useState<StatusBarItem[]>(defaultLeftItems);
+    const [rightItems, setRightItems] = useState<StatusBarItem[]>(defaultRightItems);
 
     const addItem = useCallback((item: StatusBarItem, position: 'left' | 'right') => {
-        const setter = position === 'left' ? setLeftItems : setRightItems
+        const setter = position === 'left' ? setLeftItems : setRightItems;
         setter(prev => {
-            const existing = prev.find(i => i.id === item.id)
-            if (existing) {return prev}
-            const newItems = [...prev, item]
-            return newItems.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
-        })
-    }, [])
+            const existing = prev.find(i => i.id === item.id);
+            if (existing) {return prev;}
+            const newItems = [...prev, item];
+            return newItems.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        });
+    }, []);
 
     const removeItem = useCallback((id: string) => {
-        setLeftItems(prev => prev.filter(i => i.id !== id))
-        setRightItems(prev => prev.filter(i => i.id !== id))
-    }, [])
+        setLeftItems(prev => prev.filter(i => i.id !== id));
+        setRightItems(prev => prev.filter(i => i.id !== id));
+    }, []);
 
     const updateItem = useCallback((id: string, updates: Partial<StatusBarItem>) => {
         const updater = (items: StatusBarItem[]) =>
-            items.map(item => item.id === id ? { ...item, ...updates } : item)
-        setLeftItems(updater)
-        setRightItems(updater)
-    }, [])
+            items.map(item => item.id === id ? { ...item, ...updates } : item);
+        setLeftItems(updater);
+        setRightItems(updater);
+    }, []);
 
     return (
         <StatusBarContext.Provider value={{ leftItems, rightItems, addItem, removeItem, updateItem }}>
             {children}
         </StatusBarContext.Provider>
-    )
-}
+    );
+};
 
 // Status Bar Item Component
 const StatusBarItemView: React.FC<{
     item: StatusBarItem
 }> = ({ item }) => {
-    if (item.visible === false) {return null}
+    if (item.visible === false) {return null;}
 
     return (
         <div
@@ -94,26 +94,26 @@ const StatusBarItemView: React.FC<{
         >
             {item.content}
         </div>
-    )
-}
+    );
+};
 
 // Main Status Bar Component
 export const StatusBar: React.FC<{
     className?: string
     variant?: 'default' | 'primary' | 'warning' | 'error'
 }> = ({ className, variant = 'default' }) => {
-    const { leftItems, rightItems } = useStatusBar()
+    const { leftItems, rightItems } = useStatusBar();
 
     const variantClasses = {
         default: 'bg-primary/90',
         primary: 'bg-primary',
         warning: 'bg-amber-600',
         error: 'bg-red-600'
-    }
+    };
 
     return (
         <div className={cn(
-            "h-6 flex items-center justify-between text-white/90 select-none",
+            "h-6 flex items-center justify-between text-foreground/90 select-none",
             variantClasses[variant],
             className
         )}>
@@ -131,8 +131,8 @@ export const StatusBar: React.FC<{
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 // Pre-built Status Items
 export const GitBranchStatus: React.FC<{
@@ -151,7 +151,7 @@ export const GitBranchStatus: React.FC<{
         <span>{branch}</span>
         {modified > 0 && <span className="opacity-70">+{modified}</span>}
     </div>
-)
+);
 
 export const ConnectionStatus: React.FC<{
     connected: boolean
@@ -172,7 +172,7 @@ export const ConnectionStatus: React.FC<{
         )}
         {label && <span>{label}</span>}
     </div>
-)
+);
 
 export const NotificationBell: React.FC<{
     count?: number
@@ -192,27 +192,27 @@ export const NotificationBell: React.FC<{
             </span>
         )}
     </div>
-)
+);
 
 export const LoadingStatus: React.FC<{
     loading: boolean
     label?: string
 }> = ({ loading, label }) => {
-    if (!loading) {return null}
+    if (!loading) {return null;}
 
     return (
         <div className="flex items-center gap-1 px-2 py-0.5 text-[11px]">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             {label && <span>{label}</span>}
         </div>
-    )
-}
+    );
+};
 
 export const ErrorStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) {return null}
+    if (count === 0) {return null;}
 
     return (
         <div
@@ -225,14 +225,14 @@ export const ErrorStatus: React.FC<{
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{count} {count === 1 ? 'Error' : 'Errors'}</span>
         </div>
-    )
-}
+    );
+};
 
 export const WarningStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) {return null}
+    if (count === 0) {return null;}
 
     return (
         <div
@@ -245,8 +245,8 @@ export const WarningStatus: React.FC<{
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{count} {count === 1 ? 'Warning' : 'Warnings'}</span>
         </div>
-    )
-}
+    );
+};
 
 export const ModelStatus: React.FC<{
     model?: string
@@ -262,6 +262,6 @@ export const ModelStatus: React.FC<{
         <Zap className="w-3.5 h-3.5" />
         <span>{model}</span>
     </div>
-)
+);
 
-export default StatusBar
+export default StatusBar;

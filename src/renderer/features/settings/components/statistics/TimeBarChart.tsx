@@ -1,7 +1,7 @@
-import { formatTime } from '@/lib/formatters'
+import { formatTime } from '@/lib/formatters';
 
 export const TimeBarChart = ({ value, maxValue, label, color = 'hsl(var(--primary))' }: { value: number; maxValue: number; label: string; color?: string }) => {
-    const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0
+    const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -15,5 +15,5 @@ export const TimeBarChart = ({ value, maxValue, label, color = 'hsl(var(--primar
                 />
             </div>
         </div>
-    )
-}
+    );
+};

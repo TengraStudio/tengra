@@ -1,13 +1,13 @@
-import { ProjectDashboard } from '@renderer/features/projects/components/ProjectDashboard'
-import React from 'react'
+import { ProjectDashboard } from '@renderer/features/projects/components/ProjectDashboard';
+import React from 'react';
 
-import { TerminalPanel } from '@/features/terminal/TerminalPanel'
-import { Language } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { EditorTab, Project, ProjectDashboardTab, TerminalTab, WorkspaceDashboardTab } from '@/types'
+import { TerminalPanel } from '@/features/terminal/TerminalPanel';
+import { Language } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { EditorTab, Project, ProjectDashboardTab, TerminalTab, WorkspaceDashboardTab } from '@/types';
 
-import { EditorTabs } from './EditorTabs'
-import { WorkspaceEditor } from './WorkspaceEditor'
+import { EditorTabs } from './EditorTabs';
+import { WorkspaceEditor } from './WorkspaceEditor';
 
 interface WorkspaceMainProps {
     dashboardTab: WorkspaceDashboardTab
@@ -102,5 +102,5 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

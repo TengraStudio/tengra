@@ -22,9 +22,20 @@ export const tr = {
         clear: 'Temizle',
         add: 'Ekle',
         done: 'Tamamlandı',
-        pending: 'Bekliyor',
+        close: 'Kapat',
+        pending: 'Beklemede',
         selectAll: 'Tümünü Seç',
         itemsSelected: '{{count}} öğe seçildi'
+    },
+    languages: {
+        tr: 'Türkçe',
+        en: 'İngilizce',
+        de: 'Almanca',
+        fr: 'Fransızca',
+        es: 'İspanyolca',
+        ja: 'Japonca',
+        zh: 'Çince',
+        ar: 'Arapça'
     },
     themeStore: {
         title: 'Tema Mağazası',
@@ -222,7 +233,7 @@ export const tr = {
         git: 'Git',
         issues: 'Sorunlar',
         environment: 'Ortam',
-        logs: 'Günlükler',
+        logs: 'Loglar',
         fileCount: 'DOSYA SAYISI',
         loc: 'SATIR SAYISI',
         modules: 'MODÜLLER',
@@ -271,6 +282,13 @@ export const tr = {
         noRemote: 'Uzak sunucu yok',
         pull: 'Çek',
         push: 'İt',
+        commit: 'Commit',
+        remotes: 'Uzaklar',
+        noDiffData: 'Bu commit için diff verisi yok.',
+        changesStats: 'Değişiklik İstatistikleri',
+        filesChanged: 'Değişen Dosyalar',
+        linesAdded: 'Eklenen Satırlar',
+        linesDeleted: 'Silinen Satırlar',
         indexingComplete: 'İndeksleme tamamlandı!',
         indexingFailed: 'İndeksleme başarısız oldu.',
         indexingStarted: 'Proje indeksleme başlatılıyor...',
@@ -289,16 +307,18 @@ export const tr = {
         envDescription: 'Proje ortam değişkenlerini yönetin.',
         envKey: 'ANAHTAR',
         envValue: 'DEĞER',
-        envNoVars: 'Ortam değişkeni bulunamadı. Başlamak için bir .env dosyası oluşturun.',
+        envNoVars: 'Çevre değişkeni bulunamadı. Başlamak için bir .env dosyası oluşturun.',
+        envNamePlaceholder: 'DEĞİŞKEN_ADI',
         envAddVar: 'Değişken Ekle',
         envSave: 'Kaydet',
         envHideValue: 'Değeri Gizle',
         envShowValue: 'Değeri Göster',
+        envActions: 'EYLEMLER',
         // Logs Tab
-        logsDescription: 'Gerçek zamanlı uygulama günlükleri.',
-        logsEmpty: 'Günlük mevcut değil. Log çıktısı almak için projenizi çalıştırın.',
-        logsClear: 'Günlükleri Temizle',
-        logsFilter: 'Günlükleri filtrele...'
+        logsDescription: 'Gerçek zamanlı uygulama logları.',
+        logsEmpty: 'Log bulunamadı. Log çıktısı oluşturmak için projenizi çalıştırın.',
+        logsClear: 'Logları Temizle',
+        logsFilter: 'Logları filtrele...'
     },
     git: {
         commitGenerator: 'Git Commit Oluşturucu',
@@ -444,7 +464,19 @@ export const tr = {
     },
     accounts: {
         title: 'Bağlı Hesaplar',
-        subtitle: 'Harici servis ve API bağlantılarını yönetin.',
+        subtitle: 'Harici servisleri ve API bağlantılarını yönetin.',
+        management: 'Hesap Yönetimi',
+        refreshAccounts: 'Hesapları Yenile',
+        activeAccounts: 'Aktif Hesaplar',
+        addNewAccount: 'Yeni Hesap Ekle',
+        accountNamePlaceholder: 'Hesap Adı (Örn. İş, Kişisel)',
+        create: 'Oluştur',
+        switch: 'Değiştir',
+        loadFailed: 'Hesaplar yüklenemedi',
+        createSuccess: '"{{name}}" hesabı oluşturuldu',
+        createFailed: 'Hesap oluşturulamadı',
+        switchSuccess: '"{{name}}" hesabına geçildi',
+        switchFailed: 'Hesap değiştirilemedi',
 
         // Categories
         categories: {
@@ -726,7 +758,9 @@ export const tr = {
         username: 'Kullanıcı Adı',
         cancel: 'İptal',
         add: 'Ekle',
-        deleteConfirm: '{name} öğesini silmek istediğinize emin misiniz?',
+        closeModal: 'Modalı kapat',
+        inputAriaLabel: '{{type}} adı',
+        deleteConfirm: '{name} silmek istediğinizden emin misiniz?',
         confirm: 'Onayla'
     },
     templates: {
@@ -1111,6 +1145,7 @@ export const tr = {
         saveSessionKey: 'Oturum Anahtarını Kaydet',
         validatedAndSaved: 'Doğrulandı ve Kaydedildi',
         // Device Code Modal
+        connectProvider: '{{provider}} Bağla',
         enterCodeOnGithub: 'Bağlantıyı tamamlamak için aşağıdaki kodu GitHub\'a girin:',
         copyCode: 'Kodu kopyala',
         openGithubToEnter: 'Kodu girmek için GitHub\'ı aç',
@@ -1359,6 +1394,35 @@ export const tr = {
             noIdeasDesc: 'Fikir üretmek için araştırma aşamasını tamamlayın'
         },
 
+        // Search and filter
+        search: {
+            placeholder: 'Fikirleri başlık veya açıklamaya göre arayın...'
+        },
+        filter: {
+            allStatuses: 'Tüm Durumlar',
+            allCategories: 'Tüm Kategoriler',
+            pending: 'Beklemede',
+            approved: 'Onaylandı',
+            rejected: 'Reddedildi'
+        },
+
+        // Export
+        export: {
+            button: 'Dışa Aktar',
+            markdown: 'Markdown Olarak Dışa Aktar',
+            json: 'JSON Olarak Dışa Aktar'
+        },
+
+        // Custom prompt
+        customPrompt: {
+            label: 'Özel Gereksinimler',
+            optional: 'İsteğe Bağlı',
+            placeholder: 'ör., TypeScript kullanılmalı, erişilebilirliğe odaklanın, küçük işletmelere yönelik...',
+            hint: 'Fikir üretimi sırasında yapay zekanın dikkate alması için belirli kısıtlamalar veya gereksinimler ekleyin.'
+        },
+
+        previewMarket: 'Pazar Araştırmasını Önizle',
+
         // History
         history: {
             title: 'Fikir Geçmişi',
@@ -1389,4 +1453,4 @@ export const tr = {
         filePreview: 'Dosya Önizleme',
         path: 'Yol:'
     }
-}
+};

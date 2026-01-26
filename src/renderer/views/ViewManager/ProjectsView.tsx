@@ -1,16 +1,15 @@
-import { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
-import { AppSettings, CodexUsage, QuotaResponse } from '@shared/types'
-import React, { lazy, Suspense } from 'react'
+import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import { AppSettings, CodexUsage, QuotaResponse } from '@shared/types';
+import React, { lazy, Suspense } from 'react';
 
-import { LoadingState } from '@/components/ui/LoadingState'
-import { Language } from '@/i18n'
-import { Message, Project, TerminalTab } from '@/types'
+import { LoadingState } from '@/components/ui/LoadingState';
+import { Language } from '@/i18n';
+import { Message, Project, TerminalTab } from '@/types';
 
-const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
+const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
 
 interface ProjectsViewProps {
     projects: Project[]
-    loadProjects: () => void
     selectedProject: Project | null
     setSelectedProject: (p: Project | null) => void
     language: Language
@@ -21,7 +20,7 @@ interface ProjectsViewProps {
     selectedProvider: string
     selectedModel: string
     onSelectModel: (p: string, m: string) => void
-    groupedModels: GroupedModels | null
+    groupedModels?: GroupedModels | null
     quotas: { accounts: QuotaResponse[] } | null
     codexUsage: { accounts: { usage: CodexUsage }[] } | null
     appSettings: AppSettings | null
@@ -32,7 +31,6 @@ interface ProjectsViewProps {
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
     projects,
-    loadProjects,
     selectedProject,
     setSelectedProject,
     language,
@@ -74,7 +72,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 isLoading={isLoading}
             />
         </Suspense>
-    )
-}
+    );
+};
 
-ProjectsView.displayName = 'ProjectsView'
+ProjectsView.displayName = 'ProjectsView';

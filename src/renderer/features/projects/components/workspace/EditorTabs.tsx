@@ -43,7 +43,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 event.stopPropagation();
                                 closeTab(tab.id);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-white/10 text-muted-foreground hover:text-white"
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-white/10 text-muted-foreground hover:text-foreground"
                         >
                             <X className="w-3 h-3" />
                         </span>

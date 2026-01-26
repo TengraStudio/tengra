@@ -1,13 +1,13 @@
 /**
  * Grid layout for displaying multiple ideas
  */
-import { ProjectIdea } from '@shared/types/ideas'
-import { Lightbulb } from 'lucide-react'
-import React from 'react'
+import { ProjectIdea } from '@shared/types/ideas';
+import { Lightbulb } from 'lucide-react';
+import React from 'react';
 
-import { useTranslation } from '@/i18n'
+import { useTranslation } from '@/i18n';
 
-import { IdeaCard } from './IdeaCard'
+import { IdeaCard } from './IdeaCard';
 
 interface IdeaGridProps {
     ideas: ProjectIdea[]
@@ -15,7 +15,7 @@ interface IdeaGridProps {
 }
 
 export const IdeaGrid: React.FC<IdeaGridProps> = ({ ideas, onSelectIdea }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
 
     if (ideas.length === 0) {
         return (
@@ -30,7 +30,7 @@ export const IdeaGrid: React.FC<IdeaGridProps> = ({ ideas, onSelectIdea }) => {
                     {t('ideas.empty.noIdeasDesc')}
                 </p>
             </div>
-        )
+        );
     }
 
     return (
@@ -43,5 +43,5 @@ export const IdeaGrid: React.FC<IdeaGridProps> = ({ ideas, onSelectIdea }) => {
                 />
             ))}
         </div>
-    )
-}
+    );
+};

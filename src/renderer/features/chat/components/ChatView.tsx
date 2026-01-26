@@ -1,5 +1,6 @@
 import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
 import { ChatInput } from '@renderer/features/chat/components/ChatInput';
+import { ExportModal } from '@renderer/features/chat/components/ExportModal';
 import { MessageList } from '@renderer/features/chat/components/MessageList';
 import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
 import { ChatTemplate } from '@renderer/features/chat/types';
@@ -49,6 +50,11 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
 
     const virtuosoRef = useRef<VirtuosoHandle>(null);
 
+    const [showExportModal, setShowExportModal] = React.useState(false);
+    const { chats, currentChatId } = useChat();
+    const activeChat = React.useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
+
+    // ... existing scroll handler ...
     const handleScrollToBottom = () => {
         virtuosoRef.current?.scrollToIndex({
             index: displayMessages.length - 1,
@@ -71,6 +77,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
                     t={t}
+                    onExport={() => setShowExportModal(true)}
                 />
             )}
 
@@ -97,7 +104,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         speakingMessageId={speakingMessageId}
                         onAtBottomStateChange={(atBottom) => {
                             if (setShowScrollButton) {
-                                setShowScrollButton(!atBottom)
+                                setShowScrollButton(!atBottom);
                             }
                         }}
                         virtuosoRef={virtuosoRef}
@@ -125,6 +132,15 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                 showFileMenu={showFileMenu}
                 setShowFileMenu={setShowFileMenu}
             />
+
+            {activeChat && (
+                <ExportModal
+                    isOpen={showExportModal}
+                    onClose={() => setShowExportModal(false)}
+                    chat={activeChat}
+                    messages={displayMessages}
+                />
+            )}
         </motion.div>
     );
 });

@@ -1,9 +1,9 @@
-import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components'
-import { Container, Plug, Terminal } from 'lucide-react'
-import React from 'react'
+import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components';
+import { Container, Plug, Terminal } from 'lucide-react';
+import React from 'react';
 
-import { AppView } from '@/hooks/useAppState'
-import { Language,useTranslation } from '@/i18n'
+import { AppView } from '@/hooks/useAppState';
+import { Language,useTranslation } from '@/i18n';
 
 interface ToolsSectionProps {
     isCollapsed: boolean;
@@ -18,10 +18,10 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
     onChangeView,
     language
 }) => {
-    const { t } = useTranslation(language as Language) // i18n helper might need cast if types are rigid
+    const { t } = useTranslation(language as Language); // i18n helper might need cast if types are rigid
 
     if (isCollapsed) {
-        return null
+        return null;
     }
 
     return (
@@ -58,5 +58,5 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
                 onClick={() => { /* TODO: Add Terminal */ }}
             />
         </SidebarSection>
-    )
-}
+    );
+};

@@ -1,5 +1,5 @@
 
-import React from 'react'
+import React from 'react';
 
 interface AddConnectionModalProps {
     isOpen: boolean
@@ -31,7 +31,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     isConnecting,
     onConnect
 }) => {
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
@@ -110,5 +110,5 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

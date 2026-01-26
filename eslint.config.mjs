@@ -73,6 +73,7 @@ export default tseslint.config(
             'no-var': 'error',
             'prefer-const': 'warn',
             'prefer-arrow-callback': 'warn',
+            'semi': ['warn', 'always'],
             'eqeqeq': ['warn', 'always', { null: 'ignore' }],
             'curly': ['warn', 'all'],
             'no-throw-literal': 'error',

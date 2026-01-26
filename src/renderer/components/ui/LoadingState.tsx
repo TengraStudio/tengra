@@ -1,7 +1,7 @@
-import { Loader2 } from 'lucide-react'
-import React from 'react'
+import { Loader2 } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 export interface LoadingStateProps {
     /**
@@ -53,18 +53,18 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         sm: 'w-4 h-4',
         md: 'w-8 h-8',
         lg: 'w-12 h-12'
-    }
+    };
 
     const textSizeClasses = {
         sm: 'text-xs',
         md: 'text-sm',
         lg: 'text-base'
-    }
+    };
 
     if (inline) {
         return (
             <Loader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" />
-        )
+        );
     }
 
     if (fullScreen) {
@@ -77,7 +77,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                     )}
                 </div>
             </div>
-        )
+        );
     }
 
     return (
@@ -87,7 +87,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                 <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
             )}
         </div>
-    )
-})
+    );
+});
 
-LoadingState.displayName = 'LoadingState'
+LoadingState.displayName = 'LoadingState';

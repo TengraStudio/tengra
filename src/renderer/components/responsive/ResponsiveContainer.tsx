@@ -3,10 +3,10 @@
  * Provides adaptive layouts for different screen sizes
  */
 
-import { ReactNode } from 'react'
+import { ReactNode } from 'react';
 
-import { cn } from '@/lib/utils'
-import { useBreakpoint } from '@/utils/responsive'
+import { cn } from '@/lib/utils';
+import { useBreakpoint } from '@/utils/responsive';
 
 interface ResponsiveContainerProps {
     children: ReactNode
@@ -32,26 +32,26 @@ export function ResponsiveContainer({
     hideOnTablet,
     hideOnDesktop
 }: ResponsiveContainerProps) {
-    const breakpoint = useBreakpoint()
-    const isMobile = breakpoint === 'xs' || breakpoint === 'sm'
-    const isTablet = breakpoint === 'md'
-    const isDesktop = breakpoint === 'lg' || breakpoint === 'xl' || breakpoint === '2xl'
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'xs' || breakpoint === 'sm';
+    const isTablet = breakpoint === 'md';
+    const isDesktop = breakpoint === 'lg' || breakpoint === 'xl' || breakpoint === '2xl';
 
-    if (hideOnMobile && isMobile) {return null}
-    if (hideOnTablet && isTablet) {return null}
-    if (hideOnDesktop && isDesktop) {return null}
+    if (hideOnMobile && isMobile) {return null;}
+    if (hideOnTablet && isTablet) {return null;}
+    if (hideOnDesktop && isDesktop) {return null;}
 
     const responsiveClass = isMobile
         ? mobileClassName
         : isTablet
           ? tabletClassName
-          : desktopClassName
+          : desktopClassName;
 
     return (
         <div className={cn(className, responsiveClass)}>
             {children}
         </div>
-    )
+    );
 }
 
 interface ResponsiveGridProps {
@@ -70,27 +70,27 @@ export function ResponsiveGrid({
     gap = { mobile: 'gap-2', tablet: 'gap-4', desktop: 'gap-6' },
     className
 }: ResponsiveGridProps) {
-    const breakpoint = useBreakpoint()
-    const isMobile = breakpoint === 'xs' || breakpoint === 'sm'
-    const isTablet = breakpoint === 'md'
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'xs' || breakpoint === 'sm';
+    const isTablet = breakpoint === 'md';
 
     const gridCols = isMobile
         ? `grid-cols-${cols.mobile || 1}`
         : isTablet
           ? `grid-cols-${cols.tablet || 2}`
-          : `grid-cols-${cols.desktop || 3}`
+          : `grid-cols-${cols.desktop || 3}`;
 
     const gridGap = isMobile
         ? gap.mobile || 'gap-2'
         : isTablet
           ? gap.tablet || 'gap-4'
-          : gap.desktop || 'gap-6'
+          : gap.desktop || 'gap-6';
 
     return (
         <div className={cn('grid', gridCols, gridGap, className)}>
             {children}
         </div>
-    )
+    );
 }
 
 interface TouchTargetProps {
@@ -114,5 +114,5 @@ export function TouchTarget({
         >
             {children}
         </div>
-    )
+    );
 }

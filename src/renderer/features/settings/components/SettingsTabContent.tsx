@@ -1,7 +1,7 @@
-import React from 'react'
+import React from 'react';
 
-import { GalleryView } from '@/features/chat/components/GalleryView'
-import { GroupedModels, ModelInfo } from '@/features/models/utils/model-fetcher'
+import { GalleryView } from '@/features/chat/components/GalleryView';
+import { GroupedModels, ModelInfo } from '@/features/models/utils/model-fetcher';
 import {
     AboutTab,
     AccountsTab,
@@ -15,9 +15,9 @@ import {
     PersonasTab,
     SpeechTab,
     StatisticsTab
-} from '@/features/settings/components'
+} from '@/features/settings/components';
 
-import { SettingsSharedProps } from '../types'
+import { SettingsSharedProps } from '../types';
 
 interface SettingsTabContentProps {
     activeTab: string
@@ -74,7 +74,7 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
                 <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />
             </div>
         )
-    }
+    };
 
-    return <>{tabMap[activeTab] ?? null}</>
-}
+    return <>{tabMap[activeTab] ?? null}</>;
+};

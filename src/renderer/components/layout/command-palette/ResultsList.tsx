@@ -1,8 +1,8 @@
-import { CommandItem } from '@renderer/components/layout/CommandPalette'
-import { Search } from 'lucide-react'
-import React from 'react'
+import { CommandItem } from '@renderer/components/layout/CommandPalette';
+import { Search } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface ResultsListProps {
     groupedCommands: Record<string, CommandItem[]>;
@@ -21,12 +21,12 @@ export const ResultsList: React.FC<ResultsListProps> = ({
         <div className="flex-1 overflow-y-auto py-2 border-r border-white/5 custom-scrollbar">
             {Object.entries(groupedCommands).map(([category, items]) => (
                 <div key={category}>
-                    <div className="px-4 py-1.5 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+                    <div className="px-4 py-1.5 text-[10px] font-bold text-foreground/20 uppercase tracking-widest">
                         {categoryLabels[category]}
                     </div>
                     {items.map((cmd) => {
-                        const flatIdx = getFlatIndex()
-                        const isSelected = flatIdx === selectedIndex
+                        const flatIdx = getFlatIndex();
+                        const isSelected = flatIdx === selectedIndex;
                         return (
                             <button
                                 key={cmd.id}
@@ -49,12 +49,12 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                     )}
                                 </div>
                                 {cmd.shortcut && (
-                                    <kbd className={cn("px-1.5 py-0.5 text-[9px] font-bold rounded border", isSelected ? "bg-white/20 border-white/20 text-white" : "bg-white/5 border-white/10 text-white/30")}>
+                                    <kbd className={cn("px-1.5 py-0.5 text-[9px] font-bold rounded border", isSelected ? "bg-white/20 border-white/20 text-foreground" : "bg-white/5 border-white/10 text-foreground/30")}>
                                         {cmd.shortcut}
                                     </kbd>
                                 )}
                             </button>
-                        )
+                        );
                     })}
                 </div>
             ))}
@@ -69,5 +69,5 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

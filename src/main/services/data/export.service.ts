@@ -140,59 +140,59 @@ export class ExportService {
         const lines: string[] = [];
         const title = (options.title ?? chat.title) || 'Untitled Chat';
 
-        lines.push(`# ${title}`, '')
+        lines.push(`# ${title}`, '');
 
         if (options.includeMetadata) {
-            this.addMarkdownMetadata(lines, chat)
+            this.addMarkdownMetadata(lines, chat);
         }
 
         for (const msg of chat.messages) {
-            if (msg.role === 'system' && !options.includeSystemMessages) { continue }
-            this.addMarkdownMessage(lines, msg, options)
+            if (msg.role === 'system' && !options.includeSystemMessages) { continue; }
+            this.addMarkdownMessage(lines, msg, options);
         }
 
-        lines.push('---', `*Exported from Orbit on ${new Date().toLocaleString()}*`)
-        return lines.join('\n')
+        lines.push('---', `*Exported from Orbit on ${new Date().toLocaleString()}*`);
+        return lines.join('\n');
     }
 
     private addMarkdownMetadata(lines: string[], chat: Chat): void {
         lines.push('---');
         lines.push(`**Model:** ${chat.model || 'Unknown'}`);
-        lines.push(`**Created:** ${new Date(chat.createdAt).toLocaleString()}`)
-        lines.push(`**Messages:** ${chat.messages.length}`)
-        lines.push('---', '')
+        lines.push(`**Created:** ${new Date(chat.createdAt).toLocaleString()}`);
+        lines.push(`**Messages:** ${chat.messages.length}`);
+        lines.push('---', '');
     }
 
     private addMarkdownMessage(lines: string[], msg: Message, options: ExportOptions): void {
-        const roleLabel = this.getRoleLabel(msg.role)
-        const timestamp = options.includeTimestamps ? ` _(${new Date(msg.timestamp).toLocaleString()})_` : ''
+        const roleLabel = this.getRoleLabel(msg.role);
+        const timestamp = options.includeTimestamps ? ` _(${new Date(msg.timestamp).toLocaleString()})_` : '';
 
-        lines.push(`## ${roleLabel}${timestamp}`, '', this.getMessageContent(msg), '')
+        lines.push(`## ${roleLabel}${timestamp}`, '', this.getMessageContent(msg), '');
 
         if (options.includeToolCalls) {
-            this.addMarkdownToolInfo(lines, msg)
+            this.addMarkdownToolInfo(lines, msg);
         }
     }
 
     private addMarkdownToolInfo(lines: string[], msg: Message): void {
         if (msg.toolCalls && msg.toolCalls.length > 0) {
-            lines.push('**Tool Calls:**')
+            lines.push('**Tool Calls:**');
             msg.toolCalls.forEach(tool => {
-                lines.push(`- \`${tool.function.name}\``)
-                lines.push(`  Arguments: \`${tool.function.arguments}\``)
-            })
-            lines.push('')
+                lines.push(`- \`${tool.function.name}\``);
+                lines.push(`  Arguments: \`${tool.function.arguments}\``);
+            });
+            lines.push('');
         }
 
         if (msg.toolResults) {
-            const results = typeof msg.toolResults === 'string' ? safeJsonParse<unknown[]>(msg.toolResults, []) : msg.toolResults
+            const results = typeof msg.toolResults === 'string' ? safeJsonParse<unknown[]>(msg.toolResults, []) : msg.toolResults;
             if (Array.isArray(results) && results.length > 0) {
-                lines.push('**Tool Results:**')
+                lines.push('**Tool Results:**');
                 results.forEach(result => {
-                    const res = result as { name: string; result: unknown }
-                    lines.push(`- \`${res.name}\`: ${JSON.stringify(res.result).substring(0, 200)}...`)
-                })
-                lines.push('')
+                    const res = result as { name: string; result: unknown };
+                    lines.push(`- \`${res.name}\`: ${JSON.stringify(res.result).substring(0, 200)}...`);
+                });
+                lines.push('');
             }
         }
     }

@@ -388,4 +388,4 @@ export const toolDefinitions: ToolDefinition[] = [
             }
         }
     }
-]
+];

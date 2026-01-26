@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface AnimatedCardProps {
     children: React.ReactNode
@@ -30,28 +30,28 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
     onClick,
     as: Component = 'div'
 }) => {
-    const [rotation, setRotation] = useState({ x: 0, y: 0 })
-    const cardRef = useRef<HTMLElement>(null)
+    const [rotation, setRotation] = useState({ x: 0, y: 0 });
+    const cardRef = useRef<HTMLElement>(null);
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (hoverEffect !== '3d') { return }
+        if (hoverEffect !== '3d') { return; }
 
-        const card = cardRef.current
-        if (!card) { return }
+        const card = cardRef.current;
+        if (!card) { return; }
 
-        const rect = card.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
+        const rect = card.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
 
-        const rotateX = (e.clientY - centerY) / 20
-        const rotateY = (centerX - e.clientX) / 20
+        const rotateX = (e.clientY - centerY) / 20;
+        const rotateY = (centerX - e.clientX) / 20;
 
-        setRotation({ x: rotateX, y: rotateY })
-    }
+        setRotation({ x: rotateX, y: rotateY });
+    };
 
     const handleMouseLeave = () => {
-        setRotation({ x: 0, y: 0 })
-    }
+        setRotation({ x: 0, y: 0 });
+    };
 
     const effectClasses = {
         lift: 'hover-lift',
@@ -59,17 +59,17 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
         scale: 'hover-scale',
         '3d': 'card-3d',
         none: ''
-    }
+    };
 
     const style: React.CSSProperties = hoverEffect === '3d' ? {
         transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
         transition: 'transform 0.1s ease'
-    } : {}
+    } : {};
 
     return (
         <Component
             ref={(node: HTMLElement | null) => {
-                (cardRef as React.MutableRefObject<HTMLElement | null>).current = node
+                (cardRef as React.MutableRefObject<HTMLElement | null>).current = node;
             }}
             className={cn(
                 'p-4 rounded-xl border border-border bg-card',
@@ -85,10 +85,10 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
         >
             {children}
         </Component>
-    )
-}
+    );
+};
 
-AnimatedCard.displayName = 'AnimatedCard'
+AnimatedCard.displayName = 'AnimatedCard';
 
 /**
  * GradientBorderCard Component
@@ -105,7 +105,7 @@ export const GradientBorderCard: React.FC<{
                 {children}
             </div>
         </div>
-    )
-}
+    );
+};
 
-GradientBorderCard.displayName = 'GradientBorderCard'
+GradientBorderCard.displayName = 'GradientBorderCard';

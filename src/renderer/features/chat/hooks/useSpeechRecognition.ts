@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState } from 'react';
 
 type SpeechRecognitionResultLike = { isFinal: boolean; 0: { transcript: string } }
 type SpeechRecognitionResultListLike = { length: number;[index: number]: SpeechRecognitionResultLike }
@@ -30,63 +30,63 @@ export const useSpeechRecognition = (
     language: string,
     onResult: (transcript: string) => void
 ) => {
-    const [isListening, setIsListening] = useState(false)
+    const [isListening, setIsListening] = useState(false);
 
     const startListening = useCallback(() => {
-        const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition
+        const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
         if (!SpeechRecognitionCtor) {
-            console.error('Speech recognition not supported')
-            return
+            console.error('Speech recognition not supported');
+            return;
         }
 
-        const recognition = new SpeechRecognitionCtor()
-        recognition.continuous = true
-        recognition.interimResults = false
-        recognition.lang = language ?? 'tr-TR'
+        const recognition = new SpeechRecognitionCtor();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = language ?? 'tr-TR';
 
         recognition.onresult = (event: SpeechRecognitionEventLike) => {
-            let finalTranscript = ''
+            let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const result = event.results[i]
+                const result = event.results[i];
                 if (result?.isFinal) {
-                    finalTranscript += result[0]?.transcript ?? ''
+                    finalTranscript += result[0]?.transcript ?? '';
                 }
             }
             if (finalTranscript) {
-                onResult(finalTranscript)
+                onResult(finalTranscript);
             }
-        }
+        };
 
         recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
-            console.error('Speech recognition error:', event.error)
-            setIsListening(false)
-        }
+            console.error('Speech recognition error:', event.error);
+            setIsListening(false);
+        };
 
         recognition.onend = () => {
-            setIsListening(false)
-        }
+            setIsListening(false);
+        };
 
         try {
-            recognition.start()
-            setIsListening(true)
-            window._activeRecognition = recognition
+            recognition.start();
+            setIsListening(true);
+            window._activeRecognition = recognition;
         } catch (err) {
-            console.error('Failed to start recognition:', err)
-            setIsListening(false)
+            console.error('Failed to start recognition:', err);
+            setIsListening(false);
         }
-    }, [language, onResult])
+    }, [language, onResult]);
 
     const stopListening = useCallback(() => {
         if (window._activeRecognition) {
-            window._activeRecognition.stop()
-            delete window._activeRecognition
-            setIsListening(false)
+            window._activeRecognition.stop();
+            delete window._activeRecognition;
+            setIsListening(false);
         }
-    }, [])
+    }, []);
 
     return {
         isListening,
         startListening,
         stopListening
-    }
-}
+    };
+};

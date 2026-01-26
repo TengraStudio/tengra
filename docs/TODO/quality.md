@@ -1,6 +1,6 @@
 # Quality Assurance & Technical Debt TODO
 
-*Last Updated: 2026-01-23*  
+*Last Updated: 2026-01-24*
 *Priority: CRITICAL - Technical Debt & Security*
 
 ## 🎯 **OVERVIEW**
@@ -34,22 +34,21 @@ This document outlines quality improvements for Orbit across testing, type safet
   - [x] `backup.service.ts` - Replaced multiple `as unknown as JsonObject[]` with proper JSON serialization
   - [x] `idea-generator.service.ts` - 3x `safeJsonParse(content, {}) as any` (Already fixed in security phase)
   - [x] `settings.service.ts` - Fixed LinkedAccount casting with proper type imports
-- [ ] **Enable strict TypeScript checks** in `tsconfig.json`:
-  - [ ] Enable noImplicitAny in tsconfig *(CRITICAL - Still disabled)*
-  - [ ] Enable strict null checks *(CRITICAL - Still disabled)*
-  - [ ] Add noImplicitReturns and noFallthroughCasesInSwitch
-- [ ] **Fix ESLint conflict**: Remove duplicate `@typescript-eslint/no-explicit-any` rules (lines 43 & 51)
+- [x] Enable strict TypeScript checks in `tsconfig.json` <!-- id: q-crit-1 -->
+- [x] Add CI steps for `npm run type-check` and `npm run test:e2e` <!-- id: q-crit-2 -->
+- [x] Fix empty or missing pre-commit hooks (Husky) <!-- id: q-crit-3 -->
+- [x] **Fix ESLint conflict**: Removed duplicate `@typescript-eslint/no-explicit-any` rules
 
 ### **1.2 CI/CD Critical Gaps**
 *Impact: HIGH - Quality gates not enforced*
 
-- [ ] **Add missing CI steps** to `.github/workflows/ci.yml`:
-  - [ ] Add `npm run type-check` before build *(MISSING - Critical type errors not caught)*
-  - [ ] Add `npm run test:e2e` (Playwright tests) *(MISSING - E2E not automated)*
-  - [ ] Add coverage threshold enforcement *(MISSING - 30% coverage allowed)*
-  - [ ] Add bundle size monitoring *(MISSING - No size regression detection)*
-- [ ] **Fix empty pre-commit hooks** in `.husky/pre-commit` *(CRITICAL - No pre-commit validation)*
-- [ ] **Enforce audit failures** in CI (currently warnings only)
+- [x] **Add missing CI steps** to `.github/workflows/ci.yml`:
+  - [x] Add `npm run type-check` before build *(COMPLETED)*
+  - [x] Add `npm run test:e2e` (Playwright tests) *(COMPLETED)*
+  - [x] Add coverage threshold enforcement *(COMPLETED - 75% for main, 70% for renderer)*
+  - [x] Add bundle size monitoring *(COMPLETED - bundlewatch configured)*
+- [x] **Fix empty pre-commit hooks** in `.husky/pre-commit` *(COMPLETED)*
+- [x] **Enforce audit failures** in CI (high level enforced)
 
 ### **1.3 Test Coverage Crisis**
 *Impact: MEDIUM - Technical debt, regression risk*
@@ -78,17 +77,18 @@ This document outlines quality improvements for Orbit across testing, type safet
 ### **2.1 Security Hardening**
 *Impact: MEDIUM - Compliance, supply chain risk*
 
-- [ ] **Implement secrets scanning**:
-  - [ ] Add `detect-secrets` to pre-commit hooks
-  - [ ] Scan historical commits for leaked secrets
-  - [ ] Add `.secrets.baseline` for approved patterns
-- [ ] **Supply chain security**:
-  - [ ] Add SBOM generation (`npm run sbom`)
-  - [ ] Implement dependency vulnerability scanning
+- [x] **Implement secrets scanning** *(COMPLETED - 2026-01-25)*:
+  - [x] Add `detect-secrets` to CI pipeline *(COMPLETED)*
+  - [x] Add `.secrets.baseline` for approved patterns *(COMPLETED)*
+  - [x] Add npm scripts for secrets detection *(COMPLETED - secrets:detect, secrets:audit, secrets:update)*
+  - [ ] Scan historical commits for leaked secrets *(Optional - can be done manually)*
+- [x] **Supply chain security** *(COMPLETED - 2026-01-25)*:
+  - [x] Add SBOM generation (`npm run sbom`) *(COMPLETED)*
+  - [x] Implement dependency vulnerability scanning (`npm run audit:deps`) *(COMPLETED)*
   - [ ] Review optional native dependencies (`bufferutil`, `utf-8-validate`)
-- [ ] **Environment validation**:
-  - [ ] Validate all `.env.example` vars are configured at startup
-  - [ ] Add runtime configuration validation
+- [x] **Environment validation** *(COMPLETED - 2026-01-25)*:
+  - [x] Validate all `.env.example` vars are configured at startup *(COMPLETED)*
+  - [x] Add runtime configuration validation *(COMPLETED - env-validator.util.ts)*
 
 ### **2.2 Performance Monitoring & Optimization**
 *Impact: MEDIUM - User experience, scalability*
@@ -102,11 +102,12 @@ This document outlines quality improvements for Orbit across testing, type safet
   - [x] LRU cache system (90%+ cache hit rate)
   - [x] List virtualization (handles 10K+ items)
   - [x] Additional React.memo optimizations
-- [ ] **Add performance CI pipeline**:
-  - [ ] Lighthouse CI for Electron renderer
-  - [ ] Bundle size tracking with `bundlewatch`  
-  - [ ] Startup time benchmarking
-  - [ ] Memory usage profiling
+- [x] **Add performance CI pipeline** *(COMPLETED - 2026-01-25)*:
+  - [ ] Lighthouse CI for Electron renderer *(Optional - complex setup for Electron)*
+  - [x] Bundle size tracking with `bundlewatch` *(COMPLETED - already configured)*
+  - [x] Startup time benchmarking *(COMPLETED - scripts/benchmark-startup.js)*
+  - [x] Performance CI command *(COMPLETED - npm run perf:ci)*
+  - [ ] Memory usage profiling *(Optional - can be added later)*
 - [x] **Render Performance** *(COMPLETED)*:
     - [x] Virtualize chat list *(Implemented react-virtuoso in MessageList)*
     - [x] Memoize Sidebar components *(Sidebar.tsx is memoized)*
@@ -126,37 +127,61 @@ This document outlines quality improvements for Orbit across testing, type safet
 ### **2.3 Design System & Theming**
 *Impact: MEDIUM - UI Consistency, dark/light mode support*
 
-- [ ] **Migrate Hardcoded Colors**:
+- [x] **Migrate Hardcoded Colors** *(COMPLETED - 2026-01-25)*:
   - [x] Initial Theme System setup (Black/White only)
   - [x] Fix `index.css`, `Sidebar.css`, `SettingsPage.css`
   - [x] Fix `ProjectDashboard.tsx`
-  - [ ] `ThemeStore.tsx` - Clean up unused logic
-  - [ ] `MessageBubble.tsx` - Replace `bg-white`, `bg-black`
-  - [ ] `TerminalPanel.tsx` - Check colors
-  - [ ] `SSHLogs.tsx` - Check colors
-  - [ ] Global search & replace `bg-white` -> `bg-card` / `bg-background`
-  - [ ] Global search & replace `text-white` -> `text-foreground`
+  - [x] `ThemeStore.tsx` - Clean up unused logic *(COMPLETED - removed unused onInstallTheme prop)*
+  - [x] `MessageBubble.tsx` - Replace `bg-white`, `bg-black` *(COMPLETED - replaced with theme variables)*
+  - [x] `TerminalPanel.tsx` - Check colors *(COMPLETED - already clean)*
+  - [x] `SSHLogs.tsx` - Check colors *(COMPLETED - already clean)*
+  - [x] Global search & replace `text-white` -> `text-foreground` *(COMPLETED - 2026-01-25, 50+ files)*
+  - [x] Global search & replace `text-black` -> `text-background` *(COMPLETED - 2026-01-25)*
+  - [x] Global search & replace solid `bg-black` -> `bg-background` *(COMPLETED - 2026-01-25)*
+  - Note: `bg-black/XX` and `bg-white/XX` (transparency overlays) intentionally preserved
 
 
 ### **2.3 Documentation Quality**
 *Impact: MEDIUM - Developer experience, maintainability*
 
-- [ ] **Clean Code Standards**:
+- [x] **Clean Code Standards**:
     - [x] Fix ESLint config *(COMPLETED)*
-    - [ ] Enforce import ordering *(Still needed)*
-    - [ ] Standardize semicolon usage *(Still needed)*
-- [ ] **Add JSDoc comments** to all service public methods *(Still needed)*
+    - [x] Enforce import ordering *(COMPLETED - 2026-01-24)*
+    - [x] Fix critical lint errors *(COMPLETED - 2026-01-24)*
+    - [x] Auto-fix 200+ lint warnings *(COMPLETED - 2026-01-24)*
+    - [x] Standardize semicolon usage *(COMPLETED - 2026-01-25 - Added semi rule to ESLint)*
+- [x] **Add JSDoc comments** to all service public methods (NASA Power of Ten Rule 4 & 7) *(COMPLETED)*
 - [ ] **Generate API documentation** *(Still needed)*
 - [ ] **Automated documentation**:
   - [ ] Setup TypeDoc for API reference generation
   - [ ] Add docs build to CI pipeline
+
+### **2.4 Lint Error Resolution** *(NEW - 2026-01-24)*
+*Impact: HIGH - Code quality, maintainability*
+
+- [x] **Critical Errors Fixed** (0 errors remaining):
+  - [x] Fixed React `setState` in effect error in LayoutManager.tsx
+  - [x] Fixed all import sorting issues (simple-import-sort/imports)
+  - [x] Fixed unused imports (Container in lazy-services.ts)
+  - [x] Fixed floating promise in settings.ts
+  - [x] Fixed unused parameters with `_` prefix
+- [x] **Auto-Fixed Issues** (200+ warnings resolved):
+  - [x] Ran `eslint --fix` on entire src/ directory
+  - [x] Fixed const vs let declarations
+  - [x] Fixed formatting issues
+- [ ] **Remaining Warnings** (788 warnings - manual refactoring needed):
+  - [ ] Complexity warnings (functions exceeding threshold)
+  - [ ] prefer-nullish-coalescing (|| vs ??)
+  - [ ] no-unnecessary-condition (unnecessary optional chaining)
+  - [ ] max-lines-per-function (functions exceeding line limits)
+  - [ ] no-unused-vars (test files)
 
 ---
 
 ## 🟢 **MEDIUM PRIORITY - Weeks 5-8**
 
 ### **3.1 Advanced Testing Strategy**
-*Impact: LOW - Long-term maintainability*
+*Impact: MEDIUM - Long-term maintainability (Upgraded from LOW)*
 
 - [ ] **Property-based testing** with `fast-check`:
   - [ ] Test LLM service response parsing
@@ -171,7 +196,7 @@ This document outlines quality improvements for Orbit across testing, type safet
   - [ ] Database query performance tests
 
 ### **3.2 Code Quality Automation**
-*Impact: LOW - Developer productivity*
+*Impact: MEDIUM - Developer productivity (Upgraded from LOW)*
 
 - [ ] **Advanced linting rules**:
   - [ ] Custom ESLint rules for Orbit patterns
@@ -183,11 +208,11 @@ This document outlines quality improvements for Orbit across testing, type safet
   - [ ] License compatibility checking
 
 ### **3.3 Refactoring & Clean-up**
-*Impact: LOW - Code maintainability*
+*Impact: MEDIUM - Code maintainability (Upgraded from LOW)*
 
-- [ ] **Consolidate duplicate utilities** *(From original TODO)*
-- [ ] **Remove dead code** (commented blocks) *(From original TODO)*
-- [ ] **Code metrics monitoring**:
+- [x] **Consolidate duplicate utilities** *(REVIEWED 2026-01-25 - No true duplicates found. ipc-batch.util.ts exists in main/renderer but they are complementary: main registers handlers, renderer invokes them. error.util.ts in main/shared have different purposes)*
+- [x] **Remove dead code** (commented blocks) *(REVIEWED 2026-01-25 - Minimal commented code found: ~8 lines across codebase, mostly debug-related. No action needed)*
+- [ ] **Code metrics monitoring** *(MEDIUM - Technical debt visibility)*:
   - [ ] Cyclomatic complexity trending
   - [ ] Technical debt ratio tracking
   - [ ] Code duplication detection with `jscpd`
@@ -197,18 +222,15 @@ This document outlines quality improvements for Orbit across testing, type safet
 ## 🔵 **LONG-TERM - Weeks 9-16**
 
 ### **4.1 Enterprise Quality Standards**
-*Impact: LOW - Enterprise readiness*
+*Impact: MEDIUM - Enterprise readiness (Upgraded from LOW)*
 
 - [ ] **Compliance frameworks**:
   - [ ] SOC 2 Type II compliance preparation
   - [ ] GDPR data handling audit
-  - [ ] Security vulnerability disclosure process
-- [ ] **Quality gates**:
   - [ ] Branch protection rules with quality checks
-  - [ ] Automated quality reports for releases
-- [ ] **Release quality**:
-  - [ ] Automated changelog generation from commits
-  - [ ] Quality-based release promotion pipeline
+- [ ] Automated quality reports for releases
+- [ ] Automated changelog generation from commits
+- [ ] Quality-based release promotion pipeline
 
 ---
 
@@ -231,19 +253,44 @@ This document outlines quality improvements for Orbit across testing, type safet
 
 ### **Previous Progress** ✅
 - Fixed critical `any` type usage in core services
-- Bundle size optimization completed  
+- Bundle size optimization completed
 - Basic test infrastructure working
 - ESLint configuration fixed
 - Chat flow E2E test implemented
+- **Lint Error Resolution (2026-01-24)**:
+  - Eliminated all critical lint errors (0 errors remaining)
+  - Auto-fixed 200+ warnings with eslint --fix
+  - Reduced total issues from 1000+ to 788 warnings
+  - Fixed import sorting, unused variables, floating promises
 
 ### **Immediate Blockers** 🚨
-- **TypeScript strict mode still disabled** - Preventing runtime error detection
-- **E2E tests not in CI** - Manual testing only, regression risk
-- **No pre-commit hooks** - Quality issues reach repository
-- **Coverage too low** - 30% leaves 70% of code untested
+- [ ] **Refactor `DatabaseService.ts`**: The file is excessively large (~2500 lines) and violates single responsibility principles.
+- [x] **Auth Data Migration**: Implement the actual migration of tokens from legacy JSON files in `AppData/Orbit/data/auth` to the PGlite `linked_accounts` table. (COMPLETED)
+- [ ] **Remove remaining `any` usage**: Several instances of `any` and unsafe casts still exist in `DatabaseService.ts` and `SecurityService.ts`.
+- [ ] **Coverage too low** - 30% leaves 70% of code untested
+- [ ] **Refactor complex functions**: 788 lint warnings remain, many related to function complexity and length
 
 ### **Success Criteria**
 - **4-Week**: Type safety enforced, CI complete, 75% coverage
 - **16-Week**: Enterprise-ready quality platform, full automation
+
+---
+
+## Summary (Updated 2026-01-25)
+
+**Completed:**
+- Type safety improvements in critical services (database, llm, quota, health-check)
+- CI/CD pipeline with type-check and E2E tests
+- Pre-commit hooks (Husky) configured
+- ESLint configuration fixed, import ordering enforced
+- 200+ lint warnings auto-fixed
+- Enterprise performance overhaul (memoization, lazy loading, LRU cache, virtualization)
+- Bundle size optimization via code splitting
+
+**In Progress:**
+- Test coverage increase (30% → 75% target)
+- React component testing setup
+- Remaining lint warnings (788)
+- Theme system migration
 
 **Quality is the foundation of maintainable software. These improvements will make Orbit more reliable, secure, and scalable.** 🚀

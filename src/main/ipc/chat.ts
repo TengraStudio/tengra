@@ -1,6 +1,8 @@
-import { estimateTokens } from '@shared/utils/token.util';
+import * as path from 'path';
+
 import { appLogger } from '@main/logging/logger';
 import { chatQueueManager, OrchestrationPolicy } from '@main/services/chat-queue.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
@@ -11,13 +13,12 @@ import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { parseAIResponseContent } from '@main/utils/response-parser';
 import { StreamParser } from '@main/utils/stream-parser.util';
 import { Message, ToolDefinition } from '@shared/types/chat';
+import { SystemMode } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { DatabaseService } from '@main/services/data/database.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
-import { ipcMain, IpcMainInvokeEvent, WebContents, app } from 'electron';
-import * as path from 'path';
-import { SystemMode } from '@shared/types/chat';
+import { estimateTokens } from '@shared/utils/token.util';
+import { app, ipcMain, IpcMainInvokeEvent, WebContents } from 'electron';
 
 /**
  * Safely send IPC message to renderer
@@ -163,7 +164,7 @@ class ChatIpcManager {
 
     async handleOpenAIChat(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, projectId?: string, systemMode?: SystemMode }) {
         const { messages, model, provider, tools, projectId, systemMode } = params;
-        const sanitized = this.sanitizeRequestParams(messages, model, provider, tools, projectId, systemMode);
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId, systemMode });
         let sources: string[] = [];
 
         if (sanitized.projectId && sanitized.messages.length > 0) {
@@ -199,14 +200,14 @@ class ChatIpcManager {
         };
     }
 
-    private async recordTokens(sanitized: { model: string, provider: string, projectId?: string, chatId?: string }, res: any, messages: Message[]) {
+    private async recordTokens(sanitized: { model: string, provider: string, projectId?: string, chatId?: string }, res: { promptTokens?: number; completionTokens?: number }, messages: Message[]) {
         try {
             const lastUserMessage = messages.findLast(m => m.role === 'user');
             const promptTokens = res.promptTokens ?? 0;
             const completionTokens = res.completionTokens ?? 0;
 
             await this.options.databaseService.addTokenUsage({
-                chatId: sanitized.chatId || 'system',
+                chatId: sanitized.chatId ?? 'system',
                 projectId: sanitized.projectId,
                 provider: sanitized.provider,
                 model: sanitized.model,
@@ -248,7 +249,8 @@ class ChatIpcManager {
         }
     }
 
-    private sanitizeRequestParams(messages: Message[], model: string, provider: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode) {
+    private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode }) {
+        const { messages, model, provider, tools, projectId, systemMode } = params;
         if (!Array.isArray(messages) || messages.length === 0) { throw new Error('Messages must be a non-empty array'); }
         if (!model) { throw new Error('Model must be a non-empty string'); }
         if (!provider) { throw new Error('Provider must be a non-empty string'); }
@@ -280,10 +282,10 @@ class ChatIpcManager {
     }
 
     private sanitizeStreamInputs(params: { messages: Message[], model: string, provider: string, chatId: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, chatId, tools, projectId, systemMode } = params;
+        const { messages, model, provider, chatId, tools, projectId } = params;
         if (!chatId) { throw new Error('Chat ID must be a non-empty string'); }
 
-        const sanitized = this.sanitizeRequestParams(messages, model, provider, tools, projectId);
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId });
         return {
             ...sanitized,
             chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
@@ -398,7 +400,7 @@ class ChatIpcManager {
         const { messages, model, tools: providedTools, provider, chatId, event, systemMode, projectId } = params;
         const { url, key } = await ChatUtils.getProxySettings(provider, this.options.settingsService, this.options.proxyService);
 
-        let tools = providedTools;
+        const tools = providedTools;
         let runtimeProjectRoot: string | undefined;
 
         // Ensure robust default path for FileSystem/Coding tools if no project is active
@@ -419,7 +421,6 @@ class ChatIpcManager {
 
         let totalPrompt = 0;
         let totalCompletion = 0;
-        let fullContent = '';
 
         for await (const chunk of this.options.llmService.chatOpenAIStream(messages, {
             model, tools, baseUrl: url, apiKey: key, provider,

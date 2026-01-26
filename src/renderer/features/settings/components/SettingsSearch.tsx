@@ -1,5 +1,5 @@
-import { Search, X } from 'lucide-react'
-import React from 'react'
+import { Search, X } from 'lucide-react';
+import React from 'react';
 
 interface SettingsSearchProps {
     searchQuery: string
@@ -43,5 +43,5 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

@@ -1,8 +1,8 @@
 import { IRepository } from '@main/core/repository.interface';
-import { DatabaseService,Folder } from '@main/services/data/database.service';
+import { DatabaseService, Folder } from '@main/services/data/database.service';
 
 /**
- * Repository for managing Folders.
+ * Repository for managing folders in the database.
  */
 export class FolderRepository implements IRepository<Folder> {
     constructor(private db: DatabaseService) { }
@@ -12,18 +12,18 @@ export class FolderRepository implements IRepository<Folder> {
     }
 
     async findById(id: string): Promise<Folder | null> {
-        const folders = await this.db.getFolders();
-        return folders.find(f => f.id === id) ?? null;
+        return (await this.db.getFolder(id)) ?? null;
     }
 
-    async create(item: Folder): Promise<Folder> {
+    async create(item: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
         return this.db.createFolder(item.name, item.color);
     }
 
     async update(id: string, item: Partial<Folder>): Promise<Folder> {
-        const updated = await this.db.updateFolder(id, item);
-        if (!updated) {throw new Error(`Folder not found: ${id}`);}
-        return updated;
+        await this.db.updateFolder(id, item);
+        const folder = await this.findById(id);
+        if (!folder) { throw new Error(`Folder not found after update: ${id}`); }
+        return folder;
     }
 
     async delete(id: string): Promise<boolean> {

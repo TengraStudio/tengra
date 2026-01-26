@@ -128,3 +128,10 @@ Thumbs.db
 
 # Rust target
 src/services/**/target
+lint_errors.txt
+
+# SBOM and security reports
+sbom.json
+
+# Performance benchmarks
+benchmark-results.json

@@ -1,9 +1,9 @@
-import { ChildProcess, exec, spawn } from 'child_process'
-import { existsSync } from 'fs'
-import { join } from 'path'
+import { ChildProcess, exec, spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
-import { appLogger } from '@main/logging/logger'
-import { SettingsService } from '@main/services/system/settings.service'
+import { appLogger } from '@main/logging/logger';
+import { SettingsService } from '@main/services/system/settings.service';
 
 export interface LocalAIModel {
     id: string
@@ -34,9 +34,9 @@ export interface OllamaChatResponse {
 }
 
 export class LocalAIService {
-    private llamaProcess: ChildProcess | null = null
-    private llamaModelPath: string | null = null
-    private llamaPort: number = 8080
+    private llamaProcess: ChildProcess | null = null;
+    private llamaModelPath: string | null = null;
+    private llamaPort: number = 8080;
 
     constructor(private settingsService: SettingsService) {
     }
@@ -75,48 +75,48 @@ export class LocalAIService {
     }
 
     async ollamaChat(model: string, messages: OllamaChatMessage[]): Promise<OllamaChatResponse> {
-        const settings = this.settingsService.getSettings()
-        const num_ctx = settings.ollama.numCtx ?? 4096
+        const settings = this.settingsService.getSettings();
+        const num_ctx = settings.ollama.numCtx ?? 4096;
 
         return await this.ollamaRequest<OllamaChatResponse>('/api/chat', 'POST', {
             model,
             messages,
             stream: false,
             options: { num_ctx }
-        })
+        });
     }
 
     private async ollamaRequest<T>(endpoint: string, method = 'GET', body?: object): Promise<T> {
-        const url = `http://127.0.0.1:11434${endpoint}`
+        const url = `http://127.0.0.1:11434${endpoint}`;
         const response = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: body ? JSON.stringify(body) : undefined
-        })
+        });
         if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
-        return await response.json() as T
+        return await response.json() as T;
     }
 
     // --- Llama.cpp Ops ---
 
     async startLlamaServer(modelPath: string): Promise<boolean> {
-        if (this.llamaProcess) { this.stopLlamaServer() }
-        const binPath = join(process.cwd(), 'vendor', 'llama-bin', 'llama-server.exe')
-        if (!existsSync(binPath)) { return false }
+        if (this.llamaProcess) { this.stopLlamaServer(); }
+        const binPath = join(process.cwd(), 'vendor', 'llama-bin', 'llama-server.exe');
+        if (!existsSync(binPath)) { return false; }
 
         this.llamaProcess = spawn(binPath, ['-m', modelPath, '--port', this.llamaPort.toString()], {
             windowsHide: true,
             stdio: 'ignore'
-        })
-        this.llamaModelPath = modelPath
-        return true
+        });
+        this.llamaModelPath = modelPath;
+        return true;
     }
 
     stopLlamaServer() {
         if (this.llamaProcess) {
-            this.llamaProcess.kill()
-            this.llamaProcess = null
-            this.llamaModelPath = null
+            this.llamaProcess.kill();
+            this.llamaProcess = null;
+            this.llamaModelPath = null;
         }
     }
 
@@ -126,11 +126,11 @@ export class LocalAIService {
         return new Promise((resolve) => {
             exec('nvidia-smi', (_error: Error | null, stdout: string) => {
                 if (_error) {
-                    resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' })
+                    resolve({ hasCuda: false, detail: 'nvidia-smi not found or failed' });
                 } else {
-                    resolve({ hasCuda: true, detail: stdout.split('\n')[0] })
+                    resolve({ hasCuda: true, detail: stdout.split('\n')[0] });
                 }
-            })
-        })
+            });
+        });
     }
 }

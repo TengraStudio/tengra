@@ -1,6 +1,7 @@
-import React from 'react'
-import { Bot, Code, Cpu, FolderTree, Info, Play } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Bot, Code, Cpu, FolderTree, Info, Play } from 'lucide-react';
+import React from 'react';
+
+import { cn } from '@/lib/utils';
 
 interface NavButtonProps {
     active: boolean
@@ -16,13 +17,13 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
             "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
             active
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
         )}
     >
         <Icon className={cn("w-4 h-4 translate-y-[1px]", active ? "text-primary-foreground" : "text-muted-foreground")} />
         {label}
     </button>
-)
+);
 
 export const SettingsSidebar: React.FC<{
     activeSection: string
@@ -68,4 +69,4 @@ export const SettingsSidebar: React.FC<{
             label={t('projects.advanced') || 'Advanced'}
         />
     </div>
-)
+);

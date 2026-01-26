@@ -1,7 +1,7 @@
-import { useCallback,useEffect, useState } from 'react'
+import { useCallback,useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { ServiceResponse,SSHFile } from '@/types'
+import { useTranslation } from '@/i18n';
+import { ServiceResponse,SSHFile } from '@/types';
 
 interface SFTPBrowserProps {
     connectionId: string
@@ -9,92 +9,92 @@ interface SFTPBrowserProps {
 }
 
 export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
-    const { t } = useTranslation()
-    const [currentPath, setCurrentPath] = useState('/')
-    const [files, setFiles] = useState<SSHFile[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const { t } = useTranslation();
+    const [currentPath, setCurrentPath] = useState('/');
+    const [files, setFiles] = useState<SSHFile[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const loadFiles = useCallback(async (path: string) => {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
         try {
-            const result = await window.electron.ssh.listDir(connectionId, path) as ServiceResponse<SSHFile[]>
+            const result = await window.electron.ssh.listDir(connectionId, path) as ServiceResponse<SSHFile[]>;
             if (result.success) {
-                setFiles(result.data || [])
+                setFiles(result.data || []);
             } else {
-                setError(result.error || t('ssh.unknownError'))
+                setError(result.error || t('ssh.unknownError'));
             }
         } catch (e) {
-            setError(e instanceof Error ? e.message : String(e))
+            setError(e instanceof Error ? e.message : String(e));
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [connectionId, t])
+    }, [connectionId, t]);
 
     useEffect(() => {
-        void loadFiles(currentPath)
-    }, [loadFiles, currentPath])
+        void loadFiles(currentPath);
+    }, [loadFiles, currentPath]);
 
     const handleNavigate = (name: string) => {
-        const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`
-        setCurrentPath(newPath)
-    }
+        const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        setCurrentPath(newPath);
+    };
 
     const handleBack = () => {
-        if (currentPath === '/') {return}
-        const parts = currentPath.split('/').filter(p => p.length > 0)
-        parts.pop()
-        setCurrentPath('/' + parts.join('/'))
-    }
+        if (currentPath === '/') {return;}
+        const parts = currentPath.split('/').filter(p => p.length > 0);
+        parts.pop();
+        setCurrentPath('/' + parts.join('/'));
+    };
 
     const handleDelete = async (item: SSHFile) => {
         console.warn(t('ssh.confirmDeleteFile', { name: item.name }));
 
-        const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
+        const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
         const result = item.isDirectory
             ? await window.electron.ssh.deleteDir(connectionId, path)
-            : await window.electron.ssh.deleteFile(connectionId, path)
+            : await window.electron.ssh.deleteFile(connectionId, path);
 
         if (result.success) {
-            void loadFiles(currentPath)
+            void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
         }
-    }
+    };
 
     const handleMkdir = async () => {
         const name = 'new-folder'; // Replaced prompt with default name
         console.warn(t('ssh.newFolderName'));
 
-        const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`
-        const result = await window.electron.ssh.mkdir(connectionId, path)
+        const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        const result = await window.electron.ssh.mkdir(connectionId, path);
         if (result.success) {
-            void loadFiles(currentPath)
+            void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
         }
-    }
+    };
 
     const handleRename = async (item: SSHFile) => {
         const newName = item.name; // Replaced prompt with original name
         console.warn(t('ssh.newName'));
 
-        const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`
-        const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`
+        const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
+        const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`;
 
-        const result = await window.electron.ssh.rename(connectionId, oldPath, newPath)
+        const result = await window.electron.ssh.rename(connectionId, oldPath, newPath);
         if (result.success) {
-            void loadFiles(currentPath)
+            void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }))
+            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
         }
-    }
+    };
 
     const handleDownload = async (item: SSHFile) => {
         // Simple download trigger
-        console.warn(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)')
-    }
+        console.warn(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)');
+    };
 
     return (
         <div className="sftp-browser flex-1 flex flex-col bg-background text-foreground/90">
@@ -145,5 +145,5 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                 </div>
             )}
         </div>
-    )
+    );
 }

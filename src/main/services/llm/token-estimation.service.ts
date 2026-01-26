@@ -3,7 +3,7 @@
  * Estimates token counts for messages and tracks actual usage
  */
 
-import { Message } from '@shared/types/chat'
+import { Message } from '@shared/types/chat';
 
 export interface TokenUsage {
     inputTokens: number
@@ -24,7 +24,7 @@ export interface TokenEstimate {
  * Uses a simple heuristic: ~4 characters per token for English text
  * This is a conservative estimate
  */
-const CHARS_PER_TOKEN = 4
+const CHARS_PER_TOKEN = 4;
 
 /**
  * Token Estimation Service
@@ -34,35 +34,35 @@ export class TokenEstimationService {
      * Estimate tokens for a single message
      */
     estimateMessageTokens(message: Message): number {
-        let content = ''
+        let content = '';
 
         if (typeof message.content === 'string') {
-            content = message.content
+            content = message.content;
         } else if (Array.isArray(message.content)) {
             // Sum up text content from all parts
             content = message.content
                 .filter(part => part.type === 'text' && part.text)
                 .map(part => part.text ?? '')
-                .join(' ')
+                .join(' ');
         }
 
         // Rough estimation: ~4 chars per token
-        return Math.ceil(content.length / CHARS_PER_TOKEN)
+        return Math.ceil(content.length / CHARS_PER_TOKEN);
     }
 
     /**
      * Estimate tokens for an array of messages
      */
     estimateMessagesTokens(messages: Message[]): TokenEstimate {
-        let totalInput = 0
-        let totalOutput = 0
+        let totalInput = 0;
+        let totalOutput = 0;
 
         for (const message of messages) {
-            const tokens = this.estimateMessageTokens(message)
+            const tokens = this.estimateMessageTokens(message);
             if (message.role === 'user' || message.role === 'system') {
-                totalInput += tokens
+                totalInput += tokens;
             } else if (message.role === 'assistant') {
-                totalOutput += tokens
+                totalOutput += tokens;
             }
         }
 
@@ -70,14 +70,14 @@ export class TokenEstimationService {
             estimatedInputTokens: totalInput,
             estimatedOutputTokens: totalOutput,
             estimatedTotalTokens: totalInput + totalOutput
-        }
+        };
     }
 
     /**
      * Estimate tokens for a string (useful for input validation)
      */
     estimateStringTokens(text: string): number {
-        return Math.ceil(text.length / CHARS_PER_TOKEN)
+        return Math.ceil(text.length / CHARS_PER_TOKEN);
     }
 
     /**
@@ -85,53 +85,53 @@ export class TokenEstimationService {
      * Returns common context window sizes for known models
      */
     getContextWindowSize(model: string): number {
-        const modelLower = model.toLowerCase()
+        const modelLower = model.toLowerCase();
 
         // GPT-4 models
         if (modelLower.includes('gpt-4-turbo') || modelLower.includes('gpt-4o')) {
-            return 128000
+            return 128000;
         }
         if (modelLower.includes('gpt-4')) {
-            return 8192 // Default GPT-4
+            return 8192; // Default GPT-4
         }
 
         // GPT-3.5 models
         if (modelLower.includes('gpt-3.5')) {
-            return 16385
+            return 16385;
         }
 
         // Claude models
         if (modelLower.includes('claude-3-5-sonnet') || modelLower.includes('claude-3-opus')) {
-            return 200000
+            return 200000;
         }
         if (modelLower.includes('claude-3')) {
-            return 200000
+            return 200000;
         }
         if (modelLower.includes('claude-2')) {
-            return 100000
+            return 100000;
         }
 
         // Gemini models
         if (modelLower.includes('gemini-1.5-pro') || modelLower.includes('gemini-1.5-flash')) {
-            return 2000000 // 2M tokens
+            return 2000000; // 2M tokens
         }
         if (modelLower.includes('gemini-pro')) {
-            return 32768
+            return 32768;
         }
 
         // Llama models (common sizes)
         if (modelLower.includes('llama-3.1-70b') || modelLower.includes('llama-3.1-405b')) {
-            return 131072
+            return 131072;
         }
         if (modelLower.includes('llama-3')) {
-            return 8192
+            return 8192;
         }
         if (modelLower.includes('llama-2')) {
-            return 4096
+            return 4096;
         }
 
         // Default fallback
-        return 8192
+        return 8192;
     }
 
     /**
@@ -143,17 +143,17 @@ export class TokenEstimationService {
         contextWindow: number
         remainingTokens: number
     } {
-        const estimate = this.estimateMessagesTokens(messages)
-        const contextWindow = this.getContextWindowSize(model)
-        const totalTokens = estimate.estimatedTotalTokens + reservedTokens
-        const remainingTokens = contextWindow - totalTokens
+        const estimate = this.estimateMessagesTokens(messages);
+        const contextWindow = this.getContextWindowSize(model);
+        const totalTokens = estimate.estimatedTotalTokens + reservedTokens;
+        const remainingTokens = contextWindow - totalTokens;
 
         return {
             fits: totalTokens <= contextWindow,
             estimatedTokens: totalTokens,
             contextWindow,
             remainingTokens: Math.max(0, remainingTokens)
-        }
+        };
     }
 
     /**
@@ -166,63 +166,63 @@ export class TokenEstimationService {
         reservedTokens: number = 0,
         keepSystemMessages: boolean = true
     ): Message[] {
-        const contextWindow = this.getContextWindowSize(model)
-        const maxTokens = contextWindow - reservedTokens
+        const contextWindow = this.getContextWindowSize(model);
+        const maxTokens = contextWindow - reservedTokens;
 
         if (keepSystemMessages) {
-            const systemMessages = messages.filter(m => m.role === 'system')
-            const nonSystemMessages = messages.filter(m => m.role !== 'system')
+            const systemMessages = messages.filter(m => m.role === 'system');
+            const nonSystemMessages = messages.filter(m => m.role !== 'system');
 
-            let currentTokens = systemMessages.reduce((sum, m) => sum + this.estimateMessageTokens(m), 0)
-            const truncated: Message[] = [...systemMessages]
+            let currentTokens = systemMessages.reduce((sum, m) => sum + this.estimateMessageTokens(m), 0);
+            const truncated: Message[] = [...systemMessages];
 
             // Add messages from the end until we hit the limit
             for (let i = nonSystemMessages.length - 1; i >= 0; i--) {
-                const message = nonSystemMessages[i]
+                const message = nonSystemMessages[i];
                 if (message === undefined) {
-                    continue
+                    continue;
                 }
-                const messageTokens = this.estimateMessageTokens(message)
+                const messageTokens = this.estimateMessageTokens(message);
 
                 if (currentTokens + messageTokens <= maxTokens) {
-                    truncated.push(message)
-                    currentTokens += messageTokens
+                    truncated.push(message);
+                    currentTokens += messageTokens;
                 } else {
-                    break
+                    break;
                 }
             }
 
             // Reverse to maintain chronological order
-            return [...systemMessages, ...truncated.slice(systemMessages.length).reverse()]
+            return [...systemMessages, ...truncated.slice(systemMessages.length).reverse()];
         }
 
         // No system messages to preserve
-        let currentTokens = 0
-        const truncated: Message[] = []
+        let currentTokens = 0;
+        const truncated: Message[] = [];
 
         for (let i = messages.length - 1; i >= 0; i--) {
-            const message = messages[i]
+            const message = messages[i];
             if (message === undefined) {
-                continue
+                continue;
             }
-            const messageTokens = this.estimateMessageTokens(message)
+            const messageTokens = this.estimateMessageTokens(message);
 
             if (currentTokens + messageTokens <= maxTokens) {
-                truncated.unshift(message)
-                currentTokens += messageTokens
+                truncated.unshift(message);
+                currentTokens += messageTokens;
             } else {
-                break
+                break;
             }
         }
 
-        return truncated
+        return truncated;
     }
 }
 
 // Singleton instance
-let instance: TokenEstimationService | null = null
+let instance: TokenEstimationService | null = null;
 
 export function getTokenEstimationService(): TokenEstimationService {
-    instance ??= new TokenEstimationService()
-    return instance
+    instance ??= new TokenEstimationService();
+    return instance;
 }

@@ -1,7 +1,7 @@
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
-import { appLogger } from '@main/logging/logger';
 
 /**
  * Service for managing configuration values with priority-based resolution.
@@ -23,7 +23,7 @@ export class ConfigService extends BaseService {
      */
     async initialize(): Promise<void> {
         appLogger.info(this.name, 'Initializing configuration service...');
-        
+
         // Pre-load common configuration values
         const commonKeys = ['DATABASE_PATH', 'NODE_ENV', 'LOG_LEVEL', 'API_TIMEOUT'];
         for (const key of commonKeys) {
@@ -31,7 +31,7 @@ export class ConfigService extends BaseService {
                 this.cache.set(key, process.env[key]);
             }
         }
-        
+
         appLogger.info(this.name, `Initialized with ${this.cache.size} cached config values`);
     }
 
@@ -105,7 +105,9 @@ export class ConfigService extends BaseService {
     }
 
     /**
-     * Helper to get database path
+     * Helper method to retrieve the database path from environment variables.
+     * 
+     * @returns The database path string, or a default value if not set.
      */
     getDatabasePath(): string {
         return process.env.DATABASE_PATH ?? 'default-orbit.db';

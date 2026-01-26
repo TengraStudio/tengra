@@ -1,14 +1,14 @@
-import { ChildProcess, spawn } from 'child_process'
-import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
-import { promisify } from 'util'
+import { ChildProcess, spawn } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { promisify } from 'util';
 
-import { appLogger } from '@main/logging/logger'
-import { ProxyService } from '@main/services/proxy/proxy.service'
+import { appLogger } from '@main/logging/logger';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const execAsync = promisify(require('child_process').exec)
+const execAsync = promisify(require('child_process').exec);
 
 interface ProxyEmbedStatus {
     running: boolean
@@ -20,97 +20,97 @@ interface ProxyEmbedStatus {
 }
 
 export class ProxyEmbedService {
-    private child: ChildProcess | null = null
-    private currentConfigPath: string | undefined
-    private currentPort: number | undefined
-    private stdoutBuffer = ''
-    private stderrBuffer = ''
+    private child: ChildProcess | null = null;
+    private currentConfigPath: string | undefined;
+    private currentPort: number | undefined;
+    private stdoutBuffer = '';
+    private stderrBuffer = '';
 
     constructor(private proxyService: ProxyService) { }
 
     private getBinaryPath(): string {
-        const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed'
-        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed', binName)
+        const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed';
+        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed', binName);
     }
 
     private getSourceDir(): string {
-        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed')
+        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed');
     }
 
     private async ensureBinary(): Promise<string> {
-        const binaryPath = this.getBinaryPath()
+        const binaryPath = this.getBinaryPath();
         if (fs.existsSync(binaryPath) && !this.shouldRebuild(binaryPath)) {
-            return binaryPath
+            return binaryPath;
         }
 
-        const sourceDir = this.getSourceDir()
-        const outputFlag = process.platform === 'win32' ? '-o cliproxy-embed.exe' : '-o cliproxy-embed'
-        const buildCmd = `go build ${outputFlag}`
+        const sourceDir = this.getSourceDir();
+        const outputFlag = process.platform === 'win32' ? '-o cliproxy-embed.exe' : '-o cliproxy-embed';
+        const buildCmd = `go build ${outputFlag}`;
         const env = {
             ...process.env,
             GOPATH: path.join(os.homedir(), 'go'),
             GOMODCACHE: path.join(os.homedir(), 'go', 'pkg', 'mod')
-        }
+        };
 
-        const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir, env })
-        if (stdout?.trim()) {appLogger.info('ProxyEmbed:Build', stdout.trim())}
-        if (stderr?.trim()) {appLogger.warn('ProxyEmbed:Build', stderr.trim())}
+        const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir, env });
+        if (stdout?.trim()) {appLogger.info('ProxyEmbed:Build', stdout.trim());}
+        if (stderr?.trim()) {appLogger.warn('ProxyEmbed:Build', stderr.trim());}
 
         if (!fs.existsSync(binaryPath)) {
-            throw new Error('Failed to build embed binary')
+            throw new Error('Failed to build embed binary');
         }
-        return binaryPath
+        return binaryPath;
     }
 
     private shouldRebuild(binaryPath: string): boolean {
         if (!fs.existsSync(binaryPath)) {
-            return true
+            return true;
         }
-        const binaryMtime = fs.statSync(binaryPath).mtimeMs
-        const sourceDir = this.getSourceDir()
-        const inputs = this.collectBuildInputs(sourceDir)
+        const binaryMtime = fs.statSync(binaryPath).mtimeMs;
+        const sourceDir = this.getSourceDir();
+        const inputs = this.collectBuildInputs(sourceDir);
         return inputs.some((file) => {
             try {
-                return fs.statSync(file).mtimeMs > binaryMtime
+                return fs.statSync(file).mtimeMs > binaryMtime;
             } catch {
-                return false
+                return false;
             }
-        })
+        });
     }
 
     private collectBuildInputs(dir: string): string[] {
-        const results: string[] = []
-        const entries = fs.readdirSync(dir, { withFileTypes: true })
+        const results: string[] = [];
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name)
+            const fullPath = path.join(dir, entry.name);
             if (entry.isDirectory()) {
-                results.push(...this.collectBuildInputs(fullPath))
-                continue
+                results.push(...this.collectBuildInputs(fullPath));
+                continue;
             }
             if (entry.name.endsWith('.go') || entry.name === 'go.mod' || entry.name === 'go.sum') {
-                results.push(fullPath)
+                results.push(fullPath);
             }
         }
-        return results
+        return results;
     }
 
     async start(options?: { configPath?: string; port?: number; health?: boolean }): Promise<ProxyEmbedStatus> {
         if (this.child) {
-            return this.status()
+            return this.status();
         }
 
-        const binaryPath = await this.ensureBinary()
-        const configPath = options?.configPath || this.proxyService.settingsService.getSettingsPath()
-        this.currentConfigPath = configPath
-        this.currentPort = options?.port
+        const binaryPath = await this.ensureBinary();
+        const configPath = options?.configPath || this.proxyService.settingsService.getSettingsPath();
+        this.currentConfigPath = configPath;
+        this.currentPort = options?.port;
 
         // New binary only uses -config, all other settings come from config file
-        const args = ['-config', configPath]
+        const args = ['-config', configPath];
 
         // Ensure config exists
-        await this.proxyService.generateConfig(options?.port)
+        await this.proxyService.generateConfig(options?.port);
 
-        appLogger.info('ProxyEmbed', `Spawning embedded proxy: ${binaryPath} ${args.join(' ')}`)
+        appLogger.info('ProxyEmbed', `Spawning embedded proxy: ${binaryPath} ${args.join(' ')}`);
         this.child = spawn(binaryPath, args, {
             cwd: path.dirname(binaryPath),
             env: {
@@ -118,39 +118,39 @@ export class ProxyEmbedService {
             },
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true
-        })
+        });
 
         this.child.stdout?.on('data', (data) => {
-            this.stdoutBuffer = this.logChunk(this.stdoutBuffer, data.toString(), 'info')
-        })
+            this.stdoutBuffer = this.logChunk(this.stdoutBuffer, data.toString(), 'info');
+        });
 
         this.child.stderr?.on('data', (data) => {
-            this.stderrBuffer = this.logChunk(this.stderrBuffer, data.toString(), 'error')
-        })
+            this.stderrBuffer = this.logChunk(this.stderrBuffer, data.toString(), 'error');
+        });
 
         this.child.on('close', (code) => {
             if (this.stdoutBuffer.trim()) {
-                appLogger.info('ProxyEmbed', this.stdoutBuffer.trim())
-                this.stdoutBuffer = ''
+                appLogger.info('ProxyEmbed', this.stdoutBuffer.trim());
+                this.stdoutBuffer = '';
             }
             if (this.stderrBuffer.trim()) {
-                appLogger.error('ProxyEmbed', this.stderrBuffer.trim())
-                this.stderrBuffer = ''
+                appLogger.error('ProxyEmbed', this.stderrBuffer.trim());
+                this.stderrBuffer = '';
             }
-            appLogger.warn('ProxyEmbed', `Proxy embed exited with code ${code}`)
-            this.child = null
-        })
+            appLogger.warn('ProxyEmbed', `Proxy embed exited with code ${code}`);
+            this.child = null;
+        });
 
-        return this.status()
+        return this.status();
     }
 
     async stop(): Promise<ProxyEmbedStatus> {
         if (this.child) {
-            appLogger.info('ProxyEmbed', 'Stopping embedded proxy...')
-            this.child.kill()
-            this.child = null
+            appLogger.info('ProxyEmbed', 'Stopping embedded proxy...');
+            this.child.kill();
+            this.child = null;
         }
-        return this.status()
+        return this.status();
     }
 
     status(): ProxyEmbedStatus {
@@ -160,22 +160,22 @@ export class ProxyEmbedService {
             port: this.currentPort,
             configPath: this.currentConfigPath,
             binaryPath: this.child ? this.getBinaryPath() : undefined
-        }
+        };
     }
 
     private logChunk(buffer: string, chunk: string, level: 'info' | 'error'): string {
-        const combined = buffer + chunk
-        const lines = combined.split(/\r?\n/)
-        const remainder = lines.pop() ?? ''
+        const combined = buffer + chunk;
+        const lines = combined.split(/\r?\n/);
+        const remainder = lines.pop() ?? '';
         for (const line of lines) {
-            const trimmed = line.trim()
-            if (!trimmed) {continue}
+            const trimmed = line.trim();
+            if (!trimmed) {continue;}
             if (level === 'error') {
-                appLogger.error('ProxyEmbed', trimmed)
+                appLogger.error('ProxyEmbed', trimmed);
             } else {
-                appLogger.info('ProxyEmbed', trimmed)
+                appLogger.info('ProxyEmbed', trimmed);
             }
         }
-        return remainder
+        return remainder;
     }
 }

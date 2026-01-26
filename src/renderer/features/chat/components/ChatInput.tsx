@@ -1,13 +1,13 @@
-import { Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap, Cpu, Bot } from 'lucide-react'
-import { File as FileIcon, FileCode, FileText, Image as ImageIcon } from 'lucide-react'
-import React, { memo, useEffect, useRef } from 'react'
+import { Bot,Cpu, Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap } from 'lucide-react';
+import { File as FileIcon, FileCode, FileText, Image as ImageIcon } from 'lucide-react';
+import React, { memo, useEffect, useRef } from 'react';
 
-import { ModelSelector } from '@/features/models/components/ModelSelector'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { Attachment } from '@/types'
+import { ModelSelector } from '@/features/models/components/ModelSelector';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { Attachment } from '@/types';
 
-import { useChatInputController } from '../hooks/useChatInputController'
+import { useChatInputController } from '../hooks/useChatInputController';
 
 interface ChatInputProps {
     fileInputRef?: React.RefObject<HTMLInputElement>
@@ -278,7 +278,7 @@ const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
                             <Icon size={12} className={isActive ? mode.color : ""} />
                             {isActive && <span>{mode.label}</span>}
                         </button>
-                    )
+                    );
                 })}
             </div>
         </div>
@@ -318,4 +318,4 @@ const SendIcon: React.FC<{ isLoading: boolean; hasContent: boolean }> = ({ isLoa
     const colorFill = isLoading ? "currentColor" : "none";
     const iClass = cn(isLoading && "animate-pulse", (!isLoading && hasContent) && "ml-0.5");
     return <Icon size={18} fill={colorFill} className={iClass} aria-hidden="true" />;
-}
+};

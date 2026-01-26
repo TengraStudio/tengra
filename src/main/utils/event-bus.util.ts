@@ -3,9 +3,9 @@
  * Enables loose coupling between services
  */
 
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'events';
 
-import { JsonObject, JsonValue } from '@shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common';
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>
 
@@ -57,13 +57,13 @@ export interface AppEvents {
 }
 
 class EventBus {
-    private emitter = new EventEmitter()
-    private eventHistory: Array<{ event: string; data: JsonValue; timestamp: number }> = []
-    private readonly maxHistory = 100
+    private emitter = new EventEmitter();
+    private eventHistory: Array<{ event: string; data: JsonValue; timestamp: number }> = [];
+    private readonly maxHistory = 100;
 
     constructor() {
         // Increase max listeners to avoid warnings
-        this.emitter.setMaxListeners(50)
+        this.emitter.setMaxListeners(50);
     }
 
     /**
@@ -73,13 +73,13 @@ class EventBus {
         event: K,
         handler: EventHandler<AppEvents[K]>
     ): EventSubscription {
-        this.emitter.on(event as string, handler)
+        this.emitter.on(event as string, handler);
 
         return {
             unsubscribe: () => {
-                this.emitter.off(event as string, handler)
+                this.emitter.off(event as string, handler);
             }
-        }
+        };
     }
 
     /**
@@ -89,13 +89,13 @@ class EventBus {
         event: K,
         handler: EventHandler<AppEvents[K]>
     ): EventSubscription {
-        this.emitter.once(event as string, handler)
+        this.emitter.once(event as string, handler);
 
         return {
             unsubscribe: () => {
-                this.emitter.off(event as string, handler)
+                this.emitter.off(event as string, handler);
             }
-        }
+        };
     }
 
     /**
@@ -107,22 +107,22 @@ class EventBus {
             event: event as string,
             data,
             timestamp: Date.now()
-        })
+        });
 
         // Trim history
         if (this.eventHistory.length > this.maxHistory) {
-            this.eventHistory.shift()
+            this.eventHistory.shift();
         }
 
         // Emit
-        this.emitter.emit(event as string, data)
+        this.emitter.emit(event as string, data);
     }
 
     /**
      * Remove all listeners for an event
      */
     off<K extends keyof AppEvents>(event: K): void {
-        this.emitter.removeAllListeners(event as string)
+        this.emitter.removeAllListeners(event as string);
     }
 
     /**
@@ -130,24 +130,24 @@ class EventBus {
      */
     getHistory(event?: string): Array<{ event: string; data: JsonValue; timestamp: number }> {
         if (event) {
-            return this.eventHistory.filter(e => e.event === event)
+            return this.eventHistory.filter(e => e.event === event);
         }
-        return [...this.eventHistory]
+        return [...this.eventHistory];
     }
 
     /**
      * Clear all listeners
      */
     clear(): void {
-        this.emitter.removeAllListeners()
-        this.eventHistory = []
+        this.emitter.removeAllListeners();
+        this.eventHistory = [];
     }
 
     /**
      * Get listener count for an event
      */
     listenerCount(event: string): number {
-        return this.emitter.listenerCount(event)
+        return this.emitter.listenerCount(event);
     }
 
     /**
@@ -159,25 +159,25 @@ class EventBus {
     ): Promise<AppEvents[K]> {
         return new Promise((resolve, reject) => {
             const handler = (data: AppEvents[K]) => {
-                if (timeoutId) {clearTimeout(timeoutId)}
-                resolve(data)
-            }
+                if (timeoutId) {clearTimeout(timeoutId);}
+                resolve(data);
+            };
 
-            this.emitter.once(event as string, handler)
+            this.emitter.once(event as string, handler);
 
-            let timeoutId: NodeJS.Timeout | undefined
+            let timeoutId: NodeJS.Timeout | undefined;
             if (timeoutMs) {
                 timeoutId = setTimeout(() => {
-                    this.emitter.off(event as string, handler)
-                    reject(new Error(`Timeout waiting for event: ${event as string}`))
-                }, timeoutMs)
+                    this.emitter.off(event as string, handler);
+                    reject(new Error(`Timeout waiting for event: ${event as string}`));
+                }, timeoutMs);
             }
-        })
+        });
     }
 }
 
 // Singleton instance
-export const eventBus = new EventBus()
+export const eventBus = new EventBus();
 
 // Re-export for convenience
-export default eventBus
+export default eventBus;

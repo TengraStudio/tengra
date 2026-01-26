@@ -1,6 +1,6 @@
-import { CatchError, JsonObject, JsonValue } from '@shared/types/common'
+import { CatchError, JsonObject, JsonValue } from '@shared/types/common';
 
-import { ChatStreamRequest, ToolCall } from '@/types'
+import { ChatStreamRequest, ToolCall } from '@/types';
 
 export interface ChatStreamChunk {
     type?: 'content' | 'reasoning' | 'images' | 'tool_calls' | 'metadata' | 'error'

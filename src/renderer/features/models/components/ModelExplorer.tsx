@@ -1,9 +1,9 @@
-import { Box, ChevronLeft, ChevronRight, Database, Download, Loader2, Search, Server, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Box, ChevronLeft, ChevronRight, Database, Download, Loader2, Search, Server, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { SelectDropdown } from '@/components/ui/SelectDropdown'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { SelectDropdown } from '@/components/ui/SelectDropdown';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface HFModel {
     id: string
@@ -34,10 +34,10 @@ interface HFFile {
     quantization: string
 }
 
-import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher'
+import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 
-import type { Language } from '@/i18n'
-import { useTranslation } from '@/i18n'
+import type { Language } from '@/i18n';
+import { useTranslation } from '@/i18n';
 
 interface ModelExplorerProps {
     onClose?: () => void
@@ -47,113 +47,113 @@ interface ModelExplorerProps {
 }
 
 export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], language = 'en' }: ModelExplorerProps) {
-    const { t } = useTranslation(language)
-    const [query, setQuery] = useState('')
-    const [activeSource, setActiveSource] = useState<'all' | 'ollama' | 'huggingface'>('all')
-    const [sortBy, setSortBy] = useState<'name' | 'popularity' | 'updated'>('popularity')
-    const [page, setPage] = useState(0)
+    const { t } = useTranslation(language);
+    const [query, setQuery] = useState('');
+    const [activeSource, setActiveSource] = useState<'all' | 'ollama' | 'huggingface'>('all');
+    const [sortBy, setSortBy] = useState<'name' | 'popularity' | 'updated'>('popularity');
+    const [page, setPage] = useState(0);
 
     // Data
-    const [ollamaLibrary, setOllamaLibrary] = useState<OllamaLibraryModel[]>([])
-    const [hfResults, setHfResults] = useState<HFModel[]>([])
-    const [loading, setLoading] = useState(false)
-    const [totalHf, setTotalHf] = useState(0)
+    const [ollamaLibrary, setOllamaLibrary] = useState<OllamaLibraryModel[]>([]);
+    const [hfResults, setHfResults] = useState<HFModel[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [totalHf, setTotalHf] = useState(0);
 
     const isInstalled = useMemo(() => {
-        const ids = new Set(installedModels.map(m => m.id))
-        return (id: string) => ids.has(id)
-    }, [installedModels])
+        const ids = new Set(installedModels.map(m => m.id));
+        return (id: string) => ids.has(id);
+    }, [installedModels]);
 
     // Selection & Files
-    const [selectedModel, setSelectedModel] = useState<UnifiedModel | null>(null)
-    const [files, setFiles] = useState<HFFile[]>([])
-    const [loadingFiles, setLoadingFiles] = useState(false)
-    const [downloading, setDownloading] = useState<{ [key: string]: { received: number, total: number } }>({})
-    const [modelsDir, setModelsDir] = useState<string>('')
-    const [pullingOllama, setPullingOllama] = useState<string | null>(null)
+    const [selectedModel, setSelectedModel] = useState<UnifiedModel | null>(null);
+    const [files, setFiles] = useState<HFFile[]>([]);
+    const [loadingFiles, setLoadingFiles] = useState(false);
+    const [downloading, setDownloading] = useState<{ [key: string]: { received: number, total: number } }>({});
+    const [modelsDir, setModelsDir] = useState<string>('');
+    const [pullingOllama, setPullingOllama] = useState<string | null>(null);
 
     useEffect(() => {
         // Load Ollama Library
         void window.electron.getLibraryModels().then((libs) => {
             // Map the strictly typed response to OllamaLibraryModel
-            const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }))
+            const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }));
             console.warn(`[ModelExplorer] Fetched ${typedLibs.length} models from Ollama library.`);
-            setOllamaLibrary(typedLibs)
-        })
+            setOllamaLibrary(typedLibs);
+        });
 
         // Get models dir
-        void window.electron.llama.getModelsDir().then(setModelsDir)
+        void window.electron.llama.getModelsDir().then(setModelsDir);
 
         // Listen for progress
         window.electron.huggingface.onDownloadProgress((progress) => {
             setDownloading(prev => ({
                 ...prev,
                 [progress.filename]: { received: progress.received, total: progress.total }
-            }))
-        })
+            }));
+        });
 
         // Listen for Ollama pull progress
         window.electron.onPullProgress((progress) => {
             // progress: { status, completed, total, model }
             if (progress.status === 'success') {
-                setPullingOllama(null)
-                onRefreshModels?.()
+                setPullingOllama(null);
+                onRefreshModels?.();
             }
-        })
+        });
 
         return () => {
-            window.electron.removePullProgressListener()
-        }
-    }, [onRefreshModels])
+            window.electron.removePullProgressListener();
+        };
+    }, [onRefreshModels]);
 
     const fetchModels = useCallback(async () => {
-        setLoading(true)
+        setLoading(true);
         try {
             if (activeSource !== 'ollama') {
                 // HF API is 0-indexed usually
                 const hfSort = sortBy === 'popularity' ? 'downloads' : (sortBy === 'updated' ? 'updated' : 'name');
-                const result = await window.electron.huggingface.searchModels(query, 40, page, hfSort)
-                const { models, total } = result
+                const result = await window.electron.huggingface.searchModels(query, 40, page, hfSort);
+                const { models, total } = result;
                 console.warn(`[ModelExplorer] Fetched ${models.length} of ${total} models from HuggingFace (Query: "${query}", Page: ${page}, Sort: ${sortBy})`);
-                setHfResults(models.map((r) => ({ ...r, provider: 'huggingface' })))
-                setTotalHf(total)
+                setHfResults(models.map((r) => ({ ...r, provider: 'huggingface' })));
+                setTotalHf(total);
             } else {
-                setHfResults([])
-                setTotalHf(0)
+                setHfResults([]);
+                setTotalHf(0);
             }
         } catch (e) {
-            console.error(e)
-            setHfResults([])
+            console.error(e);
+            setHfResults([]);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [activeSource, query, page, sortBy])
+    }, [activeSource, query, page, sortBy]);
 
     // HF fetch effect
     useEffect(() => {
         // Initial fetch immediately, subsequent with debounce if query changes
         if (!query && hfResults.length === 0) {
-            void fetchModels()
-            return
+            void fetchModels();
+            return;
         }
 
         const timer = setTimeout(() => {
-            void fetchModels()
-        }, 500)
-        return () => clearTimeout(timer)
-    }, [query, hfResults.length, fetchModels])
+            void fetchModels();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [query, hfResults.length, fetchModels]);
 
     // Filter Ollama locally
     const filteredOllama = useMemo(() => {
-        if (activeSource === 'huggingface') { return [] }
-        if (page > 0) { return [] } // Only show Ollama on first page mixed results
+        if (activeSource === 'huggingface') { return []; }
+        if (page > 0) { return []; } // Only show Ollama on first page mixed results
 
-        let filtered = ollamaLibrary
+        let filtered = ollamaLibrary;
         if (query) {
             filtered = ollamaLibrary.filter(m =>
                 m.name.toLowerCase().includes(query.toLowerCase()) ||
                 m.description.toLowerCase().includes(query.toLowerCase())
-            )
+            );
         }
 
         // If in 'all' mode, only show top 12 models to avoid drowning out HF
@@ -168,14 +168,14 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 if (str.endsWith('K')) { return num * 1000; }
                 return num;
             };
-            return [...filtered].sort((a, b) => parsePulls(b.pulls) - parsePulls(a.pulls)).slice(0, 12)
+            return [...filtered].sort((a, b) => parsePulls(b.pulls) - parsePulls(a.pulls)).slice(0, 12);
         }
 
-        return filtered
-    }, [ollamaLibrary, query, activeSource, page])
+        return filtered;
+    }, [ollamaLibrary, query, activeSource, page]);
 
     const displayModels = useMemo(() => {
-        const base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])]
+        const base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])];
 
         const parsePulls = (pulls?: string): number => {
             if (!pulls) { return 0; }
@@ -189,85 +189,85 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         };
 
         return base.sort((a, b) => {
-            if (sortBy === 'name') { return a.name.localeCompare(b.name) }
+            if (sortBy === 'name') { return a.name.localeCompare(b.name); }
             if (sortBy === 'popularity') {
-                const aVal = a.provider === 'huggingface' ? (a as HFModel).downloads : parsePulls((a as OllamaLibraryModel).pulls)
-                const bVal = b.provider === 'huggingface' ? (b as HFModel).downloads : parsePulls((b as OllamaLibraryModel).pulls)
-                return bVal - aVal
+                const aVal = a.provider === 'huggingface' ? (a as HFModel).downloads : parsePulls((a as OllamaLibraryModel).pulls);
+                const bVal = b.provider === 'huggingface' ? (b as HFModel).downloads : parsePulls((b as OllamaLibraryModel).pulls);
+                return bVal - aVal;
             }
             if (sortBy === 'updated' && a.provider === 'huggingface' && b.provider === 'huggingface') {
-                return new Date((b as HFModel).lastModified).getTime() - new Date((a as HFModel).lastModified).getTime()
+                return new Date((b as HFModel).lastModified).getTime() - new Date((a as HFModel).lastModified).getTime();
             }
-            return 0
-        })
-    }, [hfResults, filteredOllama, sortBy, activeSource])
+            return 0;
+        });
+    }, [hfResults, filteredOllama, sortBy, activeSource]);
 
     const handleModelSelect = async (model: UnifiedModel) => {
-        setSelectedModel(model)
+        setSelectedModel(model);
         if (model.provider === 'huggingface') {
-            setLoadingFiles(true)
+            setLoadingFiles(true);
             try {
-                const fileList = await window.electron.huggingface.getFiles((model as HFModel).id)
-                setFiles(fileList.sort((a, b) => a.size - b.size))
+                const fileList = await window.electron.huggingface.getFiles((model as HFModel).id);
+                setFiles(fileList.sort((a, b) => a.size - b.size));
             } catch (e) {
-                console.error(e)
+                console.error(e);
             } finally {
-                setLoadingFiles(false)
+                setLoadingFiles(false);
             }
         }
-    }
+    };
 
     const handlePullOllama = async (modelName: string, tag: string) => {
-        const fullModelName = `${modelName}:${tag}`
-        setPullingOllama(fullModelName)
+        const fullModelName = `${modelName}:${tag}`;
+        setPullingOllama(fullModelName);
         try {
-            await window.electron.pullModel(fullModelName)
-            console.warn(`Successfully pulled ${fullModelName}`)
-            onRefreshModels?.()
+            await window.electron.pullModel(fullModelName);
+            console.warn(`Successfully pulled ${fullModelName}`);
+            onRefreshModels?.();
         } catch (e) {
-            const message = e instanceof Error ? e.message : String(e)
-            console.warn(`Failed to pull: ${message}`)
+            const message = e instanceof Error ? e.message : String(e);
+            console.warn(`Failed to pull: ${message}`);
         } finally {
-            setPullingOllama(null)
+            setPullingOllama(null);
         }
-    }
+    };
 
     const handleDownloadHF = async (file: HFFile) => {
-        if (!modelsDir || selectedModel?.provider !== 'huggingface') { return }
+        if (!modelsDir || selectedModel?.provider !== 'huggingface') { return; }
 
-        const safeName = `${selectedModel.author}-${selectedModel.name}-${file.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
-        const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/')
+        const safeName = `${selectedModel.author}-${selectedModel.name}-${file.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
+        const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/');
 
         try {
-            setDownloading(prev => ({ ...prev, [universalPath]: { received: 0, total: file.size } }))
-            const downloadUrl = `https://huggingface.co/${selectedModel.id}/resolve/main/${file.path}`
+            setDownloading(prev => ({ ...prev, [universalPath]: { received: 0, total: file.size } }));
+            const downloadUrl = `https://huggingface.co/${selectedModel.id}/resolve/main/${file.path}`;
 
-            const res = await window.electron.huggingface.downloadFile(downloadUrl, universalPath, file.size, file.oid)
+            const res = await window.electron.huggingface.downloadFile(downloadUrl, universalPath, file.size, file.oid);
 
             if (res.success) {
-                const next = { ...downloading }
-                delete next[universalPath]
-                setDownloading(next)
-                console.warn(`Downloaded: ${safeName}`)
-                onRefreshModels?.()
+                const next = { ...downloading };
+                delete next[universalPath];
+                setDownloading(next);
+                console.warn(`Downloaded: ${safeName}`);
+                onRefreshModels?.();
             } else {
-                console.warn('Download failed: ' + res.error)
-                const next = { ...downloading }
-                delete next[universalPath]
-                setDownloading(next)
+                console.warn('Download failed: ' + res.error);
+                const next = { ...downloading };
+                delete next[universalPath];
+                setDownloading(next);
             }
         } catch (e) {
-            console.error(e)
+            console.error(e);
         }
-    }
+    };
 
     const formatSize = (bytes: number) => {
-        if (bytes === 0) { return '0 B' }
-        const k = 1024
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-        const i = Math.floor(Math.log(bytes) / Math.log(k))
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    }
+        if (bytes === 0) { return '0 B'; }
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
     return (
         <div className="h-full flex flex-col bg-background text-foreground">
@@ -359,23 +359,23 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
                     <div className={cn("grid gap-8 pb-12 transition-all duration-700", selectedModel ? "grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6")}>
                         {displayModels.map(m => {
-                            const isOllama = m.provider === 'ollama'
-                            const isHF = m.provider === 'huggingface'
+                            const isOllama = m.provider === 'ollama';
+                            const isHF = m.provider === 'huggingface';
                             // Selection Fix: Unique ID per provider
-                            const mId = isOllama ? (m as OllamaLibraryModel).name : (m as HFModel).id
-                            const key = `${m.provider}-${mId}`
+                            const mId = isOllama ? (m as OllamaLibraryModel).name : (m as HFModel).id;
+                            const key = `${m.provider}-${mId}`;
                             const isSelected = selectedModel &&
                                 (selectedModel.provider === 'ollama' ? (selectedModel as OllamaLibraryModel).name : (selectedModel as HFModel).id) === mId &&
-                                selectedModel.provider === m.provider
+                                selectedModel.provider === m.provider;
 
                             // Extract some details for Ollama models if possible
-                            const name = isOllama ? (m as OllamaLibraryModel).name : (m as HFModel).name
-                            const params = isOllama ? (m as OllamaLibraryModel).tags.find(t => t.toLowerCase().includes('b') || t.toLowerCase().includes('m')) : ''
+                            const name = isOllama ? (m as OllamaLibraryModel).name : (m as HFModel).name;
+                            const params = isOllama ? (m as OllamaLibraryModel).tags.find(t => t.toLowerCase().includes('b') || t.toLowerCase().includes('m')) : '';
                             const architecture = name.toLowerCase().includes('llama') ? 'Llama' :
                                 name.toLowerCase().includes('mistral') ? 'Mistral' :
                                     name.toLowerCase().includes('phi') ? 'Phi' :
                                         name.toLowerCase().includes('gemma') ? 'Gemma' :
-                                            name.toLowerCase().includes('qwen') ? 'Qwen' : 'Transformer'
+                                            name.toLowerCase().includes('qwen') ? 'Qwen' : 'Transformer';
 
                             return (
                                 <motion.div
@@ -441,7 +441,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                     {/* Hover Interactive Decor */}
                                     <div className="absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-full group-hover:translate-y-0" />
                                 </motion.div>
-                            )
+                            );
                         })}
                     </div>
                 </div>
@@ -553,10 +553,10 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                         ) : (
                                             <div className="space-y-3">
                                                 {files.map(f => {
-                                                    const safeName = `${(selectedModel as HFModel).author}-${(selectedModel as HFModel).name}-${f.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
-                                                    const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/')
-                                                    const progress = downloading[universalPath]
-                                                    const isRecommendation = f.quantization.includes('Q4_K_M') || f.quantization.includes('Q5_K_M')
+                                                    const safeName = `${(selectedModel as HFModel).author}-${(selectedModel as HFModel).name}-${f.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
+                                                    const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/');
+                                                    const progress = downloading[universalPath];
+                                                    const isRecommendation = f.quantization.includes('Q4_K_M') || f.quantization.includes('Q5_K_M');
 
                                                     return (
                                                         <div key={f.path} className={cn("p-5 rounded-2xl border transition-all duration-300 group", isRecommendation ? "border-primary/40 bg-primary/10 shadow-lg shadow-primary/5" : "border-border/50 bg-muted/20 hover:border-primary/40 hover:bg-muted/40")}>
@@ -589,7 +589,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                                 </button>
                                                             )}
                                                         </div>
-                                                    )
+                                                    );
                                                 })}
                                                 {files.length === 0 && <div className="text-center text-xs text-muted-foreground/50 py-12 border-2 border-dashed border-border/20 rounded-2xl">{t('modelExplorer.noCompatible')}</div>}
                                             </div>
@@ -598,8 +598,8 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                         /* Ollama Tag Selection */
                                         <div className="space-y-3">
                                             {(selectedModel as OllamaLibraryModel).tags.map(tag => {
-                                                const fullModelName = `${(selectedModel as OllamaLibraryModel).name}:${tag}`
-                                                const isPulling = pullingOllama === fullModelName
+                                                const fullModelName = `${(selectedModel as OllamaLibraryModel).name}:${tag}`;
+                                                const isPulling = pullingOllama === fullModelName;
 
                                                 return (
                                                     <div key={tag} className="p-5 rounded-2xl border border-border/50 bg-muted/20 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all group">
@@ -616,7 +616,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                             disabled={!!pullingOllama}
                                                             className={cn(
                                                                 "w-full py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50",
-                                                                isPulling ? "bg-orange-500 text-white animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-orange-600 group-hover:text-white"
+                                                                isPulling ? "bg-orange-500 text-foreground animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-orange-600 group-hover:text-foreground"
                                                             )}
                                                         >
                                                             {isPulling ? (
@@ -626,7 +626,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                             )}
                                                         </button>
                                                     </div>
-                                                )
+                                                );
                                             })}
                                         </div>
                                     )}
@@ -639,19 +639,19 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
             {/* Pagination Footer (if strictly needed, though header handles it) */}
         </div>
-    )
+    );
 }
 
 function BadgeQ({ quantization }: { quantization: string }) {
-    let color = "bg-muted text-muted-foreground"
-    if (quantization.includes("Q4")) { color = "bg-emerald-500/10 text-emerald-500" }
-    if (quantization.includes("Q5")) { color = "bg-blue-500/10 text-blue-500" }
-    if (quantization.includes("Q6") || quantization.includes("Q8")) { color = "bg-purple-500/10 text-purple-500" }
-    if (quantization.includes("Q2") || quantization.includes("Q3")) { color = "bg-red-500/10 text-red-500" }
+    let color = "bg-muted text-muted-foreground";
+    if (quantization.includes("Q4")) { color = "bg-emerald-500/10 text-emerald-500"; }
+    if (quantization.includes("Q5")) { color = "bg-blue-500/10 text-blue-500"; }
+    if (quantization.includes("Q6") || quantization.includes("Q8")) { color = "bg-purple-500/10 text-purple-500"; }
+    if (quantization.includes("Q2") || quantization.includes("Q3")) { color = "bg-red-500/10 text-red-500"; }
 
     return (
         <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", color)}>
             {quantization}
         </span>
-    )
+    );
 }

@@ -46,10 +46,8 @@ export interface NormalizedStreamChunk {
  */
 export function normalizeOpenAIResponse(response: JsonValue, model: string): NormalizedResponse {
     const res = asObject(response) ?? {};
-    const choices = asArray(res.choices) ?? [];
-    const choice = asObject(choices[0]);
-    const message = asObject(choice?.message) || { role: 'assistant', content: '' };
-    const usage = asObject(res.usage);
+    const choice = asArray(res.choices)?.[0] as JsonObject | undefined;
+    const message = asObject(choice?.message) ?? { role: 'assistant', content: '' };
 
     return {
         content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
@@ -57,20 +55,34 @@ export function normalizeOpenAIResponse(response: JsonValue, model: string): Nor
         provider: 'openai',
         model,
         finishReason: normalizeFinishReason(choice?.finish_reason as string | undefined),
-        usage: usage ? {
-            promptTokens: Number(usage.prompt_tokens ?? 0),
-            completionTokens: Number(usage.completion_tokens ?? 0),
-            totalTokens: Number(usage.total_tokens ?? 0)
-        } : undefined,
-        toolCalls: message.tool_calls ? (asArray(message.tool_calls) ?? []).map((t) => normalizeToolCall(t)) : undefined,
-        reasoning: (message.reasoning_content as string) || (message.reasoning as string),
-        metadata: {
-            id: res.id as string,
-            created: res.created as number,
-            systemFingerprint: res.system_fingerprint as string
-        },
+        usage: normalizeOpenAIUsage(asObject(res.usage)),
+        toolCalls: normalizeOpenAIToolCalls(message.tool_calls),
+        reasoning: (message.reasoning_content as string | undefined) ?? (message.reasoning as string | undefined),
+        metadata: extractOpenAIMetadata(res),
         rawResponse: response
-    }
+    };
+}
+
+function normalizeOpenAIUsage(usage: JsonObject | null): NormalizedResponse['usage'] {
+    if (!usage) { return undefined; }
+    return {
+        promptTokens: Number(usage.prompt_tokens ?? 0),
+        completionTokens: Number(usage.completion_tokens ?? 0),
+        totalTokens: Number(usage.total_tokens ?? 0)
+    };
+}
+
+function normalizeOpenAIToolCalls(toolCalls: JsonValue | undefined): NormalizedToolCall[] | undefined {
+    if (!toolCalls) { return undefined; }
+    return (asArray(toolCalls) ?? []).map((t) => normalizeToolCall(t));
+}
+
+function extractOpenAIMetadata(res: JsonObject): NormalizedResponse['metadata'] {
+    return {
+        id: res.id as string,
+        created: res.created as number,
+        systemFingerprint: res.system_fingerprint as string
+    };
 }
 
 /**
@@ -80,7 +92,7 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
     const res = asObject(response) ?? {};
     const content = asArray(res.content) ?? [];
     const textPart = asObject(content.find((c) => asObject(c)?.type === 'text'));
-    const textContent = (textPart?.text as string) || '';
+    const textContent = (textPart?.text as string | undefined) ?? '';
     const toolUseContent = content.filter((c) => asObject(c)?.type === 'tool_use');
     const usage = asObject(res.usage);
 
@@ -95,23 +107,24 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
             completionTokens: Number(usage.output_tokens ?? 0),
             totalTokens: Number(usage.input_tokens ?? 0) + Number(usage.output_tokens ?? 0)
         } : undefined,
-        toolCalls: toolUseContent.map((t) => {
-            const block = asObject(t) ?? {};
-            return {
-                id: (block.id as string) ?? `tool-${Date.now()}`,
-                type: 'function' as const,
-                function: {
-                    name: (block.name as string) ?? '',
-                    arguments: JSON.stringify(block.input ?? {})
-                }
-            };
-        }),
+        toolCalls: toolUseContent.map((t) => normalizeAnthropicToolCall(asObject(t) ?? {})),
         metadata: {
             id: res.id as string,
             model: res.model as string
         },
         rawResponse: response
-    }
+    };
+}
+
+function normalizeAnthropicToolCall(block: JsonObject): NormalizedToolCall {
+    return {
+        id: (block.id as string | undefined) ?? `tool-${Date.now()}`,
+        type: 'function' as const,
+        function: {
+            name: (block.name as string | undefined) ?? '',
+            arguments: JSON.stringify(block.input ?? {})
+        }
+    };
 }
 
 
@@ -122,56 +135,66 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
 export function normalizeOllamaResponse(response: JsonValue, model: string): NormalizedResponse {
     const res = asObject(response) ?? {};
     const message = asObject(res.message);
+    const content = message ? (message.content as string | undefined) : (res.response as string | undefined);
+
     return {
-        content: (message?.content as string) ?? (res.response as string) ?? '',
+        content: content ?? '',
         role: 'assistant',
         provider: 'ollama',
         model,
         finishReason: res.done ? 'stop' : undefined,
-        usage: res.eval_count ? {
-            promptTokens: Number(res.prompt_eval_count ?? 0),
-            completionTokens: Number(res.eval_count ?? 0),
-            totalTokens: Number(res.prompt_eval_count ?? 0) + Number(res.eval_count ?? 0)
-        } : undefined,
-        metadata: {
-            totalDuration: res.total_duration as number,
-            loadDuration: res.load_duration as number,
-            evalDuration: res.eval_duration as number
-        },
+        usage: normalizeOllamaUsage(res),
+        metadata: extractOllamaMetadata(res),
         rawResponse: response
-    }
+    };
+}
+
+function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
+    if (!res.eval_count) { return undefined; }
+    return {
+        promptTokens: Number(res.prompt_eval_count ?? 0),
+        completionTokens: Number(res.eval_count ?? 0),
+        totalTokens: Number(res.prompt_eval_count ?? 0) + Number(res.eval_count ?? 0)
+    };
+}
+
+function extractOllamaMetadata(res: JsonObject): NormalizedResponse['metadata'] {
+    return {
+        totalDuration: res.total_duration as number,
+        loadDuration: res.load_duration as number,
+        evalDuration: res.eval_duration as number
+    };
 }
 
 /**
  * Normalize any provider response
  */
 export function normalizeResponse(response: JsonValue, provider: string, model: string): NormalizedResponse {
-    const res = asObject(response)
-    switch (provider.toLowerCase()) {
-        case 'openai':
-        case 'copilot':
-        case 'antigravity':
-            return normalizeOpenAIResponse(response, model)
-        case 'anthropic':
-        case 'claude':
-            return normalizeAnthropicResponse(response, model)
-
-        case 'ollama':
-            return normalizeOllamaResponse(response, model)
-        default:
-            // Try OpenAI format as default
-            if (res && Array.isArray(res.choices)) {
-                return normalizeOpenAIResponse(response, model)
-            }
-            // Fallback
-            return {
-                content: typeof response === 'string' ? response : JSON.stringify(response),
-                role: 'assistant',
-                provider,
-                model,
-                rawResponse: response
-            }
+    const p = provider.toLowerCase();
+    if (p === 'openai' || p === 'copilot' || p === 'antigravity') {
+        return normalizeOpenAIResponse(response, model);
     }
+    if (p === 'anthropic' || p === 'claude') {
+        return normalizeAnthropicResponse(response, model);
+    }
+    if (p === 'ollama') {
+        return normalizeOllamaResponse(response, model);
+    }
+    return normalizeFallbackResponse(response, provider, model);
+}
+
+function normalizeFallbackResponse(response: JsonValue, provider: string, model: string): NormalizedResponse {
+    const resObj = asObject(response);
+    if (resObj && Array.isArray(resObj.choices)) {
+        return normalizeOpenAIResponse(response, model);
+    }
+    return {
+        content: typeof response === 'string' ? response : JSON.stringify(response),
+        role: 'assistant',
+        provider,
+        model,
+        rawResponse: response
+    };
 }
 
 /**
@@ -181,95 +204,129 @@ export function normalizeStreamChunk(chunk: JsonValue, provider: string): Normal
     switch (provider.toLowerCase()) {
         case 'openai':
         case 'copilot':
-        case 'antigravity': {
-            const resObj = asObject(chunk)
-            const choices = resObj ? asArray(resObj.choices) : null
-            const choiceObj = choices && choices.length > 0 ? asObject(choices[0]) : null
-            const delta = choiceObj ? asObject(choiceObj.delta) : null
-            return {
-                content: typeof delta?.content === 'string' ? delta.content : undefined,
-                reasoning: typeof delta?.reasoning_content === 'string'
-                    ? delta.reasoning_content
-                    : (typeof delta?.reasoning === 'string' ? delta.reasoning : undefined),
-                toolCalls: delta && Array.isArray(delta.tool_calls) ? delta.tool_calls.map(normalizeToolCall) : undefined,
-                finishReason: typeof choiceObj?.finish_reason === 'string' ? choiceObj.finish_reason : undefined,
-                done: choiceObj?.finish_reason !== undefined
-            }
-        }
-        case 'anthropic': {
-            const resObj = asObject(chunk)
-            if (resObj?.type === 'content_block_delta') {
-                const delta = asObject(resObj.delta)
-                return {
-                    content: typeof delta?.text === 'string' ? delta.text : undefined,
-                    done: false
-                }
-            }
-            if (resObj?.type === 'message_stop') {
-                return { done: true }
-            }
-            return { done: false }
-        }
-        case 'ollama': {
-            const resObj = asObject(chunk)
-            const message = resObj ? asObject(resObj.message) : null
-            return {
-                content: typeof message?.content === 'string'
-                    ? message.content
-                    : (typeof resObj?.response === 'string' ? resObj.response : undefined),
-                done: typeof resObj?.done === 'boolean' ? resObj.done : false
-            }
-        }
-        default: {
-            const resObj = asObject(chunk)
-            const delta = resObj ? asObject(resObj.delta) : null
-            return {
-                content: typeof resObj?.content === 'string'
-                    ? resObj.content
-                    : (typeof resObj?.text === 'string'
-                        ? resObj.text
-                        : (typeof delta?.content === 'string' ? delta.content : undefined)),
-                done: typeof resObj?.done === 'boolean' ? resObj.done : resObj?.finish_reason !== undefined
-            }
-        }
+        case 'antigravity':
+            return normalizeOpenAIStreamChunk(chunk);
+        case 'anthropic':
+        case 'claude':
+            return normalizeAnthropicStreamChunk(chunk);
+        case 'ollama':
+            return normalizeOllamaStreamChunk(chunk);
+        default:
+            return normalizeDefaultStreamChunk(chunk);
     }
+}
+
+function normalizeOpenAIStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const choiceObj = asArray(resObj?.choices)?.[0] as JsonObject | undefined;
+    const delta = asObject(choiceObj?.delta);
+
+    const finishReason = typeof choiceObj?.finish_reason === 'string' ? choiceObj.finish_reason : undefined;
+
+    return {
+        content: typeof delta?.content === 'string' ? delta.content : undefined,
+        reasoning: getOpenAIReasoning(delta),
+        toolCalls: delta && Array.isArray(delta.tool_calls) ? delta.tool_calls.map(normalizeToolCall) : undefined,
+        finishReason,
+        done: finishReason !== undefined
+    };
+}
+
+function getOpenAIReasoning(delta: JsonObject | null): string | undefined {
+    if (typeof delta?.reasoning_content === 'string') {
+        return delta.reasoning_content;
+    }
+    return typeof delta?.reasoning === 'string' ? delta.reasoning : undefined;
+}
+
+function normalizeAnthropicStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    if (resObj?.type === 'content_block_delta') {
+        const delta = asObject(resObj.delta);
+        return {
+            content: typeof delta?.text === 'string' ? delta.text : undefined,
+            done: false
+        };
+    }
+    return { done: resObj?.type === 'message_stop' };
+}
+
+function normalizeOllamaStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const message = resObj ? asObject(resObj.message) : null;
+    return {
+        content: typeof message?.content === 'string'
+            ? message.content
+            : (typeof resObj?.response === 'string' ? resObj.response : undefined),
+        done: typeof resObj?.done === 'boolean' ? resObj.done : false
+    };
+}
+
+function normalizeDefaultStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
+    const resObj = asObject(chunk);
+    const delta = asObject(resObj?.delta);
+    const content = getStandardContent(resObj, delta);
+    const isDone = typeof resObj?.done === 'boolean' ? resObj.done : resObj?.finish_reason !== undefined;
+
+    return {
+        content,
+        done: isDone
+    };
+}
+
+function getStandardContent(res: JsonObject | null, delta: JsonObject | null): string | undefined {
+    if (typeof res?.content === 'string') { return res.content; }
+    if (typeof res?.text === 'string') { return res.text; }
+    return typeof delta?.content === 'string' ? delta.content : undefined;
 }
 
 // Helpers
 
 function normalizeFinishReason(reason: string | undefined | null): NormalizedResponse['finishReason'] {
-    if (!reason) {return undefined}
+    if (!reason) { return undefined; }
 
-    const lower = reason.toLowerCase()
-    if (lower === 'stop' || lower === 'end_turn' || lower === 'stop_sequence') {return 'stop'}
-    if (lower === 'length' || lower === 'max_tokens') {return 'length'}
-    if (lower === 'tool_calls' || lower === 'tool_use' || lower === 'function_call') {return 'tool_calls'}
-    if (lower === 'content_filter' || lower === 'safety') {return 'content_filter'}
+    const lower = reason.toLowerCase();
+    const mapping: Record<string, NormalizedResponse['finishReason']> = {
+        stop: 'stop',
+        end_turn: 'stop',
+        stop_sequence: 'stop',
+        length: 'length',
+        max_tokens: 'length',
+        tool_calls: 'tool_calls',
+        tool_use: 'tool_calls',
+        function_call: 'tool_calls',
+        content_filter: 'content_filter',
+        safety: 'content_filter'
+    };
 
-    return 'stop'
+    return mapping[lower] ?? 'stop';
 }
 
 function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
-    const tc = asObject(toolCall) ?? {}
-    const fn = asObject(tc.function) ?? {}
-    const argsValue = fn.arguments !== undefined ? fn.arguments : tc.arguments
-    const args = typeof argsValue === 'string' ? argsValue : JSON.stringify(argsValue ?? {})
+    const tc = asObject(toolCall) ?? {};
+    const fn = asObject(tc.function) ?? {};
+
+    // Fallback logic for function details
+    const rawArgs = fn.arguments ?? tc.arguments;
+    const name = typeof fn.name === 'string' ? fn.name : (typeof tc.name === 'string' ? tc.name : '');
+    const id = typeof tc.id === 'string' ? tc.id : `tool-${Date.now()}`;
+
     return {
-        id: typeof tc.id === 'string' ? tc.id : `tool-${Date.now()}`,
+        id,
         type: 'function',
         function: {
-            name: typeof fn.name === 'string' ? fn.name : (typeof tc.name === 'string' ? tc.name : ''),
-            arguments: args
+            name,
+            arguments: typeof rawArgs === 'string' ? rawArgs : JSON.stringify(rawArgs ?? {})
         }
-    }
+    };
 }
 
 function asObject(value: JsonValue | undefined): JsonObject | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {return null}
-    return value as JsonObject
+    if (!value || typeof value !== 'object' || Array.isArray(value)) { return null; }
+    return value as JsonObject;
 }
 
 function asArray(value: JsonValue | undefined): JsonValue[] | null {
-    if (!Array.isArray(value)) {return null}
-    return value
+    if (!Array.isArray(value)) { return null; }
+    return value;
 }

@@ -1,4 +1,4 @@
-import { JsonObject } from '@/types/common'
+import { JsonObject } from '@/types/common';
 
 /**
  * Idea Generator Types
@@ -58,6 +58,7 @@ export interface IdeaSessionConfig {
     provider: string
     categories: IdeaCategory[]
     maxIdeas: number
+    customPrompt?: string
 }
 
 /**
@@ -72,6 +73,8 @@ export interface IdeaSession {
     ideasGenerated: number
     status: IdeaSessionStatus
     researchData?: ResearchData
+    customPrompt?: string
+    goal?: string                      // Added for consistency
     createdAt: number
     updatedAt: number
 }
@@ -293,6 +296,8 @@ export interface ProjectIdea {
     businessModel?: BusinessModel      // Stage 10: Monetization
     marketingPlan?: MarketingPlan      // Stage 11: GTM strategy
     marketResearch?: MarketResearchResult
+    marketAnalysis?: string            // Added for consistency with DB and older code
+    estimatedEffort?: string           // Added for consistency with DB
     // Pipeline tracking
     generationStage?: IdeaGenerationStage
     researchContext?: string           // Stage 3: Idea-specific research context

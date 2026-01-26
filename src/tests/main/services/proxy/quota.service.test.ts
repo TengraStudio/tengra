@@ -13,7 +13,7 @@ const { mockRequest, mockCookiesGet } = vi.hoisted(() => {
     return {
         mockRequest: vi.fn(),
         mockCookiesGet: vi.fn().mockResolvedValue([])
-    }
+    };
 });
 
 vi.mock('electron', () => {

@@ -1,7 +1,8 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
+import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ProjectService } from '@main/services/project/project.service';
@@ -12,7 +13,8 @@ export class LogoService {
     constructor(
         private llmService: LLMService,
         private projectService: ProjectService,
-        private localImageService: LocalImageService
+        private localImageService: LocalImageService,
+        private imagePersistenceService: ImagePersistenceService
     ) { }
 
     private getStylePrompt(style: string): string {
@@ -126,6 +128,14 @@ ${context}`;
                 await fs.mkdir(targetDir, { recursive: true });
                 await fs.copyFile(tempPath, targetPath);
 
+                // Save to gallery with metadata
+                await this.imagePersistenceService.saveImage(`data:image/png;base64,${await fs.readFile(tempPath, 'base64')}`, {
+                    prompt: enhancedPrompt,
+                    model: 'local-stable-diffusion', // Assuming local
+                    width: 1024,
+                    height: 1024
+                });
+
                 return targetPath;
             }
 
@@ -142,6 +152,14 @@ ${context}`;
 
                 await fs.mkdir(targetDir, { recursive: true });
                 await fs.copyFile(apiTempPath, targetPath);
+
+                // Save to gallery with metadata
+                await this.imagePersistenceService.saveImage(apiTempPath, {
+                    prompt: enhancedPrompt,
+                    model: 'antigravity-gemini-3-pro-image',
+                    width: 1024,
+                    height: 1024
+                });
 
                 return targetPath;
             }

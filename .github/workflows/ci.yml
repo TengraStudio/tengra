@@ -32,8 +32,13 @@ jobs:
     - name: Run Linter
       run: npm run lint
 
-    - name: Secrets Scan
+    - name: Secrets Scan (secretlint)
       run: npx secretlint "**/*"
+
+    - name: Secrets Scan (detect-secrets)
+      run: |
+        pip install detect-secrets
+        npm run secrets:detect
 
     - name: Security Audit (npm audit)
       run: npm audit --audit-level=high --production

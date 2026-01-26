@@ -1,35 +1,35 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react';
 
 export function useOllamaManager() {
-    const [isOllamaRunning, setIsOllamaRunning] = useState(false)
-    const [statusMessage, setStatusMessage] = useState('')
+    const [isOllamaRunning, setIsOllamaRunning] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
 
     const checkOllama = useCallback(async () => {
         try {
-            const running = await window.electron.isOllamaRunning()
-            setIsOllamaRunning(!!running)
+            const running = await window.electron.isOllamaRunning();
+            setIsOllamaRunning(!!running);
         } catch {
-            setIsOllamaRunning(false)
+            setIsOllamaRunning(false);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
-        void checkOllama()
-    }, [checkOllama])
+        void checkOllama();
+    }, [checkOllama]);
 
     const startOllama = useCallback(async () => {
         try {
-            const result = await window.electron.startOllama()
+            const result = await window.electron.startOllama();
             if (result.message) {
-                setStatusMessage(result.message)
-                setTimeout(() => setStatusMessage(''), 2000)
+                setStatusMessage(result.message);
+                setTimeout(() => setStatusMessage(''), 2000);
             }
         } catch (error) {
-            console.error('Failed to start Ollama:', error)
+            console.error('Failed to start Ollama:', error);
         } finally {
-            void checkOllama()
+            void checkOllama();
         }
-    }, [checkOllama])
+    }, [checkOllama]);
 
     return {
         isOllamaRunning,
@@ -37,5 +37,5 @@ export function useOllamaManager() {
         setStatusMessage,
         checkOllama,
         startOllama
-    }
+    };
 }

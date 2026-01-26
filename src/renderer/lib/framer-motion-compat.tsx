@@ -3,7 +3,7 @@
  * Uses CSS transitions instead of JS animations
  */
 
-import React, { FC, ForwardRefExoticComponent, memo, RefAttributes } from 'react'
+import React, { FC, ForwardRefExoticComponent, memo, RefAttributes } from 'react';
 
 // Type definitions matching framer-motion's API
 export interface MotionProps extends React.HTMLAttributes<HTMLElement> {
@@ -44,31 +44,31 @@ const createMotionComponent = (tag: string) => {
                 ...restProps
             },
             children
-        )
-    })
+        );
+    });
 
-    MotionComponent.displayName = `motion.${tag}`
-    return MotionComponent
-}
+    MotionComponent.displayName = `motion.${tag}`;
+    return MotionComponent;
+};
 
 // Cache for motion components
-const motionComponentCache: Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>> = {}
+const motionComponentCache: Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>> = {};
 
 // Motion proxy that creates components on demand
 export const motion = new Proxy({} as Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>>, {
     get: (_, tag: string) => {
         if (!motionComponentCache[tag]) {
-            motionComponentCache[tag] = createMotionComponent(tag) as unknown as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>
+            motionComponentCache[tag] = createMotionComponent(tag) as unknown as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>;
         }
-        return motionComponentCache[tag]
+        return motionComponentCache[tag];
     }
-})
+});
 
 // Simple AnimatePresence - just renders children directly
 export const AnimatePresence: FC<AnimatePresenceProps> = memo(({ children, mode: _mode = 'sync', initial: _initial = true, onExitComplete: _onExitComplete }) => {
-    return <>{children}</>
-})
+    return <>{children}</>;
+});
 
-AnimatePresence.displayName = 'AnimatePresence'
+AnimatePresence.displayName = 'AnimatePresence';
 
-export default { motion, AnimatePresence }
+export default { motion, AnimatePresence };

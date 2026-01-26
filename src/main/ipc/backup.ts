@@ -3,9 +3,9 @@
  * Exposes backup and restore functionality to the renderer process
  */
 
-import { BackupMetadata, BackupResult, BackupService, RestoreResult } from '@main/services/data/backup.service'
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
+import { BackupMetadata, BackupResult, BackupService, RestoreResult } from '@main/services/data/backup.service';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export interface BackupListItem {
     name: string
@@ -24,8 +24,8 @@ export function registerBackupIpc(backupService: BackupService) {
             includePrompts?: boolean
         }
     ): Promise<BackupResult> => {
-        return backupService.createBackup(options)
-    }))
+        return backupService.createBackup(options);
+    }));
 
     // Restore from a backup
     ipcMain.handle('backup:restore', createIpcHandler('backup:restore', async (
@@ -38,26 +38,26 @@ export function registerBackupIpc(backupService: BackupService) {
             mergeChats?: boolean
         }
     ): Promise<RestoreResult> => {
-        return backupService.restoreBackup(backupPath, options)
-    }))
+        return backupService.restoreBackup(backupPath, options);
+    }));
 
     // List all backups
     ipcMain.handle('backup:list', createIpcHandler('backup:list', async (): Promise<BackupListItem[]> => {
-        return backupService.listBackups()
-    }))
+        return backupService.listBackups();
+    }));
 
     // Delete a backup
     ipcMain.handle('backup:delete', createIpcHandler('backup:delete', async (
         _event: IpcMainInvokeEvent,
         backupPath: string
     ): Promise<boolean> => {
-        return backupService.deleteBackup(backupPath)
-    }))
+        return backupService.deleteBackup(backupPath);
+    }));
 
     // Get backup directory
     ipcMain.handle('backup:getDir', createIpcHandler('backup:getDir', async (): Promise<string> => {
-        return backupService.getBackupDir()
-    }))
+        return backupService.getBackupDir();
+    }));
 
     // Get auto-backup status
     ipcMain.handle('backup:getAutoBackupStatus', createIpcHandler('backup:getAutoBackupStatus', async (): Promise<{
@@ -66,8 +66,8 @@ export function registerBackupIpc(backupService: BackupService) {
         maxBackups: number
         lastBackup: string | null
     }> => {
-        return backupService.getAutoBackupStatus()
-    }))
+        return backupService.getAutoBackupStatus();
+    }));
 
     // Configure auto-backup
     ipcMain.handle('backup:configureAutoBackup', createIpcHandler('backup:configureAutoBackup', async (
@@ -78,11 +78,11 @@ export function registerBackupIpc(backupService: BackupService) {
             maxBackups?: number
         }
     ): Promise<void> => {
-        return backupService.configureAutoBackup(config)
-    }))
+        return backupService.configureAutoBackup(config);
+    }));
 
     // Trigger auto-backup cleanup
     ipcMain.handle('backup:cleanup', createIpcHandler('backup:cleanup', async (): Promise<number> => {
-        return backupService.cleanupOldBackups()
-    }))
+        return backupService.cleanupOldBackups();
+    }));
 }

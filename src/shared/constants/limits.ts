@@ -15,7 +15,7 @@ export const SIZE_LIMITS = {
     TERMINAL_BUFFER: 1024 * 1024,
     /** Memory soft limit (4GB in MB) */
     MEMORY_SOFT_LIMIT_MB: 4096,
-} as const
+} as const;
 
 /** Entry and record limits */
 export const ENTRY_LIMITS = {
@@ -31,7 +31,7 @@ export const ENTRY_LIMITS = {
     MAX_TELEMETRY_QUEUE: 1000,
     /** Maximum command length */
     MAX_COMMAND_LENGTH: 10000,
-} as const
+} as const;
 
 /** Iteration and safety limits */
 export const ITERATION_LIMITS = {
@@ -45,7 +45,7 @@ export const ITERATION_LIMITS = {
     MAX_RETRIES: 3,
     /** Queue iteration limit for chat stream */
     STREAM_QUEUE_ITERATIONS: 1000,
-} as const
+} as const;
 
 /** Display and slice limits */
 export const DISPLAY_LIMITS = {
@@ -79,7 +79,7 @@ export const DISPLAY_LIMITS = {
     GIT_LOG_PREVIEW: 3,
     /** Token batch limit for auth */
     TOKEN_BATCH: 100,
-} as const
+} as const;
 
 /** Content and text limits */
 export const CONTENT_LIMITS = {
@@ -115,7 +115,7 @@ export const CONTENT_LIMITS = {
     MODEL_CACHE_FETCH: 50,
     /** Minimum word length for filtering */
     MIN_WORD_LENGTH: 3,
-} as const
+} as const;
 
 /** Terminal limits */
 export const TERMINAL_LIMITS = {
@@ -123,16 +123,16 @@ export const TERMINAL_LIMITS = {
     SCROLLBACK_BUFFER: 10000,
     /** Safe fit delay for terminal resize */
     SAFE_FIT_DELAY: 100,
-} as const
+} as const;
 
 /** Snapshot and retention limits */
 export const RETENTION_LIMITS = {
     /** Terminal snapshot retention (7 days in ms) */
     TERMINAL_SNAPSHOT_RETENTION: 7 * 24 * 60 * 60 * 1000,
-} as const
+} as const;
 
 /** Depth limits for recursive operations */
 export const DEPTH_LIMITS = {
     /** Maximum recursion depth */
     MAX_DEPTH: 4,
-} as const
+} as const;

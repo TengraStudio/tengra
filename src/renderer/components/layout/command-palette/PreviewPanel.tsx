@@ -1,6 +1,6 @@
-import { CommandItem } from '@renderer/components/layout/CommandPalette'
-import { Command } from 'lucide-react'
-import React from 'react'
+import { CommandItem } from '@renderer/components/layout/CommandPalette';
+import { Command } from 'lucide-react';
+import React from 'react';
 
 interface PreviewPanelProps {
     selectedItem?: CommandItem | undefined;
@@ -35,5 +35,5 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

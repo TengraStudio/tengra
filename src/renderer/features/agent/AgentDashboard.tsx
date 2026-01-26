@@ -1,108 +1,108 @@
-import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom'
-import { AgentDefinition, CouncilSession } from '@shared/types/agent'
-import { Bot, CheckCircle2, Clock, Pause, Play, RefreshCw, Sparkles } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { AgentChatRoom } from '@renderer/features/agent/AgentChatRoom';
+import { AgentDefinition, CouncilSession } from '@shared/types/agent';
+import { Bot, CheckCircle2, Clock, Pause, Play, RefreshCw, Sparkles } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface AgentDashboardProps {
     language?: Language
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({ language = 'en' }) => {
-    const { t } = useTranslation(language)
-    const [goal, setGoal] = useState('')
-    const [sessions, setSessions] = useState<CouncilSession[]>([])
-    const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
-    const [activeSession, setActiveSession] = useState<CouncilSession | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
-    const [isRunning, setIsRunning] = useState(false)
-    const logEndRef = useRef<HTMLDivElement>(null)
+    const { t } = useTranslation(language);
+    const [goal, setGoal] = useState('');
+    const [sessions, setSessions] = useState<CouncilSession[]>([]);
+    const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+    const [activeSession, setActiveSession] = useState<CouncilSession | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
+    const logEndRef = useRef<HTMLDivElement>(null);
 
     const loadSessions = useCallback(async () => {
         try {
-            const list = await window.electron.council.getSessions()
-            setSessions(list ?? [])
+            const list = await window.electron.council.getSessions();
+            setSessions(list ?? []);
             if (!activeSessionId && list && list.length > 0) {
                 // Optionally select the latest one
                 // setActiveSessionId(list[list.length - 1].id)
             }
         } catch (error) {
-            console.error('Failed to load sessions:', error)
+            window.electron.log.error('Failed to load sessions', error as Error);
         }
-    }, [activeSessionId])
+    }, [activeSessionId]);
 
     const loadSession = useCallback(async (id: string) => {
         try {
-            const session = await window.electron.council.getSession(id)
-            setActiveSession(session)
+            const session = await window.electron.council.getSession(id);
+            setActiveSession(session);
             if (session && (session.status === 'completed' || session.status === 'failed')) {
-                setIsRunning(false)
+                setIsRunning(false);
             }
         } catch (error) {
-            console.error('Failed to load session:', error)
+            window.electron.log.error('Failed to load session', error as Error);
         }
-    }, [])
+    }, []);
 
     // Load sessions on mount
     useEffect(() => {
-        void loadSessions()
-    }, [loadSessions])
+        void loadSessions();
+    }, [loadSessions]);
 
     // Poll active session details
     useEffect(() => {
-        let interval: NodeJS.Timeout
+        let interval: NodeJS.Timeout;
         if (activeSessionId) {
-            void loadSession(activeSessionId)
-            interval = setInterval(() => void loadSession(activeSessionId), 1000)
+            void loadSession(activeSessionId);
+            interval = setInterval(() => void loadSession(activeSessionId), 1000);
         }
-        return () => clearInterval(interval)
-    }, [activeSessionId, loadSession])
+        return () => clearInterval(interval);
+    }, [activeSessionId, loadSession]);
 
     useEffect(() => {
         if (logEndRef.current) {
-            logEndRef.current.scrollIntoView({ behavior: 'smooth' })
+            logEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [activeSession?.logs?.length])
+    }, [activeSession?.logs?.length]);
 
     const handleCreateSession = async () => {
-        if (!goal.trim()) { return }
-        setIsLoading(true)
+        if (!goal.trim()) { return; }
+        setIsLoading(true);
         try {
-            const session = await window.electron.council.createSession(goal)
-            setSessions(prev => [...prev, session])
-            setActiveSessionId(session.id)
-            setGoal('')
-            setIsRunning(false)
+            const session = await window.electron.council.createSession(goal);
+            setSessions(prev => [...prev, session]);
+            setActiveSessionId(session.id);
+            setGoal('');
+            setIsRunning(false);
             // Auto-start step execution
             // window.electron.council.runStep(session.id)
         } catch (error) {
-            console.error('Failed to create session:', error)
+            window.electron.log.error('Failed to create session', error as Error);
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleRunStep = () => {
         if (activeSessionId) {
-            window.electron.council.runStep(activeSessionId)
+            window.electron.council.runStep(activeSessionId);
         }
-    }
+    };
 
     const toggleAutoRun = () => {
-        if (!activeSessionId) { return }
+        if (!activeSessionId) { return; }
 
         if (isRunning) {
-            window.electron.council.stopLoop(activeSessionId)
-            setIsRunning(false)
+            window.electron.council.stopLoop(activeSessionId);
+            setIsRunning(false);
         } else {
-            window.electron.council.startLoop(activeSessionId)
-            setIsRunning(true)
+            window.electron.council.startLoop(activeSessionId);
+            setIsRunning(true);
         }
-    }
+    };
 
     return (
         <div className="h-full flex flex-col bg-background/50 backdrop-blur-xl">
@@ -259,5 +259,5 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({ language = 'en' 
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

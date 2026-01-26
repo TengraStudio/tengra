@@ -1,5 +1,5 @@
-import { useDebounce } from '@renderer/hooks/useDebounce'
-import { useMemo,useState } from 'react'
+import { useDebounce } from '@renderer/hooks/useDebounce';
+import { useMemo,useState } from 'react';
 
 /**
  * Custom hook for debounced search with filtering
@@ -23,25 +23,25 @@ export function useDebouncedSearch<T>(
     searchFn: (item: T) => string,
     delay: number = 300
 ) {
-    const [searchTerm, setSearchTerm] = useState('')
-    const debouncedSearchTerm = useDebounce(searchTerm, delay)
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, delay);
 
     const filteredItems = useMemo(() => {
         if (!debouncedSearchTerm.trim()) {
-            return items
+            return items;
         }
 
-        const query = debouncedSearchTerm.toLowerCase().trim()
+        const query = debouncedSearchTerm.toLowerCase().trim();
         return items.filter(item => {
-            const searchableText = searchFn(item).toLowerCase()
-            return searchableText.includes(query)
-        })
-    }, [items, debouncedSearchTerm, searchFn])
+            const searchableText = searchFn(item).toLowerCase();
+            return searchableText.includes(query);
+        });
+    }, [items, debouncedSearchTerm, searchFn]);
 
     return {
         searchTerm,
         setSearchTerm,
         debouncedSearchTerm,
         filteredItems
-    }
+    };
 }

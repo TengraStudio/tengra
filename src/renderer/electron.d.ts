@@ -1,4 +1,4 @@
-import { IpcRendererEvent } from 'electron'
+import { IpcRendererEvent } from 'electron';
 
 import {
     AgentDefinition, AppSettings, AuthStatus, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota, CouncilSession,
@@ -7,7 +7,7 @@ import {
     SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
     SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
-} from '@/shared/types'
+} from '@/shared/types';
 
 export interface TodoItem {
     file: string
@@ -489,6 +489,10 @@ export interface ElectronAPI {
     saveFile: (content: string, filename: string) => Promise<{ success: boolean; path?: string; error?: string }>
     exportChatToPdf: (chatId: string, title: string) => Promise<{ success: boolean; path?: string; error?: string }>
 
+    // Export
+    exportMarkdown: (content: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+    exportPDF: (htmlContent: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+
     // Settings
     getSettings: () => Promise<AppSettings>
     saveSettings: (settings: AppSettings) => Promise<void>
@@ -522,11 +526,13 @@ export interface ElectronAPI {
         getSession: (id: string) => Promise<IdeaSession | null>
         getSessions: () => Promise<IdeaSession[]>
         cancelSession: (id: string) => Promise<{ success: boolean }>
+        generateMarketPreview: (categories: IdeaCategory[]) => Promise<{ success: boolean; data?: Array<{ category: IdeaCategory; summary: string; keyTrends: string[]; marketSize: string; competition: string }> }>
         startResearch: (sessionId: string) => Promise<{ success: boolean; data?: ResearchData }>
         startGeneration: (sessionId: string) => Promise<{ success: boolean }>
         enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: ProjectIdea }>
         getIdea: (id: string) => Promise<ProjectIdea | null>
         getIdeas: (sessionId?: string) => Promise<ProjectIdea[]>
+        regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: ProjectIdea }>
         approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<{ success: boolean; project?: Project }>
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
         canGenerateLogo: () => Promise<boolean>
@@ -602,11 +608,11 @@ export interface ElectronAPI {
 
     // IPC Batching API
     batch: {
-        invoke: (requests: Array<{ channel: string; args: any[] }>) => Promise<{
+        invoke: (requests: Array<{ channel: string; args: IpcValue[] }>) => Promise<{
             results: Array<{
                 channel: string
                 success: boolean
-                data?: any
+                data?: IpcValue
                 error?: string
             }>
             timing: {
@@ -615,11 +621,11 @@ export interface ElectronAPI {
                 totalMs: number
             }
         }>
-        invokeSequential: (requests: Array<{ channel: string; args: any[] }>) => Promise<{
+        invokeSequential: (requests: Array<{ channel: string; args: IpcValue[] }>) => Promise<{
             results: Array<{
                 channel: string
                 success: boolean
-                data?: any
+                data?: IpcValue
                 error?: string
             }>
             timing: {

@@ -1,15 +1,15 @@
 import {
 Activity, ChevronDown, Cpu, Database, Image, Info,
 LayoutGrid,
-Mic,     Settings,     Terminal, TrendingUp, UserCircle} from 'lucide-react'
-import React, { ComponentType,useState } from 'react'
+Mic,     Settings,     Terminal, TrendingUp, UserCircle} from 'lucide-react';
+import React, { ComponentType,useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { SettingsCategory } from '@/features/settings/types'
-import { AppView } from '@/hooks/useAppState'
-import { Language,useTranslation } from '@/i18n'
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button';
+import { SettingsCategory } from '@/features/settings/types';
+import { AppView } from '@/hooks/useAppState';
+import { Language,useTranslation } from '@/i18n';
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 const SettingsMenuItem: React.FC<{
     id: string;
@@ -35,7 +35,7 @@ const SettingsMenuItem: React.FC<{
             <Icon className="w-3.5 h-3.5 opacity-70" />
             <span>{label}</span>
         </button>
-    )
+    );
 
 interface SettingsSectionProps {
     isCollapsed: boolean;
@@ -54,11 +54,11 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
     setSettingsCategory,
     language
 }) => {
-    const { t } = useTranslation(language as Language)
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+    const { t } = useTranslation(language as Language);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     if (isCollapsed) {
-        return <CollapsedSettings onOpenSettings={onOpenSettings} currentView={currentView} t={t} />
+        return <CollapsedSettings onOpenSettings={onOpenSettings} currentView={currentView} t={t} />;
     }
 
     return (
@@ -94,8 +94,8 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                                     label={t(`settings.${id}`)}
                                     isActive={currentView === 'settings' && settingsCategory === id}
                                     onClick={() => {
-                                        onOpenSettings(id)
-                                        setSettingsCategory(id)
+                                        onOpenSettings(id);
+                                        setSettingsCategory(id);
                                     }}
                                 />
                             ))}
@@ -104,8 +104,8 @@ export const SettingsSectionComponent: React.FC<SettingsSectionProps> = ({
                 )}
             </AnimatePresence>
         </div>
-    )
-}
+    );
+};
 
 const CollapsedSettings: React.FC<{ onOpenSettings: (cat?: SettingsCategory) => void, currentView: AppView, t: (key: string) => string }> = ({ onOpenSettings, currentView, t }) => (
     <Button
@@ -119,19 +119,19 @@ const CollapsedSettings: React.FC<{ onOpenSettings: (cat?: SettingsCategory) => 
     >
         <Settings className="w-4 h-4 shrink-0" />
     </Button>
-)
+);
 
 const getIconForId = (id: SettingsCategory) => {
     switch (id) {
-        case 'models': return Database
-        case 'appearance': return Image
-        case 'speech': return Mic
-        case 'statistics': return Activity
-        case 'about': return Info
-        case 'developer': return Terminal
-        case 'advanced': return Cpu
-        case 'accounts': return UserCircle
-        case 'usage-limits': return TrendingUp
-        default: return LayoutGrid
+        case 'models': return Database;
+        case 'appearance': return Image;
+        case 'speech': return Mic;
+        case 'statistics': return Activity;
+        case 'about': return Info;
+        case 'developer': return Terminal;
+        case 'advanced': return Cpu;
+        case 'accounts': return UserCircle;
+        case 'usage-limits': return TrendingUp;
+        default: return LayoutGrid;
     }
-}
+};

@@ -1,0 +1,1118 @@
+npm warn Unknown env config "msvs-version". This will stop working in the next major version of npm.
+
+> orbit@1.0.0 lint
+> eslint .
+
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\ipc\chat.ts
+  320:5  warning  Async method 'handleCopilotStream' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\ipc\ssh.ts
+  35:22  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\repositories\folder.repository.ts
+  2:10  warning  'appLogger' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\repositories\prompt.repository.ts
+  2:10  warning  'appLogger' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\analysis\telemetry.service.ts
+  66:42  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\data\backup.service.ts
+  286:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  297:5   warning  Async method 'restoreSingleChat' has a complexity of 13. Maximum allowed is 10                      complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\data\image-persistence.service.ts
+  56:5  warning  Async method 'saveImage' has a complexity of 22. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\data\repositories\chat.repository.ts
+    2:22  warning  'JsonValue' is defined but never used                                      @typescript-eslint/no-unused-vars
+   96:5   warning  Method 'collectChatUpdates' has a complexity of 13. Maximum allowed is 10  complexity
+  172:5   warning  Async method 'searchChats' has a complexity of 11. Maximum allowed is 10   complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\data\repositories\knowledge.repository.ts
+    3:16  warning  'uuidv4' is defined but never used               @typescript-eslint/no-unused-vars
+   83:21  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  149:21  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\data\repositories\project.repository.ts
+  103:23  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  104:24  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  109:22  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\external\deep-research.service.ts
+   80:5   warning  Async method 'performDeepResearch' has a complexity of 13. Maximum allowed is 10                    complexity
+  449:50  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  460:37  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  471:5   warning  Method 'calculateMetrics' has a complexity of 12. Maximum allowed is 10                             complexity
+  675:61  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  676:59  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  677:35  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  678:34  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  679:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\external\history-import.service.ts
+  118:5  warning  Async method 'importOpenAIHistory' has a complexity of 19. Maximum allowed is 10  complexity
+  340:5  warning  Async method 'importFromJson' has a complexity of 22. Maximum allowed is 10       complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\external\http.service.ts
+  145:5  warning  Async method 'executeRequestWithRetries' has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\external\market-research.service.ts
+  256:25  warning  Blocks are nested too deeply (5). Maximum allowed is 4                          max-depth
+  298:5   warning  Async method 'searchProductHunt' has a complexity of 11. Maximum allowed is 10  complexity
+  417:5   warning  Async method 'searchCrunchbase' has a complexity of 15. Maximum allowed is 10   complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\agent-council.service.ts
+  139:5   warning  Async method 'runLoop' has a complexity of 12. Maximum allowed is 10                                complexity
+  430:78  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  527:5   warning  Method 'validateToolPermission' has a complexity of 11. Maximum allowed is 10                       complexity
+  542:56  warning  Forbidden non-null assertion                                                                        @typescript-eslint/no-non-null-assertion
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\brain.service.ts
+   46:7   warning  'USER_FACT_CATEGORIES' is assigned a value but never used                          @typescript-eslint/no-unused-vars
+  231:56  warning  'userId' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  294:21  warning  Unnecessary optional chain on a non-nullish value                                  @typescript-eslint/no-unnecessary-condition
+  334:26  warning  Unnecessary conditional, value is always truthy                                    @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\context-window.service.ts
+  55:5  warning  Method 'truncateMessages' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\copilot.service.ts
+  798:40  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\idea-scoring.service.ts
+  294:5  warning  Method 'buildScoringPrompt' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\llama.service.ts
+  137:5  warning  Async method 'startLlamaProcess' has a complexity of 13. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\llm.service.ts
+  618:5  warning  Method 'buildOpenAIBody' has a complexity of 13. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\local-image.service.ts
+  64:25  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  64:40  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  84:5   warning  Async method 'generateWithSDWebUI' has a complexity of 12. Maximum allowed is 10                    complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\multi-llm-orchestrator.service.ts
+  138:5  warning  Method 'normalizeProvider' has a complexity of 14. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\ollama.service.ts
+   64:28  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  197:75  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  241:75  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  245:17  warning  Method 'onData' has a complexity of 11. Maximum allowed is 10                                       complexity
+  250:45  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  254:45  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  316:42  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\llm\token-estimation.service.ts
+   87:5   warning  Method 'getContextWindowSize' has a complexity of 16. Maximum allowed is 10  complexity
+  182:21  warning  Unnecessary conditional, the types have no overlap                           @typescript-eslint/no-unnecessary-condition
+  205:17  warning  Unnecessary conditional, the types have no overlap                           @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\project\git.service.ts
+  111:5  warning  Method 'parseUnifiedDiff' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\project\project-agent.service.ts
+   88:21  warning  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+  105:55  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\project\project-scaffold.service.ts
+  714:16  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\project\project.service.ts
+  256:5   warning  Async method 'findIssues' has a complexity of 11. Maximum allowed is 10                             complexity
+  533:28  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  533:71  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  767:25  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\project\ssh.service.ts
+  208:21  warning  Unnecessary conditional, the types have no overlap  @typescript-eslint/no-unnecessary-condition
+  251:13  warning  Unnecessary conditional, value is always truthy     @typescript-eslint/no-unnecessary-condition
+  286:13  warning  Unnecessary conditional, value is always truthy     @typescript-eslint/no-unnecessary-condition
+  364:33  warning  Unnecessary conditional, value is always truthy     @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\proxy\proxy-embed.service.ts
+  103:48  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\proxy\proxy-process.service.ts
+   44:5   warning  Async method 'start' has a complexity of 14. Maximum allowed is 10                                  complexity
+  253:5   warning  Async method 'handleAuthUpdateFromProxy' has a complexity of 15. Maximum allowed is 10              complexity
+  256:31  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\proxy\proxy.service.ts
+  871:26  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\security\auth-api.service.ts
+   28:45  warning  Promise returned in function argument where a void return was expected            @typescript-eslint/no-misused-promises
+  108:26  warning  Arrow function has a complexity of 11. Maximum allowed is 10                      complexity
+  154:5   warning  Async method 'handleUpdateAccount' has a complexity of 24. Maximum allowed is 10  complexity
+  171:17  warning  Unnecessary conditional, value is always falsy                                    @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\security\token.service.ts
+  258:62  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\command.service.ts
+   59:5   warning  Async method 'executeCommand' has a complexity of 14. Maximum allowed is 10  complexity
+   90:43  warning  Unnecessary optional chain on a non-nullish value                            @typescript-eslint/no-unnecessary-condition
+   91:43  warning  Unnecessary optional chain on a non-nullish value                            @typescript-eslint/no-unnecessary-condition
+  141:38  warning  Arrow function has a complexity of 11. Maximum allowed is 10                 complexity
+  175:25  warning  Unnecessary optional chain on a non-nullish value                            @typescript-eslint/no-unnecessary-condition
+  181:25  warning  Unnecessary optional chain on a non-nullish value                            @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\job-scheduler.service.ts
+   53:36  warning  Promise returned in function argument where a void return was expected                              @typescript-eslint/no-misused-promises
+   99:29  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   99:39  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  118:21  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  154:34  warning  Promise returned in function argument where a void return was expected                              @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\process.service.ts
+  172:21  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\settings.service.ts
+  145:20  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  239:5   warning  Async method 'mergeWithDefaults' has a complexity of 46. Maximum allowed is 10                      complexity
+  280:54  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  281:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  288:57  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  289:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  296:32  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  304:32  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  312:52  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  313:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  344:5   warning  Method 'attemptJsonRecovery' has a complexity of 15. Maximum allowed is 10                          complexity
+  374:33  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  431:5   warning  Async method 'saveSettings' has a complexity of 38. Maximum allowed is 10                           complexity
+  592:13  warning  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  596:35  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\system.service.ts
+  29:77   warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  29:119  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\system\update.service.ts
+  43:64  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  61:83  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\services\ui\theme.service.ts
+  266:5   warning  Async method 'importTheme' has a complexity of 12. Maximum allowed is 10  complexity
+  274:17  warning  Unnecessary conditional, value is always falsy                            @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\startup\ollama.ts
+  23:19  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  83:8   warning  Async function 'startOllama' has a complexity of 12. Maximum allowed is 10                          complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\tools\tool-executor.ts
+  76:29  warning  Unexpected `await` of a non-Promise (non-"Thenable") value  @typescript-eslint/await-thenable
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\config-validator.util.ts
+   31:36  warning  Unnecessary conditional, the types have no overlap                       @typescript-eslint/no-unnecessary-condition
+  130:8   warning  Function 'validateConfig' has a complexity of 20. Maximum allowed is 10  complexity
+  136:29  warning  Unnecessary optional chain on a non-nullish value                        @typescript-eslint/no-unnecessary-condition
+  166:9   warning  Unnecessary conditional, value is always truthy                          @typescript-eslint/no-unnecessary-condition
+  169:17  warning  Unnecessary conditional, value is always falsy                           @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\env-validator.util.ts
+  63:8  warning  Function 'validateEnvironmentVariables' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\event-bus.util.ts
+  76:42  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+  80:51  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+  92:44  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+  96:51  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\local-auth-server.util.ts
+   48:46  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+   78:33  warning  Blocks are nested too deeply (5). Maximum allowed is 4                  max-depth
+  141:46  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+  165:33  warning  Blocks are nested too deeply (5). Maximum allowed is 4                  max-depth
+  274:29  warning  Unnecessary conditional, value is always falsy                          @typescript-eslint/no-unnecessary-condition
+  349:39  warning  Arrow function has a complexity of 13. Maximum allowed is 10            complexity
+  358:29  warning  Unnecessary conditional, value is always falsy                          @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\logger.ts
+  15:20  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\message-normalizer.util.ts
+   28:17  warning  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+   67:39  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   75:83  warning  Unnecessary conditional, comparison is always true, since `"text" === "text"` is true               @typescript-eslint/no-unnecessary-condition
+  102:79  warning  Unnecessary conditional, the types have no overlap                                                  @typescript-eslint/no-unnecessary-condition
+  126:13  warning  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  140:17  warning  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\model-router.util.ts
+   99:5   warning  Method 'route' has a complexity of 16. Maximum allowed is 10  complexity
+  186:24  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\rate-limiter.util.ts
+  136:25  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\response-normalizer.util.ts
+   47:8   warning  Function 'normalizeOpenAIResponse' has a complexity of 15. Maximum allowed is 10                    complexity
+   66:21  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   83:26  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  101:22  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  104:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  122:8   warning  Function 'normalizeOllamaResponse' has a complexity of 11. Maximum allowed is 10                    complexity
+  126:18  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  126:19  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  133:38  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  134:70  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  148:8   warning  Function 'normalizeResponse' has a complexity of 11. Maximum allowed is 10                          complexity
+  179:8   warning  Function 'normalizeStreamChunk' has a complexity of 44. Maximum allowed is 10                       complexity
+  239:1   warning  Function 'normalizeFinishReason' has a complexity of 12. Maximum allowed is 10                      complexity
+  251:1   warning  Function 'normalizeToolCall' has a complexity of 11. Maximum allowed is 10                          complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\response-parser.ts
+  14:8   warning  Function 'parseAIResponseContent' has a complexity of 30. Maximum allowed is 10  complexity
+  93:17  warning  Unnecessary conditional, value is always falsy                                   @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\retry.util.ts
+   36:1  warning  Function 'defaultShouldRetry' has a complexity of 23. Maximum allowed is 10   complexity
+  140:8  warning  Function 'isNonRetryableError' has a complexity of 18. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\stream-parser.util.ts
+   37:5   warning  Static async generator method 'parseChatStream' has a complexity of 11. Maximum allowed is 10              complexity
+   57:21  warning  NASA Rule 2: Unbounded while(true) loops are not allowed. Use bounded iteration counters instead           no-restricted-syntax
+   57:28  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   85:5   warning  Static generator method 'processBuffer' has a complexity of 48. Maximum allowed is 10                      complexity
+   93:25  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  131:93  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  139:95  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  196:64  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\main\utils\theme-store.util.ts
+  255:21  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  260:45  warning  Unnecessary conditional, value is always falsy     @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\AppShell.tsx
+   44:34  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  141:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  166:32  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\AppHeader.tsx
+  27:34  warning  Unnecessary conditional, value is always truthy                                    @typescript-eslint/no-unnecessary-condition
+  39:18  warning  Unnecessary conditional, value is always truthy                                    @typescript-eslint/no-unnecessary-condition
+  61:33  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\CommandPalette.tsx
+   66:40   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+   70:43   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+   71:31   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+   71:71   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+   90:115  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  107:17   warning  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+  110:31   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\LayoutManager.tsx
+  115:32  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\PanelLayout.tsx
+  221:34  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  247:17  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  260:17  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  295:25  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  309:21  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  323:17  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  334:17  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  345:17  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+  373:32  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\QuickActionBar.tsx
+  21:42  warning  Arrow function has a complexity of 16. Maximum allowed is 10                                               complexity
+  32:76  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  33:54  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  71:14  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\Sidebar.tsx
+   8:10  warning  'useAuth' is defined but never used                                                                 @typescript-eslint/no-unused-vars
+  52:41  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\UpdateNotification.tsx
+  18:48  warning  Arrow function has a complexity of 24. Maximum allowed is 10  complexity
+  42:24  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+  45:28  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+  50:29  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+  54:29  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+  65:14  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar-components\SidebarBadge.tsx
+  31:4  warning  Arrow function has a complexity of 13. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar-components\SidebarMenuItem.tsx
+  53:4  warning  Arrow function has a complexity of 18. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar-components\SidebarSection.tsx
+  48:4   warning  Arrow function has a complexity of 13. Maximum allowed is 10                                               complexity
+  89:34  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar\ChatHistorySection.tsx
+  134:42  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  136:46  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  138:45  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  140:42  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  160:50  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar\ChatListItem.tsx
+  19:29  warning  Component definition is missing display name  react/display-name
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar\SidebarChatItem.tsx
+  52:81  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  76:39  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar\SidebarItem.tsx
+  30:4  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\layout\sidebar\SidebarSettingsMenu.tsx
+  17:4  warning  Arrow function has a complexity of 13. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\lazy\index.tsx
+  12:34  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\responsive\ResponsiveContainer.tsx
+  25:8   warning  Function 'ResponsiveContainer' has a complexity of 12. Maximum allowed is 10                               complexity
+  67:8   warning  Function 'ResponsiveGrid' has a complexity of 14. Maximum allowed is 10                                    complexity
+  78:36  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  80:38  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  81:39  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  84:22  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  86:24  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  87:25  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\AnimatedProgressBar.tsx
+  36:4  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\CodeEditor.tsx
+   48:54  warning  Arrow function has too many lines (180). Maximum allowed is 150                                            max-lines-per-function
+   88:13  warning  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+  112:43  warning  Promise-returning function provided to variable where a void return was expected                           @typescript-eslint/no-misused-promises
+  243:40  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\FloatingActionButton.tsx
+  146:38  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\GlassModal.tsx
+   41:4   warning  Arrow function has a complexity of 12. Maximum allowed is 10                                               complexity
+   85:32  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+   90:33  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+   97:21  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  141:25  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\LoggingDashboard.tsx
+  34:77  warning  Arrow function has too many lines (193). Maximum allowed is 150  max-lines-per-function
+  36:34  warning  Unnecessary conditional, value is always truthy                  @typescript-eslint/no-unnecessary-condition
+  54:24  warning  Unnecessary optional chain on a non-nullish value                @typescript-eslint/no-unnecessary-condition
+  57:28  warning  Unnecessary optional chain on a non-nullish value                @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\SelectDropdown.tsx
+   34:4   warning  Arrow function has a complexity of 12. Maximum allowed is 10                                               complexity
+   91:67  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  106:38  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  107:39  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\components\ui\tooltip.tsx
+  45:43  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\context\ChatContext.tsx
+   61:34  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                      @typescript-eslint/prefer-nullish-coalescing
+   64:9   warning  Method 'formatChatError' has a complexity of 14. Maximum allowed is 10                                                                                         complexity
+   75:29  warning  Blocks are nested too deeply (5). Maximum allowed is 4                                                                                                         max-depth
+   86:29  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                      @typescript-eslint/prefer-nullish-coalescing
+  102:13  warning  Unnecessary conditional, value is always truthy                                                                                                                @typescript-eslint/no-unnecessary-condition
+  109:50  warning  Arrow function has a complexity of 18. Maximum allowed is 10                                                                                                   complexity
+  176:9   warning  React Hook useMemo has unnecessary dependencies: 'chatManager.setSystemMode' and 'chatManager.systemMode'. Either exclude them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\context\ModelContext.tsx
+  11:55  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\context\SettingsContext.tsx
+  71:30  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  74:30  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  77:26  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  77:55  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\context\ThemeContext.tsx
+  20:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
+  24:36  warning  Unnecessary optional chain on a non-nullish value                                                                                                                   @typescript-eslint/no-unnecessary-condition
+  24:44  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
+  31:13  warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\agent\AgentChatRoom.tsx
+  61:25  warning  Unnecessary optional chain on a non-nullish value             @typescript-eslint/no-unnecessary-condition
+  97:37  warning  Arrow function has a complexity of 15. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\agent\AgentDashboard.tsx
+   15:62  warning  Arrow function has too many lines (225). Maximum allowed is 150                                     max-lines-per-function
+   15:84  warning  Arrow function has a complexity of 18. Maximum allowed is 10                                        complexity
+   28:25  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   29:37  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+   69:28  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  167:41  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  198:62  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  249:46  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\AssistantIdentity.tsx
+  20:99  warning  Arrow function has a complexity of 25. Maximum allowed is 10                                               complexity
+  21:30  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  33:25  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  33:36  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\AudioChatOverlay.tsx
+  19:8  warning  Function 'AudioChatOverlay' has a complexity of 23. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\ChatInput.tsx
+  258:11  warning  'current' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\ChatView.tsx
+  49:34  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  99:35  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\ExportModal.tsx
+  91:33  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\GalleryView.tsx
+   71:29  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  102:53  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  109:53  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  116:53  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MarkdownRenderer.tsx
+  119:53  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  142:49  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MessageActions.tsx
+   22:39  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   41:63  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  106:73  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  155:47  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MessageBubble.tsx
+  171:135  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  171:150  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  224:33   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  287:211  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  287:226  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  311:182  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  311:197  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  313:157  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  429:264  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  429:279  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  511:336  warning  Arrow function has a complexity of 13. Maximum allowed is 10                                               complexity
+  538:22   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  542:19   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  560:22   warning  'plan' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
+  561:29   warning  'setShowRawMarkdown' is assigned a value but never used                                                    @typescript-eslint/no-unused-vars
+  580:95   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  618:257  warning  Arrow function has a complexity of 34. Maximum allowed is 10                                               complexity
+  636:130  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  637:62   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MessageList.tsx
+  72:37  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  73:40  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  74:36  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MonacoBlock.tsx
+  19:28  warning  Component definition is missing display name  react/display-name
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\MultiModelCollaboration.tsx
+   39:8   warning  Function 'MultiModelCollaboration' has too many lines (182). Maximum allowed is 150                        max-lines-per-function
+   39:8   warning  Function 'MultiModelCollaboration' has a complexity of 11. Maximum allowed is 10                           complexity
+  151:29  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  202:45  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\SlashMenu.tsx
+  54:21  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\TerminalView.tsx
+  24:8  warning  Function 'TerminalView' has too many lines (156). Maximum allowed is 150  max-lines-per-function
+  24:8  warning  Function 'TerminalView' has a complexity of 30. Maximum allowed is 10     complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\components\ToolDisplay.tsx
+   32:8  warning  Function 'ToolDisplay' has a complexity of 20. Maximum allowed is 10  complexity
+  150:1  warning  Function 'ToolOutput' has a complexity of 21. Maximum allowed is 10   complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\process-stream.ts
+   38:95  warning  Async arrow function has a complexity of 22. Maximum allowed is 10                                  complexity
+   58:13  warning  Unnecessary conditional, value is always falsy                                                      @typescript-eslint/no-unnecessary-condition
+  191:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  215:20  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  242:65  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\useChatHistory.ts
+  80:16  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  92:16  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\useChatManager.ts
+   33:8   warning  Function 'useChatManager' has too many lines (176). Maximum allowed is 150  max-lines-per-function
+  147:28  warning  Unnecessary conditional, value is always falsy                              @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\useSpeechRecognition.ts
+  45:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  51:27  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  52:40  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  52:49  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\useVoiceInput.ts
+  47:68  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\chat\hooks\utils.ts
+  53:22  warning  Arrow function has a complexity of 15. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\IdeasPage.tsx
+   35:1   warning  Function 'useWorkflowSync' has a complexity of 12. Maximum allowed is 10                                   complexity
+   65:52  warning  Arrow function has too many lines (309). Maximum allowed is 150                                            max-lines-per-function
+   65:99  warning  Arrow function has a complexity of 11. Maximum allowed is 10                                               complexity
+  166:22  warning  'err' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+  191:18  warning  'err' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+  213:18  warning  'err' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+  296:43  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  297:42  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  373:30  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  426:31  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  431:92  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\ApprovalFooter.tsx
+  28:4  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\CategorySelector.tsx
+   70:42  warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+  104:43  warning  Unnecessary conditional, value is always truthy               @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\IdeaDetailsContent.tsx
+  374:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  598:36  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  633:30  warning  Arrow function has a complexity of 17. Maximum allowed is 10                                               complexity
+  711:72  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\IdeaDetailsModal.tsx
+   30:66  warning  Arrow function has too many lines (265). Maximum allowed is 150                                                   max-lines-per-function
+   43:4   warning  Arrow function has a complexity of 12. Maximum allowed is 10                                                      complexity
+   92:50  warning  Arrow function has a complexity of 18. Maximum allowed is 10                                                      complexity
+  120:8   warning  React Hook useEffect has a missing dependency: 'handleApprove'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\IdeasHeader.tsx
+  107:100  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\MarketPreviewModal.tsx
+  47:5   warning  'categories' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  82:49  warning  'idx' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\ResearchProgress.tsx
+  53:50  warning  Arrow function has a complexity of 13. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\SessionHistory.tsx
+  248:62  warning  Arrow function has too many lines (339). Maximum allowed is 150  max-lines-per-function
+  254:4   warning  Arrow function has a complexity of 24. Maximum allowed is 10     complexity
+  351:11  warning  'selectAllInSession' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\SessionSetup.tsx
+  20:58  warning  Arrow function has too many lines (185). Maximum allowed is 150                                            max-lines-per-function
+  23:4   warning  Arrow function has a complexity of 11. Maximum allowed is 10                                               complexity
+  85:24  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  95:50  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  96:43  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ideas\components\VirtualizedIdeaGrid.tsx
+  41:13  warning  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\mcp\DockerDashboard.tsx
+   24:8   warning  Function 'DockerDashboard' has too many lines (197). Maximum allowed is 150                         max-lines-per-function
+   47:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   48:53  warning  Arrow function has a complexity of 11. Maximum allowed is 10                                        complexity
+  134:29  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\mcp\MCPStore.tsx
+  164:50  warning  Arrow function has too many lines (236). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\memory\components\MemoryInspector.tsx
+   23:42  warning  Arrow function has too many lines (180). Maximum allowed is 150                    max-lines-per-function
+   23:45  warning  Arrow function has a complexity of 14. Maximum allowed is 10                       complexity
+   68:65  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  158:90  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  182:98  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  208:45  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\models\components\ModelExplorer.tsx
+   49:8    warning  Function 'ModelExplorer' has too many lines (526). Maximum allowed is 150                    max-lines-per-function
+   49:8    warning  Function 'ModelExplorer' has a complexity of 34. Maximum allowed is 10                       complexity
+  198:17   warning  Unnecessary conditional, comparison is always true, since `"updated" === "updated"` is true  @typescript-eslint/no-unnecessary-condition
+  361:46   warning  Arrow function has a complexity of 24. Maximum allowed is 10                                 complexity
+  383:45   warning  Promise-returning function provided to attribute where a void return was expected            @typescript-eslint/no-misused-promises
+  476:91   warning  Unnecessary optional chain on a non-nullish value                                            @typescript-eslint/no-unnecessary-condition
+  507:142  warning  Unnecessary optional chain on a non-nullish value                                            @typescript-eslint/no-unnecessary-condition
+  573:62   warning  Unnecessary conditional, value is always truthy                                              @typescript-eslint/no-unnecessary-condition
+  585:77   warning  Promise-returning function provided to attribute where a void return was expected            @typescript-eslint/no-misused-promises
+  615:69   warning  Promise-returning function provided to attribute where a void return was expected            @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\models\components\ModelSelector.tsx
+   37:8    warning  Function 'ModelSelector' has too many lines (539). Maximum allowed is 150                                  max-lines-per-function
+   37:8    warning  Function 'ModelSelector' has a complexity of 39. Maximum allowed is 10                                     complexity
+  139:50   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  158:77   warning  Arrow function has a complexity of 113. Maximum allowed is 10                                              complexity
+  165:13   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  172:40   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  182:25   warning  Blocks are nested too deeply (5). Maximum allowed is 4                                                     max-depth
+  194:25   warning  Blocks are nested too deeply (5). Maximum allowed is 4                                                     max-depth
+  217:50   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  217:82   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  217:120  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  229:49   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  229:89   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  229:127  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  243:61   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  247:52   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  247:72   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  247:90   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  250:29   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  251:29   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  255:56   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  265:50   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  265:70   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  265:88   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  268:25   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  269:25   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  273:40   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  281:138  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  281:152  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  282:137  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  284:36   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  285:21   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  298:44   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  299:29   warning  Blocks are nested too deeply (5). Maximum allowed is 4                                                     max-depth
+  299:33   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  301:33   warning  Blocks are nested too deeply (6). Maximum allowed is 4                                                     max-depth
+  304:33   warning  Blocks are nested too deeply (6). Maximum allowed is 4                                                     max-depth
+  318:35   warning  Arrow function has a complexity of 33. Maximum allowed is 10                                               complexity
+  362:57   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  364:52   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  368:28   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  368:33   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  385:33   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  387:29   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  392:37   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  392:47   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  433:17   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  434:17   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  440:63   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  442:9    warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  444:37   warning  Arrow function has a complexity of 12. Maximum allowed is 10                                               complexity
+  455:49   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  455:72   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  476:137  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  477:117  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  482:56   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  538:38   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  539:39   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  577:76   warning  Arrow function has a complexity of 20. Maximum allowed is 10                                               complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\models\hooks\useModelManager.ts
+  40:33  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\models\utils\model-fetcher.ts
+  30:50  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  56:13  warning  Unnecessary conditional, value is always falsy                                                             @typescript-eslint/no-unnecessary-condition
+  58:32  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\onboarding\OnboardingFlow.tsx
+  40:34  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+  58:9   warning  Unnecessary conditional, value is always falsy   @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\onboarding\OnboardingTour.tsx
+  82:14  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\project-agent\ProjectAgentView.tsx
+    9:43  warning  Arrow function has too many lines (192). Maximum allowed is 150                    max-lines-per-function
+  100:39  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  103:37  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  122:33  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ContributionGrid.tsx
+  109:90  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\LogoGeneratorModal.tsx
+   17:70  warning  Arrow function has too many lines (232). Maximum allowed is 150                                     max-lines-per-function
+   19:4   warning  Arrow function has a complexity of 21. Maximum allowed is 10                                        complexity
+   33:28  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   34:24  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+   35:17  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+   37:21  warning  Unnecessary conditional, the types have no overlap                                                  @typescript-eslint/no-unnecessary-condition
+  121:45  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  130:45  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  220:45  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  231:37  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  241:41  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+  250:41  warning  Promise-returning function provided to attribute where a void return was expected                   @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectCard.tsx
+  126:28  warning  Component definition is missing display name  react/display-name
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectDashboard.tsx
+   42:33   warning  Arrow function has too many lines (481). Maximum allowed is 150                                            max-lines-per-function
+   52:27   warning  Arrow function has a complexity of 63. Maximum allowed is 10                                               complexity
+  245:56   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  270:56   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  280:70   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  323:114  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  323:138  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  339:39   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  339:47   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  344:39   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  344:47   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  344:59   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  355:53   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  355:61   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  380:27   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  380:35   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  380:42   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  493:36   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  499:80   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  503:73   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  537:95   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectEnvironmentTab.tsx
+   18:76  warning  Arrow function has too many lines (167). Maximum allowed is 150                    max-lines-per-function
+  116:33  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectGitTab.tsx
+   28:60  warning  Arrow function has too many lines (431). Maximum allowed is 150                                     max-lines-per-function
+   28:88  warning  Arrow function has a complexity of 45. Maximum allowed is 10                                        complexity
+  302:46  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  356:85  warning  Arrow function has a complexity of 11. Maximum allowed is 10                                        complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectTodoTab.tsx
+  30:62  warning  Arrow function has too many lines (304). Maximum allowed is 150  max-lines-per-function
+  30:83  warning  Arrow function has a complexity of 11. Maximum allowed is 10     complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ProjectWizardModal.tsx
+   27:70   warning  Arrow function has too many lines (517). Maximum allowed is 150                                            max-lines-per-function
+   27:120  warning  Arrow function has a complexity of 20. Maximum allowed is 10                                               complexity
+   83:77   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  115:39   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  132:39   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  265:45   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  292:45   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  434:45   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  533:45   warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  546:65   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\VirtualizedProjectGrid.tsx
+  50:13  warning  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\WorkspaceExplorer.tsx
+   40:68  warning  Arrow function has too many lines (261). Maximum allowed is 150  max-lines-per-function
+   53:4   warning  Arrow function has a complexity of 11. Maximum allowed is 10     complexity
+   54:34  warning  Unnecessary conditional, value is always truthy                  @typescript-eslint/no-unnecessary-condition
+   71:23  warning  Unnecessary optional chain on a non-nullish value                @typescript-eslint/no-unnecessary-condition
+  172:37  warning  Arrow function has a complexity of 18. Maximum allowed is 10     complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\WorkspaceTreeItem.tsx
+  33:4   warning  Arrow function has a complexity of 11. Maximum allowed is 10                                               complexity
+  53:23  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  55:76  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ide\FileExplorer.tsx
+   36:36  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+   71:25  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  108:32  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  132:82  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ide\FolderInspector.tsx
+  19:81  warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\ide\Terminal.tsx
+   52:34  warning  Arrow function has too many lines (245). Maximum allowed is 150                                     max-lines-per-function
+   79:15  warning  Arrow function has too many lines (209). Maximum allowed is 150                                     max-lines-per-function
+  148:17  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  171:26  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  171:44  warning  Unnecessary optional chain on a non-nullish value                                                   @typescript-eslint/no-unnecessary-condition
+  190:72  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  200:72  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  213:34  warning  Arrow function has a complexity of 21. Maximum allowed is 10                                        complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\workspace\CouncilPanel.tsx
+   29:58  warning  Arrow function has too many lines (184). Maximum allowed is 150                                            max-lines-per-function
+  140:62  warning  Arrow function has a complexity of 13. Maximum allowed is 10                                               complexity
+  159:58  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\workspace\WorkspaceEditor.tsx
+  40:78  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\components\workspace\WorkspaceModals.tsx
+   46:4    warning  Arrow function has a complexity of 16. Maximum allowed is 10                                               complexity
+  160:137  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\hooks\useGitData.ts
+   3:23  warning  'useEffect' is defined but never used                                   @typescript-eslint/no-unused-vars
+   5:8   warning  Function 'useGitData' has too many lines (265). Maximum allowed is 150  max-lines-per-function
+  47:47  warning  Async arrow function has a complexity of 39. Maximum allowed is 10      complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\hooks\useProjectActions.ts
+  14:5  warning  'project' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\hooks\useProjectListStateMachine.ts
+   83:1  warning  Function 'projectListReducer' has a complexity of 33. Maximum allowed is 10             complexity
+  241:8  warning  Function 'useProjectListStateMachine' has too many lines (163). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\hooks\useProjectSettingsForm.ts
+   7:1  warning  Function 'getBuildState' has a complexity of 11. Maximum allowed is 10    complexity
+  47:1  warning  Function 'checkBuildDirty' has a complexity of 15. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\projects\hooks\useWorkspaceManager.ts
+   20:8    warning  Function 'useWorkspaceManager' has too many lines (229). Maximum allowed is 150             max-lines-per-function
+   79:72   warning  Async arrow function has a complexity of 11. Maximum allowed is 10                          complexity
+   81:13   warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+  107:141  warning  Async arrow function has a complexity of 23. Maximum allowed is 10                          complexity
+  217:13   warning  Unnecessary conditional, value is always falsy                                              @typescript-eslint/no-unnecessary-condition
+  229:13   warning  Unnecessary conditional, value is always falsy                                              @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\AdvancedTab.tsx
+  27:56   warning  Arrow function has too many lines (187). Maximum allowed is 150                                            max-lines-per-function
+  29:4    warning  Arrow function has a complexity of 25. Maximum allowed is 10                                               complexity
+  31:34   warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined         @typescript-eslint/no-unnecessary-condition
+  40:66   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  40:85   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  45:149  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  65:69   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  90:48   warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  90:70   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\AppearanceTab.tsx
+   13:60  warning  Arrow function has too many lines (175). Maximum allowed is 150                                            max-lines-per-function
+   13:93  warning  Arrow function has a complexity of 24. Maximum allowed is 10                                               complexity
+   27:39  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+   27:47  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   29:42  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+   29:55  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  122:78  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  122:89  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  127:72  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  127:83  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  136:57  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  136:68  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  166:61  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  185:61  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\DeveloperTab.tsx
+  31:41   warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  39:241  warning  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\GeneralTab.tsx
+  15:99  warning  Arrow function has a complexity of 17. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\ManualSessionModal.tsx
+   2:30  warning  'ExternalLink' is defined but never used                                                                @typescript-eslint/no-unused-vars
+  29:4   warning  Arrow function has a complexity of 11. Maximum allowed is 10                                            complexity
+  68:8   warning  React Hook useCallback has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  70:11  warning  'handleOpenClaude' is assigned a value but never used                                                   @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\PersonasTab.tsx
+  22:40  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\SpeechTab.tsx
+   13:84   warning  Arrow function has a complexity of 16. Maximum allowed is 10                                               complexity
+   37:13   warning  Unnecessary conditional, the types have no overlap                                                         @typescript-eslint/no-unnecessary-condition
+   59:49   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   74:63   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   83:268  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   84:104  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   94:73   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  107:74   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\StatisticsTab.tsx
+   36:4   warning  Arrow function has a complexity of 15. Maximum allowed is 10                                               complexity
+   37:51  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+   37:62  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   71:37  warning  Unnecessary optional chain on a non-nullish value                                                          @typescript-eslint/no-unnecessary-condition
+  126:67  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\statistics\CodexCard.tsx
+  30:61   warning  Arrow function has a complexity of 13. Maximum allowed is 10                                               complexity
+  33:53   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  34:102  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  42:35   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  44:49   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  45:119  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  48:85   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  51:143  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  56:86   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  59:144  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\statistics\CopilotCard.tsx
+  28:63   warning  Arrow function has a complexity of 22. Maximum allowed is 10                                               complexity
+  31:53   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  32:105  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  41:79   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  42:93   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  46:49   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  54:156  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  54:176  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\statistics\OverviewCards.tsx
+  18:108  warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\components\statistics\QuotaRing.tsx
+  3:112  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\hooks\useAuthManager.ts
+  12:42  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\hooks\useBrowserAuth.ts
+   18:8    warning  Function 'useBrowserAuth' has too many lines (201). Maximum allowed is 150  max-lines-per-function
+   75:31   warning  Async arrow function has a complexity of 13. Maximum allowed is 10          complexity
+   99:29   warning  Blocks are nested too deeply (5). Maximum allowed is 4                      max-depth
+   99:33   warning  Unnecessary conditional, value is always truthy                             @typescript-eslint/no-unnecessary-condition
+  143:23   warning  Unnecessary optional chain on a non-nullish value                           @typescript-eslint/no-unnecessary-condition
+  169:24   warning  Unnecessary optional chain on a non-nullish value                           @typescript-eslint/no-unnecessary-condition
+  175:64   warning  Unnecessary optional chain on a non-nullish value                           @typescript-eslint/no-unnecessary-condition
+  176:52   warning  Unnecessary optional chain on a non-nullish value                           @typescript-eslint/no-unnecessary-condition
+  186:109  warning  Async arrow function has a complexity of 22. Maximum allowed is 10          complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\hooks\useSettingsLogic.ts
+  38:36  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\settings\hooks\useSettingsPersonas.ts
+  22:21  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\SFTPBrowser.tsx
+   24:38  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   26:39  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   62:73  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   75:73  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+   90:73  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  106:33  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  107:33  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  137:57  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  138:57  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  139:79  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\SSHLogs.tsx
+  19:17  warning  Unnecessary conditional, the types have no overlap                                                         @typescript-eslint/no-unnecessary-condition
+  59:37  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  65:37  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  77:40  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\SSHManager.tsx
+   29:8   warning  Function 'SSHManager' has too many lines (188). Maximum allowed is 150                                     max-lines-per-function
+   90:25  warning  Prefer using nullish coalescing operator (`??`) instead of a ternary expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing
+  102:35  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  103:46  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  109:96  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  163:38  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  164:34  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  220:86  warning  Unnecessary conditional, comparison is always true, since `"logs" === "logs"` is true                      @typescript-eslint/no-unnecessary-condition
+  239:31  warning  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\StatsDashboard.tsx
+  34:34  warning  Unnecessary conditional, value is always truthy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\components\AddConnectionModal.tsx
+  69:55  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  77:57  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  97:55  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\components\SSHTerminal.tsx
+  4:10  warning  'cn' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\ssh\hooks\useSSHConnections.ts
+  35:50  warning  Async arrow function has a complexity of 11. Maximum allowed is 10                                  complexity
+  37:33  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  38:33  warning  Unnecessary conditional, value is always truthy                                                     @typescript-eslint/no-unnecessary-condition
+  42:25  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  43:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  44:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  45:27  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+  46:31  warning  Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\terminal\TerminalPanel.tsx
+   35:30  warning  Arrow function has too many lines (256). Maximum allowed is 150                                            max-lines-per-function
+  136:38  warning  Async arrow function has a complexity of 15. Maximum allowed is 10                                         complexity
+  183:51  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  240:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  353:8   warning  Function 'TerminalPanel' has too many lines (240). Maximum allowed is 150                                  max-lines-per-function
+  373:43  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  381:34  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  492:17  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  493:17  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\features\themes\ThemeStore.tsx
+  61:54  warning  Arrow function has too many lines (218). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\hooks\useKeyboardShortcuts.ts
+  43:50  warning  Arrow function has a complexity of 51. Maximum allowed is 10  complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\hooks\useTheme.ts
+  6:68  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\lib\file-icons.tsx
+  221:9   warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+  247:44  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  262:26  warning  Unnecessary conditional, value is always truthy                                                            @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\lib\framer-motion-compat.tsx
+  60:13  warning  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\logging.ts
+  12:35  warning  Unnecessary optional chain on a non-nullish value  @typescript-eslint/no-unnecessary-condition
+  13:9   warning  Unnecessary conditional, value is always falsy     @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\utils\error-handler.util.ts
+  49:8   warning  Function 'handleError' has a complexity of 20. Maximum allowed is 10                                       complexity
+  61:35  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\utils\language-map.ts
+  266:82  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  297:58  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  343:12  warning  Unnecessary conditional, the types have no overlap                                                         @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\renderer\utils\lru-cache.util.ts
+  180:9  warning  Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\shared\utils\error.util.ts
+  32:8  warning  Function 'getErrorMessage' has a complexity of 11. Maximum allowed is 10  complexity
+  51:8  warning  Function 'toAppError' has a complexity of 12. Maximum allowed is 10       complexity
+
+C:\Users\agnes\Desktop\projects\orbit\src\shared\utils\sanitize.util.ts
+  193:9  warning  Unnecessary conditional, value is always falsy  @typescript-eslint/no-unnecessary-condition
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\ipc\chat.integration.test.ts
+  24:59  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\ipc\project.integration.test.ts
+  24:59  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\export.service.test.ts
+  32:27  warning  Arrow function has too many lines (228). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\health-check.service.test.ts
+  7:32  warning  Arrow function has too many lines (167). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\llm\model-fallback.service.test.ts
+  18:34  warning  Arrow function has too many lines (275). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\security.service.test.ts
+  28:29  warning  Arrow function has too many lines (179). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\security\token.service.test.ts
+  21:26  warning  Arrow function has too many lines (157). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\settings.service.test.ts
+  46:29  warning  Arrow function has too many lines (155). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\services\token-estimation.service.test.ts
+  9:36  warning  Arrow function has too many lines (205). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\src\tests\main\utils\ipc-batch.util.test.ts
+  24:31  warning  Arrow function has too many lines (159). Maximum allowed is 150  max-lines-per-function
+
+C:\Users\agnes\Desktop\projects\orbit\vite.config.ts
+  128:69  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+
+Ô£û 713 problems (0 errors, 713 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

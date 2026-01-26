@@ -3,7 +3,7 @@ import * as net from 'net';
 import * as os from 'os';
 import { promisify } from 'util';
 
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
 import { INetworkService } from '@main/types/services';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';

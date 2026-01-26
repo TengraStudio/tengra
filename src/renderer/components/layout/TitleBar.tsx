@@ -1,8 +1,8 @@
-import { Minus, Square, X } from 'lucide-react'
-import { type CSSProperties, ReactNode } from 'react'
+import { Minus, Square, X } from 'lucide-react';
+import { type CSSProperties, ReactNode } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface TitleBarProps {
     children?: ReactNode
@@ -11,10 +11,10 @@ interface TitleBarProps {
 }
 
 export function TitleBar({ children, leftContent, className }: TitleBarProps) {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
     type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' }
-    const dragStyle: AppRegionStyle = { WebkitAppRegion: 'drag' }
-    const noDragStyle: AppRegionStyle = { WebkitAppRegion: 'no-drag' }
+    const dragStyle: AppRegionStyle = { WebkitAppRegion: 'drag' };
+    const noDragStyle: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
     return (
         <header
             className={cn(
@@ -60,7 +60,7 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
                 </div>
             </div>
         </header>
-    )
+    );
 }
 
 

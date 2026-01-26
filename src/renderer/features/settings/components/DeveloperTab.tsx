@@ -1,8 +1,8 @@
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { RefreshCw, Terminal } from 'lucide-react'
-import React from 'react'
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { RefreshCw, Terminal } from 'lucide-react';
+import React from 'react';
 
-import { AppSettings } from '@/types/settings'
+import { AppSettings } from '@/types/settings';
 
 interface DeveloperTabProps {
     settings: AppSettings | null
@@ -41,5 +41,5 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

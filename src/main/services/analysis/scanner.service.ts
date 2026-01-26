@@ -41,13 +41,13 @@ export class ScannerService {
             const fullPath = path.join(dir, file.name);
 
             if (file.isDirectory()) {
-                if (this.ignoreList.includes(file.name)) { continue }
+                if (this.ignoreList.includes(file.name)) { continue; }
                 await this.walk(fullPath, results);
-                continue
+                continue;
             }
 
             const ext = path.extname(file.name).toLowerCase();
-            if (!this.allowedExtensions.includes(ext)) { continue }
+            if (!this.allowedExtensions.includes(ext)) { continue; }
 
             try {
                 const content = await fs.readFile(fullPath, 'utf8');

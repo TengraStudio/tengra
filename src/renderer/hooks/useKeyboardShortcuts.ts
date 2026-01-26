@@ -3,7 +3,7 @@
  * Centralizes keyboard shortcut handling
  */
 
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 export interface KeyboardShortcutsConfig {
     onCommandPalette: () => void
@@ -37,106 +37,106 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         showShortcuts,
         showSSHManager,
         currentChatId
-    } = config
+    } = config;
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Don't trigger shortcuts when typing in inputs, textareas, or contenteditable elements
-            const target = e.target as HTMLElement
+            const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
                 // Allow some shortcuts even in inputs
                 if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-                    e.preventDefault()
-                    onShowShortcuts()
+                    e.preventDefault();
+                    onShowShortcuts();
                 }
-                return
+                return;
             }
 
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
-            const modKey = isMac ? e.metaKey : e.ctrlKey
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modKey = isMac ? e.metaKey : e.ctrlKey;
 
             // Ctrl/Cmd + K: Command Palette
             if (modKey && e.key === 'k' && !e.shiftKey && !e.altKey) {
-                e.preventDefault()
-                onCommandPalette()
-                return
+                e.preventDefault();
+                onCommandPalette();
+                return;
             }
 
             // Ctrl/Cmd + N: New Chat
             if (modKey && e.key === 'n' && !e.shiftKey && !e.altKey) {
-                e.preventDefault()
-                onNewChat()
-                return
+                e.preventDefault();
+                onNewChat();
+                return;
             }
 
             // Ctrl/Cmd + ,: Open Settings
             if (modKey && e.key === ',' && !e.shiftKey && !e.altKey) {
-                e.preventDefault()
-                onOpenSettings()
-                return
+                e.preventDefault();
+                onOpenSettings();
+                return;
             }
 
             // ?: Show Keyboard Shortcuts
             if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-                e.preventDefault()
-                onShowShortcuts()
-                return
+                e.preventDefault();
+                onShowShortcuts();
+                return;
             }
 
             // Ctrl/Cmd + L: Clear current chat
             if (modKey && e.key === 'l' && !e.shiftKey && !e.altKey) {
-                e.preventDefault()
+                e.preventDefault();
                 if (currentChatId) {
-                    onClearChat()
+                    onClearChat();
                 }
-                return
+                return;
             }
 
             // Ctrl/Cmd + 1-4: Switch views
             if (modKey && !e.shiftKey && !e.altKey) {
                 if (e.key === '1') {
-                    e.preventDefault()
-                    onSwitchView('chat')
-                    return
+                    e.preventDefault();
+                    onSwitchView('chat');
+                    return;
                 }
                 if (e.key === '2') {
-                    e.preventDefault()
-                    onSwitchView('projects')
-                    return
+                    e.preventDefault();
+                    onSwitchView('projects');
+                    return;
                 }
                 if (e.key === '3') {
-                    e.preventDefault()
-                    onSwitchView('council')
-                    return
+                    e.preventDefault();
+                    onSwitchView('council');
+                    return;
                 }
                 if (e.key === '4') {
-                    e.preventDefault()
-                    onSwitchView('settings')
-                    return
+                    e.preventDefault();
+                    onSwitchView('settings');
+                    return;
                 }
             }
 
             // Ctrl/Cmd + B: Toggle Sidebar
             if (modKey && e.key === 'b' && !e.shiftKey && !e.altKey) {
-                e.preventDefault()
-                onToggleSidebar()
-                return
+                e.preventDefault();
+                onToggleSidebar();
+                return;
             }
 
             // Escape: Close modals
             if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
                 if (showCommandPalette || showShortcuts || showSSHManager) {
-                    e.preventDefault()
-                    onCloseModals()
-                    return
+                    e.preventDefault();
+                    onCloseModals();
+                    return;
                 }
             }
-        }
+        };
 
-        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('keydown', handleKeyDown);
         return () => {
-            window.removeEventListener('keydown', handleKeyDown)
-        }
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, [
         onCommandPalette,
         onNewChat,
@@ -150,5 +150,5 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         showShortcuts,
         showSSHManager,
         currentChatId
-    ])
+    ]);
 }

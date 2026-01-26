@@ -1,17 +1,17 @@
-import { exec } from 'child_process'
-import { EventEmitter } from 'events'
-import { promises as fs } from 'fs'
-import * as os from 'os'
-import * as path from 'path'
-import { promisify } from 'util'
+import { exec } from 'child_process';
+import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { promisify } from 'util';
 
-import { appLogger } from '@main/logging/logger'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import * as pty from 'node-pty'
+import { appLogger } from '@main/logging/logger';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import * as pty from 'node-pty';
 
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
 
 // Interface for a running task
 export interface TaskProcess {
@@ -26,21 +26,21 @@ export interface TaskProcess {
 }
 
 export class ProcessService extends EventEmitter {
-    private processes: Map<string, TaskProcess> = new Map()
-    private shell: string
+    private processes: Map<string, TaskProcess> = new Map();
+    private shell: string;
 
     constructor() {
-        super()
-        this.shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash'
+        super();
+        this.shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     }
 
     // --- Task Runner (2.2.21) ---
 
     // Spawn a process using node-pty for terminal integration
     spawn(command: string, args: string[], cwd: string): string {
-        const id = Math.random().toString(36).substring(7)
+        const id = Math.random().toString(36).substring(7);
 
-        appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `)
+        appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `);
 
         const ptyProcess = pty.spawn(this.shell, ['-c', `${command} ${args.join(' ')} `], {
             name: 'xterm-color',
@@ -48,7 +48,7 @@ export class ProcessService extends EventEmitter {
             rows: 30,
             cwd: cwd,
             env: process.env
-        })
+        });
 
         const task: TaskProcess = {
             id,
@@ -59,39 +59,39 @@ export class ProcessService extends EventEmitter {
             status: 'running',
             cwd,
             ptyProcess
-        }
+        };
 
-        this.processes.set(id, task)
+        this.processes.set(id, task);
 
         // Relay data to frontend
         ptyProcess.onData((data) => {
-            this.emit('data', { id, data })
-        })
+            this.emit('data', { id, data });
+        });
 
         ptyProcess.onExit(({ exitCode }) => {
-            appLogger.info('process.service', `[ProcessService] Task ${id} exited with ${exitCode} `)
-            task.status = exitCode === 0 ? 'stopped' : 'failed'
-            this.emit('exit', { id, code: exitCode })
+            appLogger.info('process.service', `[ProcessService] Task ${id} exited with ${exitCode} `);
+            task.status = exitCode === 0 ? 'stopped' : 'failed';
+            this.emit('exit', { id, code: exitCode });
             // Optional: Keep in history, but remove active reference later?
             // For now, keep it so we can query status
             if (exitCode === 0) {
-                this.processes.delete(id)
+                this.processes.delete(id);
             }
-        })
+        });
 
-        return id
+        return id;
     }
 
     kill(id: string) {
-        const task = this.processes.get(id)
+        const task = this.processes.get(id);
         if (task) {
-            appLogger.info('process.service', `[ProcessService] Killing task ${id} `)
-            task.ptyProcess.kill()
-            task.status = 'stopped'
-            this.processes.delete(id)
-            return true
+            appLogger.info('process.service', `[ProcessService] Killing task ${id} `);
+            task.ptyProcess.kill();
+            task.status = 'stopped';
+            this.processes.delete(id);
+            return true;
         }
-        return false
+        return false;
     }
 
     getEncoding() {
@@ -101,28 +101,28 @@ export class ProcessService extends EventEmitter {
     // --- Script Auto-Discovery (2.2.22) ---
 
     async scanScripts(rootPath: string): Promise<Record<string, string>> {
-        const scripts: Record<string, string> = {}
+        const scripts: Record<string, string> = {};
 
         try {
             // NPM / Node
-            const pkgPath = path.join(rootPath, 'package.json')
-            const pkgExists = await fs.access(pkgPath).then(() => true).catch(() => false)
+            const pkgPath = path.join(rootPath, 'package.json');
+            const pkgExists = await fs.access(pkgPath).then(() => true).catch(() => false);
 
             if (pkgExists) {
-                const content = await fs.readFile(pkgPath, 'utf-8')
-                const pkg = safeJsonParse<Record<string, unknown>>(content, {})
+                const content = await fs.readFile(pkgPath, 'utf-8');
+                const pkg = safeJsonParse<Record<string, unknown>>(content, {});
                 if (pkg.scripts && typeof pkg.scripts === 'object') {
-                    Object.assign(scripts, pkg.scripts)
+                    Object.assign(scripts, pkg.scripts);
                 }
             }
 
             // Python (basic check for manage.py or similar)
             // Makefile?
         } catch (error) {
-            console.error('[ProcessService] Failed to scan scripts:', getErrorMessage(error as Error))
+            console.error('[ProcessService] Failed to scan scripts:', getErrorMessage(error as Error));
         }
 
-        return scripts
+        return scripts;
     }
 
     // --- Process Manager (2.2.23) ---
@@ -135,45 +135,45 @@ export class ProcessService extends EventEmitter {
             cwd: t.cwd,
             status: t.status,
             startTime: t.startTime
-        }))
+        }));
     }
 
     resize(id: string, cols: number, rows: number): boolean {
-        const task = this.processes.get(id)
-        if (!task) { return false }
+        const task = this.processes.get(id);
+        if (!task) { return false; }
         try {
-            task.ptyProcess.resize(cols, rows)
-            return true
+            task.ptyProcess.resize(cols, rows);
+            return true;
         } catch (e) {
-            console.error(`[ProcessService] Resize failed for task ${id}: `, e)
-            return false
+            console.error(`[ProcessService] Resize failed for task ${id}: `, e);
+            return false;
         }
     }
 
     write(id: string, data: string): boolean {
-        const task = this.processes.get(id)
-        if (!task) { return false }
+        const task = this.processes.get(id);
+        if (!task) { return false; }
         try {
-            task.ptyProcess.write(data)
-            return true
+            task.ptyProcess.write(data);
+            return true;
         } catch (e) {
             // Broken pipe errors are common when process has exited
-            const errorMsg = getErrorMessage(e as Error)
+            const errorMsg = getErrorMessage(e as Error);
             if (!errorMsg.includes('EPIPE') && !errorMsg.includes('broken pipe')) {
-                console.error(`[ProcessService] Write failed for task ${id}: `, e)
+                console.error(`[ProcessService] Write failed for task ${id}: `, e);
             }
-            return false
+            return false;
         }
     }
 
     async execute(command: string, cwd?: string): Promise<string> {
         try {
-            const { stdout, stderr } = await execAsync(command, { cwd })
-            return (stdout || stderr) ?? 'Command executed successfully'
+            const { stdout, stderr } = await execAsync(command, { cwd });
+            return (stdout || stderr) ?? 'Command executed successfully';
         } catch (e) {
-            const msg = getErrorMessage(e as Error)
-            const stderr = (e as { stderr?: string }).stderr ?? ''
-            return (`Error: ${msg}\nStderr: ${(stderr || '')}`)
+            const msg = getErrorMessage(e as Error);
+            const stderr = (e as { stderr?: string }).stderr ?? '';
+            return (`Error: ${msg}\nStderr: ${(stderr || '')}`);
         }
     }
 }

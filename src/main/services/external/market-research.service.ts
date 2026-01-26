@@ -1,5 +1,5 @@
-import { BaseService } from '@main/services/base.service'
-import { WebService } from '@main/services/external/web.service'
+import { BaseService } from '@main/services/base.service';
+import { WebService } from '@main/services/external/web.service';
 import {
     Competitor,
     CrunchbaseCompany,
@@ -8,8 +8,8 @@ import {
     ProductHuntProduct,
     ResearchData,
     WebSearchResult
-} from '@shared/types/ideas'
-import { getErrorMessage } from '@shared/utils/error.util'
+} from '@shared/types/ideas';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 /**
  * Market Research Service
@@ -17,11 +17,11 @@ import { getErrorMessage } from '@shared/utils/error.util'
  * Uses DuckDuckGo for web search, with optional Product Hunt and Crunchbase integration
  */
 export class MarketResearchService extends BaseService {
-    private productHuntApiKey: string | null = null
-    private crunchbaseApiKey: string | null = null
+    private productHuntApiKey: string | null = null;
+    private crunchbaseApiKey: string | null = null;
 
     constructor(private webService: WebService) {
-        super('MarketResearchService')
+        super('MarketResearchService');
     }
 
     /**
@@ -29,61 +29,61 @@ export class MarketResearchService extends BaseService {
      * This method is designed to be slow and thorough, performing multiple sequential dives.
      */
     async getDeepMarketData(category: IdeaCategory, onProgress?: (msg: string) => void): Promise<ResearchData> {
-        const categoryName = this.getCategoryDisplayName(category)
-        const currentYear = new Date().getFullYear()
+        const categoryName = this.getCategoryDisplayName(category);
+        const currentYear = new Date().getFullYear();
 
-        this.logInfo(`Starting DEEP market research for category: ${categoryName}`)
+        this.logInfo(`Starting DEEP market research for category: ${categoryName}`);
 
         // 1. Initial Context & Strategy
         if (onProgress) {
-            onProgress(`Defining research strategy for ${categoryName}...`)
+            onProgress(`Defining research strategy for ${categoryName}...`);
         }
-        await this.delay(2000)
-        const categoryAnalysis = this.generateCategoryAnalysis(category)
-        const sectors = this.getSectorsForCategory(category)
+        await this.delay(2000);
+        const categoryAnalysis = this.generateCategoryAnalysis(category);
+        const sectors = this.getSectorsForCategory(category);
 
         // 2. Market Context Dive (3 targeted searches)
-        const marketTrends: MarketTrend[] = []
+        const marketTrends: MarketTrend[] = [];
         const trendQueries = [
             `${categoryName} consumer behavior trends ${currentYear}`,
             `emerging ${categoryName} market needs and gaps`,
             `new technologies transforming ${categoryName} in ${currentYear}`
-        ]
+        ];
 
         for (const query of trendQueries) {
             if (onProgress) {
-                onProgress(`Analyzing: ${query}...`)
+                onProgress(`Analyzing: ${query}...`);
             }
-            const results = await this.searchMarketTrendsCustom(query)
-            marketTrends.push(...results)
-            await this.delay(3000) // Meaningful pause
+            const results = await this.searchMarketTrendsCustom(query);
+            marketTrends.push(...results);
+            await this.delay(3000); // Meaningful pause
         }
 
         // 3. Competitive Landscape Dive (Deep dive into top players)
         if (onProgress) {
-            onProgress(`Conducting competitive landscape analysis for ${categoryName}...`)
+            onProgress(`Conducting competitive landscape analysis for ${categoryName}...`);
         }
-        const competitors = await this.searchCompetitorsDeep(categoryName, onProgress)
-        await this.delay(2000)
+        const competitors = await this.searchCompetitorsDeep(categoryName, onProgress);
+        await this.delay(2000);
 
         // 4. Free Platform Data (Product Hunt / Crunchbase fallbacks)
         if (onProgress) {
-            onProgress('Gathering insights from Product Hunt and Crunchbase...')
+            onProgress('Gathering insights from Product Hunt and Crunchbase...');
         }
-        const productHuntProducts = await this.searchProductHunt(category)
-        const crunchbaseCompanies = await this.searchCrunchbase(categoryName)
-        await this.delay(2000)
+        const productHuntProducts = await this.searchProductHunt(category);
+        const crunchbaseCompanies = await this.searchCrunchbase(categoryName);
+        await this.delay(2000);
 
         // 5. Gap Analysis & Opportunities
         if (onProgress) {
-            onProgress('Synthesizing research findings and identifying market gaps...')
+            onProgress('Synthesizing research findings and identifying market gaps...');
         }
         const opportunities = this.extractOpportunities(
             marketTrends,
             competitors,
             productHuntProducts
-        )
-        await this.delay(1000)
+        );
+        await this.delay(1000);
 
         return {
             categoryAnalysis,
@@ -94,13 +94,13 @@ export class MarketResearchService extends BaseService {
             productHuntProducts,
             crunchbaseCompanies,
             webSearchResults: []
-        }
+        };
     }
 
     private async searchMarketTrendsCustom(query: string): Promise<MarketTrend[]> {
-        const trends: MarketTrend[] = []
+        const trends: MarketTrend[] = [];
         try {
-            const result = await this.webService.searchWeb(query, 4)
+            const result = await this.webService.searchWeb(query, 4);
             if (result.success && result.results) {
                 for (const searchResult of result.results) {
                     trends.push({
@@ -108,28 +108,28 @@ export class MarketResearchService extends BaseService {
                         description: searchResult.snippet || 'Trend insight from deep search',
                         source: 'Tavily Deep Search',
                         url: searchResult.url
-                    })
+                    });
                 }
             }
         } catch (error) {
-            this.logWarn(`Deep trend search failed for: ${query}`, getErrorMessage(error as Error))
+            this.logWarn(`Deep trend search failed for: ${query}`, getErrorMessage(error as Error));
         }
-        return trends
+        return trends;
     }
 
     private async searchCompetitorsDeep(categoryName: string, onProgress?: (msg: string) => void): Promise<Competitor[]> {
-        const competitors: Competitor[] = []
+        const competitors: Competitor[] = [];
         const queries = [
             `established ${categoryName} market leaders`,
             `fastest growing ${categoryName} startups ${new Date().getFullYear()}`,
             `innovative ${categoryName} solutions and alternatives`
-        ]
+        ];
 
         for (const query of queries) {
             if (onProgress) {
-                onProgress(`Identifying competitors: ${query}...`)
+                onProgress(`Identifying competitors: ${query}...`);
             }
-            const result = await this.webService.searchWeb(query, 4)
+            const result = await this.webService.searchWeb(query, 4);
             if (result.success && result.results) {
                 for (const r of result.results) {
                     if (!competitors.some(c => c.url === r.url)) {
@@ -139,17 +139,17 @@ export class MarketResearchService extends BaseService {
                             url: r.url,
                             strengths: [],
                             weaknesses: []
-                        })
+                        });
                     }
                 }
             }
-            await this.delay(2500)
+            await this.delay(2500);
         }
-        return competitors.slice(0, 15)
+        return competitors.slice(0, 15);
     }
 
     private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms))
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
 
@@ -157,18 +157,18 @@ export class MarketResearchService extends BaseService {
      * Set API keys for external services
      */
     setApiKeys(productHunt?: string, crunchbase?: string): void {
-        this.productHuntApiKey = productHunt ?? null
-        this.crunchbaseApiKey = crunchbase ?? null
+        this.productHuntApiKey = productHunt ?? null;
+        this.crunchbaseApiKey = crunchbase ?? null;
     }
 
     /**
      * Perform comprehensive market research for a category
      */
     async getMarketData(category: IdeaCategory): Promise<ResearchData> {
-        const categoryName = this.getCategoryDisplayName(category)
-        const currentYear = new Date().getFullYear()
+        const categoryName = this.getCategoryDisplayName(category);
+        const currentYear = new Date().getFullYear();
 
-        this.logInfo(`Starting market research for category: ${categoryName}`)
+        this.logInfo(`Starting market research for category: ${categoryName}`);
 
         // Run searches in parallel for efficiency
         const [
@@ -181,14 +181,14 @@ export class MarketResearchService extends BaseService {
             this.searchCompetitors(categoryName),
             this.searchProductHunt(category),
             this.searchCrunchbase(categoryName)
-        ])
+        ]);
 
         // Extract opportunities from the research
         const opportunities = this.extractOpportunities(
             trendsResults,
             competitorResults,
             productHuntResults
-        )
+        );
 
         return {
             categoryAnalysis: this.generateCategoryAnalysis(category),
@@ -199,24 +199,24 @@ export class MarketResearchService extends BaseService {
             productHuntProducts: productHuntResults,
             crunchbaseCompanies: crunchbaseResults,
             webSearchResults: []
-        }
+        };
     }
 
     /**
      * Search for market trends via web search
      */
     async searchMarketTrends(categoryName: string, year: number): Promise<MarketTrend[]> {
-        const trends: MarketTrend[] = []
+        const trends: MarketTrend[] = [];
 
         const queries = [
             `${categoryName} trends ${year}`,
             `${categoryName} market growth ${year}`,
             `emerging ${categoryName} technologies ${year}`
-        ]
+        ];
 
         for (const query of queries) {
             try {
-                const result = await this.webService.searchWeb(query, 3)
+                const result = await this.webService.searchWeb(query, 3);
                 if (result.success && result.results) {
                     for (const searchResult of result.results) {
                         trends.push({
@@ -224,32 +224,32 @@ export class MarketResearchService extends BaseService {
                             description: searchResult.snippet || 'Market trend from web search',
                             source: 'Web Search',
                             url: searchResult.url
-                        })
+                        });
                     }
                 }
             } catch (error) {
-                this.logWarn(`Failed to search trends for query: ${query}`, getErrorMessage(error as Error))
+                this.logWarn(`Failed to search trends for query: ${query}`, getErrorMessage(error as Error));
             }
         }
 
-        return trends.slice(0, 10)
+        return trends.slice(0, 10);
     }
 
     /**
      * Search for competitors in the category
      */
     async searchCompetitors(categoryName: string): Promise<Competitor[]> {
-        const competitors: Competitor[] = []
+        const competitors: Competitor[] = [];
 
         try {
             const queries = [
                 `best ${categoryName} apps ${new Date().getFullYear()}`,
                 `top ${categoryName} platforms`,
                 `${categoryName} market leaders`
-            ]
+            ];
 
             for (const query of queries) {
-                const result = await this.webService.searchWeb(query, 5)
+                const result = await this.webService.searchWeb(query, 5);
                 if (result.success && result.results) {
                     for (const searchResult of result.results) {
                         // Avoid duplicates
@@ -260,16 +260,16 @@ export class MarketResearchService extends BaseService {
                                 url: searchResult.url,
                                 strengths: [],
                                 weaknesses: []
-                            })
+                            });
                         }
                     }
                 }
             }
         } catch (error) {
-            this.logWarn('Failed to search competitors', getErrorMessage(error as Error))
+            this.logWarn('Failed to search competitors', getErrorMessage(error as Error));
         }
 
-        return competitors.slice(0, 10)
+        return competitors.slice(0, 10);
     }
 
     /**
@@ -277,18 +277,18 @@ export class MarketResearchService extends BaseService {
      */
     async searchWeb(query: string, maxResults: number = 5): Promise<WebSearchResult[]> {
         try {
-            const result = await this.webService.searchWeb(query, maxResults)
+            const result = await this.webService.searchWeb(query, maxResults);
             if (result.success && result.results) {
                 return result.results.map(r => ({
                     title: r.title,
                     url: r.url,
                     snippet: r.snippet
-                }))
+                }));
             }
         } catch (error) {
-            this.logWarn(`Web search failed for query: ${query}`, getErrorMessage(error as Error))
+            this.logWarn(`Web search failed for query: ${query}`, getErrorMessage(error as Error));
         }
-        return []
+        return [];
     }
 
     /**
@@ -297,12 +297,12 @@ export class MarketResearchService extends BaseService {
      */
     async searchProductHunt(category: IdeaCategory): Promise<ProductHuntProduct[]> {
         if (!this.productHuntApiKey) {
-            this.logDebug('Product Hunt API key not configured, using Tavily fallback')
-            return await this.searchProductHuntWeb(category)
+            this.logDebug('Product Hunt API key not configured, using Tavily fallback');
+            return await this.searchProductHuntWeb(category);
         }
 
-        const products: ProductHuntProduct[] = []
-        const categoryTopic = this.getCategoryProductHuntTopic(category)
+        const products: ProductHuntProduct[] = [];
+        const categoryTopic = this.getCategoryProductHuntTopic(category);
 
         try {
             // Product Hunt GraphQL API
@@ -339,7 +339,7 @@ export class MarketResearchService extends BaseService {
                         }
                     `
                 })
-            })
+            });
 
             if (response.ok) {
                 const data = await response.json() as {
@@ -359,11 +359,11 @@ export class MarketResearchService extends BaseService {
                             }>
                         }
                     }
-                }
+                };
 
-                const posts = data.data?.posts?.edges ?? []
+                const posts = data.data?.posts?.edges ?? [];
                 for (const edge of posts) {
-                    const node = edge.node
+                    const node = edge.node;
                     products.push({
                         id: node.id,
                         name: node.name,
@@ -373,25 +373,25 @@ export class MarketResearchService extends BaseService {
                         votesCount: node.votesCount,
                         topics: node.topics?.edges?.map(t => t.node.name) ?? [],
                         launchedAt: node.createdAt
-                    })
+                    });
                 }
             }
         } catch (error) {
-            this.logWarn('Product Hunt search failed', getErrorMessage(error as Error))
+            this.logWarn('Product Hunt search failed', getErrorMessage(error as Error));
         }
 
-        return products
+        return products;
     }
 
     /**
      * Fallback: Search Product Hunt using Tavily search
      */
     private async searchProductHuntWeb(category: IdeaCategory): Promise<ProductHuntProduct[]> {
-        const products: ProductHuntProduct[] = []
-        const query = `site:producthunt.com ${this.getCategoryDisplayName(category)} trending products`
+        const products: ProductHuntProduct[] = [];
+        const query = `site:producthunt.com ${this.getCategoryDisplayName(category)} trending products`;
 
         try {
-            const searchResult = await this.webService.searchWeb(query, 5)
+            const searchResult = await this.webService.searchWeb(query, 5);
             if (searchResult.success && searchResult.results) {
                 for (const result of searchResult.results) {
                     products.push({
@@ -401,13 +401,13 @@ export class MarketResearchService extends BaseService {
                         url: result.url,
                         votesCount: Math.floor(Math.random() * 500) + 50, // Simulated votes for context
                         topics: [category]
-                    })
+                    });
                 }
             }
         } catch (error) {
-            this.logWarn('Product Hunt web fallback failed', getErrorMessage(error as Error))
+            this.logWarn('Product Hunt web fallback failed', getErrorMessage(error as Error));
         }
-        return products
+        return products;
     }
 
     /**
@@ -416,11 +416,11 @@ export class MarketResearchService extends BaseService {
      */
     async searchCrunchbase(categoryName: string): Promise<CrunchbaseCompany[]> {
         if (!this.crunchbaseApiKey) {
-            this.logDebug('Crunchbase API key not configured, using Tavily fallback')
-            return await this.searchCrunchbaseWeb(categoryName)
+            this.logDebug('Crunchbase API key not configured, using Tavily fallback');
+            return await this.searchCrunchbaseWeb(categoryName);
         }
 
-        const companies: CrunchbaseCompany[] = []
+        const companies: CrunchbaseCompany[] = [];
 
         try {
             // Crunchbase API endpoint
@@ -451,7 +451,7 @@ export class MarketResearchService extends BaseService {
                         limit: 10
                     })
                 }
-            )
+            );
 
             if (response.ok) {
                 const data = await response.json() as {
@@ -465,10 +465,10 @@ export class MarketResearchService extends BaseService {
                             categories?: Array<{ value?: string }>
                         }
                     }>
-                }
+                };
 
                 for (const entity of data.entities ?? []) {
-                    const props = entity.properties
+                    const props = entity.properties;
                     if (props) {
                         companies.push({
                             name: props.identifier?.value ?? 'Unknown',
@@ -479,26 +479,26 @@ export class MarketResearchService extends BaseService {
                             foundedOn: props.founded_on?.value,
                             numEmployees: props.num_employees_enum,
                             categories: props.categories?.map(c => c.value ?? '').filter(Boolean) ?? []
-                        })
+                        });
                     }
                 }
             }
         } catch (error) {
-            this.logWarn('Crunchbase search failed', getErrorMessage(error as Error))
+            this.logWarn('Crunchbase search failed', getErrorMessage(error as Error));
         }
 
-        return companies
+        return companies;
     }
 
     /**
      * Fallback: Search Crunchbase using Tavily search
      */
     private async searchCrunchbaseWeb(categoryName: string): Promise<CrunchbaseCompany[]> {
-        const companies: CrunchbaseCompany[] = []
-        const query = `site:crunchbase.com ${categoryName} startup competitors funding`
+        const companies: CrunchbaseCompany[] = [];
+        const query = `site:crunchbase.com ${categoryName} startup competitors funding`;
 
         try {
-            const searchResult = await this.webService.searchWeb(query, 5)
+            const searchResult = await this.webService.searchWeb(query, 5);
             if (searchResult.success && searchResult.results) {
                 for (const result of searchResult.results) {
                     companies.push({
@@ -506,13 +506,13 @@ export class MarketResearchService extends BaseService {
                         description: result.snippet,
                         url: result.url,
                         categories: [categoryName]
-                    })
+                    });
                 }
             }
         } catch (error) {
-            this.logWarn('Crunchbase web fallback failed', getErrorMessage(error as Error))
+            this.logWarn('Crunchbase web fallback failed', getErrorMessage(error as Error));
         }
-        return companies
+        return companies;
     }
 
     /**
@@ -526,8 +526,8 @@ export class MarketResearchService extends BaseService {
             'cli-tool': 'Command Line Tool',
             'desktop': 'Desktop Application',
             'other': 'Software'
-        }
-        return names[category]
+        };
+        return names[category];
     }
 
     /**
@@ -541,8 +541,8 @@ export class MarketResearchService extends BaseService {
             'cli-tool': 'developer-tools',
             'desktop': 'mac',
             'other': 'tech'
-        }
-        return topics[category]
+        };
+        return topics[category];
     }
 
     /**
@@ -556,8 +556,8 @@ export class MarketResearchService extends BaseService {
             'cli-tool': 'Developer tools continue to see innovation in automation, cloud integration, and AI-assisted coding. Modern CLIs focus on user experience and integration with existing workflows.',
             'desktop': 'Desktop applications are seeing a renaissance with Electron and Tauri enabling cross-platform development. Focus on performance, offline capabilities, and system integration.',
             'other': 'General software development continues to embrace AI, automation, and cloud-native architectures across all domains.'
-        }
-        return analyses[category]
+        };
+        return analyses[category];
     }
 
     /**
@@ -571,8 +571,8 @@ export class MarketResearchService extends BaseService {
             'cli-tool': ['DevOps', 'Data Processing', 'Automation', 'Security', 'Testing', 'Documentation'],
             'desktop': ['Productivity', 'Creative Tools', 'Development', 'System Utilities', 'Media', 'Security'],
             'other': ['General', 'Enterprise', 'Consumer', 'B2B', 'B2C']
-        }
-        return sectors[category]
+        };
+        return sectors[category];
     }
 
     /**
@@ -583,23 +583,23 @@ export class MarketResearchService extends BaseService {
         competitors: Competitor[],
         products: ProductHuntProduct[]
     ): string[] {
-        const opportunities: string[] = []
+        const opportunities: string[] = [];
 
         // Look for gaps in competitor offerings
         if (competitors.length > 0) {
-            opportunities.push('Address common pain points not fully solved by existing solutions')
+            opportunities.push('Address common pain points not fully solved by existing solutions');
         }
 
         // Look for trending topics
         if (trends.length > 0) {
-            opportunities.push('Leverage emerging trends in the market')
+            opportunities.push('Leverage emerging trends in the market');
         }
 
         // Look at Product Hunt reception
         if (products.length > 0) {
-            const avgVotes = products.reduce((sum, p) => sum + p.votesCount, 0) / products.length
+            const avgVotes = products.reduce((sum, p) => sum + p.votesCount, 0) / products.length;
             if (avgVotes > 100) {
-                opportunities.push('Strong market interest indicated by Product Hunt reception')
+                opportunities.push('Strong market interest indicated by Product Hunt reception');
             }
         }
 
@@ -609,8 +609,8 @@ export class MarketResearchService extends BaseService {
             'Consider mobile-first or cross-platform approach',
             'Integrate AI/ML capabilities for enhanced features',
             'Build strong community and feedback loops'
-        )
+        );
 
-        return opportunities.slice(0, 8)
+        return opportunities.slice(0, 8);
     }
 }

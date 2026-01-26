@@ -4,10 +4,10 @@
 
 ### 1.1 Missing Features
 - [ ] Memory/RAG management: UI and Backend
-- [ ] **Agent Council: CRITICAL FIXES NEEDED**
-  - [ ] **CRITICAL**: Fix hardcoded model/provider (currently locked to gpt-4o/openai)
-  - [ ] **CRITICAL**: Implement tool security system (callSystem can invoke any service method)
-  - [ ] **CRITICAL**: Add error recovery and retry mechanisms (step failure stops entire session)
+- [x] **Agent Council: CRITICAL FIXES COMPLETED** (2026-01-25)
+  - [x] **CRITICAL**: Fix hardcoded model/provider (now uses session config)
+  - [x] **CRITICAL**: Implement tool security system (ToolPermissions + callSystem whitelist)
+  - [x] **CRITICAL**: Add error recovery and retry mechanisms (exponential backoff, 3 retries)
 - [ ] Onboarding Flow: Complete remaining 50%
 - [ ] Settings UI: Add missing panels (Model parameters, Token limits)
 
@@ -15,7 +15,7 @@
 - [ ] **HIGH**: Custom agent system (only 3 hardcoded agents currently)
 - [ ] **HIGH**: Advanced workflow engine (no parallel execution, voting, or consensus)
 - [ ] **HIGH**: Enhanced UI and control system (pause/resume, step-through, manual intervention)
-- [ ] **HIGH**: Tool security and sandboxing (currently unrestricted file/command access)
+- [x] **HIGH**: Tool security and sandboxing (ToolPermissions system implemented)
 - [ ] **HIGH**: Session management and templates (no reusable workflows)
 - [ ] **MEDIUM**: Specialized agent library (research, testing, security, performance agents)
 - [ ] **MEDIUM**: Advanced planning system (multi-level planning, dependency analysis)
@@ -108,9 +108,9 @@
 - [ ] Implement Planning Mode (multi-step execution)
 - [ ] Support model-specific thinking blocks (Claude, o1)
 
-## LOW - Quality of Life
+## MEDIUM - Quality of Life (Upgraded from LOW)
 
-- [ ] Chat Export/Import
-- [ ] Keyboard Shortcut Customization
-- [ ] Theme Creator
-- [ ] Log Viewer
+- [x] Chat Export/Import *(EXISTS - ExportModal.tsx for export, history-import.service.ts for ChatGPT/Claude import)*
+- [ ] **Keyboard Shortcut Customization** *(MEDIUM - User productivity, requires Settings UI panel)*
+- [ ] **Theme Creator** *(MEDIUM - User customization, complex UI builder)*
+- [x] Log Viewer *(EXISTS - LoggingDashboard.tsx, accessible via Ctrl+L)*

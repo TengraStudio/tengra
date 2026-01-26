@@ -1,7 +1,7 @@
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react';
 
-import { SSHConnection } from '@/types'
+import { SSHConnection } from '@/types';
 
 interface SSHProfile {
     id: string
@@ -14,28 +14,28 @@ interface SSHProfile {
 }
 
 export function useSSHConnections(isOpen: boolean) {
-    const [connections, setConnections] = useState<SSHConnection[]>([])
-    const [isConnecting, setIsConnecting] = useState(false)
-    const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null)
+    const [connections, setConnections] = useState<SSHConnection[]>([]);
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
 
     const updateConnectionStatus = useCallback((id: string, status: SSHConnection['status'], error?: string) => {
         setConnections(prev => prev.map(c => {
-            if (c.id !== id) {return c}
+            if (c.id !== id) {return c;}
 
-            const content = { ...c, status } as SSHConnection
+            const content = { ...c, status } as SSHConnection;
             if (error !== undefined) {
-                content.error = error
+                content.error = error;
             } else {
-                delete content.error
+                delete content.error;
             }
-            return content
-        }))
-    }, [])
+            return content;
+        }));
+    }, []);
 
     const loadConnections = useCallback(async () => {
         try {
-            const profilesRaw = await window.electron.ssh.getProfiles() as SSHProfile[] || []
-            const activeConns = await window.electron.ssh.getConnections() || []
+            const profilesRaw = await window.electron.ssh.getProfiles() as SSHProfile[] || [];
+            const activeConns = await window.electron.ssh.getConnections() || [];
 
             const merged: SSHConnection[] = profilesRaw.map(p => {
                 const conn: SSHConnection = {
@@ -46,81 +46,81 @@ export function useSSHConnections(isOpen: boolean) {
                     username: p.username ?? '',
                     status: 'disconnected' as const,
                     authType: p.privateKey ? 'key' : 'password'
-                }
-                if (p.password) {conn.password = p.password}
-                if (p.privateKey) {conn.privateKey = p.privateKey}
-                return conn
-            })
+                };
+                if (p.password) {conn.password = p.password;}
+                if (p.privateKey) {conn.privateKey = p.privateKey;}
+                return conn;
+            });
 
             for (const active of activeConns) {
-                const existingIndex = merged.findIndex(p => p.id === active.id)
+                const existingIndex = merged.findIndex(p => p.id === active.id);
                 if (existingIndex >= 0) {
-                    const current = merged[existingIndex]
+                    const current = merged[existingIndex];
                     const updated: SSHConnection = {
                         ...current,
                         ...active,
                         status: 'connected' as const
-                    }
+                    };
                     // Handle error property safely for exactOptionalPropertyTypes
                     if (active.error) {
-                        updated.error = active.error
+                        updated.error = active.error;
                     } else {
-                        delete updated.error
+                        delete updated.error;
                     }
 
-                    merged[existingIndex] = updated
+                    merged[existingIndex] = updated;
                 } else {
                     const newConn: SSHConnection = {
                         ...active,
                         status: 'connected' as const
-                    } as SSHConnection
-                    if (!active.error) {delete newConn.error}
+                    } as SSHConnection;
+                    if (!active.error) {delete newConn.error;}
 
-                    merged.push(newConn)
+                    merged.push(newConn);
                 }
             }
 
-            setConnections(merged)
+            setConnections(merged);
 
             for (const conn of merged) {
-                if (conn.status !== 'connected') { continue }
-                const isConnected = await window.electron.ssh.isConnected(conn.id)
+                if (conn.status !== 'connected') { continue; }
+                const isConnected = await window.electron.ssh.isConnected(conn.id);
                 if (!isConnected) {
-                    updateConnectionStatus(conn.id, 'disconnected')
+                    updateConnectionStatus(conn.id, 'disconnected');
                 }
             }
         } catch (e) {
-            console.error('Failed to load connections:', e)
+            console.error('Failed to load connections:', e);
         }
-    }, [updateConnectionStatus])
+    }, [updateConnectionStatus]);
 
     useEffect(() => {
-        if (!isOpen) {return}
+        if (!isOpen) {return;}
 
         const init = async () => {
-            await loadConnections()
-        }
-        void init().catch(e => console.error('SSH init error:', e))
+            await loadConnections();
+        };
+        void init().catch(e => console.error('SSH init error:', e));
 
         const onConnected = (id: string) => {
-            updateConnectionStatus(id, 'connected')
-            setIsConnecting(false)
-            setSelectedConnectionId(id)
-            void window.electron.ssh.shellStart(id)
-        }
+            updateConnectionStatus(id, 'connected');
+            setIsConnecting(false);
+            setSelectedConnectionId(id);
+            void window.electron.ssh.shellStart(id);
+        };
 
         const onDisconnected = (id: string) => {
-            updateConnectionStatus(id, 'disconnected')
-            if (selectedConnectionId === id) { setSelectedConnectionId(null) }
-        }
+            updateConnectionStatus(id, 'disconnected');
+            if (selectedConnectionId === id) { setSelectedConnectionId(null); }
+        };
 
-        window.electron.ssh.onConnected(onConnected)
-        window.electron.ssh.onDisconnected(onDisconnected)
+        window.electron.ssh.onConnected(onConnected);
+        window.electron.ssh.onDisconnected(onDisconnected);
 
         return () => {
-            window.electron.ssh.removeAllListeners()
-        }
-    }, [isOpen, loadConnections, updateConnectionStatus, selectedConnectionId])
+            window.electron.ssh.removeAllListeners();
+        };
+    }, [isOpen, loadConnections, updateConnectionStatus, selectedConnectionId]);
 
     return {
         connections,
@@ -131,5 +131,5 @@ export function useSSHConnections(isOpen: boolean) {
         setSelectedConnectionId,
         loadConnections,
         updateConnectionStatus
-    }
+    };
 }

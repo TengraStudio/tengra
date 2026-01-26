@@ -1,11 +1,11 @@
-import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
-import { SettingsCategory } from '@renderer/features/settings/types'
-import { useMemo, useState } from 'react'
+import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
+import { SettingsCategory } from '@renderer/features/settings/types';
+import { useMemo, useState } from 'react';
 
 export function useAuthManager() {
-    const logic = useSettingsLogic()
-    const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('general')
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+    const logic = useSettingsLogic();
+    const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('general');
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     return useMemo(() => ({
         ...logic,
@@ -22,5 +22,5 @@ export function useAuthManager() {
         refresh: logic.refreshAuthStatus
     }), [
         logic, settingsCategory, isAuthModalOpen
-    ])
+    ]);
 }

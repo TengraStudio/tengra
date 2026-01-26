@@ -1,5 +1,5 @@
-import React from 'react'
-import { RotateCcw, Save, Settings } from 'lucide-react'
+import { RotateCcw, Save, Settings } from 'lucide-react';
+import React from 'react';
 
 interface SettingsHeaderProps {
     t: (key: string) => string
@@ -16,7 +16,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({ t, projectTitle,
                 <Settings className="w-5 h-5" />
             </div>
             <div>
-                <h2 className="text-lg font-semibold text-white">{t('projects.projectSettings') || 'Project Settings'}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t('projects.projectSettings') || 'Project Settings'}</h2>
                 <p className="text-xs text-muted-foreground">{projectTitle}</p>
             </div>
         </div>
@@ -40,4 +40,4 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({ t, projectTitle,
             </button>
         </div>
     </div>
-)
+);

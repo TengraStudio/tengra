@@ -1,10 +1,10 @@
-import React from 'react'
+import React from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { Language } from '@/i18n'
-import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, Message,QuotaResponse } from '@/types'
+import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { Language } from '@/i18n';
+import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, Message,QuotaResponse } from '@/types';
 
-import { AIAssistantSidebar } from './AIAssistantSidebar'
+import { AIAssistantSidebar } from './AIAssistantSidebar';
 
 interface WorkspaceSidebarProps {
     showAgentPanel: boolean
@@ -54,17 +54,17 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             <div
                 className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 transition-colors z-50"
                 onMouseDown={(e) => {
-                    const startX = e.clientX
-                    const startWidth = agentPanelWidth
+                    const startX = e.clientX;
+                    const startWidth = agentPanelWidth;
                     const doDrag = (dragEvent: MouseEvent) => {
-                        setAgentPanelWidth(Math.max(300, Math.min(800, startWidth - (dragEvent.clientX - startX))))
-                    }
+                        setAgentPanelWidth(Math.max(300, Math.min(800, startWidth - (dragEvent.clientX - startX))));
+                    };
                     const stopDrag = () => {
-                        window.removeEventListener('mousemove', doDrag)
-                        window.removeEventListener('mouseup', stopDrag)
-                    }
-                    window.addEventListener('mousemove', doDrag)
-                    window.addEventListener('mouseup', stopDrag)
+                        window.removeEventListener('mousemove', doDrag);
+                        window.removeEventListener('mouseup', stopDrag);
+                    };
+                    window.addEventListener('mousemove', doDrag);
+                    window.addEventListener('mouseup', stopDrag);
                 }}
             />
             <div className="h-full flex flex-col">
@@ -84,7 +84,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                     agents={agents}
                     toggleAgent={toggleAgent}
                     addAgent={addAgent}
-                    runCouncil={() => { void runCouncil() }}
+                    runCouncil={() => { void runCouncil(); }}
                     activityLog={activityLog}
                     clearLogs={clearLogs}
                     t={t}
@@ -95,5 +95,5 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 />
             </div>
         </div>
-    )
-}
+    );
+};

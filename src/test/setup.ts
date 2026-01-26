@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi } from 'vitest';
 
 // Global mocks for Electron
 vi.mock('electron', () => ({
@@ -47,11 +47,11 @@ vi.mock('electron', () => ({
         showOpenDialog: vi.fn(),
         showSaveDialog: vi.fn(),
     },
-}))
+}));
 
 // Mock fs
 vi.mock('fs', async (importOriginal) => {
-    const originalModule = await importOriginal<typeof import('fs')>()
+    const originalModule = await importOriginal<typeof import('fs')>();
     return {
         ...originalModule,
         existsSync: vi.fn(() => true),
@@ -60,18 +60,18 @@ vi.mock('fs', async (importOriginal) => {
         mkdirSync: vi.fn(),
         readdirSync: vi.fn(() => []),
         statSync: vi.fn(() => ({ isDirectory: () => false, size: 0 })),
-    }
-})
+    };
+});
 
 // Mock path
 vi.mock('path', async (importOriginal) => {
-    const originalModule = await importOriginal<typeof import('path')>()
+    const originalModule = await importOriginal<typeof import('path')>();
     return {
         ...originalModule,
         join: (...args: string[]) => args.join('/'),
         dirname: (p: string) => p.substring(0, p.lastIndexOf('/')),
         resolve: (...args: string[]) => args.join('/'),
-    }
-})
+    };
+});
 
-console.warn('Test setup complete: Electron mocks loaded')
+console.warn('Test setup complete: Electron mocks loaded');

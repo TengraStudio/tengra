@@ -1,10 +1,10 @@
-import { Loader2, Sparkles, X } from 'lucide-react'
-import React, { useState } from 'react'
+import { Loader2, Sparkles, X } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { useLogoGeneration } from '../hooks/useLogoGeneration'
+import { useLogoGeneration } from '../hooks/useLogoGeneration';
 
 interface LogoGeneratorProps {
     ideaId: string
@@ -14,7 +14,7 @@ interface LogoGeneratorProps {
 
 const LogoPreview: React.FC<{ logoPath: string | null }> = ({ logoPath }) => {
     if (!logoPath) {
-        return null
+        return null;
     }
     return (
         <div className="mb-4 p-4 bg-muted/20 border border-border/50 rounded-lg flex items-center justify-center backdrop-blur-sm">
@@ -24,36 +24,36 @@ const LogoPreview: React.FC<{ logoPath: string | null }> = ({ logoPath }) => {
                 className="max-w-[200px] max-h-[200px] object-contain drop-shadow-2xl"
             />
         </div>
-    )
-}
+    );
+};
 
 const LogoError: React.FC<{ error: string | null }> = ({ error }) => {
     if (!error) {
-        return null
+        return null;
     }
     return (
         <div className="mb-4 p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg text-xs font-bold flex items-center gap-2">
             <Sparkles className="w-3 h-3 animate-pulse" />
             {error}
         </div>
-    )
-}
+    );
+};
 
 export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
     ideaId,
     ideaTitle,
     onClose
 }) => {
-    const { t } = useTranslation()
-    const [prompt, setPrompt] = useState(`Modern minimalist logo for ${ideaTitle}`)
-    const { isGenerating, logoPath, error, generateLogo } = useLogoGeneration()
+    const { t } = useTranslation();
+    const [prompt, setPrompt] = useState(`Modern minimalist logo for ${ideaTitle}`);
+    const { isGenerating, logoPath, error, generateLogo } = useLogoGeneration();
 
     const handleGenerate = async () => {
         if (!prompt.trim()) {
-            return
+            return;
         }
-        await generateLogo(ideaId, prompt)
-    }
+        await generateLogo(ideaId, prompt);
+    };
 
     return (
         <div className="bg-muted/10 rounded-xl border border-border/50 p-4 backdrop-blur-md">
@@ -91,7 +91,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
             <button
                 type="button"
                 onClick={() => {
-                    void handleGenerate()
+                    void handleGenerate();
                 }}
                 disabled={isGenerating || !prompt.trim()}
                 className={cn(
@@ -113,5 +113,5 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                 )}
             </button>
         </div>
-    )
-}
+    );
+};

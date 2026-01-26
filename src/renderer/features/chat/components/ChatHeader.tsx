@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Download,Search, X } from 'lucide-react';
 import { memo, useEffect } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
@@ -8,6 +8,7 @@ interface ChatHeaderProps {
     setSearchTerm: (value: string) => void;
     onSearchChange?: (debouncedTerm: string) => void;
     t: (key: string) => string;
+    onExport?: () => void;
 }
 
 /**
@@ -20,7 +21,8 @@ export const ChatHeader = memo(({
     searchTerm,
     setSearchTerm,
     onSearchChange,
-    t
+    t,
+    onExport
 }: ChatHeaderProps) => {
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -53,8 +55,17 @@ export const ChatHeader = memo(({
                         </button>
                     )}
                 </div>
+                {onExport && (
+                    <button
+                        onClick={onExport}
+                        className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
+                        title={t('export.title') || 'Export Chat'}
+                    >
+                        <Download className="w-5 h-5" />
+                    </button>
+                )}
             </div>
         </div>
     );
 });
-ChatHeader.displayName = 'ChatHeader'
+ChatHeader.displayName = 'ChatHeader';

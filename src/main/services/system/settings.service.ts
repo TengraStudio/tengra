@@ -1,12 +1,12 @@
 
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { appLogger } from '@main/logging/logger'
-import { AppSettings } from '@shared/types/settings'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { app } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { AppSettings } from '@shared/types/settings';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app } from 'electron';
 
 const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
@@ -87,103 +87,82 @@ const DEFAULT_SETTINGS: AppSettings = {
         startOnStartup: true,
         workAtBackground: true
     }
-}
+};
 
-import { BaseService } from '@main/services/base.service'
-import { DataService } from '@main/services/data/data.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { LinkedAccount } from '@main/services/data/database.service'
+import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
+import { LinkedAccount } from '@main/services/data/database.service';
+import { AuthService } from '@main/services/security/auth.service';
 
 export class SettingsService extends BaseService {
-    private settingsPath: string
-    private settings: AppSettings
-    private saveInProgress: boolean = false
-    private pendingSave: Partial<AppSettings> | null = null
-    private initialized: boolean = false
+    private settingsPath: string;
+    private settings: AppSettings;
+    private saveInProgress: boolean = false;
+    private pendingSave: Partial<AppSettings> | null = null;
+    private initialized: boolean = false;
 
     constructor(
         dataService?: DataService,
         private authService?: AuthService
     ) {
-        super('SettingsService')
+        super('SettingsService');
 
         if (dataService) {
-            this.settingsPath = path.join(dataService.getPath('config'), 'settings.json')
+            this.settingsPath = path.join(dataService.getPath('config'), 'settings.json');
         } else {
-            // Fallback for tests or simplified usage, though in main we pass it.
-            this.settingsPath = path.join(app.getPath('userData'), 'settings.json')
+            this.settingsPath = path.join(app.getPath('userData'), 'settings.json');
         }
 
-        // Initialize with defaults, actual loading happens in initialize()
-        this.settings = { ...DEFAULT_SETTINGS }
+        this.settings = { ...DEFAULT_SETTINGS };
     }
 
-    /**
-     * Initialize the service by loading settings from disk.
-     * Must be called after construction before using getSettings().
-     */
     async initialize(): Promise<void> {
         if (this.initialized) {
-            return
+            return;
         }
-        this.settings = await this.loadSettings()
-        this.initialized = true
-        appLogger.info('SettingsService', 'Initialized successfully')
+        this.settings = await this.loadSettings();
+        this.initialized = true;
+        appLogger.info('SettingsService', 'Initialized successfully');
     }
 
     async cleanup(): Promise<void> {
         if (this.saveInProgress) {
-            appLogger.info('SettingsService', 'Waiting for pending save to complete before cleanup...')
-            // Wait for any pending save to complete
+            appLogger.info('SettingsService', 'Waiting for pending save to complete before cleanup...');
             while (this.saveInProgress) {
-                await new Promise(resolve => setTimeout(resolve, 100))
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
-        
-        // Save any pending changes before cleanup
+
         if (this.pendingSave) {
-            await this.saveSettings(this.pendingSave)
+            await this.saveSettings(this.pendingSave);
         }
-        
-        appLogger.info('SettingsService', 'Settings service cleanup complete')
+
+        appLogger.info('SettingsService', 'Settings service cleanup complete');
     }
 
-    /**
-     * Load settings from the settings file.
-     *
-     * @returns The loaded settings merged with defaults
-     */
     private async loadSettings(): Promise<AppSettings> {
-        appLogger.info('SettingsService', `loadSettings (authService=${!!this.authService})`);
-
-        // 1. Check if file exists
         try {
-            await fs.promises.access(this.settingsPath)
+            await fs.promises.access(this.settingsPath);
         } catch {
-            appLogger.info('SettingsService', `settings.json NOT FOUND at ${this.settingsPath}`);
-            return this.initializeDefaults()
+            return this.initializeDefaults();
         }
 
-        // 2. Read and Parse
         let loaded: Partial<AppSettings> = {};
         try {
-            appLogger.info('SettingsService', `Found settings file at ${this.settingsPath}`);
-            const data = await fs.promises.readFile(this.settingsPath, 'utf8')
+            const data = await fs.promises.readFile(this.settingsPath, 'utf8');
 
             if (!data.trim()) {
-                appLogger.warn('SettingsService', 'Settings file is empty, using defaults');
-                loaded = {}
+                loaded = {};
             } else {
                 loaded = await this.parseAndRecoverSettings(data);
             }
 
-            // Cleanup deprecated fields
-            if (loaded.userAvatar) { delete loaded.userAvatar; }
-            if (loaded.aiAvatar) { delete loaded.aiAvatar; }
+            const loadedRecord = loaded as Record<string, unknown>;
+            if (loadedRecord.userAvatar) { delete loadedRecord.userAvatar; }
+            if (loadedRecord.aiAvatar) { delete loadedRecord.aiAvatar; }
 
         } catch (error) {
             appLogger.error('SettingsService', `Failed to read/parse settings: ${getErrorMessage(error as Error)}`);
-            // Proceed with defaults if read fails
             loaded = {};
         }
 
@@ -196,7 +175,7 @@ export class SettingsService extends BaseService {
         } catch {
             appLogger.warn('SettingsService', 'JSON.parse failed, attempting recovery...');
 
-            const recovered = this.attemptJsonRecovery(data)
+            const recovered = this.attemptJsonRecovery(data);
             if (recovered) {
                 appLogger.info('SettingsService', 'JSON recovery successful');
                 if (recovered.wasModified) {
@@ -213,12 +192,12 @@ export class SettingsService extends BaseService {
 
     private async backupCorruptedSettings(originalData: string, type: 'recovered' | 'corrupted', recoveredData?: Partial<AppSettings>) {
         try {
-            const backupPath = `${this.settingsPath}.${type}.${Date.now()}`
-            await fs.promises.writeFile(backupPath, originalData, 'utf8')
-            appLogger.info('SettingsService', `Backed up original/corrupted file to: ${backupPath}`)
+            const backupPath = `${this.settingsPath}.${type}.${Date.now()}`;
+            await fs.promises.writeFile(backupPath, originalData, 'utf8');
+            appLogger.info('SettingsService', `Backed up original/corrupted file to: ${backupPath}`);
 
             if (recoveredData) {
-                await fs.promises.writeFile(this.settingsPath, JSON.stringify(recoveredData, null, 2), 'utf8')
+                await fs.promises.writeFile(this.settingsPath, JSON.stringify(recoveredData, null, 2), 'utf8');
             }
         } catch (e) {
             appLogger.warn('SettingsService', `Failed to backup ${type} settings: ${getErrorMessage(e as Error)}`);
@@ -226,100 +205,94 @@ export class SettingsService extends BaseService {
     }
 
     private async initializeDefaults(): Promise<AppSettings> {
-        // Even if file missing, we might have tokens in memory if AuthService is active
         return this.mergeWithDefaults({});
     }
 
     private async mergeWithDefaults(loaded: Partial<AppSettings>): Promise<AppSettings> {
-        // Merge tokens from AuthService (always do this if authService is available)
-        let authAccounts: LinkedAccount[] = []
+        let authAccounts: LinkedAccount[] = [];
         if (this.authService) {
-            authAccounts = await this.authService.getAllAccountsFull()
-            appLogger.info('SettingsService', `Loaded auth accounts count: ${authAccounts.length}`)
+            authAccounts = await this.authService.getAllAccountsFull();
         }
 
-        // Helper for fuzzy token lookup
-        const findToken = (provider: string, fallbackKeys: string[] = []): string => {
-            return this.findTokenInAuth(authAccounts, provider, fallbackKeys);
-        };
-
-        const def = DEFAULT_SETTINGS;
-
-        // Safe accessors for defaults to avoid non-null assertions
-        const defOpenAI = def.openai ?? { apiKey: '', model: 'gpt-4o' };
-        const defAnthropic = def.anthropic ?? { apiKey: '', model: 'claude-3-opus-20240229' };
-        const defAntigravity = def.antigravity ?? { connected: false };
-        const defCopilot = def.copilot ?? { connected: false };
-        const defGroq = def.groq ?? { apiKey: '', model: 'llama3-70b-8192' };
-        const defProxy = def.proxy ?? { enabled: false, url: 'http://localhost:8317/v1', key: 'proxypal-local' };
-        const defAutoUpdate = def.autoUpdate ?? { enabled: true, checkOnStartup: true, downloadAutomatically: true, notifyOnly: false };
-
         const res: AppSettings = {
-            ...def,
+            ...DEFAULT_SETTINGS,
             ...loaded,
-            ollama: { ...def.ollama, ...(loaded.ollama ?? {}) },
-            autoUpdate: loaded.autoUpdate
-                ? { ...defAutoUpdate, ...loaded.autoUpdate }
-                : defAutoUpdate,
-            general: { ...def.general, ...(loaded.general ?? {}) },
-            github: {
-                ...def.github,
-                ...(loaded.github ?? {}),
-                token: (findToken('github') || (loaded.github?.token ?? ''))
-            },
-            openai: loaded.openai
-                ? {
-                    ...defOpenAI,
-                    ...loaded.openai,
-                    apiKey: (findToken('openai') || (loaded.openai.apiKey ?? '')),
-                    model: loaded.openai.model || defOpenAI.model
-                }
-                : defOpenAI,
-            anthropic: loaded.anthropic
-                ? {
-                    ...defAnthropic,
-                    ...loaded.anthropic,
-                    apiKey: (findToken('anthropic') || (loaded.anthropic.apiKey ?? '')),
-                    model: loaded.anthropic.model || defAnthropic.model
-                }
-                : defAnthropic,
-            antigravity: loaded.antigravity
-                ? {
-                    ...defAntigravity,
-                    ...loaded.antigravity,
-                    connected: loaded.antigravity.connected ?? defAntigravity.connected,
-                    token: (findToken('antigravity') || (loaded.antigravity.token ?? ''))
-                }
-                : defAntigravity,
-            copilot: loaded.copilot
-                ? {
-                    ...defCopilot,
-                    ...loaded.copilot,
-                    connected: loaded.copilot.connected ?? defCopilot.connected,
-                    token: (findToken('copilot') || findToken('github') || (loaded.copilot.token ?? ''))
-                }
-                : defCopilot,
-            groq: loaded.groq
-                ? {
-                    ...defGroq,
-                    ...loaded.groq,
-                    apiKey: (findToken('groq') || (loaded.groq.apiKey ?? '')),
-                    model: loaded.groq.model || defGroq.model
-                }
-                : defGroq,
-            proxy: {
-                ...defProxy,
-                ...(loaded.proxy ?? {}),
-                enabled: loaded.proxy?.enabled ?? defProxy.enabled,
-                url: loaded.proxy?.url || defProxy.url,
-                key: (findToken('proxy') || (loaded.proxy?.key ?? ''))
-            },
-            window: loaded.window
+            ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama ?? {}) },
+            autoUpdate: this.mergeAutoUpdate(loaded.autoUpdate),
+            general: { ...DEFAULT_SETTINGS.general, ...(loaded.general ?? {}) },
+            github: this.mergeProvider(authAccounts, 'github', loaded.github),
+            openai: this.mergeProvider(authAccounts, 'openai', loaded.openai, 'apiKey'),
+            anthropic: this.mergeProvider(authAccounts, 'anthropic', loaded.anthropic, 'apiKey'),
+            antigravity: this.mergeProvider(authAccounts, 'antigravity', loaded.antigravity),
+            copilot: this.mergeCopilot(authAccounts, loaded.copilot),
+            groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
+            proxy: this.mergeProxy(authAccounts, loaded.proxy),
+            window: loaded.window ?? DEFAULT_SETTINGS.window
         };
 
         this.migrateDeprecatedSettings(res);
-
         return res;
+    }
+
+    private mergeAutoUpdate(loaded?: Partial<AppSettings['autoUpdate']>): AppSettings['autoUpdate'] {
+        const def = DEFAULT_SETTINGS.autoUpdate ?? {
+            enabled: true,
+            checkOnStartup: true,
+            downloadAutomatically: true,
+            notifyOnly: false
+        };
+        return {
+            enabled: loaded?.enabled ?? def.enabled,
+            checkOnStartup: loaded?.checkOnStartup ?? def.checkOnStartup,
+            downloadAutomatically: loaded?.downloadAutomatically ?? def.downloadAutomatically,
+            notifyOnly: loaded?.notifyOnly ?? def.notifyOnly
+        };
+    }
+
+    private mergeProvider<T extends keyof AppSettings>(
+        authAccounts: LinkedAccount[],
+        provider: T,
+        loaded?: Partial<AppSettings[T]>,
+        keyField: string = 'token'
+    ): AppSettings[T] {
+        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown>) ?? {};
+        const loadedObj = (loaded ?? {}) as Record<string, unknown>;
+        const tokenVal = loadedObj[keyField] as string | undefined;
+        const token = this.findTokenInAuth(authAccounts, String(provider)) || (tokenVal ?? '');
+        return {
+            ...def,
+            ...loadedObj,
+            [keyField]: token
+        } as AppSettings[T];
+    }
+
+    private mergeCopilot(authAccounts: LinkedAccount[], loaded?: Partial<AppSettings['copilot']>): AppSettings['copilot'] {
+        const def = DEFAULT_SETTINGS.copilot;
+        const token = this.findTokenInAuth(authAccounts, 'copilot') ||
+            this.findTokenInAuth(authAccounts, 'github') ||
+            (loaded?.token ?? '');
+
+        if (!def) {
+            return { connected: loaded?.connected ?? false, token };
+        }
+        return {
+            connected: loaded?.connected ?? def.connected,
+            token
+        };
+    }
+
+    private mergeProxy(authAccounts: LinkedAccount[], loaded?: Partial<AppSettings['proxy']>): AppSettings['proxy'] {
+        const def = DEFAULT_SETTINGS.proxy ?? {
+            enabled: false,
+            url: 'http://localhost:8317/v1',
+            key: ''
+        };
+        const token = this.findTokenInAuth(authAccounts, 'proxy') || (loaded?.key ?? '');
+        return {
+            enabled: loaded?.enabled ?? def.enabled,
+            url: loaded?.url ?? def.url,
+            key: token
+        };
     }
 
     private migrateDeprecatedSettings(settings: AppSettings): void {
@@ -331,205 +304,198 @@ export class SettingsService extends BaseService {
         }
     }
 
-    /**
-     * Attempt to recover valid JSON from potentially corrupted data.
-     * Returns null if recovery is not possible.
-     */
     private attemptJsonRecovery(data: string): { data: Partial<AppSettings>; wasModified: boolean } | null {
-        // Strategy: Find where the root JSON object ends by tracking brace depth
-        // This handles: trailing garbage, incomplete writes, BOM issues
+        const cleanData = data.replace(/^\uFEFF/, '');
+        const startIndex = cleanData.indexOf('{');
+        if (startIndex < 0) { return null; }
 
-        // Remove BOM if present
-        const cleanData = data.replace(/^\uFEFF/, '')
+        const endIndex = this.findJsonObjectEnd(cleanData, startIndex);
+        if (endIndex < 0) { return null; }
 
-        // Find the start of JSON object
-        const startIndex = cleanData.indexOf('{')
-        if (startIndex < 0) { return null }
-
-        // Parse character by character to find valid JSON end
-        let depth = 0
-        let inString = false
-        let escapeNext = false
-        let endIndex = -1
-
-        for (let i = startIndex; i < cleanData.length; i++) {
-            const char = cleanData[i]
-
-            if (escapeNext) {
-                escapeNext = false
-                continue
-            }
-
-            if (char === '\\' && inString) {
-                escapeNext = true
-                continue
-            }
-
-            if (char === '"' && !escapeNext) {
-                inString = !inString
-                continue
-            }
-
-            if (inString) { continue }
-
-            if (char === '{') { depth++ }
-            else if (char === '}') {
-                depth--
-                if (depth === 0) {
-                    endIndex = i
-                    break
-                }
-            }
-        }
-
-        if (endIndex < 0) { return null }
-
-        const jsonCandidate = cleanData.substring(startIndex, endIndex + 1)
-        const wasModified = endIndex < cleanData.length - 1 || startIndex > 0
+        const jsonCandidate = cleanData.substring(startIndex, endIndex + 1);
+        const wasModified = endIndex < cleanData.length - 1 || startIndex > 0;
 
         try {
-            const parsed = safeJsonParse<Partial<AppSettings>>(jsonCandidate, {})
-            return { data: parsed, wasModified }
+            return { data: safeJsonParse<Partial<AppSettings>>(jsonCandidate, {}), wasModified };
         } catch {
-            return null
+            return null;
         }
+    }
+
+    private findJsonObjectEnd(cleanData: string, startIndex: number): number {
+        let depth = 0;
+        let inString = false;
+        let escapeNext = false;
+
+        for (let i = startIndex; i < cleanData.length; i++) {
+            const char = cleanData[i];
+
+            // Handle escapes first
+            if (escapeNext) {
+                escapeNext = false;
+                continue;
+            }
+            if (char === '\\' && inString) {
+                escapeNext = true;
+                continue;
+            }
+
+            // Handle strings
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+            if (inString) { continue; }
+
+            // Handle nesting
+            if (char === '{') {
+                depth++;
+            } else if (char === '}') {
+                depth--;
+                if (depth === 0) { return i; }
+            }
+        }
+        return -1;
     }
 
     getSettings(): AppSettings {
-        return this.settings
+        return this.settings;
     }
 
     getSettingsPath(): string {
-        return this.settingsPath
+        return this.settingsPath;
     }
 
     async saveSettings(newSettings: Partial<AppSettings>): Promise<AppSettings> {
-        // Handle concurrent save attempts by queuing
         if (this.saveInProgress) {
-            // Merge with pending save or create new pending
-            this.pendingSave = this.pendingSave
-                ? { ...this.pendingSave, ...newSettings }
-                : newSettings
-            appLogger.info('SettingsService', 'Save in progress, queuing update')
-            return this.settings
+            this.pendingSave = { ...this.pendingSave, ...newSettings };
+            return this.settings;
         }
 
-        this.saveInProgress = true
-        // Deep merge logic extracted to deepMergeSettings
-        // Using strict property initialization for settings updates
+        this.saveInProgress = true;
+        const currentSettings = { ...this.settings };
 
-        const newKeys = Object.keys(newSettings);
-        appLogger.info('SettingsService', `saveSettings: Called with ${newKeys.length} keys: ${newKeys.join(', ')}`);
-
-        // TOKEN CONSERVATION:
-        // When the renderer saves settings, it often has empty strings for tokens (secrets).
-        // We must prevent these from overwriting the real tokens already in memory.
         if (this.authService) {
             this.preserveSensitiveTokens(newSettings);
         }
 
-        const currentSettings = this.settings
-
         this.settings = this.deepMergeSettings(this.settings, newSettings) as AppSettings;
 
-        // Secure Storage Logic
         if (this.authService) {
-            appLogger.info('SettingsService', 'saveSettings: Processing secure storage.');
-            const tokens: Record<string, string | undefined> = {};
-
-            // Helper to check if changed
-            const addIfChanged = (key: string, newValue: string | undefined, oldValue: string | undefined) => {
-                if (newValue && newValue !== oldValue) {
-                    tokens[key] = newValue;
-                }
-            };
-
-            addIfChanged('github_token', newSettings.github?.token, currentSettings.github?.token);
-            addIfChanged('copilot_token', newSettings.copilot?.token, currentSettings.copilot?.token);
-            addIfChanged('antigravity_token', newSettings.antigravity?.token, currentSettings.antigravity?.token);
-            addIfChanged('openai_key', newSettings.openai?.apiKey, currentSettings.openai?.apiKey);
-            addIfChanged('anthropic_key', newSettings.anthropic?.apiKey, currentSettings.anthropic?.apiKey);
-            addIfChanged('groq_key', newSettings.groq?.apiKey, currentSettings.groq?.apiKey);
-
-            // Proxy key logic
-            const newProxyKey = (newSettings.proxy?.key && newSettings.proxy.key !== 'connected') ? newSettings.proxy.key : undefined;
-            const oldProxyKey = (currentSettings.proxy?.key && currentSettings.proxy.key !== 'connected') ? currentSettings.proxy.key : undefined;
-            addIfChanged('proxy_key', newProxyKey, oldProxyKey);
-
-            for (const [key, val] of Object.entries(tokens)) {
-                if (val) {
-                    void this.authService.linkAccount(key, { accessToken: val });
-                }
-            }
+            await this.syncTokensToAuth(newSettings, currentSettings);
         }
 
-        try {
-            // Create a copy to save that doesn't have the secrets
-            const settingsToSave = JSON.parse(JSON.stringify(this.settings))
+        await this.persistSettingsToDisk();
 
-            // Strip secrets if AuthService is active
-            if (this.authService) {
-                if (settingsToSave.github) { settingsToSave.github.token = '' }
-                if (settingsToSave.openai) { settingsToSave.openai.apiKey = '' }
-                if (settingsToSave.anthropic) { settingsToSave.anthropic.apiKey = '' }
+        this.saveInProgress = false;
+        this.processPendingSaves();
 
-                if (settingsToSave.groq) { settingsToSave.groq.apiKey = '' }
-                // Using undefined for optional properties
-                if (settingsToSave.antigravity) { settingsToSave.antigravity.token = undefined }
-                if (settingsToSave.copilot) { settingsToSave.copilot.token = undefined }
-                if (settingsToSave.proxy && settingsToSave.proxy.key !== 'connected') {
-                    settingsToSave.proxy.key = ''
-                }
-            }
-
-            // Use atomic write: write to temp file first, then rename
-            // This prevents corruption if the process crashes during write
-            const tempPath = this.settingsPath + '.tmp'
-            const jsonString = JSON.stringify(settingsToSave, null, 2)
-
-            // Validate JSON before writing
-            try {
-                JSON.parse(jsonString) // Verify it's valid JSON
-            } catch (parseError) {
-                appLogger.error('SettingsService', `Generated invalid JSON, aborting save: ${getErrorMessage(parseError as Error)}`)
-                throw new Error('Generated invalid JSON during save')
-            }
-
-            await fs.promises.writeFile(tempPath, jsonString, 'utf8')
-            await fs.promises.rename(tempPath, this.settingsPath)
-        } catch (error) {
-            appLogger.error('SettingsService', `Failed to save settings: ${getErrorMessage(error as Error)}`)
-            // Try to remove temp file if it exists
-            try {
-                const tempPath = this.settingsPath + '.tmp'
-                await fs.promises.unlink(tempPath).catch(() => { })
-            } catch {
-                // Ignore cleanup errors
-            }
-        } finally {
-            this.saveInProgress = false
-
-            // Process any pending saves that accumulated while we were saving
-            if (this.pendingSave) {
-                const pending = this.pendingSave
-                this.pendingSave = null
-                // Use setImmediate to avoid stack overflow with rapid saves
-                setImmediate(() => {
-                    void this.saveSettings(pending)
-                })
-            }
-        }
-
-        return this.settings
+        return this.settings;
     }
 
-    /**
-     * Force reload settings from disk.
-     * Useful after external modifications or suspected corruption.
-     */
+    private async syncTokensToAuth(newSettings: Partial<AppSettings>, oldSettings: AppSettings): Promise<void> {
+        if (!this.authService) {
+            return;
+        }
+
+        const mappings = this.getTokenMappings(newSettings, oldSettings);
+        for (const [key, val] of Object.entries(mappings)) {
+            if (val) {
+                await this.authService.linkAccount(key, { accessToken: val });
+            }
+        }
+    }
+
+    private getTokenMappings(newSettings: Partial<AppSettings>, oldSettings: AppSettings): Record<string, string | undefined> {
+        const mappings: Record<string, string | undefined> = {};
+
+        this.addCoreMappings(mappings, newSettings, oldSettings);
+        this.addProviderMappings(mappings, newSettings, oldSettings);
+
+        return mappings;
+    }
+
+    private addCoreMappings(mappings: Record<string, string | undefined>, newSettings: Partial<AppSettings>, oldSettings: AppSettings): void {
+        this.checkTokenMapping(mappings, 'github_token', newSettings.github?.token, oldSettings.github?.token);
+        this.checkTokenMapping(mappings, 'copilot_token', newSettings.copilot?.token, oldSettings.copilot?.token);
+        this.checkTokenMapping(mappings, 'antigravity_token', newSettings.antigravity?.token, oldSettings.antigravity?.token);
+    }
+
+    private addProviderMappings(mappings: Record<string, string | undefined>, newSettings: Partial<AppSettings>, oldSettings: AppSettings): void {
+        this.checkTokenMapping(mappings, 'openai_key', newSettings.openai?.apiKey, oldSettings.openai?.apiKey);
+        this.checkTokenMapping(mappings, 'anthropic_key', newSettings.anthropic?.apiKey, oldSettings.anthropic?.apiKey);
+        this.checkTokenMapping(mappings, 'groq_key', newSettings.groq?.apiKey, oldSettings.groq?.apiKey);
+        this.checkTokenMapping(mappings, 'proxy_key', newSettings.proxy?.key, oldSettings.proxy?.key);
+    }
+
+    private checkTokenMapping(mappings: Record<string, string | undefined>, key: string, newVal: string | undefined, oldVal: string | undefined): void {
+        if (newVal && newVal !== oldVal && newVal !== 'connected') {
+            mappings[key] = newVal;
+        }
+    }
+
+    private async persistSettingsToDisk(): Promise<void> {
+        try {
+            const settingsToSave = this.prepareSettingsForSaving();
+            const jsonString = JSON.stringify(settingsToSave, null, 2);
+
+            const tempPath = this.settingsPath + '.tmp';
+            await fs.promises.writeFile(tempPath, jsonString, 'utf8');
+            await fs.promises.rename(tempPath, this.settingsPath);
+        } catch (error) {
+            appLogger.error('SettingsService', `Failed to save settings: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
+    private prepareSettingsForSaving(): AppSettings {
+        const settingsToSave = JSON.parse(JSON.stringify(this.settings));
+        if (!this.authService) {
+            return settingsToSave;
+        }
+
+        this.stripSecrets(settingsToSave);
+        return settingsToSave;
+    }
+
+    private stripSecrets(settings: AppSettings): void {
+        const { github, openai, anthropic, groq } = settings;
+        if (github) { github.token = ''; }
+        if (openai) { openai.apiKey = ''; }
+        if (anthropic) { anthropic.apiKey = ''; }
+        if (groq) { groq.apiKey = ''; }
+
+        this.stripOtherSecrets(settings);
+    }
+
+    private stripOtherSecrets(settings: AppSettings): void {
+        const antigravity = settings.antigravity as Record<string, unknown> | undefined;
+        const copilot = settings.copilot as Record<string, unknown> | undefined;
+        const proxy = settings.proxy as Record<string, unknown> | undefined;
+
+        if (antigravity) {
+            antigravity.token = undefined;
+        }
+        if (copilot) {
+            copilot.token = undefined;
+        }
+        if (proxy && proxy.key !== 'connected') {
+            proxy.key = '';
+        }
+    }
+
+    private processPendingSaves(): void {
+        if (this.pendingSave) {
+            const pending = this.pendingSave;
+            this.pendingSave = null;
+            setImmediate(() => {
+                void this.saveSettings(pending);
+            });
+        }
+    }
+
     async reloadSettings(): Promise<AppSettings> {
-        this.settings = await this.loadSettings()
-        return this.settings
+        this.settings = await this.loadSettings();
+        return this.settings;
     }
 
     private findTokenInAuth(authAccounts: LinkedAccount[], provider: string, fallbackKeys: string[] = []): string {
@@ -548,11 +514,10 @@ export class SettingsService extends BaseService {
         for (const p of searchProviders) {
             const acc = authAccounts.find(a => a.provider === p);
             if (acc) {
-                return acc.accessToken || acc.sessionToken || '';
+                return acc.accessToken ?? acc.sessionToken ?? '';
             }
         }
 
-        // Fuzzy search for specific provider patterns if needed
         const fuzzyAcc = authAccounts.find(a => (a.provider as string).startsWith(provider + '-'));
         if (fuzzyAcc) {
             return ((fuzzyAcc.accessToken as string) || (fuzzyAcc.sessionToken as string) || '');
@@ -566,7 +531,7 @@ export class SettingsService extends BaseService {
         const res = { ...target };
         for (const key of Object.keys(source)) {
             if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                res[key] = { ...((target[key] as Record<string, unknown>) || {}), ...source[key] };
+                res[key] = { ...((target[key] as Record<string, unknown>) ?? {}), ...source[key] };
             } else {
                 res[key] = source[key];
             }
@@ -579,7 +544,6 @@ export class SettingsService extends BaseService {
             const newProv = newSettings[provider] as Record<string, unknown> | undefined;
             const oldProv = this.settings[provider] as Record<string, unknown> | undefined;
             if (newProv && oldProv && !newProv[field] && oldProv[field]) {
-                appLogger.info('SettingsService', `saveSettings: Conserving existing ${String(provider)} token.`);
                 newProv[field] = oldProv[field];
             }
         };

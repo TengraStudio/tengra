@@ -1,8 +1,8 @@
-import { LinkedAccountInfo } from '@renderer/electron.d'
-import { Check, Key, Trash2, User } from 'lucide-react'
-import React from 'react'
+import { LinkedAccountInfo } from '@renderer/electron.d';
+import { Check, Key, Trash2, User } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface AccountRowProps {
     account: LinkedAccountInfo
@@ -72,12 +72,12 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                     <button
                         type="button"
                         onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            onShowManualSession(account.id, account.email)
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onShowManualSession(account.id, account.email);
                         }}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Session Key"
+                        title={t('auth.sessionKeyLabel')}
                     >
                         <Key className="h-3.5 w-3.5" />
                     </button>
@@ -96,5 +96,5 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                 </button>
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,7 +1,7 @@
-import { useTranslation } from '@renderer/i18n'
-import React, { useRef } from 'react'
+import { useTranslation } from '@renderer/i18n';
+import React, { useRef } from 'react';
 
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
 interface DragDropWrapperProps {
     isDragging: boolean
@@ -16,39 +16,39 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
     onFileDrop,
     children
 }) => {
-    const { t } = useTranslation()
-    const dragCounter = useRef(0)
+    const { t } = useTranslation();
+    const dragCounter = useRef(0);
 
     const handleDragEnter = (e: React.DragEvent) => {
-        e.preventDefault()
+        e.preventDefault();
         if (e.dataTransfer.types.includes('Files')) {
-            dragCounter.current++
-            if (!isDragging) { setIsDragging(true) }
+            dragCounter.current++;
+            if (!isDragging) { setIsDragging(true); }
         }
-    }
+    };
 
     const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault()
+        e.preventDefault();
         if (e.dataTransfer.types.includes('Files') && !isDragging) {
-            setIsDragging(true)
+            setIsDragging(true);
         }
-    }
+    };
 
     const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault()
-        dragCounter.current--
+        e.preventDefault();
+        dragCounter.current--;
         if (dragCounter.current <= 0) {
-            dragCounter.current = 0
-            setIsDragging(false)
+            dragCounter.current = 0;
+            setIsDragging(false);
         }
-    }
+    };
 
     const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault()
-        dragCounter.current = 0
-        setIsDragging(false)
-        Array.from(e.dataTransfer.files).forEach(onFileDrop)
-    }
+        e.preventDefault();
+        dragCounter.current = 0;
+        setIsDragging(false);
+        Array.from(e.dataTransfer.files).forEach(onFileDrop);
+    };
 
     return (
         <div
@@ -82,5 +82,5 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
                 )}
             </AnimatePresence>
         </div>
-    )
-}
+    );
+};

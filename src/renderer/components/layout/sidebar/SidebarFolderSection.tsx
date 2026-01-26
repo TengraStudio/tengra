@@ -1,8 +1,8 @@
-import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem'
-import { Folder as FolderIcon, FolderOpen, Trash2 } from 'lucide-react'
-import React from 'react'
+import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
+import { Folder as FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
+import React from 'react';
 
-import { Chat, Folder } from '@/types'
+import { Chat, Folder } from '@/types';
 
 interface SidebarFolderSectionProps {
     folder: Folder
@@ -34,7 +34,7 @@ export const SidebarFolderSection = React.memo(({
                 isCollapsed={isCollapsed}
                 actions={(
                     <button
-                        onClick={e => { e.stopPropagation(); deleteFolder(folder.id) }}
+                        onClick={e => { e.stopPropagation(); deleteFolder(folder.id); }}
                         className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground"
                     >
                         <Trash2 className="w-3 h-3" />
@@ -51,7 +51,7 @@ export const SidebarFolderSection = React.memo(({
                 </div>
             )}
         </div>
-    )
-})
+    );
+});
 
-SidebarFolderSection.displayName = 'SidebarFolderSection'
+SidebarFolderSection.displayName = 'SidebarFolderSection';

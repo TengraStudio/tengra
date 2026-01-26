@@ -64,12 +64,12 @@ export function GalleryView({ language }: GalleryViewProps) {
         <div className="h-full flex flex-col">
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                 <div className="flex items-center gap-3">
-                    <h3 className="text-white font-medium">{t('gallery.title')}</h3>
+                    <h3 className="text-foreground font-medium">{t('gallery.title')}</h3>
                     <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
                 </div>
                 <button
                     onClick={loadImages}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-foreground transition-colors"
                     title={t('gallery.refresh')}
                 >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -96,11 +96,11 @@ export function GalleryView({ language }: GalleryViewProps) {
 
                                 {/* Overlay */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                    <div className="text-xs text-white truncate font-medium mb-2">{img.name}</div>
+                                    <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
                                     <div className="flex gap-2 justify-end">
                                         <button
                                             onClick={() => handleReveal(img.path)}
-                                            className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm transition-colors"
+                                            className="p-1.5 bg-white/10 hover:bg-white/20 text-foreground rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.openLocation')}
                                         >
                                             <FolderOpen className="w-4 h-4" />

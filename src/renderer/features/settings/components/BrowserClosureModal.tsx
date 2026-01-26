@@ -1,5 +1,5 @@
-import { AlertTriangle, X } from 'lucide-react'
-import React from 'react'
+import { AlertTriangle, X } from 'lucide-react';
+import React from 'react';
 
 interface BrowserClosureModalProps {
     isOpen: boolean
@@ -9,7 +9,7 @@ interface BrowserClosureModalProps {
 }
 
 export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen, onClose, onConfirm, providerName }) => {
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -53,8 +53,8 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                     </button>
                     <button
                         onClick={() => {
-                            onConfirm()
-                            onClose()
+                            onConfirm();
+                            onClose();
                         }}
                         className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-500 hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20 transition-all"
                     >
@@ -63,5 +63,5 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,8 +1,8 @@
-import { SidebarStatusIndicator, StatusType } from '@renderer/components/layout/sidebar-components/SidebarStatusIndicator'
-import React, { useState } from 'react'
+import { SidebarStatusIndicator, StatusType } from '@renderer/components/layout/sidebar-components/SidebarStatusIndicator';
+import React, { useState } from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export interface SidebarMenuItemProps {
     /** Unique identifier */
@@ -51,14 +51,14 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
     shortcut,
     className
 }) => {
-    const [isHovered, setIsHovered] = useState(false)
+    const [isHovered, setIsHovered] = useState(false);
 
     const indentClasses = {
         0: 'pl-3',
         1: 'pl-7',
         2: 'pl-11',
         3: 'pl-14'
-    }
+    };
 
     return (
         <motion.button
@@ -143,7 +143,7 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
                 </motion.div>
             )}
         </motion.button>
-    )
-})
+    );
+});
 
-SidebarMenuItem.displayName = 'SidebarMenuItem'
+SidebarMenuItem.displayName = 'SidebarMenuItem';

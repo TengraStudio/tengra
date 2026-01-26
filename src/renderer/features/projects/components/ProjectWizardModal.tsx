@@ -1,11 +1,11 @@
-import { ArrowRight, Check, ChevronLeft, Code, Database, FolderOpen, Globe, Loader2, Plus, Server, Smartphone, Terminal } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { ArrowRight, Check, ChevronLeft, Code, Database, FolderOpen, Globe, Loader2, Plus, Server, Smartphone, Terminal } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
-import { Modal } from '@/components/ui/modal'
-import { Language, useTranslation } from '@/i18n'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { SSHFile, WorkspaceMount } from '@/types'
+import { Modal } from '@/components/ui/modal';
+import { Language, useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { SSHFile, WorkspaceMount } from '@/types';
 
 interface ProjectWizardModalProps {
     isOpen: boolean
@@ -22,19 +22,19 @@ const CATEGORIES = [
     { id: 'cli', nameKey: 'projectWizard.categories.cli', icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/10' },
     { id: 'mobile', nameKey: 'projectWizard.categories.mobile', icon: Smartphone, color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { id: 'other', nameKey: 'projectWizard.categories.other', icon: Code, color: 'text-gray-400', bg: 'bg-gray-500/10' },
-]
+];
 
 export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
-    const { t } = useTranslation(language)
-    const [step, setStep] = useState<Step>('selection')
+    const { t } = useTranslation(language);
+    const [step, setStep] = useState<Step>('selection');
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         category: 'web',
         goal: ''
-    })
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [sshForm, setSshForm] = useState({
         host: '',
@@ -44,17 +44,17 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         password: '',
         privateKey: '',
         passphrase: ''
-    })
+    });
 
-    const [sshConnectionId, setSshConnectionId] = useState<string | null>(null)
-    const [sshPath, setSshPath] = useState<string>('/')
-    const [sshFiles, setSshFiles] = useState<SSHFile[]>([])
+    const [sshConnectionId, setSshConnectionId] = useState<string | null>(null);
+    const [sshPath, setSshPath] = useState<string>('/');
+    const [sshFiles, setSshFiles] = useState<SSHFile[]>([]);
 
     // Reset state on open
     useEffect(() => {
         if (isOpen) {
-            setStep('details')
-            setFormData({ name: '', description: '', category: 'web', goal: '' })
+            setStep('details');
+            setFormData({ name: '', description: '', category: 'web', goal: '' });
             setSshForm({
                 host: '',
                 port: '22',
@@ -63,40 +63,40 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 password: '',
                 privateKey: '',
                 passphrase: ''
-            })
-            setSshConnectionId(null)
-            setSshPath('/')
-            setSshFiles([])
-            setIsLoading(false)
-            setError(null)
+            });
+            setSshConnectionId(null);
+            setSshPath('/');
+            setSshFiles([]);
+            setIsLoading(false);
+            setError(null);
         }
-    }, [isOpen])
+    }, [isOpen]);
 
     const handleImportLocal = async () => {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         try {
-            const result = await window.electron.selectDirectory()
+            const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
                 const mounts: WorkspaceMount[] = [{
                     id: `local-${Date.now()}`,
                     name: formData.name || result.path.split(/[/\\]/).pop() || 'Project',
                     type: 'local',
                     rootPath: result.path
-                }]
-                onProjectCreated(result.path, formData.name || mounts[0]?.name || '', formData.description, mounts)
-                onClose()
+                }];
+                onProjectCreated(result.path, formData.name || mounts[0]?.name || '', formData.description, mounts);
+                onClose();
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to select directory')
+            setError(err instanceof Error ? err.message : 'Failed to select directory');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleSSHConnect = async () => {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
         try {
             const result = await window.electron.ssh.connect({
                 host: sshForm.host,
@@ -105,67 +105,67 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 password: sshForm.password,
                 privateKey: sshForm.privateKey,
                 passphrase: sshForm.passphrase
-            })
+            });
 
             if (result.success && result.id) {
-                setSshConnectionId(result.id)
-                setStep('ssh-browser')
-                void loadRemoteDirectory(result.id, '/')
+                setSshConnectionId(result.id);
+                setStep('ssh-browser');
+                void loadRemoteDirectory(result.id, '/');
             } else {
-                setError(result.error || 'Failed to connect')
+                setError(result.error || 'Failed to connect');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Connection failed')
+            setError(err instanceof Error ? err.message : 'Connection failed');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const loadRemoteDirectory = async (connId: string, path: string) => {
-        setIsLoading(true)
+        setIsLoading(true);
         try {
-            const result = await window.electron.ssh.listDir(connId, path)
+            const result = await window.electron.ssh.listDir(connId, path);
             if (result.success && result.files) {
-                setSshFiles(result.files)
-                setSshPath(path)
+                setSshFiles(result.files);
+                setSshPath(path);
             } else {
-                setError(result.error || 'Failed to list directory')
+                setError(result.error || 'Failed to list directory');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to list directory')
+            setError(err instanceof Error ? err.message : 'Failed to list directory');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleCreate = async () => {
-        if (!formData.name) { return }
-        setIsLoading(true)
-        setError(null)
-        setStep('creating')
+        if (!formData.name) { return; }
+        setIsLoading(true);
+        setError(null);
+        setStep('creating');
 
         try {
-            const userData = await window.electron.getUserDataPath()
-            const projectsDir = `${userData}\\projects`
-            const projectPath = `${projectsDir}\\${formData.name.replace(/[^a-zA-Z0-9-_]/g, '-')}`
+            const userData = await window.electron.getUserDataPath();
+            const projectsDir = `${userData}\\projects`;
+            const projectPath = `${projectsDir}\\${formData.name.replace(/[^a-zA-Z0-9-_]/g, '-')}`;
 
-            await window.electron.createDirectory(projectsDir)
-            await window.electron.createDirectory(projectPath)
+            await window.electron.createDirectory(projectsDir);
+            await window.electron.createDirectory(projectPath);
 
-            const readmeContent = `# ${formData.name}\n\n${formData.description}\n`
-            await window.electron.writeFile(`${projectPath}\\README.md`, readmeContent)
+            const readmeContent = `# ${formData.name}\n\n${formData.description}\n`;
+            await window.electron.writeFile(`${projectPath}\\README.md`, readmeContent);
 
-            onProjectCreated(projectPath, formData.name, formData.description)
-            onClose()
+            onProjectCreated(projectPath, formData.name, formData.description);
+            onClose();
 
         } catch (err) {
-            console.error('Project Creation Failed:', err)
-            setError(err instanceof Error ? err.message : 'Failed to create project')
-            setStep('selection')
+            console.error('Project Creation Failed:', err);
+            setError(err instanceof Error ? err.message : 'Failed to create project');
+            setStep('selection');
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('projectWizard.title')} size="3xl">
@@ -425,7 +425,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     onChange={e => setSshPath(e.target.value)}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter' && sshConnectionId) {
-                                            void loadRemoteDirectory(sshConnectionId, sshPath)
+                                            void loadRemoteDirectory(sshConnectionId, sshPath);
                                         }
                                     }}
                                     className="flex-1 bg-transparent text-sm text-foreground focus:outline-none font-mono"
@@ -442,8 +442,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                 {sshPath !== '/' && (
                                     <button
                                         onClick={() => {
-                                            const parent = sshPath.split('/').slice(0, -1).join('/') || '/'
-                                            if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent) }
+                                            const parent = sshPath.split('/').slice(0, -1).join('/') || '/';
+                                            if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent); }
                                         }}
                                         className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
                                     >
@@ -456,8 +456,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                         key={i}
                                         onClick={() => {
                                             if (file.isDirectory && sshConnectionId) {
-                                                const newPath = sshPath === '/' ? `/${file.name}` : `${sshPath}/${file.name}`
-                                                void loadRemoteDirectory(sshConnectionId, newPath)
+                                                const newPath = sshPath === '/' ? `/${file.name}` : `${sshPath}/${file.name}`;
+                                                void loadRemoteDirectory(sshConnectionId, newPath);
                                             }
                                         }}
                                         className={cn(
@@ -503,9 +503,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                     <div className="flex justify-between items-center pt-6 border-t border-border/20 mt-auto">
                         <button
                             onClick={() => {
-                                if (step === 'selection') { setStep('details') }
-                                else if (step === 'ssh-connection') { setStep('selection') }
-                                else { onClose() }
+                                if (step === 'selection') { setStep('details'); }
+                                else if (step === 'ssh-connection') { setStep('selection'); }
+                                else { onClose(); }
                             }}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                         >
@@ -517,8 +517,8 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             {step === 'details' && (
                                 <button
                                     onClick={() => {
-                                        if (!formData.name) { return }
-                                        setStep('selection')
+                                        if (!formData.name) { return; }
+                                        setStep('selection');
                                     }}
                                     disabled={!formData.name}
                                     className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-primary/20"
@@ -532,7 +532,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                 <button
                                     onClick={handleSSHConnect}
                                     disabled={!sshForm.host || !sshForm.username || isLoading}
-                                    className="px-6 py-2.5 bg-purple-500 text-white rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-purple-500/20"
+                                    className="px-6 py-2.5 bg-purple-500 text-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-purple-500/20"
                                 >
                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                     {t('common.connect')}
@@ -556,9 +556,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                                 privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
                                                 passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
                                             }
-                                        }
-                                        onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount])
-                                        onClose()
+                                        };
+                                        onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount]);
+                                        onClose();
                                     }}
                                     className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
                                 >
@@ -571,5 +571,5 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 )}
             </div>
         </Modal>
-    )
-}
+    );
+};

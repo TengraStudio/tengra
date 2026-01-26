@@ -81,7 +81,7 @@ describe('ProxyService', () => {
             emit: vi.fn(),
         } as unknown as EventBusService;
 
-        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,

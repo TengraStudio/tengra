@@ -1,6 +1,7 @@
-import React from 'react'
-import { Play } from 'lucide-react'
-import { SettingsSectionProps } from './types'
+import { Play } from 'lucide-react';
+import React from 'react';
+
+import { SettingsSectionProps } from './types';
 
 export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -49,4 +50,4 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
             </div>
         </div>
     </div>
-)
+);

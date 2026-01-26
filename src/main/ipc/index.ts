@@ -2,6 +2,7 @@ import { registerAgentIpc } from '@main/ipc/agent';
 import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBackupIpc } from '@main/ipc/backup';
+import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
@@ -70,7 +71,7 @@ export function registerAllIpc(
 
     // UI & Navigation
     registerGalleryIpc(services.dataService.getPath('gallery'));
-    registerExportIpc(getWin);
+    registerExportIpc(services.exportService);
     registerSettingsIpc({
         settingsService: services.settingsService,
         llmService: services.llmService,
@@ -98,7 +99,13 @@ export function registerAllIpc(
     registerMetricsIpc();
 
     // AI & LLM
-    registerAuthIpc(services.proxyService, services.settingsService, services.copilotService, services.authService);
+    registerAuthIpc({
+        proxyService: services.proxyService,
+        copilotService: services.copilotService,
+        authService: services.authService,
+        getMainWindow: getWin,
+        eventBus: services.eventBusService
+    });
     registerProxyIpc(services.proxyService);
     registerProxyEmbedIpc(services.proxyService);
     registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService);
@@ -127,7 +134,7 @@ export function registerAllIpc(
     registerMultiModelIpc(services.multiModelComparisonService);
 
     // Productivity & Tools
-    registerSshIpc(getWin, services.sshService);
+    registerSshIpc(getWin, services.sshService, services.rateLimitService);
     registerProjectIpc(getWin, {
         projectService: services.projectService,
         logoService: services.logoService,
@@ -138,6 +145,7 @@ export function registerAllIpc(
     registerAgentIpc(services.agentService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
     registerMemoryIpc(services.memoryService);
+    registerBrainIpcHandlers(services.brainService);
     registerGitIpc(services.gitService);
     registerPromptTemplatesIpc(services.promptTemplatesService);
     registerHistoryIpc(services.historyImportService);

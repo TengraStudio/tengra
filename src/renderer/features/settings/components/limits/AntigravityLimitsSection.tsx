@@ -1,7 +1,7 @@
-import { Percent } from 'lucide-react'
-import React from 'react'
+import { Percent } from 'lucide-react';
+import React from 'react';
 
-import { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { ModelInfo } from '@/features/models/utils/model-fetcher';
 
 interface AntigravityLimitsSectionProps {
     antigravityModels: ModelInfo[]
@@ -26,8 +26,8 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
 
             <div className="space-y-3 max-h-96 overflow-y-auto">
                 {antigravityModels.map((model) => {
-                    const modelId = model.id ?? ''
-                    const modelLimit = antigravityLimits?.[modelId] ?? { enabled: false, percentage: 50 }
+                    const modelId = model.id ?? '';
+                    const modelLimit = antigravityLimits?.[modelId] ?? { enabled: false, percentage: 50 };
                     return (
                         <div key={modelId} className="p-3 bg-muted/10 rounded-lg border border-border/50">
                             <div className="flex items-center justify-between mb-2">
@@ -59,9 +59,9 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
                                 </div>
                             )}
                         </div>
-                    )
+                    );
                 })}
             </div>
         </div>
-    )
-}
+    );
+};

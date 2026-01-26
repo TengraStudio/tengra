@@ -1,8 +1,8 @@
-import { AlertCircle, CheckSquare, ChevronDown, ChevronRight, FileText, Plus, RefreshCw, Square } from 'lucide-react'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertCircle, CheckSquare, ChevronDown, ChevronRight, FileText, Plus, RefreshCw, Square } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface ProjectTodoTabProps {
     projectRoot: string
@@ -24,54 +24,54 @@ interface TodoFile {
     items: TodoItem[]
 }
 
-const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage', '.orbit', 'vendor']
-const TODO_FILENAMES = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md']
+const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage', '.orbit', 'vendor'];
+const TODO_FILENAMES = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md'];
 
 export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }) => {
-    const [todoFiles, setTodoFiles] = useState<TodoFile[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [isAdding, setIsAdding] = useState(false)
-    const [newTaskText, setNewTaskText] = useState('')
-    const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({})
+    const [todoFiles, setTodoFiles] = useState<TodoFile[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isAdding, setIsAdding] = useState(false);
+    const [newTaskText, setNewTaskText] = useState('');
+    const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
 
     const scanDirectory = useCallback(async (dirPath: string): Promise<string[]> => {
-        const foundFiles: string[] = []
+        const foundFiles: string[] = [];
         try {
-            const entries = await window.electron.files.listDirectory(dirPath)
-            const entryList = Array.isArray(entries) ? entries : []
+            const entries = await window.electron.files.listDirectory(dirPath);
+            const entryList = Array.isArray(entries) ? entries : [];
 
             for (const entry of entryList) {
-                if (IGNORED_FOLDERS.includes(entry.name)) { continue }
-                if (entry.name.startsWith('.')) { continue }
+                if (IGNORED_FOLDERS.includes(entry.name)) { continue; }
+                if (entry.name.startsWith('.')) { continue; }
 
-                const fullPath = `${dirPath}/${entry.name}`
+                const fullPath = `${dirPath}/${entry.name}`;
 
                 if (entry.isDirectory) {
-                    const subFiles = await scanDirectory(fullPath)
-                    foundFiles.push(...subFiles)
+                    const subFiles = await scanDirectory(fullPath);
+                    foundFiles.push(...subFiles);
                 } else if (TODO_FILENAMES.includes(entry.name.toLowerCase())) {
-                    foundFiles.push(fullPath)
+                    foundFiles.push(fullPath);
                 }
             }
         } catch (e) {
-            console.warn(`Failed to scan ${dirPath}`, e)
+            console.warn(`Failed to scan ${dirPath}`, e);
         }
-        return foundFiles
-    }, [])
+        return foundFiles;
+    }, []);
 
     const parseTodoFile = useCallback(async (filePath: string): Promise<TodoFile | null> => {
         try {
-            const content = await window.electron.files.readFile(filePath)
-            const lines = content.split('\n')
-            const items: TodoItem[] = []
-            const relativePath = filePath.replace(projectRoot, '').replace(/^[\\/]/, '')
+            const content = await window.electron.files.readFile(filePath);
+            const lines = content.split('\n');
+            const items: TodoItem[] = [];
+            const relativePath = filePath.replace(projectRoot, '').replace(/^[\\/]/, '');
 
             lines.forEach((line, index) => {
-                const trimmed = line.trim()
-                const match = trimmed.match(/^[-*+]\s*\[([ xX-])\]\s*(.*)/)
+                const trimmed = line.trim();
+                const match = trimmed.match(/^[-*+]\s*\[([ xX-])\]\s*(.*)/);
                 if (match) {
-                    const status = match[1].toLowerCase()
+                    const status = match[1].toLowerCase();
                     items.push({
                         id: `${filePath}-${index}`,
                         text: match[2].trim() || '',
@@ -79,7 +79,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                         line: index + 1,
                         filePath,
                         relativePath
-                    })
+                    });
                 } else if (trimmed.startsWith('TODO:') || trimmed.startsWith('FIXME:')) {
                     items.push({
                         id: `${filePath}-${index}`,
@@ -88,115 +88,115 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                         line: index + 1,
                         filePath,
                         relativePath
-                    })
+                    });
                 }
-            })
+            });
 
-            return { path: filePath, relativePath, items }
+            return { path: filePath, relativePath, items };
         } catch (e) {
-            console.error(`Failed to parse ${filePath}`, e)
-            return null
+            console.error(`Failed to parse ${filePath}`, e);
+            return null;
         }
-    }, [projectRoot])
+    }, [projectRoot]);
 
     const fetchTodos = useCallback(async () => {
-        if (!projectRoot) { return }
-        setLoading(true)
-        setError(null)
+        if (!projectRoot) { return; }
+        setLoading(true);
+        setError(null);
         try {
-            const files = await scanDirectory(projectRoot)
-            const results = await Promise.all(files.map(parseTodoFile))
-            const validFiles = results.filter((f): f is TodoFile => f !== null && f.items.length > 0)
+            const files = await scanDirectory(projectRoot);
+            const results = await Promise.all(files.map(parseTodoFile));
+            const validFiles = results.filter((f): f is TodoFile => f !== null && f.items.length > 0);
 
-            setTodoFiles(validFiles)
+            setTodoFiles(validFiles);
 
             // Auto expand all by default
-            const expanded: Record<string, boolean> = {}
-            validFiles.forEach(f => expanded[f.path] = true)
-            setExpandedFiles(expanded)
+            const expanded: Record<string, boolean> = {};
+            validFiles.forEach(f => expanded[f.path] = true);
+            setExpandedFiles(expanded);
 
         } catch (err) {
-            console.error('Failed to fetch todos:', err)
-            setError(err instanceof Error ? err.message : String(err))
+            console.error('Failed to fetch todos:', err);
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [projectRoot, scanDirectory, parseTodoFile])
+    }, [projectRoot, scanDirectory, parseTodoFile]);
 
     const handleToggle = async (item: TodoItem) => {
         try {
-            const content = await window.electron.files.readFile(item.filePath)
-            const lines = content.split('\n')
+            const content = await window.electron.files.readFile(item.filePath);
+            const lines = content.split('\n');
 
             // Verify line content matches to avoid drift issues
-            const targetLine = lines[item.line - 1]
+            const targetLine = lines[item.line - 1];
             if (!targetLine || (!targetLine.includes('- [ ]') && !targetLine.includes('- [x]'))) {
-                throw new Error('File content changed, please refresh')
+                throw new Error('File content changed, please refresh');
             }
 
             const newLine = item.completed
                 ? targetLine.replace('- [x]', '- [ ]')
-                : targetLine.replace('- [ ]', '- [x]')
+                : targetLine.replace('- [ ]', '- [x]');
 
-            lines[item.line - 1] = newLine
-            await window.electron.files.writeFile(item.filePath, lines.join('\n'))
+            lines[item.line - 1] = newLine;
+            await window.electron.files.writeFile(item.filePath, lines.join('\n'));
 
             // Optimistic update
             setTodoFiles(prev => prev.map(f => {
-                if (f.path !== item.filePath) { return f }
+                if (f.path !== item.filePath) { return f; }
                 return {
                     ...f,
                     items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
-                }
-            }))
+                };
+            }));
         } catch (e) {
-            setError(e instanceof Error ? e.message : String(e))
-            void fetchTodos() // Revert/Refresh on error
+            setError(e instanceof Error ? e.message : String(e));
+            void fetchTodos(); // Revert/Refresh on error
         }
-    }
+    };
 
     const handleAddTask = async () => {
-        if (!newTaskText.trim()) { return }
+        if (!newTaskText.trim()) { return; }
 
         try {
             // Default to root TODO.md
-            const targetPath = `${projectRoot}/TODO.md`
-            let content = ''
+            const targetPath = `${projectRoot}/TODO.md`;
+            let content = '';
 
             // Check if file exists
             if (await window.electron.files.exists(targetPath)) {
-                content = await window.electron.files.readFile(targetPath)
-                if (content && !content.endsWith('\n')) { content += '\n' }
+                content = await window.electron.files.readFile(targetPath);
+                if (content && !content.endsWith('\n')) { content += '\n'; }
             } else {
-                content = '# Project Tasks\n\n'
+                content = '# Project Tasks\n\n';
             }
 
-            const newTaskLine = `- [ ] ${newTaskText}`
-            const newContent = content + newTaskLine + '\n'
+            const newTaskLine = `- [ ] ${newTaskText}`;
+            const newContent = content + newTaskLine + '\n';
 
-            await window.electron.files.writeFile(targetPath, newContent)
-            setNewTaskText('')
-            setIsAdding(false)
-            await fetchTodos()
+            await window.electron.files.writeFile(targetPath, newContent);
+            setNewTaskText('');
+            setIsAdding(false);
+            await fetchTodos();
 
         } catch (e) {
-            setError(e instanceof Error ? e.message : String(e))
+            setError(e instanceof Error ? e.message : String(e));
         }
-    }
+    };
 
     useEffect(() => {
-        void fetchTodos()
-    }, [fetchTodos])
+        void fetchTodos();
+    }, [fetchTodos]);
 
     const totalStats = useMemo(() => {
-        let total = 0
-        let completed = 0
+        let total = 0;
+        let completed = 0;
         todoFiles.forEach(f => {
-            total += f.items.length
-            f.items.forEach(i => { if (i.completed) { completed++ } })
-        })
-        return { total, completed, pending: total - completed }
-    }, [todoFiles])
+            total += f.items.length;
+            f.items.forEach(i => { if (i.completed) { completed++; } });
+        });
+        return { total, completed, pending: total - completed };
+    }, [todoFiles]);
 
     if (loading && todoFiles.length === 0) {
         return (
@@ -204,7 +204,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                 <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                 {t('projectDashboard.loadingTasks') || 'Scanning for tasks...'}
             </div>
-        )
+        );
     }
 
     return (
@@ -269,7 +269,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                         autoFocus
                                         value={newTaskText}
                                         onChange={e => setNewTaskText(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') { void handleAddTask() } }}
+                                        onKeyDown={e => { if (e.key === 'Enter') { void handleAddTask(); } }}
                                         placeholder={t('projects.todoPlaceholder')}
                                         className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/50"
                                     />
@@ -298,8 +298,8 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                 ) : (
                     <div className="space-y-4">
                         {todoFiles.map(file => {
-                            const isExpanded = expandedFiles[file.path]
-                            const pendingCount = file.items.filter(i => !i.completed).length
+                            const isExpanded = expandedFiles[file.path];
+                            const pendingCount = file.items.filter(i => !i.completed).length;
 
                             return (
                                 <div key={file.path} className="space-y-2">
@@ -360,11 +360,11 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                         )}
                                     </AnimatePresence>
                                 </div>
-                            )
+                            );
                         })}
                     </div>
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

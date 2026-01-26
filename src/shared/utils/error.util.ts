@@ -1,4 +1,4 @@
-import { AppError,CatchError } from '@/types/common';
+import { AppError, CatchError } from '@/types/common';
 
 /**
  * Error handling utilities
@@ -30,14 +30,15 @@ export class OrbitError extends Error {
  * Usage: catch (e) { const msg = getErrorMessage(e) }
  */
 export function getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {return error.message;}
-    if (typeof error === 'string') {return error;}
+    if (error instanceof Error) { return error.message; }
+    if (typeof error === 'string') { return error; }
     if (error && typeof error === 'object') {
         const err = error as Record<string, unknown>;
-        if (typeof err.message === 'string') {return err.message;}
-        if (typeof err.error === 'string') {return err.error;}
-        if (err.error && typeof err.error === 'object' && typeof (err.error as Record<string, unknown>).message === 'string') {
-            return (err.error as Record<string, unknown>).message as string;
+        if (typeof err.message === 'string') { return err.message; }
+        if (typeof err.error === 'string') { return err.error; }
+        if (err.error && typeof err.error === 'object') {
+            const nestedErr = err.error as Record<string, unknown>;
+            if (typeof nestedErr.message === 'string') { return nestedErr.message; }
         }
     }
     const str = String(error);
@@ -48,12 +49,15 @@ export function getErrorMessage(error: unknown): string {
  * Normalizes any caught error into a structured AppError
  */
 export function toAppError(error: CatchError, defaultCode = 'UNKNOWN_ERROR'): AppError {
-    if (error && typeof error === 'object' && 'message' in error && 'code' in error && typeof (error as Record<string, unknown>).message === 'string') {
-        return error as AppError;
+    if (error && typeof error === 'object' && 'message' in error && 'code' in error) {
+        const err = error as Record<string, unknown>;
+        if (typeof err.message === 'string') {
+            return error as AppError;
+        }
     }
 
     const message = getErrorMessage(error);
-    const code = (error && typeof error === 'object' && 'code' in error && typeof (error as Record<string, unknown>).code === 'string')
+    const code = (error && typeof error === 'object' && 'code' in error)
         ? (error as Record<string, unknown>).code as string
         : defaultCode;
 

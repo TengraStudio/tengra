@@ -1,49 +1,49 @@
-import { AppHeader } from '@renderer/components/layout/AppHeader'
-import { CommandPalette } from '@renderer/components/layout/CommandPalette'
-import { LayoutManager } from '@renderer/components/layout/LayoutManager'
-import { QuickActionBar } from '@renderer/components/layout/QuickActionBar'
-import { Sidebar } from '@renderer/components/layout/Sidebar'
-import { UpdateNotification } from '@renderer/components/layout/UpdateNotification'
-import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal'
-import { Modal } from '@renderer/components/ui/modal'
-import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay'
-import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
-import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput'
-import { ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import { OnboardingFlow } from '@renderer/features/onboarding/OnboardingFlow'
-import { SettingsCategory } from '@renderer/features/settings/types'
-import { useAppState } from '@renderer/hooks/useAppState'
-import { AppView } from '@renderer/hooks/useAppState'
-import { useTranslation } from '@renderer/i18n'
-import { ViewManager } from '@renderer/views/ViewManager'
-import { useCallback, useState } from 'react'
+import { AppHeader } from '@renderer/components/layout/AppHeader';
+import { CommandPalette } from '@renderer/components/layout/CommandPalette';
+import { LayoutManager } from '@renderer/components/layout/LayoutManager';
+import { QuickActionBar } from '@renderer/components/layout/QuickActionBar';
+import { Sidebar } from '@renderer/components/layout/Sidebar';
+import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
+import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal';
+import { Modal } from '@renderer/components/ui/modal';
+import { AudioChatOverlay } from '@renderer/features/chat/components/AudioChatOverlay';
+import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
+import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
+import { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import { OnboardingFlow } from '@renderer/features/onboarding/OnboardingFlow';
+import { SettingsCategory } from '@renderer/features/settings/types';
+import { useAppState } from '@renderer/hooks/useAppState';
+import { AppView } from '@renderer/hooks/useAppState';
+import { useTranslation } from '@renderer/i18n';
+import { ViewManager } from '@renderer/views/ViewManager';
+import { useCallback, useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useChat } from '@/context/ChatContext'
-import { useModel } from '@/context/ModelContext'
-import { useProject } from '@/context/ProjectContext'
-import { useTheme } from '@/context/ThemeContext'
-import { AnimatePresence } from '@/lib/framer-motion-compat'
-import { Chat, Project } from '@/types'
+import { useAuth } from '@/context/AuthContext';
+import { useChat } from '@/context/ChatContext';
+import { useModel } from '@/context/ModelContext';
+import { useProject } from '@/context/ProjectContext';
+import { useTheme } from '@/context/ThemeContext';
+import { AnimatePresence } from '@/lib/framer-motion-compat';
+import { Chat, Project } from '@/types';
 
 export function AppShell() {
-    const { theme } = useTheme()
+    const { theme } = useTheme();
     const {
         language, isAuthModalOpen, setIsAuthModalOpen,
         handleAntigravityLogout, setSettingsCategory
-    } = useAuth()
+    } = useAuth();
     const {
         createNewChat, currentChatId, setCurrentChatId, chats,
         clearMessages
-    } = useChat()
+    } = useChat();
     const {
         models, loadModels, selectedModel, setSelectedModel
-    } = useModel()
-    const { projects, setSelectedProject, loadProjects } = useProject()
+    } = useModel();
+    const { projects, setSelectedProject, loadProjects } = useProject();
 
-    const { t } = useTranslation(language ?? 'en')
-    const { isListening, stopListening, startListening } = useVoiceInput(() => { })
-    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech()
+    const { t } = useTranslation(language ?? 'en');
+    const { isListening, stopListening, startListening } = useVoiceInput(() => { });
+    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
 
     const {
         currentView, setCurrentView, isSidebarCollapsed, setIsSidebarCollapsed,
@@ -53,24 +53,24 @@ export function AppShell() {
         messagesEndRef, fileInputRef, textareaRef,
         showCommandPalette, setShowCommandPalette,
         setShowSSHManager
-    } = useAppState()
+    } = useAppState();
 
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
-        return !localStorage.getItem('orbit-onboarding-complete')
-    })
+        return !localStorage.getItem('orbit-onboarding-complete');
+    });
 
     // Handle navigation to a newly created project from Ideas page
     const handleNavigateToProject = useCallback(async (projectId: string) => {
         // Reload projects to ensure the new project is in the list
-        await loadProjects()
+        await loadProjects();
         // Find and select the project
-        const project = projects.find(p => p.id === projectId)
+        const project = projects.find(p => p.id === projectId);
         if (project) {
-            setSelectedProject(project)
+            setSelectedProject(project);
         }
         // Navigate to projects view
-        setCurrentView('projects')
-    }, [loadProjects, projects, setSelectedProject, setCurrentView])
+        setCurrentView('projects');
+    }, [loadProjects, projects, setSelectedProject, setCurrentView]);
 
     const sidebar = (
         <Sidebar
@@ -79,14 +79,14 @@ export function AppShell() {
             currentView={currentView}
             onChangeView={(view) => setCurrentView(view)}
             onOpenSettings={(cat?) => {
-                setCurrentView('settings')
+                setCurrentView('settings');
                 if (cat) {
-                    setSettingsCategory(cat)
+                    setSettingsCategory(cat);
                 }
             }}
             onSearch={() => { }}
         />
-    )
+    );
 
     const main = (
         <div className="flex flex-col flex-1 h-full min-w-0 overflow-hidden relative">
@@ -103,7 +103,7 @@ export function AppShell() {
                         fileInputRef={fileInputRef}
                         textareaRef={textareaRef}
                         onScrollToBottom={() => {
-                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
                         }}
                         showScrollButton={showScrollButton}
                         setShowScrollButton={setShowScrollButton}
@@ -121,7 +121,7 @@ export function AppShell() {
                 onTranslate={() => { }}
             />
         </div>
-    )
+    );
 
     return (
         <div className={`app-container overflow-hidden h-screen w-screen flex flex-col ${theme}`}>
@@ -144,27 +144,27 @@ export function AppShell() {
                 chats={chats}
                 projects={projects}
                 onSelectChat={(id: string) => {
-                    setCurrentChatId(id)
-                    setCurrentView('chat')
+                    setCurrentChatId(id);
+                    setCurrentView('chat');
                 }}
                 onNewChat={createNewChat}
                 onSelectProject={(id: string) => {
-                    const project = projects.find(p => p.id === id) ?? null
-                    setSelectedProject(project)
-                    setCurrentView('projects')
+                    const project = projects.find(p => p.id === id) ?? null;
+                    setSelectedProject(project);
+                    setCurrentView('projects');
                 }}
                 onOpenSettings={(cat?: SettingsCategory) => {
-                    setCurrentView('settings')
+                    setCurrentView('settings');
                     if (cat) {
-                        setSettingsCategory(cat)
+                        setSettingsCategory(cat);
                     }
                 }}
                 onOpenSSHManager={() => setShowSSHManager(true)}
-                onRefreshModels={() => { void loadModels() }}
+                onRefreshModels={() => { void loadModels(); }}
                 models={models}
                 onSelectModel={(model: string) => setSelectedModel(model)}
                 selectedModel={selectedModel ?? ''}
-                onClearChat={() => { if (currentChatId) { void clearMessages() } }}
+                onClearChat={() => { if (currentChatId) { void clearMessages(); } }}
                 t={t}
                 isAuthModalOpen={isAuthModalOpen}
                 setIsAuthModalOpen={setIsAuthModalOpen}
@@ -177,7 +177,7 @@ export function AppShell() {
                 setIsOnboardingOpen={setIsOnboardingOpen}
             />
         </div>
-    )
+    );
 }
 
 interface AppOverlaysProps {
@@ -261,9 +261,9 @@ function AppOverlays({
                     <p className="text-muted-foreground">{t('auth.connectionFailed')}</p>
                     <button
                         onClick={() => {
-                            setIsAuthModalOpen(false)
-                            setCurrentView('settings')
-                            setSettingsCategory('general')
+                            setIsAuthModalOpen(false);
+                            setCurrentView('settings');
+                            setSettingsCategory('general');
                         }}
                         className="w-full py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-bold uppercase tracking-wider"
                     >
@@ -271,8 +271,8 @@ function AppOverlays({
                     </button>
                     <button
                         onClick={() => {
-                            void handleAntigravityLogout()
-                            setIsAuthModalOpen(false)
+                            void handleAntigravityLogout();
+                            setIsAuthModalOpen(false);
                         }}
                         className="w-full py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors font-bold uppercase tracking-wider"
                     >
@@ -293,5 +293,5 @@ function AppOverlays({
                 onClose={() => setIsOnboardingOpen(false)}
             />
         </>
-    )
+    );
 }

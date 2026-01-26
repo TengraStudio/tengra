@@ -1,52 +1,53 @@
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 
-import * as dotenv from 'dotenv'
+import * as dotenv from 'dotenv';
 
-dotenv.config()
+dotenv.config();
 
-import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell, Tray } from 'electron'
+import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell, Tray } from 'electron';
 
-declare const __BUILD_TIME__: string
+declare const __BUILD_TIME__: string;
 
 // Suppress Electron security warnings in development (CSP warnings due to Monaco Editor requiring unsafe-eval)
 // These warnings don't appear in packaged apps
 if (!app.isPackaged) {
-    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 }
 
 // Set the application name early - this affects Task Manager display on Windows
-app.setName('Orbit')
+app.setName('Orbit');
 
 // Increase memory limits for the Renderer process (Chromium/V8) to prevent "Oilpan: Normal allocation failed"
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
-app.commandLine.appendSwitch('disable-site-isolation-trials') // Can save memory in some cases
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
+app.commandLine.appendSwitch('disable-site-isolation-trials'); // Can save memory in some cases
 
 
 // On Windows, set the AppUserModelId for taskbar grouping and display name
 if (process.platform === 'win32') {
-    app.setAppUserModelId('com.orbit.app')
+    app.setAppUserModelId('com.orbit.app');
 }
 
-import { appLogger, LogLevel } from '@main/logging/logger'
-import { McpDispatcher } from '@main/mcp/dispatcher'
-import { SettingsService } from '@main/services/system/settings.service'
-import { registerIpcHandlers } from '@main/startup/ipc'
-import { container, createServices } from '@main/startup/services'
-import { ToolExecutor } from '@main/tools/tool-executor'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { appLogger, LogLevel } from '@main/logging/logger';
+import { McpDispatcher } from '@main/mcp/dispatcher';
+import { SettingsService } from '@main/services/system/settings.service';
+import { registerIpcHandlers } from '@main/startup/ipc';
+import { container, createServices } from '@main/startup/services';
+import { ToolExecutor } from '@main/tools/tool-executor';
+import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
-let mainWindow: BrowserWindow | null = null
-let tray: Tray | null = null
-let globalServices: Awaited<ReturnType<typeof createServices>> | null = null
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let globalServices: Awaited<ReturnType<typeof createServices>> | null = null;
 
 // eslint-disable-next-line complexity
 function createWindow(settingsService?: SettingsService): BrowserWindow {
     // Get saved window settings or use defaults
-    const settings = settingsService?.getSettings()
-    const windowSettings = settings?.window
-    const defaultWidth = 1280
-    const defaultHeight = 800
+    const settings = settingsService?.getSettings();
+    const windowSettings = settings?.window;
+    const defaultWidth = 1280;
+    const defaultHeight = 800;
 
     const win = new BrowserWindow({
         width: windowSettings?.width ?? defaultWidth,
@@ -59,15 +60,27 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, '../preload/preload.js'),
-            sandbox: false,
+            sandbox: false, // Required for some Node APIs if contextIsolation is false, but here it is true. keeping as is.
             contextIsolation: true,
             nodeIntegration: false
         }
-    })
+    });
+
+    // Security: Set Content-Security-Policy
+    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: safe-file: https: http://localhost:* ws://localhost:*; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:;"
+                ]
+            }
+        });
+    });
 
     // Apply fullscreen if saved
     if (windowSettings?.fullscreen === true) {
-        win.setFullScreen(true)
+        win.setFullScreen(true);
     }
 
     win.on('ready-to-show', () => {
@@ -76,20 +89,20 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
             settings?.window?.workAtBackground === true && app.getLoginItemSettings().wasOpenedAtLogin;
 
         if (!isHidden) {
-            win.show()
+            win.show();
         }
-        win.setTitle('ORBIT')
-    })
+        win.setTitle('ORBIT');
+    });
 
     // Save window position and size on move/resize
-    let saveTimeout: NodeJS.Timeout | null = null
+    let saveTimeout: NodeJS.Timeout | null = null;
     const saveWindowState = () => {
-        if (saveTimeout) { clearTimeout(saveTimeout) }
+        if (saveTimeout) { clearTimeout(saveTimeout); }
         saveTimeout = setTimeout(() => {
             if (settingsService && !win.isDestroyed()) {
-                const bounds = win.getBounds()
-                const isFullscreen = win.isFullScreen()
-                const currentSettings = settingsService.getSettings()
+                const bounds = win.getBounds();
+                const isFullscreen = win.isFullScreen();
+                const currentSettings = settingsService.getSettings();
                 void settingsService.saveSettings({
                     ...currentSettings,
                     window: {
@@ -100,17 +113,17 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
                         y: bounds.y,
                         fullscreen: isFullscreen
                     }
-                })
+                });
             }
-        }, 500) // Debounce saves
-    }
+        }, 500); // Debounce saves
+    };
 
-    win.on('moved', saveWindowState)
-    win.on('resized', saveWindowState)
+    win.on('moved', saveWindowState);
+    win.on('resized', saveWindowState);
     win.on('enter-full-screen', () => {
         if (settingsService) {
-            const currentSettings = settingsService.getSettings()
-            const currentWindow = currentSettings.window
+            const currentSettings = settingsService.getSettings();
+            const currentWindow = currentSettings.window;
             void settingsService.saveSettings({
                 ...currentSettings,
                 window: {
@@ -121,13 +134,13 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
                     ...currentWindow,
                     fullscreen: true
                 }
-            })
+            });
         }
-    })
+    });
     win.on('leave-full-screen', () => {
         if (settingsService) {
-            const currentSettings = settingsService.getSettings()
-            const currentWindow = currentSettings.window
+            const currentSettings = settingsService.getSettings();
+            const currentWindow = currentSettings.window;
             void settingsService.saveSettings({
                 ...currentSettings,
                 window: {
@@ -138,117 +151,121 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
                     ...currentWindow,
                     fullscreen: false
                 }
-            })
+            });
         }
-    })
+    });
 
     win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-        const levels = ['debug', 'info', 'warn', 'error']
-        const lvl = levels[level] as 'debug' | 'info' | 'warn' | 'error'
-        const context = `renderer:${path.basename(sourceId)}:${line} `
-        appLogger[lvl](context, message)
-    })
+        const levels = ['debug', 'info', 'warn', 'error'];
+        const lvl = levels[level] as 'debug' | 'info' | 'warn' | 'error';
+        const context = `renderer:${path.basename(sourceId)}:${line} `;
+        appLogger[lvl](context, message);
+    });
 
     win.webContents.setWindowOpenHandler((details: HandlerDetails) => {
-        void shell.openExternal(details.url)
-        return { action: 'deny' }
-    })
+        void shell.openExternal(details.url);
+        return { action: 'deny' };
+    });
 
     if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-        void win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+        void win.loadURL(process.env['ELECTRON_RENDERER_URL']);
     } else {
-        void win.loadFile(path.join(__dirname, '../renderer/index.html'))
+        void win.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
 
-    return win
+    return win;
 }
 
 // Guard for when running in Node.js context during build (vite-plugin-electron)
 if (typeof protocol.registerSchemesAsPrivileged === 'function') {
     protocol.registerSchemesAsPrivileged([
         { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
-    ])
+    ]);
 }
 
 // eslint-disable-next-line max-lines-per-function, complexity
 app.whenReady().then(async () => {
-    app.setAppUserModelId('Orbit')
-    app.name = 'Orbit'
+    app.setAppUserModelId('Orbit');
+    app.name = 'Orbit';
 
     // Isolate Electron runtime folders to a subfolder
-    const runtimePath = path.join(app.getPath('appData'), 'Orbit', 'runtime')
-    app.setPath('userData', runtimePath)
+    const runtimePath = path.join(app.getPath('appData'), 'Orbit', 'runtime');
+    app.setPath('userData', runtimePath);
 
     // Initialize Logger
-    appLogger.setLevel(LogLevel.DEBUG)
-    appLogger.installConsoleRedirect()
+    appLogger.setLevel(LogLevel.DEBUG);
+    appLogger.installConsoleRedirect();
 
-    appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']} `)
-    appLogger.info('Startup', `app.isPackaged: ${app.isPackaged} `)
-    appLogger.info('Startup', `Build Time: ${typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'N/A'} `)
-    appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'} `)
+    // Validate environment variables
+    appLogger.info('Startup', 'Validating environment variables...');
+    validateEnvironmentVariables();
+
+    appLogger.info('Startup', `ELECTRON_RENDERER_URL: ${process.env['ELECTRON_RENDERER_URL']} `);
+    appLogger.info('Startup', `app.isPackaged: ${app.isPackaged} `);
+    appLogger.info('Startup', `Build Time: ${typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'N/A'} `);
+    appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'} `);
 
     // Migration from orbit-ai to Orbit
-    const oldPath = path.join(app.getPath('appData'), 'orbit-ai')
-    const newPath = app.getPath('userData') // This should now point to Orbit due to app.name change
+    const oldPath = path.join(app.getPath('appData'), 'orbit-ai');
+    const newPath = app.getPath('userData'); // This should now point to Orbit due to app.name change
 
     if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
         try {
-            appLogger.info('Main', `Migrating AppData from ${oldPath} to ${newPath} `)
-            fs.renameSync(oldPath, newPath)
+            appLogger.info('Main', `Migrating AppData from ${oldPath} to ${newPath} `);
+            fs.renameSync(oldPath, newPath);
         } catch (e) {
-            appLogger.error('Main', `Failed to migrate AppData folder: ${e} `)
+            appLogger.error('Main', `Failed to migrate AppData folder: ${e} `);
         }
     }
 
     // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
     // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
-    const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery')
-    const orbitRoaming = path.join(app.getPath('appData'), 'Orbit')
-    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, orbitRoaming])
+    const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery');
+    const orbitRoaming = path.join(app.getPath('appData'), 'Orbit');
+    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, orbitRoaming]);
 
     protocol.registerFileProtocol('safe-file', (request, callback) => {
-        let url = request.url.replace('safe-file://', '')
+        let url = request.url.replace('safe-file://', '');
 
         // Handle Windows drive letters (e.g., /C:/Users -> C:/Users)
         if (process.platform === 'win32') {
             if (/^\/[a-zA-Z]:/.test(url)) {
-                url = url.slice(1)
+                url = url.slice(1);
             } else if (/^[a-zA-Z]\//.test(url)) {
-                url = url.substring(0, 1) + ':' + url.substring(1)
+                url = url.substring(0, 1) + ':' + url.substring(1);
             }
         }
 
-        const decoded = decodeURIComponent(url)
-        const absolutePath = path.resolve(decoded)
+        const decoded = decodeURIComponent(url);
+        const absolutePath = path.resolve(decoded);
 
         // Security check: Must be in allowed roots
-        const isWindows = process.platform === 'win32'
+        const isWindows = process.platform === 'win32';
         const allowed = Array.from(allowedFileRoots).some(root => {
-            const resolvedRoot = path.resolve(root)
+            const resolvedRoot = path.resolve(root);
             if (isWindows) {
-                return absolutePath.toLowerCase().startsWith(resolvedRoot.toLowerCase())
+                return absolutePath.toLowerCase().startsWith(resolvedRoot.toLowerCase());
             }
-            return absolutePath.startsWith(resolvedRoot)
-        })
+            return absolutePath.startsWith(resolvedRoot);
+        });
         if (!allowed) {
-            appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath} `)
-            return callback({ error: -6 }) // NET_ERROR(FILE_NOT_FOUND) or similar
+            appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath} `);
+            return callback({ error: -6 }); // NET_ERROR(FILE_NOT_FOUND) or similar
         }
 
         try {
-            return callback(absolutePath)
+            return callback(absolutePath);
         } catch (error) {
-            appLogger.error('Main', `SAFE-FILE protocol error: ${error}`)
+            appLogger.error('Main', `SAFE-FILE protocol error: ${error}`);
         }
-    })
+    });
 
     let services;
     try {
-        services = await createServices(allowedFileRoots)
-        appLogger.info('Main', 'createServices completed')
+        services = await createServices(allowedFileRoots);
+        appLogger.info('Main', 'createServices completed');
     } catch (e) {
-        appLogger.error('Main', `Critical error during service creation: ${e}`)
+        appLogger.error('Main', `Critical error during service creation: ${e}`);
         // Try to recover or exit gracefully? For now, let's allow it to fall through 
         // effectively continuing with undefined services, which will likely crash later 
         // BUT we might get some UI or logs. 
@@ -264,35 +281,35 @@ app.whenReady().then(async () => {
         throw e;
     }
 
-    appLogger.info('Main', 'Starting Database initialization...')
+    appLogger.info('Main', 'Starting Database initialization...');
     await services.databaseService.initialize()
         .then(() => appLogger.info('Main', 'Database initialization completed'))
         .catch(e => {
-            appLogger.error('Main', `Failed to initialize database service: ${e}`)
-            throw e // Critical failure
-        })
+            appLogger.error('Main', `Failed to initialize database service: ${e}`);
+            throw e; // Critical failure
+        });
 
     // Debug: Check what tokens are available (Now safe to call)
     {
         const accounts = await services.authService.getAllAccountsFull();
-        appLogger.debug('Main', `AuthService identified ${accounts.length} accounts at startup. Providers: ${JSON.stringify(accounts.map(a => a.provider))}`)
+        appLogger.debug('Main', `AuthService identified ${accounts.length} accounts at startup. Providers: ${JSON.stringify(accounts.map(a => a.provider))}`);
         const copilot = accounts.find(a => a.provider === 'copilot_token' || a.provider === 'copilot');
         if (copilot?.accessToken) {
-            appLogger.debug('Main', `copilot account found in AuthService, token length: ${copilot.accessToken.length}`)
+            appLogger.debug('Main', `copilot account found in AuthService, token length: ${copilot.accessToken.length}`);
         }
         const github = accounts.find(a => a.provider === 'github_token' || a.provider === 'github');
         if (github?.accessToken) {
-            appLogger.debug('Main', `github account found in AuthService, token length: ${github.accessToken.length}`)
+            appLogger.debug('Main', `github account found in AuthService, token length: ${github.accessToken.length}`);
         }
     }
 
-    appLogger.info('Main', 'Starting Proxy initialization...')
+    appLogger.info('Main', 'Starting Proxy initialization...');
     services.proxyService.startEmbeddedProxy()
         .then(() => appLogger.info('Main', 'Proxy initialization completed'))
-        .catch(e => appLogger.error('Main', `Failed to start embedded proxy: ${e}`))
+        .catch(e => appLogger.error('Main', `Failed to start embedded proxy: ${e}`));
 
-    appLogger.info('Main', 'Initializing ToolExecutor...')
-    const mcpDispatcher = new McpDispatcher([], services.settingsService)
+    appLogger.info('Main', 'Initializing ToolExecutor...');
+    const mcpDispatcher = new McpDispatcher([], services.settingsService);
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
@@ -317,48 +334,48 @@ app.whenReady().then(async () => {
         llm: services.llmService,
         memory: services.memoryService,
         pageSpeed: services.pageSpeedService
-    })
-    appLogger.info('Main', 'ToolExecutor initialized')
+    });
+    appLogger.info('Main', 'ToolExecutor initialized');
 
     // Register all IPC handlers BEFORE creating window to prevent race conditions
     // registerWindowIpc(() => mainWindow) // This will be handled by registerIpcHandlers
-    appLogger.info('Main', 'Window IPC registered')
+    appLogger.info('Main', 'Window IPC registered');
 
 
 
 
 
     // Register all IPC handlers
-    registerIpcHandlers(services, toolExecutor, () => mainWindow, allowedFileRoots, mcpDispatcher)
-    appLogger.info('Main', 'All IPC handlers registered')
+    registerIpcHandlers(services, toolExecutor, () => mainWindow, allowedFileRoots, mcpDispatcher);
+    appLogger.info('Main', 'All IPC handlers registered');
 
     // Store services for use in event handlers
-    globalServices = services
+    globalServices = services;
 
     // Cookie Interceptor removed as requested
 
 
     // Configure auto-start on boot
-    const settings = services.settingsService.getSettings()
+    const settings = services.settingsService.getSettings();
     if (settings.window?.startOnStartup !== undefined) {
         app.setLoginItemSettings({
             openAtLogin: settings.window.startOnStartup,
             openAsHidden: settings.window.workAtBackground ?? false
-        })
+        });
     }
 
     // Setup system tray if workAtBackground is enabled
     if (settings.window?.workAtBackground) {
-        setupTray()
+        setupTray();
     }
 
     // NOW create window after all handlers are registered
-    appLogger.info('Main', 'Creating window...')
+    appLogger.info('Main', 'Creating window...');
     try {
-        mainWindow = createWindow(services.settingsService)
-        appLogger.info('Main', 'Window created')
+        mainWindow = createWindow(services.settingsService);
+        appLogger.info('Main', 'Window created');
     } catch (e) {
-        appLogger.error('Main', `Failed to create window: ${e}`)
+        appLogger.error('Main', `Failed to create window: ${e}`);
     }
 
     // Initialize Services
@@ -371,26 +388,26 @@ app.whenReady().then(async () => {
 
     // Auto-start Ollama
     try {
-        const { startOllama } = await import('@main/startup/ollama')
-        appLogger.info('Main', 'Initiating Ollama auto-start...')
+        const { startOllama } = await import('@main/startup/ollama');
+        appLogger.info('Main', 'Initiating Ollama auto-start...');
         // Don't await this to avoid blocking startup
         void startOllama(() => mainWindow, false).catch(err => {
-            appLogger.error('Main', `Ollama auto-start failed: ${err}`)
-        })
+            appLogger.error('Main', `Ollama auto-start failed: ${err}`);
+        });
     } catch (e) {
-        appLogger.error('Main', `Failed to import startOllama: ${e}`)
+        appLogger.error('Main', `Failed to import startOllama: ${e}`);
     }
 
     // Initialize Auto-Updater
     if (mainWindow) {
-        services.updateService.init(mainWindow)
+        services.updateService.init(mainWindow);
     } else {
-        appLogger.error('Main', 'MainWindow is null, skipping updateService init')
+        appLogger.error('Main', 'MainWindow is null, skipping updateService init');
     }
 
     // Initialize Crash Reporting
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    services.sentryService.init()
+    services.sentryService.init();
 
 
 
@@ -398,135 +415,135 @@ app.whenReady().then(async () => {
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             if (globalServices) {
-                mainWindow = createWindow(globalServices.settingsService)
+                mainWindow = createWindow(globalServices.settingsService);
             } else {
-                mainWindow = createWindow()
+                mainWindow = createWindow();
             }
         } else if (mainWindow) {
-            mainWindow.show()
+            mainWindow.show();
         }
-    })
+    });
 }).catch(e => {
-    appLogger.error('Main', `Failed to start application: ${e}`)
-    app.exit(1)
-})
+    appLogger.error('Main', `Failed to start application: ${e}`);
+    app.exit(1);
+});
 
 function setupTray() {
-    if (tray) { return } // Already set up
+    if (tray) { return; } // Already set up
 
     try {
         // Create a simple icon (you can replace this with an actual icon file)
-        const icon = nativeImage.createEmpty()
+        const icon = nativeImage.createEmpty();
         // For now, use a simple approach - you may want to load an actual icon file
         // const iconPath = path.join(process.cwd(), 'src/renderer/assets/logo.png')
         // const icon = nativeImage.createFromPath(iconPath)
 
-        tray = new Tray(icon)
+        tray = new Tray(icon);
 
         const contextMenu = Menu.buildFromTemplate([
             {
                 label: 'Show Orbit',
                 click: () => {
                     if (mainWindow) {
-                        mainWindow.show()
-                        mainWindow.focus()
+                        mainWindow.show();
+                        mainWindow.focus();
                     } else if (globalServices) {
-                        mainWindow = createWindow(globalServices.settingsService)
+                        mainWindow = createWindow(globalServices.settingsService);
                     }
                 }
             },
             {
                 label: 'Quit',
                 click: () => {
-                    app.quit()
+                    app.quit();
                 }
             }
-        ])
+        ]);
 
-        tray.setToolTip('Orbit')
-        tray.setContextMenu(contextMenu)
+        tray.setToolTip('Orbit');
+        tray.setContextMenu(contextMenu);
 
         tray.on('click', () => {
             if (mainWindow) {
                 if (mainWindow.isVisible()) {
-                    mainWindow.hide()
+                    mainWindow.hide();
                 } else {
-                    mainWindow.show()
-                    mainWindow.focus()
+                    mainWindow.show();
+                    mainWindow.focus();
                 }
             } else if (globalServices) {
-                mainWindow = createWindow(globalServices.settingsService)
+                mainWindow = createWindow(globalServices.settingsService);
             }
-        })
+        });
     } catch (error) {
-        appLogger.error('Main', `Failed to setup tray: ${error} `)
+        appLogger.error('Main', `Failed to setup tray: ${error} `);
     }
 }
 
 app.on('window-all-closed', () => {
-    if (!globalServices) { return }
+    if (!globalServices) { return; }
 
-    const settings = globalServices.settingsService.getSettings()
+    const settings = globalServices.settingsService.getSettings();
     // If workAtBackground is enabled, don't quit - keep app running in background
     if (settings.window?.workAtBackground) {
         // Hide window instead of closing
         if (mainWindow) {
-            mainWindow.hide()
+            mainWindow.hide();
         }
         // Ensure tray is visible
         if (!tray) {
-            setupTray()
+            setupTray();
         }
-        return
+        return;
     }
 
     if (process.platform !== 'darwin') {
-        app.quit()
+        app.quit();
     }
-})
+});
 
 // Cleanup on app quit - prevent memory leaks
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 app.on('before-quit', async (event) => {
-    appLogger.info('Main', 'Application shutdown initiated')
+    appLogger.info('Main', 'Application shutdown initiated');
 
     // Prevent default quit to allow cleanup
-    event.preventDefault()
+    event.preventDefault();
 
     try {
         // Close all windows gracefully
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.removeAllListeners('close')
-            mainWindow.close()
+            mainWindow.removeAllListeners('close');
+            mainWindow.close();
         }
 
         // Cleanup services
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (container) {
-            appLogger.info('Main', 'Disposing service container (native services will persist)...')
+            appLogger.info('Main', 'Disposing service container (native services will persist)...');
             try {
                 // container.dispose() often kills processes, but we want them to persist.
                 // Our ProcessManagerService.killAll() is now a no-op for native services.
-                await container.dispose()
-                appLogger.info('Main', 'Service container disposed successfully')
+                await container.dispose();
+                appLogger.info('Main', 'Service container disposed successfully');
             } catch (e) {
-                appLogger.error('Main', `Failed to dispose container: ${getErrorMessage(e)} `)
+                appLogger.error('Main', `Failed to dispose container: ${getErrorMessage(e)} `);
             }
         }
         if (tray) {
-            tray.destroy()
-            tray = null
+            tray.destroy();
+            tray = null;
         }
 
-        appLogger.info('Main', 'Cleanup completed, quitting application')
+        appLogger.info('Main', 'Cleanup completed, quitting application');
 
         // Now actually quit
-        app.exit(0)
+        app.exit(0);
 
     } catch (e) {
-        appLogger.error('Main', `Cleanup error: ${e}`)
+        appLogger.error('Main', `Cleanup error: ${e}`);
         // Force quit even if cleanup fails
-        app.exit(1)
+        app.exit(1);
     }
-}) as unknown as (event: Event) => void
+}) as unknown as (event: Event) => void;
 

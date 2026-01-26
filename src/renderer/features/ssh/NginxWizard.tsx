@@ -1,7 +1,7 @@
-import { Globe, Loader2, Play, Save, Server, ShieldCheck } from 'lucide-react'
-import React, { useState } from 'react'
+import { Globe, Loader2, Play, Save, Server, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n';
 
 interface NginxWizardProps {
     connectionId: string
@@ -9,12 +9,12 @@ interface NginxWizardProps {
 }
 
 export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language }) => {
-    const { t } = useTranslation(language)
-    const [domain, setDomain] = useState('')
-    const [backendPort, setBackendPort] = useState('3000')
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [config, setConfig] = useState('')
-    const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+    const { t } = useTranslation(language);
+    const [domain, setDomain] = useState('');
+    const [backendPort, setBackendPort] = useState('3000');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [config, setConfig] = useState('');
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
     const generateConfig = () => {
         const conf = `server {
@@ -29,44 +29,44 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
-}`
-        setConfig(conf)
-    }
+}`;
+        setConfig(conf);
+    };
 
     const handleApply = async () => {
         if (!domain) {
-            setStatus({ type: 'error', message: t('ssh.nginx.status.domainRequired') })
-            return
+            setStatus({ type: 'error', message: t('ssh.nginx.status.domainRequired') });
+            return;
         }
 
-        setIsGenerating(true)
-        setStatus({ type: 'info', message: t('ssh.nginx.status.connecting') })
+        setIsGenerating(true);
+        setStatus({ type: 'info', message: t('ssh.nginx.status.connecting') });
 
         try {
-            const fileName = domain.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-            const remotePath = `/etc/nginx/sites-available/${fileName}`
+            const fileName = domain.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const remotePath = `/etc/nginx/sites-available/${fileName}`;
 
             // Step 1: Write to temp file first (since /etc/nginx is likely protected)
-            const tempPath = `/tmp/orbit_nginx_${fileName}`
-            await window.electron.ssh.writeFile(connectionId, tempPath, config)
+            const tempPath = `/tmp/orbit_nginx_${fileName}`;
+            await window.electron.ssh.writeFile(connectionId, tempPath, config);
 
             // Step 2: Try to move with sudo (User will see errors if they don't have sudo or if it fails)
-            setStatus({ type: 'info', message: t('ssh.nginx.status.moving') })
-            const moveCmd = `sudo mv ${tempPath} ${remotePath} && sudo ln -sf ${remotePath} /etc/nginx/sites-enabled/ && sudo nginx -t && sudo systemctl reload nginx`
+            setStatus({ type: 'info', message: t('ssh.nginx.status.moving') });
+            const moveCmd = `sudo mv ${tempPath} ${remotePath} && sudo ln -sf ${remotePath} /etc/nginx/sites-enabled/ && sudo nginx -t && sudo systemctl reload nginx`;
 
-            const result = await window.electron.ssh.execute(connectionId, moveCmd)
+            const result = await window.electron.ssh.execute(connectionId, moveCmd);
 
             if (result.code === 0) {
-                setStatus({ type: 'success', message: t('ssh.nginx.status.success') })
+                setStatus({ type: 'success', message: t('ssh.nginx.status.success') });
             } else {
-                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr || 'Unknown error' }) })
+                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr || 'Unknown error' }) });
             }
         } catch (error) {
-            setStatus({ type: 'error', message: `${t('common.error')}: ${error instanceof Error ? error.message : String(error)}` })
+            setStatus({ type: 'error', message: `${t('common.error')}: ${error instanceof Error ? error.message : String(error)}` });
         } finally {
-            setIsGenerating(false)
+            setIsGenerating(false);
         }
-    }
+    };
 
     return (
         <div className="flex flex-col h-full bg-background p-6 overflow-y-auto">
@@ -144,5 +144,5 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

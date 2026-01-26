@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface SSHLogsProps {
     connectionId: string
@@ -6,49 +6,49 @@ interface SSHLogsProps {
 }
 
 export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
-    const [logFiles, setLogFiles] = useState<string[]>([])
-    const [selectedLog, setSelectedLog] = useState<string | null>(null)
-    const [content, setContent] = useState('')
-    const [loading, setLoading] = useState(false)
+    const [logFiles, setLogFiles] = useState<string[]>([]);
+    const [selectedLog, setSelectedLog] = useState<string | null>(null);
+    const [content, setContent] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const loadFiles = useCallback(async () => {
-        const files = await window.electron.ssh.getLogFiles(connectionId)
-        setLogFiles(files)
+        const files = await window.electron.ssh.getLogFiles(connectionId);
+        setLogFiles(files);
         if (files.length > 0 && !selectedLog) {
-            const firstFile = files[0]
+            const firstFile = files[0];
             if (firstFile !== undefined) {
-                setSelectedLog(firstFile)
-                setLoading(true)
+                setSelectedLog(firstFile);
+                setLoading(true);
                 try {
-                    const data = await window.electron.ssh.readLogFile(connectionId, firstFile, 100)
-                    setContent(data)
+                    const data = await window.electron.ssh.readLogFile(connectionId, firstFile, 100);
+                    setContent(data);
                 } finally {
-                    setLoading(false)
+                    setLoading(false);
                 }
             }
         }
-    }, [connectionId, selectedLog])
+    }, [connectionId, selectedLog]);
 
     useEffect(() => {
         if (active && logFiles.length === 0) {
-            void loadFiles()
+            void loadFiles();
         }
-    }, [active, logFiles.length, loadFiles])
+    }, [active, logFiles.length, loadFiles]);
 
     const selectLog = async (path: string) => {
-        setSelectedLog(path)
-        setLoading(true)
+        setSelectedLog(path);
+        setLoading(true);
         try {
-            const data = await window.electron.ssh.readLogFile(connectionId, path, 100)
-            setContent(data)
+            const data = await window.electron.ssh.readLogFile(connectionId, path, 100);
+            setContent(data);
         } catch {
-            setContent('Failed to read log file (Permissions denied or empty).')
+            setContent('Failed to read log file (Permissions denied or empty).');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
-    if (!active) { return null }
+    if (!active) { return null; }
 
     return (
         <div className="flex h-full">
@@ -82,5 +82,5 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
                 </pre>
             </div>
         </div>
-    )
-}
+    );
+};

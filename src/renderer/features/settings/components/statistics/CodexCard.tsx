@@ -1,14 +1,14 @@
-import { Activity } from 'lucide-react'
-import React from 'react'
+import { Activity } from 'lucide-react';
+import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatReset } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
-import { CodexUsage } from '@/types/quota'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatReset } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import { CodexUsage } from '@/types/quota';
 
-import { AccountWrapper } from '../../types'
+import { AccountWrapper } from '../../types';
 
-import { QuotaRing } from './QuotaRing'
+import { QuotaRing } from './QuotaRing';
 
 interface CodexCardProps {
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
@@ -16,7 +16,7 @@ interface CodexCardProps {
 }
 
 export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-US' }) => {
-    if (!codexUsage?.accounts || codexUsage.accounts.length === 0) { return null }
+    if (!codexUsage?.accounts || codexUsage.accounts.length === 0) { return null; }
 
     return (
         <Card className="border-border/40 bg-card backdrop-blur-md overflow-hidden relative group">
@@ -37,9 +37,9 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                     Error: {acc.error}
                                 </div>
                             </div>
-                        )
+                        );
                     }
-                    const usage = acc.usage || {}
+                    const usage = acc.usage || {};
                     return (
                         <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/50")}>
                             <div className="text-xs font-black text-blue-400/80 uppercase tracking-widest">{acc.email || 'Codex Account'}</div>
@@ -62,9 +62,9 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                 </div>
                             </div>
                         </div>
-                    )
+                    );
                 })}
             </CardContent>
         </Card>
-    )
-}
+    );
+};

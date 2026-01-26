@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { ToolResult } from '@/types'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { ToolResult } from '@/types';
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -29,24 +29,24 @@ export function TerminalView({
     expanded,
     onToggleExpand
 }: TerminalViewProps) {
-    const { t } = useTranslation()
-    const [showMarkdown, setShowMarkdown] = useState(false)
+    const { t } = useTranslation();
+    const [showMarkdown, setShowMarkdown] = useState(false);
 
-    const resultData = result?.result as CommandExecutionResult | undefined
-    const stdout = resultData?.stdout
-    const stderr = resultData?.stderr
-    const error = resultData?.error
+    const resultData = result?.result as CommandExecutionResult | undefined;
+    const stdout = resultData?.stdout;
+    const stderr = resultData?.stderr;
+    const error = resultData?.error;
 
-    const outputText = [stdout, stderr, error].filter(Boolean).join('\n')
-    const preview = outputText ? outputText.split('\n').slice(0, 6).join('\n') : ''
-    const hasOutput = Boolean(outputText)
+    const outputText = [stdout, stderr, error].filter(Boolean).join('\n');
+    const preview = outputText ? outputText.split('\n').slice(0, 6).join('\n') : '';
+    const hasOutput = Boolean(outputText);
 
-    const statusLabel = isExecuting ? t('tools.running') : (error || stderr ? t('tools.error') : t('tools.completed'))
+    const statusLabel = isExecuting ? t('tools.running') : (error || stderr ? t('tools.error') : t('tools.completed'));
     const statusClass = error || stderr
         ? 'bg-red-500/10 text-red-400 border-red-500/20'
         : isExecuting
             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-            : 'bg-muted/20 text-muted-foreground border-border/50'
+            : 'bg-muted/20 text-muted-foreground border-border/50';
 
     return (
         <div className="my-3 animate-in fade-in slide-in-from-bottom-1 duration-500">
@@ -91,8 +91,8 @@ export function TerminalView({
                         {hasOutput && (
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    setShowMarkdown(!showMarkdown)
+                                    e.stopPropagation();
+                                    setShowMarkdown(!showMarkdown);
                                 }}
                                 className="text-xs bg-background/50 text-muted-foreground hover:bg-background/80 px-2 py-0.5 rounded border border-border transition-colors uppercase tracking-wider font-bold mr-2"
                                 title={t('toolDisplay.markdownView')}
@@ -104,11 +104,11 @@ export function TerminalView({
                         {isExecuting && (
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation()
+                                    e.stopPropagation();
                                     void (async () => {
-                                        const success = await window.electron.killTool(toolCallId)
-                                        if (success) { console.warn("Process killed") }
-                                    })()
+                                        const success = await window.electron.killTool(toolCallId);
+                                        if (success) { console.warn("Process killed"); }
+                                    })();
                                 }}
                                 className="text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors uppercase tracking-wider font-bold"
                                 title={t('tools.forceStop')}
@@ -184,5 +184,5 @@ export function TerminalView({
                 </div>
             )}
         </div>
-    )
+    );
 }

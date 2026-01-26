@@ -137,10 +137,10 @@ export class ModelAnalyticsService extends BaseService {
         // Daily usage
         const dailyMap = new Map<string, { requests: number; tokens: number; cost: number }>();
         filteredRecords.forEach(r => {
-            const dateParts = new Date(r.timestamp).toISOString().split('T')
-            const date = dateParts[0]
+            const dateParts = new Date(r.timestamp).toISOString().split('T');
+            const date = dateParts[0];
             if (!date) {
-                return
+                return;
             }
             const existing = dailyMap.get(date) ?? { requests: 0, tokens: 0, cost: 0 };
             dailyMap.set(date, {

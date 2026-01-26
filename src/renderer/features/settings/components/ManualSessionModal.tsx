@@ -1,9 +1,9 @@
-import { AlertCircle, Check, ExternalLink, Key, Loader2, ShieldCheck } from 'lucide-react'
-import React, { useCallback, useState } from 'react'
+import { useTranslation } from '@renderer/i18n';
+import { AlertCircle, Check, ExternalLink, Key, Loader2, ShieldCheck } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 
-import { Modal } from '@/components/ui/modal'
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@renderer/i18n'
+import { Modal } from '@/components/ui/modal';
+import { cn } from '@/lib/utils';
 
 export interface ManualSessionModalState {
     isOpen: boolean
@@ -27,49 +27,49 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
     email,
     accountId
 }) => {
-    const { t } = useTranslation()
-    const [sessionKey, setSessionKey] = useState('')
-    const [isSaving, setIsSaving] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState(false)
+    const { t } = useTranslation();
+    const [sessionKey, setSessionKey] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
     const handleSave = useCallback(async () => {
         if (!sessionKey.trim()) {
-            setError(t('auth.enterSessionKey'))
-            return
+            setError(t('auth.enterSessionKey'));
+            return;
         }
 
         if (!sessionKey.startsWith('sk-ant-sid')) {
-            setError(t('auth.invalidSessionFormat'))
-            return
+            setError(t('auth.invalidSessionFormat'));
+            return;
         }
 
-        setIsSaving(true)
-        setError(null)
+        setIsSaving(true);
+        setError(null);
 
         try {
-            const result = await onSave(sessionKey.trim(), accountId)
+            const result = await onSave(sessionKey.trim(), accountId);
             if (result.success) {
-                setSuccess(true)
+                setSuccess(true);
                 setTimeout(() => {
-                    onClose()
+                    onClose();
                     // Reset state after closing
-                    setSuccess(false)
-                    setSessionKey('')
-                }, 1500)
+                    setSuccess(false);
+                    setSessionKey('');
+                }, 1500);
             } else {
-                setError(result.error ?? 'Failed to save session key')
+                setError(result.error ?? 'Failed to save session key');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
-            setIsSaving(false)
+            setIsSaving(false);
         }
-    }, [sessionKey, onSave, onClose, accountId])
+    }, [sessionKey, onSave, onClose, accountId]);
 
     const handleOpenClaude = useCallback(() => {
-        window.electron.openExternal('https://claude.ai')
-    }, [])
+        window.electron.openExternal('https://claude.ai');
+    }, []);
 
     return (
         <Modal
@@ -156,7 +156,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         className={cn(
                             "flex-[2] px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/10",
                             success
-                                ? "bg-emerald-500 text-white shadow-emerald-500/20"
+                                ? "bg-emerald-500 text-foreground shadow-emerald-500/20"
                                 : "bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:grayscale"
                         )}
                     >
@@ -174,5 +174,5 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                 </div>
             </div>
         </Modal>
-    )
-}
+    );
+};

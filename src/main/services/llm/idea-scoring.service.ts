@@ -1,10 +1,10 @@
-import { BaseService } from '@main/services/base.service'
-import { LLMService } from '@main/services/llm/llm.service'
-import { Message } from '@shared/types/chat'
-import { IdeaCategory, ProjectIdea } from '@shared/types/ideas'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { v4 as uuidv4 } from 'uuid'
+import { BaseService } from '@main/services/base.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { Message } from '@shared/types/chat';
+import { IdeaCategory, ProjectIdea } from '@shared/types/ideas';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Detailed idea score breakdown
@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid'
 export interface IdeaScoreBreakdown {
     /** Overall score 0-100 */
     overallScore: number
-    
+
     /** Individual dimension scores */
     dimensions: {
         /** How innovative and unique is this idea? */
@@ -28,19 +28,19 @@ export interface IdeaScoreBreakdown {
         /** How defensible/competitive is the moat? */
         competitiveMoat: number
     }
-    
+
     /** Key strengths identified */
     strengths: string[]
-    
+
     /** Key weaknesses identified */
     weaknesses: string[]
-    
+
     /** Suggestions for improvement */
     improvements: string[]
-    
+
     /** Confidence in the scoring */
     confidence: 'high' | 'medium' | 'low'
-    
+
     /** Brief summary explanation */
     summary: string
 }
@@ -55,7 +55,7 @@ export interface IdeaComparison {
     recommendation: string
 }
 
-const CURRENT_YEAR = new Date().getFullYear()
+const CURRENT_YEAR = new Date().getFullYear();
 
 /**
  * Idea Scoring Service
@@ -66,7 +66,7 @@ export class IdeaScoringService extends BaseService {
     private initialized = false;
 
     constructor(private llmService: LLMService) {
-        super('IdeaScoringService')
+        super('IdeaScoringService');
     }
 
     /**
@@ -74,11 +74,11 @@ export class IdeaScoringService extends BaseService {
      */
     async initialize(): Promise<void> {
         this.logInfo('Initializing idea scoring service...');
-        
+
         // Clear any existing cache
         this.scoringCache.clear();
         this.initialized = true;
-        
+
         this.logInfo('Idea scoring service initialized with scoring cache');
     }
 
@@ -87,11 +87,11 @@ export class IdeaScoringService extends BaseService {
      */
     async cleanup(): Promise<void> {
         this.logInfo('Cleaning up idea scoring service...');
-        
+
         // Clear scoring cache
         this.scoringCache.clear();
         this.initialized = false;
-        
+
         this.logInfo('Idea scoring service cleaned up');
     }
 
@@ -99,9 +99,9 @@ export class IdeaScoringService extends BaseService {
      * Score a single idea comprehensively
      */
     async scoreIdea(idea: ProjectIdea): Promise<IdeaScoreBreakdown> {
-        this.logInfo(`Scoring idea: ${idea.title}`)
+        this.logInfo(`Scoring idea: ${idea.title}`);
 
-        const prompt = this.buildScoringPrompt(idea)
+        const prompt = this.buildScoringPrompt(idea);
 
         const messages: Message[] = [
             {
@@ -116,7 +116,7 @@ export class IdeaScoringService extends BaseService {
                 content: prompt,
                 timestamp: new Date()
             }
-        ]
+        ];
 
         try {
             const response = await this.llmService.chat(
@@ -125,12 +125,12 @@ export class IdeaScoringService extends BaseService {
                 undefined,
                 'openai',
                 { temperature: 0.3 }
-            )
+            );
 
-            return this.parseScoringResponse(response.content)
+            return this.parseScoringResponse(response.content);
         } catch (error) {
-            this.logError(`Failed to score idea: ${getErrorMessage(error as Error)}`)
-            return this.getDefaultScore()
+            this.logError(`Failed to score idea: ${getErrorMessage(error as Error)}`);
+            return this.getDefaultScore();
         }
     }
 
@@ -142,39 +142,39 @@ export class IdeaScoringService extends BaseService {
         score: IdeaScoreBreakdown
         rank: number
     }>> {
-        this.logInfo(`Ranking ${ideas.length} ideas`)
+        this.logInfo(`Ranking ${ideas.length} ideas`);
 
         // Score all ideas in parallel (with concurrency limit)
-        const scores: Array<{ idea: ProjectIdea; score: IdeaScoreBreakdown }> = []
-        
+        const scores: Array<{ idea: ProjectIdea; score: IdeaScoreBreakdown }> = [];
+
         // Process in batches of 3 to avoid rate limits
-        const batchSize = 3
+        const batchSize = 3;
         for (let i = 0; i < ideas.length; i += batchSize) {
-            const batch = ideas.slice(i, i + batchSize)
+            const batch = ideas.slice(i, i + batchSize);
             const batchScores = await Promise.all(
                 batch.map(async idea => ({
                     idea,
                     score: await this.scoreIdea(idea)
                 }))
-            )
-            scores.push(...batchScores)
+            );
+            scores.push(...batchScores);
         }
 
         // Sort by overall score descending
-        scores.sort((a, b) => b.score.overallScore - a.score.overallScore)
+        scores.sort((a, b) => b.score.overallScore - a.score.overallScore);
 
         // Add ranks
         return scores.map((item, index) => ({
             ...item,
             rank: index + 1
-        }))
+        }));
     }
 
     /**
      * Compare two ideas directly
      */
     async compareIdeas(idea1: ProjectIdea, idea2: ProjectIdea): Promise<IdeaComparison> {
-        this.logInfo(`Comparing ideas: "${idea1.title}" vs "${idea2.title}"`)
+        this.logInfo(`Comparing ideas: "${idea1.title}" vs "${idea2.title}"`);
 
         const prompt = `Compare these two project ideas and determine which is stronger:
 
@@ -211,7 +211,7 @@ Respond in JSON:
         "competitiveMoat": { "idea1": 0-100, "idea2": 0-100 }
     },
     "recommendation": "What would make the losing idea stronger"
-}`
+}`;
 
         const messages: Message[] = [
             {
@@ -226,19 +226,19 @@ Respond in JSON:
                 content: prompt,
                 timestamp: new Date()
             }
-        ]
+        ];
 
         try {
-            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai')
-            return this.parseComparisonResponse(response.content, idea1.id, idea2.id)
+            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai');
+            return this.parseComparisonResponse(response.content, idea1.id, idea2.id);
         } catch (error) {
-            this.logError(`Failed to compare ideas: ${getErrorMessage(error as Error)}`)
+            this.logError(`Failed to compare ideas: ${getErrorMessage(error as Error)}`);
             return {
                 winnerId: idea1.id,
                 reason: 'Comparison could not be completed',
                 strengthComparison: {},
                 recommendation: 'Try comparing again'
-            }
+            };
         }
     }
 
@@ -252,7 +252,7 @@ Title: ${title}
 Category: ${category}
 Description: ${description}
 
-Respond with ONLY a number between 0 and 100.`
+Respond with ONLY a number between 0 and 100.`;
 
         const messages: Message[] = [
             {
@@ -267,7 +267,7 @@ Respond with ONLY a number between 0 and 100.`
                 content: prompt,
                 timestamp: new Date()
             }
-        ]
+        ];
 
         try {
             const response = await this.llmService.chat(
@@ -276,15 +276,15 @@ Respond with ONLY a number between 0 and 100.`
                 undefined,
                 'openai',
                 { temperature: 0.2 }
-            )
+            );
 
-            const score = parseInt(response.content.trim(), 10)
+            const score = parseInt(response.content.trim(), 10);
             if (isNaN(score) || score < 0 || score > 100) {
-                return 50
+                return 50;
             }
-            return score
+            return score;
         } catch {
-            return 50
+            return 50;
         }
     }
 
@@ -298,45 +298,45 @@ BASIC INFO:
 - Title: ${idea.title}
 - Category: ${idea.category}
 - Description: ${idea.description}
-`
+`;
 
         if (idea.valueProposition) {
-            prompt += `- Value Proposition: ${idea.valueProposition}\n`
+            prompt += `- Value Proposition: ${idea.valueProposition}\n`;
         }
 
         if (idea.longDescription) {
-            prompt += `\nDETAILED DESCRIPTION:\n${idea.longDescription.slice(0, 1000)}\n`
+            prompt += `\nDETAILED DESCRIPTION:\n${idea.longDescription.slice(0, 1000)}\n`;
         }
 
         if (idea.competitiveAdvantages?.length) {
-            prompt += `\nCOMPETITIVE ADVANTAGES:\n${idea.competitiveAdvantages.map(a => `- ${a}`).join('\n')}\n`
+            prompt += `\nCOMPETITIVE ADVANTAGES:\n${idea.competitiveAdvantages.map(a => `- ${a}`).join('\n')}\n`;
         }
 
         if (idea.techStack) {
-            const techs: string[] = []
-            if (idea.techStack.frontend?.length) {
-                techs.push(`Frontend: ${idea.techStack.frontend.map(t => t.name).join(', ')}`)
+            const techs: string[] = [];
+            if (idea.techStack.frontend.length) {
+                techs.push(`Frontend: ${idea.techStack.frontend.map(t => t.name).join(', ')}`);
             }
-            if (idea.techStack.backend?.length) {
-                techs.push(`Backend: ${idea.techStack.backend.map(t => t.name).join(', ')}`)
+            if (idea.techStack.backend.length) {
+                techs.push(`Backend: ${idea.techStack.backend.map(t => t.name).join(', ')}`);
             }
             if (techs.length) {
-                prompt += `\nTECH STACK:\n${techs.join('\n')}\n`
+                prompt += `\nTECH STACK:\n${techs.join('\n')}\n`;
             }
         }
 
         if (idea.roadmap) {
-            prompt += `\nROADMAP:\n- MVP: ${idea.roadmap.mvp.description}\n- Total Duration: ${idea.roadmap.totalDuration}\n`
+            prompt += `\nROADMAP:\n- MVP: ${idea.roadmap.mvp.description}\n- Total Duration: ${idea.roadmap.totalDuration}\n`;
         }
 
         if (idea.businessModel) {
-            prompt += `\nBUSINESS MODEL:\n- Type: ${idea.businessModel.monetizationType}\n`
+            prompt += `\nBUSINESS MODEL:\n- Type: ${idea.businessModel.monetizationType}\n`;
         }
 
         if (idea.swot) {
-            prompt += `\nSWOT ANALYSIS:\n`
-            prompt += `Strengths: ${idea.swot.strengths.slice(0, 3).join(', ')}\n`
-            prompt += `Weaknesses: ${idea.swot.weaknesses.slice(0, 3).join(', ')}\n`
+            prompt += `\nSWOT ANALYSIS:\n`;
+            prompt += `Strengths: ${idea.swot.strengths.slice(0, 3).join(', ')}\n`;
+            prompt += `Weaknesses: ${idea.swot.weaknesses.slice(0, 3).join(', ')}\n`;
         }
 
         prompt += `
@@ -371,9 +371,9 @@ Respond in JSON:
     "improvements": ["...", "..."],
     "confidence": "high|medium|low",
     "summary": "Brief evaluation summary"
-}`
+}`;
 
-        return prompt
+        return prompt;
     }
 
     /**
@@ -396,7 +396,7 @@ Be honest and critical. Don't inflate scores. Consider:
 - Target market size and accessibility
 - Revenue potential and business model viability
 
-Always respond in valid JSON format.`
+Always respond in valid JSON format.`;
     }
 
     /**
@@ -404,9 +404,9 @@ Always respond in valid JSON format.`
      */
     private parseScoringResponse(content: string): IdeaScoreBreakdown {
         try {
-            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
+            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0];
             if (!jsonMatch) {
-                throw new Error('No JSON found in response')
+                throw new Error('No JSON found in response');
             }
 
             const data = safeJsonParse(jsonMatch, {
@@ -424,42 +424,42 @@ Always respond in valid JSON format.`
                 improvements: [],
                 confidence: 'medium' as const,
                 summary: 'Default score assessment'
-            })
+            });
 
-            const clamp = (val: number | undefined, def: number): number => 
-                Math.max(0, Math.min(100, val ?? def))
+            const clamp = (val: number | undefined, def: number): number =>
+                Math.max(0, Math.min(100, val ?? def));
 
             const dimensions = {
-                innovation: clamp(data.dimensions?.innovation, 50),
-                marketNeed: clamp(data.dimensions?.marketNeed, 50),
-                feasibility: clamp(data.dimensions?.feasibility, 50),
-                businessPotential: clamp(data.dimensions?.businessPotential, 50),
-                targetClarity: clamp(data.dimensions?.targetClarity, 50),
-                competitiveMoat: clamp(data.dimensions?.competitiveMoat, 50)
-            }
+                innovation: clamp(data.dimensions.innovation, 50),
+                marketNeed: clamp(data.dimensions.marketNeed, 50),
+                feasibility: clamp(data.dimensions.feasibility, 50),
+                businessPotential: clamp(data.dimensions.businessPotential, 50),
+                targetClarity: clamp(data.dimensions.targetClarity, 50),
+                competitiveMoat: clamp(data.dimensions.competitiveMoat, 50)
+            };
 
             // Calculate overall if not provided
-            const overallScore = data.overallScore ?? Math.round(
+            const overallScore = data.overallScore || Math.round(
                 (dimensions.innovation +
-                dimensions.marketNeed +
-                dimensions.feasibility +
-                dimensions.businessPotential +
-                dimensions.targetClarity +
-                dimensions.competitiveMoat) / 6
-            )
+                    dimensions.marketNeed +
+                    dimensions.feasibility +
+                    dimensions.businessPotential +
+                    dimensions.targetClarity +
+                    dimensions.competitiveMoat) / 6
+            );
 
             return {
                 overallScore: clamp(overallScore, 50),
                 dimensions,
-                strengths: data.strengths ?? [],
-                weaknesses: data.weaknesses ?? [],
-                improvements: data.improvements ?? [],
-                confidence: data.confidence ?? 'medium',
-                summary: data.summary ?? 'Scoring completed'
-            }
+                strengths: data.strengths,
+                weaknesses: data.weaknesses,
+                improvements: data.improvements,
+                confidence: data.confidence,
+                summary: data.summary
+            };
         } catch (error) {
-            this.logWarn(`Failed to parse scoring response: ${getErrorMessage(error as Error)}`)
-            return this.getDefaultScore()
+            this.logWarn(`Failed to parse scoring response: ${getErrorMessage(error as Error)}`);
+            return this.getDefaultScore();
         }
     }
 
@@ -472,29 +472,29 @@ Always respond in valid JSON format.`
         idea2Id: string
     ): IdeaComparison {
         try {
-            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
-            if (!jsonMatch) {throw new Error('No JSON found')}
+            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0];
+            if (!jsonMatch) { throw new Error('No JSON found'); }
 
             const data = safeJsonParse(jsonMatch, {
                 winnerId: '1',
                 reason: 'Comparison completed',
                 strengthComparison: {},
                 recommendation: ''
-            })
+            });
 
             return {
                 winnerId: data.winnerId === '2' ? idea2Id : idea1Id,
-                reason: data.reason ?? 'Comparison completed',
-                strengthComparison: data.strengthComparison ?? {},
-                recommendation: data.recommendation ?? ''
-            }
+                reason: data.reason,
+                strengthComparison: data.strengthComparison,
+                recommendation: data.recommendation
+            };
         } catch {
             return {
                 winnerId: idea1Id,
                 reason: 'Comparison could not be parsed',
                 strengthComparison: {},
                 recommendation: ''
-            }
+            };
         }
     }
 
@@ -517,6 +517,6 @@ Always respond in valid JSON format.`
             improvements: ['Unable to fully analyze - please try again'],
             confidence: 'low',
             summary: 'Scoring could not be completed'
-        }
+        };
     }
 }

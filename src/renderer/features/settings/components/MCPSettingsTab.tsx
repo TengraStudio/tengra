@@ -1,12 +1,12 @@
-import { MCPServersTab } from '@renderer/features/settings/components/MCPServersTab'
-import { Server, ShoppingBag } from 'lucide-react'
-import { useState } from 'react'
+import { MCPServersTab } from '@renderer/features/settings/components/MCPServersTab';
+import { Server, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
 
-import { MCPStore } from '@/features/mcp/MCPStore'
-import { cn } from '@/lib/utils'
+import { MCPStore } from '@/features/mcp/MCPStore';
+import { cn } from '@/lib/utils';
 
 export const MCPSettingsTab = () => {
-    const [activeTab, setActiveTab] = useState<'servers' | 'marketplace'>('servers')
+    const [activeTab, setActiveTab] = useState<'servers' | 'marketplace'>('servers');
 
     return (
         <div className="h-full flex flex-col">
@@ -54,5 +54,5 @@ export const MCPSettingsTab = () => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

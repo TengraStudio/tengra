@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { AppSettings } from '@/types/settings'
+import { AppSettings } from '@/types/settings';
 
 type PersonaDraft = { name: string; description: string; prompt: string }
 
@@ -18,8 +18,8 @@ interface PersonasTabProps {
 export const PersonasTab: React.FC<PersonasTabProps> = ({
     settings, editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona, t
 }) => {
-    if (!settings) { return null }
-    const personas = settings.personas || []
+    if (!settings) { return null; }
+    const personas = settings.personas || [];
 
     return (
         <div className="space-y-6">
@@ -31,7 +31,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                     <textarea placeholder={t('personas.promptPlaceholder')} value={personaDraft.prompt} onChange={e => setPersonaDraft({ ...personaDraft, prompt: e.target.value })} className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground min-h-[120px]" />
                     <div className="flex items-center gap-2">
                         <button onClick={handleSavePersona} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-border/50">{editingPersonaId ? t('common.update') : t('common.add')}</button>
-                        {editingPersonaId && <button onClick={() => { setEditingPersonaId(null); setPersonaDraft({ name: '', description: '', prompt: '' }) }} className="px-3 py-2 rounded-lg text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50">{t('common.cancel')}</button>}
+                        {editingPersonaId && <button onClick={() => { setEditingPersonaId(null); setPersonaDraft({ name: '', description: '', prompt: '' }); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50">{t('common.cancel')}</button>}
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 

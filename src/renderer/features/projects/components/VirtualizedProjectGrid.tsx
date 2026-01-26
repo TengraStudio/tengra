@@ -3,18 +3,26 @@
  * Uses react-virtuoso for efficient rendering of large project lists
  */
 
-import { Project } from '@shared/types/project'
-import React, { useMemo } from 'react'
-import { Virtuoso } from 'react-virtuoso'
+import { Project } from '@shared/types/project';
+import React, { useMemo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
-import { ProjectCard } from './ProjectCard'
+import { ProjectCard } from './ProjectCard';
 
 interface VirtualizedProjectGridProps {
     projects: Project[]
     onSelectProject?: (project: Project) => void
     showProjectMenu: string | null
     setShowProjectMenu: (id: string | null) => void
-    projectStateMachine: any
+    projectStateMachine: {
+        startEdit: (project: Project, event?: React.MouseEvent) => void
+        startDelete: (project: Project, event?: React.MouseEvent) => void
+        startArchive: (project: Project) => void
+        toggleSelection: (id: string) => void
+        state: {
+            selectedProjectIds: Set<string>
+        }
+    }
     itemsPerRow?: number
     itemHeight?: number
 }
@@ -30,16 +38,16 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
 }) => {
     // Create rows of projects for virtualization
     const projectRows = useMemo(() => {
-        const rows = []
+        const rows = [];
         for (let i = 0; i < projects.length; i += itemsPerRow) {
-            rows.push(projects.slice(i, i + itemsPerRow))
+            rows.push(projects.slice(i, i + itemsPerRow));
         }
-        return rows
-    }, [projects, itemsPerRow])
+        return rows;
+    }, [projects, itemsPerRow]);
 
     const renderRow = (index: number) => {
-        const row = projectRows[index]
-        if (!row) return null
+        const row = projectRows[index];
+        if (!row) {return null;}
 
         return (
             <div 
@@ -55,16 +63,16 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
                         showMenu={showProjectMenu === project.id}
                         setShowMenu={setShowProjectMenu}
                         onEdit={(p, e) => { 
-                            setShowProjectMenu(null)
-                            sm.startEdit(p, e) 
+                            setShowProjectMenu(null);
+                            sm.startEdit(p, e); 
                         }}
                         onDelete={(p, e) => { 
-                            setShowProjectMenu(null)
-                            sm.startDelete(p, e) 
+                            setShowProjectMenu(null);
+                            sm.startDelete(p, e); 
                         }}
                         onArchive={(p) => sm.startArchive(p)}
                         isSelected={sm.state.selectedProjectIds.has(project.id)}
-                        onToggleSelection={() => sm.toggleProjectSelection(project.id)}
+                        onToggleSelection={() => sm.toggleSelection(project.id)}
                         t={(key: string) => key} // Add required t prop
                     />
                 ))}
@@ -73,11 +81,11 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
                     <div key={`empty-${emptyIndex}`} />
                 ))}
             </div>
-        )
-    }
+        );
+    };
 
     if (projects.length === 0) {
-        return null
+        return null;
     }
 
     return (
@@ -88,7 +96,7 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
             overscan={2}
             data={projectRows}
         />
-    )
-}
+    );
+};
 
-export default VirtualizedProjectGrid
+export default VirtualizedProjectGrid;

@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector';
+import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal';
+import { ProjectEnvironmentTab } from '@renderer/features/projects/components/ProjectEnvironmentTab';
+import { ProjectGitTab } from '@renderer/features/projects/components/ProjectGitTab';
+import { ProjectIssuesTab } from '@renderer/features/projects/components/ProjectIssuesTab';
+import { ProjectLogsTab } from '@renderer/features/projects/components/ProjectLogsTab';
+import { ProjectSettingsPanel } from '@renderer/features/projects/components/ProjectSettingsPanel';
+import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab';
+import { FileSearchResult } from '@shared/types/common';
+import { Project } from '@shared/types/project';
+import { Camera, Check, FileCode, Pencil, RefreshCw, Sparkles, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { AgentCouncil } from '@/features/chat/components/AgentCouncil'
-import { CodeEditor } from '@/components/ui/CodeEditor'
-import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector'
-import { ProjectEnvironmentTab } from '@renderer/features/projects/components/ProjectEnvironmentTab'
-import { ProjectGitTab } from '@renderer/features/projects/components/ProjectGitTab'
-import { ProjectIssuesTab } from '@renderer/features/projects/components/ProjectIssuesTab'
-import { ProjectLogsTab } from '@renderer/features/projects/components/ProjectLogsTab'
-import { ProjectSettingsPanel } from '@renderer/features/projects/components/ProjectSettingsPanel'
-import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab'
-import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal'
-import { cn } from '@/lib/utils'
-import { FileSearchResult } from '@shared/types/common'
-import { Project } from '@shared/types/project'
-import { AgentDefinition, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types'
-import { Language, useTranslation } from '@/i18n'
-import { Camera, Check, FileCode, Pencil, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
+import { CodeEditor } from '@/components/ui/CodeEditor';
+import { AgentCouncil } from '@/features/chat/components/AgentCouncil';
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { AgentDefinition, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types';
 
 // OpenFile interface moved to types? No, keep here if specific.
 interface OpenFile {
@@ -50,139 +50,139 @@ export const ProjectDashboard = ({
     selectedEntry,
     onOpenFile
 }: ProjectDashboardProps) => {
-    const { t } = useTranslation(language)
-    const [stats, setStats] = useState<ProjectStats | null>(null)
-    const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [internalTab, setInternalTab] = useState<ProjectDashboardTab>('overview')
+    const { t } = useTranslation(language);
+    const [stats, setStats] = useState<ProjectStats | null>(null);
+    const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [internalTab, setInternalTab] = useState<ProjectDashboardTab>('overview');
     // Use external tab if provided, otherwise use internal
-    const activeTab = (externalTab ?? internalTab)
-    const setActiveTab = (onTabChange ?? setInternalTab) as (tab: ProjectDashboardTab) => void
-    const [projectRoot, setProjectRoot] = useState<string>(project.path)
-    const [openFiles, setOpenFiles] = useState<OpenFile[]>([])
-    const [activeFile, setActiveFile] = useState<string | null>(null)
-    const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+    const activeTab = (externalTab ?? internalTab);
+    const setActiveTab = (onTabChange ?? setInternalTab) as (tab: ProjectDashboardTab) => void;
+    const [projectRoot, setProjectRoot] = useState<string>(project.path);
+    const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
+    const [activeFile, setActiveFile] = useState<string | null>(null);
+    const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
     // Inline Editing State
-    const [isEditingName, setIsEditingName] = useState(false)
-    const [isEditingDesc, setIsEditingDesc] = useState(false)
-    const [editName, setEditName] = useState(project.title)
-    const [editDesc, setEditDesc] = useState(project.description || '')
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingDesc, setIsEditingDesc] = useState(false);
+    const [editName, setEditName] = useState(project.title);
+    const [editDesc, setEditDesc] = useState(project.description || '');
 
     // Search and Agents State
-    const [searchQuery, setSearchQuery] = useState('')
-    const [searchResults, setSearchResults] = useState<FileSearchResult[]>([])
-    const [isSearching, setIsSearching] = useState(false)
-    const [availableAgents, setAvailableAgents] = useState<AgentDefinition[]>([])
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<FileSearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [availableAgents, setAvailableAgents] = useState<AgentDefinition[]>([]);
 
     // Fetch Agents
     useEffect(() => {
         const fetchAgents = async () => {
             try {
-                const agents = await window.electron.agent.getAll()
-                setAvailableAgents(agents as AgentDefinition[])
+                const agents = await window.electron.agent.getAll();
+                setAvailableAgents(agents as AgentDefinition[]);
             } catch (error) {
-                console.error('Failed to fetch agents', error)
+                console.error('Failed to fetch agents', error);
             }
-        }
-        void fetchAgents()
-    }, [])
+        };
+        void fetchAgents();
+    }, []);
 
     // Sync folder selection from global explorer
     useEffect(() => {
         if (selectedEntry?.isDirectory) {
-            setSelectedFolder(selectedEntry.path)
+            setSelectedFolder(selectedEntry.path);
         } else {
-            setSelectedFolder(null)
+            setSelectedFolder(null);
         }
-    }, [selectedEntry])
+    }, [selectedEntry]);
 
     const handleSearch = async () => {
-        if (searchQuery.trim().length < 2) { return }
-        setIsSearching(true)
+        if (searchQuery.trim().length < 2) { return; }
+        setIsSearching(true);
         try {
-            const results = await window.electron.code.searchFiles(projectRoot, searchQuery, project.id)
-            setSearchResults(results)
+            const results = await window.electron.code.searchFiles(projectRoot, searchQuery, project.id);
+            setSearchResults(results);
         } catch (error) {
-            console.error('Search failed:', error)
+            console.error('Search failed:', error);
         } finally {
-            setIsSearching(false)
+            setIsSearching(false);
         }
-    }
+    };
 
     const analyzeProject = useCallback(async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const rootPath = project.path
-            console.warn('[ProjectDashboard] Requesting analysis for path:', rootPath)
+            const rootPath = project.path;
+            console.warn('[ProjectDashboard] Requesting analysis for path:', rootPath);
             if (rootPath) {
-                setProjectRoot(rootPath)
-                window.electron.log.info(`[ProjectDashboard] Calling analyze for ${rootPath}`)
-                const data = await window.electron.project.analyze(rootPath, project.id)
-                window.electron.log.info('[ProjectDashboard] Analysis results received', data as ProjectAnalysis)
-                setAnalysis(data)
-                setStats(data.stats)
+                setProjectRoot(rootPath);
+                window.electron.log.info(`[ProjectDashboard] Calling analyze for ${rootPath}`);
+                const data = await window.electron.project.analyze(rootPath, project.id);
+                window.electron.log.info('[ProjectDashboard] Analysis results received', data as ProjectAnalysis);
+                setAnalysis(data);
+                setStats(data.stats);
             }
         } catch (error) {
-            console.error('Project analysis failed:', error)
+            console.error('Project analysis failed:', error);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [project.path, project.id])
+    }, [project.path, project.id]);
 
     const handleSaveName = async () => {
         if (editName.trim() && editName !== project.title) {
-            await onUpdate?.({ title: editName })
+            await onUpdate?.({ title: editName });
         }
-        setIsEditingName(false)
-    }
+        setIsEditingName(false);
+    };
 
     const handleSaveDesc = async () => {
         if (editDesc !== project.description) {
-            await onUpdate?.({ description: editDesc })
+            await onUpdate?.({ description: editDesc });
         }
-        setIsEditingDesc(false)
-    }
+        setIsEditingDesc(false);
+    };
 
     useEffect(() => {
-        void analyzeProject()
-    }, [project.path, project.id, analyzeProject])
+        void analyzeProject();
+    }, [project.path, project.id, analyzeProject]);
 
     const handleFileSelect = async (path: string, line?: number) => {
         if (onOpenFile) {
-            onOpenFile(path, line)
-            return
+            onOpenFile(path, line);
+            return;
         }
 
         if (openFiles.find(f => f.path === path)) {
-            setActiveFile(path)
+            setActiveFile(path);
             // Update the existing file with the new initial line if provided
             if (line !== undefined) {
-                setOpenFiles(prev => prev.map(f => f.path === path ? { ...f, initialLine: line } : f))
+                setOpenFiles(prev => prev.map(f => f.path === path ? { ...f, initialLine: line } : f));
             }
-            setActiveTab('files')
-            return
+            setActiveTab('files');
+            return;
         }
 
         try {
-            const content = await window.electron.files.readFile(path)
-            const name = path.split(/[\\/]/).pop() ?? 'file'
-            setOpenFiles([...openFiles, { path, name, content, isDirty: false, initialLine: line }])
-            setActiveFile(path)
-            setActiveTab('files')
+            const content = await window.electron.files.readFile(path);
+            const name = path.split(/[\\/]/).pop() ?? 'file';
+            setOpenFiles([...openFiles, { path, name, content, isDirty: false, initialLine: line }]);
+            setActiveFile(path);
+            setActiveTab('files');
         } catch (error) {
-            console.error('Failed to open file', error)
+            console.error('Failed to open file', error);
         }
-    }
+    };
 
     const closeFile = (e: React.MouseEvent, path: string) => {
-        e.stopPropagation()
-        const newFiles = openFiles.filter(f => f.path !== path)
-        setOpenFiles(newFiles)
+        e.stopPropagation();
+        const newFiles = openFiles.filter(f => f.path !== path);
+        setOpenFiles(newFiles);
         if (activeFile === path) {
-            setActiveFile(newFiles.length > 0 ? newFiles[newFiles.length - 1].path : null)
+            setActiveFile(newFiles.length > 0 ? newFiles[newFiles.length - 1].path : null);
         }
-    }
+    };
 
     if (loading && !analysis) {
         return (
@@ -190,17 +190,17 @@ export const ProjectDashboard = ({
                 <RefreshCw className="w-6 h-6 animate-spin mr-2" />
                 {t('projectDashboard.analyzing')}
             </div>
-        )
+        );
     }
 
     if (!analysis) {
         return (
             <div className="p-8 text-center text-muted-foreground">{t('projectDashboard.noProject')}</div>
-        )
+        );
     }
 
-    const { type, dependencies } = analysis
-    const activeFileObj = openFiles.find(f => f.path === activeFile)
+    const { type, dependencies } = analysis;
+    const activeFileObj = openFiles.find(f => f.path === activeFile);
 
     return (
         <div className="h-full flex flex-col bg-background text-foreground">
@@ -220,7 +220,7 @@ export const ProjectDashboard = ({
                                     )}
 
                                     <button
-                                        onClick={() => { void onOpenLogoGenerator?.() }}
+                                        onClick={() => { void onOpenLogoGenerator?.(); }}
                                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                                     >
                                         <Camera className="w-6 h-6" />
@@ -239,19 +239,19 @@ export const ProjectDashboard = ({
                                                 value={editName}
                                                 onChange={e => setEditName(e.target.value)}
                                                 onKeyDown={e => {
-                                                    if (e.key === 'Enter') { void handleSaveName() }
-                                                    if (e.key === 'Escape') { setIsEditingName(false) }
+                                                    if (e.key === 'Enter') { void handleSaveName(); }
+                                                    if (e.key === 'Escape') { setIsEditingName(false); }
                                                 }}
-                                                onBlur={handleSaveName}
+                                                onBlur={() => { void handleSaveName(); }}
                                                 className="text-3xl font-black bg-transparent border border-primary/50 rounded-lg px-2 py-1 outline-none w-full tracking-tight text-foreground"
                                             />
-                                            <button onClick={() => { void handleSaveName() }} className="p-2 bg-primary text-primary-foreground rounded-lg">
+                                            <button onClick={() => { void handleSaveName(); }} className="p-2 bg-primary text-primary-foreground rounded-lg">
                                                 <Check className="w-4 h-4" />
                                             </button>
                                         </div>
                                     ) : (
                                         <h1
-                                            onClick={() => setIsEditingName(true)}
+                                            onClick={() => { setIsEditingName(true); }}
                                             className="text-4xl font-black tracking-tighter text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
                                         >
                                             {project.title}
@@ -267,17 +267,17 @@ export const ProjectDashboard = ({
                                                 autoFocus
                                                 value={editDesc}
                                                 onChange={e => setEditDesc(e.target.value)}
-                                                onBlur={handleSaveDesc}
+                                                onBlur={() => { void handleSaveDesc(); }}
                                                 className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-[80px] resize-none"
                                                 placeholder={(t('projects.description') || 'Description') + '...'}
                                             />
                                         </div>
                                     ) : (
                                         <p
-                                            onClick={() => setIsEditingDesc(true)}
+                                            onClick={() => { setIsEditingDesc(true); }}
                                             className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
                                         >
-                                            {project.description || (t('projects.noDescription') ?? 'No description provided')}
+                                            {project.description ?? (t('projects.noDescription') ?? 'No description provided')}
                                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </p>
                                     )}
@@ -292,7 +292,7 @@ export const ProjectDashboard = ({
                                         {projectRoot}
                                     </div>
                                     <button
-                                        onClick={() => { void analyzeProject() }}
+                                        onClick={() => { void analyzeProject(); }}
                                         disabled={loading}
                                         className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 text-xs"
                                         title={t('common.refresh')}
@@ -320,7 +320,7 @@ export const ProjectDashboard = ({
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.modules')}</div>
-                                <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages?.length ?? Object.keys(dependencies ?? {}).length}</div>
+                                <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(dependencies ?? {}).length}</div>
                             </div>
                             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
                                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
@@ -336,12 +336,12 @@ export const ProjectDashboard = ({
                                     {t('projectDashboard.techStack')}
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {(analysis?.frameworks ?? []).map((fw: string) => (
+                                    {(analysis.frameworks).map((fw: string) => (
                                         <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full text-xs text-primary font-medium">
                                             {fw}
                                         </span>
                                     ))}
-                                    {(analysis?.frameworks?.length ?? 0) === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
+                                    {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
                                 </div>
                             </div>
 
@@ -352,11 +352,11 @@ export const ProjectDashboard = ({
                                     {t('projectDashboard.langDist')}
                                 </h3>
                                 <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
-                                    {Object.entries(analysis?.languages ?? {})
+                                    {Object.entries(analysis.languages)
                                         .sort(([, a], [, b]) => (b as number) - (a as number))
                                         .slice(0, 15)
                                         .map(([lang, count]) => {
-                                            const percentage = stats ? Math.round(((count as number) / stats.fileCount) * 100) : 0
+                                            const percentage = stats ? Math.round(((count as number) / stats.fileCount) * 100) : 0;
                                             return (
                                                 <div key={lang} className="space-y-1">
                                                     <div className="flex justify-between text-[10px] uppercase font-bold tracking-tight">
@@ -370,14 +370,14 @@ export const ProjectDashboard = ({
                                                         />
                                                     </div>
                                                 </div>
-                                            )
+                                            );
                                         })}
                                 </div>
                             </div>
                         </div>
 
                         {/* TODO List Section */}
-                        {(analysis?.todos?.length ?? 0) > 0 && (
+                        {analysis.todos.length > 0 && (
                             <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
                                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
@@ -406,7 +406,7 @@ export const ProjectDashboard = ({
                                     <p className="text-sm text-muted-foreground">{t('projects.deleteWarning') || 'This action cannot be undone.'}</p>
                                 </div>
                                 <button
-                                    onClick={() => { void onDelete?.() }}
+                                    onClick={() => { void onDelete?.(); }}
                                     className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg border border-destructive/20 transition-colors text-sm font-medium"
                                 >
                                     {t('common.delete') || 'Delete'}
@@ -439,12 +439,12 @@ export const ProjectDashboard = ({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        void handleSearch()
+                                        void handleSearch();
                                     }
                                 }}
                             />
                             <button
-                                onClick={() => { void handleSearch() }}
+                                onClick={() => { void handleSearch(); }}
                                 disabled={isSearching || searchQuery.trim().length < 2}
                                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
                             >
@@ -452,7 +452,7 @@ export const ProjectDashboard = ({
                             </button>
                         </div>
                         <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col p-2">
-                            <SearchResults results={searchResults} projectRoot={projectRoot} onSelect={(path, line) => { void handleFileSelect(path, line) }} t={t} />
+                            <SearchResults results={searchResults} projectRoot={projectRoot} onSelect={(path, line) => { void handleFileSelect(path, line); }} t={t} />
                         </div>
                     </div>
                 )}
@@ -472,11 +472,11 @@ export const ProjectDashboard = ({
                             availableAgents={availableAgents}
                             onAddMount={() => {
                                 // This would ideally open a mount creation modal
-                                console.warn('Add mount requested from settings')
+                                console.warn('Add mount requested from settings');
                             }}
                             onRemoveMount={(id) => {
-                                const nextMounts = project.mounts.filter(m => m.id !== id)
-                                void onUpdate?.({ mounts: nextMounts })
+                                const nextMounts = project.mounts.filter(m => m.id !== id);
+                                void onUpdate?.({ mounts: nextMounts });
                             }}
                         />
                     </div>
@@ -490,17 +490,17 @@ export const ProjectDashboard = ({
                     <ProjectIssuesTab
                         analysis={analysis}
                         projectRoot={projectRoot}
-                        onOpenFile={handleFileSelect}
+                        onOpenFile={(path, line) => { void handleFileSelect(path, line); }}
                         language={language}
                     />
                 )}
 
                 {(activeTab === 'env' || activeTab === 'environment') && (
-                    <ProjectEnvironmentTab projectPath={projectRoot} language={language ?? 'en'} />
+                    <ProjectEnvironmentTab projectPath={projectRoot} language={language} />
                 )}
 
                 {activeTab === 'logs' && (
-                    <ProjectLogsTab projectPath={projectRoot} language={language ?? 'en'} />
+                    <ProjectLogsTab projectPath={projectRoot} language={language} />
                 )}
 
                 {activeTab === 'files' && (
@@ -513,7 +513,7 @@ export const ProjectDashboard = ({
                                         {openFiles.map(file => (
                                             <div
                                                 key={file.path}
-                                                onClick={() => setActiveFile(file.path)}
+                                                onClick={() => { setActiveFile(file.path); }}
                                                 className={`
                                                     group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/20 cursor-pointer min-w-[120px] max-w-[200px]
                                                     ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'}
@@ -536,8 +536,8 @@ export const ProjectDashboard = ({
                                                 value={activeFileObj.content}
                                                 language={activeFileObj.name.split('.').pop() || 'typescript'}
                                                 onChange={(newContent) => {
-                                                    const newFiles = openFiles.map(f => f.path === activeFileObj.path ? { ...f, content: newContent ?? '', isDirty: true } : f)
-                                                    setOpenFiles(newFiles)
+                                                    const newFiles = openFiles.map(f => f.path === activeFileObj.path ? { ...f, content: newContent ?? '', isDirty: true } : f);
+                                                    setOpenFiles(newFiles);
                                                 }}
                                             />
                                         )}
@@ -562,24 +562,24 @@ export const ProjectDashboard = ({
                 )}
             </div>
         </div >
-    )
-}
+    );
+};
 
 const formatBytes = (bytes: number) => {
-    if (bytes === 0) { return '0 B' }
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
+    if (bytes === 0) { return '0 B'; }
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 const SearchResults = ({ results, projectRoot, onSelect, t }: { results: FileSearchResult[], projectRoot: string, onSelect: (path: string, line?: number) => void, t: (key: string) => string }) => {
-    if (results.length === 0) { return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div> }
+    if (results.length === 0) { return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>; }
 
     return (
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 space-y-2">
             {results.map((res, i) => (
-                <div key={i} onClick={() => onSelect(res.file, res.line)} className="p-2 hover:bg-muted/20 rounded cursor-pointer group">
+                <div key={i} onClick={() => { void onSelect(res.file, res.line); }} className="p-2 hover:bg-muted/20 rounded cursor-pointer group">
                     <div className="flex items-center gap-2 text-xs text-blue-400 mb-0.5">
                         <span className="font-mono">{res.file.replace(projectRoot, '')}:{res.line}</span>
                         {res.type && <span className="px-1.5 py-0.5 bg-blue-500/10 rounded-full text-[10px] uppercase tracking-wider">{res.type}</span>}
@@ -590,9 +590,9 @@ const SearchResults = ({ results, projectRoot, onSelect, t }: { results: FileSea
                 </div>
             ))}
         </div>
-    )
-}
+    );
+};
 
 const CodeCodeIcon = ({ className }: { className?: string }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-)
+);

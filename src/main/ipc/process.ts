@@ -1,51 +1,51 @@
-import { ProcessService } from '@main/services/system/process.service'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { ipcMain } from 'electron'
+import { ProcessService } from '@main/services/system/process.service';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { ipcMain } from 'electron';
 
 export const registerProcessIpc = (processService: ProcessService) => {
     ipcMain.handle('process:spawn', async (_, command: string, args: string[], cwd: string) => {
         try {
-            return processService.spawn(command, args, cwd)
+            return processService.spawn(command, args, cwd);
         } catch (error) {
-            console.error('[IPC] process:spawn failed:', getErrorMessage(error as Error))
-            return null
+            console.error('[IPC] process:spawn failed:', getErrorMessage(error as Error));
+            return null;
         }
-    })
+    });
 
     ipcMain.handle('process:kill', async (_, id: string) => {
         try {
-            return processService.kill(id)
+            return processService.kill(id);
         } catch (error) {
-            console.error('[IPC] process:kill failed:', getErrorMessage(error as Error))
-            return false
+            console.error('[IPC] process:kill failed:', getErrorMessage(error as Error));
+            return false;
         }
-    })
+    });
 
     ipcMain.handle('process:list', async () => {
         try {
-            return processService.getRunningTasks()
+            return processService.getRunningTasks();
         } catch (error) {
-            console.error('[IPC] process:list failed:', getErrorMessage(error as Error))
-            return []
+            console.error('[IPC] process:list failed:', getErrorMessage(error as Error));
+            return [];
         }
-    })
+    });
 
     ipcMain.handle('process:scan-scripts', async (_, rootPath: string) => {
         try {
-            return await processService.scanScripts(rootPath)
+            return await processService.scanScripts(rootPath);
         } catch (error) {
-            console.error('[IPC] process:scan-scripts failed:', getErrorMessage(error as Error))
-            return {}
+            console.error('[IPC] process:scan-scripts failed:', getErrorMessage(error as Error));
+            return {};
         }
-    })
+    });
 
     ipcMain.handle('process:resize', (_, id: string, cols: number, rows: number) => {
-        processService.resize(id, cols, rows)
-    })
+        processService.resize(id, cols, rows);
+    });
 
     ipcMain.handle('process:write', (_, id: string, data: string) => {
-        processService.write(id, data)
-    })
+        processService.write(id, data);
+    });
 
     // Bridge events
     // We need a way to send 'data' and 'exit' events to the renderer.
@@ -65,41 +65,41 @@ export const registerProcessIpc = (processService: ProcessService) => {
         // requires 'electron' import.
     })
     */
-}
+};
 
-import { BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron';
 
 export const setupProcessEvents = (processService: ProcessService) => {
-    const buffers = new Map<string, string>()
-    let timer: NodeJS.Timeout | null = null
+    const buffers = new Map<string, string>();
+    let timer: NodeJS.Timeout | null = null;
 
     const flush = () => {
-        if (buffers.size === 0) { return }
+        if (buffers.size === 0) { return; }
 
         BrowserWindow.getAllWindows().forEach(win => {
-            if (win.isDestroyed()) { return }
+            if (win.isDestroyed()) { return; }
             buffers.forEach((data, id) => {
-                win.webContents.send('process:data', { id, data })
-            })
-        })
-        buffers.clear()
-        timer = null
-    }
+                win.webContents.send('process:data', { id, data });
+            });
+        });
+        buffers.clear();
+        timer = null;
+    };
 
     processService.on('data', ({ id, data }) => {
-        const current = buffers.get(id) ?? ''
-        buffers.set(id, current + data)
+        const current = buffers.get(id) ?? '';
+        buffers.set(id, current + data);
 
-        timer ??= setTimeout(flush, 100)
-    })
+        timer ??= setTimeout(flush, 100);
+    });
 
     processService.on('exit', ({ id, code }) => {
         // Flush immediately on exit
-        flush()
+        flush();
         BrowserWindow.getAllWindows().forEach(win => {
             if (!win.isDestroyed()) {
-                win.webContents.send('process:exit', { id, code })
+                win.webContents.send('process:exit', { id, code });
             }
-        })
-    })
-}
+        });
+    });
+};

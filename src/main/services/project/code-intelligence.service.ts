@@ -1,13 +1,13 @@
-import * as crypto from 'crypto'
-import { promises as fs } from 'fs'
-import * as path from 'path'
+import * as crypto from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 
-import { appLogger } from '@main/logging/logger'
-import { DatabaseService, SemanticFragment } from '@main/services/data/database.service'
-import { EmbeddingService } from '@main/services/llm/embedding.service'
-import { FileSearchResult } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { BrowserWindow } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { FileSearchResult } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow } from 'electron';
 
 export interface CodeSymbol {
     file: string;
@@ -29,8 +29,8 @@ export interface IndexingProgress {
 
 export class CodeIntelligenceService {
 
-    private indexingInProgress = new Set<string>()
-    private indexedProjects = new Set<string>()
+    private indexingInProgress = new Set<string>();
+    private indexedProjects = new Set<string>();
 
     constructor(
         private db: DatabaseService,
@@ -39,15 +39,15 @@ export class CodeIntelligenceService {
 
     // Indexing
     async queryIndexedSymbols(query: string): Promise<FileSearchResult[]> {
-        const vector = await this.embedding.generateEmbedding(query)
+        const vector = await this.embedding.generateEmbedding(query);
 
         // Parallel search: Symbols + Fragments
         const [symbolResults, fragmentResults] = await Promise.all([
             this.db.searchCodeSymbols(vector),
             this.db.searchSemanticFragments(vector, 10)
-        ])
+        ]);
 
-        const combined: FileSearchResult[] = []
+        const combined: FileSearchResult[] = [];
 
         // Map symbols
         combined.push(...symbolResults.map(r => ({
@@ -56,7 +56,7 @@ export class CodeIntelligenceService {
             text: r.name,
             name: r.name,
             type: 'symbol'
-        })))
+        })));
 
         // Map fragments
         combined.push(...fragmentResults.map(r => ({
@@ -64,73 +64,73 @@ export class CodeIntelligenceService {
             line: 1, // Fragments don't always track precise line, defaulting
             text: r.content,
             type: 'content'
-        })))
+        })));
 
-        return combined
+        return combined;
     }
 
     async indexProject(rootPath: string, projectId: string, force = false): Promise<void> {
-        if (!await this.shouldStartIndexing(projectId, force)) { return }
+        if (!await this.shouldStartIndexing(projectId, force)) { return; }
 
-        this.indexingInProgress.add(projectId)
-        appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing project ${projectId} at ${rootPath} (force=${force})`)
+        this.indexingInProgress.add(projectId);
+        appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing project ${projectId} at ${rootPath} (force=${force})`);
 
         try {
-            this.sendIndexingProgress(projectId, 0, 0, 'Scanning files...')
-            const files: string[] = []
-            await this.scanDirRecursively(rootPath, files)
+            this.sendIndexingProgress(projectId, 0, 0, 'Scanning files...');
+            const files: string[] = [];
+            await this.scanDirRecursively(rootPath, files);
 
-            const total = files.length
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} files. Clearing old index...`)
+            const total = files.length;
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} files. Clearing old index...`);
 
-            await this.db.clearCodeSymbols(projectId)
-            await this.db.clearSemanticFragments(projectId)
+            await this.db.clearCodeSymbols(projectId);
+            await this.db.clearSemanticFragments(projectId);
 
             for (let i = 0; i < total; i++) {
-                await this.processProjectFile(projectId, files[i], i, total)
+                await this.processProjectFile(projectId, files[i], i, total);
             }
 
-            this.indexedProjects.add(projectId)
-            this.sendIndexingProgress(projectId, total, total, 'Complete')
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing complete for ${projectId}`)
+            this.indexedProjects.add(projectId);
+            this.sendIndexingProgress(projectId, total, total, 'Complete');
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing complete for ${projectId}`);
         } catch (error) {
-            appLogger.error('code-intelligence.service', 'Indexing failed', error as Error)
-            this.sendIndexingProgress(projectId, 0, 0, 'Failed')
+            appLogger.error('code-intelligence.service', 'Indexing failed', error as Error);
+            this.sendIndexingProgress(projectId, 0, 0, 'Failed');
         } finally {
-            this.indexingInProgress.delete(projectId)
+            this.indexingInProgress.delete(projectId);
         }
     }
 
     private async shouldStartIndexing(projectId: string, force: boolean): Promise<boolean> {
-        if (this.indexingInProgress.has(projectId)) { return false }
-        if (!force && this.indexedProjects.has(projectId)) { return false }
+        if (this.indexingInProgress.has(projectId)) { return false; }
+        if (!force && this.indexedProjects.has(projectId)) { return false; }
         if (!force) {
-            const alreadyHasData = await this.db.hasIndexedSymbols(projectId)
+            const alreadyHasData = await this.db.hasIndexedSymbols(projectId);
             if (alreadyHasData) {
-                this.indexedProjects.add(projectId)
-                return false
+                this.indexedProjects.add(projectId);
+                return false;
             }
         }
-        return true
+        return true;
     }
 
     private sendIndexingProgress(projectId: string, current: number, total: number, status: string) {
-        const windows = BrowserWindow.getAllWindows()
-        const progress: IndexingProgress = { projectId, current, total, status }
-        windows.forEach((win) => win.webContents.send('code:indexing-progress', progress))
+        const windows = BrowserWindow.getAllWindows();
+        const progress: IndexingProgress = { projectId, current, total, status };
+        windows.forEach((win) => win.webContents.send('code:indexing-progress', progress));
     }
 
     private async processProjectFile(projectId: string, filePath: string, index: number, total: number) {
-        const relativeName = path.basename(filePath)
-        this.sendIndexingProgress(projectId, index + 1, total, `Indexing ${relativeName}...`)
+        const relativeName = path.basename(filePath);
+        this.sendIndexingProgress(projectId, index + 1, total, `Indexing ${relativeName}...`);
 
         try {
-            const content = await fs.readFile(filePath, 'utf-8')
-            const symbols = this.parseFileSymbols(filePath, content)
+            const content = await fs.readFile(filePath, 'utf-8');
+            const symbols = this.parseFileSymbols(filePath, content);
 
             for (const sym of symbols) {
-                const text = `${sym.kind} ${sym.name} ${sym.signature}\n${sym.docstring}`
-                const vector = await this.embedding.generateEmbedding(text)
+                const text = `${sym.kind} ${sym.name} ${sym.signature}\n${sym.docstring}`;
+                const vector = await this.embedding.generateEmbedding(text);
                 await this.db.storeCodeSymbol({
                     id: crypto.randomUUID(),
                     project_path: projectId,
@@ -141,20 +141,20 @@ export class CodeIntelligenceService {
                     signature: sym.signature,
                     docstring: sym.docstring,
                     vector
-                })
+                });
             }
 
-            const ext = path.extname(filePath).toLowerCase()
-            const supported = ['.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.kt', '.kts', '.java', '.xml', '.gradle', '.cpp', '.h']
+            const ext = path.extname(filePath).toLowerCase();
+            const supported = ['.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.kt', '.kts', '.java', '.xml', '.gradle', '.cpp', '.h'];
             if (supported.includes(ext)) {
-                await this.chunkAndIndexFile(projectId, filePath, content)
+                await this.chunkAndIndexFile(projectId, filePath, content);
             }
 
             if ((index + 1) % 50 === 0) {
-                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed ${index + 1}/${total} files...`)
+                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed ${index + 1}/${total} files...`);
             }
         } catch (error) {
-            appLogger.error('code-intelligence.service', `[CodeIntelligence] Failed to index ${relativeName}`, error as Error)
+            appLogger.error('code-intelligence.service', `[CodeIntelligence] Failed to index ${relativeName}`, error as Error);
         }
     }
 
@@ -172,8 +172,8 @@ export class CodeIntelligenceService {
             // 3. Re-index Symbols
             const symbols = this.parseFileSymbols(filePath, content);
             for (const sym of symbols) {
-                const text = `${sym.kind} ${sym.name}\n${sym.signature}\n${sym.docstring}`
-                const vector = await this.embedding.generateEmbedding(text)
+                const text = `${sym.kind} ${sym.name}\n${sym.signature}\n${sym.docstring}`;
+                const vector = await this.embedding.generateEmbedding(text);
                 await this.db.storeCodeSymbol({
                     id: crypto.randomUUID(),
                     project_path: projectId,
@@ -184,13 +184,13 @@ export class CodeIntelligenceService {
                     signature: sym.signature,
                     docstring: sym.docstring,
                     vector
-                })
+                });
             }
 
             // 4. Re-index Chunks
             const ext = path.extname(filePath).toLowerCase();
             if (['.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs'].includes(ext)) {
-                await this.chunkAndIndexFile(projectId, filePath, content)
+                await this.chunkAndIndexFile(projectId, filePath, content);
             }
         } catch (error) {
             console.error(`[CodeIntelligence] Failed to update index for ${filePath}:`, getErrorMessage(error as Error));
@@ -199,19 +199,19 @@ export class CodeIntelligenceService {
 
     private async scanDirRecursively(dir: string, fileList: string[]) {
         try {
-            const entries = await fs.readdir(dir, { withFileTypes: true })
+            const entries = await fs.readdir(dir, { withFileTypes: true });
             for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) { continue }
+                const fullPath = path.join(dir, entry.name);
+                if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'].includes(entry.name)) { continue; }
 
                 if (entry.isDirectory()) {
-                    await this.scanDirRecursively(fullPath, fileList)
+                    await this.scanDirRecursively(fullPath, fileList);
                 } else if (entry.isFile() && /\.(ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|md|txt|json)$/.test(entry.name)) {
-                    fileList.push(fullPath)
+                    fileList.push(fullPath);
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan dir ${dir}:`, getErrorMessage(error as Error))
+            console.error(`[CodeIntelligence] Failed to scan dir ${dir}:`, getErrorMessage(error as Error));
         }
     }
 
@@ -241,11 +241,11 @@ export class CodeIntelligenceService {
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                     projectId // Extra metadata
-                }
+                };
 
                 await this.db.storeSemanticFragment(fragment);
             } catch (e) {
-                console.error(`[CodeIntelligence] Failed to chunk/embed ${path.basename(filePath)}`, e)
+                console.error(`[CodeIntelligence] Failed to chunk/embed ${path.basename(filePath)}`, e);
             }
 
             start += (CHUNK_SIZE - OVERLAP);
@@ -253,28 +253,28 @@ export class CodeIntelligenceService {
     }
 
     private parseFileSymbols(filePath: string, content: string): CodeSymbol[] {
-        const results: CodeSymbol[] = []
+        const results: CodeSymbol[] = [];
         try {
-            const ext = path.extname(filePath)
-            const regexes = this.getRegexesForExtension(ext)
-            if (regexes.length === 0) { return [] }
+            const ext = path.extname(filePath);
+            const regexes = this.getRegexesForExtension(ext);
+            if (regexes.length === 0) { return []; }
 
-            const lines = content.split('\n')
+            const lines = content.split('\n');
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]?.trim()
-                if (!line) { continue }
+                const line = lines[i]?.trim();
+                if (!line) { continue; }
 
                 for (const { kind, regex } of regexes) {
-                    const match = line.match(regex)
+                    const match = line.match(regex);
                     if (match?.[1]) {
-                        results.push(this.createSymbolFromMatch(match, filePath, i, lines, kind))
+                        results.push(this.createSymbolFromMatch(match, filePath, i, lines, kind));
                     }
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to parse file ${filePath}:`, getErrorMessage(error as Error))
+            console.error(`[CodeIntelligence] Failed to parse file ${filePath}:`, getErrorMessage(error as Error));
         }
-        return results
+        return results;
     }
 
     private getRegexesForExtension(ext: string): { kind: string, regex: RegExp }[] {
@@ -284,32 +284,32 @@ export class CodeIntelligenceService {
             { kind: 'interface', regex: /(?:export\s+)?interface\s+([a-zA-Z0-9_]+)/ },
             { kind: 'type', regex: /(?:export\s+)?type\s+([a-zA-Z0-9_]+)\s*=/ },
             { kind: 'variable', regex: /(?:export\s+)?(?:const|let|var)\s+([a-zA-Z0-9_]+)\s*=/ }
-        ]
+        ];
 
-        if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) { return jsRegexes }
+        if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) { return jsRegexes; }
         if (ext === '.py') {
             return [
                 { kind: 'function', regex: /def\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)/ },
                 { kind: 'class', regex: /class\s+([a-zA-Z0-9_]+)/ }
-            ]
+            ];
         }
         if (ext === '.go') {
             return [
                 { kind: 'function', regex: /func\s+([a-zA-Z0-9_]+)\s*\(/ },
                 { kind: 'type', regex: /type\s+([a-zA-Z0-9_]+)\s+struct/ }
-            ]
+            ];
         }
-        return []
+        return [];
     }
 
     private createSymbolFromMatch(match: RegExpMatchArray, filePath: string, lineIndex: number, lines: string[], kind: string): CodeSymbol {
-        const name = match[1]
-        const signature = match[0]
-        let docstring = ''
-        const prevLine = lineIndex > 0 ? lines[lineIndex - 1]?.trim() : null
+        const name = match[1];
+        const signature = match[0];
+        let docstring = '';
+        const prevLine = lineIndex > 0 ? lines[lineIndex - 1]?.trim() : null;
 
         if (prevLine && (prevLine.startsWith('//') || prevLine.startsWith('#') || prevLine.endsWith('*/'))) {
-            docstring = prevLine.replace(/^\/\/\s*/, '').replace(/^#\s*/, '').replace(/\*\/$/, '').replace(/^\/\*\*\s*/, '')
+            docstring = prevLine.replace(/^\/\/\s*/, '').replace(/^#\s*/, '').replace(/\*\/$/, '').replace(/^\/\*\*\s*/, '');
         }
 
         return {
@@ -319,12 +319,12 @@ export class CodeIntelligenceService {
             kind,
             signature,
             docstring
-        }
+        };
     }
 
     // 2.4.41 Symbol Search (Regex) - Legacy/Quick
     async findSymbols(rootPath: string, query: string): Promise<FileSearchResult[]> {
-        const results: FileSearchResult[] = []
+        const results: FileSearchResult[] = [];
 
         // 1. Try Vector Index (Semantic Navigation)
         try {
@@ -340,7 +340,7 @@ export class CodeIntelligenceService {
                         text: (s.signature && s.signature.length > 0) ? s.signature : s.name,
                         name: s.name,
                         type: s.kind
-                    }))
+                    }));
                 }
             }
         } catch (e) {
@@ -348,140 +348,140 @@ export class CodeIntelligenceService {
         }
 
         // 2. Fallback to Regex Scan
-        await this.scanDirForSymbols(rootPath, query, results)
-        return results
+        await this.scanDirForSymbols(rootPath, query, results);
+        return results;
     }
 
     // Advanced Hybrid Search (Indexed + Semantic + Regex Fallback)
     async searchFiles(rootPath: string, query: string, projectId?: string, isRegex: boolean = false): Promise<FileSearchResult[]> {
-        const results: FileSearchResult[] = []
-        appLogger.info('code-intelligence.service', `[CodeIntelligence] Starting search for "${query}" (regex=${isRegex}) project=${projectId} root=${rootPath}`)
+        const results: FileSearchResult[] = [];
+        appLogger.info('code-intelligence.service', `[CodeIntelligence] Starting search for "${query}" (regex=${isRegex}) project=${projectId} root=${rootPath}`);
 
         try {
             // 1. Try Indexed Database Search if projectId is available
             if (projectId || rootPath) {
-                const targetId = (projectId && projectId.length > 0) ? projectId : rootPath
+                const targetId = (projectId && projectId.length > 0) ? projectId : rootPath;
                 // A. Indexed Symbols (Name matches)
-                const symbols = await this.db.findCodeSymbolsByName(targetId, query)
-                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed symbols found: ${symbols.length}`)
+                const symbols = await this.db.findCodeSymbolsByName(targetId, query);
+                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed symbols found: ${symbols.length}`);
                 results.push(...symbols.map(s => ({
                     file: s.path,
                     line: s.line,
                     text: (s.signature && s.signature.length > 0) ? s.signature : s.name,
                     name: s.name,
                     type: s.kind
-                })))
+                })));
 
                 // B. Indexed Content (Text fragments)
-                const fragments = await this.db.searchCodeContentByText(targetId, query)
-                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed content fragments found: ${fragments.length}`)
+                const fragments = await this.db.searchCodeContentByText(targetId, query);
+                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed content fragments found: ${fragments.length}`);
                 results.push(...fragments.map(f => ({
                     file: f.path,
                     line: f.line,
                     text: f.docstring,
                     type: 'content'
-                })))
+                })));
             }
         } catch (e) {
-            appLogger.warn('code-intelligence.service', `[CodeIntelligence] Indexed search failed: ${getErrorMessage(e as Error)}`)
+            appLogger.warn('code-intelligence.service', `[CodeIntelligence] Indexed search failed: ${getErrorMessage(e as Error)}`);
         }
 
         // 2. If we have few results or it's a regex, perform a scoped FS scan
         // Only run FS scan if we have less than 20 indexed results or if it's explicitly regex
         if (results.length < 20 || isRegex) {
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Too few indexed results(${results.length}), running FS scan on ${rootPath}...`)
-            await this.scanDirForText(rootPath, query, isRegex, results)
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Too few indexed results(${results.length}), running FS scan on ${rootPath}...`);
+            await this.scanDirForText(rootPath, query, isRegex, results);
         }
 
         // Deduplicate and limit
-        const seen = new Set<string>()
+        const seen = new Set<string>();
         const finalResults = results.filter(r => {
-            const key = `${r.file}: ${r.line}: ${r.text}`
-            if (seen.has(key)) { return false }
-            seen.add(key)
-            return true
-        }).slice(0, 500)
+            const key = `${r.file}: ${r.line}: ${r.text}`;
+            if (seen.has(key)) { return false; }
+            seen.add(key);
+            return true;
+        }).slice(0, 500);
 
-        appLogger.info('code-intelligence.service', `[CodeIntelligence] Search finished. Total unique results: ${finalResults.length}`)
-        return finalResults
+        appLogger.info('code-intelligence.service', `[CodeIntelligence] Search finished. Total unique results: ${finalResults.length}`);
+        return finalResults;
     }
 
     // 2.4.42 TODO Scanner
     async scanTodos(rootPath: string): Promise<FileSearchResult[]> {
-        const todos: FileSearchResult[] = []
-        await this.scanDirForTodos(rootPath, todos)
-        return todos
+        const todos: FileSearchResult[] = [];
+        await this.scanDirForTodos(rootPath, todos);
+        return todos;
     }
 
     // 2.4.47 Code Structure (Outline)
     async getFileDimensions(filePath: string): Promise<FileSearchResult[]> {
         try {
-            const content = await fs.readFile(filePath, 'utf-8')
-            const symbols = this.parseFileSymbols(filePath, content)
+            const content = await fs.readFile(filePath, 'utf-8');
+            const symbols = this.parseFileSymbols(filePath, content);
             return symbols.map(r => ({
                 file: filePath,
                 type: r.kind,
                 name: r.name,
                 line: r.line,
                 text: r.signature
-            }))
+            }));
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to get file dimensions for ${filePath}: `, error)
-            return []
+            console.error(`[CodeIntelligence] Failed to get file dimensions for ${filePath}: `, error);
+            return [];
         }
     }
 
     // 2.5 Advanced Agent Tool: Find Usage
     async findUsage(rootPath: string, symbol: string): Promise<FileSearchResult[]> {
-        const results: FileSearchResult[] = []
-        await this.scanDirForText(rootPath, `\\b${symbol} \\b`, true, results)
-        return results
+        const results: FileSearchResult[] = [];
+        await this.scanDirForText(rootPath, `\\b${symbol} \\b`, true, results);
+        return results;
     }
 
     private async scanDirForTodos(dir: string, results: FileSearchResult[]) {
         try {
-            const entries = await fs.readdir(dir, { withFileTypes: true })
+            const entries = await fs.readdir(dir, { withFileTypes: true });
             for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') { continue }
+                const fullPath = path.join(dir, entry.name);
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') { continue; }
 
                 if (entry.isDirectory()) {
-                    await this.scanDirForTodos(fullPath, results)
+                    await this.scanDirForTodos(fullPath, results);
                 } else if (entry.isFile() && /\.(ts|js|py|kt|java|go|rs|cpp|h|gradle)$/.test(entry.name)) {
-                    const content = await fs.readFile(fullPath, 'utf-8')
-                    const lines = content.split('\n')
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    const lines = content.split('\n');
                     lines.forEach((line, index) => {
                         if (line.includes('// TODO') || line.includes('# TODO')) {
                             results.push({
                                 file: fullPath,
                                 line: index + 1,
                                 text: line.trim()
-                            })
+                            });
                         }
-                    })
+                    });
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan todos in ${dir}: `, getErrorMessage(error as Error))
+            console.error(`[CodeIntelligence] Failed to scan todos in ${dir}: `, getErrorMessage(error as Error));
         }
     }
 
     private async scanDirForSymbols(dir: string, query: string, results: FileSearchResult[]) {
         try {
-            const entries = await fs.readdir(dir, { withFileTypes: true })
+            const entries = await fs.readdir(dir, { withFileTypes: true });
             for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') { continue }
+                const fullPath = path.join(dir, entry.name);
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') { continue; }
 
                 if (entry.isDirectory()) {
-                    await this.scanDirForSymbols(fullPath, query, results)
+                    await this.scanDirForSymbols(fullPath, query, results);
                 } else if (entry.isFile() && /\.(ts|tsx|js|jsx|py|kt|java|go|rs|cpp|h|cs)$/.test(entry.name)) {
-                    const content = await fs.readFile(fullPath, 'utf-8')
-                    const lines = content.split('\n')
-                    const symbolRegex = new RegExp(`(function|class|const|let|var|interface|type|fun|object|interface|void|public|private|protected|internal)\\s+(${query}\\w*)`, 'i')
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    const lines = content.split('\n');
+                    const symbolRegex = new RegExp(`(function|class|const|let|var|interface|type|fun|object|interface|void|public|private|protected|internal)\\s+(${query}\\w*)`, 'i');
 
                     lines.forEach((line, index) => {
-                        const match = line.match(symbolRegex)
+                        const match = line.match(symbolRegex);
                         if (match?.[1] && match[2]) {
                             results.push({
                                 file: fullPath,
@@ -489,37 +489,37 @@ export class CodeIntelligenceService {
                                 text: line.trim(),
                                 type: match[1],
                                 name: match[2]
-                            })
+                            });
                         }
-                    })
+                    });
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan symbols in ${dir}: `, getErrorMessage(error as Error))
+            console.error(`[CodeIntelligence] Failed to scan symbols in ${dir}: `, getErrorMessage(error as Error));
         }
     }
 
     private async scanDirForText(dir: string, query: string, isRegex: boolean, results: FileSearchResult[]) {
         try {
-            const entries = await fs.readdir(dir, { withFileTypes: true })
+            const entries = await fs.readdir(dir, { withFileTypes: true });
             for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name)
-                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') { continue }
+                const fullPath = path.join(dir, entry.name);
+                if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') { continue; }
 
                 if (entry.isDirectory()) {
-                    await this.scanDirForText(fullPath, query, isRegex, results)
+                    await this.scanDirForText(fullPath, query, isRegex, results);
                 } else if (entry.isFile() && !/\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|mp4|webm)$/i.test(entry.name)) {
-                    const content = await fs.readFile(fullPath, 'utf-8')
-                    const lines = content.split('\n')
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    const lines = content.split('\n');
 
                     lines.forEach((line, index) => {
-                        let match = false
+                        let match = false;
                         if (isRegex) {
                             try {
-                                if (new RegExp(query, 'i').test(line)) { match = true }
+                                if (new RegExp(query, 'i').test(line)) { match = true; }
                             } catch { /* ignore invalid regex */ }
                         } else {
-                            if (line.toLowerCase().includes(query.toLowerCase())) { match = true }
+                            if (line.toLowerCase().includes(query.toLowerCase())) { match = true; }
                         }
 
                         if (match) {
@@ -528,14 +528,14 @@ export class CodeIntelligenceService {
                                     file: fullPath,
                                     line: index + 1,
                                     text: line.trim().substring(0, 200)
-                                })
+                                });
                             }
                         }
-                    })
+                    });
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan text in ${dir}: `, getErrorMessage(error as Error))
+            console.error(`[CodeIntelligence] Failed to scan text in ${dir}: `, getErrorMessage(error as Error));
         }
     }
 }

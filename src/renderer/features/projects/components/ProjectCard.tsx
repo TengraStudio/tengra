@@ -1,9 +1,9 @@
-import { Archive, ArrowRight, Calendar, MoreVertical, Pencil, Terminal, Trash2 } from 'lucide-react'
-import React, { memo } from 'react'
+import { Archive, ArrowRight, Calendar, MoreVertical, Pencil, Terminal, Trash2 } from 'lucide-react';
+import React, { memo } from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { Project } from '@/types'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { Project } from '@/types';
 
 interface ProjectCardProps {
     project: Project
@@ -26,8 +26,8 @@ const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () =
             isSelected ? "opacity-100 scale-100" : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
         )}
         onClick={(e) => {
-            e.stopPropagation()
-            onToggle?.()
+            e.stopPropagation();
+            onToggle?.();
         }}
     >
         <div className={cn(
@@ -41,7 +41,7 @@ const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () =
             )}
         </div>
     </div>
-)
+);
 
 const ProjectCardMenu: React.FC<{
     project: Project
@@ -55,8 +55,8 @@ const ProjectCardMenu: React.FC<{
     <div className="relative">
         <button
             onClick={(e) => {
-                e.stopPropagation()
-                setShowMenu(showMenu ? null : project.id)
+                e.stopPropagation();
+                setShowMenu(showMenu ? null : project.id);
             }}
             className={cn(
                 "p-1.5 rounded-md hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors",
@@ -68,7 +68,7 @@ const ProjectCardMenu: React.FC<{
 
         {showMenu && (
             <>
-                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(null) }} />
+                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(null); }} />
                 <div
                     className="absolute right-0 top-full mt-1 w-40 bg-card border border-border/50 rounded-lg shadow-xl z-50 py-1"
                     onClick={(e) => e.stopPropagation()}
@@ -81,7 +81,7 @@ const ProjectCardMenu: React.FC<{
                         {t('common.edit')}
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null) }}
+                        onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Archive className="w-3.5 h-3.5 text-emerald-400" />
@@ -98,7 +98,7 @@ const ProjectCardMenu: React.FC<{
             </>
         )}
     </div>
-)
+);
 
 const ProjectCardInfo: React.FC<{ project: Project }> = ({ project }) => (
     <div>
@@ -109,7 +109,7 @@ const ProjectCardInfo: React.FC<{ project: Project }> = ({ project }) => (
             {project.path}
         </p>
     </div>
-)
+);
 
 const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string }> = ({ project, t }) => (
     <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
@@ -121,7 +121,7 @@ const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string
             {project.status === 'active' ? t('common.active') : project.status}
         </span>
     </div>
-)
+);
 
 export const ProjectCard = memo<ProjectCardProps>(({
     project, index, onSelect, showMenu, setShowMenu, onEdit, onDelete, onArchive, isSelected, onToggleSelection, t
@@ -168,5 +168,5 @@ export const ProjectCard = memo<ProjectCardProps>(({
             <ProjectCardInfo project={project} />
             <ProjectCardFooter project={project} t={t} />
         </motion.div>
-    )
-})
+    );
+});

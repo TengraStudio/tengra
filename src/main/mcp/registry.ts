@@ -1,30 +1,30 @@
-import { promises as dns } from 'dns'
+import { promises as dns } from 'dns';
 
-import { McpAction, McpResult, McpService } from '@main/mcp/types'
-import { MonitoringService } from '@main/services/analysis/monitoring.service'
-import { ScannerService } from '@main/services/analysis/scanner.service'
-import { DatabaseService } from '@main/services/data/database.service'
-import { FileManagementService } from '@main/services/data/file.service'
-import { FileSystemService } from '@main/services/data/filesystem.service'
-import { ContentService } from '@main/services/external/content.service'
-import { UtilityService } from '@main/services/external/utility.service'
-import { WebService } from '@main/services/external/web.service'
-import { EmbeddingService } from '@main/services/llm/embedding.service'
-import { OllamaService } from '@main/services/llm/ollama.service'
-import { DockerService } from '@main/services/project/docker.service'
-import { GitService } from '@main/services/project/git.service'
-import { SSHConnection, SSHService } from '@main/services/project/ssh.service'
-import { SecurityService } from '@main/services/security/security.service'
-import { CommandService } from '@main/services/system/command.service'
-import { NetworkService } from '@main/services/system/network.service'
-import { SettingsService } from '@main/services/system/settings.service'
-import { SystemService } from '@main/services/system/system.service'
-import { ClipboardService } from '@main/services/ui/clipboard.service'
-import { NotificationService } from '@main/services/ui/notification.service'
-import { ScreenshotService } from '@main/services/ui/screenshot.service'
-import { ServiceResponse } from '@shared/types'
-import { JsonObject, JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { McpAction, McpResult, McpService } from '@main/mcp/types';
+import { MonitoringService } from '@main/services/analysis/monitoring.service';
+import { ScannerService } from '@main/services/analysis/scanner.service';
+import { DatabaseService } from '@main/services/data/database.service';
+import { FileManagementService } from '@main/services/data/file.service';
+import { FileSystemService } from '@main/services/data/filesystem.service';
+import { ContentService } from '@main/services/external/content.service';
+import { UtilityService } from '@main/services/external/utility.service';
+import { WebService } from '@main/services/external/web.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
+import { DockerService } from '@main/services/project/docker.service';
+import { GitService } from '@main/services/project/git.service';
+import { SSHConnection, SSHService } from '@main/services/project/ssh.service';
+import { SecurityService } from '@main/services/security/security.service';
+import { CommandService } from '@main/services/system/command.service';
+import { NetworkService } from '@main/services/system/network.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { SystemService } from '@main/services/system/system.service';
+import { ClipboardService } from '@main/services/ui/clipboard.service';
+import { NotificationService } from '@main/services/ui/notification.service';
+import { ScreenshotService } from '@main/services/ui/screenshot.service';
+import { ServiceResponse } from '@shared/types';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 interface McpDeps {
     web: WebService
@@ -55,59 +55,59 @@ type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | u
 function wrap(handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>): (args: JsonObject) => Promise<McpResult> {
     return async (args: JsonObject) => {
         try {
-            const rawResult = await Promise.resolve(handler(args))
-            return normalizeResult(rawResult)
+            const rawResult = await Promise.resolve(handler(args));
+            return normalizeResult(rawResult);
         } catch (error) {
-            return { success: false, error: getErrorMessage(error) }
+            return { success: false, error: getErrorMessage(error) };
         }
-    }
+    };
 }
 
 function normalizeResult(rawResult: McpHandlerResult): McpResult {
     if (isServiceResponse(rawResult)) {
-        return normalizeServiceResponse(rawResult)
+        return normalizeServiceResponse(rawResult);
     }
-    return { success: true, data: (rawResult ?? null) as JsonValue }
+    return { success: true, data: (rawResult ?? null) as JsonValue };
 }
 
 function isServiceResponse(result: unknown): result is ServiceResponse<unknown> {
-    return !!(result && typeof result === 'object' && 'success' in result)
+    return !!(result && typeof result === 'object' && 'success' in result);
 }
 
 function normalizeServiceResponse(res: ServiceResponse<unknown>): McpResult {
     if (res.success === false) {
-        return { success: false, error: (res.error ?? res.message) ?? 'Unknown error' }
+        return { success: false, error: (res.error ?? res.message) ?? 'Unknown error' };
     }
     // prioritized data extraction
-    const data = res.data ?? res.result ?? res.content ?? res
-    return { success: true, data: data as JsonValue }
+    const data = res.data ?? res.result ?? res.content ?? res;
+    return { success: true, data: data as JsonValue };
 }
 
 const buildActions = (actions: Array<Omit<McpAction, 'handler'> & { handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult> }>): McpAction[] =>
-    actions.map(a => ({ ...a, handler: wrap(a.handler) }))
+    actions.map(a => ({ ...a, handler: wrap(a.handler) }));
 
 const normalizeTarget = (target: string): string => {
-    const trimmed = String(target).trim()
-    if (!trimmed) { return '' }
+    const trimmed = String(target).trim();
+    if (!trimmed) { return ''; }
     try {
-        const url = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`)
-        return url.hostname
+        const url = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`);
+        return url.hostname;
     } catch {
-        return trimmed
+        return trimmed;
     }
-}
+};
 
 const ensureAllowedTarget = (deps: McpDeps, target: string) => {
-    const allowed = deps.settings.getSettings().mcpSecurityAllowedHosts ?? []
-    const normalized = normalizeTarget(target)
+    const allowed = deps.settings.getSettings().mcpSecurityAllowedHosts ?? [];
+    const normalized = normalizeTarget(target);
     if (!normalized) {
-        throw new Error('Target is required')
+        throw new Error('Target is required');
     }
     if (!allowed.includes(normalized)) {
-        throw new Error(`Target not allowlisted: ${normalized}`)
+        throw new Error(`Target not allowlisted: ${normalized}`);
     }
-    return normalized
-}
+    return normalized;
+};
 
 export function buildMcpServices(deps: McpDeps): McpService[] {
     return [
@@ -117,7 +117,7 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
         ...buildProjectServices(deps),
         ...buildDataServices(deps),
         ...buildSecurityServices(deps)
-    ]
+    ];
 }
 
 function buildCoreServices(deps: McpDeps): McpService[] {
@@ -156,7 +156,7 @@ function buildCoreServices(deps: McpDeps): McpService[] {
                 { name: 'processOnPort', description: 'Find process on port', handler: ({ port }) => deps.system.getProcessOnPort(Number(port)) }
             ])
         }
-    ]
+    ];
 }
 
 function buildNetworkServices(deps: McpDeps): McpService[] {
@@ -187,7 +187,7 @@ function buildNetworkServices(deps: McpDeps): McpService[] {
                 { name: 'whois', description: 'WHOIS lookup', handler: ({ domain }) => deps.network.whois(domain as string) }
             ])
         }
-    ]
+    ];
 }
 
 function buildUtilityServices(deps: McpDeps): McpService[] {
@@ -231,7 +231,7 @@ function buildUtilityServices(deps: McpDeps): McpService[] {
                 { name: 'write', description: 'Write clipboard text', handler: ({ text }) => deps.clipboard.writeText(text as string) }
             ])
         }
-    ]
+    ];
 }
 
 function buildProjectServices(deps: McpDeps): McpService[] {
@@ -260,7 +260,7 @@ function buildProjectServices(deps: McpDeps): McpService[] {
                 { name: 'listImages', description: 'List docker images', handler: () => deps.docker.listImages() }
             ])
         }
-    ]
+    ];
 }
 
 function buildDataServices(deps: McpDeps): McpService[] {
@@ -296,7 +296,7 @@ function buildDataServices(deps: McpDeps): McpService[] {
                 { name: 'formatJson', description: 'Pretty print JSON', handler: ({ json }) => deps.content.formatJson(json as JsonValue) }
             ])
         }
-    ]
+    ];
 }
 
 function buildSecurityServices(deps: McpDeps): McpService[] {
@@ -319,48 +319,48 @@ function buildSecurityServices(deps: McpDeps): McpService[] {
                     name: 'dnsLookup',
                     description: 'Resolve DNS A/AAAA records',
                     handler: (async (args: JsonObject) => {
-                        const target = args.target as string
-                        const hostname = ensureAllowedTarget(deps, target)
-                        const records = await dns.lookup(hostname, { all: true })
-                        return { hostname, records: records.map(r => ({ address: r.address, family: r.family })) }
+                        const target = args.target as string;
+                        const hostname = ensureAllowedTarget(deps, target);
+                        const records = await dns.lookup(hostname, { all: true });
+                        return { hostname, records: records.map(r => ({ address: r.address, family: r.family })) };
                     })
                 },
                 {
                     name: 'mxLookup',
                     description: 'Resolve DNS MX records',
                     handler: (async (args: JsonObject) => {
-                        const target = args.target as string
-                        const hostname = ensureAllowedTarget(deps, target)
-                        const records = await dns.resolveMx(hostname)
-                        return { hostname, records: records.map(r => ({ exchange: r.exchange, priority: r.priority })) }
+                        const target = args.target as string;
+                        const hostname = ensureAllowedTarget(deps, target);
+                        const records = await dns.resolveMx(hostname);
+                        return { hostname, records: records.map(r => ({ exchange: r.exchange, priority: r.priority })) };
                     })
                 },
                 {
                     name: 'httpHeaders',
                     description: 'Fetch HTTP headers (HEAD request)',
                     handler: (async (args: JsonObject) => {
-                        const url = args.url as string
-                        const hostname = ensureAllowedTarget(deps, url)
-                        const targetUrl = url.includes('://') ? url : `https://${hostname}`
-                        const response = await fetch(targetUrl, { method: 'HEAD' })
-                        const headers: Record<string, string> = {}
-                        response.headers.forEach((value, key) => { headers[key] = value })
-                        return { status: response.status, headers }
+                        const url = args.url as string;
+                        const hostname = ensureAllowedTarget(deps, url);
+                        const targetUrl = url.includes('://') ? url : `https://${hostname}`;
+                        const response = await fetch(targetUrl, { method: 'HEAD' });
+                        const headers: Record<string, string> = {};
+                        response.headers.forEach((value, key) => { headers[key] = value; });
+                        return { status: response.status, headers };
                     })
                 },
                 {
                     name: 'portScan',
                     description: 'Scan ports with nmap (allowlist only)',
                     handler: (async (args: JsonObject) => {
-                        const target = args.target as string
-                        const ports = args.ports as string | undefined
-                        const hostname = ensureAllowedTarget(deps, target)
-                        const portArg = ports ? `-p ${ports}` : ''
-                        const command = `nmap -Pn ${portArg} ${hostname}`.trim()
-                        return deps.command.executeCommand(command)
+                        const target = args.target as string;
+                        const ports = args.ports as string | undefined;
+                        const hostname = ensureAllowedTarget(deps, target);
+                        const portArg = ports ? `-p ${ports}` : '';
+                        const command = `nmap -Pn ${portArg} ${hostname}`.trim();
+                        return deps.command.executeCommand(command);
                     })
                 }
             ])
         }
-    ]
+    ];
 }

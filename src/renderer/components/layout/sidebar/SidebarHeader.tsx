@@ -1,7 +1,7 @@
-import { Plus } from 'lucide-react'
-import React from 'react'
+import { Plus } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface SidebarHeaderProps {
     isCollapsed: boolean
@@ -28,7 +28,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 {!isCollapsed && <span>{newChatLabel}</span>}
             </button>
         </div>
-    )
-}
+    );
+};
 
-SidebarHeader.displayName = 'SidebarHeader'
+SidebarHeader.displayName = 'SidebarHeader';

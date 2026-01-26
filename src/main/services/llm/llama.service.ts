@@ -1,16 +1,16 @@
 // LlamaService - Uses llama-server executable for fast CUDA inference
 // Communicates via HTTP API (OpenAI-compatible)
 
-import { ChildProcess,spawn } from 'child_process'
-import * as fs from 'fs'
-import * as http from 'http'
-import * as path from 'path'
+import { ChildProcess,spawn } from 'child_process';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as path from 'path';
 
-import { BaseService } from '@main/services/base.service'
-import { DataService } from '@main/services/data/data.service'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { app } from 'electron'
+import { BaseService } from '@main/services/base.service';
+import { DataService } from '@main/services/data/data.service';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app } from 'electron';
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -29,12 +29,12 @@ interface ModelInfo {
 }
 
 export class LlamaService extends BaseService {
-    private serverProcess: ChildProcess | null = null
-    private modelsDir: string
-    private binDir: string
-    private currentModelPath: string | null = null
-    private serverPort: number = 8080
-    private serverHost: string = '127.0.0.1'
+    private serverProcess: ChildProcess | null = null;
+    private modelsDir: string;
+    private binDir: string;
+    private currentModelPath: string | null = null;
+    private serverPort: number = 8080;
+    private serverHost: string = '127.0.0.1';
     private config: LlamaConfig = {
         gpuLayers: -1,
         contextSize: 8192,
@@ -42,30 +42,30 @@ export class LlamaService extends BaseService {
         port: 8080,
         host: '127.0.0.1',
         backend: 'auto'
-    }
+    };
 
     constructor(dataService?: DataService) {
         super('LlamaService');
         // Get paths
         try {
             if (dataService) {
-                this.modelsDir = path.join(dataService.getPath('models'))
+                this.modelsDir = path.join(dataService.getPath('models'));
             } else {
-                this.modelsDir = path.join(app.getPath('userData'), 'models')
+                this.modelsDir = path.join(app.getPath('userData'), 'models');
             }
 
-            fs.mkdirSync(this.modelsDir, { recursive: true })
+            fs.mkdirSync(this.modelsDir, { recursive: true });
         } catch (e) {
-            this.logWarn(`Failed to setup models directory: ${getErrorMessage(e as Error)}`)
-            this.modelsDir = path.join(process.cwd(), 'models')
+            this.logWarn(`Failed to setup models directory: ${getErrorMessage(e as Error)}`);
+            this.modelsDir = path.join(process.cwd(), 'models');
         }
 
         // llama-server binary path
-        this.binDir = path.join(process.cwd(), 'vendor/llama-bin')
+        this.binDir = path.join(process.cwd(), 'vendor/llama-bin');
 
         // Fallback to project root if not in dist
         if (!fs.existsSync(this.binDir)) {
-            this.binDir = path.join(process.cwd(), 'vendor', 'llama-bin')
+            this.binDir = path.join(process.cwd(), 'vendor', 'llama-bin');
         }
     }
 
@@ -75,7 +75,7 @@ export class LlamaService extends BaseService {
     }
 
     private getServerPath(): string {
-        return path.join(this.binDir, 'llama-server.exe')
+        return path.join(this.binDir, 'llama-server.exe');
     }
 
     async isServerRunning(): Promise<boolean> {
@@ -87,50 +87,50 @@ export class LlamaService extends BaseService {
                 method: 'GET',
                 timeout: 2000
             }, (res) => {
-                resolve(res.statusCode === 200)
-            })
-            req.on('error', () => resolve(false))
+                resolve(res.statusCode === 200);
+            });
+            req.on('error', () => resolve(false));
             req.on('timeout', () => {
-                req.destroy()
-                resolve(false)
-            })
-            req.end()
-        })
+                req.destroy();
+                resolve(false);
+            });
+            req.end();
+        });
     }
 
     async loadModel(modelPath: string, config?: LlamaConfig): Promise<{ success: boolean; error?: string }> {
         try {
             // Check if llama-server exists
-            const serverPath = this.getServerPath()
+            const serverPath = this.getServerPath();
             if (!fs.existsSync(serverPath)) {
                 return {
                     success: false,
                     error: `llama-server.exe bulunamadı: ${serverPath}`
-                }
+                };
             }
 
             // Check if model exists
             if (!fs.existsSync(modelPath)) {
-                return { success: false, error: `Model dosyası bulunamadı: ${modelPath}` }
+                return { success: false, error: `Model dosyası bulunamadı: ${modelPath}` };
             }
 
             // Stop existing server
-            await this.stopServer()
+            await this.stopServer();
 
             // Merge config
             if (config) {
-                this.config = { ...this.config, ...config }
+                this.config = { ...this.config, ...config };
             }
-            this.serverPort = this.config.port ?? 8080
-            this.serverHost = this.config.host ?? '127.0.0.1'
+            this.serverPort = this.config.port ?? 8080;
+            this.serverHost = this.config.host ?? '127.0.0.1';
 
-            this.logInfo(`Starting llama-server with model: ${modelPath}`)
-            this.logInfo(`GPU Layers: ${this.config.gpuLayers}, Context: ${this.config.contextSize}`)
+            this.logInfo(`Starting llama-server with model: ${modelPath}`);
+            this.logInfo(`GPU Layers: ${this.config.gpuLayers}, Context: ${this.config.contextSize}`);
 
             return this.startLlamaProcess(modelPath, serverPath);
 
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) }
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
@@ -145,50 +145,50 @@ export class LlamaService extends BaseService {
             '--flash-attn',
             '--cont-batching',
             '--mlock',
-        ]
+        ];
 
         if (this.config.gpuLayers !== undefined && this.config.gpuLayers >= 0) {
-            args.push('--gpu-layers', this.config.gpuLayers.toString())
+            args.push('--gpu-layers', this.config.gpuLayers.toString());
         } else {
-            args.push('--gpu-layers', '999')
+            args.push('--gpu-layers', '999');
         }
 
         // Start server
-        const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH }
+        const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH };
 
         if (this.config.backend === 'vulkan') {
-            env['GGML_VULKAN'] = '1'
+            env['GGML_VULKAN'] = '1';
         } else if (this.config.backend === 'cuda') {
-            env['GGML_CUDA'] = '1'
+            env['GGML_CUDA'] = '1';
         } else if (this.config.backend === 'metal') {
-            env['GGML_METAL'] = '1'
+            env['GGML_METAL'] = '1';
         } else if (this.config.backend === 'cpu') {
-            args.push('--gpu-layers', '0')
+            args.push('--gpu-layers', '0');
         }
 
         this.serverProcess = spawn(serverPath, args, {
             cwd: this.binDir,
             env,
             windowsHide: true
-        })
+        });
 
         this.serverProcess.stdout?.on('data', (data) => {
-            this.logInfo(`llama-server: ${data.toString()}`)
-        })
+            this.logInfo(`llama-server: ${data.toString()}`);
+        });
 
         this.serverProcess.stderr?.on('data', (data) => {
-            this.logError(`llama-server: ${data.toString()}`)
-        })
+            this.logError(`llama-server: ${data.toString()}`);
+        });
 
         this.serverProcess.on('exit', (code) => {
-            this.logInfo(`llama-server exited with code ${code}`)
-            this.serverProcess = null
-            this.currentModelPath = null
-        })
+            this.logInfo(`llama-server exited with code ${code}`);
+            this.serverProcess = null;
+            this.currentModelPath = null;
+        });
 
         // Wait for server to start
         for (let i = 0; i < 60; i++) {
-            await new Promise(r => setTimeout(r, 1000))
+            await new Promise(r => setTimeout(r, 1000));
             if (await this.isServerRunning()) {
                 this.currentModelPath = modelPath;
                 this.logInfo('llama-server started successfully');
@@ -197,8 +197,8 @@ export class LlamaService extends BaseService {
         }
 
         // Server didn't start
-        await this.stopServer()
-        return { success: false, error: 'llama-server başlatılamadı (timeout)' }
+        await this.stopServer();
+        return { success: false, error: 'llama-server başlatılamadı (timeout)' };
     }
 
     async stopServer(): Promise<void> {
@@ -217,7 +217,7 @@ export class LlamaService extends BaseService {
     }
 
     async unloadModel(): Promise<void> {
-        await this.stopServer()
+        await this.stopServer();
     }
 
     async chat(
@@ -226,21 +226,21 @@ export class LlamaService extends BaseService {
         onToken?: (token: string) => void
     ): Promise<{ success: boolean; response?: string; error?: string }> {
         if (!await this.isServerRunning()) {
-            return { success: false, error: 'llama-server is not running' }
+            return { success: false, error: 'llama-server is not running' };
         }
 
         return new Promise((resolve) => {
-            const messages = []
+            const messages = [];
             if (systemPrompt) {
-                messages.push({ role: 'system', content: systemPrompt })
+                messages.push({ role: 'system', content: systemPrompt });
             }
-            messages.push({ role: 'user', content: message })
+            messages.push({ role: 'user', content: message });
 
             const postData = JSON.stringify({
                 messages,
                 stream: !!onToken,
                 max_tokens: 4096
-            })
+            });
 
             const req = http.request({
                 hostname: this.serverHost,
@@ -252,62 +252,62 @@ export class LlamaService extends BaseService {
                     'Content-Length': Buffer.byteLength(postData)
                 }
             }, (res) => {
-                let data = ''
-                let fullResponse = ''
+                let data = '';
+                let fullResponse = '';
 
                 res.on('data', (chunk) => {
-                    const str = chunk.toString()
+                    const str = chunk.toString();
 
                     if (onToken) {
                         // Handle SSE streaming
-                        const lines = str.split('\n')
+                        const lines = str.split('\n');
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
-                                const jsonStr = line.slice(6).trim()
-                                if (jsonStr === '[DONE]') {continue}
-                                const obj = safeJsonParse<{ choices?: Array<{ delta?: { content?: string } }> }>(jsonStr, {})
-                                const content = obj.choices?.[0]?.delta?.content
+                                const jsonStr = line.slice(6).trim();
+                                if (jsonStr === '[DONE]') {continue;}
+                                const obj = safeJsonParse<{ choices?: Array<{ delta?: { content?: string } }> }>(jsonStr, {});
+                                const content = obj.choices?.[0]?.delta?.content;
                                 if (content) {
-                                    fullResponse += content
-                                    onToken(content)
+                                    fullResponse += content;
+                                    onToken(content);
                                 }
                             }
                         }
                     } else {
-                        data += str
+                        data += str;
                     }
-                })
+                });
 
                 res.on('end', () => {
                     if (onToken) {
-                        resolve({ success: true, response: fullResponse })
+                        resolve({ success: true, response: fullResponse });
                     } else {
-                        const result = safeJsonParse<{ choices?: Array<{ message?: { content?: string } }> }>(data, {})
-                        const content = result.choices?.[0]?.message?.content ?? ''
-                        resolve({ success: true, response: content })
+                        const result = safeJsonParse<{ choices?: Array<{ message?: { content?: string } }> }>(data, {});
+                        const content = result.choices?.[0]?.message?.content ?? '';
+                        resolve({ success: true, response: content });
                     }
-                })
-            })
+                });
+            });
 
             req.on('error', (e) => {
-                resolve({ success: false, error: e.message })
-            })
+                resolve({ success: false, error: e.message });
+            });
 
-            req.write(postData)
-            req.end()
-        })
+            req.write(postData);
+            req.end();
+        });
     }
 
     async getEmbeddings(input: string): Promise<number[]> {
         if (!await this.isServerRunning()) {
-            throw new Error('llama-server is not running')
+            throw new Error('llama-server is not running');
         }
 
         return new Promise((resolve, reject) => {
             const postData = JSON.stringify({
                 input,
                 model: 'default'
-            })
+            });
 
             const req = http.request({
                 hostname: this.serverHost,
@@ -319,23 +319,23 @@ export class LlamaService extends BaseService {
                     'Content-Length': Buffer.byteLength(postData)
                 }
             }, (res) => {
-                let data = ''
-                res.on('data', chunk => data += chunk.toString())
+                let data = '';
+                res.on('data', chunk => data += chunk.toString());
                 res.on('end', () => {
-                    const json = safeJsonParse<{ data?: Array<{ embedding?: number[] }> }>(data, {})
-                    const embedding = json.data?.[0]?.embedding
+                    const json = safeJsonParse<{ data?: Array<{ embedding?: number[] }> }>(data, {});
+                    const embedding = json.data?.[0]?.embedding;
                     if (embedding) {
-                        resolve(embedding)
+                        resolve(embedding);
                     } else {
-                        reject(new Error('Invalid embedding response from llama-server'))
+                        reject(new Error('Invalid embedding response from llama-server'));
                     }
-                })
-            })
+                });
+            });
 
-            req.on('error', (e) => reject(e))
-            req.write(postData)
-            req.end()
-        })
+            req.on('error', (e) => reject(e));
+            req.write(postData);
+            req.end();
+        });
     }
 
     async resetSession(): Promise<void> {
@@ -355,141 +355,141 @@ export class LlamaService extends BaseService {
     }
 
     async getModels(): Promise<ModelInfo[]> {
-        const models: ModelInfo[] = []
+        const models: ModelInfo[] = [];
         try {
             if (!fs.existsSync(this.modelsDir)) {
-                return models
+                return models;
             }
 
-            const files = await fs.promises.readdir(this.modelsDir)
+            const files = await fs.promises.readdir(this.modelsDir);
 
             for (const file of files) {
                 if (file.endsWith('.gguf')) {
-                    const fullPath = path.join(this.modelsDir, file)
-                    const stats = await fs.promises.stat(fullPath)
+                    const fullPath = path.join(this.modelsDir, file);
+                    const stats = await fs.promises.stat(fullPath);
                     models.push({
                         name: file.replace('.gguf', ''),
                         path: fullPath,
                         size: stats.size,
                         loaded: this.currentModelPath === fullPath
-                    })
+                    });
                 }
             }
         } catch (e) {
-            this.logError(`Error reading models directory: ${getErrorMessage(e as Error)}`)
+            this.logError(`Error reading models directory: ${getErrorMessage(e as Error)}`);
         }
 
-        return models
+        return models;
     }
 
     async downloadModel(url: string, filename: string, onProgress?: (downloadedSize: number, total: number) => void): Promise<{ success: boolean; path?: string; error?: string }> {
-        const https = await import('https')
-        const httpModule = await import('http')
-        const { createWriteStream } = await import('fs')
+        const https = await import('https');
+        const httpModule = await import('http');
+        const { createWriteStream } = await import('fs');
 
         return new Promise((resolve) => {
-            const outputPath = path.join(this.modelsDir, filename)
-            const file = createWriteStream(outputPath)
+            const outputPath = path.join(this.modelsDir, filename);
+            const file = createWriteStream(outputPath);
 
-            const protocol = url.startsWith('https') ? https : httpModule
+            const protocol = url.startsWith('https') ? https : httpModule;
 
             const download = (downloadUrl: string) => {
                 protocol.get(downloadUrl, (response: http.IncomingMessage) => {
                     if (response.statusCode === 302 || response.statusCode === 301) {
-                        const redirectUrl = response.headers.location
+                        const redirectUrl = response.headers.location;
                         if (redirectUrl) {
-                            file.close()
-                            download(redirectUrl)
-                            return
+                            file.close();
+                            download(redirectUrl);
+                            return;
                         }
                     }
 
-                    const totalSize = parseInt(response.headers['content-length'] ?? '0', 10)
-                    let downloadedSize = 0
+                    const totalSize = parseInt(response.headers['content-length'] ?? '0', 10);
+                    let downloadedSize = 0;
 
                     response.on('data', (chunk: Buffer) => {
-                        downloadedSize += chunk.length
-                        onProgress?.(downloadedSize, totalSize)
-                    })
+                        downloadedSize += chunk.length;
+                        onProgress?.(downloadedSize, totalSize);
+                    });
 
-                    response.pipe(file)
+                    response.pipe(file);
 
                     file.on('finish', () => {
-                        file.close()
-                        resolve({ success: true, path: outputPath })
-                    })
+                        file.close();
+                        resolve({ success: true, path: outputPath });
+                    });
 
                     file.on('error', (err: Error) => {
-                        file.close()
-                        resolve({ success: false, error: err.message })
-                    })
+                        file.close();
+                        resolve({ success: false, error: err.message });
+                    });
                 }).on('error', (err: Error) => {
-                    resolve({ success: false, error: err.message })
-                })
-            }
+                    resolve({ success: false, error: err.message });
+                });
+            };
 
-            download(url)
-        })
+            download(url);
+        });
     }
 
     async deleteModel(modelPath: string): Promise<{ success: boolean; error?: string }> {
         try {
             if (this.currentModelPath === modelPath) {
-                await this.stopServer()
+                await this.stopServer();
             }
             if (fs.existsSync(modelPath)) {
-                await fs.promises.unlink(modelPath)
+                await fs.promises.unlink(modelPath);
             }
-            return { success: true }
+            return { success: true };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) }
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
     getConfig(): LlamaConfig {
-        return { ...this.config }
+        return { ...this.config };
     }
 
     setConfig(config: Partial<LlamaConfig>): void {
-        this.config = { ...this.config, ...config }
+        this.config = { ...this.config, ...config };
     }
 
     async getGpuInfo(): Promise<{ available: boolean; backends: string[]; name?: string }> {
-        const backends: string[] = []
-        let detectedName = 'Generic GPU'
+        const backends: string[] = [];
+        let detectedName = 'Generic GPU';
 
         // Check CUDA
-        const cudaDll = path.join(this.binDir, 'ggml-cuda.dll')
+        const cudaDll = path.join(this.binDir, 'ggml-cuda.dll');
         if (fs.existsSync(cudaDll)) {
-            backends.push('cuda')
-            detectedName = 'NVIDIA CUDA'
+            backends.push('cuda');
+            detectedName = 'NVIDIA CUDA';
         }
 
         // Check Vulkan
-        const vulkanDll = path.join(this.binDir, 'ggml-vulkan.dll')
+        const vulkanDll = path.join(this.binDir, 'ggml-vulkan.dll');
         if (fs.existsSync(vulkanDll)) {
-            backends.push('vulkan')
+            backends.push('vulkan');
             if (backends.length === 1) {
-                detectedName = 'Vulkan'
+                detectedName = 'Vulkan';
             } else {
-                detectedName += ' / Vulkan'
+                detectedName += ' / Vulkan';
             }
         }
 
         // Check Metal (Apple only)
         if (process.platform === 'darwin') {
-            backends.push('metal')
-            detectedName = 'Apple Metal'
+            backends.push('metal');
+            detectedName = 'Apple Metal';
         }
 
         return {
             available: backends.length > 0,
             backends,
             name: backends.length > 0 ? detectedName : 'None'
-        }
+        };
     }
 
     isServerAvailable(): boolean {
-        return fs.existsSync(this.getServerPath())
+        return fs.existsSync(this.getServerPath());
     }
 }

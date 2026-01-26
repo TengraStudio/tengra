@@ -1,4 +1,4 @@
-import { Notification } from 'electron'
+import { Notification } from 'electron';
 
 export class NotificationService {
     showNotification(title: string, body: string, silent: boolean = false) {
@@ -7,10 +7,10 @@ export class NotificationService {
                 title,
                 body,
                 silent
-            })
-            notification.show()
-            return { success: true }
+            });
+            notification.show();
+            return { success: true };
         }
-        return { success: false, error: 'Notifications not supported' }
+        return { success: false, error: 'Notifications not supported' };
     }
 }

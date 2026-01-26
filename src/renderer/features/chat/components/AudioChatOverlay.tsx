@@ -1,9 +1,9 @@
-import { Loader2, Mic, StopCircle, Volume2, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { Loader2, Mic, StopCircle, Volume2, X } from 'lucide-react';
+import { useEffect } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface AudioChatOverlayProps {
     isOpen: boolean
@@ -26,16 +26,16 @@ export function AudioChatOverlay({
     onStopSpeaking,
     language
 }: AudioChatOverlayProps) {
-    const { t } = useTranslation(language)
+    const { t } = useTranslation(language);
 
     // Auto-start listening when opened if not speaking
     useEffect(() => {
         if (isOpen && !isListening && !isSpeaking) {
-            startListening()
+            startListening();
         }
-    }, [isOpen, isSpeaking, isListening, startListening])
+    }, [isOpen, isSpeaking, isListening, startListening]);
 
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <AnimatePresence>
@@ -49,7 +49,7 @@ export function AudioChatOverlay({
                     onClick={onClose}
                     className="absolute top-8 right-8 p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl"
                 >
-                    <X className="w-8 h-8 text-white/50 hover:text-white" />
+                    <X className="w-8 h-8 text-foreground/50 hover:text-foreground" />
                 </button>
 
                 <div className="flex flex-col items-center gap-16 relative w-full max-w-lg mx-auto p-4">
@@ -96,7 +96,7 @@ export function AudioChatOverlay({
                             className={cn(
                                 "w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-white/10",
                                 isListening ? "bg-primary text-primary-foreground" :
-                                    isSpeaking ? "bg-emerald-500 text-white" :
+                                    isSpeaking ? "bg-emerald-500 text-foreground" :
                                         "bg-zinc-800 text-zinc-400"
                             )}
                         >
@@ -158,5 +158,5 @@ export function AudioChatOverlay({
                 </div>
             </motion.div>
         </AnimatePresence>
-    )
+    );
 }

@@ -41,7 +41,7 @@ This document serves as the central index for project tasks. Tasks are categoriz
 | Category | Status | Blocking Items |
 |----------|--------|----------------|
 | **i18n** | Completed | None |
-| **Security** | Under Review | Authentication Migration |
+| **Security** | Completed | None |
 | **Features** | In Backlog | Memory and RAG system |
 | **Architecture** | Refactoring | Event Bus implementation |
 | **Quality** | Stable | Test coverage improvements |
@@ -53,49 +53,56 @@ This document serves as the central index for project tasks. Tasks are categoriz
 - [x] Resolution of hardcoded strings (i18n)
 - [x] Completion of Turkish localizations
 - [x] Fix TS5076 error in PromptTemplatesService
-- Accessibility audit and ARIA compliance
+- [x] Accessibility audit and ARIA compliance
+- [x] Fix immediate account UI refresh bug and refactor Auth IPC
 
 ### Short-Term Goals
-- Authentication database migration
-- [ ] Gallery prompt storage implementation
-- [ ] Service layer standardization
+- [x] Authentication database migration
+- [x] Gallery prompt storage implementation
+- [x] Service layer standardization
 - [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
-- [ ] Exportable Research Briefs (PDF/Markdown)
+- [x] Exportable Research Briefs (PDF/Markdown)
 
 ### Autonomous Project System (New)
 Implement the "Project System" for long-running autonomous tasks (replacing `build_project_system_prompt.md`).
 
 #### Backend Service (`ProjectAgentService`)
-- [ ] Create `src/main/services/project/project-agent.service.ts` extending `BaseService`.
-- [ ] Implement `Think -> Plan -> Act -> Observe` loop.
-- [ ] **State Persistence**: Save `currentTask`, `plan`, `history` to `project-state.json`.
-- [ ] **Tools**: Wrap `run_command`, `read_file`, etc.
-- [ ] **Resilience**:
-    - [ ] Intercept 429/Quota errors.
-    - [ ] Auto-rotate accounts via `AuthService`.
-    - [ ] Retry 5xx errors with exponential backoff.
+- [x] Create `src/main/services/project/project-agent.service.ts` extending `BaseService`.
+- [x] Implement `Think -> Plan -> Act -> Observe` loop.
+- [x] **State Persistence**: Save `currentTask`, `plan`, `history` to `project-state.json`.
+- [x] **Tools**: Wrap `run_command`, `read_file`, etc.
+- [x] **Resilience**:
+    - [x] Intercept 429/Quota errors.
+    - [x] Auto-rotate accounts via `AuthService`.
+    - [x] Retry 5xx errors with exponential backoff.
+
+| Project System | [x] Critical Fixes, [ ] Phase 2 | [x] High | 2026-02-15 |
+| UI/UX | [x] Accessibility, [x] Themes | [x] High | 2026-01-30 |
+| i18n | [x] Core Fixes, [ ] More Langs | [ ] Med | 2026-03-01 |
+| Infrastructure | [x] Strict TS, [x] CI/CD | [x] High | 2026-01-25 |
 
 #### User Interface (`src/renderer/features/project/`)
-- [ ] Create Project View.
-- [ ] **Mission Input**: Large text area.
-- [ ] **Live Dashboard**:
-    - [ ] Activity Stream (scrolling logs).
-    - [ ] Planner View (checklist).
-- [ ] **Controls**: Start, Pause, Stop.
+- [x] Create Project View.
+- [x] **Mission Input**: Large text area.
+- [x] **Live Dashboard**:
+    - [x] Activity Stream (scrolling logs).
+    - [x] Planner View (checklist).
+- [x] **Controls**: Start, Pause, Stop.
 
 #### Integration
-- [ ] Register IPC: `project:start`, `project:stop`, `project:update`.
-- [ ] Inject System Prompt from `docs/prompts/project_agent_system_prompt.md`.
+- [x] Register IPC: `project:start`, `project:stop`, `project:update`.
+- [x] Inject System Prompt from `docs/prompts/project_agent_system_prompt.md`.
 
 ### Medium-Term Goals
 - Development of the Statistics dashboard
 - [ ] Implementation of the "Thinking" mode for agents
 - [ ] Design and development of a plugin system
+- [x] Refactor high complexity methods (>10) in `SettingsService`
 - [ ] Refactor database system to a Windows service (Rust-based standalone PGlite host)
 - [ ] Local AI Hardware Optimization & Management UI
 - [ ] Local Hugging Face Model Support (Inference API & Local GGUF/Transformers.js)
 
 - [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
 - [x] Turkish localizations completed for migrated modules
-- [x] Build and lint verification passed
-*Last Updated: January 23, 2026*
+- [x] Build and lint verification passed (Reduced warnings from 804 to 655)
+*Last Updated: January 26, 2026 (Batch 7 Complete)*

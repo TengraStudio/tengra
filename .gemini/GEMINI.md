@@ -60,6 +60,20 @@ npm run test         # Run tests
 - All public methods need JSDoc comments
 - Prefer interfaces for object types
 
+### Performance Standards
+1.  **Lazy Loading**: Use `React.lazy()` for heavy components.
+2.  **Memoization**: Mandatory `useMemo`/`useCallback` for computations.
+3.  **IPC Batching**: Combine IPC calls to minimize overhead.
+4.  **Virtualization**: Always virtualize lists exceeding 50 items.
+5.  **Lazy Services**: Main services must follow lazy instantiation patterns.
+6.  **Database Indexing**: Mandatory indexes for all query-critical fields.
+7.  **Resource Disposal**: Strictly implement and call `dispose()`/cleanup.
+8.  **Responsive Main**: Never block the main process; use worker threads.
+9.  **Lookup Efficiency**: Use `Map`/`Set` for collections/high-freq lookups.
+10. **Tree Shaking**: Use explicit imports for all library functions.
+11. **Off-screen Layout**: Use `content-visibility: auto` where appropriate.
+12. **State Hygiene**: Avoid unnecessary global state; keep state local.
+
 ### i18n Requirements
 - Never hardcode user-facing strings
 - Use t('key') for all translations

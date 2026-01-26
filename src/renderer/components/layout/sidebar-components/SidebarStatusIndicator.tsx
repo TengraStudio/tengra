@@ -1,7 +1,7 @@
-import React from 'react'
+import React from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export type StatusType = 'online' | 'warning' | 'error' | 'offline' | 'loading' | 'idle'
 
@@ -24,7 +24,7 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
         sm: 'w-1.5 h-1.5',
         md: 'w-2 h-2',
         lg: 'w-2.5 h-2.5'
-    }
+    };
 
     const statusConfig = {
         online: {
@@ -63,9 +63,9 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
             pulse: false,
             defaultLabel: 'Idle'
         }
-    }
+    };
 
-    const config = statusConfig[status]
+    const config = statusConfig[status];
 
     return (
         <div className={cn('flex items-center gap-1.5', className)}>
@@ -109,7 +109,7 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
                 </span>
             )}
         </div>
-    )
-}
+    );
+};
 
-SidebarStatusIndicator.displayName = 'SidebarStatusIndicator'
+SidebarStatusIndicator.displayName = 'SidebarStatusIndicator';

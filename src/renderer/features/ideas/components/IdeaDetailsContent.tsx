@@ -9,7 +9,7 @@ import {
     SWOTAnalysis,
     TechStack,
     UserPersona
-} from '@shared/types/ideas'
+} from '@shared/types/ideas';
 import {
     CheckCircle,
     ChevronRight,
@@ -26,27 +26,29 @@ import {
     Trophy,
     Users,
     Wrench
-} from 'lucide-react'
-import React, { useState } from 'react'
+} from 'lucide-react';
+import React, { useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { LogoGenerator } from './LogoGenerator'
+import { LogoGenerator } from './LogoGenerator';
 
 interface IdeaDetailsContentProps {
     idea: ProjectIdea
     activeTab: 'overview' | 'market' | 'strategy' | 'technology' | 'roadmap' | 'users' | 'business'
     selectedName: string
     onNameSelect: (name: string) => void
+    selectedDescription: string
+    onDescriptionChange: (description: string) => void
     canGenerateLogo: boolean
     showLogoGenerator: boolean
     setShowLogoGenerator: (show: boolean) => void
 }
 
 const ValueProposition: React.FC<{ value?: string }> = ({ value }) => {
-    const { t } = useTranslation()
-    if (!value) { return null }
+    const { t } = useTranslation();
+    if (!value) { return null; }
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
@@ -55,16 +57,16 @@ const ValueProposition: React.FC<{ value?: string }> = ({ value }) => {
             </h3>
             <p className="text-foreground/70 bg-muted/20 rounded-lg p-4 leading-relaxed border border-border/10 italic">{value}</p>
         </div>
-    )
-}
+    );
+};
 
 const NameSuggestions: React.FC<{
     names: string[],
     selectedName: string,
     onSelect: (name: string) => void
 }> = ({ names, selectedName, onSelect }) => {
-    const { t } = useTranslation()
-    if (names.length === 0) { return null }
+    const { t } = useTranslation();
+    if (names.length === 0) { return null; }
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
@@ -89,12 +91,12 @@ const NameSuggestions: React.FC<{
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 const CompetitiveAdvantages: React.FC<{ advantages: string[] }> = ({ advantages }) => {
-    const { t } = useTranslation()
-    if (advantages.length === 0) { return null }
+    const { t } = useTranslation();
+    if (advantages.length === 0) { return null; }
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
@@ -110,12 +112,12 @@ const CompetitiveAdvantages: React.FC<{ advantages: string[] }> = ({ advantages 
                 ))}
             </ul>
         </div>
-    )
-}
+    );
+};
 
 const MarketTrends: React.FC<{ trends: MarketTrend[] }> = ({ trends }) => {
-    const { t } = useTranslation()
-    if (trends.length === 0) { return null }
+    const { t } = useTranslation();
+    if (trends.length === 0) { return null; }
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
@@ -131,24 +133,24 @@ const MarketTrends: React.FC<{ trends: MarketTrend[] }> = ({ trends }) => {
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 // (Unused Competitors component removed to reduce complexity)
 
 // ==================== New Multi-Stage Pipeline Components ====================
 
 const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => {
-    const { t } = useTranslation()
-    const [expandedPhase, setExpandedPhase] = useState<number | null>(null)
+    const { t } = useTranslation();
+    const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
 
     if (!roadmap) {
-        return null
+        return null;
     }
 
     const togglePhase = (idx: number) => {
-        setExpandedPhase(expandedPhase === idx ? null : idx)
-    }
+        setExpandedPhase(expandedPhase === idx ? null : idx);
+    };
 
     return (
         <div>
@@ -207,12 +209,12 @@ const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => 
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) => {
-    const { t } = useTranslation()
-    if (!techStack) { return null }
+    const { t } = useTranslation();
+    if (!techStack) { return null; }
 
     const categories = [
         { key: 'frontend', label: t('ideas.techStack.frontend'), icon: Globe, color: 'text-blue-400', items: techStack.frontend },
@@ -220,9 +222,9 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
         { key: 'database', label: t('ideas.techStack.database'), icon: Database, color: 'text-yellow-400', items: techStack.database },
         { key: 'infrastructure', label: t('ideas.techStack.infrastructure'), icon: Cpu, color: 'text-purple-400', items: techStack.infrastructure },
         { key: 'other', label: t('ideas.techStack.other'), icon: Wrench, color: 'text-orange-400', items: techStack.other }
-    ].filter(c => c.items.length > 0)
+    ].filter(c => c.items.length > 0);
 
-    if (categories.length === 0) { return null }
+    if (categories.length === 0) { return null; }
 
     return (
         <div>
@@ -256,14 +258,14 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ competitors }) => {
-    const { t } = useTranslation()
-    const [expandedComp, setExpandedComp] = useState<number | null>(null)
+    const { t } = useTranslation();
+    const [expandedComp, setExpandedComp] = useState<number | null>(null);
 
-    if (!competitors || competitors.length === 0) { return null }
+    if (!competitors || competitors.length === 0) { return null; }
 
     return (
         <div>
@@ -351,11 +353,11 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};
 
 const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneyStep[] }> = ({ personas, journey }) => {
-    if (!personas || personas.length === 0) { return null }
+    if (!personas || personas.length === 0) { return null; }
 
     return (
         <div className="space-y-8">
@@ -423,8 +425,8 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: BusinessModel, marketingPlan?: MarketingPlan }> = ({ swot, businessModel, marketingPlan }) => {
 
@@ -504,7 +506,7 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
             {/* Marketing / GTM */}
             {marketingPlan && (
                 <div>
-                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white/80 mb-4">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Globe className="w-4 h-4 text-emerald-400" />
                         Go-To-Market Plan
                     </h3>
@@ -524,30 +526,30 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
-    const [question, setQuestion] = useState('')
-    const [chat, setChat] = useState<Array<{ q: string, a?: string }>>([])
-    const [isLoading, setIsLoading] = useState(false)
+    const [question, setQuestion] = useState('');
+    const [chat, setChat] = useState<Array<{ q: string, a?: string }>>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleAsk = async () => {
-        if (!question.trim() || isLoading) { return }
-        const currentQ = question
-        setQuestion('')
-        setChat(prev => [...prev, { q: currentQ }])
-        setIsLoading(true)
+        if (!question.trim() || isLoading) { return; }
+        const currentQ = question;
+        setQuestion('');
+        setChat(prev => [...prev, { q: currentQ }]);
+        setIsLoading(true);
 
         try {
-            const result = await window.electron.ideas.queryResearch(ideaId, currentQ)
-            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: result.answer } : item))
+            const result = await window.electron.ideas.queryResearch(ideaId, currentQ);
+            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: result.answer } : item));
         } catch {
-            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: "I'm sorry, I couldn't reach the research laboratory right now." } : item))
+            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: "I'm sorry, I couldn't reach the research laboratory right now." } : item));
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     return (
         <div className="bg-muted/30 border border-border/50 rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
@@ -598,7 +600,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                         className="w-full bg-muted/20 border border-border/50 rounded-xl py-2.5 pl-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                     <button
-                        onClick={() => { void handleAsk() }}
+                        onClick={() => { void handleAsk(); }}
                         disabled={!question.trim() || isLoading}
                         className="absolute right-2 top-1.5 p-1.5 rounded-lg bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 transition-colors"
                     >
@@ -607,24 +609,26 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
     idea,
     activeTab,
     selectedName,
     onNameSelect,
+    selectedDescription,
+    onDescriptionChange,
     canGenerateLogo,
     showLogoGenerator,
     setShowLogoGenerator
 }) => {
-    const { t } = useTranslation()
-    const nameSuggestions = idea.nameSuggestions ?? []
-    const competitiveAdvantages = idea.competitiveAdvantages ?? []
-    const marketTrends = idea.marketResearch?.trends ?? []
+    const { t } = useTranslation();
+    const nameSuggestions = idea.nameSuggestions ?? [];
+    const competitiveAdvantages = idea.competitiveAdvantages ?? [];
+    const marketTrends = idea.marketResearch?.trends ?? [];
     // unused competitors removed
-    const ideaCompetitors = idea.ideaCompetitors ?? []
+    const ideaCompetitors = idea.ideaCompetitors ?? [];
 
     const renderContent = () => {
         switch (activeTab) {
@@ -635,10 +639,30 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <Sparkles className="w-32 h-32 text-primary" />
                             </div>
-                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Core Concept</h3>
-                            <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">
-                                {idea.description}
-                            </p>
+                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
+                                Core Concept
+                                {idea.status === 'pending' && selectedDescription !== idea.description && (
+                                    <button
+                                        onClick={() => onDescriptionChange(idea.description)}
+                                        className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold normal-case"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </h3>
+                            {idea.status === 'pending' ? (
+                                <textarea
+                                    value={selectedDescription}
+                                    onChange={(e) => onDescriptionChange(e.target.value)}
+                                    className="w-full bg-transparent border border-border/30 rounded-lg px-3 py-2 text-lg text-foreground font-bold leading-relaxed relative z-10 focus:outline-none focus:border-primary/50 transition-all resize-none"
+                                    rows={3}
+                                    placeholder="Edit description..."
+                                />
+                            ) : (
+                                <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">
+                                    {idea.description}
+                                </p>
+                            )}
                         </div>
 
                         <ValueProposition value={idea.valueProposition} />
@@ -677,7 +701,7 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                             )}
                         </div>
                     </div>
-                )
+                );
             case 'market':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -689,32 +713,32 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                         </div>
                         <MarketTrends trends={marketTrends} />
                     </div>
-                )
+                );
             case 'strategy':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
                         <CompetitiveAdvantages advantages={competitiveAdvantages} />
                         <IdeaCompetitorsSection competitors={ideaCompetitors} />
                     </div>
-                )
+                );
             case 'technology':
                 return (
                     <div className="animate-in fade-in slide-in-from-right-2 duration-300">
                         <TechStackSection techStack={idea.techStack} />
                     </div>
-                )
+                );
             case 'roadmap':
                 return (
                     <div className="animate-in fade-in slide-in-from-right-2 duration-300">
                         <RoadmapSection roadmap={idea.roadmap} />
                     </div>
-                )
+                );
             case 'users':
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
                         <PersonasSection personas={idea.personas} journey={idea.userJourney} />
                     </div>
-                )
+                );
             case 'business':
                 return (
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -731,13 +755,13 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                             </div>
                         </div>
                     </div>
-                )
+                );
         }
-    }
+    };
 
     return (
         <div className="p-8 overflow-y-auto max-h-full flex-1 custom-scrollbar">
             {renderContent()}
         </div>
-    )
-}
+    );
+};

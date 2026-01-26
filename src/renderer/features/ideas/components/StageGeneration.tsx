@@ -1,10 +1,10 @@
-import { ProjectIdea } from '@shared/types/ideas'
-import { Lightbulb, Loader2 } from 'lucide-react'
-import React from 'react'
+import { ProjectIdea } from '@shared/types/ideas';
+import { Lightbulb, Loader2 } from 'lucide-react';
+import React from 'react';
 
-import { WorkflowStage } from '../types'
+import { WorkflowStage } from '../types';
 
-import { IdeaGrid } from './IdeaGrid'
+import { IdeaGrid } from './IdeaGrid';
 
 interface StageGenerationProps {
     isGenerating: boolean
@@ -58,4 +58,4 @@ export const StageGeneration: React.FC<StageGenerationProps> = ({
             </button>
         )}
     </div>
-)
+);

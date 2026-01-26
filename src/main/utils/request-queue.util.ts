@@ -3,8 +3,8 @@
  * Manages concurrent API requests with priority and throttling
  */
 
-import { CatchError } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { CatchError } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export type Priority = 'high' | 'normal' | 'low'
 
@@ -31,22 +31,22 @@ const DEFAULT_OPTIONS: Required<QueueOptions> = {
     maxConcurrent: 5,
     maxQueueSize: 100,
     timeoutMs: 60000
-}
+};
 
 const PRIORITY_ORDER: Record<Priority, number> = {
     high: 3,
     normal: 2,
     low: 1
-}
+};
 
 export class RequestQueue {
-    private queue: QueuedRequest<QueueResult>[] = []
-    private running = 0
-    private readonly options: Required<QueueOptions>
-    private requestId = 0
+    private queue: QueuedRequest<QueueResult>[] = [];
+    private running = 0;
+    private readonly options: Required<QueueOptions>;
+    private requestId = 0;
 
     constructor(options?: QueueOptions) {
-        this.options = { ...DEFAULT_OPTIONS, ...options }
+        this.options = { ...DEFAULT_OPTIONS, ...options };
     }
 
     /**
@@ -62,8 +62,8 @@ export class RequestQueue {
         return new Promise<T>((resolve, reject) => {
             // Check queue size limit
             if (this.queue.length >= this.options.maxQueueSize) {
-                reject(new Error('Request queue is full'))
-                return
+                reject(new Error('Request queue is full'));
+                return;
             }
 
             const request: QueuedRequest<T> = {
@@ -74,30 +74,30 @@ export class RequestQueue {
                 reject,
                 createdAt: Date.now(),
                 provider: options?.provider
-            }
+            };
 
             // Insert based on priority
-            const insertIndex = this.findInsertIndex(request.priority)
-            this.queue.splice(insertIndex, 0, request as QueuedRequest<unknown>)
+            const insertIndex = this.findInsertIndex(request.priority);
+            this.queue.splice(insertIndex, 0, request as QueuedRequest<unknown>);
 
             // Try to process
-            void this.processQueue()
-        })
+            void this.processQueue();
+        });
     }
 
     /**
      * Find insertion index for priority-based ordering
      */
     private findInsertIndex(priority: Priority): number {
-        const priorityValue = PRIORITY_ORDER[priority]
+        const priorityValue = PRIORITY_ORDER[priority];
 
         for (let i = 0; i < this.queue.length; i++) {
             if (PRIORITY_ORDER[this.queue[i].priority] < priorityValue) {
-                return i
+                return i;
             }
         }
 
-        return this.queue.length
+        return this.queue.length;
     }
 
     /**
@@ -112,11 +112,11 @@ export class RequestQueue {
         let iterations = 0;
 
         while (this.running < this.options.maxConcurrent && this.queue.length > 0 && iterations < MAX_QUEUE_ITERATIONS) {
-            const request = this.queue.shift()
-            if (!request) {break}
+            const request = this.queue.shift();
+            if (!request) {break;}
 
-            this.running++
-            iterations++
+            this.running++;
+            iterations++;
 
             // Execute with timeout and handle return value
             this.executeRequest(request)
@@ -130,12 +130,12 @@ export class RequestQueue {
                     console.error('[RequestQueue] Request execution error:', error);
                 })
                 .finally(() => {
-                    this.running--
+                    this.running--;
                     // Only continue processing if we haven't hit the iteration limit
                     if (iterations < MAX_QUEUE_ITERATIONS) {
-                        void this.processQueue()
+                        void this.processQueue();
                     }
-                })
+                });
         }
 
         if (iterations >= MAX_QUEUE_ITERATIONS) {
@@ -156,11 +156,11 @@ export class RequestQueue {
                         this.options.timeoutMs
                     )
                 )
-            ])
+            ]);
 
-            request.resolve(result as T)
+            request.resolve(result as T);
         } catch (error) {
-            request.reject(getErrorMessage(error as Error))
+            request.reject(getErrorMessage(error as Error));
         }
     }
 
@@ -176,7 +176,7 @@ export class RequestQueue {
             queueLength: this.queue.length,
             running: this.running,
             maxConcurrent: this.options.maxConcurrent
-        }
+        };
     }
 
     /**
@@ -184,16 +184,16 @@ export class RequestQueue {
      */
     clear() {
         for (const request of this.queue) {
-            request.reject(new Error('Queue cleared'))
+            request.reject(new Error('Queue cleared'));
         }
-        this.queue = []
+        this.queue = [];
     }
 
     /**
      * Check if queue is empty and no requests are running
      */
     isIdle(): boolean {
-        return this.queue.length === 0 && this.running === 0
+        return this.queue.length === 0 && this.running === 0;
     }
 
     /**
@@ -203,37 +203,37 @@ export class RequestQueue {
         return new Promise(resolve => {
             const check = () => {
                 if (this.isIdle()) {
-                    resolve()
+                    resolve();
                 } else {
-                    setTimeout(check, 50)
+                    setTimeout(check, 50);
                 }
-            }
-            check()
-        })
+            };
+            check();
+        });
     }
 }
 
 // Provider-specific queues
-const queues: Map<string, RequestQueue> = new Map()
+const queues: Map<string, RequestQueue> = new Map();
 
 /**
  * Get a queue for a specific provider
  */
 export function getProviderQueue(provider: string, options?: QueueOptions): RequestQueue {
-    const key = provider.toLowerCase()
+    const key = provider.toLowerCase();
 
     if (!queues.has(key)) {
-        queues.set(key, new RequestQueue(options))
+        queues.set(key, new RequestQueue(options));
     }
 
-    const queue = queues.get(key)
+    const queue = queues.get(key);
     if (!queue) {
-        throw new Error(`Failed to get queue for provider: ${key}`)
+        throw new Error(`Failed to get queue for provider: ${key}`);
     }
-    return queue
+    return queue;
 }
 
 /**
  * Global request queue for general use
  */
-export const globalQueue = new RequestQueue({ maxConcurrent: 10 })
+export const globalQueue = new RequestQueue({ maxConcurrent: 10 });

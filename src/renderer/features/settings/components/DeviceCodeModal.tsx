@@ -1,8 +1,9 @@
-import { Check, Copy, ExternalLink, Loader2, X } from 'lucide-react'
-import React, { useCallback, useState } from 'react'
+import { Check, Copy, ExternalLink, Loader2, X } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 
-import { Modal } from '@/components/ui/modal'
-import { cn } from '@/lib/utils'
+import { Modal } from '@/components/ui/modal';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 export interface DeviceCodeModalState {
     isOpen: boolean
@@ -30,39 +31,40 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
     status,
     errorMessage
 }) => {
-    const [copied, setCopied] = useState(false)
+    const { t } = useTranslation();
+    const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(userCode)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
+            await navigator.clipboard.writeText(userCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         } catch {
             // Failed to copy - user can still manually copy
         }
-    }, [userCode])
+    }, [userCode]);
 
     const handleOpenLink = useCallback(() => {
-        window.electron.openExternal(verificationUri)
-    }, [verificationUri])
+        window.electron.openExternal(verificationUri);
+    }, [verificationUri]);
 
-    const providerName = provider === 'copilot' ? 'GitHub Copilot' : 'GitHub'
-    const isPending = status === 'pending'
-    const isSuccess = status === 'success'
-    const isError = status === 'error'
+    const providerName = provider === 'copilot' ? 'GitHub Copilot' : 'GitHub';
+    const isPending = status === 'pending';
+    const isSuccess = status === 'success';
+    const isError = status === 'error';
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Connect ${providerName}`}
+            title={t('auth.connectProvider', { provider: providerName })}
             preventClose={isPending}
             size="md"
         >
             <div className="space-y-6">
                 {/* Instructions */}
                 <p className="text-sm text-muted-foreground">
-                    Enter the following code on GitHub to complete the connection:
+                    {t('auth.enterCodeOnGithub')}
                 </p>
 
                 {/* Device Code Display */}
@@ -82,7 +84,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                                 ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-500"
                                 : "bg-muted/30 border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50"
                         )}
-                        title="Copy code"
+                        title={t('auth.copyCode')}
                     >
                         {copied ? (
                             <Check className="w-4 h-4" />
@@ -98,7 +100,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-colors font-semibold"
                 >
                     <ExternalLink className="w-4 h-4" />
-                    Open GitHub to enter code
+                    {t('auth.openGithubToEnter')}
                 </button>
 
                 {/* Status Display */}
@@ -106,19 +108,19 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     {isPending && (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Waiting for login...</span>
+                            <span className="text-sm text-muted-foreground">{t('auth.waitingForLogin')}</span>
                         </>
                     )}
                     {isSuccess && (
                         <>
                             <Check className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-emerald-500 font-semibold">Connected successfully!</span>
+                            <span className="text-sm text-emerald-500 font-semibold">{t('auth.connectedSuccessfully')}</span>
                         </>
                     )}
                     {isError && (
                         <>
                             <X className="w-4 h-4 text-destructive" />
-                            <span className="text-sm text-destructive">{errorMessage ?? 'Connection failed'}</span>
+                            <span className="text-sm text-destructive">{errorMessage ?? t('auth.connectionFailedGeneric')}</span>
                         </>
                     )}
                 </div>
@@ -129,10 +131,10 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                         onClick={onClose}
                         className="w-full px-4 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors text-sm font-medium"
                     >
-                        Close
+                        {t('common.close')}
                     </button>
                 )}
             </div>
         </Modal>
-    )
-}
+    );
+};

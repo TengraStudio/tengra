@@ -1,9 +1,9 @@
-import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem'
-import { Edit2, MessageSquare, Pin, Trash2 } from 'lucide-react'
-import React from 'react'
+import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
+import { Edit2, MessageSquare, Pin, Trash2 } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
-import { Chat } from '@/types'
+import { cn } from '@/lib/utils';
+import { Chat } from '@/types';
 
 interface SidebarChatItemProps {
     chat: Chat
@@ -49,19 +49,19 @@ export const SidebarChatItem = React.memo(({
             {!isEditing && (
                 <div className="opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-card border border-border/50 shadow-sm rounded-md px-1 py-0.5">
                     <button
-                        onClick={e => { e.stopPropagation(); startEdit(chat.id, chat.title ?? '') }}
+                        onClick={e => { e.stopPropagation(); startEdit(chat.id, chat.title ?? ''); }}
                         className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground pointer-events-auto"
                     >
                         <Edit2 className="w-3 h-3" />
                     </button>
                     <button
-                        onClick={e => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned) }}
+                        onClick={e => { e.stopPropagation(); togglePin(chat.id, !chat.isPinned); }}
                         className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground pointer-events-auto"
                     >
                         <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
                     </button>
                     <button
-                        onClick={e => { e.stopPropagation(); deleteChat(chat.id) }}
+                        onClick={e => { e.stopPropagation(); deleteChat(chat.id); }}
                         className="p-1 hover:bg-destructive/10 hover:text-destructive rounded text-muted-foreground pointer-events-auto"
                     >
                         <Trash2 className="w-3 h-3" />
@@ -76,8 +76,8 @@ export const SidebarChatItem = React.memo(({
                         defaultValue={chat.title ?? ''} // Uncontrolled
                         onBlur={saveEdit}
                         onKeyDown={e => {
-                            if (e.key === 'Enter') { saveEdit() }
-                            if (e.key === 'Escape') { cancelEdit() }
+                            if (e.key === 'Enter') { saveEdit(); }
+                            if (e.key === 'Escape') { cancelEdit(); }
                         }}
                         onClick={e => e.stopPropagation()}
                         className="absolute inset-0 bg-background/90 px-2 py-1 text-sm outline-none rounded focus-visible:ring-1 focus-visible:ring-primary"
@@ -85,7 +85,7 @@ export const SidebarChatItem = React.memo(({
                 </SidebarItem>
             )}
         </div>
-    )
-})
+    );
+});
 
-SidebarChatItem.displayName = 'SidebarChatItem'
+SidebarChatItem.displayName = 'SidebarChatItem';

@@ -15,12 +15,12 @@ export class EmbeddingService {
         private llama: LlamaService,
         private settingsService: SettingsService
     ) {
-        this.initializeProvider()
+        this.initializeProvider();
     }
 
     private initializeProvider() {
-        const settings = this.settingsService.getSettings()
-        this.setProvider(settings.embeddings.provider, settings.embeddings.model)
+        const settings = this.settingsService.getSettings();
+        this.setProvider(settings.embeddings.provider, settings.embeddings.model);
     }
 
     setProvider(provider: EmbeddingProvider, model?: string) {

@@ -4,18 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { LinkedAccountInfo } from '@/electron.d';
+import { useTranslation } from '@/i18n';
 import { CommonBatches } from '@/utils/ipc-batch.util';
 
-interface AuthAccount {
-    id: string;
-    name: string;
-    avatar?: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
 export const AccountManager: React.FC = () => {
-    const [accounts, setAccounts] = useState<AuthAccount[]>([]);
+    const { t } = useTranslation();
+    const [accounts, setAccounts] = useState<LinkedAccountInfo[]>([]);
     const [activeAccountId, setActiveAccountId] = useState<string>('default');
     const [newAccountName, setNewAccountName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -34,14 +29,14 @@ export const AccountManager: React.FC = () => {
     const loadAccounts = async () => {
         try {
             // Use batching to load accounts and active account in one call
-            const { accounts, activeAccount } = await CommonBatches.loadAuthState()
-            setAccounts(accounts)
-            setActiveAccountId(activeAccount)
+            const { accounts, activeAccount } = await CommonBatches.loadAuthState();
+            setAccounts(accounts);
+            setActiveAccountId(activeAccount?.id ?? 'default');
         } catch (error) {
-            console.error('Failed to load accounts', error)
-            showMessage('Failed to load accounts', 'error')
+            console.error('Failed to load accounts', error);
+            showMessage(t('accounts.loadFailed'), 'error');
         }
-    }
+    };
 
     const handleCreateAccount = async () => {
         if (!newAccountName.trim()) { return; }
@@ -50,9 +45,9 @@ export const AccountManager: React.FC = () => {
             await window.electron.ipcRenderer.invoke('auth:create-account', newAccountName);
             setNewAccountName('');
             await loadAccounts();
-            showMessage(`Account "${newAccountName}" created`, 'success');
+            showMessage(t('accounts.createSuccess', { name: newAccountName }), 'success');
         } catch {
-            showMessage('Failed to create account', 'error');
+            showMessage(t('accounts.createFailed'), 'error');
         } finally {
             setIsCreating(false);
         }
@@ -62,10 +57,10 @@ export const AccountManager: React.FC = () => {
         try {
             await window.electron.ipcRenderer.invoke('auth:switch-account', id);
             setActiveAccountId(id);
-            showMessage(`Switched to "${name}"`, 'success');
+            showMessage(t('accounts.switchSuccess', { name }), 'success');
             setTimeout(() => window.location.reload(), 1000); // Reload to apply changes
         } catch {
-            showMessage('Failed to switch account', 'error');
+            showMessage(t('accounts.switchFailed'), 'error');
         }
     };
 
@@ -75,9 +70,9 @@ export const AccountManager: React.FC = () => {
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Users className="w-5 h-5" />
-                        Account Management
+                        {t('accounts.management')}
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title="Refresh Accounts">
+                    <Button variant="ghost" size="icon" onClick={() => { void loadAccounts(); }} title={t('accounts.refreshAccounts')}>
                         <RefreshCw className="w-4 h-4" />
                     </Button>
                 </CardTitle>
@@ -90,7 +85,7 @@ export const AccountManager: React.FC = () => {
                 )}
 
                 <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground">Active Accounts</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t('accounts.activeAccounts')}</h3>
                     <div className="grid gap-3">
                         {accounts.map((account) => (
                             <div
@@ -99,25 +94,25 @@ export const AccountManager: React.FC = () => {
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden border border-border">
-                                        {account.avatar ? (
-                                            <img src={account.avatar} alt={account.name} className="w-full h-full object-cover" />
+                                        {account.avatarUrl ? (
+                                            <img src={account.avatarUrl} alt={account.displayName ?? account.id} className="w-full h-full object-cover" />
                                         ) : (
                                             <User className="w-4 h-4 text-muted-foreground" />
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-foreground">{account.name}</p>
+                                        <p className="font-medium text-foreground">{account.displayName ?? t('accounts.unnamed')}</p>
                                         <p className="text-xs text-muted-foreground">ID: {account.id.slice(0, 8)}...</p>
                                     </div>
                                 </div>
                                 {activeAccountId === account.id ? (
                                     <div className="flex items-center gap-2 text-primary text-sm font-bold bg-primary/10 px-3 py-1 rounded-full">
                                         <Check className="w-3 h-3" />
-                                        Active
+                                        {t('accounts.active')}
                                     </div>
                                 ) : (
-                                    <Button variant="secondary" size="sm" onClick={() => { void handleSwitchAccount(account.id, account.name); }}>
-                                        Switch
+                                    <Button variant="secondary" size="sm" onClick={() => { void handleSwitchAccount(account.id, account.displayName ?? account.id); }}>
+                                        {t('accounts.switch')}
                                     </Button>
                                 )}
                             </div>
@@ -126,17 +121,17 @@ export const AccountManager: React.FC = () => {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-border">
-                    <label className="text-sm font-medium text-muted-foreground block">Add New Account</label>
+                    <label className="text-sm font-medium text-muted-foreground block">{t('accounts.addNewAccount')}</label>
                     <div className="flex gap-2">
                         <Input
-                            placeholder="Account Name (e.g. Work, Personal)"
+                            placeholder={t('accounts.accountNamePlaceholder')}
                             value={newAccountName}
                             onChange={(e) => setNewAccountName(e.target.value)}
                             className="bg-background"
                         />
                         <Button onClick={() => { void handleCreateAccount(); }} disabled={isCreating || !newAccountName.trim()}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Create
+                            {t('accounts.create')}
                         </Button>
                     </div>
                 </div>

@@ -1,12 +1,12 @@
-﻿import { Check, Plus } from 'lucide-react'
-import { useState } from 'react'
+﻿import { Check, Plus } from 'lucide-react';
+import { useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { PresetCard } from './presets/PresetCard'
-import { PresetEditor } from './presets/PresetEditor'
-import { getPresetColor, getPresetIcon } from './presets/utils'
+import { PresetCard } from './presets/PresetCard';
+import { PresetEditor } from './presets/PresetEditor';
+import { getPresetColor, getPresetIcon } from './presets/utils';
 
 export interface ParameterPreset {
     id: string
@@ -23,7 +23,7 @@ const DEFAULT_PRESETS: ParameterPreset[] = [
     { id: 'creative', name: 'Creative', icon: 'creative', temperature: 0.9, topP: 0.95, maxTokens: 4096 },
     { id: 'precise', name: 'Precise', icon: 'precise', temperature: 0.3, topP: 0.85, maxTokens: 4096 },
     { id: 'coding', name: 'Coding', icon: 'coding', temperature: 0.2, topP: 0.9, maxTokens: 8192 }
-]
+];
 
 interface ParameterPresetsProps {
     activePresetId?: string
@@ -44,11 +44,11 @@ export function ParameterPresets({
     compact = false,
     language
 }: ParameterPresetsProps) {
-    const { t } = useTranslation(language)
-    const [showCustom, setShowCustom] = useState(false)
-    const [editingPreset, setEditingPreset] = useState<ParameterPreset | null>(null)
+    const { t } = useTranslation(language);
+    const [showCustom, setShowCustom] = useState(false);
+    const [editingPreset, setEditingPreset] = useState<ParameterPreset | null>(null);
 
-    const allPresets = [...DEFAULT_PRESETS, ...customPresets]
+    const allPresets = [...DEFAULT_PRESETS, ...customPresets];
 
     const handleCreateCustom = () => {
         const newPreset: ParameterPreset = {
@@ -58,25 +58,25 @@ export function ParameterPresets({
             temperature: 0.7,
             topP: 0.9,
             maxTokens: 4096
-        }
-        setEditingPreset(newPreset)
-        setShowCustom(true)
-    }
+        };
+        setEditingPreset(newPreset);
+        setShowCustom(true);
+    };
 
     const handleSaveCustom = () => {
         if (editingPreset && onSaveCustomPreset) {
-            onSaveCustomPreset(editingPreset)
-            setShowCustom(false)
-            setEditingPreset(null)
+            onSaveCustomPreset(editingPreset);
+            setShowCustom(false);
+            setEditingPreset(null);
         }
-    }
+    };
 
     if (compact) {
         return (
             <div className="flex gap-1.5 flex-wrap">
                 {DEFAULT_PRESETS.map((preset) => {
-                    const Icon = getPresetIcon(preset.icon)
-                    const isActive = activePresetId === preset.id
+                    const Icon = getPresetIcon(preset.icon);
+                    const isActive = activePresetId === preset.id;
 
                     return (
                         <button
@@ -94,10 +94,10 @@ export function ParameterPresets({
                                     preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
                             {isActive && <Check size={10} />}
                         </button>
-                    )
+                    );
                 })}
             </div>
-        )
+        );
     }
 
     return (
@@ -131,11 +131,11 @@ export function ParameterPresets({
                 <PresetEditor
                     preset={editingPreset}
                     onUpdate={setEditingPreset}
-                    onCancel={() => { setShowCustom(false); setEditingPreset(null) }}
+                    onCancel={() => { setShowCustom(false); setEditingPreset(null); }}
                     onSave={handleSaveCustom}
                     t={t}
                 />
             )}
         </div>
-    )
+    );
 }
