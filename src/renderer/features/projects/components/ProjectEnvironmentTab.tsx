@@ -1,8 +1,8 @@
-import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface EnvVar {
     key: string
@@ -16,71 +16,71 @@ interface ProjectEnvironmentTabProps {
 }
 
 export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ projectPath, language }) => {
-    const { t } = useTranslation(language)
-    const [envVars, setEnvVars] = useState<EnvVar[]>([])
-    const [loading, setLoading] = useState(true)
-    const [saving, setSaving] = useState(false)
-    const [hasChanges, setHasChanges] = useState(false)
+    const { t } = useTranslation(language);
+    const [envVars, setEnvVars] = useState<EnvVar[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
 
     const loadEnvVars = useCallback(async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const result = await window.electron.ipcRenderer.invoke('project:getEnv', projectPath)
+            const result = await window.electron.ipcRenderer.invoke('project:getEnv', projectPath);
             if (result?.success && result.data) {
                 const vars = Object.entries(result.data as Record<string, string>).map(([key, value]) => ({
                     key,
                     value,
                     visible: false
-                }))
-                setEnvVars(vars)
+                }));
+                setEnvVars(vars);
             }
         } catch (error) {
-            console.error('Failed to load env vars:', error)
+            console.error('Failed to load env vars:', error);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [projectPath])
+    }, [projectPath]);
 
     useEffect(() => {
-        void loadEnvVars()
-    }, [loadEnvVars])
+        void loadEnvVars();
+    }, [loadEnvVars]);
 
     const handleSave = async () => {
-        setSaving(true)
+        setSaving(true);
         try {
-            const varsObj: Record<string, string> = {}
+            const varsObj: Record<string, string> = {};
             for (const v of envVars) {
                 if (v.key.trim()) {
-                    varsObj[v.key.trim()] = v.value
+                    varsObj[v.key.trim()] = v.value;
                 }
             }
-            await window.electron.ipcRenderer.invoke('project:saveEnv', projectPath, varsObj)
-            setHasChanges(false)
+            await window.electron.ipcRenderer.invoke('project:saveEnv', projectPath, varsObj);
+            setHasChanges(false);
         } catch (error) {
-            console.error('Failed to save env vars:', error)
+            console.error('Failed to save env vars:', error);
         } finally {
-            setSaving(false)
+            setSaving(false);
         }
-    }
+    };
 
     const updateVar = (index: number, field: 'key' | 'value', newValue: string) => {
-        setEnvVars(prev => prev.map((v, i) => i === index ? { ...v, [field]: newValue } : v))
-        setHasChanges(true)
-    }
+        setEnvVars(prev => prev.map((v, i) => i === index ? { ...v, [field]: newValue } : v));
+        setHasChanges(true);
+    };
 
     const toggleVisibility = (index: number) => {
-        setEnvVars(prev => prev.map((v, i) => i === index ? { ...v, visible: !v.visible } : v))
-    }
+        setEnvVars(prev => prev.map((v, i) => i === index ? { ...v, visible: !v.visible } : v));
+    };
 
     const addVar = () => {
-        setEnvVars(prev => [...prev, { key: '', value: '', visible: true }])
-        setHasChanges(true)
-    }
+        setEnvVars(prev => [...prev, { key: '', value: '', visible: true }]);
+        setHasChanges(true);
+    };
 
     const removeVar = (index: number) => {
-        setEnvVars(prev => prev.filter((_, i) => i !== index))
-        setHasChanges(true)
-    }
+        setEnvVars(prev => prev.filter((_, i) => i !== index));
+        setHasChanges(true);
+    };
 
     if (loading) {
         return (
@@ -88,7 +88,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                 <Settings className="w-6 h-6 animate-spin mr-2" />
                 {t('common.loading')}
             </div>
-        )
+        );
     }
 
     return (
@@ -132,7 +132,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                     <div className="grid grid-cols-12 gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
                         <div className="col-span-4">{t('projectDashboard.envKey')}</div>
                         <div className="col-span-6">{t('projectDashboard.envValue')}</div>
-                        <div className="col-span-2 text-right">Actions</div>
+                        <div className="col-span-2 text-right">{t('projectDashboard.envActions')}</div>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
@@ -148,7 +148,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                         value={envVar.key}
                                         onChange={(e) => updateVar(idx, 'key', e.target.value)}
                                         className="w-full bg-transparent border-b border-border/50 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
-                                        placeholder="VARIABLE_NAME"
+                                        placeholder={t('projectDashboard.envNamePlaceholder')}
                                     />
                                 </div>
                                 <div className="col-span-6 flex items-center gap-2">
@@ -156,7 +156,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                         type={envVar.visible ? 'text' : 'password'}
                                         value={envVar.value}
                                         onChange={(e) => updateVar(idx, 'value', e.target.value)}
-                                        className="flex-1 bg-transparent border-b border-white/10 focus:border-primary/50 outline-none text-sm font-mono text-white py-1"
+                                        className="flex-1 bg-transparent border-b border-white/10 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
                                         placeholder="value"
                                     />
                                     <button
@@ -190,5 +190,5 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

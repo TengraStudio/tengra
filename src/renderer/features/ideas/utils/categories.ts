@@ -1,7 +1,7 @@
 /**
  * Category metadata for project ideas
  */
-import { IdeaCategory } from '@shared/types/ideas'
+import { IdeaCategory } from '@shared/types/ideas';
 import {
     Code,
     Gamepad2,
@@ -10,7 +10,7 @@ import {
     Monitor,
     Smartphone,
     Sparkles
-} from 'lucide-react'
+} from 'lucide-react';
 
 export interface CategoryMeta {
     id: IdeaCategory
@@ -63,7 +63,7 @@ export const CATEGORY_METADATA: Record<IdeaCategory, CategoryMeta> = {
         color: 'text-yellow-400',
         bgColor: 'bg-yellow-500/20'
     }
-}
+};
 
 /**
  * Compatibility matrix for categories.
@@ -74,7 +74,7 @@ export const INCOMPATIBILITY_RULES: Partial<Record<IdeaCategory, IdeaCategory[]>
     'cli-tool': ['game', 'mobile-app'],
     'website': ['game'],
     'mobile-app': ['cli-tool']
-}
+};
 
 export const CATEGORIES: IdeaCategory[] = [
     'website',
@@ -83,8 +83,8 @@ export const CATEGORIES: IdeaCategory[] = [
     'cli-tool',
     'desktop',
     'other'
-]
+];
 
 export function getCategoryMeta(category: IdeaCategory): CategoryMeta {
-    return CATEGORY_METADATA[category]
+    return CATEGORY_METADATA[category];
 }

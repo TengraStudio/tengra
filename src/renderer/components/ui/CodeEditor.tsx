@@ -1,15 +1,12 @@
+import type { Monaco, OnChange, OnMount } from '@monaco-editor/react';
 import { Loader2 } from 'lucide-react';
+import type { editor } from 'monaco-editor';
 import React, { useRef } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { Language, useTranslation } from '@/i18n';
 import { normalizeLanguage } from '@/utils/language-map';
 import { initTextMateSupport } from '@/utils/textmate-loader';
-
-// Types for Monaco (loaded dynamically)
-type Monaco = any;
-type OnChange = (value: string | undefined, event: any) => void;
-type OnMount = (editor: any, monaco: any) => void;
 
 // Dynamic imports for Monaco Editor
 const loadMonaco = async () => {
@@ -20,14 +17,14 @@ const loadMonaco = async () => {
         import('@monaco-editor/react'),
         import('monaco-editor')
     ]);
-    
+
     // Initialize Monaco if not already done
     try {
         await loader.init();
-    } catch (err) {
-        console.error('Failed to pre-load Monaco:', err);
+    } catch (error) {
+        window.electron.log.error('Failed to pre-load Monaco', error as Error);
     }
-    
+
     return { Editor, loader, monaco };
 };
 
@@ -61,12 +58,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     const decorationRef = useRef<string[]>([]);
-    const monacoRef = useRef<any>(null);
-    
+    const monacoRef = useRef<Monaco | null>(null);
+
     // Monaco loading state
-    const [monacoComponents, setMonacoComponents] = React.useState<any>(null);
+    const [monacoComponents, setMonacoComponents] = React.useState<{
+        Editor: typeof import('@monaco-editor/react').default;
+        loader: unknown; // Monaco loader doesn't have good typings
+        monaco: Monaco;
+    } | null>(null);
     const [loading, setLoading] = React.useState(true);
 
     // Load Monaco on component mount
@@ -74,8 +75,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         loadMonaco().then(({ Editor, loader, monaco }) => {
             setMonacoComponents({ Editor, loader, monaco });
             setLoading(false);
-        }).catch(err => {
-            console.error('Failed to load Monaco:', err);
+        }).catch(error => {
+            window.electron.log.error('Failed to load Monaco', error as Error);
             setLoading(false);
         });
     }, []);
@@ -83,13 +84,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     // Normalize the language to a Monaco-compatible ID
     const normalizedLanguage = normalizeLanguage(language);
 
-    const updateDecorations = (editor: any) => {
+    const updateDecorations = (editor: editor.IStandaloneCodeEditor) => {
         if (!editor || !monacoComponents?.monaco) { return; }
         const model = editor.getModel();
         if (!model) { return; }
 
         const lineCount = model.getLineCount();
-        const newDecorations: any[] = [];
+        const newDecorations: editor.IModelDeltaDecoration[] = [];
 
         for (let i = 1; i <= lineCount; i++) {
             const lineContent = model.getLineContent(i).trim();
@@ -118,9 +119,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             try {
                 await initTextMateSupport(monaco);
                 textMateInitialized = true;
-                console.warn('[CodeEditor] TextMate support initialized');
+                window.electron.log.info('[CodeEditor] TextMate support initialized');
             } catch (error) {
-                console.warn('[CodeEditor] TextMate initialization failed, using Monaco defaults:', error);
+                window.electron.log.warn('[CodeEditor] TextMate initialization failed, using Monaco defaults', error as Error);
             } finally {
                 textMateInitializing = false;
             }
@@ -131,9 +132,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         updateDecorations(editor);
 
         // Click handler for gutter
-        editor.onMouseDown((e: any) => {
-            if (e.target.type === 2) { // 2 = Gutter Glyph Margin
-                const line = e.target.position.lineNumber;
+        editor.onMouseDown((e) => {
+            if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+                const line = e.target.position?.lineNumber;
+                if (!line) { return; }
                 document.dispatchEvent(new CustomEvent('ai-refactor-request', {
                     detail: { line, content: editor.getModel()?.getLineContent(line) }
                 }));
@@ -153,7 +155,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         const monaco = monacoRef.current;
 
         const provider = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
-            provideInlineCompletions: async (model: any, position: any) => {
+            provideInlineCompletions: async (model: editor.ITextModel, position: { lineNumber: number; column: number }) => {
                 const textBefore = model.getValueInRange({
                     startLineNumber: 1,
                     startColumn: 1,

@@ -1,8 +1,8 @@
-import { resolve } from 'path'
+import { resolve } from 'path';
 
-import { FileSystemService } from '@main/services/data/filesystem.service'
-import { AISystemType } from '@shared/types/file-diff'
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { FileSystemService } from '@main/services/data/filesystem.service';
+import { AISystemType } from '@shared/types/file-diff';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 
 export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
@@ -10,31 +10,31 @@ export function registerFilesIpc(
     allowedRoots: Set<string>
 ) {
     ipcMain.handle('files:selectDirectory', async () => {
-        const win = getMainWindow()
-        if (!win) { return { success: false } }
+        const win = getMainWindow();
+        if (!win) { return { success: false }; }
         const result = await dialog.showOpenDialog(win, {
             properties: ['openDirectory']
-        })
-        if (result.canceled) { return { success: false } }
-        const chosenPath = result.filePaths[0]
+        });
+        if (result.canceled) { return { success: false }; }
+        const chosenPath = result.filePaths[0];
         if (chosenPath) {
-            allowedRoots.add(resolve(chosenPath))
-            fileSystemService.updateAllowedRoots(Array.from(allowedRoots))
+            allowedRoots.add(resolve(chosenPath));
+            fileSystemService.updateAllowedRoots(Array.from(allowedRoots));
         }
-        return { success: true, path: chosenPath }
-    })
+        return { success: true, path: chosenPath };
+    });
 
     ipcMain.handle('files:listDirectory', async (_event, dirPath: string) => {
-        return await fileSystemService.listDirectory(dirPath)
-    })
+        return await fileSystemService.listDirectory(dirPath);
+    });
 
     ipcMain.handle('files:readFile', async (_event, filePath: string) => {
-        return await fileSystemService.readFile(filePath)
-    })
+        return await fileSystemService.readFile(filePath);
+    });
 
     ipcMain.handle('files:readImage', async (_event, filePath: string) => {
-        return await fileSystemService.readImage(filePath)
-    })
+        return await fileSystemService.readImage(filePath);
+    });
 
     ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => {
         if (context?.aiSystem) {
@@ -42,37 +42,37 @@ export function registerFilesIpc(
             return await fileSystemService.writeFileWithTracking(filePath, content, {
                 aiSystem: context.aiSystem as AISystemType,
                 chatSessionId: context.chatSessionId,
-                changeReason: context.changeReason || 'AI file modification'
-            })
+                changeReason: context.changeReason ?? 'AI file modification'
+            });
         } else {
             // Regular user-initiated file write
-            return await fileSystemService.writeFile(filePath, content)
+            return await fileSystemService.writeFile(filePath, content);
         }
-    })
+    });
 
     ipcMain.handle('files:createDirectory', async (_event, dirPath: string) => {
-        return await fileSystemService.createDirectory(dirPath)
-    })
+        return await fileSystemService.createDirectory(dirPath);
+    });
 
     ipcMain.handle('files:deleteFile', async (_event, filePath: string) => {
-        return await fileSystemService.deleteFile(filePath)
-    })
+        return await fileSystemService.deleteFile(filePath);
+    });
 
     ipcMain.handle('files:deleteDirectory', async (_event, dirPath: string) => {
-        return await fileSystemService.deleteDirectory(dirPath)
-    })
+        return await fileSystemService.deleteDirectory(dirPath);
+    });
 
     ipcMain.handle('files:renamePath', async (_event, oldPath: string, newPath: string) => {
-        return await fileSystemService.moveFile(oldPath, newPath)
-    })
+        return await fileSystemService.moveFile(oldPath, newPath);
+    });
 
     ipcMain.handle('files:searchFiles', async (_event, rootPath: string, pattern: string) => {
-        return await fileSystemService.searchFiles(rootPath, pattern)
-    })
+        return await fileSystemService.searchFiles(rootPath, pattern);
+    });
 
     ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
-        const win = getMainWindow()
-        if (!win) { return { success: false } }
+        const win = getMainWindow();
+        if (!win) { return { success: false }; }
 
         // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
         // Actually for a stream we should probably just return 'started' and emit events
@@ -81,20 +81,20 @@ export function registerFilesIpc(
 
         void fileSystemService.searchFilesStream(rootPath, pattern, (filePath) => {
             if (!win.isDestroyed()) {
-                win.webContents.send(`files:search-result:${jobId}`, filePath)
+                win.webContents.send(`files:search-result:${jobId}`, filePath);
             }
         }).then(() => {
             if (!win.isDestroyed()) {
-                win.webContents.send(`files:search-complete:${jobId}`)
+                win.webContents.send(`files:search-complete:${jobId}`);
             }
         }).catch((err: Error) => {
-            console.error('File search failed:', err)
-        })
+            console.error('File search failed:', err);
+        });
 
-        return { success: true, jobId }
-    })
+        return { success: true, jobId };
+    });
 
     ipcMain.handle('app:getUserDataPath', () => {
-        return app.getPath('userData')
-    })
+        return app.getPath('userData');
+    });
 }

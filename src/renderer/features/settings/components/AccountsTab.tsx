@@ -1,18 +1,18 @@
-import { LinkedAccountInfo } from '@renderer/electron.d'
-import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal'
-import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts'
-import { ChevronDown, ExternalLink, Plus, RefreshCw } from 'lucide-react'
-import React, { useState } from 'react'
+import { LinkedAccountInfo } from '@renderer/electron.d';
+import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal';
+import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts';
+import { ChevronDown, ExternalLink, Plus, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
 
-import antigravityLogo from '@/assets/antigravity.svg'
-import chatgptLogo from '@/assets/chatgpt.svg'
-import claudeLogo from '@/assets/claude.svg'
-import copilotLogo from '@/assets/copilot.png'
-import ollamaLogo from '@/assets/ollama.svg'
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@/types'
+import antigravityLogo from '@/assets/antigravity.svg';
+import chatgptLogo from '@/assets/chatgpt.svg';
+import claudeLogo from '@/assets/claude.svg';
+import copilotLogo from '@/assets/copilot.png';
+import ollamaLogo from '@/assets/ollama.svg';
+import { cn } from '@/lib/utils';
+import { AppSettings } from '@/types';
 
-import { AccountRow } from './accounts/AccountRow'
+import { AccountRow } from './accounts/AccountRow';
 
 type ProviderCategory = 'ai' | 'developer' | 'local'
 
@@ -32,7 +32,7 @@ const PROVIDERS: ProviderConfig[] = [
     // Developer Tools
     { id: 'github', name: 'accounts.providers.github.name', description: 'accounts.providers.github.description', logo: copilotLogo, category: 'developer' },
     { id: 'copilot', name: 'accounts.providers.copilot.name', description: 'accounts.providers.copilot.description', logo: copilotLogo, category: 'developer' },
-]
+];
 
 interface AccountsTabProps {
     settings: AppSettings | null
@@ -68,17 +68,17 @@ interface ProviderCardProps {
 const ProviderCard = React.memo<ProviderCardProps>(({
     provider, accounts, authBusy, onConnect, onUnlink, onSetActive, onShowManualSession, t
 }) => {
-    const [expanded, setExpanded] = useState(accounts.length > 0)
-    const isBusy = authBusy === provider.id
-    const hasAccounts = accounts.length > 0
-    const accountCount = accounts.length
+    const [expanded, setExpanded] = useState(accounts.length > 0);
+    const isBusy = authBusy === provider.id;
+    const hasAccounts = accounts.length > 0;
+    const accountCount = accounts.length;
 
     // Update expanded state when accounts change (e.g. first account added)
     React.useEffect(() => {
         if (accounts.length > 0 && !expanded) {
-            setExpanded(true)
+            setExpanded(true);
         }
-    }, [accounts.length, expanded])
+    }, [accounts.length, expanded]);
 
     return (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -177,8 +177,8 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                 </div>
             )}
         </div>
-    )
-})
+    );
+});
 
 const ProviderList = React.memo(({
     title,
@@ -222,9 +222,9 @@ const ProviderList = React.memo(({
                 ))}
             </div>
         </section>
-    )
-})
-ProviderList.displayName = 'ProviderList'
+    );
+});
+ProviderList.displayName = 'ProviderList';
 
 const OllamaSection = React.memo(({
     isRunning,
@@ -319,9 +319,9 @@ const OllamaSection = React.memo(({
                 </div>
             </div>
         </section>
-    )
-})
-OllamaSection.displayName = 'OllamaSection'
+    );
+});
+OllamaSection.displayName = 'OllamaSection';
 
 export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
@@ -331,26 +331,26 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
 }) => {
     const handleConnect = React.useCallback((providerId: string) => {
         switch (providerId) {
-            case 'github': connectGitHubProfile(); break
-            case 'copilot': connectCopilot(); break
-            case 'codex': connectBrowserProvider('codex'); break
-            case 'claude': connectBrowserProvider('claude'); break
-            case 'antigravity': connectBrowserProvider('antigravity'); break
+            case 'github': connectGitHubProfile(); break;
+            case 'copilot': connectCopilot(); break;
+            case 'codex': connectBrowserProvider('codex'); break;
+            case 'claude': connectBrowserProvider('claude'); break;
+            case 'antigravity': connectBrowserProvider('antigravity'); break;
         }
-    }, [connectGitHubProfile, connectCopilot, connectBrowserProvider])
+    }, [connectGitHubProfile, connectCopilot, connectBrowserProvider]);
 
     const handleRefresh = React.useCallback(() => {
-        void linkedAccounts.refreshAccounts()
-    }, [linkedAccounts])
+        void linkedAccounts.refreshAccounts();
+    }, [linkedAccounts]);
 
-    const aiProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'ai'), [])
-    const developerProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'developer'), [])
+    const aiProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'ai'), []);
+    const developerProviders = React.useMemo(() => PROVIDERS.filter(p => p.category === 'developer'), []);
 
     const handleShowManualSession = React.useCallback((accountId: string, email?: string) => {
-        setManualSessionModal({ isOpen: true, accountId, email })
-    }, [setManualSessionModal])
+        setManualSessionModal({ isOpen: true, accountId, email });
+    }, [setManualSessionModal]);
 
-    if (!settings) { return null }
+    if (!settings) { return null; }
 
     return (
         <div className="space-y-8">
@@ -423,8 +423,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 />
             )}
         </div>
-    )
-})
+    );
+});
 
-ProviderCard.displayName = 'ProviderCard'
-AccountsTab.displayName = 'AccountsTab'
+ProviderCard.displayName = 'ProviderCard';
+AccountsTab.displayName = 'AccountsTab';

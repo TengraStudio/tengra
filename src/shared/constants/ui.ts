@@ -20,7 +20,7 @@ export const Z_INDEX = {
     WORKSPACE_FLOAT: 99999,
     /** Onboarding overlay */
     ONBOARDING: 10000,
-} as const
+} as const;
 
 /** Animation durations (in milliseconds) */
 export const ANIMATION_DURATIONS = {
@@ -32,7 +32,7 @@ export const ANIMATION_DURATIONS = {
     SLOW: 300,
     /** Modal enter/exit */
     MODAL: 200,
-} as const
+} as const;
 
 /** Breakpoints for responsive design (in pixels) */
 export const BREAKPOINTS = {
@@ -46,7 +46,7 @@ export const BREAKPOINTS = {
     XL: 1280,
     /** Large desktops */
     XXL: 1536,
-} as const
+} as const;
 
 /** Color thresholds for statistics and indicators */
 export const COLOR_THRESHOLDS = {
@@ -58,7 +58,7 @@ export const COLOR_THRESHOLDS = {
     HIGH: 75,
     /** Quota warning threshold */
     QUOTA_WARNING: 5,
-} as const
+} as const;
 
 /** Number formatting thresholds */
 export const FORMAT_THRESHOLDS = {
@@ -68,7 +68,7 @@ export const FORMAT_THRESHOLDS = {
     THOUSANDS: 1000,
     /** Downloads threshold for popular indicator */
     POPULAR_DOWNLOADS: 1000,
-} as const
+} as const;
 
 /** Accessibility constants */
 export const A11Y = {
@@ -78,7 +78,7 @@ export const A11Y = {
     FOCUS_RING_WIDTH: 2,
     /** Focus ring offset */
     FOCUS_RING_OFFSET: 2,
-} as const
+} as const;
 
 /** Default port numbers */
 export const DEFAULT_PORTS = {
@@ -86,7 +86,7 @@ export const DEFAULT_PORTS = {
     BACKEND: 3000,
     /** Default SSH port */
     SSH: 22,
-} as const
+} as const;
 
 /** Common unit conversions */
 export const CONVERSIONS = {
@@ -96,4 +96,4 @@ export const CONVERSIONS = {
     BYTES_TO_KB: 1024,
     /** Bytes to megabytes */
     BYTES_TO_MB: 1024 * 1024,
-} as const
+} as const;

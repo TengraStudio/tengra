@@ -1,9 +1,9 @@
 
-import type { IpcRendererEvent } from 'electron'
-import { AlertCircle, CheckCircle,Download, RefreshCw, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import type { IpcRendererEvent } from 'electron';
+import { AlertCircle, CheckCircle,Download, RefreshCw, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
 
 interface UpdateStatus {
     state: 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error' | 'idle'
@@ -16,49 +16,49 @@ interface UpdateStatus {
 }
 
 export const UpdateNotification: React.FC = () => {
-    const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' })
-    const [isVisible, setIsVisible] = useState(false)
+    const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' });
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
         const handleUpdateStatus = (_event: IpcRendererEvent, newStatus: UpdateStatus) => {
-            console.warn('Update status received:', newStatus)
-            setStatus(newStatus)
+            console.warn('Update status received:', newStatus);
+            setStatus(newStatus);
 
             // Auto-show logic
             if (newStatus.state === 'available' ||
                 newStatus.state === 'downloading' ||
                 newStatus.state === 'downloaded' ||
                 newStatus.state === 'error') {
-                setIsVisible(true)
+                setIsVisible(true);
             }
 
             // Auto-hide for "not-available" after delay
             if (newStatus.state === 'not-available') {
-                setIsVisible(true)
-                setTimeout(() => setIsVisible(false), 3000)
+                setIsVisible(true);
+                setTimeout(() => setIsVisible(false), 3000);
             }
-        }
+        };
 
-        window.electron?.ipcRenderer.on('update:status', handleUpdateStatus)
+        window.electron?.ipcRenderer.on('update:status', handleUpdateStatus);
 
         return () => {
-            window.electron?.ipcRenderer.removeAllListeners('update:status')
-        }
-    }, [])
+            window.electron?.ipcRenderer.removeAllListeners('update:status');
+        };
+    }, []);
 
     const handleDownload = () => {
-        void window.electron?.ipcRenderer.invoke('update:download')
-    }
+        void window.electron?.ipcRenderer.invoke('update:download');
+    };
 
     const handleInstall = () => {
-        void window.electron?.ipcRenderer.invoke('update:install')
-    }
+        void window.electron?.ipcRenderer.invoke('update:install');
+    };
 
     const handleDismiss = () => {
-        setIsVisible(false)
-    }
+        setIsVisible(false);
+    };
 
-    if (!isVisible || status.state === 'idle') {return null}
+    if (!isVisible || status.state === 'idle') {return null;}
 
     return (
         <AnimatePresence>
@@ -79,7 +79,7 @@ export const UpdateNotification: React.FC = () => {
                             {status.state === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
                             {status.state === 'not-available' && <CheckCircle className="w-4 h-4 text-gray-400" />}
 
-                            <h3 className="font-medium text-white text-sm">
+                            <h3 className="font-medium text-foreground text-sm">
                                 {status.state === 'checking' && 'Checking for updates...'}
                                 {status.state === 'available' && `Update Available: v${status.version}`}
                                 {status.state === 'downloading' && 'Downloading update...'}
@@ -88,7 +88,7 @@ export const UpdateNotification: React.FC = () => {
                                 {status.state === 'error' && 'Update Failed'}
                             </h3>
                         </div>
-                        <button onClick={handleDismiss} className="text-gray-500 hover:text-white">
+                        <button onClick={handleDismiss} className="text-gray-500 hover:text-foreground">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
@@ -119,7 +119,7 @@ export const UpdateNotification: React.FC = () => {
                         {status.state === 'available' && (
                             <button
                                 onClick={handleDownload}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3 rounded transition-colors"
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground text-xs py-1.5 px-3 rounded transition-colors"
                             >
                                 Download
                             </button>
@@ -127,7 +127,7 @@ export const UpdateNotification: React.FC = () => {
                         {status.state === 'downloaded' && (
                             <button
                                 onClick={handleInstall}
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 px-3 rounded transition-colors"
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-foreground text-xs py-1.5 px-3 rounded transition-colors"
                             >
                                 Restart Now
                             </button>
@@ -136,14 +136,14 @@ export const UpdateNotification: React.FC = () => {
                 </motion.div>
             )}
         </AnimatePresence>
-    )
-}
+    );
+};
 
 function formatBytes(bytes: number, decimals = 2) {
-    if (!+bytes) {return '0 B'}
-    const k = 1024
-    const dm = decimals < 0 ? 0 : decimals
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+    if (!+bytes) {return '0 B';}
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }

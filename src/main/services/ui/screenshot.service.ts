@@ -14,14 +14,14 @@ export class ScreenshotService {
     async captureScreen(): Promise<ScreenshotResult> {
         // This is a placeholder - actual capture happens in main.ts
         // using desktopCapturer directly
-        return { success: true }
+        return { success: true };
     }
 
     async captureWindow(_windowName?: string): Promise<ScreenshotResult> {
-        return { success: true }
+        return { success: true };
     }
 
     async listWindows(): Promise<{ success: boolean; windows?: string[]; error?: string }> {
-        return { success: true, windows: [] }
+        return { success: true, windows: [] };
     }
 }

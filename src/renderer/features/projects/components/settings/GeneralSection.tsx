@@ -1,7 +1,9 @@
-import React from 'react'
-import { Info } from 'lucide-react'
-import { Project } from '@/types'
-import { SettingsSectionProps } from './types'
+import { Info } from 'lucide-react';
+import React from 'react';
+
+import { Project } from '@/types';
+
+import { SettingsSectionProps } from './types';
 
 export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -46,4 +48,4 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
             </div>
         </div>
     </section>
-)
+);

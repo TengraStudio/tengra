@@ -7,12 +7,12 @@ import {
     ShieldCheck,
     Sparkles,
     X
-} from 'lucide-react'
-import { useState } from 'react'
+} from 'lucide-react';
+import { useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface Step {
     title: string
@@ -29,8 +29,8 @@ interface OnboardingTourProps {
 }
 
 export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }: OnboardingTourProps) {
-    const { t } = useTranslation(language)
-    const [currentStep, setCurrentStep] = useState(0)
+    const { t } = useTranslation(language);
+    const [currentStep, setCurrentStep] = useState(0);
 
     const steps: Step[] = [
         {
@@ -59,23 +59,23 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
             description: t('onboarding.step5Desc'),
             icon: <MessageSquare className="w-8 h-8 text-primary animate-bounce" />
         }
-    ]
+    ];
 
     const handleNext = () => {
         if (currentStep < steps.length - 1) {
-            setCurrentStep(currentStep + 1)
+            setCurrentStep(currentStep + 1);
         } else {
-            onComplete()
+            onComplete();
         }
-    }
+    };
 
     const handleBack = () => {
         if (currentStep > 0) {
-            setCurrentStep(currentStep - 1)
+            setCurrentStep(currentStep - 1);
         }
-    }
+    };
 
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <AnimatePresence>
@@ -165,5 +165,5 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
                 </div>
             )}
         </AnimatePresence>
-    )
+    );
 }

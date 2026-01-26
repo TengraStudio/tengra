@@ -1,14 +1,14 @@
-import { Activity, Clock, RefreshCw } from 'lucide-react'
-import React from 'react'
+import { Activity, Clock, RefreshCw } from 'lucide-react';
+import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatReset } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
-import { ModelQuotaItem, QuotaResponse } from '@/types/quota'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatReset } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 
-import { AccountWrapper } from '../../types'
+import { AccountWrapper } from '../../types';
 
-import { getQuotaColor, QuotaRing } from './QuotaRing'
+import { getQuotaColor, QuotaRing } from './QuotaRing';
 
 interface AntigravityCardProps {
     t: (key: string) => string
@@ -18,7 +18,7 @@ interface AntigravityCardProps {
 }
 
 export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, setReloadTrigger, locale = 'en-US' }) => {
-    if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null }
+    if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null; }
 
     return (
         <Card className="border-border/40 bg-card backdrop-blur-md overflow-hidden relative group col-span-1 md:col-span-2 shadow-2xl shadow-primary/5">
@@ -68,5 +68,5 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, 
                 ))}
             </CardContent>
         </Card>
-    )
-}
+    );
+};

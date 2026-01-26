@@ -1,5 +1,5 @@
-import { Archive, Plus, Search, Trash2 } from 'lucide-react'
-import React from 'react'
+import { Archive, Plus, Search, Trash2 } from 'lucide-react';
+import React from 'react';
 
 interface ProjectsHeaderProps {
     title: string
@@ -92,5 +92,5 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                 </div>
             </div>
         </>
-    )
-}
+    );
+};

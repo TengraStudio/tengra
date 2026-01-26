@@ -3,14 +3,14 @@
  * Allows users to run multiple LLMs simultaneously and compare/combine results
  */
 
-import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
-import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Message } from '@/types'
+import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Message } from '@/types';
 
 interface MultiModelCollaborationProps {
     messages: Message[]
@@ -41,54 +41,54 @@ export function MultiModelCollaboration({
     onResult,
     availableModels = []
 }: MultiModelCollaborationProps) {
-    const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([])
-    const [strategy, setStrategy] = useState<Strategy>('consensus')
-    const [isRunning, setIsRunning] = useState(false)
-    const [results, setResults] = useState<CollaborationResult | null>(null)
-    const [error, setError] = useState<string | null>(null)
+    const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([]);
+    const [strategy, setStrategy] = useState<Strategy>('consensus');
+    const [isRunning, setIsRunning] = useState(false);
+    const [results, setResults] = useState<CollaborationResult | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleAddModel = () => {
         if (availableModels.length > 0) {
-            const firstModel = availableModels[0]
+            const firstModel = availableModels[0];
             setSelectedModels([...selectedModels, {
                 provider: firstModel.provider,
                 model: firstModel.model
-            }])
+            }]);
         }
-    }
+    };
 
     const handleRemoveModel = (index: number) => {
-        setSelectedModels(selectedModels.filter((_, i) => i !== index))
-    }
+        setSelectedModels(selectedModels.filter((_, i) => i !== index));
+    };
 
     const handleRun = async () => {
         if (selectedModels.length === 0) {
-            setError('Please select at least one model')
-            return
+            setError('Please select at least one model');
+            return;
         }
 
-        setIsRunning(true)
-        setError(null)
-        setResults(null)
+        setIsRunning(true);
+        setError(null);
+        setResults(null);
 
         try {
             const result = await window.electron.collaboration.run({
                 messages,
                 models: selectedModels,
                 strategy
-            })
+            });
 
-            setResults(result)
+            setResults(result);
             // Use the main response field from the result
             if (result.response) {
-                onResult?.(result.response)
+                onResult?.(result.response);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to run collaboration')
+            setError(err instanceof Error ? err.message : 'Failed to run collaboration');
         } finally {
-            setIsRunning(false)
+            setIsRunning(false);
         }
-    }
+    };
 
     return (
         <ResponsiveContainer className="w-full space-y-4">
@@ -231,5 +231,5 @@ export function MultiModelCollaboration({
                 )}
             </Card>
         </ResponsiveContainer>
-    )
+    );
 }

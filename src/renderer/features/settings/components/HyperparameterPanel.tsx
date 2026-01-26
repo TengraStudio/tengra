@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import { useState } from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface HyperparameterPanelProps {
     temperature: number
@@ -25,7 +25,7 @@ export function HyperparameterPanel({
     onTopKChange,
     onRepeatPenaltyChange
 }: HyperparameterPanelProps) {
-    const [isExpanded, setIsExpanded] = useState(false)
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const sliders = [
         {
@@ -64,7 +64,7 @@ export function HyperparameterPanel({
             step: 0.05,
             description: 'Tekrar cezasÄ± (1: yok, 2: yÃ¼ksek)'
         }
-    ]
+    ];
 
     return (
         <div className="glass-card rounded-lg overflow-hidden">
@@ -128,5 +128,5 @@ export function HyperparameterPanel({
                 </div>
             </motion.div>
         </div>
-    )
+    );
 }

@@ -1,13 +1,13 @@
 // Ollama service using Node http module with forced IPv4
-import * as http from 'http'
+import * as http from 'http';
 
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolCall } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import axios from 'axios'
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import axios from 'axios';
 
 
 interface OllamaMessage {
@@ -53,36 +53,36 @@ interface LibraryModel {
 }
 
 export class OllamaService {
-    private host: string = '127.0.0.1'
-    private port: number = 11434
-    private currentRequest: http.ClientRequest | null = null
-    private settingsService: SettingsService
+    private host: string = '127.0.0.1';
+    private port: number = 11434;
+    private currentRequest: http.ClientRequest | null = null;
+    private settingsService: SettingsService;
 
     constructor(settingsService: SettingsService) {
-        this.settingsService = settingsService
-        const settings = this.settingsService.getSettings()
+        this.settingsService = settingsService;
+        const settings = this.settingsService.getSettings();
         if (settings.ollama?.url) {
             try {
-                const url = new URL(settings.ollama.url)
-                this.host = url.hostname
-                this.port = parseInt(url.port) || 11434
+                const url = new URL(settings.ollama.url);
+                this.host = url.hostname;
+                this.port = parseInt(url.port) || 11434;
             } catch (e) {
-                console.error('Invalid Ollama URL provided, using default', getErrorMessage(e as Error))
+                console.error('Invalid Ollama URL provided, using default', getErrorMessage(e as Error));
             }
         }
     }
 
     abort() {
         if (this.currentRequest) {
-            this.currentRequest.destroy()
-            this.currentRequest = null
-            appLogger.info('ollama.service', 'Ollama request aborted by user')
+            this.currentRequest.destroy();
+            this.currentRequest = null;
+            appLogger.info('ollama.service', 'Ollama request aborted by user');
         }
     }
 
     setConnection(host: string, port: number) {
-        this.host = host
-        this.port = port
+        this.host = host;
+        this.port = port;
     }
 
     // IPv4-only HTTP request helper (Instance Method)
@@ -103,28 +103,28 @@ export class OllamaService {
                 headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
                 family: 4 // Force IPv4
             }, (res) => {
-                let data = ''
-                res.on('data', chunk => data += chunk)
+                let data = '';
+                res.on('data', chunk => data += chunk);
                 res.on('end', () => {
                     resolve({
                         ok: (res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300,
                         status: res.statusCode ?? 500,
                         data
-                    })
-                })
-            })
+                    });
+                });
+            });
 
-            req.on('error', reject)
+            req.on('error', reject);
             req.setTimeout(options.timeout ?? 10000, () => {
-                req.destroy()
-                reject(new Error('Request timeout'))
-            })
+                req.destroy();
+                reject(new Error('Request timeout'));
+            });
 
             if (options.body) {
-                req.write(options.body)
+                req.write(options.body);
             }
-            req.end()
-        })
+            req.end();
+        });
     }
 
     // Streaming HTTP request for chat (Instance Method)
@@ -145,42 +145,42 @@ export class OllamaService {
                 headers: { 'Content-Type': 'application/json' },
                 family: 4
             }, (res) => {
-                res.on('data', chunk => options.onData(chunk.toString()))
-                res.on('end', () => resolve())
-                res.on('error', reject)
-            })
+                res.on('data', chunk => options.onData(chunk.toString()));
+                res.on('end', () => resolve());
+                res.on('error', reject);
+            });
 
-            req.on('error', reject)
+            req.on('error', reject);
             req.setTimeout(0, () => {
                 // No timeout
-            })
+            });
 
-            this.currentRequest = req
+            this.currentRequest = req;
 
-            req.write(options.body)
-            req.end()
-        })
+            req.write(options.body);
+            req.end();
+        });
     }
 
     async getModels(): Promise<OllamaModel[]> {
         try {
-            const response = await this.httpRequest({ path: '/api/tags', timeout: 5000 })
-            const data = safeJsonParse<{ models?: OllamaModel[] }>(response.data, { models: [] })
-            return data.models ?? []
+            const response = await this.httpRequest({ path: '/api/tags', timeout: 5000 });
+            const data = safeJsonParse<{ models?: OllamaModel[] }>(response.data, { models: [] });
+            return data.models ?? [];
         } catch (error) {
-            console.error('Failed to get models:', getErrorMessage(error as Error))
-            return []
+            console.error('Failed to get models:', getErrorMessage(error as Error));
+            return [];
         }
     }
 
     async ps(): Promise<JsonObject[]> {
         try {
-            const response = await this.httpRequest({ path: '/api/ps', timeout: 5000 })
-            const data = safeJsonParse<{ models?: JsonObject[] }>(response.data, { models: [] })
-            return (data.models ?? []) as JsonObject[]
+            const response = await this.httpRequest({ path: '/api/ps', timeout: 5000 });
+            const data = safeJsonParse<{ models?: JsonObject[] }>(response.data, { models: [] });
+            return (data.models ?? []) as JsonObject[];
         } catch (error) {
-            console.error('Failed to get running models:', getErrorMessage(error as Error))
-            return []
+            console.error('Failed to get running models:', getErrorMessage(error as Error));
+            return [];
         }
     }
 
@@ -198,17 +198,17 @@ export class OllamaService {
                     },
                     keep_alive: '24h'  // Keep model loaded
                 })
-            })
+            });
             const data = safeJsonParse<OllamaResponse>(response.data, {
                 model: '',
                 created_at: '',
                 message: { role: 'assistant', content: '' },
                 done: true
-            })
-            return data
+            });
+            return data;
         } catch (error) {
-            console.error('Chat error:', getErrorMessage(error as Error))
-            throw error
+            console.error('Chat error:', getErrorMessage(error as Error));
+            throw error;
         }
     }
 
@@ -224,10 +224,10 @@ export class OllamaService {
         promptTokens: number;
         completionTokens: number;
     }> {
-        let fullResponse = ''
-        let toolCalls: ToolCall[] = []
-        let promptTokens = 0
-        let completionTokens = 0
+        let fullResponse = '';
+        let toolCalls: ToolCall[] = [];
+        let promptTokens = 0;
+        let completionTokens = 0;
 
         try {
             await this.httpStreamRequest({
@@ -243,40 +243,40 @@ export class OllamaService {
                     keep_alive: '24h'
                 }),
                 onData: (chunk) => {
-                    const lines = chunk.toString().split('\n').filter(Boolean)
+                    const lines = chunk.toString().split('\n').filter(Boolean);
                     for (const line of lines) {
                         try {
-                            const data = safeJsonParse<OllamaResponse>(line, {} as OllamaResponse)
+                            const data = safeJsonParse<OllamaResponse>(line, {} as OllamaResponse);
                             if (data.message?.content) {
-                                fullResponse += data.message.content
-                                onChunk?.(data.message.content)
+                                fullResponse += data.message.content;
+                                onChunk?.(data.message.content);
                             }
                             if (data.message?.tool_calls) {
-                                toolCalls = data.message.tool_calls
+                                toolCalls = data.message.tool_calls;
                             }
                             if (data.done) {
-                                if (data.prompt_eval_count) { promptTokens = data.prompt_eval_count }
-                                if (data.eval_count) { completionTokens = data.eval_count }
+                                if (data.prompt_eval_count) { promptTokens = data.prompt_eval_count; }
+                                if (data.eval_count) { completionTokens = data.eval_count; }
                             }
                         } catch {
                             // Ignore parse errors
                         }
                     }
                 }
-            })
+            });
 
-            this.currentRequest = null
+            this.currentRequest = null;
 
             return {
                 content: fullResponse,
                 tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
                 promptTokens,
                 completionTokens
-            }
+            };
         } catch (error) {
-            this.currentRequest = null
-            console.error('Stream chat error:', getErrorMessage(error as Error))
-            throw error
+            this.currentRequest = null;
+            console.error('Stream chat error:', getErrorMessage(error as Error));
+            throw error;
         }
     }
 
@@ -289,12 +289,12 @@ export class OllamaService {
                     model,
                     input
                 })
-            })
-            const data = safeJsonParse<{ embeddings?: number[][] }>(response.data, { embeddings: [] })
-            return data.embeddings?.[0] ?? []
+            });
+            const data = safeJsonParse<{ embeddings?: number[][] }>(response.data, { embeddings: [] });
+            return data.embeddings?.[0] ?? [];
         } catch (error) {
-            console.error('Error generating embeddings with Ollama:', getErrorMessage(error as Error))
-            throw error
+            console.error('Error generating embeddings with Ollama:', getErrorMessage(error as Error));
+            throw error;
         }
     }
 
@@ -308,26 +308,26 @@ export class OllamaService {
                 body: JSON.stringify({ name: modelName, stream: true }),
                 timeout: 3600000,
                 onData: (chunk) => {
-                    const lines = chunk.split('\n').filter(Boolean)
+                    const lines = chunk.split('\n').filter(Boolean);
                     for (const line of lines) {
                         try {
-                            const data = safeJsonParse<Record<string, unknown>>(line, {})
+                            const data = safeJsonParse<Record<string, unknown>>(line, {});
                             onProgress?.({
                                 status: (data.status as string) ?? 'downloading',
                                 completed: data.completed as number | undefined,
                                 total: data.total as number | undefined
-                            })
+                            });
                         } catch {
                             // Ignore
                         }
                     }
                 }
-            })
-            return { success: true }
+            });
+            return { success: true };
         } catch (error) {
-            this.currentRequest = null
-            const message = getErrorMessage(error as Error)
-            return { success: false, error: message }
+            this.currentRequest = null;
+            const message = getErrorMessage(error as Error);
+            return { success: false, error: message };
         }
     }
 
@@ -337,17 +337,17 @@ export class OllamaService {
                 method: 'DELETE',
                 path: '/api/delete',
                 body: JSON.stringify({ name: modelName })
-            })
+            });
 
             if (response.ok) {
-                return { success: true }
+                return { success: true };
             } else {
-                const data = safeJsonParse<{ error?: string }>(response.data, {})
-                return { success: false, error: data.error ?? 'Failed to delete model' }
+                const data = safeJsonParse<{ error?: string }>(response.data, {});
+                return { success: false, error: data.error ?? 'Failed to delete model' };
             }
         } catch (error) {
-            const message = getErrorMessage(error as Error)
-            return { success: false, error: message }
+            const message = getErrorMessage(error as Error);
+            return { success: false, error: message };
         }
     }
 
@@ -373,12 +373,12 @@ export class OllamaService {
             { name: 'orca-mini', description: 'Orca Mini', tags: ['3b', '7b', '13b'] },
             { name: 'neural-chat', description: 'Intel Neural Chat', tags: ['7b'] },
             { name: 'vicuna', description: 'Vicuna', tags: ['7b', '13b', '33b'] }
-        ]
+        ];
 
         try {
             // Attempt to fetch most popular from registry to get real "pulls" count
-            const response = await axios.get('https://ollama.com/library?sort=popular', { timeout: 3000 })
-            const html = response.data
+            const response = await axios.get('https://ollama.com/library?sort=popular', { timeout: 3000 });
+            const html = response.data;
 
             // Build a map of name -> pulls from the library page
             const pullsMap: Record<string, string> = {};
@@ -397,7 +397,7 @@ export class OllamaService {
             appLogger.info('ollama.service', `[OllamaService] Library enriched with Pulls. Found counts for ${Object.keys(pullsMap).length} models.`);
             return results;
         } catch (e) {
-            const message = getErrorMessage(e as Error)
+            const message = getErrorMessage(e as Error);
             console.warn('[OllamaService] Could not fetch live pulls from registry, using static list', message);
             return staticList;
         }
@@ -405,14 +405,14 @@ export class OllamaService {
 
     async isAvailable(): Promise<boolean> {
         try {
-            const response = await this.httpRequest({ path: '/api/tags', timeout: 3000 })
-            return response.ok
+            const response = await this.httpRequest({ path: '/api/tags', timeout: 3000 });
+            return response.ok;
         } catch {
-            return false
+            return false;
         }
     }
 
     async isOllamaRunning(): Promise<boolean> {
-        return this.isAvailable()
+        return this.isAvailable();
     }
 }

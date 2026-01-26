@@ -1,3 +1,4 @@
+import { useLanguage } from '@renderer/i18n';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTheme } from '@/context/ThemeContext';
@@ -21,29 +22,24 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     setIsSidebarCollapsed,
 }) => {
     const { theme } = useTheme();
+    const { isRTL } = useLanguage();
     const containerRef = useRef<HTMLDivElement>(null);
     const [sidebarWidth, setSidebarWidth] = useState(() => {
-        if (isSidebarCollapsed) { return 60; }
-        const savedWidth = localStorage.getItem('sidebarWidth');
-        return savedWidth ? parseInt(savedWidth, 10) || 280 : 280;
+        const savedWidth = parseInt(localStorage.getItem('sidebarWidth') ?? '280', 10);
+        return Number.isFinite(savedWidth) ? savedWidth : 280;
     });
     const [isDragging, setIsDragging] = useState(false);
     const startXRef = useRef(0);
     const startWidthRef = useRef(0);
-
-    useEffect(() => {
-        const targetWidth = isSidebarCollapsed ? 60 : (parseInt(localStorage.getItem('sidebarWidth') ?? '280', 10));
-        startWidthRef.current = targetWidth;
-        setSidebarWidth(prev => prev !== targetWidth ? targetWidth : prev);
-    }, [isSidebarCollapsed]);
+    const effectiveSidebarWidth = isSidebarCollapsed ? 60 : sidebarWidth;
 
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         setIsDragging(true);
         startXRef.current = e.clientX;
-        startWidthRef.current = sidebarWidth;
-    }, [sidebarWidth]);
+        startWidthRef.current = isSidebarCollapsed ? 60 : sidebarWidth;
+    }, [isSidebarCollapsed, sidebarWidth]);
 
     useEffect(() => {
         if (!isDragging) { return; }
@@ -53,8 +49,11 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             const SNAP_THRESHOLD = 15;
 
             const delta = e.clientX - startXRef.current;
+            // Invert delta if RTL because dragging Left (negative delta) means increasing width from Right edge
+            const effectiveDelta = isRTL ? -delta : delta;
+
             const maxWidth = Math.min(window.innerWidth * 0.4, 800); // Max 40% or 800px
-            let newWidth = Math.max(60, Math.min(maxWidth, startWidthRef.current + delta));
+            let newWidth = Math.max(60, Math.min(maxWidth, startWidthRef.current + effectiveDelta));
 
             // Magnetic Snapping
             for (const point of SNAP_POINTS) {
@@ -89,17 +88,18 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, isSidebarCollapsed, setIsSidebarCollapsed, sidebarWidth]);
+    }, [isDragging, isSidebarCollapsed, setIsSidebarCollapsed, sidebarWidth, isRTL]);
 
     return (
         <div
             ref={containerRef}
+            dir={isRTL ? 'rtl' : 'ltr'}
             className={cn("fixed inset-0 flex overflow-hidden bg-background text-foreground", theme)}
         >
             {/* Sidebar */}
             <div
-                className="h-full flex-shrink-0 z-20 bg-background border-r border-border"
-                style={{ width: sidebarWidth }}
+                className="h-full flex-shrink-0 z-20 bg-background border-e border-border"
+                style={{ width: effectiveSidebarWidth }}
             >
                 {sidebarContent}
             </div>
@@ -108,18 +108,26 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             <div
                 tabIndex={0}
                 role="separator"
-                aria-valuenow={sidebarWidth}
+                aria-valuenow={effectiveSidebarWidth}
                 aria-valuemin={60}
                 aria-valuemax={800}
                 onMouseDown={handleMouseDown}
                 onKeyDown={(e) => {
                     const step = e.shiftKey ? 50 : 10;
                     if (e.key === 'ArrowLeft') {
-                        const newWidth = Math.max(60, sidebarWidth - step);
+                        // ArrowLeft reduces width in LTR, increases in RTL (moving away from edge?)
+                        // If LTR: Left = smaller width.
+                        // If RTL: Left = Larger width (moving away from Right edge).
+                        const change = isRTL ? step : -step;
+                        const baseWidth = isSidebarCollapsed ? 60 : sidebarWidth;
+                        const newWidth = Math.max(60, Math.min(800, baseWidth + change));
                         setSidebarWidth(newWidth);
                         localStorage.setItem('sidebarWidth', newWidth.toString());
                     } else if (e.key === 'ArrowRight') {
-                        const newWidth = Math.min(800, sidebarWidth + step);
+                        // ArrowRight increases in LTR, decreases in RTL
+                        const change = isRTL ? -step : step;
+                        const baseWidth = isSidebarCollapsed ? 60 : sidebarWidth;
+                        const newWidth = Math.max(60, Math.min(800, baseWidth + change));
                         setSidebarWidth(newWidth);
                         localStorage.setItem('sidebarWidth', newWidth.toString());
                     } else if (e.key === 'Enter' || e.key === ' ') {
@@ -136,7 +144,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                     }
                 }}
                 className={cn(
-                    "w-4 -ml-2 relative z-50 cursor-col-resize flex flex-col justify-center items-center group outline-none select-none touch-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
+                    "w-4 -ms-2 relative z-50 cursor-col-resize flex flex-col justify-center items-center group outline-none select-none touch-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
                 )}
             >
                 {/* Visible Line */}

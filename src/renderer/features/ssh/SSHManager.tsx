@@ -1,16 +1,16 @@
-import { NginxWizard } from '@renderer/features/ssh/NginxWizard'
-import { PackageManager } from '@renderer/features/ssh/PackageManager'
-import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser'
-import { SSHLogs } from '@renderer/features/ssh/SSHLogs'
-import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard'
-import { useEffect, useState } from 'react'
+import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
+import { PackageManager } from '@renderer/features/ssh/PackageManager';
+import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
+import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
+import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
+import { useEffect, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n';
 
-import { AddConnectionModal } from './components/AddConnectionModal'
-import { SSHConnectionList } from './components/SSHConnectionList'
-import { SSHTerminal } from './components/SSHTerminal'
-import { useSSHConnections } from './hooks/useSSHConnections'
+import { AddConnectionModal } from './components/AddConnectionModal';
+import { SSHConnectionList } from './components/SSHConnectionList';
+import { SSHTerminal } from './components/SSHTerminal';
+import { useSSHConnections } from './hooks/useSSHConnections';
 
 interface SSHManagerProps {
     isOpen: boolean
@@ -27,7 +27,7 @@ interface SSHProfile {
 }
 
 export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
-    const { t } = useTranslation(language)
+    const { t } = useTranslation(language);
     const {
         connections,
         isConnecting,
@@ -35,9 +35,9 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         selectedConnectionId,
         setSelectedConnectionId,
         loadConnections,
-    } = useSSHConnections(isOpen)
+    } = useSSHConnections(isOpen);
 
-    const [showAddModal, setShowAddModal] = useState(false)
+    const [showAddModal, setShowAddModal] = useState(false);
     const [newConnection, setNewConnection] = useState<{
         host: string;
         port: number;
@@ -52,35 +52,35 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         username: '',
         password: '',
         privateKey: ''
-    })
-    const [shouldSaveProfile, setShouldSaveProfile] = useState(false)
-    const [terminalOutput, setTerminalOutput] = useState<string>('')
+    });
+    const [shouldSaveProfile, setShouldSaveProfile] = useState(false);
+    const [terminalOutput, setTerminalOutput] = useState<string>('');
 
     type TabId = 'terminal' | 'dashboard' | 'files' | 'packages' | 'logs' | 'management'
-    const [activeTab, setActiveTab] = useState<TabId>('terminal')
+    const [activeTab, setActiveTab] = useState<TabId>('terminal');
 
     useEffect(() => {
         if (isOpen) {
             window.electron.ssh.onStdout((data) => {
-                const str = typeof data === 'string' ? data : new TextDecoder().decode(data)
-                setTerminalOutput(prev => prev + str)
-            })
+                const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
+                setTerminalOutput(prev => prev + str);
+            });
             window.electron.ssh.onStderr((data) => {
-                const str = typeof data === 'string' ? data : new TextDecoder().decode(data)
-                setTerminalOutput(prev => prev + str)
-            })
+                const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
+                setTerminalOutput(prev => prev + str);
+            });
             window.electron.ssh.onShellData((eventData) => {
-                setTerminalOutput(prev => prev + eventData.data)
-            })
+                setTerminalOutput(prev => prev + eventData.data);
+            });
         }
         // Cleanup is handled by the hook's removeAllListeners, 
         // or we could add specific cleanup here if IPC supports it.
         // Assuming global cleanup on unmount is sufficient.
-    }, [isOpen])
+    }, [isOpen]);
 
     const handleAddConnection = async () => {
-        setIsConnecting(true)
-        setTerminalOutput(`${t('ssh.connecting')} ${newConnection.host}...\n`)
+        setIsConnecting(true);
+        setTerminalOutput(`${t('ssh.connecting')} ${newConnection.host}...\n`);
 
         const result = await window.electron.ssh.connect({
             host: newConnection.host,
@@ -88,51 +88,51 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             username: newConnection.username,
             password: newConnection.password,
             privateKey: newConnection.privateKey ? newConnection.privateKey : undefined
-        })
+        });
 
-        setIsConnecting(false)
+        setIsConnecting(false);
 
         if (result.success) {
-            setTerminalOutput(prev => prev + `${t('ssh.connected', { host: newConnection.host })}\n`)
-            setShowAddModal(false)
+            setTerminalOutput(prev => prev + `${t('ssh.connected', { host: newConnection.host })}\n`);
+            setShowAddModal(false);
 
             if (shouldSaveProfile) {
                 void window.electron.ssh.saveProfile({
                     ...newConnection,
                     id: result.id || '',
                     name: newConnection.name || newConnection.host
-                }).catch(e => console.error('Save profile err', e))
+                }).catch(e => console.error('Save profile err', e));
             }
 
-            void loadConnections().catch(e => console.error('Load conns err', e))
+            void loadConnections().catch(e => console.error('Load conns err', e));
         } else {
-            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error || 'Unknown error' })}\n`)
+            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error || 'Unknown error' })}\n`);
         }
-    }
+    };
 
     const handleDeleteProfile = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation()
+        e.stopPropagation();
         // Removed confirm as per lint, or we can use a custom modal. 
         // For now, restoring confirm but suppressing lint if needed, or simply not suppressing 
         // because "Unexpected confirm" is a warning.
         // Replacing with a simpler check or ignoring lint.
         // eslint-disable-next-line
         if (confirm(t('ssh.confirmDelete') || 'Are you sure?')) {
-            await window.electron.ssh.deleteProfile(id)
-            void loadConnections()
+            await window.electron.ssh.deleteProfile(id);
+            void loadConnections();
         }
-    }
+    };
 
     const handleDisconnect = async (id: string) => {
-        await window.electron.ssh.disconnect(id)
+        await window.electron.ssh.disconnect(id);
         // updateConnectionStatus(id, 'disconnected') // Hook handles this via listener
-        setTerminalOutput(prev => prev + `${t('ssh.disconnected')}\n`)
-    }
+        setTerminalOutput(prev => prev + `${t('ssh.disconnected')}\n`);
+    };
 
     const handleExecute = async (id: string, cmd: string) => {
-        if (!cmd.trim()) { return }
-        await window.electron.ssh.shellWrite(id, cmd + '\n')
-    }
+        if (!cmd.trim()) { return; }
+        await window.electron.ssh.shellWrite(id, cmd + '\n');
+    };
 
     const handleConnectProfile = (conn: SSHProfile) => {
         void window.electron.ssh.connect({
@@ -141,10 +141,10 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             username: conn.username,
             password: conn.password,
             privateKey: conn.privateKey
-        }).then(() => loadConnections().catch(console.error))
+        }).then(() => loadConnections().catch(console.error));
     };
 
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <div className="modal-overlay">
@@ -201,9 +201,9 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                                     t={t}
                                     onExecute={(cmd) => {
                                         if (selectedConnectionId) {
-                                            handleExecute(selectedConnectionId, cmd).catch(console.error)
+                                            handleExecute(selectedConnectionId, cmd).catch(console.error);
                                         } else {
-                                            setTerminalOutput(prev => prev + `${t('ssh.noServerConnected')}\n`)
+                                            setTerminalOutput(prev => prev + `${t('ssh.noServerConnected')}\n`);
                                         }
                                     }}
                                     selectedConnectionId={selectedConnectionId}
@@ -240,5 +240,5 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 />
             </div>
         </div>
-    )
+    );
 }

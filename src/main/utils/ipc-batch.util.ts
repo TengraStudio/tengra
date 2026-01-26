@@ -4,20 +4,20 @@
  * Reduces IPC overhead by combining multiple requests into a single batch
  */
 
-import { appLogger } from '@main/logging/logger'
-import { JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { IpcValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export interface BatchRequest {
     channel: string
-    args: JsonValue[]
+    args: IpcValue[]
 }
 
 export interface BatchResult {
     channel: string
     success: boolean
-    data?: JsonValue
+    data?: IpcValue
     error?: string
 }
 
@@ -31,7 +31,7 @@ export interface BatchResponse {
 }
 
 // Registry of handlers that can be batched
-const batchableHandlers = new Map<string, (event: IpcMainInvokeEvent, ...args: JsonValue[]) => Promise<JsonValue>>()
+const batchableHandlers = new Map<string, (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>>();
 
 /**
  * Register a handler as batchable
@@ -39,30 +39,30 @@ const batchableHandlers = new Map<string, (event: IpcMainInvokeEvent, ...args: J
  */
 export function registerBatchableHandler(
     channel: string,
-    handler: (event: IpcMainInvokeEvent, ...args: JsonValue[]) => Promise<JsonValue>
+    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>
 ): void {
-    batchableHandlers.set(channel, handler)
+    batchableHandlers.set(channel, handler);
 }
 
 /**
  * Unregister a batchable handler
  */
 export function unregisterBatchableHandler(channel: string): void {
-    batchableHandlers.delete(channel)
+    batchableHandlers.delete(channel);
 }
 
 /**
  * Check if a handler is registered as batchable
  */
 export function isBatchable(channel: string): boolean {
-    return batchableHandlers.has(channel)
+    return batchableHandlers.has(channel);
 }
 
 /**
  * Get all registered batchable channels
  */
 export function getBatchableChannels(): string[] {
-    return Array.from(batchableHandlers.keys())
+    return Array.from(batchableHandlers.keys());
 }
 
 /**
@@ -72,29 +72,29 @@ async function executeBatchRequest(
     event: IpcMainInvokeEvent,
     request: BatchRequest
 ): Promise<BatchResult> {
-    const handler = batchableHandlers.get(request.channel)
+    const handler = batchableHandlers.get(request.channel);
 
     if (!handler) {
         return {
             channel: request.channel,
             success: false,
             error: `Handler not found or not batchable: ${request.channel}`
-        }
+        };
     }
 
     try {
-        const result = await handler(event, ...request.args)
+        const result = await handler(event, ...request.args);
         return {
             channel: request.channel,
             success: true,
             data: result
-        }
+        };
     } catch (error) {
         return {
             channel: request.channel,
             success: false,
             error: getErrorMessage(error as Error)
-        }
+        };
     }
 }
 
@@ -107,7 +107,7 @@ export function registerBatchIpc(): void {
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
     ): Promise<BatchResponse> => {
-        const startTime = Date.now()
+        const startTime = Date.now();
 
         if (!Array.isArray(requests) || requests.length === 0) {
             return {
@@ -117,18 +117,18 @@ export function registerBatchIpc(): void {
                     endTime: Date.now(),
                     totalMs: Date.now() - startTime
                 }
-            }
+            };
         }
 
         // Execute all requests in parallel
         const results = await Promise.all(
             requests.map(req => executeBatchRequest(event, req))
-        )
+        );
 
-        const endTime = Date.now()
-        const totalMs = endTime - startTime
+        const endTime = Date.now();
+        const totalMs = endTime - startTime;
 
-        appLogger.debug('IpcBatch', `Processed ${requests.length} requests in ${totalMs}ms`)
+        appLogger.debug('IpcBatch', `Processed ${requests.length} requests in ${totalMs}ms`);
 
         return {
             results,
@@ -137,15 +137,15 @@ export function registerBatchIpc(): void {
                 endTime,
                 totalMs
             }
-        }
-    })
+        };
+    });
 
     // Handle sequential batch invoke (for requests that must be in order)
     ipcMain.handle('batch:invokeSequential', async (
         event: IpcMainInvokeEvent,
         requests: BatchRequest[]
     ): Promise<BatchResponse> => {
-        const startTime = Date.now()
+        const startTime = Date.now();
 
         if (!Array.isArray(requests) || requests.length === 0) {
             return {
@@ -155,20 +155,20 @@ export function registerBatchIpc(): void {
                     endTime: Date.now(),
                     totalMs: Date.now() - startTime
                 }
-            }
+            };
         }
 
         // Execute requests sequentially
-        const results: BatchResult[] = []
+        const results: BatchResult[] = [];
         for (const request of requests) {
-            const result = await executeBatchRequest(event, request)
-            results.push(result)
+            const result = await executeBatchRequest(event, request);
+            results.push(result);
         }
 
-        const endTime = Date.now()
-        const totalMs = endTime - startTime
+        const endTime = Date.now();
+        const totalMs = endTime - startTime;
 
-        appLogger.debug('IpcBatch', `Processed ${requests.length} sequential requests in ${totalMs}ms`)
+        appLogger.debug('IpcBatch', `Processed ${requests.length} sequential requests in ${totalMs}ms`);
 
         return {
             results,
@@ -177,23 +177,23 @@ export function registerBatchIpc(): void {
                 endTime,
                 totalMs
             }
-        }
-    })
+        };
+    });
 
     // Get list of batchable channels
     ipcMain.handle('batch:getChannels', async (): Promise<string[]> => {
-        return getBatchableChannels()
-    })
+        return getBatchableChannels();
+    });
 }
 
 /**
  * Helper to register multiple handlers at once
  */
 export function registerBatchableHandlers(
-    handlers: Record<string, (event: IpcMainInvokeEvent, ...args: JsonValue[]) => Promise<JsonValue>>
+    handlers: Record<string, (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>>
 ): void {
     for (const [channel, handler] of Object.entries(handlers)) {
-        registerBatchableHandler(channel, handler)
+        registerBatchableHandler(channel, handler);
     }
 }
 
@@ -201,9 +201,9 @@ export function registerBatchableHandlers(
  * Create a batchable version of an existing handler
  * Use this when you want to make existing handlers batchable without modifying them
  */
-export function makeBatchable<T extends JsonValue>(
+export function makeBatchable<T extends IpcValue>(
     channel: string,
-    handler: (event: IpcMainInvokeEvent, ...args: JsonValue[]) => Promise<T>
+    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<T>
 ): void {
-    registerBatchableHandler(channel, handler as (event: IpcMainInvokeEvent, ...args: JsonValue[]) => Promise<JsonValue>)
+    registerBatchableHandler(channel, handler as (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>);
 }

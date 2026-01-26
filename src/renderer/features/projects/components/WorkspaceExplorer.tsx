@@ -1,12 +1,12 @@
-﻿import { FileNode, WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem'
-import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils'
-import { ChevronDown, ChevronRight, FilePlus, Folder, FolderPlus, Pencil, Plus, Server, Trash2, X } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+﻿import { FileNode, WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem';
+import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils';
+import { ChevronDown, ChevronRight, FilePlus, Folder, FolderPlus, Pencil, Plus, Server, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { WorkspaceEntry, WorkspaceMount } from '@/types'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { WorkspaceEntry, WorkspaceMount } from '@/types';
 
 export interface ContextMenuAction {
     type: 'createFile' | 'createFolder' | 'rename' | 'delete'
@@ -51,96 +51,96 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     variant = 'panel',
     language
 }) => {
-    const { t } = useTranslation(language || 'en')
-    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({})
-    const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({})
-    const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({})
-    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+    const { t } = useTranslation(language || 'en');
+    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({});
+    const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({});
+    const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({});
+    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
     const loadRoot = useCallback(async (mount: WorkspaceMount) => {
-        setLoadingMounts((prev) => ({ ...prev, [mount.id]: true }))
-        const isReady = onEnsureMount ? await onEnsureMount(mount) : true
+        setLoadingMounts((prev) => ({ ...prev, [mount.id]: true }));
+        const isReady = onEnsureMount ? await onEnsureMount(mount) : true;
         if (!isReady) {
-            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }))
-            return
+            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }));
+            return;
         }
         try {
             const result = mount.type === 'local'
                 ? await window.electron.listDirectory(mount.rootPath)
-                : await window.electron.ssh.listDir(mount.id, mount.rootPath)
+                : await window.electron.ssh.listDir(mount.id, mount.rootPath);
             if (result?.success) {
                 // Handle both response formats: { files } or { data }
-                const anyResult = result as { files?: MountFileEntry[]; data?: MountFileEntry[] }
-                const fileList = anyResult.files ?? anyResult.data ?? []
+                const anyResult = result as { files?: MountFileEntry[]; data?: MountFileEntry[] };
+                const fileList = anyResult.files ?? anyResult.data ?? [];
                 if (Array.isArray(fileList)) {
                     const mapped = fileList.map((item: MountFileEntry) => ({
                         name: item.name,
                         isDirectory: Boolean(item.isDirectory),
                         path: joinPath(mount.rootPath, item.name, mount.type)
-                    }))
-                    setRootNodes((prev) => ({ ...prev, [mount.id]: sortNodes(mapped) }))
+                    }));
+                    setRootNodes((prev) => ({ ...prev, [mount.id]: sortNodes(mapped) }));
                 }
             }
         } catch (error) {
-            console.error('Failed to load mount root', error)
+            console.error('Failed to load mount root', error);
         } finally {
-            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }))
+            setLoadingMounts((prev) => ({ ...prev, [mount.id]: false }));
         }
-    }, [onEnsureMount])
+    }, [onEnsureMount]);
 
     useEffect(() => {
         mounts.forEach((mount) => {
             // Auto-load if explicit expanded OR if it's the only local mount (which hides the toggle)
-            const shouldLoad = expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local')
+            const shouldLoad = expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local');
 
             if (shouldLoad) {
                 // Avoid reloading if already loaded and no refresh signal?
                 // Actually loadRoot handles re-fetching.
                 // We want to fetch on mount.
-                void loadRoot(mount)
+                void loadRoot(mount);
             }
-        })
-    }, [refreshSignal, mounts, expandedMounts, loadRoot])
+        });
+    }, [refreshSignal, mounts, expandedMounts, loadRoot]);
 
     // Close context menu when clicking outside
     useEffect(() => {
-        const handleClick = () => setContextMenu(null)
+        const handleClick = () => setContextMenu(null);
         if (contextMenu) {
-            document.addEventListener('click', handleClick)
-            return () => document.removeEventListener('click', handleClick)
+            document.addEventListener('click', handleClick);
+            return () => document.removeEventListener('click', handleClick);
         }
-        return undefined
-    }, [contextMenu])
+        return undefined;
+    }, [contextMenu]);
 
     const toggleMount = (mount: WorkspaceMount) => {
         setExpandedMounts((prev) => {
-            const next = { ...prev, [mount.id]: !prev[mount.id] }
+            const next = { ...prev, [mount.id]: !prev[mount.id] };
             if (!prev[mount.id]) {
-                void loadRoot(mount)
+                void loadRoot(mount);
             }
-            return next
-        })
-    }
+            return next;
+        });
+    };
 
     const handleContextMenu = (e: React.MouseEvent, entry: WorkspaceEntry) => {
-        setContextMenu({ x: e.clientX, y: e.clientY, entry })
-    }
+        setContextMenu({ x: e.clientX, y: e.clientY, entry });
+    };
 
     const handleContextAction = (type: ContextMenuAction['type']) => {
         if (contextMenu?.entry && onContextAction) {
-            onContextAction({ type, entry: contextMenu.entry })
+            onContextAction({ type, entry: contextMenu.entry });
         }
-        setContextMenu(null)
-    }
+        setContextMenu(null);
+    };
 
     const mountIcon = (mount: WorkspaceMount) => (
         mount.type === 'ssh'
             ? <Server className="w-3.5 h-3.5 text-indigo-400" />
             : <Folder className="w-3.5 h-3.5 text-emerald-400" />
-    )
+    );
 
 
-    const hasMounts = mounts.length > 0
+    const hasMounts = mounts.length > 0;
 
     return (
         <div className={cn(
@@ -181,9 +181,9 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 )}
                                 onClick={() => toggleMount(mount)}
                                 onContextMenu={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    setContextMenu({ x: e.clientX, y: e.clientY, mountId: mount.id })
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setContextMenu({ x: e.clientX, y: e.clientY, mountId: mount.id });
                                 }}
                             >
                                 <span className="opacity-50 group-hover/mount:opacity-100 transition-opacity">
@@ -210,7 +210,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 </div>
 
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onRemoveMount(mount.id) }}
+                                    onClick={(e) => { e.stopPropagation(); onRemoveMount(mount.id); }}
                                     className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-red-400 transition-all"
                                     title={t('workspace.removeMount')}
                                 >
@@ -266,9 +266,9 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         <button
                             onClick={() => {
                                 if (contextMenu.mountId) {
-                                    onRemoveMount(contextMenu.mountId)
+                                    onRemoveMount(contextMenu.mountId);
                                 }
-                                setContextMenu(null)
+                                setContextMenu(null);
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                         >
@@ -320,5 +320,5 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             )}
 
         </div>
-    )
-}
+    );
+};

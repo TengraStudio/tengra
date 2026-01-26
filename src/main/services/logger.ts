@@ -1,4 +1,4 @@
-import { JsonValue } from '@/types/common'
+import { JsonValue } from '@/types/common';
 export enum LogLevel {
     DEBUG = 0,
     INFO = 1,
@@ -7,33 +7,33 @@ export enum LogLevel {
 }
 
 export class Logger {
-    private static level: LogLevel = LogLevel.INFO
+    private static level: LogLevel = LogLevel.INFO;
 
     static setLevel(level: LogLevel) {
-        this.level = level
+        this.level = level;
     }
 
     static debug(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.DEBUG) {
-            console.warn(`[DEBUG] [${context}] ${message}`, ...args)
+            console.warn(`[DEBUG] [${context}] ${message}`, ...args);
         }
     }
 
     static info(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.INFO) {
-            console.warn(`[INFO] [${context}] ${message}`, ...args)
+            console.warn(`[INFO] [${context}] ${message}`, ...args);
         }
     }
 
     static warn(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.WARN) {
-            console.warn(`[WARN] [${context}] ${message}`, ...args)
+            console.warn(`[WARN] [${context}] ${message}`, ...args);
         }
     }
 
     static error(context: string, message: string, ...args: Array<JsonValue | Error | object>) {
         if (this.level <= LogLevel.ERROR) {
-            console.error(`[ERROR] [${context}] ${message}`, ...args)
+            console.error(`[ERROR] [${context}] ${message}`, ...args);
         }
     }
 }

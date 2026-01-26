@@ -1,12 +1,12 @@
-import { ResearchStage } from '@shared/types/ideas'
-import { Play } from 'lucide-react'
-import React from 'react'
+import { ResearchStage } from '@shared/types/ideas';
+import { Play } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
-import { WorkflowStage } from '../types'
+import { WorkflowStage } from '../types';
 
-import { ResearchProgress } from './ResearchProgress'
+import { ResearchProgress } from './ResearchProgress';
 
 interface StageResearchProps {
     researchStage: ResearchStage
@@ -41,8 +41,8 @@ export const StageResearch: React.FC<StageResearchProps> = ({
                 type="button"
                 onClick={() => {
                     if (currentSessionId) {
-                        setWorkflowStage('generation')
-                        void startGeneration(currentSessionId)
+                        setWorkflowStage('generation');
+                        void startGeneration(currentSessionId);
                     }
                 }}
                 disabled={isGenerating}
@@ -57,4 +57,4 @@ export const StageResearch: React.FC<StageResearchProps> = ({
             </button>
         )}
     </div>
-)
+);

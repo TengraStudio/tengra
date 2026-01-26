@@ -6,11 +6,11 @@
 import {
     BarChart3, Check,
     ChevronDown, Clock, Copy, Loader2, Play, Plus, X, Zap
-} from 'lucide-react'
-import React, { useCallback, useState } from 'react'
+} from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface ModelResponse {
     model: string
@@ -45,8 +45,8 @@ const ModelSelector = ({
     availableModels: { provider: string; model: string; name: string }[];
     updateSlot: (id: string, provider: string, model: string) => void;
 }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const currentModel = availableModels.find(m => m.provider === slot.provider && m.model === slot.model)
+    const [isOpen, setIsOpen] = useState(false);
+    const currentModel = availableModels.find(m => m.provider === slot.provider && m.model === slot.model);
 
     return (
         <div className="relative">
@@ -72,8 +72,8 @@ const ModelSelector = ({
                             <button
                                 key={`${model.provider}-${model.model}`}
                                 onClick={() => {
-                                    updateSlot(slot.id, model.provider, model.model)
-                                    setIsOpen(false)
+                                    updateSlot(slot.id, model.provider, model.model);
+                                    setIsOpen(false);
                                 }}
                                 role="option"
                                 aria-selected={slot.provider === model.provider && slot.model === model.model}
@@ -90,8 +90,8 @@ const ModelSelector = ({
                 </>
             )}
         </div>
-    )
-}
+    );
+};
 
 const ResponseCardHeader = ({
     slot,
@@ -140,7 +140,7 @@ const ResponseCardHeader = ({
             )}
         </div>
     </div>
-)
+);
 
 const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: string) => string }) => (
     <div className="flex-1 p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
@@ -158,7 +158,7 @@ const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: strin
             </div>
         )}
     </div>
-)
+);
 
 const ResponseCardStats = ({ response }: { response: ModelResponse }) => (
     <div
@@ -178,7 +178,7 @@ const ResponseCardStats = ({ response }: { response: ModelResponse }) => (
             {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} t/s
         </span>
     </div>
-)
+);
 
 interface ResponseCardProps {
     slot: ComparisonSlot;
@@ -192,8 +192,8 @@ interface ResponseCardProps {
 }
 
 const ResponseCard = (props: ResponseCardProps) => {
-    const { slot } = props
-    const response = slot.response
+    const { slot } = props;
+    const response = slot.response;
 
     return (
         <div
@@ -208,15 +208,15 @@ const ResponseCard = (props: ResponseCardProps) => {
             <ResponseCardContent slot={slot} t={props.t} />
             {response && !response.error ? <ResponseCardStats response={response} /> : null}
         </div>
-    )
-}
+    );
+};
 
 const ComparisonHeader = ({ t }: { t: (key: string) => string }) => (
     <div className="mb-4">
         <h1 className="text-xl font-bold mb-1">{t('modelComparison.title')}</h1>
         <p className="text-sm text-muted-foreground">{t('modelComparison.subtitle')}</p>
     </div>
-)
+);
 
 const PromptInput = ({
     prompt,
@@ -262,62 +262,62 @@ const PromptInput = ({
             </div>
         </div>
     </div>
-)
+);
 
 export const ModelComparison: React.FC<ModelComparisonProps> = ({
     availableModels,
     onCompare,
     language = 'en'
 }) => {
-    const { t } = useTranslation(language)
-    const [prompt, setPrompt] = useState('')
+    const { t } = useTranslation(language);
+    const [prompt, setPrompt] = useState('');
     const [slots, setSlots] = useState<ComparisonSlot[]>([
         { id: '1', provider: 'openai', model: 'gpt-4o', isLoading: false },
         { id: '2', provider: 'anthropic', model: 'claude-3-sonnet', isLoading: false }
-    ])
-    const [isComparing, setIsComparing] = useState(false)
-    const [copiedId, setCopiedId] = useState<string | null>(null)
+    ]);
+    const [isComparing, setIsComparing] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const addSlot = useCallback(() => {
-        if (slots.length >= 4) { return }
+        if (slots.length >= 4) { return; }
         const unusedModel = availableModels.find(m =>
             !slots.some(s => s.provider === m.provider && s.model === m.model)
-        ) ?? availableModels[0]
+        ) ?? availableModels[0];
 
         setSlots(prev => [...prev, {
             id: crypto.randomUUID(),
             provider: unusedModel.provider,
             model: unusedModel.model,
             isLoading: false
-        }])
-    }, [slots, availableModels])
+        }]);
+    }, [slots, availableModels]);
 
     const removeSlot = useCallback((id: string) => {
-        if (slots.length <= 2) { return }
-        setSlots(prev => prev.filter(s => s.id !== id))
-    }, [slots])
+        if (slots.length <= 2) { return; }
+        setSlots(prev => prev.filter(s => s.id !== id));
+    }, [slots]);
 
     const updateSlot = useCallback((id: string, provider: string, model: string) => {
         setSlots(prev => prev.map(s =>
             s.id === id ? { ...s, provider, model, response: undefined } : s
-        ))
-    }, [])
+        ));
+    }, []);
 
     const runComparison = useCallback(async () => {
-        if (!prompt.trim() || isComparing) { return }
+        if (!prompt.trim() || isComparing) { return; }
 
-        setIsComparing(true)
-        setSlots(prev => prev.map(s => ({ ...s, isLoading: true, response: undefined })))
+        setIsComparing(true);
+        setSlots(prev => prev.map(s => ({ ...s, isLoading: true, response: undefined })));
 
         try {
-            const models = slots.map(s => ({ provider: s.provider, model: s.model }))
-            const responses = await onCompare(prompt, models)
+            const models = slots.map(s => ({ provider: s.provider, model: s.model }));
+            const responses = await onCompare(prompt, models);
 
             setSlots(prev => prev.map((slot, i) => ({
                 ...slot,
                 isLoading: false,
                 response: responses[i] || undefined
-            })))
+            })));
         } catch (error) {
             setSlots(prev => prev.map(s => ({
                 ...s,
@@ -331,17 +331,17 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                     timestamp: Date.now(),
                     error: String(error)
                 }
-            })))
+            })));
         } finally {
-            setIsComparing(false)
+            setIsComparing(false);
         }
-    }, [prompt, slots, isComparing, onCompare])
+    }, [prompt, slots, isComparing, onCompare]);
 
     const copyResponse = useCallback((id: string, content: string) => {
-        void navigator.clipboard.writeText(content)
-        setCopiedId(id)
-        setTimeout(() => setCopiedId(null), 2000)
-    }, [])
+        void navigator.clipboard.writeText(content);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    }, []);
 
     return (
         <div className="h-full flex flex-col p-4">
@@ -388,7 +388,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                 </button>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default ModelComparison
+export default ModelComparison;

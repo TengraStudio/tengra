@@ -1,9 +1,9 @@
-import { ChatTemplate } from '@renderer/features/chat/types'
-import React, { lazy,Suspense } from 'react'
+import { ChatTemplate } from '@renderer/features/chat/types';
+import React, { lazy,Suspense } from 'react';
 
-import { LoadingState } from '@/components/ui/LoadingState'
+import { LoadingState } from '@/components/ui/LoadingState';
 
-const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })))
+const ChatView = lazy(() => import('@/features/chat/components/ChatView').then(m => ({ default: m.ChatView })));
 
 interface ChatViewWrapperProps {
     templates: ChatTemplate[]
@@ -42,7 +42,7 @@ export const ChatViewWrapper: React.FC<ChatViewWrapperProps> = ({
                 setShowFileMenu={setShowFileMenu}
             />
         </Suspense>
-    )
-}
+    );
+};
 
-ChatViewWrapper.displayName = 'ChatViewWrapper'
+ChatViewWrapper.displayName = 'ChatViewWrapper';

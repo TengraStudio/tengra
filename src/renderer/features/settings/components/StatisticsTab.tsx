@@ -1,21 +1,21 @@
-import { Loader2 } from 'lucide-react'
-import React, { useEffect, useState, memo } from 'react'
+import { Loader2 } from 'lucide-react';
+import React, { memo,useEffect, useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@/types'
-import { CodexUsage, CopilotQuota, QuotaResponse } from '@/types/quota'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { AppSettings } from '@/types';
+import { CodexUsage, CopilotQuota, QuotaResponse } from '@/types/quota';
 
-import { AccountWrapper, DetailedStats, TimeStats } from '../types'
+import { AccountWrapper, DetailedStats, TimeStats } from '../types';
 
-import { AntigravityCard } from './statistics/AntigravityCard'
-import { ClaudeCard } from './statistics/ClaudeCard'
-import { CodexCard } from './statistics/CodexCard'
-import { CopilotCard } from './statistics/CopilotCard'
-import { OverviewCards } from './statistics/OverviewCards'
-import { ProjectBarChart } from './statistics/ProjectBarChart'
-import { TokenUsageChart } from './statistics/TokenUsageChart'
+import { AntigravityCard } from './statistics/AntigravityCard';
+import { ClaudeCard } from './statistics/ClaudeCard';
+import { CodexCard } from './statistics/CodexCard';
+import { CopilotCard } from './statistics/CopilotCard';
+import { OverviewCards } from './statistics/OverviewCards';
+import { ProjectBarChart } from './statistics/ProjectBarChart';
+import { TokenUsageChart } from './statistics/TokenUsageChart';
 
 interface StatisticsTabProps {
     statsLoading: boolean
@@ -34,41 +34,41 @@ interface StatisticsTabProps {
 export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
     statsLoading, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, statsPeriod, setStatsPeriod, settings, setReloadTrigger
 }) => {
-    const { t } = useTranslation(settings?.general?.language || 'en')
-    const [timeStats, setTimeStats] = useState<TimeStats | null>(null)
-    const [loadingTimeStats, setLoadingTimeStats] = useState(false)
-    const [projects, setProjects] = useState<Array<{ id: string; title: string }>>([])
+    const { t } = useTranslation(settings?.general?.language || 'en');
+    const [timeStats, setTimeStats] = useState<TimeStats | null>(null);
+    const [loadingTimeStats, setLoadingTimeStats] = useState(false);
+    const [projects, setProjects] = useState<Array<{ id: string; title: string }>>([]);
 
     useEffect(() => {
         const loadTimeStats = async () => {
-            setLoadingTimeStats(true)
+            setLoadingTimeStats(true);
             try {
-                const stats = await window.electron.db.getTimeStats()
-                setTimeStats(stats)
+                const stats = await window.electron.db.getTimeStats();
+                setTimeStats(stats);
             } catch (error) {
-                console.error('Failed to load time stats:', error)
+                console.error('Failed to load time stats:', error);
             } finally {
-                setLoadingTimeStats(false)
+                setLoadingTimeStats(false);
             }
-        }
-        void loadTimeStats()
+        };
+        void loadTimeStats();
 
         const loadProjects = async () => {
             try {
-                const projs = await window.electron.db.getProjects()
-                setProjects(projs)
+                const projs = await window.electron.db.getProjects();
+                setProjects(projs);
             } catch (error) {
-                console.error('Failed to load projects:', error)
+                console.error('Failed to load projects:', error);
             }
-        }
-        void loadProjects()
-    }, [])
+        };
+        void loadProjects();
+    }, []);
 
     if (statsLoading && !statsData) {
-        return <div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        return <div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
-    const locale = settings?.general?.language === 'tr' ? 'tr-TR' : 'en-US'
+    const locale = settings?.general?.language === 'tr' ? 'tr-TR' : 'en-US';
 
     return (
         <div className="space-y-6">
@@ -120,12 +120,12 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                                 projects={Object.entries(timeStats.projectCodingTime)
                                     .sort(([, a], [, b]) => b - a)
                                     .map(([projectId, time]) => {
-                                        const project = projects.find(p => p.id === projectId)
+                                        const project = projects.find(p => p.id === projectId);
                                         return {
                                             id: projectId,
                                             title: project?.title || t('statistics.unknownProject'),
                                             time
-                                        }
+                                        };
                                     })}
                                 maxTime={Math.max(...Object.values(timeStats.projectCodingTime), 0)}
                             />
@@ -172,7 +172,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                 </CardContent>
             </Card>
         </div>
-    )
-})
+    );
+});
 
-StatisticsTab.displayName = 'StatisticsTab'
+StatisticsTab.displayName = 'StatisticsTab';

@@ -1,20 +1,20 @@
-import { Activity } from 'lucide-react'
-import React from 'react'
+import { Activity } from 'lucide-react';
+import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { CopilotQuota } from '@/types/quota'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { CopilotQuota } from '@/types/quota';
 
-import { AccountWrapper } from '../../types'
+import { AccountWrapper } from '../../types';
 
-import { QuotaRing } from './QuotaRing'
+import { QuotaRing } from './QuotaRing';
 
 interface CopilotCardProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null
 }
 
 export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
-    if (!copilotQuota?.accounts || copilotQuota.accounts.length === 0) { return null }
+    if (!copilotQuota?.accounts || copilotQuota.accounts.length === 0) { return null; }
 
     return (
         <Card className="border-border/40 bg-card backdrop-blur-md overflow-hidden relative group">
@@ -35,12 +35,12 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
                                     Error: {acc.error}
                                 </div>
                             </div>
-                        )
+                        );
                     }
-                    const hasSeats = !!acc.seat_breakdown
-                    const limit = hasSeats ? (acc.seat_breakdown?.total_seats || 0) : (acc.limit || 0)
-                    const remaining = hasSeats ? (limit - (acc.seat_breakdown?.active_seats || 0)) : (acc.remaining || 0)
-                    const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 0
+                    const hasSeats = !!acc.seat_breakdown;
+                    const limit = hasSeats ? (acc.seat_breakdown?.total_seats || 0) : (acc.limit || 0);
+                    const remaining = hasSeats ? (limit - (acc.seat_breakdown?.active_seats || 0)) : (acc.remaining || 0);
+                    const percent = limit > 0 ? Math.round((remaining / limit) * 100) : 0;
 
                     return (
                         <div key={acc.accountId || idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/50")}>
@@ -66,9 +66,9 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
                                 )}
                             </div>
                         </div>
-                    )
+                    );
                 })}
             </CardContent>
         </Card>
-    )
-}
+    );
+};

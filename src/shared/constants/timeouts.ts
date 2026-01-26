@@ -15,7 +15,7 @@ export const FEEDBACK_TIMEOUTS = {
     NOTIFICATION: 5000,
     /** Longer notification for important messages */
     NOTIFICATION_LONG: 10000,
-} as const
+} as const;
 
 /** HTTP and API request timeouts */
 export const REQUEST_TIMEOUTS = {
@@ -31,7 +31,7 @@ export const REQUEST_TIMEOUTS = {
     GENERATION: 3600000,
     /** Timeout for model generation (1 minute) */
     MODEL_GENERATION: 60000,
-} as const
+} as const;
 
 /** Service interval timeouts */
 export const SERVICE_INTERVALS = {
@@ -51,7 +51,7 @@ export const SERVICE_INTERVALS = {
     TIME_TRACKING: 60000,
     /** Database check interval (30 seconds) */
     DATABASE_CHECK: 30000,
-} as const
+} as const;
 
 /** Retry and backoff timeouts */
 export const RETRY_TIMEOUTS = {
@@ -65,7 +65,7 @@ export const RETRY_TIMEOUTS = {
     SCHEDULE_DELAY: 2000,
     /** Delay before VS Code fetch */
     VSCODE_FETCH_DELAY: 5000,
-} as const
+} as const;
 
 /** Connection and keep-alive timeouts */
 export const CONNECTION_TIMEOUTS = {
@@ -79,7 +79,7 @@ export const CONNECTION_TIMEOUTS = {
     CONNECT: 30000,
     /** Port scan timeout */
     PORT_SCAN: 2000,
-} as const
+} as const;
 
 /** Token and auth timeouts */
 export const AUTH_TIMEOUTS = {
@@ -91,7 +91,7 @@ export const AUTH_TIMEOUTS = {
     AUTH_API: 10000,
     /** Token fetch timeout */
     TOKEN_FETCH: 2000,
-} as const
+} as const;
 
 /** Debounce and throttle delays */
 export const DEBOUNCE_DELAYS = {
@@ -107,7 +107,7 @@ export const DEBOUNCE_DELAYS = {
     DB_SAVE: 2000,
     /** Code editor decoration update delay */
     DECORATION_UPDATE: 500,
-} as const
+} as const;
 
 /** Cache time-to-live values */
 export const CACHE_TTL = {
@@ -119,7 +119,7 @@ export const CACHE_TTL = {
     RATE_LIMIT_CHECK: 300000,
     /** HTTP deduplication window */
     HTTP_DEDUP_WINDOW: 1000,
-} as const
+} as const;
 
 /** Agent and council timeouts */
 export const AGENT_TIMEOUTS = {
@@ -127,4 +127,4 @@ export const AGENT_TIMEOUTS = {
     COUNCIL_DELAY: 2000,
     /** Session reload interval */
     SESSION_RELOAD: 1000,
-} as const
+} as const;

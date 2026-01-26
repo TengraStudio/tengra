@@ -1,3 +1,5 @@
+import { JsonObject } from './common';
+
 /**
  * File Diff Types - Shared between main and renderer processes
  */
@@ -12,12 +14,7 @@ export interface FileDiff {
     diffContent: string
     timestamp: number
     changeReason?: string
-    metadata?: {
-        userId?: string
-        messageId?: string
-        councilSessionId?: string
-        toolName?: string
-    }
+    metadata?: JsonObject
 }
 
 export interface DiffHunk {

@@ -1,9 +1,9 @@
-import { AlertCircle, Check } from 'lucide-react'
-import React from 'react'
+import { AlertCircle, Check } from 'lucide-react';
+import React from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { ProjectAnalysis } from '@/types'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { ProjectAnalysis } from '@/types';
 
 interface ProjectIssuesTabProps {
     analysis: ProjectAnalysis
@@ -18,7 +18,7 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
     onOpenFile,
     language
 }) => {
-    const { t } = useTranslation(language)
+    const { t } = useTranslation(language);
 
     return (
         <div className="flex-1 flex flex-col gap-6 p-4 overflow-y-auto min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -47,8 +47,8 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
                                 key={idx}
                                 className="grid grid-cols-12 gap-4 p-4 rounded-2xl bg-muted/20 hover:bg-muted/30 border border-border/50 transition-all group cursor-pointer"
                                 onClick={() => {
-                                    const sep = projectRoot.includes('\\') ? '\\' : '/'
-                                    onOpenFile(projectRoot + (projectRoot.endsWith(sep) ? '' : sep) + issue.file, issue.line)
+                                    const sep = projectRoot.includes('\\') ? '\\' : '/';
+                                    onOpenFile(projectRoot + (projectRoot.endsWith(sep) ? '' : sep) + issue.file, issue.line);
                                 }}
                             >
                                 <div className="col-span-1">
@@ -85,5 +85,5 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,20 +1,20 @@
-import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoGeneratorModal'
-import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip'
-import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar'
-import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer'
-import { useProjectState } from '@renderer/features/projects/hooks/useProjectState'
-import { useProjectWorkspaceController } from '@renderer/features/projects/hooks/useProjectWorkspaceController'
-import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager'
-import React from 'react'
+import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoGeneratorModal';
+import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip';
+import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar';
+import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer';
+import { useProjectState } from '@renderer/features/projects/hooks/useProjectState';
+import { useProjectWorkspaceController } from '@renderer/features/projects/hooks/useProjectWorkspaceController';
+import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager';
+import React from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { Language } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab, WorkspaceDashboardTab } from '@/types'
+import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { Language } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab, WorkspaceDashboardTab } from '@/types';
 
-import { WorkspaceMain } from './workspace/WorkspaceMain'
-import { WorkspaceNotifications } from './workspace/WorkspaceNotifications'
-import { WorkspaceSidebar } from './workspace/WorkspaceSidebar'
+import { WorkspaceMain } from './workspace/WorkspaceMain';
+import { WorkspaceNotifications } from './workspace/WorkspaceNotifications';
+import { WorkspaceSidebar } from './workspace/WorkspaceSidebar';
 
 // Types are now shared from @/types
 
@@ -67,7 +67,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const {
         ps, wm, activityLog, setActivityLog,
         handleUpdateProject, runCouncil, toggleAgent, t
-    } = useProjectWorkspaceController({ project, language })
+    } = useProjectWorkspaceController({ project, language });
 
 
 
@@ -77,7 +77,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <WorkspaceToolbar
                 project={project}
                 projectName={project.title}
-                onNameChange={(title) => { void handleUpdateProject({ title }) }}
+                onNameChange={(title) => { void handleUpdateProject({ title }); }}
                 handleRunProject={() => wm.setDashboardTab('terminal')}
                 onBack={onBack}
                 language={language}
@@ -121,12 +121,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     setActiveTabIdTerminal={setActiveTabId}
                     selectedEntry={ps.selectedEntry}
                     onOpenFile={(path: string, line?: number) => {
-                        const name = path.split(/[\\/]/).pop() ?? 'file'
-                        const mountId = wm.mounts[0]?.id
+                        const name = path.split(/[\\/]/).pop() ?? 'file';
+                        const mountId = wm.mounts[0]?.id;
                         if (mountId) {
-                            const entry = { mountId, path, name, isDirectory: false, initialLine: line }
-                            void wm.openFile(entry)
-                            ps.setSelectedEntry(entry)
+                            const entry = { mountId, path, name, isDirectory: false, initialLine: line };
+                            void wm.openFile(entry);
+                            ps.setSelectedEntry(entry);
                         }
                     }}
                 />
@@ -150,14 +150,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     agents={ps.agents}
                     toggleAgent={toggleAgent}
                     addAgent={() => ps.notify('info', 'Agent creation coming soon')}
-                    runCouncil={() => { void runCouncil() }}
+                    runCouncil={() => { void runCouncil(); }}
                     activityLog={activityLog}
                     clearLogs={() => setActivityLog([])}
                     t={t}
                     messages={messages}
                     isLoading={isLoading}
                     language={language}
-                    onSourceClick={(path: string) => { void wm.openFile({ mountId: wm.mounts[0]?.id, path, name: path.split('/').pop() ?? '', isDirectory: false }) }}
+                    onSourceClick={(path: string) => { void wm.openFile({ mountId: wm.mounts[0]?.id, path, name: path.split('/').pop() ?? '', isDirectory: false }); }}
                 />
             </div>
 
@@ -169,7 +169,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 isOpen={ps.showLogoModal}
                 onClose={() => ps.setShowLogoModal(false)}
                 project={project}
-                onApply={(logoPath: string) => { void handleUpdateProject({ logo: logoPath }).then(() => ps.setShowLogoModal(false)) }}
+                onApply={(logoPath: string) => { void handleUpdateProject({ logo: logoPath }).then(() => ps.setShowLogoModal(false)); }}
                 language={language}
             />
 
@@ -182,8 +182,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onCommandClick={() => ps.notify('info', 'Command Palette coming soon')}
             />
         </div>
-    )
-}
+    );
+};
 
 interface ProjectExplorerPanelProps {
     ps: ReturnType<typeof useProjectState>;
@@ -202,20 +202,20 @@ function ProjectExplorerPanel({ ps, wm, language }: ProjectExplorerPanelProps) {
                     mounts={wm.mounts}
                     mountStatus={wm.mountStatus}
                     refreshSignal={wm.refreshSignal}
-                    onOpenFile={(...args) => { void wm.openFile(...args) }}
+                    onOpenFile={(...args) => { void wm.openFile(...args); }}
                     onSelectEntry={ps.setSelectedEntry}
                     selectedEntry={ps.selectedEntry}
                     onAddMount={() => ps.setShowMountModal(true)}
-                    onRemoveMount={(id: string) => { void wm.persistMounts(wm.mounts.filter(m => m.id !== id)) }}
+                    onRemoveMount={(id: string) => { void wm.persistMounts(wm.mounts.filter(m => m.id !== id)); }}
                     onEnsureMount={wm.ensureMountReady}
                     onContextAction={(action) => {
-                        ps.setEntryModal({ type: action.type, entry: action.entry })
-                        if (action.type !== 'delete') { ps.setEntryName(action.entry.name) }
+                        ps.setEntryModal({ type: action.type, entry: action.entry });
+                        if (action.type !== 'delete') { ps.setEntryName(action.entry.name); }
                     }}
                     variant="panel"
                     language={language}
                 />
             </div>
         </div>
-    )
+    );
 }

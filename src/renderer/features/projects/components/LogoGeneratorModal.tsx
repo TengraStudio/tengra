@@ -1,10 +1,10 @@
-import { Check, ImageIcon, Loader2, Sparkles, Wand2 } from 'lucide-react'
-import React, { useState } from 'react'
+import { Check, ImageIcon, Loader2, Sparkles, Wand2 } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { Modal } from '@/components/ui/modal'
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { Project } from '@/types'
+import { Modal } from '@/components/ui/modal';
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { Project } from '@/types';
 
 interface LogoGeneratorModalProps {
     isOpen: boolean
@@ -17,92 +17,92 @@ interface LogoGeneratorModalProps {
 export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     isOpen, onClose, project, onApply, language
 }) => {
-    const { t } = useTranslation(language)
-    const [prompt, setPrompt] = useState('')
-    const [style, setStyle] = useState('Minimalist')
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [isAnalyzing, setIsAnalyzing] = useState(false)
-    const [generatedLogo, setGeneratedLogo] = useState<string | null>(null)
-    const [suggestions, setSuggestions] = useState<string[]>([])
-    const [palette, setPalette] = useState<string[]>([])
+    const { t } = useTranslation(language);
+    const [prompt, setPrompt] = useState('');
+    const [style, setStyle] = useState('Minimalist');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [generatedLogo, setGeneratedLogo] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [palette, setPalette] = useState<string[]>([]);
 
     const handleAnalyze = async () => {
-        setIsAnalyzing(true)
+        setIsAnalyzing(true);
         try {
-            const result = await window.electron.project.analyzeIdentity(project.path)
-            setSuggestions(result.suggestedPrompts ?? [])
-            setPalette(result.colors ?? [])
+            const result = await window.electron.project.analyzeIdentity(project.path);
+            setSuggestions(result.suggestedPrompts ?? []);
+            setPalette(result.colors ?? []);
             if (result.suggestedPrompts && result.suggestedPrompts.length > 0 && !prompt) {
-                const firstPrompt = result.suggestedPrompts[0]
+                const firstPrompt = result.suggestedPrompts[0];
                 if (firstPrompt !== undefined) {
-                    setPrompt(firstPrompt)
+                    setPrompt(firstPrompt);
                 }
             }
         } catch (error) {
-            console.error('Analysis failed', error)
+            console.error('Analysis failed', error);
         } finally {
-            setIsAnalyzing(false)
+            setIsAnalyzing(false);
         }
-    }
+    };
 
     const handleGenerate = async () => {
-        if (!prompt) { return }
-        setIsGenerating(true)
+        if (!prompt) { return; }
+        setIsGenerating(true);
         try {
             // Include palette colors in prompt if available
-            const colorContext = palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : ''
-            const finalPrompt = `${prompt}${colorContext}`
-            const logoPath = await window.electron.project.generateLogo(project.path, finalPrompt, style)
-            setGeneratedLogo(logoPath)
+            const colorContext = palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : '';
+            const finalPrompt = `${prompt}${colorContext}`;
+            const logoPath = await window.electron.project.generateLogo(project.path, finalPrompt, style);
+            setGeneratedLogo(logoPath);
         } catch (error) {
-            console.error('Generation failed', error)
+            console.error('Generation failed', error);
         } finally {
-            setIsGenerating(false)
+            setIsGenerating(false);
         }
-    }
+    };
 
     const handleImprovePrompt = async () => {
-        if (!prompt || isAnalyzing) { return }
-        setIsAnalyzing(true)
+        if (!prompt || isAnalyzing) { return; }
+        setIsAnalyzing(true);
         try {
-            const improved = await window.electron.project.improveLogoPrompt(prompt)
-            setPrompt(improved)
+            const improved = await window.electron.project.improveLogoPrompt(prompt);
+            setPrompt(improved);
         } catch (error) {
-            console.error('Improvement failed', error)
+            console.error('Improvement failed', error);
         } finally {
-            setIsAnalyzing(false)
+            setIsAnalyzing(false);
         }
-    }
+    };
 
     const handleManualUpload = async () => {
         try {
-            const uploadedPath = await window.electron.project.uploadLogo(project.path)
+            const uploadedPath = await window.electron.project.uploadLogo(project.path);
             if (uploadedPath) {
-                onApply(uploadedPath)
-                onClose()
+                onApply(uploadedPath);
+                onClose();
             }
         } catch (error) {
-            console.error('Manual upload failed', error)
+            console.error('Manual upload failed', error);
         }
-    }
+    };
 
     const handleApply = async () => {
-        if (!generatedLogo) { return }
-        setIsGenerating(true)
+        if (!generatedLogo) { return; }
+        setIsGenerating(true);
         try {
-            const finalPath = await window.electron.project.applyLogo(project.path, generatedLogo)
-            onApply(finalPath)
-            onClose()
+            const finalPath = await window.electron.project.applyLogo(project.path, generatedLogo);
+            onApply(finalPath);
+            onClose();
         } catch (error) {
-            console.error('Apply failed', error)
+            console.error('Apply failed', error);
         } finally {
-            setIsGenerating(false)
+            setIsGenerating(false);
         }
-    }
+    };
 
     const selectIdea = (idea: string) => {
-        setPrompt(idea)
-    }
+        setPrompt(idea);
+    };
 
     return (
         <Modal
@@ -191,7 +191,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                         title={c}
                                     >
                                         <div className="w-8 h-8 rounded-full border border-border/50 shadow-md transition-transform hover:scale-110 active:scale-90" style={{ backgroundColor: c }} />
-                                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">{c}</div>
+                                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-background text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">{c}</div>
                                     </button>
                                 ))}
                             </div>
@@ -258,5 +258,5 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                 </div>
             </div>
         </Modal>
-    )
-}
+    );
+};

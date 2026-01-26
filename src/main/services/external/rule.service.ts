@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
 import { isNodeError } from '@shared/utils/error.util';
 
 export interface WorkspaceRules {

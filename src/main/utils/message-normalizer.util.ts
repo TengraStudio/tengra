@@ -58,25 +58,25 @@ export class MessageNormalizer {
         const contentParts: OpenAIContentPart[] = (message.content as NormalizableContentPart[])
             .map((part) => {
                 if (part.type === 'text' && typeof part.text === 'string') {
-                    return { type: 'text' as const, text: part.text }
+                    return { type: 'text' as const, text: part.text };
                 }
                 if (part.type === 'image_url' && part.image_url?.url) {
-                    return { type: 'image_url' as const, image_url: { url: part.image_url.url } }
+                    return { type: 'image_url' as const, image_url: { url: part.image_url.url } };
                 }
                 if (part.type === 'image' && part.source?.data) {
-                    const mediaType = part.source.media_type ?? 'image/png'
-                    return { type: 'image_url' as const, image_url: { url: `data:${mediaType};base64,${part.source.data}` } }
+                    const mediaType = part.source.media_type ?? 'image/png';
+                    return { type: 'image_url' as const, image_url: { url: `data:${mediaType};base64,${part.source.data}` } };
                 }
-                return null
+                return null;
             })
-            .filter((part): part is OpenAIContentPart => part !== null)
+            .filter((part): part is OpenAIContentPart => part !== null);
 
         if (shouldStripImages) {
-            const text = contentParts.filter((p) => p.type === 'text').map((p) => p.type === 'text' ? p.text : '').join('')
+            const text = contentParts.filter((p) => p.type === 'text').map((p) => p.type === 'text' ? p.text : '').join('');
             return {
                 role: message.role as OpenAIMessage['role'],
                 content: text
-            }
+            };
         }
 
         return {
@@ -84,7 +84,7 @@ export class MessageNormalizer {
             content: contentParts,
             tool_calls: (message as Message).toolCalls,
             tool_call_id: (message as Message).toolCallId
-        }
+        };
     }
 
     private static normalizeSimpleContent(message: Message | ChatMessage, shouldStripImages: boolean): OpenAIMessage {
@@ -95,7 +95,7 @@ export class MessageNormalizer {
             return {
                 role: message.role as OpenAIMessage['role'],
                 content: textContent,
-            }
+            };
         }
 
         const parts: OpenAIContentPart[] = [];
@@ -112,7 +112,7 @@ export class MessageNormalizer {
             content: parts,
             tool_calls: (message as Message).toolCalls,
             tool_call_id: (message as Message).toolCallId
-        }
+        };
     }
 
     private static addImagesToOpenAIParts(parts: OpenAIContentPart[], images: string[]): void {
@@ -176,9 +176,9 @@ export class MessageNormalizer {
      * Adapts messages for OpenCode's /responses API format.
      */
     static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): Array<{ role: 'user' | 'assistant'; content: OpenCodeContentPart[] }> {
-        if (!Array.isArray(messages)) { return [] }
+        if (!Array.isArray(messages)) { return []; }
         return messages.map(msg => {
-            const contentParts: OpenCodeContentPart[] = []
+            const contentParts: OpenCodeContentPart[] = [];
             this.addContentToOpenCodeParts(contentParts, msg.content);
 
             return {

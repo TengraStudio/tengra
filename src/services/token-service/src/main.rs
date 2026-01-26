@@ -160,11 +160,28 @@ async fn handle_monitor(
 ) -> Json<Response> {
     let mut tokens = state.tokens.write().await;
     
+    let now_ms = chrono::Utc::now().timestamp_millis();
+    
+    // Check if we already have a newer or same-age token to avoid "stomp"
+    if let Some(existing) = tokens.get(&payload.token.id) {
+        if let (Some(existing_exp), Some(new_exp)) = (existing.token.expires_at, payload.token.expires_at) {
+            if existing_exp > new_exp {
+                log(&format!("Skipping registration for {}: Memory has newer token (exp {} > {})", 
+                    payload.token.id, existing_exp, new_exp));
+                return Json(Response {
+                    success: true, 
+                    token: Some(existing.token.clone()), 
+                    error: None 
+                });
+            }
+        }
+    }
+
     let monitored = MonitoredToken {
         token: payload.token.clone(),
         client_id: payload.client_id,
         client_secret: payload.client_secret,
-        updated_at: chrono::Utc::now().timestamp_millis(),
+        updated_at: now_ms,
     };
 
     tokens.insert(payload.token.id.clone(), monitored);
@@ -308,7 +325,7 @@ async fn execute_refresh(
     } else if token.provider.contains("codex") || token.provider.contains("openai") {
         "https://auth.openai.com/oauth/token"
     } else if token.provider.contains("claude") || token.provider.contains("anthropic") {
-        "https://console.anthropic.com/v1/oauth/token"
+        "https://api.anthropic.com/v1/oauth/token"
     } else {
         return Response { success: false, token: None, error: Some("Unknown provider".into()) }
     };
@@ -327,11 +344,12 @@ async fn execute_refresh(
         .header("Accept", "application/json");
 
     if token.provider.contains("claude") || token.provider.contains("anthropic") {
-        log(&format!("Refreshing Claude token at {} with browser User-Agent", url));
+        log(&format!("Refreshing Claude token at {} with official User-Agent (form-urlencoded)", url));
         request_builder = request_builder
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .header("Content-Type", "application/json")
-            .json(&params); // Use JSON for Claude
+            .header("User-Agent", "Mozilla/5.0 (Node.js) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0")
+            .header("x-anthropic-billing-header", "cc_version=2.1.19; cc_entrypoint=unknown")
+            .header("x-anthropic-additional-protection", "true")
+            .form(&params); // Use Form for Claude (Crucial fix)
     } else {
         request_builder = request_builder.form(&params); // Use Form for others (Google, etc)
     }
@@ -405,7 +423,9 @@ fn get_app_data_dir() -> Result<PathBuf, Box<dyn Error>> {
 
 fn log(msg: &str) {
     if let Ok(dir) = get_app_data_dir() {
-        let log_file = dir.join("services").join("token-service.log");
+        let log_dir = dir.join("services");
+        let _ = fs::create_dir_all(&log_dir);
+        let log_file = log_dir.join("token-service.log");
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
         let line = format!("[{}] {}\n", timestamp, msg);
         // Best effort logging
@@ -413,8 +433,7 @@ fn log(msg: &str) {
             let _ = file.write_all(line.as_bytes());
         }
     }
-    // Also print to stdout/stderr (will be eaten by windows subsystem if no console, but good for debug runs)
-    use std::io::Write;
+    // Also print to stdout/stderr (using writeln! which is safer but still Best Effort)
     let _ = writeln!(std::io::stdout(), "{}", msg);
 }
 

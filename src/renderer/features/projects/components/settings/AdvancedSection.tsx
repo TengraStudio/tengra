@@ -1,5 +1,6 @@
-import React from 'react'
-import { SettingsSectionProps } from './types'
+import React from 'react';
+
+import { SettingsSectionProps } from './types';
 
 export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -55,4 +56,4 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             </div>
         </div>
     </div>
-)
+);

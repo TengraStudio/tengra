@@ -1,10 +1,10 @@
-import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
-import { Edit2, FolderIcon, FolderOpen, Trash2 } from 'lucide-react'
-import React, { useState } from 'react'
+import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem';
+import { Edit2, FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { Chat, Folder } from '@/types'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { Chat, Folder } from '@/types';
 
 interface FolderItemProps {
     folder: Folder;
@@ -26,15 +26,15 @@ export const FolderItem: React.FC<FolderItemProps> = ({
     folder, chats, expanded, onToggle, onRename, onDelete, onMoveChat,
     currentChatId, onSelectChat, onDeleteChat, onTogglePinChat, isGenerating, t
 }) => {
-    const [isEditing, setIsEditing] = useState(false)
-    const [name, setName] = useState(folder.name)
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState(folder.name);
 
     const handleRename = () => {
         if (name.trim() && name !== folder.name) {
-            onRename(folder.id, name.trim())
+            onRename(folder.id, name.trim());
         }
-        setIsEditing(false)
-    }
+        setIsEditing(false);
+    };
 
     return (
         <div className="space-y-0.5">
@@ -91,5 +91,5 @@ export const FolderItem: React.FC<FolderItemProps> = ({
                 )}
             </AnimatePresence>
         </div>
-    )
-}
+    );
+};

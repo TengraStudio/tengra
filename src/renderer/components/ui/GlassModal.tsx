@@ -1,8 +1,8 @@
-import { X } from 'lucide-react'
-import React, { useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface GlassModalProps {
     isOpen: boolean
@@ -39,67 +39,67 @@ export const GlassModal: React.FC<GlassModalProps> = ({
     closeOnBackdrop = true,
     closeOnEscape = true
 }) => {
-    const modalRef = useRef<HTMLDivElement>(null)
+    const modalRef = useRef<HTMLDivElement>(null);
 
     // Handle escape key
     useEffect(() => {
-        if (!closeOnEscape || !isOpen) {return}
+        if (!closeOnEscape || !isOpen) {return;}
 
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                onClose()
+                onClose();
             }
-        }
+        };
 
-        document.addEventListener('keydown', handleEscape)
-        return () => document.removeEventListener('keydown', handleEscape)
-    }, [isOpen, onClose, closeOnEscape])
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isOpen, onClose, closeOnEscape]);
 
     // Lock body scroll when modal is open
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden'
+            document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = ''
+            document.body.style.overflow = '';
         }
         return () => {
-            document.body.style.overflow = ''
-        }
-    }, [isOpen])
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // Focus trap
     useEffect(() => {
-        if (!isOpen) {return}
+        if (!isOpen) {return;}
 
         const focusableElements = modalRef.current?.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
-        const firstElement = focusableElements?.[0] as HTMLElement
-        const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement
+        );
+        const firstElement = focusableElements?.[0] as HTMLElement;
+        const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement;
 
         const handleTab = (e: KeyboardEvent) => {
-            if (e.key !== 'Tab') {return}
+            if (e.key !== 'Tab') {return;}
 
             if (e.shiftKey) {
                 if (document.activeElement === firstElement) {
-                    lastElement?.focus()
-                    e.preventDefault()
+                    lastElement?.focus();
+                    e.preventDefault();
                 }
             } else {
                 if (document.activeElement === lastElement) {
-                    firstElement?.focus()
-                    e.preventDefault()
+                    firstElement?.focus();
+                    e.preventDefault();
                 }
             }
-        }
+        };
 
-        document.addEventListener('keydown', handleTab)
-        firstElement?.focus()
+        document.addEventListener('keydown', handleTab);
+        firstElement?.focus();
 
-        return () => document.removeEventListener('keydown', handleTab)
-    }, [isOpen])
+        return () => document.removeEventListener('keydown', handleTab);
+    }, [isOpen]);
 
-    if (!isOpen) {return null}
+    if (!isOpen) {return null;}
 
     const sizeClasses = {
         sm: 'max-w-sm',
@@ -107,7 +107,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
         lg: 'max-w-lg',
         xl: 'max-w-xl',
         full: 'max-w-[90vw] max-h-[90vh]'
-    }
+    };
 
     return createPortal(
         <div
@@ -164,7 +164,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             </div>
         </div>,
         document.body
-    )
-}
+    );
+};
 
-GlassModal.displayName = 'GlassModal'
+GlassModal.displayName = 'GlassModal';

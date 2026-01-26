@@ -1,4 +1,4 @@
-import { Project } from '@/types/project'
+import { Project } from '@/types/project';
 
 export interface ProjectSettingsFormData {
     title: string

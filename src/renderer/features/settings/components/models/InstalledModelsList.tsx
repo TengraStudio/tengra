@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { ModelInfo } from '@/features/models/utils/model-fetcher'
+import { ModelInfo } from '@/features/models/utils/model-fetcher';
 
 interface InstalledModelsListProps {
     filtered: Array<{ id: string; sources: string[]; details?: ModelInfo }>
@@ -69,5 +69,5 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};

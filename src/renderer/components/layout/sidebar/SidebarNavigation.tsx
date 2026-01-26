@@ -1,11 +1,11 @@
-import { Brain, Lightbulb, MessageSquare, Rocket, Users } from 'lucide-react'
-import React from 'react'
+import { Bot, Brain, Lightbulb, MessageSquare, Rocket, Users } from 'lucide-react';
+import React from 'react';
 
-import { SidebarItem } from './SidebarItem'
+import { SidebarItem } from './SidebarItem';
 
 interface SidebarNavigationProps {
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas') => void
+    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas' | 'project-agent'
+    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas' | 'project-agent') => void
     isCollapsed: boolean
     chatsCount: number
     t: (key: string) => string
@@ -56,8 +56,15 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 onClick={() => onChangeView('ideas')}
                 isCollapsed={isCollapsed}
             />
+            <SidebarItem
+                icon={Bot}
+                label="Agent"
+                active={currentView === 'project-agent'}
+                onClick={() => onChangeView('project-agent')}
+                isCollapsed={isCollapsed}
+            />
         </div>
-    )
-}
+    );
+};
 
-SidebarNavigation.displayName = 'SidebarNavigation'
+SidebarNavigation.displayName = 'SidebarNavigation';

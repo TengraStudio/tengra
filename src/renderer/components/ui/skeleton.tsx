@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface SkeletonProps {
     className?: string
@@ -34,12 +34,12 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
         circular: 'rounded-full',
         rectangular: 'rounded-none',
         rounded: 'rounded-lg'
-    }
+    };
 
     const style: React.CSSProperties = {
         width: width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : undefined,
         height: height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : undefined
-    }
+    };
 
     return (
         <div
@@ -52,10 +52,10 @@ export const Skeleton: React.FC<SkeletonProps> = React.memo(({
             style={style}
             aria-hidden="true"
         />
-    )
-})
+    );
+});
 
-Skeleton.displayName = 'Skeleton'
+Skeleton.displayName = 'Skeleton';
 
 /**
  * SkeletonText Component
@@ -77,10 +77,10 @@ export const SkeletonText: React.FC<{
                 />
             ))}
         </div>
-    )
-})
+    );
+});
 
-SkeletonText.displayName = 'SkeletonText'
+SkeletonText.displayName = 'SkeletonText';
 
 /**
  * SkeletonCard Component
@@ -110,7 +110,7 @@ export const SkeletonCard: React.FC<{
                 <SkeletonText lines={2} />
             )}
         </div>
-    )
-})
+    );
+});
 
-SkeletonCard.displayName = 'SkeletonCard'
+SkeletonCard.displayName = 'SkeletonCard';

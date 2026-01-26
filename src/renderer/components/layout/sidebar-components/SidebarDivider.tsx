@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 export interface SidebarDividerProps {
     /** Optional label in center of divider */
@@ -20,7 +20,7 @@ export const SidebarDivider: React.FC<SidebarDividerProps> = ({
         sm: 'my-1',
         md: 'my-2',
         lg: 'my-4'
-    }
+    };
 
     if (label) {
         return (
@@ -35,7 +35,7 @@ export const SidebarDivider: React.FC<SidebarDividerProps> = ({
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-l from-border/50 to-transparent" />
             </div>
-        )
+        );
     }
 
     return (
@@ -45,7 +45,7 @@ export const SidebarDivider: React.FC<SidebarDividerProps> = ({
             spacingClasses[spacing],
             className
         )} />
-    )
-}
+    );
+};
 
-SidebarDivider.displayName = 'SidebarDivider'
+SidebarDivider.displayName = 'SidebarDivider';

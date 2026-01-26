@@ -1,11 +1,11 @@
-import { SERVICE_INTERVALS } from '@shared/constants'
-import { AppSettings } from '@shared/types/settings'
-import { Activity, Clock, MessageSquare, RefreshCw, Sliders, Thermometer, Zap } from 'lucide-react'
-import React, { useState } from 'react'
+import { SERVICE_INTERVALS } from '@shared/constants';
+import { AppSettings } from '@shared/types/settings';
+import { Activity, Clock, MessageSquare, RefreshCw, Sliders, Thermometer, Zap } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { SelectDropdown } from '@/components/ui/SelectDropdown'
-import type { ModelInfo } from '@/features/models/utils/model-fetcher'
-import { cn } from '@/lib/utils'
+import { SelectDropdown } from '@/components/ui/SelectDropdown';
+import type { ModelInfo } from '@/features/models/utils/model-fetcher';
+import { cn } from '@/lib/utils';
 
 interface BenchmarkResult {
     tokensPerSec: number
@@ -27,25 +27,25 @@ interface AdvancedTabProps {
 export const AdvancedTab: React.FC<AdvancedTabProps> = ({
     settings, installedModels, proxyModels, setSettings, handleSave, benchmarkResult, isBenchmarking: _isBenchmarking, handleRunBenchmark: _handleRunBenchmark, t
 }) => {
-    const [selectedConfigModel, setSelectedConfigModel] = useState<string | null>(null)
-    const availableModels = [...(installedModels ?? []), ...(proxyModels ?? [])]
-    const currentModelId = selectedConfigModel ?? (availableModels[0]?.id ?? '')
-    const modelSettings = settings?.modelSettings?.[currentModelId] ?? {}
+    const [selectedConfigModel, setSelectedConfigModel] = useState<string | null>(null);
+    const availableModels = [...(installedModels ?? []), ...(proxyModels ?? [])];
+    const currentModelId = selectedConfigModel ?? (availableModels[0]?.id ?? '');
+    const modelSettings = settings?.modelSettings?.[currentModelId] ?? {};
     const modelPresets = settings?.presets ?? [
         { id: 'creative', name: t('ssh.presets.creative'), temperature: 0.9, topP: 0.95, frequencyPenalty: 0.1, presencePenalty: 0.1 },
         { id: 'precise', name: t('ssh.presets.precise'), temperature: 0.2, topP: 0.1, frequencyPenalty: 0, presencePenalty: 0 },
         { id: 'balanced', name: t('ssh.presets.balanced'), temperature: 0.7, topP: 0.9, frequencyPenalty: 0, presencePenalty: 0 }
-    ]
+    ];
 
-    const modelOptions = availableModels.map(m => ({ value: m.id || '', label: m.id || '' }))
+    const modelOptions = availableModels.map(m => ({ value: m.id || '', label: m.id || '' }));
 
     type ModelSettingsPatch = Partial<NonNullable<AppSettings['modelSettings']>[string]>
     const updateModelSetting = (patch: ModelSettingsPatch) => {
-        if (!settings || !currentModelId) { return }
-        const updated = { ...settings, modelSettings: { ...settings.modelSettings, [currentModelId]: { ...(settings.modelSettings?.[currentModelId] || {}), ...patch } } }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        if (!settings || !currentModelId) { return; }
+        const updated = { ...settings, modelSettings: { ...settings.modelSettings, [currentModelId]: { ...(settings.modelSettings?.[currentModelId] || {}), ...patch } } };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
     return (
         <div className="space-y-6">
@@ -94,10 +94,10 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                             { value: 'parallel', label: t('advanced.orchestrationParallel') }
                         ]}
                         onChange={(val) => {
-                            if (!settings) { return }
-                            const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as 'auto' | 'fifo' | 'parallel' } }
-                            setSettings(updated)
-                            handleSave(updated)
+                            if (!settings) { return; }
+                            const updated = { ...settings, ollama: { ...settings.ollama, orchestrationPolicy: val as 'auto' | 'fifo' | 'parallel' } };
+                            setSettings(updated);
+                            handleSave(updated);
                         }}
                         className="w-48"
                     />
@@ -137,13 +137,13 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.modelUpdateInterval ?? SERVICE_INTERVALS.MODEL_UPDATE}
                             onChange={(e) => {
-                                if (!settings) { return }
+                                if (!settings) { return; }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, modelUpdateInterval: parseInt(e.target.value) }
-                                }
-                                setSettings(updated)
-                                handleSave(updated)
+                                };
+                                setSettings(updated);
+                                handleSave(updated);
                             }}
                             className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                             aria-label={t('advanced.modelUpdateInterval')}
@@ -166,13 +166,13 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.tokenRefreshInterval ?? SERVICE_INTERVALS.TOKEN_REFRESH}
                             onChange={(e) => {
-                                if (!settings) { return }
+                                if (!settings) { return; }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, tokenRefreshInterval: parseInt(e.target.value) }
-                                }
-                                setSettings(updated)
-                                handleSave(updated)
+                                };
+                                setSettings(updated);
+                                handleSave(updated);
                             }}
                             className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                             aria-label={t('advanced.tokenRefreshInterval')}
@@ -195,13 +195,13 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                         <select
                             value={settings?.ai?.copilotRefreshInterval ?? SERVICE_INTERVALS.COPILOT_REFRESH}
                             onChange={(e) => {
-                                if (!settings) { return }
+                                if (!settings) { return; }
                                 const updated = {
                                     ...settings,
                                     ai: { ...settings.ai, copilotRefreshInterval: parseInt(e.target.value) }
-                                }
-                                setSettings(updated)
-                                handleSave(updated)
+                                };
+                                setSettings(updated);
+                                handleSave(updated);
                             }}
                             className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                             aria-label={t('advanced.copilotRefreshInterval')}
@@ -216,5 +216,5 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

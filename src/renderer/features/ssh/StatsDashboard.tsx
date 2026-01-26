@@ -1,10 +1,10 @@
 
-import { Activity, Clock, Cpu, HardDrive } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Activity, Clock, Cpu, HardDrive } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useTranslation } from '@/i18n'
-import { motion } from '@/lib/framer-motion-compat'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/i18n';
+import { motion } from '@/lib/framer-motion-compat';
 
 interface SystemStats {
     cpu: number
@@ -23,31 +23,31 @@ interface StatsDashboardProps {
 }
 
 export function StatsDashboard({ connectionId }: StatsDashboardProps) {
-    const { t } = useTranslation()
-    const [stats, setStats] = useState<SystemStats | null>(null)
+    const { t } = useTranslation();
+    const [stats, setStats] = useState<SystemStats | null>(null);
 
     useEffect(() => {
-        let isMounted = true
+        let isMounted = true;
         const load = async () => {
             try {
-                const data = await window.electron.ssh.getSystemStats(connectionId) as SystemStats
+                const data = await window.electron.ssh.getSystemStats(connectionId) as SystemStats;
                 if (isMounted && data) {
-                    setStats(data)
+                    setStats(data);
                 }
             } catch (e) {
-                console.error(e)
+                console.error(e);
             }
-        }
+        };
 
-        void load()
-        const interval = setInterval(() => void load(), 5000)
+        void load();
+        const interval = setInterval(() => void load(), 5000);
         return () => {
-            isMounted = false
-            clearInterval(interval)
-        }
-    }, [connectionId])
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [connectionId]);
 
-    if (!stats) { return <div className="flex items-center justify-center p-8 text-muted-foreground/50">{t('ssh.loadingStats')}</div> }
+    if (!stats) { return <div className="flex items-center justify-center p-8 text-muted-foreground/50">{t('ssh.loadingStats')}</div>; }
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
@@ -127,5 +127,5 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                 </CardContent>
             </Card>
         </div>
-    )
+    );
 }

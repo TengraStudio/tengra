@@ -1,6 +1,6 @@
-import { AuditLogService } from '@main/services/analysis/audit-log.service'
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
-import { ipcMain } from 'electron'
+import { AuditLogService } from '@main/services/analysis/audit-log.service';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { ipcMain } from 'electron';
 
 export function registerAuditIpc(auditLogService: AuditLogService) {
     ipcMain.handle('audit:getLogs', createIpcHandler('audit:getLogs', async (_event, options?: {
@@ -9,11 +9,11 @@ export function registerAuditIpc(auditLogService: AuditLogService) {
         endDate?: number
         limit?: number
     }) => {
-        return await auditLogService.getLogs(options)
-    }))
+        return await auditLogService.getLogs(options);
+    }));
 
     ipcMain.handle('audit:clearLogs', createIpcHandler('audit:clearLogs', async () => {
-        await auditLogService.clearLogs()
-        return { success: true }
-    }))
+        await auditLogService.clearLogs();
+        return { success: true };
+    }));
 }

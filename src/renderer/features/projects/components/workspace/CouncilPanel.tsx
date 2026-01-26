@@ -48,14 +48,14 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
                     <div className="text-xs uppercase text-zinc-500 tracking-widest">{t('agents.council')}</div>
-                    <div className="text-2xl font-bold text-white">{councilEnabled ? t('agents.enabled') : t('agents.disabled')}</div>
+                    <div className="text-2xl font-bold text-foreground">{councilEnabled ? t('agents.enabled') : t('agents.disabled')}</div>
                     <button
                         onClick={toggleCouncil}
                         className={cn(
                             "w-full px-3 py-2 rounded-lg text-xs font-semibold border transition-colors",
                             councilEnabled
                                 ? "bg-primary/20 text-primary border-primary/40"
-                                : "bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10"
+                                : "bg-white/5 text-zinc-400 border-white/10 hover:text-foreground hover:bg-white/10"
                         )}
                     >
                         {councilEnabled ? t('agents.disableCouncil') : t('agents.enableCouncil')}
@@ -63,7 +63,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
                     <div className="text-xs uppercase text-zinc-500 tracking-widest">{t('agents.agents')}</div>
-                    <div className="text-2xl font-bold text-white">{enabledAgents.length}</div>
+                    <div className="text-2xl font-bold text-foreground">{enabledAgents.length}</div>
                     <div className="text-xs text-zinc-500">{localCount} {t('agents.local')} / {cloudCount} {t('agents.cloud')}</div>
                     <button
                         onClick={addAgent}
@@ -95,7 +95,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
 
             <div className="bg-card border border-border rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-semibold text-white">{t('agents.agents')}</div>
+                    <div className="text-sm font-semibold text-foreground">{t('agents.agents')}</div>
                     <div className="text-xs text-zinc-500">{enabledAgents.length} {t('agents.active')}</div>
                 </div>
                 <div className="space-y-3">
@@ -106,7 +106,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                                 agent.status === 'ready' ? "bg-emerald-400" : "bg-amber-400"
                             )} />
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-white truncate">{agent.name}</div>
+                                <div className="text-sm font-semibold text-foreground truncate">{agent.name}</div>
                                 <div className="text-xs text-zinc-500 truncate">{agent.role}</div>
                             </div>
                             <span className="text-xs uppercase font-semibold text-zinc-400">{agent.kind}</span>
@@ -116,7 +116,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                                     "px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors",
                                     agent.enabled
                                         ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                                        : "bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10"
+                                        : "bg-white/5 text-zinc-400 border-white/10 hover:text-foreground hover:bg-white/10"
                                 )}
                             >
                                 {agent.enabled ? t('agents.on') : t('agents.off')}
@@ -128,7 +128,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
 
             <div className="bg-card border border-border rounded-2xl p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-white">{t('agents.thoughtStream')}</div>
+                    <div className="text-sm font-semibold text-foreground">{t('agents.thoughtStream')}</div>
                     <button onClick={clearLogs} className="text-xs text-zinc-500 hover:text-zinc-300">{t('agents.clear')}</button>
                 </div>
                 <div className="h-64 overflow-y-auto custom-scrollbar border border-white/10 rounded-xl bg-black/40 p-4 space-y-3 font-mono text-xs">
@@ -177,7 +177,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-card border border-border rounded-2xl p-5">
-                    <div className="text-sm font-semibold text-white mb-3">{t('agents.taskRouting')}</div>
+                    <div className="text-sm font-semibold text-foreground mb-3">{t('agents.taskRouting')}</div>
                     <div className="space-y-2 text-xs text-zinc-500">
                         <div className="flex items-center justify-between">
                             <span>{t('agents.strategy')}</span>
@@ -194,7 +194,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                     </div>
                 </div>
                 <div className="bg-card border border-border rounded-2xl p-5">
-                    <div className="text-sm font-semibold text-white mb-3">{t('agents.decisionRules')}</div>
+                    <div className="text-sm font-semibold text-foreground mb-3">{t('agents.decisionRules')}</div>
                     <div className="space-y-2 text-xs text-zinc-500">
                         <div className="flex items-center justify-between">
                             <span>{t('agents.confidenceGate')}</span>

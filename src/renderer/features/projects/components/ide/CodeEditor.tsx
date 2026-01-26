@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react';
 
 interface CodeEditorProps {
     content: string
@@ -11,16 +11,16 @@ interface CodeEditorProps {
 type EditorView = import('@codemirror/view').EditorView
 
 export const CodeEditor = ({ content, language = 'javascript', onChange, readonly = false }: CodeEditorProps) => {
-    const editorRef = useRef<HTMLDivElement>(null)
-    const viewRef = useRef<EditorView | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const editorRef = useRef<HTMLDivElement>(null);
+    const viewRef = useRef<EditorView | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!editorRef.current) { return }
+        if (!editorRef.current) { return; }
 
-        let view: EditorView | null = null
-        let mounted = true
+        let view: EditorView | null = null;
+        let mounted = true;
 
         const initEditor = async () => {
             try {
@@ -49,22 +49,22 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     import('@codemirror/lang-python'),
                     import('@codemirror/theme-one-dark'),
                     import('@codemirror/autocomplete')
-                ])
+                ]);
 
-                if (!mounted || !editorRef.current) { return }
+                if (!mounted || !editorRef.current) { return; }
 
                 const getLanguageExtension = (lang: string) => {
                     switch (lang) {
-                        case 'json': return json()
-                        case 'markdown': return markdown()
-                        case 'html': return html()
-                        case 'css': return css()
-                        case 'python': return python()
+                        case 'json': return json();
+                        case 'markdown': return markdown();
+                        case 'html': return html();
+                        case 'css': return css();
+                        case 'python': return python();
                         case 'typescript':
                         case 'javascript':
-                        default: return javascript()
+                        default: return javascript();
                     }
-                }
+                };
 
                 // Minimal setup equivalent to basicSetup but safe
                 const minimalSetup = [
@@ -83,7 +83,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                         ...historyKeymap,
                         ...completionKeymap
                     ])
-                ]
+                ];
 
                 const startState = EditorState.create({
                     doc: content,
@@ -99,66 +99,66 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                         EditorState.readOnly.of(readonly),
                         EditorView.updateListener.of((update) => {
                             if (update.docChanged && onChange) {
-                                onChange(update.state.doc.toString())
+                                onChange(update.state.doc.toString());
                             }
                         }),
                         // Simple LSP Hover
                         hoverTooltip(async (view, pos) => {
-                            const { from, to, text } = view.state.doc.lineAt(pos)
-                            let start = pos, end = pos
-                            while (start > from && /\w/.test(text[start - from - 1] || '')) { start-- }
-                            while (end < to && /\w/.test(text[end - from] || '')) { end++ }
-                            if (start === end) { return null }
+                            const { from, to, text } = view.state.doc.lineAt(pos);
+                            let start = pos, end = pos;
+                            while (start > from && /\w/.test(text[start - from - 1] || '')) { start--; }
+                            while (end < to && /\w/.test(text[end - from] || '')) { end++; }
+                            if (start === end) { return null; }
 
-                            const word = text.slice(start - from, end - from)
+                            const word = text.slice(start - from, end - from);
 
                             return {
                                 pos: start,
                                 end,
                                 above: true,
                                 create() {
-                                    const dom = document.createElement("div")
-                                    dom.className = "p-2 bg-popover border border-border/50 rounded text-xs text-foreground shadow-xl backdrop-blur-md"
-                                    dom.textContent = `Symbol: ${word}`
-                                    return { dom }
+                                    const dom = document.createElement("div");
+                                    dom.className = "p-2 bg-popover border border-border/50 rounded text-xs text-foreground shadow-xl backdrop-blur-md";
+                                    dom.textContent = `Symbol: ${word}`;
+                                    return { dom };
                                 }
-                            }
+                            };
                         })
                     ]
-                })
+                });
 
                 view = new EditorView({
                     state: startState,
                     parent: editorRef.current
-                })
+                });
 
-                viewRef.current = view
-                setIsLoading(false)
+                viewRef.current = view;
+                setIsLoading(false);
             } catch (err) {
-                console.error('Failed to initialize CodeMirror:', err)
-                setError(err instanceof Error ? err.message : 'Failed to load editor')
-                setIsLoading(false)
+                console.error('Failed to initialize CodeMirror:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load editor');
+                setIsLoading(false);
             }
-        }
+        };
 
-        void initEditor()
+        void initEditor();
 
         return () => {
-            mounted = false
+            mounted = false;
             if (view) {
-                view.destroy()
+                view.destroy();
             }
-        }
+        };
         // Note: content and onChange are intentionally excluded to avoid recreating editor on every change
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [language, readonly])
+    }, [language, readonly]);
 
     if (error) {
         return (
             <div className="h-full w-full flex items-center justify-center text-red-500 text-sm">
                 <span>Editor error: {error}</span>
             </div>
-        )
+        );
     }
 
     return (
@@ -171,7 +171,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     </div>
                 </div>
             )}
-            <div ref={editorRef} className="h-full w-full overflow-auto text-sm" />
+            <div ref={editorRef} className="h-full w-full overflow-auto text-sm" dir="ltr" />
         </div>
-    )
-}
+    );
+};

@@ -1,6 +1,6 @@
-import React, { useRef,useState } from 'react'
+import React, { useRef,useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface RippleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -35,35 +35,35 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
     onClick,
     ...props
 }) => {
-    const [ripples, setRipples] = useState<Ripple[]>([])
-    const buttonRef = useRef<HTMLButtonElement>(null)
-    const rippleIdRef = useRef(0)
+    const [ripples, setRipples] = useState<Ripple[]>([]);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const rippleIdRef = useRef(0);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        const button = buttonRef.current
-        if (!button) {return}
+        const button = buttonRef.current;
+        if (!button) {return;}
 
-        const rect = button.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
-        const size = Math.max(rect.width, rect.height) * 2
+        const rect = button.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const size = Math.max(rect.width, rect.height) * 2;
 
         const newRipple: Ripple = {
             id: rippleIdRef.current++,
             x,
             y,
             size
-        }
+        };
 
-        setRipples(prev => [...prev, newRipple])
+        setRipples(prev => [...prev, newRipple]);
 
         // Remove ripple after animation
         setTimeout(() => {
-            setRipples(prev => prev.filter(r => r.id !== newRipple.id))
-        }, 600)
+            setRipples(prev => prev.filter(r => r.id !== newRipple.id));
+        }, 600);
 
-        onClick?.(e)
-    }
+        onClick?.(e);
+    };
 
     const variantClasses = {
         default: 'bg-muted hover:bg-muted/80 text-foreground',
@@ -71,13 +71,13 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
         secondary: 'bg-secondary hover:bg-secondary/80 text-secondary-foreground',
         ghost: 'hover:bg-muted/50 text-foreground',
         destructive: 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-    }
+    };
 
     const sizeClasses = {
         sm: 'px-3 py-1.5 text-sm',
         md: 'px-4 py-2',
         lg: 'px-6 py-3 text-lg'
-    }
+    };
 
     return (
         <button
@@ -124,7 +124,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
                 }
             `}</style>
         </button>
-    )
-}
+    );
+};
 
-RippleButton.displayName = 'RippleButton'
+RippleButton.displayName = 'RippleButton';

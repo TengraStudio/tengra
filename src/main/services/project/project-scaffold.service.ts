@@ -1,9 +1,9 @@
-import { mkdir, writeFile } from 'fs/promises'
-import path from 'path'
+import { mkdir, writeFile } from 'fs/promises';
+import path from 'path';
 
-import { BaseService } from '@main/services/base.service'
-import { IdeaCategory, ProjectIdea } from '@shared/types/ideas'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { BaseService } from '@main/services/base.service';
+import { IdeaCategory, ProjectIdea } from '@shared/types/ideas';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 /**
  * Project Scaffold Service
@@ -11,48 +11,48 @@ import { getErrorMessage } from '@shared/utils/error.util'
  */
 export class ProjectScaffoldService extends BaseService {
     constructor() {
-        super('ProjectScaffoldService')
+        super('ProjectScaffoldService');
     }
 
     /**
      * Scaffold a project based on the idea category
      */
     async scaffoldProject(idea: ProjectIdea, targetPath: string): Promise<void> {
-        this.logInfo(`Scaffolding project: ${idea.title} at ${targetPath}`)
+        this.logInfo(`Scaffolding project: ${idea.title} at ${targetPath}`);
 
         try {
             // Create the project directory
-            await mkdir(targetPath, { recursive: true })
+            await mkdir(targetPath, { recursive: true });
 
             // Create category-specific scaffold
             switch (idea.category) {
                 case 'website':
-                    await this.createWebsiteScaffold(targetPath, idea)
-                    break
+                    await this.createWebsiteScaffold(targetPath, idea);
+                    break;
                 case 'mobile-app':
-                    await this.createMobileAppScaffold(targetPath, idea)
-                    break
+                    await this.createMobileAppScaffold(targetPath, idea);
+                    break;
                 case 'game':
-                    await this.createGameScaffold(targetPath, idea)
-                    break
+                    await this.createGameScaffold(targetPath, idea);
+                    break;
                 case 'cli-tool':
-                    await this.createCliToolScaffold(targetPath, idea)
-                    break
+                    await this.createCliToolScaffold(targetPath, idea);
+                    break;
                 case 'desktop':
-                    await this.createDesktopScaffold(targetPath, idea)
-                    break
+                    await this.createDesktopScaffold(targetPath, idea);
+                    break;
                 default:
-                    await this.createGenericScaffold(targetPath, idea)
+                    await this.createGenericScaffold(targetPath, idea);
             }
 
             // Always create README
-            const readme = this.generateReadme(idea)
-            await writeFile(path.join(targetPath, 'README.md'), readme)
+            const readme = this.generateReadme(idea);
+            await writeFile(path.join(targetPath, 'README.md'), readme);
 
-            this.logInfo(`Project scaffold created successfully at ${targetPath}`)
+            this.logInfo(`Project scaffold created successfully at ${targetPath}`);
         } catch (error) {
-            this.logError(`Failed to scaffold project: ${getErrorMessage(error as Error)}`)
-            throw error
+            this.logError(`Failed to scaffold project: ${getErrorMessage(error as Error)}`);
+            throw error;
         }
     }
 
@@ -61,9 +61,9 @@ export class ProjectScaffoldService extends BaseService {
      */
     private async createWebsiteScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
         // Create directories
-        await mkdir(path.join(targetPath, 'css'), { recursive: true })
-        await mkdir(path.join(targetPath, 'js'), { recursive: true })
-        await mkdir(path.join(targetPath, 'assets'), { recursive: true })
+        await mkdir(path.join(targetPath, 'css'), { recursive: true });
+        await mkdir(path.join(targetPath, 'js'), { recursive: true });
+        await mkdir(path.join(targetPath, 'assets'), { recursive: true });
 
         // index.html
         const indexHtml = `<!DOCTYPE html>
@@ -88,7 +88,7 @@ export class ProjectScaffoldService extends BaseService {
     </footer>
     <script src="js/main.js"></script>
 </body>
-</html>`
+</html>`;
 
         // styles.css
         const stylesCss = `/* ${idea.title} Styles */
@@ -137,7 +137,7 @@ footer {
     padding: 1rem;
     margin-top: 2rem;
 }
-`
+`;
 
         // main.js
         const mainJs = `// ${idea.title} - Main JavaScript
@@ -146,21 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add your initialization code here
 });
-`
+`;
 
-        await writeFile(path.join(targetPath, 'index.html'), indexHtml)
-        await writeFile(path.join(targetPath, 'css', 'styles.css'), stylesCss)
-        await writeFile(path.join(targetPath, 'js', 'main.js'), mainJs)
+        await writeFile(path.join(targetPath, 'index.html'), indexHtml);
+        await writeFile(path.join(targetPath, 'css', 'styles.css'), stylesCss);
+        await writeFile(path.join(targetPath, 'js', 'main.js'), mainJs);
     }
 
     /**
      * Create mobile app scaffold (React Native)
      */
     private async createMobileAppScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
-        await mkdir(path.join(targetPath, 'src'), { recursive: true })
-        await mkdir(path.join(targetPath, 'src', 'components'), { recursive: true })
-        await mkdir(path.join(targetPath, 'src', 'screens'), { recursive: true })
-        await mkdir(path.join(targetPath, 'assets'), { recursive: true })
+        await mkdir(path.join(targetPath, 'src'), { recursive: true });
+        await mkdir(path.join(targetPath, 'src', 'components'), { recursive: true });
+        await mkdir(path.join(targetPath, 'src', 'screens'), { recursive: true });
+        await mkdir(path.join(targetPath, 'assets'), { recursive: true });
 
         // package.json
         const packageJson = {
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '@types/react': '^18.2.0',
                 'typescript': '^5.3.0'
             }
-        }
+        };
 
         // App.tsx
         const appTsx = `import React from 'react';
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
         color: '#666',
     },
 });
-`
+`;
 
         // tsconfig.json
         const tsConfig = {
@@ -237,20 +237,20 @@ const styles = StyleSheet.create({
                 skipLibCheck: true
             },
             exclude: ['node_modules']
-        }
+        };
 
-        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2))
-        await writeFile(path.join(targetPath, 'src', 'App.tsx'), appTsx)
-        await writeFile(path.join(targetPath, 'tsconfig.json'), JSON.stringify(tsConfig, null, 2))
+        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+        await writeFile(path.join(targetPath, 'src', 'App.tsx'), appTsx);
+        await writeFile(path.join(targetPath, 'tsconfig.json'), JSON.stringify(tsConfig, null, 2));
     }
 
     /**
      * Create game scaffold
      */
     private async createGameScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
-        await mkdir(path.join(targetPath, 'src'), { recursive: true })
-        await mkdir(path.join(targetPath, 'assets', 'images'), { recursive: true })
-        await mkdir(path.join(targetPath, 'assets', 'sounds'), { recursive: true })
+        await mkdir(path.join(targetPath, 'src'), { recursive: true });
+        await mkdir(path.join(targetPath, 'assets', 'images'), { recursive: true });
+        await mkdir(path.join(targetPath, 'assets', 'sounds'), { recursive: true });
 
         // package.json
         const packageJson = {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
             devDependencies: {
                 'vite': '^5.0.0'
             }
-        }
+        };
 
         // main.js
         const mainJs = `import Phaser from 'phaser';
@@ -318,7 +318,7 @@ function create() {
 function update() {
     // Game loop logic
 }
-`
+`;
 
         // index.html
         const indexHtml = `<!DOCTYPE html>
@@ -347,7 +347,7 @@ function update() {
     <div id="game-container"></div>
     <script type="module" src="src/main.js"></script>
 </body>
-</html>`
+</html>`;
 
         // config.json
         const configJson = {
@@ -361,22 +361,22 @@ function update() {
                 musicVolume: 0.7,
                 sfxVolume: 1.0
             }
-        }
+        };
 
-        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2))
-        await writeFile(path.join(targetPath, 'src', 'main.js'), mainJs)
-        await writeFile(path.join(targetPath, 'index.html'), indexHtml)
-        await writeFile(path.join(targetPath, 'config.json'), JSON.stringify(configJson, null, 2))
+        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+        await writeFile(path.join(targetPath, 'src', 'main.js'), mainJs);
+        await writeFile(path.join(targetPath, 'index.html'), indexHtml);
+        await writeFile(path.join(targetPath, 'config.json'), JSON.stringify(configJson, null, 2));
     }
 
     /**
      * Create CLI tool scaffold
      */
     private async createCliToolScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
-        await mkdir(path.join(targetPath, 'src'), { recursive: true })
-        await mkdir(path.join(targetPath, 'bin'), { recursive: true })
+        await mkdir(path.join(targetPath, 'src'), { recursive: true });
+        await mkdir(path.join(targetPath, 'bin'), { recursive: true });
 
-        const cliName = this.slugify(idea.title)
+        const cliName = this.slugify(idea.title);
 
         // package.json
         const packageJson = {
@@ -399,7 +399,7 @@ function update() {
             engines: {
                 node: '>=18.0.0'
             }
-        }
+        };
 
         // bin/cli.js
         const cliJs = `#!/usr/bin/env node
@@ -429,7 +429,7 @@ program
     });
 
 program.parse();
-`
+`;
 
         // src/index.js
         const indexJs = `import chalk from 'chalk';
@@ -449,11 +449,11 @@ export function run(options = {}) {
 }
 
 export default { run };
-`
+`;
 
-        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2))
-        await writeFile(path.join(targetPath, 'bin', 'cli.js'), cliJs)
-        await writeFile(path.join(targetPath, 'src', 'index.js'), indexJs)
+        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+        await writeFile(path.join(targetPath, 'bin', 'cli.js'), cliJs);
+        await writeFile(path.join(targetPath, 'src', 'index.js'), indexJs);
     }
 
 
@@ -462,7 +462,7 @@ export default { run };
      * Create desktop app scaffold (Electron)
      */
     private async createDesktopScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
-        await mkdir(path.join(targetPath, 'src'), { recursive: true })
+        await mkdir(path.join(targetPath, 'src'), { recursive: true });
 
         // package.json
         const packageJson = {
@@ -479,7 +479,7 @@ export default { run };
                 'electron': '^28.0.0',
                 'electron-builder': '^24.9.0'
             }
-        }
+        };
 
         // src/main.js
         const mainJs = `const { app, BrowserWindow } = require('electron');
@@ -519,7 +519,7 @@ app.on('window-all-closed', () => {
         app.quit();
     }
 });
-`
+`;
 
         // src/preload.js
         const preloadJs = `const { contextBridge, ipcRenderer } = require('electron');
@@ -528,7 +528,7 @@ contextBridge.exposeInMainWorld('api', {
     send: (channel, data) => ipcRenderer.send(channel, data),
     receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args))
 });
-`
+`;
 
         // src/index.html
         const indexHtml = `<!DOCTYPE html>
@@ -563,28 +563,28 @@ contextBridge.exposeInMainWorld('api', {
     </div>
     <script src="renderer.js"></script>
 </body>
-</html>`
+</html>`;
 
         // src/renderer.js
         const rendererJs = `// Renderer process code
 document.addEventListener('DOMContentLoaded', () => {
     console.log('${idea.title} loaded');
 });
-`
+`;
 
-        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2))
-        await writeFile(path.join(targetPath, 'src', 'main.js'), mainJs)
-        await writeFile(path.join(targetPath, 'src', 'preload.js'), preloadJs)
-        await writeFile(path.join(targetPath, 'src', 'index.html'), indexHtml)
-        await writeFile(path.join(targetPath, 'src', 'renderer.js'), rendererJs)
+        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+        await writeFile(path.join(targetPath, 'src', 'main.js'), mainJs);
+        await writeFile(path.join(targetPath, 'src', 'preload.js'), preloadJs);
+        await writeFile(path.join(targetPath, 'src', 'index.html'), indexHtml);
+        await writeFile(path.join(targetPath, 'src', 'renderer.js'), rendererJs);
     }
 
     /**
      * Create generic scaffold for 'other' category
      */
     private async createGenericScaffold(targetPath: string, idea: ProjectIdea): Promise<void> {
-        await mkdir(path.join(targetPath, 'src'), { recursive: true })
-        await mkdir(path.join(targetPath, 'docs'), { recursive: true })
+        await mkdir(path.join(targetPath, 'src'), { recursive: true });
+        await mkdir(path.join(targetPath, 'docs'), { recursive: true });
 
         // package.json
         const packageJson = {
@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             dependencies: {},
             devDependencies: {}
-        }
+        };
 
         // src/index.js
         const indexJs = `/**
@@ -612,18 +612,18 @@ function main() {
 }
 
 main();
-`
+`;
 
-        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2))
-        await writeFile(path.join(targetPath, 'src', 'index.js'), indexJs)
+        await writeFile(path.join(targetPath, 'package.json'), JSON.stringify(packageJson, null, 2));
+        await writeFile(path.join(targetPath, 'src', 'index.js'), indexJs);
     }
 
     /**
      * Generate README content for the project
      */
     generateReadme(idea: ProjectIdea): string {
-        const nameSuggestions = idea.nameSuggestions?.slice(0, 5).join(', ') ?? ''
-        const advantages = idea.competitiveAdvantages?.map(a => `- ${a}`).join('\n') ?? ''
+        const nameSuggestions = idea.nameSuggestions?.slice(0, 5).join(', ') ?? '';
+        const advantages = idea.competitiveAdvantages?.map(a => `- ${a}`).join('\n') ?? '';
 
         return `# ${idea.title}
 
@@ -662,7 +662,7 @@ MIT
 ---
 
 *Generated by [Orbit AI](https://github.com/orbit-ai)*
-`
+`;
     }
 
     /**
@@ -710,8 +710,8 @@ MIT
 ├── docs/
 ├── package.json
 └── README.md`
-        }
-        return structures[category] ?? structures['other']
+        };
+        return structures[category] ?? structures['other'];
     }
 
     /**
@@ -722,7 +722,7 @@ MIT
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '')
-            .slice(0, 50)
+            .slice(0, 50);
     }
 
     /**
@@ -735,7 +735,7 @@ MIT
             '>': '&gt;',
             '"': '&quot;',
             "'": '&#39;'
-        }
-        return text.replace(/[&<>"']/g, char => escapeMap[char] ?? char)
+        };
+        return text.replace(/[&<>"']/g, char => escapeMap[char] ?? char);
     }
 }

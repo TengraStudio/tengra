@@ -1,7 +1,7 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
-ipcRenderer.setMaxListeners(50)
+ipcRenderer.setMaxListeners(50);
 import {
     AgentDefinition, AppSettings, AuthStatus,
     Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota, CouncilSession,
@@ -11,7 +11,7 @@ import {
     Project, ProjectAnalysis, Prompt,
     QuotaResponse, SemanticFragment,
     SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
-} from '@shared/types'
+} from '@shared/types';
 
 interface ModelDefinition {
     id: string
@@ -393,6 +393,12 @@ export interface ElectronAPI {
     renamePath: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>
     searchFiles: (rootPath: string, pattern: string) => Promise<{ success: boolean; matches?: string[]; error?: string }>
     saveFile: (content: string, filename: string) => Promise<{ success: boolean; path?: string; error?: string }>
+    exportChatToPdf: (chatId: string, title: string) => Promise<{ success: boolean; path?: string; error?: string }>
+
+    // Export
+    exportMarkdown: (content: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+    exportPDF: (htmlContent: string, filePath: string) => Promise<{ success: boolean; error?: string }>
+
     searchFilesStream: (rootPath: string, pattern: string, onResult: (path: string) => void, onComplete?: () => void) => () => void
 
     files: {
@@ -531,11 +537,13 @@ export interface ElectronAPI {
         getSession: (id: string) => Promise<IpcValue>
         getSessions: () => Promise<IpcValue[]>
         cancelSession: (id: string) => Promise<{ success: boolean }>
+        generateMarketPreview: (categories: string[]) => Promise<{ success: boolean; data?: IpcValue[] }>
         startResearch: (sessionId: string) => Promise<{ success: boolean; data?: IpcValue }>
         startGeneration: (sessionId: string) => Promise<{ success: boolean }>
         enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: IpcValue }>
         getIdea: (id: string) => Promise<IpcValue>
         getIdeas: (sessionId?: string) => Promise<IpcValue[]>
+        regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: IpcValue }>
         approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<{ success: boolean; project?: IpcValue }>
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>
         canGenerateLogo: () => Promise<boolean>
@@ -613,27 +621,27 @@ const api: ElectronAPI = {
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
     chatOpenAI: async (request) => {
-        const res = await ipcRenderer.invoke('chat:openai', request.messages, request.model, request.tools, request.provider, request.options, request.projectId)
-        if (res.success) { return res.data }
-        throw new Error(res.error?.message ?? 'Chat request failed')
+        const res = await ipcRenderer.invoke('chat:openai', request.messages, request.model, request.tools, request.provider, request.options, request.projectId);
+        if (res.success) { return res.data; }
+        throw new Error(res.error?.message ?? 'Chat request failed');
     },
     chatStream: (request) => ipcRenderer.invoke('chat:stream', request.messages, request.model, request.tools, request.provider, request.options, request.chatId, request.projectId),
-    abortChat: () => { void ipcRenderer.invoke('ollama:abort') },
+    abortChat: () => { void ipcRenderer.invoke('ollama:abort'); },
     onStreamChunk: (callback) => {
         console.warn(`[Preload] onStreamChunk registered on ${window.location.href}`);
         const listener = (_event: IpcRendererEvent, chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string; chatId?: string; done?: boolean }) => {
             console.warn('[Preload] Received ollama:streamChunk:', JSON.stringify(chunk));
             callback(chunk);
-        }
-        ipcRenderer.on('ollama:streamChunk', listener)
+        };
+        ipcRenderer.on('ollama:streamChunk', listener);
         return () => {
             console.warn('[Preload] onStreamChunk unsubscribing');
-            ipcRenderer.removeListener('ollama:streamChunk', listener)
-        }
+            ipcRenderer.removeListener('ollama:streamChunk', listener);
+        };
     },
     removeStreamChunkListener: () => {
         console.warn('[Preload] removeAllListeners for ollama:streamChunk');
-        ipcRenderer.removeAllListeners('ollama:streamChunk')
+        ipcRenderer.removeAllListeners('ollama:streamChunk');
     },
 
     isOllamaRunning: () => ipcRenderer.invoke('ollama:isRunning'),
@@ -642,7 +650,7 @@ const api: ElectronAPI = {
     deleteOllamaModel: (modelName) => ipcRenderer.invoke('ollama:deleteModel', modelName),
     getLibraryModels: () => ipcRenderer.invoke('ollama:getLibraryModels'),
     onPullProgress: (callback) => {
-        ipcRenderer.on('ollama:pullProgress', (_event, progress) => callback(progress))
+        ipcRenderer.on('ollama:pullProgress', (_event, progress) => callback(progress));
     },
     removePullProgressListener: () => ipcRenderer.removeAllListeners('ollama:pullProgress'),
 
@@ -664,16 +672,16 @@ const api: ElectronAPI = {
         getGpuInfo: () => ipcRenderer.invoke('llama:getGpuInfo'),
         getModelsDir: () => ipcRenderer.invoke('llama:getModelsDir'),
         onToken: (callback) => {
-            ipcRenderer.on('llama:token', (_event, token) => callback(token))
+            ipcRenderer.on('llama:token', (_event, token) => callback(token));
         },
         removeTokenListener: () => {
-            ipcRenderer.removeAllListeners('llama:token')
+            ipcRenderer.removeAllListeners('llama:token');
         },
         onDownloadProgress: (callback) => {
-            ipcRenderer.on('llama:downloadProgress', (_event, progress) => callback(progress))
+            ipcRenderer.on('llama:downloadProgress', (_event, progress) => callback(progress));
         },
         removeDownloadProgressListener: () => {
-            ipcRenderer.removeAllListeners('llama:downloadProgress')
+            ipcRenderer.removeAllListeners('llama:downloadProgress');
         }
     },
 
@@ -787,13 +795,13 @@ const api: ElectronAPI = {
         onUploadProgress: (callback) => ipcRenderer.on('ssh:uploadProgress', (_event, p) => callback(p)),
         onDownloadProgress: (callback) => ipcRenderer.on('ssh:downloadProgress', (_event, p) => callback(p)),
         removeAllListeners: () => {
-            ipcRenderer.removeAllListeners('ssh:stdout')
-            ipcRenderer.removeAllListeners('ssh:stderr')
-            ipcRenderer.removeAllListeners('ssh:connected')
-            ipcRenderer.removeAllListeners('ssh:disconnected')
-            ipcRenderer.removeAllListeners('ssh:uploadProgress')
-            ipcRenderer.removeAllListeners('ssh:downloadProgress')
-            ipcRenderer.removeAllListeners('ssh:shellData')
+            ipcRenderer.removeAllListeners('ssh:stdout');
+            ipcRenderer.removeAllListeners('ssh:stderr');
+            ipcRenderer.removeAllListeners('ssh:connected');
+            ipcRenderer.removeAllListeners('ssh:disconnected');
+            ipcRenderer.removeAllListeners('ssh:uploadProgress');
+            ipcRenderer.removeAllListeners('ssh:downloadProgress');
+            ipcRenderer.removeAllListeners('ssh:shellData');
         },
         onShellData: (callback) => ipcRenderer.on('ssh:shellData', (_event, data: { data: string }) => callback(data)),
         shellStart: (connectionId) => ipcRenderer.invoke('ssh:shellStart', connectionId),
@@ -828,7 +836,7 @@ const api: ElectronAPI = {
     },
 
     captureScreenshot: () => ipcRenderer.invoke('screenshot:capture'),
-    openExternal: (url) => { void ipcRenderer.invoke('shell:openExternal', url) },
+    openExternal: (url) => { void ipcRenderer.invoke('shell:openExternal', url); },
     captureCookies: (url: string, timeoutMs?: number) => ipcRenderer.invoke('window:captureCookies', url, timeoutMs),
     openTerminal: (command) => ipcRenderer.invoke('shell:openTerminal', command),
     runCommand: (command, args, cwd) => ipcRenderer.invoke('shell:runCommand', command, args, cwd),
@@ -859,33 +867,38 @@ const api: ElectronAPI = {
     listDirectory: (path) => ipcRenderer.invoke('files:listDirectory', path),
     readFile: (path) => ipcRenderer.invoke('files:readFile', path),
     writeFile: (path: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => ipcRenderer.invoke('files:writeFile', path, content, context),
-    
+
     createDirectory: (path) => ipcRenderer.invoke('files:createDirectory', path),
     deleteFile: (path) => ipcRenderer.invoke('files:deleteFile', path),
     deleteDirectory: (path) => ipcRenderer.invoke('files:deleteDirectory', path),
     renamePath: (oldPath, newPath) => ipcRenderer.invoke('files:renamePath', oldPath, newPath),
     searchFiles: (rootPath, pattern) => ipcRenderer.invoke('files:searchFiles', rootPath, pattern),
     searchFilesStream: (rootPath: string, pattern: string, onResult: (path: string) => void, onComplete?: () => void) => {
-        const jobId = Math.random().toString(36).substring(7)
+        const jobId = Math.random().toString(36).substring(7);
 
-        const resultListener = (_event: IpcRendererEvent, path: string) => onResult(path)
+        const resultListener = (_event: IpcRendererEvent, path: string) => onResult(path);
         const completeListener = () => {
-            ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener)
-            ipcRenderer.removeListener(`files:search-complete:${jobId}`, completeListener)
-            if (onComplete) { onComplete() }
-        }
+            ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener);
+            ipcRenderer.removeListener(`files:search-complete:${jobId}`, completeListener);
+            if (onComplete) { onComplete(); }
+        };
 
-        ipcRenderer.on(`files:search-result:${jobId}`, resultListener)
-        ipcRenderer.on(`files:search-complete:${jobId}`, completeListener)
+        ipcRenderer.on(`files:search-result:${jobId}`, resultListener);
+        ipcRenderer.on(`files:search-complete:${jobId}`, completeListener);
 
-        void ipcRenderer.invoke('files:searchFilesStream', rootPath, pattern, jobId)
+        void ipcRenderer.invoke('files:searchFilesStream', rootPath, pattern, jobId);
 
         return () => { // unsubscribe function
-            ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener)
-            ipcRenderer.removeListener(`files:search-complete:${jobId}`, completeListener)
-        }
+            ipcRenderer.removeListener(`files:search-result:${jobId}`, resultListener);
+            ipcRenderer.removeListener(`files:search-complete:${jobId}`, completeListener);
+        };
     },
-    saveFile: (content, filename) => ipcRenderer.invoke('dialog:saveFile', { content, filename }),
+    saveFile: (content: string, filename: string) => ipcRenderer.invoke('dialog:saveFile', { content, filename }),
+    exportChatToPdf: (chatId: string, title: string) => ipcRenderer.invoke('files:exportChatToPdf', chatId, title) as Promise<{ success: boolean; path?: string; error?: string }>,
+
+    // Export
+    exportMarkdown: (content: string, filePath: string) => ipcRenderer.invoke('export:markdown', content, filePath),
+    exportPDF: (htmlContent: string, filePath: string) => ipcRenderer.invoke('export:pdf', htmlContent, filePath),
 
     modelRegistry: {
         getAllModels: () => ipcRenderer.invoke('model-registry:getAllModels'),
@@ -906,57 +919,57 @@ const api: ElectronAPI = {
 
     project: {
         analyze: async (rootPath: string, projectId: string) => {
-            const res = await ipcRenderer.invoke('project:analyze', rootPath, projectId)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Analysis failed')
+            const res = await ipcRenderer.invoke('project:analyze', rootPath, projectId);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Analysis failed');
         },
         analyzeIdentity: async (rootPath: string) => {
-            const res = await ipcRenderer.invoke('project:analyzeIdentity', rootPath)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Identity analysis failed')
+            const res = await ipcRenderer.invoke('project:analyzeIdentity', rootPath);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Identity analysis failed');
         },
         generateLogo: async (projectPath: string, prompt: string, style: string) => {
-            const res = await ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Logo generation failed')
+            const res = await ipcRenderer.invoke('project:generateLogo', projectPath, prompt, style);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Logo generation failed');
         },
         analyzeDirectory: async (dirPath: string) => {
-            const res = await ipcRenderer.invoke('project:analyzeDirectory', dirPath)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Directory analysis failed')
+            const res = await ipcRenderer.invoke('project:analyzeDirectory', dirPath);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Directory analysis failed');
         },
         applyLogo: async (projectPath: string, tempLogoPath: string) => {
-            const res = await ipcRenderer.invoke('project:applyLogo', projectPath, tempLogoPath)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Apply logo failed')
+            const res = await ipcRenderer.invoke('project:applyLogo', projectPath, tempLogoPath);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Apply logo failed');
         },
         getCompletion: async (text: string) => {
-            const res = await ipcRenderer.invoke('project:getCompletion', text)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Completion failed')
+            const res = await ipcRenderer.invoke('project:getCompletion', text);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Completion failed');
         },
         improveLogoPrompt: async (prompt: string) => {
-            const res = await ipcRenderer.invoke('project:improveLogoPrompt', prompt)
-            if (res.success) { return res.data }
-            throw new Error(res.error?.message ?? 'Prompt improvement failed')
+            const res = await ipcRenderer.invoke('project:improveLogoPrompt', prompt);
+            if (res.success) { return res.data; }
+            throw new Error(res.error?.message ?? 'Prompt improvement failed');
         },
         uploadLogo: async (projectPath: string) => {
-            const res = await ipcRenderer.invoke('project:uploadLogo', projectPath)
-            if (res.success) { return res.data }
-            return null
+            const res = await ipcRenderer.invoke('project:uploadLogo', projectPath);
+            if (res.success) { return res.data; }
+            return null;
         },
         watch: async (rootPath: string) => {
-            const res = await ipcRenderer.invoke('project:watch', rootPath)
-            return res.success
+            const res = await ipcRenderer.invoke('project:watch', rootPath);
+            return res.success;
         },
         unwatch: async (rootPath: string) => {
-            const res = await ipcRenderer.invoke('project:unwatch', rootPath)
-            return res.success
+            const res = await ipcRenderer.invoke('project:unwatch', rootPath);
+            return res.success;
         },
         onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => {
-            const listener = (_event: IpcRendererEvent, data: { event: string, path: string, rootPath: string }) => callback(data.event, data.path, data.rootPath)
-            ipcRenderer.on('project:file-change', listener)
-            return () => ipcRenderer.removeListener('project:file-change', listener)
+            const listener = (_event: IpcRendererEvent, data: { event: string, path: string, rootPath: string }) => callback(data.event, data.path, data.rootPath);
+            ipcRenderer.on('project:file-change', listener);
+            return () => ipcRenderer.removeListener('project:file-change', listener);
         }
     },
 
@@ -970,8 +983,8 @@ const api: ElectronAPI = {
         onData: (callback: (data: { id: string; data: string }) => void) => ipcRenderer.on('process:data', (_event, data) => callback(data)),
         onExit: (callback: (data: { id: string; code: number }) => void) => ipcRenderer.on('process:exit', (_event, data) => callback(data)),
         removeListeners: () => {
-            ipcRenderer.removeAllListeners('process:data')
-            ipcRenderer.removeAllListeners('process:exit')
+            ipcRenderer.removeAllListeners('process:data');
+            ipcRenderer.removeAllListeners('process:exit');
         }
     },
 
@@ -980,7 +993,7 @@ const api: ElectronAPI = {
         getFiles: (modelId: string) => ipcRenderer.invoke('hf:get-files', modelId),
         downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256),
         onDownloadProgress: (callback) => ipcRenderer.on('hf:download-progress', (_event, progress) => callback(progress)),
-        cancelDownload: () => { void ipcRenderer.invoke('hf:cancel-download') }
+        cancelDownload: () => { void ipcRenderer.invoke('hf:cancel-download'); }
     },
 
     log: {
@@ -1000,19 +1013,19 @@ const api: ElectronAPI = {
         kill: (sessionId) => ipcRenderer.invoke('terminal:kill', sessionId),
         getSessions: () => ipcRenderer.invoke('terminal:getSessions'),
         onData: (callback) => {
-            const listener = (_event: IpcRendererEvent, data: { id: string; data: string }) => callback(data)
-            ipcRenderer.on('terminal:data', listener)
-            return () => ipcRenderer.removeListener('terminal:data', listener)
+            const listener = (_event: IpcRendererEvent, data: { id: string; data: string }) => callback(data);
+            ipcRenderer.on('terminal:data', listener);
+            return () => ipcRenderer.removeListener('terminal:data', listener);
         },
         onExit: (callback) => {
-            const listener = (_event: IpcRendererEvent, data: { id: string; code: number }) => callback(data)
-            ipcRenderer.on('terminal:exit', listener)
-            return () => ipcRenderer.removeListener('terminal:exit', listener)
+            const listener = (_event: IpcRendererEvent, data: { id: string; code: number }) => callback(data);
+            ipcRenderer.on('terminal:exit', listener);
+            return () => ipcRenderer.removeListener('terminal:exit', listener);
         },
         readBuffer: (sessionId) => ipcRenderer.invoke('terminal:readBuffer', sessionId),
         removeAllListeners: () => {
-            ipcRenderer.removeAllListeners('terminal:data')
-            ipcRenderer.removeAllListeners('terminal:exit')
+            ipcRenderer.removeAllListeners('terminal:data');
+            ipcRenderer.removeAllListeners('terminal:exit');
         }
     },
 
@@ -1024,9 +1037,9 @@ const api: ElectronAPI = {
     },
 
     on: (channel: string, callback: (...args: IpcValue[]) => void) => {
-        const listener = (_event: IpcRendererEvent, ...args: IpcValue[]) => callback(...args)
-        ipcRenderer.on(channel, listener)
-        return () => ipcRenderer.removeListener(channel, listener)
+        const listener = (_event: IpcRendererEvent, ...args: IpcValue[]) => callback(...args);
+        ipcRenderer.on(channel, listener);
+        return () => ipcRenderer.removeListener(channel, listener);
     },
 
     getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
@@ -1039,8 +1052,8 @@ const api: ElectronAPI = {
 
     ipcRenderer: {
         on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
-            ipcRenderer.on(channel, listener)
-            return () => ipcRenderer.removeListener(channel, listener)
+            ipcRenderer.on(channel, listener);
+            return () => ipcRenderer.removeListener(channel, listener);
         },
         off: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => ipcRenderer.removeListener(channel, listener),
         send: (channel: string, ...args: IpcValue[]) => ipcRenderer.send(channel, ...args),
@@ -1080,11 +1093,13 @@ const api: ElectronAPI = {
         getSession: (id) => ipcRenderer.invoke('ideas:getSession', id),
         getSessions: () => ipcRenderer.invoke('ideas:getSessions'),
         cancelSession: (id) => ipcRenderer.invoke('ideas:cancelSession', id),
+        generateMarketPreview: (categories) => ipcRenderer.invoke('ideas:generateMarketPreview', categories),
         startResearch: (sessionId) => ipcRenderer.invoke('ideas:startResearch', sessionId),
         startGeneration: (sessionId) => ipcRenderer.invoke('ideas:startGeneration', sessionId),
         enrichIdea: (ideaId) => ipcRenderer.invoke('ideas:enrichIdea', ideaId),
         getIdea: (id) => ipcRenderer.invoke('ideas:getIdea', id),
         getIdeas: (sessionId) => ipcRenderer.invoke('ideas:getIdeas', sessionId),
+        regenerateIdea: (ideaId) => ipcRenderer.invoke('ideas:regenerateIdea', ideaId),
         approveIdea: (ideaId, projectPath, selectedName) => ipcRenderer.invoke('ideas:approveIdea', ideaId, projectPath, selectedName),
         rejectIdea: (ideaId) => ipcRenderer.invoke('ideas:rejectIdea', ideaId),
         canGenerateLogo: () => ipcRenderer.invoke('ideas:canGenerateLogo'),
@@ -1107,21 +1122,21 @@ const api: ElectronAPI = {
         getArchivedIdeas: (sessionId?: string) => ipcRenderer.invoke('ideas:getArchivedIdeas', sessionId),
         // Progress events
         onResearchProgress: (callback) => {
-            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
-            ipcRenderer.on('ideas:research-progress', listener)
-            return () => ipcRenderer.removeListener('ideas:research-progress', listener)
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress);
+            ipcRenderer.on('ideas:research-progress', listener);
+            return () => ipcRenderer.removeListener('ideas:research-progress', listener);
         },
         onIdeaProgress: (callback) => {
-            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
-            ipcRenderer.on('ideas:idea-progress', listener)
-            return () => ipcRenderer.removeListener('ideas:idea-progress', listener)
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress);
+            ipcRenderer.on('ideas:idea-progress', listener);
+            return () => ipcRenderer.removeListener('ideas:idea-progress', listener);
         },
         onDeepResearchProgress: (callback) => {
-            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress)
-            ipcRenderer.on('ideas:deep-research-progress', listener)
-            return () => ipcRenderer.removeListener('ideas:deep-research-progress', listener)
+            const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress);
+            ipcRenderer.on('ideas:deep-research-progress', listener);
+            return () => ipcRenderer.removeListener('ideas:deep-research-progress', listener);
         }
     }
-}
+};
 
-contextBridge.exposeInMainWorld('electron', api)
+contextBridge.exposeInMainWorld('electron', api);

@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from "react";
 
 const ScrollArea = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, children, ...props }, ref) => (
     <div ref={ref} className={`relative overflow-hidden ${className}`} {...props}>
@@ -6,7 +6,7 @@ const ScrollArea = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
             {children}
         </div>
     </div>
-))
-ScrollArea.displayName = "ScrollArea"
+));
+ScrollArea.displayName = "ScrollArea";
 
-export { ScrollArea }
+export { ScrollArea };

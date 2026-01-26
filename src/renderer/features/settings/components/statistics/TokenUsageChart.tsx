@@ -1,7 +1,7 @@
-import { Activity, Coins } from 'lucide-react'
-import React, { useMemo } from 'react'
+import { Activity, Coins } from 'lucide-react';
+import React, { useMemo } from 'react';
 
-import { formatNumber } from '@/lib/formatters'
+import { formatNumber } from '@/lib/formatters';
 
 interface TokenUsageChartProps {
     tokenTimeline: Array<{
@@ -16,19 +16,19 @@ interface TokenUsageChartProps {
 
 export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline, t, period }) => {
     // 1. Calculate Max for scaling
-    const maxTokens = useMemo(() => Math.max(...tokenTimeline.map(d => d.promptTokens + d.completionTokens), 100), [tokenTimeline])
+    const maxTokens = useMemo(() => Math.max(...tokenTimeline.map(d => d.promptTokens + d.completionTokens), 100), [tokenTimeline]);
 
     // 2. Sort Data
-    const sortedData = useMemo(() => [...tokenTimeline].sort((a, b) => a.timestamp - b.timestamp), [tokenTimeline])
+    const sortedData = useMemo(() => [...tokenTimeline].sort((a, b) => a.timestamp - b.timestamp), [tokenTimeline]);
 
     // 3. Calculate Totals & Cost
-    const totalPrompt = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.promptTokens, 0), [sortedData])
-    const totalCompletion = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.completionTokens, 0), [sortedData])
+    const totalPrompt = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.promptTokens, 0), [sortedData]);
+    const totalCompletion = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.completionTokens, 0), [sortedData]);
 
     // Rough estimate: $2.50/1M input, $10.00/1M output (Avg of GPT-4o / Claude 3.5 Sonnet mixed)
     const estimatedCost = useMemo(() => {
-        return ((totalPrompt / 1_000_000) * 2.5) + ((totalCompletion / 1_000_000) * 10)
-    }, [totalPrompt, totalCompletion])
+        return ((totalPrompt / 1_000_000) * 2.5) + ((totalCompletion / 1_000_000) * 10);
+    }, [totalPrompt, totalCompletion]);
 
     return (
         <div className="space-y-6">
@@ -93,11 +93,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                         </div>
                     ) : (
                         sortedData.map((data, idx) => {
-                            const promptHeight = (data.promptTokens / maxTokens) * 100
-                            const completionHeight = (data.completionTokens / maxTokens) * 100
+                            const promptHeight = (data.promptTokens / maxTokens) * 100;
+                            const completionHeight = (data.completionTokens / maxTokens) * 100;
 
                             // Animation delay
-                            const delay = Math.min(idx * 0.05, 1.5) // Cap max delay
+                            const delay = Math.min(idx * 0.05, 1.5); // Cap max delay
 
                             return (
                                 <div
@@ -165,7 +165,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                         {getSimpleLabel(data.timestamp, period)}
                                     </div>
                                 </div>
-                            )
+                            );
                         })
                     )}
                 </div>
@@ -179,20 +179,20 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 }
             `}</style>
         </div>
-    )
-}
+    );
+};
 
 function getLabel(ts: number, period: string, full = false) {
-    const d = new Date(ts)
-    if (period === 'daily') { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    if (period === 'weekly') { return d.toLocaleDateString(undefined, { weekday: full ? 'long' : 'short' }) }
-    if (period === 'monthly') { return d.getDate().toString() }
-    return d.toLocaleDateString(undefined, { month: full ? 'long' : 'short' })
+    const d = new Date(ts);
+    if (period === 'daily') { return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+    if (period === 'weekly') { return d.toLocaleDateString(undefined, { weekday: full ? 'long' : 'short' }); }
+    if (period === 'monthly') { return d.getDate().toString(); }
+    return d.toLocaleDateString(undefined, { month: full ? 'long' : 'short' });
 }
 
 function getSimpleLabel(ts: number, period: string) {
-    const d = new Date(ts)
-    if (period === 'daily') { return d.getHours() }
-    if (period === 'weekly') { return d.getDate() }
-    return d.getDate()
+    const d = new Date(ts);
+    if (period === 'daily') { return d.getHours(); }
+    if (period === 'weekly') { return d.getDate(); }
+    return d.getDate();
 }

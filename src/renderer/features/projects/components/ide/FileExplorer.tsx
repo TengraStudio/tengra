@@ -1,9 +1,9 @@
-﻿import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useEffect, useState } from 'react'
+﻿import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { renderIcon } from '@/lib/file-icons'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { renderIcon } from '@/lib/file-icons';
+import { cn } from '@/lib/utils';
 
 interface FileNode {
     name: string
@@ -19,46 +19,46 @@ interface FileExplorerProps {
 }
 
 const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: FileNode, depth?: number, onSelect: (path: string) => void, onFolderSelect?: (path: string) => void }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [children, setChildren] = useState<FileNode[]>([])
-    const [loading, setLoading] = useState(false)
+    const [isOpen, setIsOpen] = useState(false);
+    const [children, setChildren] = useState<FileNode[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const handleToggle = async (e: React.MouseEvent) => {
-        e.stopPropagation()
+        e.stopPropagation();
         if (node.isDirectory) {
-            onFolderSelect?.(node.path)
+            onFolderSelect?.(node.path);
 
             if (!isOpen && children.length === 0) {
-                setLoading(true)
+                setLoading(true);
                 try {
-                    const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
+                    const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
                     // Handle ServiceResponse format: { success, data } or direct array
-                    const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : [])
+                    const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
                     const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                         name: f.name,
                         path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
                         isDirectory: f.isDirectory
                     })).sort((a: FileNode, b: FileNode) => {
-                        if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name) }
-                        return a.isDirectory ? -1 : 1
-                    })
-                    setChildren(nodes)
-                    setIsOpen(true)
+                        if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
+                        return a.isDirectory ? -1 : 1;
+                    });
+                    setChildren(nodes);
+                    setIsOpen(true);
                 } catch (error) {
-                    console.error('Failed to load directory:', error)
+                    console.error('Failed to load directory:', error);
                 } finally {
-                    setLoading(false)
+                    setLoading(false);
                 }
             } else {
-                setIsOpen(!isOpen)
+                setIsOpen(!isOpen);
             }
         } else {
-            onSelect(node.path)
+            onSelect(node.path);
         }
-    }
+    };
 
     // Use the new centralized file icons system
-    const icon = renderIcon(node.name, node.isDirectory, isOpen, { size: 14 })
+    const icon = renderIcon(node.name, node.isDirectory, isOpen, { size: 14 });
 
     return (
         <div>
@@ -90,41 +90,41 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExplorerProps) => {
-    const { t } = useTranslation()
-    const [rootNodes, setRootNodes] = useState<FileNode[]>([])
-    const [loading, setLoading] = useState(false)
+    const { t } = useTranslation();
+    const [rootNodes, setRootNodes] = useState<FileNode[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const loadRoot = async () => {
-            if (!rootPath) { return }
-            setLoading(true)
+            if (!rootPath) { return; }
+            setLoading(true);
             try {
-                const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>
+                const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
                 // Handle ServiceResponse format: { success, data } or direct array
-                const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : [])
+                const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
                 const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                     name: f.name,
                     path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
                     isDirectory: f.isDirectory
                 })).sort((a: FileNode, b: FileNode) => {
-                    if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name) }
-                    return a.isDirectory ? -1 : 1
-                })
-                setRootNodes(nodes)
+                    if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
+                    return a.isDirectory ? -1 : 1;
+                });
+                setRootNodes(nodes);
             } catch (error) {
-                console.error("Failed to load root:", error)
+                console.error("Failed to load root:", error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        void loadRoot()
-    }, [rootPath])
+        };
+        void loadRoot();
+    }, [rootPath]);
 
-    if (loading) { return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div> }
+    if (loading) { return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>; }
 
     return (
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
@@ -135,5 +135,5 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                 <div className="p-4 text-xs text-muted-foreground text-center">{t('projectDashboard.emptyDir')}</div>
             )}
         </div>
-    )
-}
+    );
+};

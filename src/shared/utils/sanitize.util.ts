@@ -23,40 +23,40 @@ export function sanitizeString(
         maxLength = 1000000, // Default 1MB of text
         allowNewlines = true,
         trimWhitespace = true
-    } = options
+    } = options;
 
     if (typeof input !== 'string') {
-        return ''
+        return '';
     }
 
-    let sanitized = input
+    let sanitized = input;
 
     // Trim whitespace if requested
     if (trimWhitespace) {
-        sanitized = sanitized.trim()
+        sanitized = sanitized.trim();
     }
 
     // Remove null bytes and control characters (except newlines if allowed)
     if (allowNewlines) {
         // Keep newlines, tabs, and carriage returns, but remove other control chars
         // eslint-disable-next-line no-control-regex
-        sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     } else {
         // Remove all control characters including newlines
         // eslint-disable-next-line no-control-regex
-        sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '')
+        sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
     }
 
     // Remove potentially dangerous Unicode characters
     // Remove zero-width characters
-    sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF]/g, '')
+    sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
     // Limit length
     if (sanitized.length > maxLength) {
-        sanitized = sanitized.substring(0, maxLength)
+        sanitized = sanitized.substring(0, maxLength);
     }
 
-    return sanitized
+    return sanitized;
 }
 
 /**
@@ -67,7 +67,7 @@ export function sanitizeString(
  */
 export function sanitizeFilename(filename: string): string {
     if (typeof filename !== 'string') {
-        return ''
+        return '';
     }
 
     // Remove path separators and dangerous characters
@@ -75,18 +75,18 @@ export function sanitizeFilename(filename: string): string {
         .replace(/[/\\?*|"<>:]/g, '') // Remove path separators and invalid chars
         .replace(/^\.+/, '') // Remove leading dots
         .replace(/\.+$/, '') // Remove trailing dots
-        .trim()
+        .trim();
 
     // Remove control characters
     // eslint-disable-next-line no-control-regex
-    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '')
+    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
 
     // Limit length
     if (sanitized.length > 255) {
-        sanitized = sanitized.substring(0, 255)
+        sanitized = sanitized.substring(0, 255);
     }
 
-    return sanitized ?? 'unnamed'
+    return sanitized || 'unnamed';
 }
 
 /**
@@ -97,24 +97,24 @@ export function sanitizeFilename(filename: string): string {
  */
 export function sanitizeUrl(url: string): string {
     if (typeof url !== 'string') {
-        return ''
+        return '';
     }
 
-    const trimmed = url.trim()
+    const trimmed = url.trim();
 
     // Basic URL validation
     try {
-        const parsed = new URL(trimmed)
+        const parsed = new URL(trimmed);
 
         // Only allow http, https, and data URLs
         if (!['http:', 'https:', 'data:'].includes(parsed.protocol)) {
-            return ''
+            return '';
         }
 
-        return parsed.toString()
+        return parsed.toString();
     } catch {
         // If URL parsing fails, return empty string
-        return ''
+        return '';
     }
 }
 
@@ -127,14 +127,14 @@ export function sanitizeUrl(url: string): string {
  */
 export function sanitizeJson(jsonString: string): string {
     if (typeof jsonString !== 'string') {
-        return ''
+        return '';
     }
 
     try {
-        const parsed = JSON.parse(jsonString)
-        return JSON.stringify(parsed)
+        const parsed = JSON.parse(jsonString);
+        return JSON.stringify(parsed);
     } catch {
-        return ''
+        return '';
     }
 }
 
@@ -148,13 +148,13 @@ export function sanitizeJson(jsonString: string): string {
  */
 export function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
     if (typeof jsonString !== 'string' || jsonString.trim() === '') {
-        return defaultValue
+        return defaultValue;
     }
 
     try {
-        return JSON.parse(jsonString) as T
+        return JSON.parse(jsonString) as T;
     } catch {
-        return defaultValue
+        return defaultValue;
     }
 }
 
@@ -170,13 +170,13 @@ export function sanitizeStringArray(
     options: Parameters<typeof sanitizeString>[1] = {}
 ): string[] {
     if (!Array.isArray(inputs)) {
-        return []
+        return [];
     }
 
     return inputs
         .filter(input => typeof input === 'string')
         .map(input => sanitizeString(input, options))
-        .filter(input => input.length > 0)
+        .filter(input => input.length > 0);
 }
 
 /**
@@ -191,32 +191,28 @@ export function sanitizeObject<T extends Record<string, unknown>>(
     options: Parameters<typeof sanitizeString>[1] = {}
 ): T {
     if (!obj) {
-        return obj
-    }
-
-    if (typeof obj !== 'object') {
-        return obj
+        return obj;
     }
 
     if (Array.isArray(obj)) {
-        return obj.map(item => sanitizeObject(item as Record<string, unknown>, options)) as unknown as T
+        return obj.map(item => sanitizeObject(item as Record<string, unknown>, options)) as unknown as T;
     }
 
-    const sanitized = {} as T
+    const sanitized = {} as T;
 
     for (const [key, value] of Object.entries(obj)) {
-        const sanitizedKey = sanitizeString(key, { maxLength: 100, allowNewlines: false })
+        const sanitizedKey = sanitizeString(key, { maxLength: 100, allowNewlines: false });
 
         if (typeof value === 'string') {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options)
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options);
         } else if (typeof value === 'object' && value !== null) {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options)
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options);
         } else {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = value
+            ; (sanitized as Record<string, unknown>)[sanitizedKey] = value;
         }
     }
 
-    return sanitized
+    return sanitized;
 }
 
 /**
@@ -228,15 +224,15 @@ export function sanitizeObject<T extends Record<string, unknown>>(
  */
 export function sanitizeSqlInput(input: string): string {
     if (typeof input !== 'string') {
-        return ''
+        return '';
     }
 
     // Remove SQL comment syntax
-    let sanitized = input.replace(/--/g, '')
-    sanitized = sanitized.replace(/\/\*[\s\S]*?\*\//g, '')
+    let sanitized = input.replace(/--/g, '');
+    sanitized = sanitized.replace(/\/\*[\s\S]*?\*\//g, '');
 
     // Remove semicolons (statement terminators)
-    sanitized = sanitized.replace(/;/g, '')
+    sanitized = sanitized.replace(/;/g, '');
 
     // Remove common SQL keywords that could be used for injection
     const dangerousKeywords = [
@@ -249,11 +245,11 @@ export function sanitizeSqlInput(input: string): string {
         /\bEXEC\b/gi,
         /\bEXECUTE\b/gi,
         /\bUNION\s+SELECT\b/gi
-    ]
+    ];
 
     for (const keyword of dangerousKeywords) {
-        sanitized = sanitized.replace(keyword, '')
+        sanitized = sanitized.replace(keyword, '');
     }
 
-    return sanitized.trim()
+    return sanitized.trim();
 }

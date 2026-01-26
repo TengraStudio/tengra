@@ -22,9 +22,20 @@ export const en = {
         clear: 'Clear',
         add: 'Add',
         done: 'Done',
+        close: 'Close',
         pending: 'Pending',
         selectAll: 'Select All',
         itemsSelected: '{{count}} items selected'
+    },
+    languages: {
+        tr: 'Turkish',
+        en: 'English',
+        de: 'German',
+        fr: 'French',
+        es: 'Spanish',
+        ja: 'Japanese',
+        zh: 'Chinese',
+        ar: 'Arabic'
     },
     themeStore: {
         title: 'Theme Store',
@@ -271,6 +282,13 @@ export const en = {
         noRemote: 'No remote',
         pull: 'Pull',
         push: 'Push',
+        commit: 'Commit',
+        remotes: 'Remotes',
+        noDiffData: 'No diff data available for this commit.',
+        changesStats: 'Changes Statistics',
+        filesChanged: 'Files Changed',
+        linesAdded: 'Lines Added',
+        linesDeleted: 'Lines Deleted',
         indexingComplete: 'Indexing complete!',
         indexingFailed: 'Indexing failed.',
         indexingStarted: 'Starting project indexing...',
@@ -290,10 +308,12 @@ export const en = {
         envKey: 'KEY',
         envValue: 'VALUE',
         envNoVars: 'No environment variables found. Create a .env file to get started.',
+        envNamePlaceholder: 'VARIABLE_NAME',
         envAddVar: 'Add Variable',
         envSave: 'Save Changes',
         envHideValue: 'Hide Value',
         envShowValue: 'Show Value',
+        envActions: 'ACTIONS',
         // Logs Tab
         logsDescription: 'Real-time application logs.',
         logsEmpty: 'No logs available. Run your project to generate log output.',
@@ -444,6 +464,18 @@ export const en = {
     accounts: {
         title: 'Connected Accounts',
         subtitle: 'Manage external services and API connections.',
+        management: 'Account Management',
+        refreshAccounts: 'Refresh Accounts',
+        activeAccounts: 'Active Accounts',
+        addNewAccount: 'Add New Account',
+        accountNamePlaceholder: 'Account Name (e.g. Work, Personal)',
+        create: 'Create',
+        switch: 'Switch',
+        loadFailed: 'Failed to load accounts',
+        createSuccess: 'Account "{{name}}" created',
+        createFailed: 'Failed to create account',
+        switchSuccess: 'Switched to "{{name}}"',
+        switchFailed: 'Failed to switch account',
 
         // Categories
         categories: {
@@ -756,6 +788,8 @@ export const en = {
         username: 'Username',
         cancel: 'Cancel',
         add: 'Add',
+        closeModal: 'Close modal',
+        inputAriaLabel: '{{type}} name',
         deleteConfirm: 'Are you sure you want to delete {name}?',
         confirm: 'Confirm'
     },
@@ -1141,6 +1175,7 @@ export const en = {
         saveSessionKey: 'Save Session Key',
         validatedAndSaved: 'Validated & Saved',
         // Device Code Modal
+        connectProvider: 'Connect {{provider}}',
         enterCodeOnGithub: 'Enter the following code on GitHub to complete the connection:',
         copyCode: 'Copy code',
         openGithubToEnter: 'Open GitHub to enter code',
@@ -1358,6 +1393,35 @@ export const en = {
             noIdeasDesc: 'Complete the research phase to generate ideas'
         },
 
+        // Search and filter
+        search: {
+            placeholder: 'Search ideas by title or description...'
+        },
+        filter: {
+            allStatuses: 'All Statuses',
+            allCategories: 'All Categories',
+            pending: 'Pending',
+            approved: 'Approved',
+            rejected: 'Rejected'
+        },
+
+        // Export
+        export: {
+            button: 'Export',
+            markdown: 'Export as Markdown',
+            json: 'Export as JSON'
+        },
+
+        // Custom prompt
+        customPrompt: {
+            label: 'Custom Requirements',
+            optional: 'Optional',
+            placeholder: 'e.g., Must use TypeScript, focus on accessibility, target small businesses...',
+            hint: 'Add specific constraints or requirements for the AI to consider during idea generation.'
+        },
+
+        previewMarket: 'Preview Market Research',
+
         // History
         history: {
             title: 'Idea History',
@@ -1388,4 +1452,4 @@ export const en = {
         filePreview: 'File Preview',
         path: 'Path:'
     }
-}
+};

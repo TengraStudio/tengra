@@ -1,12 +1,12 @@
-import { LLMService } from '@main/services/llm/llm.service'
-import { LocalAIService } from '@main/services/llm/local-ai.service'
-import { OllamaService } from '@main/services/llm/ollama.service'
-import { OllamaHealthService } from '@main/services/llm/ollama-health.service'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { SettingsService } from '@main/services/system/settings.service'
+import { LLMService } from '@main/services/llm/llm.service';
+import { LocalAIService } from '@main/services/llm/local-ai.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
+import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron';
 
 interface ModelDefinition {
     id: string;
@@ -36,88 +36,88 @@ export function registerOllamaIpc(options: {
     ollamaHealthService?: OllamaHealthService
     proxyService?: ProxyService
 }) {
-    const { localAIService, ollamaService, ollamaHealthService } = options
+    const { localAIService, ollamaService, ollamaHealthService } = options;
 
-    ipcMain.handle('ollama:tags', async () => []) // Moved to ModelRegistryService via Rust
+    ipcMain.handle('ollama:tags', async () => []); // Moved to ModelRegistryService via Rust
 
     // deleted unused functions
     ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
-        return [] // Moved to ModelRegistryService via Rust
-    })
+        return []; // Moved to ModelRegistryService via Rust
+    });
 
     // Use health service for isRunning check
     ipcMain.handle('ollama:isRunning', async () => {
         if (ollamaHealthService) {
-            const status = ollamaHealthService.getStatus()
-            return status.online
+            const status = ollamaHealthService.getStatus();
+            return status.online;
         }
-        return true // Fallback
-    })
+        return true; // Fallback
+    });
 
     // Get detailed health status
     ipcMain.handle('ollama:healthStatus', async () => {
         if (ollamaHealthService) {
-            return ollamaHealthService.getStatus()
+            return ollamaHealthService.getStatus();
         }
-        return { online: true, lastCheck: new Date() }
-    })
+        return { online: true, lastCheck: new Date() };
+    });
 
     // Force health check
     ipcMain.handle('ollama:forceHealthCheck', async () => {
         if (ollamaHealthService) {
-            return await ollamaHealthService.forceCheck()
+            return await ollamaHealthService.forceCheck();
         }
-        return { online: true, lastCheck: new Date() }
-    })
+        return { online: true, lastCheck: new Date() };
+    });
 
     // GPU Check
-    ipcMain.handle('ollama:checkCuda', async () => localAIService.checkCudaSupport())
+    ipcMain.handle('ollama:checkCuda', async () => localAIService.checkCudaSupport());
 
     // Forward health events to renderer
     if (ollamaHealthService) {
         ollamaHealthService.on('statusChange', (status) => {
-            const windows = BrowserWindow.getAllWindows()
+            const windows = BrowserWindow.getAllWindows();
             windows.forEach(win => {
-                win.webContents.send('ollama:statusChange', status)
-            })
-        })
+                win.webContents.send('ollama:statusChange', status);
+            });
+        });
     }
 
     ipcMain.handle('ollama:chat', async (_event, messages, model) => {
-        return await localAIService.ollamaChat(model, messages)
-    })
+        return await localAIService.ollamaChat(model, messages);
+    });
 
     ipcMain.handle('ollama:chatStream', async (event, messages, model) => {
         try {
-            const res = await localAIService.ollamaChat(model, messages)
+            const res = await localAIService.ollamaChat(model, messages);
             if (res.message.content) {
-                event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' })
+                event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
             }
-            return { content: res.message.content, role: 'assistant' }
+            return { content: res.message.content, role: 'assistant' };
         } catch (err) {
-            const message = getErrorMessage(err as Error)
-            console.error('[Main:Ollama] Chat Error:', message)
-            return { error: message }
+            const message = getErrorMessage(err as Error);
+            console.error('[Main:Ollama] Chat Error:', message);
+            return { error: message };
         }
-    })
+    });
 
     ipcMain.handle('ollama:getLibraryModels', async () => {
         try {
             if (ollamaService) {
-                return await ollamaService.getLibraryModels()
+                return await ollamaService.getLibraryModels();
             }
-            return []
+            return [];
         } catch (err) {
-            console.error('[Main:Ollama] getLibraryModels Error:', getErrorMessage(err as Error))
-            return []
+            console.error('[Main:Ollama] getLibraryModels Error:', getErrorMessage(err as Error));
+            return [];
         }
-    })
+    });
 
     ipcMain.handle('ollama:start', async () => {
-        const { startOllama } = await import('@main/startup/ollama')
+        const { startOllama } = await import('@main/startup/ollama');
         // Get primary window
-        const win = BrowserWindow.getAllWindows()[0]
-        const getWin = () => win as (BrowserWindow | null)
-        return await startOllama(getWin, true)
-    })
+        const win = BrowserWindow.getAllWindows()[0];
+        const getWin = () => win as (BrowserWindow | null);
+        return await startOllama(getWin, true);
+    });
 }

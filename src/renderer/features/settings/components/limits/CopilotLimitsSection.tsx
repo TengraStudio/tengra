@@ -1,9 +1,9 @@
-import { TrendingUp } from 'lucide-react'
-import React from 'react'
+import { TrendingUp } from 'lucide-react';
+import React from 'react';
 
-import { AppSettings } from '@/types/settings'
+import { AppSettings } from '@/types/settings';
 
-import { CopilotLimitItem } from './CopilotLimitItem'
+import { CopilotLimitItem } from './CopilotLimitItem';
 
 interface CopilotLimitsSectionProps {
     copilotLimits?: NonNullable<AppSettings['modelUsageLimits']>['copilot']
@@ -29,7 +29,7 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
             </div>
 
             {(['hourly', 'daily', 'weekly'] as const).map((period) => {
-                const periodLimit = copilotLimits?.[period] ?? { enabled: false, type: 'requests' as const, value: 0 }
+                const periodLimit = copilotLimits?.[period] ?? { enabled: false, type: 'requests' as const, value: 0 };
                 return (
                     <CopilotLimitItem
                         key={period}
@@ -38,8 +38,8 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
                         copilotRemaining={copilotRemaining}
                         updateCopilotLimit={updateCopilotLimit}
                     />
-                )
+                );
             })}
         </div>
-    )
-}
+    );
+};

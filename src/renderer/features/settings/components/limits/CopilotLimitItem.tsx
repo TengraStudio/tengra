@@ -1,7 +1,7 @@
-import { Calendar, Clock, Hash, Percent, TrendingUp } from 'lucide-react'
-import React from 'react'
+import { Calendar, Clock, Hash, Percent, TrendingUp } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface CopilotLimitItemProps {
     period: 'hourly' | 'daily' | 'weekly'
@@ -13,8 +13,8 @@ interface CopilotLimitItemProps {
 export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
     period, periodLimit, copilotRemaining, updateCopilotLimit
 }) => {
-    const periodLabel = period.charAt(0).toUpperCase() + period.slice(1)
-    const Icon = period === 'hourly' ? Clock : period === 'daily' ? Calendar : TrendingUp
+    const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
+    const Icon = period === 'hourly' ? Clock : period === 'daily' ? Calendar : TrendingUp;
 
     return (
         <div key={period} className="mb-4 p-4 bg-muted/10 rounded-lg border border-border/50">
@@ -88,5 +88,5 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

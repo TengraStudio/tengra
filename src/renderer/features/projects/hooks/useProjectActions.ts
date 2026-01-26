@@ -1,4 +1,4 @@
-import { ActivityEntry, CouncilSession, Project } from '@/types'
+import { ActivityEntry, CouncilSession, Project } from '@/types';
 
 export interface ProjectActionsProps {
     project: Project
@@ -11,7 +11,7 @@ export interface ProjectActionsProps {
 }
 
 export function useProjectActions({
-    project,
+    project: _project,
     notify,
     t,
     onUpdateProject,
@@ -22,35 +22,35 @@ export function useProjectActions({
     const handleUpdateProject = async (updates: Partial<Project>) => {
         try {
             if (onUpdateProject) {
-                await onUpdateProject(updates)
+                await onUpdateProject(updates);
             }
         } catch (error) {
-            console.error('[ProjectActions] Update failed:', error)
-            notify('error', t('projectDashboard.updateFailed') || 'Failed to update project')
+            console.error('[ProjectActions] Update failed:', error);
+            notify('error', t('projectDashboard.updateFailed'));
         }
-    }
+    };
 
     const runCouncil = async () => {
         if (!agentChatMessage) {
-            notify('error', 'Please provide a message for the agents')
-            return
+            notify('error', 'Please provide a message for the agents');
+            return;
         }
 
         try {
-            notify('info', t('projectDashboard.startingCouncil') || 'Starting Council AI session...')
-            const session = await window.electron.ipcRenderer.invoke('council:create', agentChatMessage) as CouncilSession
-            setCouncilSession(session)
-            setActivityLog([])
-            window.electron.ipcRenderer.send('council:start-loop', session.id)
-            notify('success', t('projectDashboard.councilStarted') || 'Council AI session started')
+            notify('info', t('projectDashboard.startingCouncil'));
+            const session = await window.electron.ipcRenderer.invoke('council:create', agentChatMessage) as CouncilSession;
+            setCouncilSession(session);
+            setActivityLog([]);
+            window.electron.ipcRenderer.send('council:start-loop', session.id);
+            notify('success', t('projectDashboard.councilStarted'));
         } catch (error) {
-            console.error('[ProjectActions] Start Council failed:', error)
-            notify('error', t('projectDashboard.councilFailed') || 'Failed to start Council session')
+            console.error('[ProjectActions] Start Council failed:', error);
+            notify('error', t('projectDashboard.councilFailed'));
         }
-    }
+    };
 
     return {
         handleUpdateProject,
         runCouncil
-    }
+    };
 }

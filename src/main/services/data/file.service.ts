@@ -6,7 +6,7 @@ import * as https from 'https';
 import * as path from 'path';
 import { promisify } from 'util';
 
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 

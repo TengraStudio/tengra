@@ -1,12 +1,12 @@
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { BaseService } from '@main/services/base.service'
-import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants'
-import { JsonObject } from '@shared/types/common'
-import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { app } from 'electron'
+import { BaseService } from '@main/services/base.service';
+import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
+import { JsonObject } from '@shared/types/common';
+import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app } from 'electron';
 
 interface ThemeStoreData {
     currentTheme: string
@@ -22,91 +22,91 @@ const DEFAULT_THEME_STORE: ThemeStoreData = {
     favorites: [],
     history: ['graphite'],
     preset: null
-}
+};
 
 export class ThemeService extends BaseService {
-    private storePath: string
-    private store: ThemeStoreData = { ...DEFAULT_THEME_STORE }
-    private initialized = false
+    private storePath: string;
+    private store: ThemeStoreData = { ...DEFAULT_THEME_STORE };
+    private initialized = false;
 
     constructor() {
-        super('ThemeService')
-        this.storePath = path.join(app.getPath('userData'), 'theme-store.json')
+        super('ThemeService');
+        this.storePath = path.join(app.getPath('userData'), 'theme-store.json');
     }
 
     async initialize(): Promise<void> {
-        if (this.initialized) { return }
-        this.store = await this.loadStore()
-        this.initialized = true
-        this.logInfo('Theme service initialized successfully')
+        if (this.initialized) { return; }
+        this.store = await this.loadStore();
+        this.initialized = true;
+        this.logInfo('Theme service initialized successfully');
     }
 
     async cleanup(): Promise<void> {
         if (this.initialized) {
-            await this.saveStore()
-            this.logInfo('Theme service cleanup completed')
+            await this.saveStore();
+            this.logInfo('Theme service cleanup completed');
         }
     }
 
     async init() {
         // Legacy method for backward compatibility
-        await this.initialize()
+        await this.initialize();
     }
 
     private async loadStore(): Promise<ThemeStoreData> {
         try {
-            const exists = await fs.promises.access(this.storePath).then(() => true).catch(() => false)
+            const exists = await fs.promises.access(this.storePath).then(() => true).catch(() => false);
             if (exists) {
-                const data = await fs.promises.readFile(this.storePath, 'utf8')
-                const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE)
-                return { ...DEFAULT_THEME_STORE, ...loaded }
+                const data = await fs.promises.readFile(this.storePath, 'utf8');
+                const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE);
+                return { ...DEFAULT_THEME_STORE, ...loaded };
             }
         } catch (error) {
-            this.logWarn('Failed to load theme store, using defaults', error as Error)
+            this.logWarn('Failed to load theme store, using defaults', error as Error);
         }
-        return { ...DEFAULT_THEME_STORE }
+        return { ...DEFAULT_THEME_STORE };
     }
 
     private async saveStore(): Promise<void> {
         try {
-            const tempPath = this.storePath + '.tmp'
-            await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8')
-            await fs.promises.rename(tempPath, this.storePath)
+            const tempPath = this.storePath + '.tmp';
+            await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
+            await fs.promises.rename(tempPath, this.storePath);
         } catch (error) {
-            this.logError('Failed to save theme store', error as Error)
+            this.logError('Failed to save theme store', error as Error);
         }
     }
 
 
 
     getCurrentTheme(): string {
-        return this.store.currentTheme
+        return this.store.currentTheme;
     }
 
     async setTheme(themeId: string): Promise<boolean> {
-        const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId)
+        const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
-            this.logWarn(`Theme not found: ${themeId}`)
-            return false
+            this.logWarn(`Theme not found: ${themeId}`);
+            return false;
         }
 
-        const previousTheme = this.store.currentTheme
-        this.store.currentTheme = themeId
+        const previousTheme = this.store.currentTheme;
+        this.store.currentTheme = themeId;
 
         if (!this.store.history.includes(themeId)) {
-            this.store.history.push(themeId)
+            this.store.history.push(themeId);
             if (this.store.history.length > 20) {
-                this.store.history.shift()
+                this.store.history.shift();
             }
         }
 
         if (previousTheme !== themeId && !this.store.history.includes(previousTheme)) {
-            this.store.history.push(previousTheme)
+            this.store.history.push(previousTheme);
         }
 
-        await this.saveStore()
-        this.logInfo(`Theme changed to: ${themeId}`)
-        return true
+        await this.saveStore();
+        this.logInfo(`Theme changed to: ${themeId}`);
+        return true;
     }
 
     getAllThemes(): Array<{ id: string; name: string; isDark: boolean; isCustom?: boolean }> {
@@ -114,30 +114,30 @@ export class ThemeService extends BaseService {
             id: t.id,
             name: t.name,
             isDark: t.isDark
-        }))
+        }));
         const custom = this.store.customThemes.map(t => ({
             id: t.id,
             name: t.name,
             isDark: t.isDark,
             isCustom: true
-        }))
-        return [...builtin, ...custom]
+        }));
+        return [...builtin, ...custom];
     }
 
     getThemeDetails(themeId: string) {
-        const builtin = getThemeById(themeId)
+        const builtin = getThemeById(themeId);
         if (builtin) {
-            return { ...builtin, isBuiltIn: true }
+            return { ...builtin, isBuiltIn: true };
         }
-        const custom = this.store.customThemes.find(t => t.id === themeId)
+        const custom = this.store.customThemes.find(t => t.id === themeId);
         if (custom) {
-            return { ...custom, isBuiltIn: false }
+            return { ...custom, isBuiltIn: false };
         }
-        return null
+        return null;
     }
 
     getCustomThemes(): CustomTheme[] {
-        return [...this.store.customThemes]
+        return [...this.store.customThemes];
     }
 
     async addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): Promise<CustomTheme> {
@@ -146,18 +146,18 @@ export class ThemeService extends BaseService {
             id: `custom-${Date.now()}`,
             createdAt: Date.now(),
             modifiedAt: Date.now()
-        }
-        this.store.customThemes.push(customTheme)
-        await this.saveStore()
-        this.logInfo(`Custom theme added: ${customTheme.id}`)
-        return customTheme
+        };
+        this.store.customThemes.push(customTheme);
+        await this.saveStore();
+        this.logInfo(`Custom theme added: ${customTheme.id}`);
+        return customTheme;
     }
 
     async updateCustomTheme(id: string, updates: Partial<CustomTheme>): Promise<boolean> {
-        const index = this.store.customThemes.findIndex(t => t.id === id)
+        const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
-            this.logWarn(`Custom theme not found for update: ${id}`)
-            return false
+            this.logWarn(`Custom theme not found for update: ${id}`);
+            return false;
         }
 
         this.store.customThemes[index] = {
@@ -165,149 +165,149 @@ export class ThemeService extends BaseService {
             ...updates,
             id,
             modifiedAt: Date.now()
-        }
-        await this.saveStore()
-        this.logInfo(`Custom theme updated: ${id}`)
-        return true
+        };
+        await this.saveStore();
+        this.logInfo(`Custom theme updated: ${id}`);
+        return true;
     }
 
     async deleteCustomTheme(id: string): Promise<boolean> {
-        const index = this.store.customThemes.findIndex(t => t.id === id)
+        const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
-            this.logWarn(`Custom theme not found for deletion: ${id}`)
-            return false
+            this.logWarn(`Custom theme not found for deletion: ${id}`);
+            return false;
         }
 
-        this.store.customThemes.splice(index, 1)
+        this.store.customThemes.splice(index, 1);
 
         if (this.store.currentTheme === id) {
-            await this.setTheme('graphite')
+            await this.setTheme('graphite');
         }
 
-        await this.saveStore()
-        this.logInfo(`Custom theme deleted: ${id}`)
-        return true
+        await this.saveStore();
+        this.logInfo(`Custom theme deleted: ${id}`);
+        return true;
     }
 
     async toggleFavorite(themeId: string): Promise<boolean> {
-        const index = this.store.favorites.indexOf(themeId)
+        const index = this.store.favorites.indexOf(themeId);
         if (index === -1) {
-            this.store.favorites.push(themeId)
-            this.logInfo(`Theme favorited: ${themeId}`)
+            this.store.favorites.push(themeId);
+            this.logInfo(`Theme favorited: ${themeId}`);
         } else {
-            this.store.favorites.splice(index, 1)
-            this.logInfo(`Theme unfavorited: ${themeId}`)
+            this.store.favorites.splice(index, 1);
+            this.logInfo(`Theme unfavorited: ${themeId}`);
         }
-        await this.saveStore()
-        return this.store.favorites.includes(themeId)
+        await this.saveStore();
+        return this.store.favorites.includes(themeId);
     }
 
     getFavorites(): string[] {
-        return [...this.store.favorites]
+        return [...this.store.favorites];
     }
 
     isFavorite(themeId: string): boolean {
-        return this.store.favorites.includes(themeId)
+        return this.store.favorites.includes(themeId);
     }
 
     getHistory(): string[] {
-        return [...this.store.history]
+        return [...this.store.history];
     }
 
     async clearHistory(): Promise<void> {
-        this.store.history = []
-        await this.saveStore()
+        this.store.history = [];
+        await this.saveStore();
     }
 
     getPresets(): ThemePreset[] {
-        return [...DEFAULT_THEME_PRESETS]
+        return [...DEFAULT_THEME_PRESETS];
     }
 
     getPreset(id: string): ThemePreset | undefined {
-        return DEFAULT_THEME_PRESETS.find(p => p.id === id)
+        return DEFAULT_THEME_PRESETS.find(p => p.id === id);
     }
 
     async applyPreset(presetId: string): Promise<boolean> {
-        const preset = this.getPreset(presetId)
+        const preset = this.getPreset(presetId);
         if (!preset) {
-            this.logWarn(`Preset not found: ${presetId}`)
-            return false
+            this.logWarn(`Preset not found: ${presetId}`);
+            return false;
         }
 
-        this.store.preset = preset
-        await this.setTheme(preset.themeId)
-        this.logInfo(`Preset applied: ${presetId}`)
-        return true
+        this.store.preset = preset;
+        await this.setTheme(preset.themeId);
+        this.logInfo(`Preset applied: ${presetId}`);
+        return true;
     }
 
     getCurrentPreset(): ThemePreset | null {
-        return this.store.preset
+        return this.store.preset;
     }
 
     async clearPreset(): Promise<void> {
-        this.store.preset = null
-        await this.saveStore()
+        this.store.preset = null;
+        await this.saveStore();
     }
 
     exportTheme(themeId: string): string | null {
-        const theme = this.getThemeDetails(themeId)
+        const theme = this.getThemeDetails(themeId);
         if (!theme) {
-            return null
+            return null;
         }
 
         const exportData = {
             version: '1.0',
             exportedAt: new Date().toISOString(),
             theme
-        }
-        return JSON.stringify(exportData, null, 2)
+        };
+        return JSON.stringify(exportData, null, 2);
     }
 
     async importTheme(jsonString: string): Promise<CustomTheme | null> {
         try {
-            const data = safeJsonParse<JsonObject>(jsonString, {})
+            const data = safeJsonParse<JsonObject>(jsonString, {});
             if (data.version !== '1.0' || !data.theme) {
-                throw new Error('Invalid theme format')
+                throw new Error('Invalid theme format');
             }
 
-            const themeObject = data.theme as JsonObject
+            const themeObject = data.theme as JsonObject;
             if (!themeObject || typeof themeObject !== 'object' || Array.isArray(themeObject)) {
-                throw new Error('Invalid theme format')
+                throw new Error('Invalid theme format');
             }
 
             if (!themeObject.id || !themeObject.name || !themeObject.colors) {
-                throw new Error('Missing required theme properties')
+                throw new Error('Missing required theme properties');
             }
 
-            const themeId = themeObject.id as string
+            const themeId = themeObject.id as string;
             if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
-                throw new Error('Theme ID already exists')
+                throw new Error('Theme ID already exists');
             }
 
             return await this.addCustomTheme({
                 ...(themeObject as unknown as CustomTheme),
                 isCustom: true,
                 source: 'imported'
-            })
+            });
         } catch (error) {
-            this.logError('Failed to import theme', error)
-            return null
+            this.logError('Failed to import theme', error);
+            return null;
         }
     }
 
     async duplicateTheme(themeId: string, newName: string): Promise<CustomTheme | null> {
-        const original = this.getThemeDetails(themeId)
+        const original = this.getThemeDetails(themeId);
         if (!original || !('id' in original)) {
-            return null
+            return null;
         }
 
-        const originalTyped = original as CustomTheme
+        const originalTyped = original as CustomTheme;
         return await this.addCustomTheme({
             ...originalTyped,
             name: newName,
             isCustom: true,
             source: 'user-created'
-        })
+        });
     }
 }
 

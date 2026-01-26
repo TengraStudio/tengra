@@ -1,18 +1,18 @@
-import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic'
-import { SettingsCategory } from '@renderer/features/settings/types'
-import { memo, useCallback, useMemo, useState } from 'react'
+import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
+import { SettingsCategory } from '@renderer/features/settings/types';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal'
-import type { ModelInfo } from '@/features/models/utils/model-fetcher'
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { SettingsSearch, SettingsTabContent } from '@/features/settings/components'
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import type { ModelInfo } from '@/features/models/utils/model-fetcher';
+import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { SettingsSearch, SettingsTabContent } from '@/features/settings/components';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { ManualSessionModal } from './components/ManualSessionModal'
+import { ManualSessionModal } from './components/ManualSessionModal';
 
-import '@renderer/features/settings/SettingsPage.css'
+import '@renderer/features/settings/SettingsPage.css';
 
 export interface SettingsPageProps {
     installedModels: ModelInfo[]
@@ -38,12 +38,12 @@ export function SettingsPage({
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession
-    } = useSettingsLogic(onRefreshModels)
+    } = useSettingsLogic(onRefreshModels);
 
-    const { t } = useTranslation(settings?.general.language ?? 'tr')
+    const { t } = useTranslation(settings?.general.language ?? 'tr');
 
     // Search state for settings
-    const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Define tabs for filtering
     const allTabs = useMemo(() => [
@@ -57,34 +57,34 @@ export function SettingsPage({
         { id: 'developer', label: t('settings.tabs.developer') },
         { id: 'advanced', label: t('settings.tabs.advanced') },
         { id: 'about', label: t('settings.tabs.about') }
-    ], [t])
+    ], [t]);
 
     const filteredTabs = useMemo(() => {
-        if (!searchQuery) { return allTabs }
+        if (!searchQuery) { return allTabs; }
         return allTabs.filter(tab =>
             tab.label.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    }, [searchQuery, allTabs])
+        );
+    }, [searchQuery, allTabs]);
 
-    const [showResetConfirm, setShowResetConfirm] = useState(false)
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
 
     const handleFactoryReset = useCallback(async () => {
         await window.electron.saveSettings({
             ollama: { url: 'http://localhost:11434' },
             general: { language: 'tr', theme: 'dark', resolution: '1920x1080', fontSize: 14 },
             proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
-        })
-        window.location.reload()
-    }, [])
+        });
+        window.location.reload();
+    }, []);
 
     const onResetClick = useCallback(() => {
-        setShowResetConfirm(true)
-    }, [])
+        setShowResetConfirm(true);
+    }, []);
 
     const loadSettings = useCallback(async () => {
-        const data = await window.electron.getSettings()
-        void setSettings(data)
-    }, [setSettings])
+        const data = await window.electron.getSettings();
+        void setSettings(data);
+    }, [setSettings]);
 
     const sharedProps = useMemo(() => ({
         settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
@@ -106,7 +106,7 @@ export function SettingsPage({
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, handleFactoryReset
-    ])
+    ]);
 
     return (
         <div className="settings-container">
@@ -147,7 +147,7 @@ export function SettingsPage({
                 title={t('settings.factoryReset')}
                 message={t('settings.factoryResetConfirm')}
                 confirmLabel={t('common.reset')}
-                isDestructive
+                variant="danger"
             />
             <ManualSessionModal
                 {...manualSessionModal}
@@ -155,9 +155,9 @@ export function SettingsPage({
                 onSave={handleSaveClaudeSession}
             />
         </div>
-    )
+    );
 }
 
-export const MemoizedSettingsPage = memo(SettingsPage)
+export const MemoizedSettingsPage = memo(SettingsPage);
 
-export default MemoizedSettingsPage
+export default MemoizedSettingsPage;

@@ -5,8 +5,8 @@
  * It serves as the main entry point for MCP-related operations.
  */
 
-export { McpDispatcher } from './dispatcher'
-export type { McpAction, McpResult, McpService } from './types'
+export { McpDispatcher } from './dispatcher';
+export type { McpAction, McpResult, McpService } from './types';
 
 /**
  * Available MCP Server Types
@@ -39,7 +39,7 @@ export class McpModule {
             description: 'Model Context Protocol integration for Orbit',
             availableServers: Object.values(McpServerType),
             status: 'active'
-        }
+        };
     }
 
     /**
@@ -57,8 +57,8 @@ export class McpModule {
             [McpServerType.SSH]: 'SSH Remote Operations',
             [McpServerType.WEB]: 'Web Services & HTTP',
             [McpServerType.UTILITY]: 'General Utilities'
-        }
-        return names[type]
+        };
+        return names[type];
     }
 }
 
@@ -93,4 +93,4 @@ export const DEFAULT_MCP_CONFIG: McpConfig = {
         allowSystemCommands: true,
         allowNetworkAccess: true
     }
-}
+};

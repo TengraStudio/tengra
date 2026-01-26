@@ -1,7 +1,7 @@
-import { Plus, X } from 'lucide-react'
-import React, { useEffect,useRef, useState } from 'react'
+import { Plus, X } from 'lucide-react';
+import React, { useEffect,useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface FabAction {
     icon: React.ReactNode
@@ -40,55 +40,55 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     mainIcon = <Plus className="w-6 h-6" />,
     closeIcon = <X className="w-6 h-6" />
 }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const containerRef = useRef<HTMLDivElement>(null)
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Close on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                setIsOpen(false)
+                setIsOpen(false);
             }
-        }
+        };
 
         if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
+            document.addEventListener('mousedown', handleClickOutside);
         }
 
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [isOpen])
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
 
     // Close on escape
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {setIsOpen(false)}
-        }
+            if (e.key === 'Escape') {setIsOpen(false);}
+        };
 
         if (isOpen) {
-            document.addEventListener('keydown', handleEscape)
+            document.addEventListener('keydown', handleEscape);
         }
 
-        return () => document.removeEventListener('keydown', handleEscape)
-    }, [isOpen])
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isOpen]);
 
     const positionClasses = {
         'bottom-right': 'bottom-6 right-6',
         'bottom-left': 'bottom-6 left-6',
         'top-right': 'top-6 right-6',
         'top-left': 'top-6 left-6'
-    }
+    };
 
     // Calculate radial positions for actions
     const getActionPosition = (index: number, total: number) => {
-        const angleStep = Math.PI / (total + 1)
-        const angle = angleStep * (index + 1) + (position.includes('right') ? Math.PI / 2 : 0)
-        const radius = 80
+        const angleStep = Math.PI / (total + 1);
+        const angle = angleStep * (index + 1) + (position.includes('right') ? Math.PI / 2 : 0);
+        const radius = 80;
         
-        const x = Math.cos(angle) * radius
-        const y = -Math.sin(angle) * radius
+        const x = Math.cos(angle) * radius;
+        const y = -Math.sin(angle) * radius;
 
-        return { x, y }
-    }
+        return { x, y };
+    };
 
     return (
         <div
@@ -101,13 +101,13 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         >
             {/* Action buttons */}
             {actions.map((action, index) => {
-                const { x, y } = getActionPosition(index, actions.length)
+                const { x, y } = getActionPosition(index, actions.length);
                 return (
                     <button
                         key={action.label}
                         onClick={() => {
-                            action.onClick()
-                            setIsOpen(false)
+                            action.onClick();
+                            setIsOpen(false);
                         }}
                         className={cn(
                             'absolute w-12 h-12 rounded-full shadow-lg flex items-center justify-center',
@@ -127,17 +127,17 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     >
                         {action.icon}
                     </button>
-                )
+                );
             })}
 
             {/* Labels */}
             {isOpen && actions.map((action, index) => {
-                const { x, y } = getActionPosition(index, actions.length)
+                const { x, y } = getActionPosition(index, actions.length);
                 return (
                     <span
                         key={`label-${action.label}`}
                         className={cn(
-                            'absolute px-2 py-1 text-xs font-medium rounded bg-black/80 text-white',
+                            'absolute px-2 py-1 text-xs font-medium rounded bg-black/80 text-foreground',
                             'whitespace-nowrap pointer-events-none',
                             'transition-all duration-300'
                         )}
@@ -148,7 +148,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     >
                         {action.label}
                     </span>
-                )
+                );
             })}
 
             {/* Main FAB button */}
@@ -167,7 +167,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 {isOpen ? closeIcon : mainIcon}
             </button>
         </div>
-    )
-}
+    );
+};
 
-FloatingActionButton.displayName = 'FloatingActionButton'
+FloatingActionButton.displayName = 'FloatingActionButton';

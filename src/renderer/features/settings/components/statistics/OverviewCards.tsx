@@ -1,12 +1,12 @@
-import { Activity, Clock, Loader2, MessageSquare, TrendingUp } from 'lucide-react'
-import React from 'react'
+import { Activity, Clock, Loader2, MessageSquare, TrendingUp } from 'lucide-react';
+import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatNumber } from '@/lib/formatters'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatNumber } from '@/lib/formatters';
 
-import { DetailedStats, TimeStats } from '../../types'
+import { DetailedStats, TimeStats } from '../../types';
 
-import { TimeBarChart } from './TimeBarChart'
+import { TimeBarChart } from './TimeBarChart';
 
 interface OverviewCardsProps {
     t: (key: string) => string
@@ -105,5 +105,5 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData, time
                 </CardContent>
             </Card>
         </div>
-    )
-}
+    );
+};

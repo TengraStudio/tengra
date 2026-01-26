@@ -1,24 +1,23 @@
+import { ContributionGrid } from '@renderer/features/projects/components/ContributionGrid';
+import { useGitData } from '@renderer/features/projects/hooks/useGitData';
+import { Project } from '@shared/types/project';
 import {
     ArrowDown,
     ArrowUp,
     Check,
     Download,
+    FileCode,
     GitBranch,
     GitCommit,
     Globe,
     Minus,
     Plus,
     RefreshCw,
-    Upload,
-    FileCode
-} from 'lucide-react'
-import React, { useEffect } from 'react'
+    Upload} from 'lucide-react';
+import React, { useEffect } from 'react';
 
-import { ContributionGrid } from '@renderer/features/projects/components/ContributionGrid'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
-import { useGitData } from '@renderer/features/projects/hooks/useGitData'
-import { Project } from '@shared/types/project'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface ProjectGitTabProps {
     project: Project
@@ -51,21 +50,21 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
         commitDiff,
         loadingDiff,
         handleCommitSelect
-    } = useGitData(project)
+    } = useGitData(project);
 
     useEffect(() => {
         if (activeTab === 'git' && project.path) {
-            void fetchGitData()
+            void fetchGitData();
         }
-    }, [activeTab, project.path, fetchGitData])
+    }, [activeTab, project.path, fetchGitData]);
 
     const getStatusIcon = (status: string) => {
-        if (status.startsWith('A')) { return <Plus className="w-3.5 h-3.5 text-emerald-400" /> }
-        if (status.startsWith('D')) { return <Minus className="w-3.5 h-3.5 text-red-400" /> }
-        if (status.startsWith('M')) { return <FileCode className="w-3.5 h-3.5 text-amber-400" /> }
-        if (status.startsWith('R')) { return <FileCode className="w-3.5 h-3.5 text-blue-400" /> }
-        return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />
-    }
+        if (status.startsWith('A')) { return <Plus className="w-3.5 h-3.5 text-emerald-400" />; }
+        if (status.startsWith('D')) { return <Minus className="w-3.5 h-3.5 text-red-400" />; }
+        if (status.startsWith('M')) { return <FileCode className="w-3.5 h-3.5 text-amber-400" />; }
+        if (status.startsWith('R')) { return <FileCode className="w-3.5 h-3.5 text-blue-400" />; }
+        return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />;
+    };
 
     return (
         <div className="h-full flex flex-col gap-6 overflow-y-auto px-6 py-6">
@@ -92,7 +91,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                 {t('projectDashboard.gitRepository')}
                             </h2>
                             <button
-                                onClick={() => { void fetchGitData() }}
+                                onClick={() => { void fetchGitData(); }}
                                 className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
                                 title={t('common.refresh')}
                             >
@@ -104,7 +103,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                             <div className="bg-muted/30 rounded-xl p-4">
                                 <div className="text-xs text-muted-foreground mb-2">{t('projectDashboard.branch')}</div>
                                 {branches.length > 0 ? (
-                                    <Select value={gitData.branch ?? ''} onValueChange={(value) => { void handleCheckout(value) }} disabled={isCheckingOut}>
+                                    <Select value={gitData.branch ?? ''} onValueChange={(value) => { void handleCheckout(value); }} disabled={isCheckingOut}>
                                         <SelectTrigger className="h-8 text-sm">
                                             <SelectValue>
                                                 <div className="flex items-center gap-2">
@@ -167,7 +166,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                         {/* Quick Actions */}
                         <div className="flex items-center gap-2 flex-wrap">
                             <button
-                                onClick={() => { void handlePull() }}
+                                onClick={() => { void handlePull(); }}
                                 disabled={isPulling || remotes.length === 0}
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
@@ -183,7 +182,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                 {t('projectDashboard.pull')}
                             </button>
                             <button
-                                onClick={() => { void handlePush() }}
+                                onClick={() => { void handlePush(); }}
                                 disabled={isPushing || remotes.length === 0 || (trackingInfo?.ahead ?? 0) === 0}
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
@@ -210,15 +209,15 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                         onChange={(e) => setCommitMessage(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !e.shiftKey && commitMessage.trim()) {
-                                                e.preventDefault()
-                                                void handleCommit()
+                                                e.preventDefault();
+                                                void handleCommit();
                                             }
                                         }}
                                         placeholder={t('projectDashboard.commitMessage')}
                                         className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                                     />
                                     <button
-                                        onClick={() => { void handleCommit() }}
+                                        onClick={() => { void handleCommit(); }}
                                         disabled={!commitMessage.trim() || isCommitting}
                                         className={cn(
                                             "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
@@ -231,7 +230,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                         ) : (
                                             <GitCommit className="w-4 h-4" />
                                         )}
-                                        Commit
+                                        {t('projectDashboard.commit')}
                                     </button>
                                 </div>
                             </div>
@@ -243,7 +242,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                         <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
                             <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                                 <Globe className="w-4 h-4" />
-                                Remotes
+                                {t('projectDashboard.remotes')}
                             </h3>
                             <div className="space-y-2">
                                 {remotes.map((remote) => (
@@ -269,14 +268,14 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                             <div className="flex items-center gap-2">
                                 {selectedCommit && (
                                     <button
-                                        onClick={() => { void handleCommitSelect(null as any) }}
+                                        onClick={() => { void handleCommitSelect(null); }}
                                         className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
                                     >
                                         Clear Selection
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => { void fetchGitData() }}
+                                    onClick={() => { void fetchGitData(); }}
                                     className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
                                     title={t('common.refresh')}
                                 >
@@ -301,7 +300,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                 {gitData.recentCommits.map((commit, i) => (
                                     <button
                                         key={commit.hash ?? i}
-                                        onClick={() => { void handleCommitSelect(commit) }}
+                                        onClick={() => { void handleCommitSelect(commit); }}
                                         className={cn(
                                             "flex flex-col gap-3 p-5 rounded-2xl transition-all text-left group",
                                             selectedCommit?.hash === commit.hash
@@ -355,9 +354,9 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                     ) : commitDiff ? (
                                         <div className="max-h-[500px] overflow-auto p-4 font-mono text-xs leading-relaxed">
                                             {commitDiff.split('\n').map((line, idx) => {
-                                                const isAddition = line.startsWith('+') && !line.startsWith('+++')
-                                                const isDeletion = line.startsWith('-') && !line.startsWith('---')
-                                                const isHeader = line.startsWith('diff --git') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++') || line.startsWith('@@')
+                                                const isAddition = line.startsWith('+') && !line.startsWith('+++');
+                                                const isDeletion = line.startsWith('-') && !line.startsWith('---');
+                                                const isHeader = line.startsWith('diff --git') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++') || line.startsWith('@@');
 
                                                 return (
                                                     <div
@@ -371,12 +370,12 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                                     >
                                                         {line || ' '}
                                                     </div>
-                                                )
+                                                );
                                             })}
                                         </div>
                                     ) : (
                                         <div className="h-40 flex items-center justify-center text-muted-foreground text-sm italic">
-                                            No diff data available for this commit.
+                                            {t('projectDashboard.noDiffData')}
                                         </div>
                                     )}
                                 </div>
@@ -387,20 +386,20 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                     {/* Changes Statistics & Files */}
                     {diffStats && (diffStats.total.added > 0 || diffStats.total.deleted > 0 || diffStats.total.files > 0 || gitData.changedFiles.length > 0) && (
                         <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6 flex flex-col gap-6">
-                            <h3 className="text-sm font-bold text-foreground">Changes Statistics</h3>
+                            <h3 className="text-sm font-bold text-foreground">{t('projectDashboard.changesStats')}</h3>
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-muted/30 rounded-xl p-4">
-                                    <div className="text-xs text-muted-foreground mb-1">Files Changed</div>
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.filesChanged')}</div>
                                     <div className="text-2xl font-bold text-foreground">{diffStats.total.files}</div>
                                 </div>
                                 <div className="bg-muted/30 rounded-xl p-4">
-                                    <div className="text-xs text-muted-foreground mb-1">Lines Added</div>
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.linesAdded')}</div>
                                     <div className="text-2xl font-bold text-emerald-400">+{diffStats.total.added}</div>
                                 </div>
                                 <div className="bg-muted/30 rounded-xl p-4">
-                                    <div className="text-xs text-muted-foreground mb-1">Lines Deleted</div>
+                                    <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.linesDeleted')}</div>
                                     <div className="text-2xl font-bold text-red-400">-{diffStats.total.deleted}</div>
                                 </div>
                             </div>
@@ -424,8 +423,8 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                                         <span className="flex-1 truncate text-foreground">{file.path}</span>
                                                         <button
                                                             onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                void handleUnstageFile(file.path)
+                                                                e.stopPropagation();
+                                                                void handleUnstageFile(file.path);
                                                             }}
                                                             className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-amber-400"
                                                             title={t('projectDashboard.unstage')}
@@ -452,8 +451,8 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                                         <span className="flex-1 truncate text-foreground">{file.path}</span>
                                                         <button
                                                             onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                void handleStageFile(file.path)
+                                                                e.stopPropagation();
+                                                                void handleStageFile(file.path);
                                                             }}
                                                             className="p-1 rounded hover:bg-muted/50 text-muted-foreground hover:text-emerald-400"
                                                             title={t('projectDashboard.stage')}
@@ -472,5 +471,5 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                 </>
             )}
         </div>
-    )
-}
+    );
+};

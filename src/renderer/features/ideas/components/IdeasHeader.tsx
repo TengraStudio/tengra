@@ -1,13 +1,15 @@
-import { ArrowLeft, History, Lightbulb, Plus, RefreshCw } from 'lucide-react'
-import React from 'react'
+import { ArrowLeft, Download, History, Lightbulb, Plus, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { WorkflowStage } from '../types'
+import { WorkflowStage } from '../types';
 
 interface IdeasHeaderProps {
     workflowStage: WorkflowStage
     handleNewSession: () => void
     handleShowHistory: () => void
     loadSessions: () => Promise<void>
+    hasIdeas?: boolean
+    onExport?: (format: 'markdown' | 'json') => void
     t: (key: string) => string
 }
 
@@ -20,7 +22,7 @@ const BackButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     >
         <ArrowLeft className="w-5 h-5" />
     </button>
-)
+);
 
 const HistoryButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
     <button
@@ -31,7 +33,7 @@ const HistoryButton: React.FC<{ onClick: () => void; label: string }> = ({ onCli
         <History className="w-4 h-4" />
         {label}
     </button>
-)
+);
 
 const NewSessionButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
     <button
@@ -42,7 +44,7 @@ const NewSessionButton: React.FC<{ onClick: () => void; label: string }> = ({ on
         <Plus className="w-4 h-4" />
         {label}
     </button>
-)
+);
 
 const RefreshButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
     <button
@@ -53,23 +55,68 @@ const RefreshButton: React.FC<{ onClick: () => void; label: string }> = ({ onCli
         <RefreshCw className="w-4 h-4" />
         {label}
     </button>
-)
+);
+
+const ExportButton: React.FC<{ onExport: (format: 'markdown' | 'json') => void; t: (key: string) => string }> = ({ onExport, t }) => {
+    const [showMenu, setShowMenu] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => { setShowMenu(!showMenu); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-foreground/80 hover:text-foreground transition-colors"
+            >
+                <Download className="w-4 h-4" />
+                {t('ideas.export.button')}
+            </button>
+            {showMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg overflow-hidden z-10">
+                    <button
+                        onClick={() => {
+                            onExport('markdown');
+                            setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-muted/50 text-foreground transition-colors"
+                    >
+                        {t('ideas.export.markdown')}
+                    </button>
+                    <button
+                        onClick={() => {
+                            onExport('json');
+                            setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-muted/50 text-foreground transition-colors"
+                    >
+                        {t('ideas.export.json')}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const HeaderActions: React.FC<{
     workflowStage: WorkflowStage
     handleNewSession: () => void
     handleShowHistory: () => void
     loadSessions: () => Promise<void>
+    hasIdeas?: boolean
+    onExport?: (format: 'markdown' | 'json') => void
     t: (key: string) => string
-}> = ({ workflowStage, handleNewSession, handleShowHistory, loadSessions, t }) => {
-    const showHistoryButton = workflowStage === 'setup' || workflowStage === 'review'
-    const showNewSessionButton = workflowStage === 'history' || workflowStage === 'review'
-    const showRefreshButton = workflowStage === 'review'
+}> = ({ workflowStage, handleNewSession, handleShowHistory, loadSessions, hasIdeas, onExport, t }) => {
+    const showHistoryButton = workflowStage === 'setup' || workflowStage === 'review';
+    const showNewSessionButton = workflowStage === 'history' || workflowStage === 'review';
+    const showRefreshButton = workflowStage === 'review';
+    const showExportButton = workflowStage === 'review' && hasIdeas && onExport;
 
     return (
         <div className="flex items-center gap-2">
             {showHistoryButton && workflowStage === 'setup' && (
                 <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />
+            )}
+            {showExportButton && (
+                <ExportButton onExport={onExport} t={t} />
             )}
             {showNewSessionButton && (
                 <NewSessionButton onClick={handleNewSession} label={t('ideas.newSession')} />
@@ -81,18 +128,20 @@ const HeaderActions: React.FC<{
                 <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />
             )}
         </div>
-    )
-}
+    );
+};
 
 export const IdeasHeader: React.FC<IdeasHeaderProps> = ({
     workflowStage,
     handleNewSession,
     handleShowHistory,
     loadSessions,
+    hasIdeas,
+    onExport,
     t
 }) => {
-    const showBackButton = workflowStage !== 'setup'
-    const isHistoryView = workflowStage === 'history'
+    const showBackButton = workflowStage !== 'setup';
+    const isHistoryView = workflowStage === 'history';
 
     return (
         <div className="flex items-center justify-between mb-8">
@@ -114,8 +163,10 @@ export const IdeasHeader: React.FC<IdeasHeaderProps> = ({
                 handleNewSession={handleNewSession}
                 handleShowHistory={handleShowHistory}
                 loadSessions={loadSessions}
+                hasIdeas={hasIdeas}
+                onExport={onExport}
                 t={t}
             />
         </div>
-    )
-}
+    );
+};

@@ -13,7 +13,7 @@ import {
   MessageSquare,
   Search,
   Server,
-  Terminal} from 'lucide-react'
+  Terminal} from 'lucide-react';
 
 export const MARKETPLACE_MCP_DATA = [
   // Developer Tools & DevOps
@@ -393,4 +393,4 @@ export const MARKETPLACE_MCP_DATA = [
       { name: 'get_directions', description: 'Get directions' }
     ]
   }
-]
+];

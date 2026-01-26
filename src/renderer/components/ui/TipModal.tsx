@@ -1,18 +1,18 @@
-import { Button } from '@renderer/components/ui/button'
-import { Modal } from '@renderer/components/ui/modal'
-import { Brain,Lightbulb, Sparkles, Zap } from 'lucide-react'
-import { useEffect,useState } from 'react'
+import { Button } from '@renderer/components/ui/button';
+import { Modal } from '@renderer/components/ui/modal';
+import { Brain,Lightbulb, Sparkles, Zap } from 'lucide-react';
+import { useEffect,useState } from 'react';
 
-import { Language,useTranslation } from '@/i18n'
+import { Language,useTranslation } from '@/i18n';
 
 export function TipModal({ language = 'tr' }: { language?: Language }) {
-    const { t } = useTranslation(language)
-    const [isOpen, setIsOpen] = useState(false)
-    const [currentTip, setCurrentTip] = useState("")
+    const { t } = useTranslation(language);
+    const [isOpen, setIsOpen] = useState(false);
+    const [currentTip, setCurrentTip] = useState("");
 
     useEffect(() => {
-        const lastShown = localStorage.getItem('last_tip_date')
-        const today = new Date().toDateString()
+        const lastShown = localStorage.getItem('last_tip_date');
+        const today = new Date().toDateString();
 
         if (lastShown !== today) {
             const tips = [
@@ -21,19 +21,19 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
                 t('tips.tip3'),
                 t('tips.tip4'),
                 t('tips.tip5')
-            ].filter(Boolean)
+            ].filter(Boolean);
             if (tips.length > 0) {
-                const randomTip = tips[Math.floor(Math.random() * tips.length)]
+                const randomTip = tips[Math.floor(Math.random() * tips.length)];
                 setTimeout(() => {
-                    setCurrentTip(randomTip)
-                    setIsOpen(true)
-                }, 0)
-                localStorage.setItem('last_tip_date', today)
+                    setCurrentTip(randomTip);
+                    setIsOpen(true);
+                }, 0);
+                localStorage.setItem('last_tip_date', today);
             }
         }
-    }, [t])
+    }, [t]);
 
-    if (!isOpen) {return null}
+    if (!isOpen) {return null;}
 
     return (
         <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('tips.title')}>
@@ -42,7 +42,7 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
                     <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-xl transition-all group-hover:blur-2xl" />
                     <Lightbulb className="w-8 h-8 text-primary relative z-10 animate-pulse" />
                     <div className="absolute -top-2 -right-2 bg-amber-400 rounded-full p-1 shadow-lg">
-                        <Sparkles className="w-3 h-3 text-white" />
+                        <Sparkles className="w-3 h-3 text-foreground" />
                     </div>
                 </div>
 
@@ -74,5 +74,5 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
                 </button>
             </div>
         </Modal>
-    )
+    );
 }

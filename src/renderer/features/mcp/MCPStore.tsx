@@ -8,11 +8,11 @@ import {
     Search, Server, Settings,
     Shield, Star, Terminal,
     Zap
-} from 'lucide-react'
-import React, { useMemo, useState } from 'react'
+} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface MCPTool {
     id: string
@@ -144,7 +144,7 @@ const MCP_TOOLS: MCPTool[] = [
         isInstalled: false,
         isOfficial: true
     }
-]
+];
 
 const CATEGORIES = [
     { id: 'all', label: 'All Tools', icon: Plug },
@@ -153,7 +153,7 @@ const CATEGORIES = [
     { id: 'api', label: 'APIs', icon: Globe },
     { id: 'development', label: 'Development', icon: Code },
     { id: 'ai', label: 'AI', icon: Zap }
-]
+];
 
 interface MCPStoreProps {
     onInstall?: (toolId: string) => void
@@ -166,31 +166,31 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
     onUninstall,
     onConfigure
 }) => {
-    const [searchQuery, setSearchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const { t } = useTranslation();
-    const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null)
+    const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
 
     const filteredTools = useMemo(() => {
-        let tools = MCP_TOOLS
+        let tools = MCP_TOOLS;
 
         if (searchQuery) {
-            const q = searchQuery.toLowerCase()
+            const q = searchQuery.toLowerCase();
             tools = tools.filter(t =>
                 t.name.toLowerCase().includes(q) ||
                 t.description.toLowerCase().includes(q) ||
                 t.features.some(f => f.toLowerCase().includes(q))
-            )
+            );
         }
 
         if (selectedCategory !== 'all') {
-            tools = tools.filter(t => t.category === selectedCategory)
+            tools = tools.filter(t => t.category === selectedCategory);
         }
 
-        return tools
-    }, [searchQuery, selectedCategory])
+        return tools;
+    }, [searchQuery, selectedCategory]);
 
-    const installedCount = MCP_TOOLS.filter(t => t.isInstalled).length
+    const installedCount = MCP_TOOLS.filter(t => t.isInstalled).length;
 
     const ToolCard = ({ tool }: { tool: MCPTool }) => (
         <div
@@ -240,13 +240,13 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                 {tool.isInstalled ? (
                     <>
                         <button
-                            onClick={(e) => { e.stopPropagation(); onConfigure?.(tool.id) }}
+                            onClick={(e) => { e.stopPropagation(); onConfigure?.(tool.id); }}
                             className="flex-1 py-1.5 text-xs font-medium bg-muted/50 hover:bg-muted text-foreground rounded-md transition-colors flex items-center justify-center gap-1"
                         >
                             <Settings className="w-3 h-3" /> Configure
                         </button>
                         <button
-                            onClick={(e) => { e.stopPropagation(); onUninstall?.(tool.id) }}
+                            onClick={(e) => { e.stopPropagation(); onUninstall?.(tool.id); }}
                             className="px-3 py-1.5 text-xs font-medium bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
                         >
                             Remove
@@ -254,7 +254,7 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                     </>
                 ) : (
                     <button
-                        onClick={(e) => { e.stopPropagation(); onInstall?.(tool.id) }}
+                        onClick={(e) => { e.stopPropagation(); onInstall?.(tool.id); }}
                         className="flex-1 py-1.5 text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors flex items-center justify-center gap-1"
                     >
                         <Download className="w-3 h-3" /> Install
@@ -262,7 +262,7 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                 )}
             </div>
         </div>
-    )
+    );
 
     return (
         <div className="h-full flex flex-col">
@@ -382,13 +382,13 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                                 {selectedTool.isInstalled ? (
                                     <>
                                         <button
-                                            onClick={() => { onConfigure?.(selectedTool.id); setSelectedTool(null) }}
+                                            onClick={() => { onConfigure?.(selectedTool.id); setSelectedTool(null); }}
                                             className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
                                         >
                                             <Settings className="w-4 h-4" /> Configure
                                         </button>
                                         <button
-                                            onClick={() => { onUninstall?.(selectedTool.id); setSelectedTool(null) }}
+                                            onClick={() => { onUninstall?.(selectedTool.id); setSelectedTool(null); }}
                                             className="px-4 py-2 bg-destructive/10 text-destructive rounded-lg font-medium text-sm hover:bg-destructive/20"
                                         >
                                             Uninstall
@@ -396,7 +396,7 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                                     </>
                                 ) : (
                                     <button
-                                        onClick={() => { onInstall?.(selectedTool.id); setSelectedTool(null) }}
+                                        onClick={() => { onInstall?.(selectedTool.id); setSelectedTool(null); }}
                                         className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 flex items-center justify-center gap-2"
                                     >
                                         <Download className="w-4 h-4" /> Install Tool
@@ -414,7 +414,7 @@ export const MCPStore: React.FC<MCPStoreProps> = ({
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default MCPStore
+export default MCPStore;

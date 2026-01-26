@@ -17,18 +17,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Initialize from localStorage as immediate fallback before settings load
     const [localTheme, setLocalTheme] = useState<Theme>(() => {
-        return localStorage.getItem('orbit-theme') || 'black';
+        return localStorage.getItem('orbit-theme') ?? 'black';
     });
 
     // Prefer settings if available, otherwise local state
-    const theme = settings?.general?.theme || localTheme;
+    const theme = settings?.general.theme ?? localTheme;
 
     const setTheme = useCallback((newTheme: Theme) => {
         setLocalTheme(newTheme);
         localStorage.setItem('orbit-theme', newTheme);
 
         if (settings) {
-            updateSettings({
+            void updateSettings({
                 ...settings,
                 general: { ...settings.general, theme: newTheme }
             }, true);
@@ -63,7 +63,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         theme,
         setTheme,
         toggleTheme
-    }), [theme, setTheme, toggleTheme])
+    }), [theme, setTheme, toggleTheme]);
 
     return (
         <ThemeContext.Provider value={value}>

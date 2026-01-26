@@ -8,12 +8,12 @@
     Square,
     Users,
     X
-} from 'lucide-react'
-import React from 'react'
+} from 'lucide-react';
+import React from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useChat } from '@/context/ChatContext'
-import { useTranslation } from '@/i18n'
+import { useAuth } from '@/context/AuthContext';
+import { useChat } from '@/context/ChatContext';
+import { useTranslation } from '@/i18n';
 
 interface AppHeaderProps {
     currentView: string
@@ -22,11 +22,11 @@ interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({
     currentView
 }) => {
-    const { chats, currentChatId, clearMessages } = useChat()
-    const { language } = useAuth()
-    const { t } = useTranslation(language || 'en')
+    const { chats, currentChatId, clearMessages } = useChat();
+    const { language } = useAuth();
+    const { t } = useTranslation(language || 'en');
 
-    const currentChat = chats.find(c => c.id === currentChatId)
+    const currentChat = chats.find(c => c.id === currentChatId);
 
     const viewIcons = {
         chat: MessageSquare,
@@ -34,13 +34,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         settings: SettingsIcon,
         council: Users,
         mcp: Container
-    } as Record<string, React.ElementType>
+    } as Record<string, React.ElementType>;
 
-    const Icon = viewIcons[currentView] || MessageSquare
+    const Icon = viewIcons[currentView] || MessageSquare;
 
-    const handleMinimize = () => { void window.electron.minimize() }
-    const handleMaximize = () => { void window.electron.maximize() }
-    const handleClose = () => { void window.electron.close() }
+    const handleMinimize = () => { void window.electron.minimize(); };
+    const handleMaximize = () => { void window.electron.maximize(); };
+    const handleClose = () => { void window.electron.close(); };
 
     return (
         <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/95 z-50 app-drag-region">
@@ -81,7 +81,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </div>
             </div>
         </header>
-    )
-}
+    );
+};
 
-export const MemoizedAppHeader = React.memo(AppHeader)
+export const MemoizedAppHeader = React.memo(AppHeader);

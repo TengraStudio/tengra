@@ -1,13 +1,12 @@
-import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem'
-import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch'
-import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem'
-import { SidebarDivider } from '@renderer/components/layout/sidebar-components'
-import { useTranslation } from '@renderer/i18n'
-import { History, Pin } from 'lucide-react'
-import React, { useState } from 'react'
+import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem';
+import { ChatSearch } from '@renderer/components/layout/sidebar/ChatSearch';
+import { FolderItem } from '@renderer/components/layout/sidebar/FolderItem';
+import { SidebarDivider } from '@renderer/components/layout/sidebar-components';
+import { History, Pin } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { AppView } from '@/hooks/useAppState'
-import { Chat, Folder } from '@/types'
+import { AppView } from '@/hooks/useAppState';
+import { Chat, Folder } from '@/types';
 
 interface ChatHistorySectionProps {
     isCollapsed: boolean;
@@ -38,31 +37,31 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
     togglePin, isLoading, onChangeView, searchQuery, setSearchQuery,
     localGeneratingMap, t
 }) => {
-    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
-    const [isCreatingFolder, setIsCreatingFolder] = useState(false)
-    const [newFolderName, setNewFolderName] = useState('')
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
 
     if (isCollapsed) {
-        return null
+        return null;
     }
 
     const toggleFolder = (folderId: string) => {
-        const newExpanded = new Set(expandedFolders)
+        const newExpanded = new Set(expandedFolders);
         if (newExpanded.has(folderId)) {
-            newExpanded.delete(folderId)
+            newExpanded.delete(folderId);
         } else {
-            newExpanded.add(folderId)
+            newExpanded.add(folderId);
         }
-        setExpandedFolders(newExpanded)
-    }
+        setExpandedFolders(newExpanded);
+    };
 
     const handleCreateFolder = () => {
         if (newFolderName.trim()) {
-            createFolder(newFolderName.trim())
-            setNewFolderName('')
-            setIsCreatingFolder(false)
+            createFolder(newFolderName.trim());
+            setNewFolderName('');
+            setIsCreatingFolder(false);
         }
-    }
+    };
 
     return (
         <div className="flex-1 flex flex-col min-h-0">
@@ -87,8 +86,8 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') { handleCreateFolder() }
-                            if (e.key === 'Escape') { setIsCreatingFolder(false) }
+                            if (e.key === 'Enter') { handleCreateFolder(); }
+                            if (e.key === 'Escape') { setIsCreatingFolder(false); }
                         }}
                         className="w-full bg-muted/20 border border-primary/30 text-xs rounded-md px-2 py-1 outline-none"
                         placeholder={t('sidebar.newFolderPlaceholder')}
@@ -114,8 +113,8 @@ export const ChatHistorySectionComponent: React.FC<ChatHistorySectionProps> = ({
                 t={t}
             />
         </div>
-    )
-}
+    );
+};
 
 const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
     const groups: Record<string, Chat[]> = {
@@ -123,27 +122,27 @@ const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
         [t('dateGroups.yesterday')]: [],
         [t('dateGroups.lastWeek')]: [],
         [t('dateGroups.older')]: []
-    }
+    };
 
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const yesterday = today - 86400000
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
 
     chatsToGroup.forEach(chat => {
-        const date = new Date(chat.createdAt).getTime()
+        const date = new Date(chat.createdAt).getTime();
         if (date >= today) {
-            groups[t('dateGroups.today')]?.push(chat)
+            groups[t('dateGroups.today')]?.push(chat);
         } else if (date >= yesterday) {
-            groups[t('dateGroups.yesterday')]?.push(chat)
+            groups[t('dateGroups.yesterday')]?.push(chat);
         } else if (date >= today - 7 * 86400000) {
-            groups[t('dateGroups.lastWeek')]?.push(chat)
+            groups[t('dateGroups.lastWeek')]?.push(chat);
         } else {
-            groups[t('dateGroups.older')]?.push(chat)
+            groups[t('dateGroups.older')]?.push(chat);
         }
-    })
+    });
 
-    return groups
-}
+    return groups;
+};
 
 const ChatListContent: React.FC<{
     chats: Chat[], folders: Folder[], isLoading: boolean, currentChatId: string | null,
@@ -158,10 +157,10 @@ const ChatListContent: React.FC<{
     updateFolder, deleteFolder, moveChatToFolder, onChangeView, setCurrentChatId,
     deleteChat, togglePin, localGeneratingMap, t
 }) => {
-        const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating ?? false
-        const pinnedChats = chats.filter(c => c.isPinned)
-        const unfolderedChats = chats.filter(c => !c.folderId && !c.isPinned)
-        const dateGroups = groupChatsByDate(unfolderedChats, t)
+        const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating ?? false;
+        const pinnedChats = chats.filter(c => c.isPinned);
+        const unfolderedChats = chats.filter(c => !c.folderId && !c.isPinned);
+        const dateGroups = groupChatsByDate(unfolderedChats, t);
 
         return (
             <div className="flex-1 overflow-y-auto px-3 space-y-4 custom-scrollbar py-2">
@@ -241,5 +240,5 @@ const ChatListContent: React.FC<{
                     </>
                 )}
             </div>
-        )
-    }
+        );
+    };

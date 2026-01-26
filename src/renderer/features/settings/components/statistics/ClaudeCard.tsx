@@ -1,14 +1,14 @@
-import { Activity } from 'lucide-react'
-import React from 'react'
+import { Activity } from 'lucide-react';
+import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatReset } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
-import { ClaudeQuota } from '@/types/quota'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatReset } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import { ClaudeQuota } from '@/types/quota';
 
-import { AccountWrapper } from '../../types'
+import { AccountWrapper } from '../../types';
 
-import { QuotaRing } from './QuotaRing'
+import { QuotaRing } from './QuotaRing';
 
 interface ClaudeCardProps {
     claudeQuota: AccountWrapper<ClaudeQuota> | null
@@ -16,7 +16,7 @@ interface ClaudeCardProps {
 }
 
 export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'en-US' }) => {
-    if (!claudeQuota?.accounts || claudeQuota.accounts.length === 0) { return null }
+    if (!claudeQuota?.accounts || claudeQuota.accounts.length === 0) { return null; }
 
     return (
         <Card className="border-border/40 bg-card backdrop-blur-md overflow-hidden relative group">
@@ -37,7 +37,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                     Error: {acc.error}
                                 </div>
                             </div>
-                        )
+                        );
                     }
                     return (
                         <div key={acc.accountId ?? idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/50")}>
@@ -65,9 +65,9 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                 )}
                             </div>
                         </div>
-                    )
+                    );
                 })}
             </CardContent>
         </Card>
-    )
-}
+    );
+};

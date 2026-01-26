@@ -1,7 +1,8 @@
 
-import React from 'react'
-import { cn } from '@/lib/utils'
-import { SSHConnection } from '@/types'
+import React from 'react';
+
+import { cn } from '@/lib/utils';
+import { SSHConnection } from '@/types';
 
 interface SSHConnectionListProps {
     connections: SSHConnection[]
@@ -57,8 +58,8 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                             {conn.status === 'connected' ? (
                                 <button
                                     onClick={(e) => {
-                                        e.stopPropagation()
-                                        onDisconnect(conn.id)
+                                        e.stopPropagation();
+                                        onDisconnect(conn.id);
                                     }}
                                     className="text-xs px-2 py-0.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded border border-red-500/20"
                                 >
@@ -68,8 +69,8 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation()
-                                            onConnect(conn)
+                                            e.stopPropagation();
+                                            onConnect(conn);
                                         }}
                                         className="text-xs px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded border border-primary/20"
                                     >
@@ -89,5 +90,5 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                 ))}
             </div>
         </div>
-    )
-}
+    );
+};

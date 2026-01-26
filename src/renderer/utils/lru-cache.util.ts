@@ -11,49 +11,54 @@ interface CacheNode<K, V> {
     timestamp: number
 }
 
-export class LRUCache<K = string, V = any> {
-    private capacity: number
-    private cache = new Map<K, CacheNode<K, V>>()
-    private head: CacheNode<K, V> | null = null
-    private tail: CacheNode<K, V> | null = null
-    private hitCount = 0
-    private missCount = 0
+interface CacheEntry {
+    value: unknown
+    timestamp: number
+}
+
+export class LRUCache<K = string, V = CacheEntry> {
+    private capacity: number;
+    private cache = new Map<K, CacheNode<K, V>>();
+    private head: CacheNode<K, V> | null = null;
+    private tail: CacheNode<K, V> | null = null;
+    private hitCount = 0;
+    private missCount = 0;
 
     constructor(capacity: number = 100) {
-        this.capacity = capacity
+        this.capacity = capacity;
     }
 
     /**
      * Get value from cache
      */
     get(key: K): V | null {
-        const node = this.cache.get(key)
-        
+        const node = this.cache.get(key);
+
         if (!node) {
-            this.missCount++
-            return null
+            this.missCount++;
+            return null;
         }
 
         // Move to head (most recently used)
-        this.moveToHead(node)
-        node.timestamp = Date.now()
-        this.hitCount++
-        
-        return node.value
+        this.moveToHead(node);
+        node.timestamp = Date.now();
+        this.hitCount++;
+
+        return node.value;
     }
 
     /**
      * Set value in cache
      */
     set(key: K, value: V): void {
-        const existingNode = this.cache.get(key)
+        const existingNode = this.cache.get(key);
 
         if (existingNode) {
             // Update existing node
-            existingNode.value = value
-            existingNode.timestamp = Date.now()
-            this.moveToHead(existingNode)
-            return
+            existingNode.value = value;
+            existingNode.timestamp = Date.now();
+            this.moveToHead(existingNode);
+            return;
         }
 
         // Create new node
@@ -63,54 +68,54 @@ export class LRUCache<K = string, V = any> {
             prev: null,
             next: null,
             timestamp: Date.now()
-        }
+        };
 
         // Check capacity
         if (this.cache.size >= this.capacity) {
-            this.removeTail()
+            this.removeTail();
         }
 
-        this.cache.set(key, newNode)
-        this.addToHead(newNode)
+        this.cache.set(key, newNode);
+        this.addToHead(newNode);
     }
 
     /**
      * Check if key exists in cache
      */
     has(key: K): boolean {
-        return this.cache.has(key)
+        return this.cache.has(key);
     }
 
     /**
      * Delete key from cache
      */
     delete(key: K): boolean {
-        const node = this.cache.get(key)
+        const node = this.cache.get(key);
         if (!node) {
-            return false
+            return false;
         }
 
-        this.removeNode(node)
-        this.cache.delete(key)
-        return true
+        this.removeNode(node);
+        this.cache.delete(key);
+        return true;
     }
 
     /**
      * Clear all cache entries
      */
     clear(): void {
-        this.cache.clear()
-        this.head = null
-        this.tail = null
-        this.hitCount = 0
-        this.missCount = 0
+        this.cache.clear();
+        this.head = null;
+        this.tail = null;
+        this.hitCount = 0;
+        this.missCount = 0;
     }
 
     /**
      * Get cache statistics
      */
     getStats() {
-        const total = this.hitCount + this.missCount
+        const total = this.hitCount + this.missCount;
         return {
             size: this.cache.size,
             capacity: this.capacity,
@@ -118,153 +123,153 @@ export class LRUCache<K = string, V = any> {
             missCount: this.missCount,
             hitRate: total > 0 ? (this.hitCount / total) * 100 : 0,
             usage: (this.cache.size / this.capacity) * 100
-        }
+        };
     }
 
     /**
      * Get cache entries sorted by access time
      */
     getEntries(): Array<{ key: K; value: V; timestamp: number }> {
-        const entries: Array<{ key: K; value: V; timestamp: number }> = []
-        let current = this.head
-        
+        const entries: Array<{ key: K; value: V; timestamp: number }> = [];
+        let current = this.head;
+
         while (current) {
             entries.push({
                 key: current.key,
                 value: current.value,
                 timestamp: current.timestamp
-            })
-            current = current.next
+            });
+            current = current.next;
         }
-        
-        return entries
+
+        return entries;
     }
 
     /**
      * Remove entries older than specified milliseconds
      */
     evictExpired(maxAge: number): number {
-        const now = Date.now()
-        let evicted = 0
-        const toRemove: K[] = []
+        const now = Date.now();
+        let evicted = 0;
+        const toRemove: K[] = [];
 
         for (const [key, node] of this.cache.entries()) {
             if (now - node.timestamp > maxAge) {
-                toRemove.push(key)
+                toRemove.push(key);
             }
         }
 
         for (const key of toRemove) {
-            this.delete(key)
-            evicted++
+            this.delete(key);
+            evicted++;
         }
 
-        return evicted
+        return evicted;
     }
 
     private addToHead(node: CacheNode<K, V>): void {
-        node.prev = null
-        node.next = this.head
+        node.prev = null;
+        node.next = this.head;
 
         if (this.head) {
-            this.head.prev = node
+            this.head.prev = node;
         }
 
-        this.head = node
+        this.head = node;
 
         if (!this.tail) {
-            this.tail = node
+            this.tail = node;
         }
     }
 
     private removeNode(node: CacheNode<K, V>): void {
         if (node.prev) {
-            node.prev.next = node.next
+            node.prev.next = node.next;
         } else {
-            this.head = node.next
+            this.head = node.next;
         }
 
         if (node.next) {
-            node.next.prev = node.prev
+            node.next.prev = node.prev;
         } else {
-            this.tail = node.prev
+            this.tail = node.prev;
         }
     }
 
     private moveToHead(node: CacheNode<K, V>): void {
-        this.removeNode(node)
-        this.addToHead(node)
+        this.removeNode(node);
+        this.addToHead(node);
     }
 
     private removeTail(): void {
         if (!this.tail) {
-            return
+            return;
         }
 
-        const lastNode = this.tail
-        this.cache.delete(lastNode.key)
-        this.removeNode(lastNode)
+        const lastNode = this.tail;
+        this.cache.delete(lastNode.key);
+        this.removeNode(lastNode);
     }
 }
 
 // Global cache instances for common use cases
-export const dbQueryCache = new LRUCache<string, any>(50)
-export const chatCache = new LRUCache<string, any>(20)
-export const projectCache = new LRUCache<string, any>(10)
-export const settingsCache = new LRUCache<string, any>(10)
+export const dbQueryCache = new LRUCache<string, CacheEntry>(50);
+export const chatCache = new LRUCache<string, CacheEntry>(20);
+export const projectCache = new LRUCache<string, CacheEntry>(10);
+export const settingsCache = new LRUCache<string, CacheEntry>(10);
 
 /**
  * Cache wrapper for database queries
  */
 export async function withCache<T>(
-    cacheKey: string, 
+    cacheKey: string,
     fetcher: () => Promise<T>,
-    cache: LRUCache = dbQueryCache,
+    cache: LRUCache<string, CacheEntry> = dbQueryCache,
     maxAge: number = 30000 // 30 seconds
 ): Promise<T> {
     // Check cache first
-    const cached = cache.get(cacheKey)
+    const cached = cache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < maxAge)) {
-        return cached.value
+        return cached.value as T;
     }
 
     // Fetch and cache
-    const result = await fetcher()
-    cache.set(cacheKey, { value: result, timestamp: Date.now() })
-    return result
+    const result = await fetcher();
+    cache.set(cacheKey, { value: result, timestamp: Date.now() });
+    return result;
 }
 
 /**
  * Invalidate cache entries by pattern
  */
-export function invalidateCache(pattern: string | RegExp, cache: LRUCache = dbQueryCache): number {
-    let invalidated = 0
-    const toRemove: string[] = []
+export function invalidateCache(pattern: string | RegExp, cache: LRUCache<string, CacheEntry> = dbQueryCache): number {
+    let invalidated = 0;
+    const toRemove: string[] = [];
 
     for (const { key } of cache.getEntries()) {
-        const keyStr = String(key)
-        const shouldRemove = pattern instanceof RegExp 
+        const keyStr = String(key);
+        const shouldRemove = pattern instanceof RegExp
             ? pattern.test(keyStr)
-            : keyStr.includes(pattern)
-        
+            : keyStr.includes(pattern);
+
         if (shouldRemove) {
-            toRemove.push(keyStr)
+            toRemove.push(keyStr);
         }
     }
 
     for (const key of toRemove) {
-        cache.delete(key as any)
-        invalidated++
+        cache.delete(key);
+        invalidated++;
     }
 
-    return invalidated
+    return invalidated;
 }
 
 // Auto-cleanup expired entries every 5 minutes
 setInterval(() => {
-    const maxAge = 5 * 60 * 1000 // 5 minutes
-    dbQueryCache.evictExpired(maxAge)
-    chatCache.evictExpired(maxAge)
-    projectCache.evictExpired(maxAge)
-    settingsCache.evictExpired(maxAge)
-}, 5 * 60 * 1000)
+    const maxAge = 5 * 60 * 1000; // 5 minutes
+    dbQueryCache.evictExpired(maxAge);
+    chatCache.evictExpired(maxAge);
+    projectCache.evictExpired(maxAge);
+    settingsCache.evictExpired(maxAge);
+}, 5 * 60 * 1000);

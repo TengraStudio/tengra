@@ -1,10 +1,10 @@
-import { getErrorMessage } from '@shared/utils/error.util'
-import { AlertCircle, Brain, Loader2, Play, Terminal, User } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { getErrorMessage } from '@shared/utils/error.util';
+import { AlertCircle, Brain, Loader2, Play, Terminal, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { JsonValue } from '@/types/common'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { JsonValue } from '@/types/common';
 
 // Types aligned with backend CouncilSession
 interface AgentConfig {
@@ -40,26 +40,26 @@ const statusConfig = {
     waiting_for_approval: { label: 'waiting_for_approval', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
     completed: { label: 'completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
     failed: { label: 'failed', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' }
-}
+};
 
 const AgentStatusBadge = ({ status }: { status: 'thinking' | 'working' | 'waiting' }) => {
     const statusColors = {
         thinking: 'bg-blue-500',
         working: 'bg-amber-500',
         waiting: 'bg-zinc-500'
-    }
+    };
 
     return (
         <span className={cn(
             "px-2 py-1 text-[10px] font-medium rounded-md flex items-center gap-1",
             statusColors[status],
-            "text-white"
+            "text-foreground"
         )}>
             <div className={cn("w-1.5 h-1.5 rounded-full", statusColors[status])} />
             {status}
         </span>
-    )
-}
+    );
+};
 
 const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) => (
     <div
@@ -117,7 +117,7 @@ const AgentCard = ({ agent, active }: { agent: AgentConfig; active: boolean }) =
             <div className="absolute inset-0 rounded-xl border-2 border-primary/30 pointer-events-none animate-pulse" aria-hidden="true" />
         )}
     </div>
-)
+);
 
 const AgentList = ({
     agents,
@@ -126,7 +126,7 @@ const AgentList = ({
     agents: AgentConfig[];
     activeAgentName: string | null
 }) => {
-    if (agents.length === 0) { return null }
+    if (agents.length === 0) { return null; }
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" role="list" aria-label="Agents">
@@ -138,8 +138,8 @@ const AgentList = ({
                 />
             ))}
         </div>
-    )
-}
+    );
+};
 
 const AgentCouncilHeader = ({
     session,
@@ -182,7 +182,7 @@ const AgentCouncilHeader = ({
                     onChange={(e) => setTaskInput(e.target.value)}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' && !isGenerating && taskInput.trim()) {
-                            void handleStart()
+                            void handleStart();
                         }
                     }}
                     disabled={isGenerating}
@@ -229,19 +229,19 @@ const AgentCouncilHeader = ({
             )
         )}
     </div>
-)
+);
 
 const LogItem = ({ log }: { log: LogEntry }) => {
-    const logType = log.type ?? 'chat'
+    const logType = log.type ?? 'chat';
     const typeConfig = {
         thought: { icon: Brain, color: 'text-blue-400', bg: 'bg-blue-500/5' },
         tool: { icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/5' },
         chat: { icon: User, color: 'text-primary', bg: 'bg-primary/5' },
         system: { icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-500/5' }
-    }
+    };
 
-    const config = (typeConfig as Record<string, typeof typeConfig.chat>)[logType] ?? typeConfig.chat
-    const Icon = config.icon
+    const config = (typeConfig as Record<string, typeof typeConfig.chat>)[logType] ?? typeConfig.chat;
+    const Icon = config.icon;
 
     return (
         <div
@@ -269,8 +269,8 @@ const LogItem = ({ log }: { log: LogEntry }) => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
 const AgentCouncilActivity = ({ session, t }: { session: LocalCouncilSession | null; t: (key: string) => string }) => (
     <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden" role="region" aria-label={t('council.liveActivity')}>
@@ -306,40 +306,40 @@ const AgentCouncilActivity = ({ session, t }: { session: LocalCouncilSession | n
             )}
         </div>
     </div>
-)
+);
 
 interface AgentCouncilProps {
     language?: Language
 }
 
 export const AgentCouncil: React.FC<AgentCouncilProps> = ({ language = 'en' }) => {
-    const { t } = useTranslation(language)
-    const [session, setSession] = useState<LocalCouncilSession | null>(null)
-    const [taskInput, setTaskInput] = useState('')
-    const [isGenerating, setIsGenerating] = useState(false)
+    const { t } = useTranslation(language);
+    const [session, setSession] = useState<LocalCouncilSession | null>(null);
+    const [taskInput, setTaskInput] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         // Listen for IPC updates (placeholder for future implementation)
-    }, [])
+    }, []);
 
     const handleStart = async () => {
-        if (!taskInput.trim()) { return }
-        setIsGenerating(true)
+        if (!taskInput.trim()) { return; }
+        setIsGenerating(true);
         try {
-            const newSession = await window.electron.council.createSession(taskInput)
+            const newSession = await window.electron.council.createSession(taskInput);
             if (newSession) {
-                setSession(newSession as LocalCouncilSession)
+                setSession(newSession as LocalCouncilSession);
             }
         } catch (err) {
-            console.error('Failed to create council session', getErrorMessage(err as Error))
+            console.error('Failed to create council session', getErrorMessage(err as Error));
         } finally {
-            setIsGenerating(false)
+            setIsGenerating(false);
         }
-    }
+    };
 
-    const lastLog = session?.logs ? session.logs[session.logs.length - 1] : undefined
-    const activeAgentName = lastLog?.agent ?? null
-    const statusInfo = session ? statusConfig[session.status] : null
+    const lastLog = session?.logs ? session.logs[session.logs.length - 1] : undefined;
+    const activeAgentName = lastLog?.agent ?? null;
+    const statusInfo = session ? statusConfig[session.status] : null;
 
     return (
         <div className="h-full flex flex-col gap-4 p-4 md:p-6 overflow-hidden">
@@ -360,5 +360,5 @@ export const AgentCouncil: React.FC<AgentCouncilProps> = ({ language = 'en' }) =
 
             <AgentCouncilActivity session={session} t={t} />
         </div>
-    )
-}
+    );
+};

@@ -70,4 +70,4 @@ export const DEFAULT_THEME_PRESETS: ThemePreset[] = [
     { id: 'comfort', name: 'Comfort', themeId: 'snow', borderRadius: 'xl', fontScale: 1.1 },
     { id: 'developer', name: 'Developer', themeId: 'obsidian', borderRadius: 'sm' },
     { id: 'creative', name: 'Creative', themeId: 'cyberpunk', borderRadius: 'lg' }
-]
+];

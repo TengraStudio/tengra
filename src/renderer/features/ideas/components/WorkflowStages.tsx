@@ -1,13 +1,13 @@
-import { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchStage } from '@shared/types/ideas'
-import React from 'react'
+import { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchStage } from '@shared/types/ideas';
+import React from 'react';
 
-import { WorkflowStage } from '../types'
+import { WorkflowStage } from '../types';
 
-import { IdeaGrid } from './IdeaGrid'
-import { SessionInfo } from './SessionInfo'
-import { SessionSetup } from './SessionSetup'
-import { StageGeneration } from './StageGeneration'
-import { StageResearch } from './StageResearch'
+import { IdeaGrid } from './IdeaGrid';
+import { SessionInfo } from './SessionInfo';
+import { SessionSetup } from './SessionSetup';
+import { StageGeneration } from './StageGeneration';
+import { StageResearch } from './StageResearch';
 
 interface WorkflowStagesProps {
     workflowStage: WorkflowStage
@@ -32,7 +32,7 @@ const SetupStage: React.FC<Pick<WorkflowStagesProps, 'handleCreateSession' | 'is
             onCreateSession={handleCreateSession}
             isLoading={isSessionLoading || isResearching || isGenerating}
         />
-    )
+    );
 
 const ReviewStage: React.FC<Pick<WorkflowStagesProps, 'currentSession' | 'ideas' | 'setSelectedIdea' | 't'>> =
     ({ currentSession, ideas, setSelectedIdea, t }) => (
@@ -42,7 +42,7 @@ const ReviewStage: React.FC<Pick<WorkflowStagesProps, 'currentSession' | 'ideas'
             )}
             <IdeaGrid ideas={ideas} onSelectIdea={setSelectedIdea} />
         </div>
-    )
+    );
 
 export const WorkflowStages: React.FC<WorkflowStagesProps> = (props) => {
     const {
@@ -60,10 +60,10 @@ export const WorkflowStages: React.FC<WorkflowStagesProps> = (props) => {
         startGeneration,
         setWorkflowStage,
         t
-    } = props
+    } = props;
 
     if (workflowStage === 'setup') {
-        return <SetupStage handleCreateSession={handleCreateSession} isSessionLoading={isSessionLoading} isResearching={isResearching} isGenerating={isGenerating} />
+        return <SetupStage handleCreateSession={handleCreateSession} isSessionLoading={isSessionLoading} isResearching={isResearching} isGenerating={isGenerating} />;
     }
     if (workflowStage === 'research') {
         return (
@@ -77,7 +77,7 @@ export const WorkflowStages: React.FC<WorkflowStagesProps> = (props) => {
                 setWorkflowStage={setWorkflowStage}
                 t={t}
             />
-        )
+        );
     }
     if (workflowStage === 'generation') {
         return (
@@ -90,7 +90,7 @@ export const WorkflowStages: React.FC<WorkflowStagesProps> = (props) => {
                 setWorkflowStage={setWorkflowStage}
                 t={t}
             />
-        )
+        );
     }
     return (
         <ReviewStage
@@ -99,5 +99,5 @@ export const WorkflowStages: React.FC<WorkflowStagesProps> = (props) => {
             setSelectedIdea={setSelectedIdea}
             t={t}
         />
-    )
-}
+    );
+};

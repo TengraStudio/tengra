@@ -1,7 +1,7 @@
-import { CheckCircle2, Edit2,Plus, Server, Trash2, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Edit2,Plus, Server, Trash2, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface MCPServer {
     id: string
@@ -15,11 +15,11 @@ export const MCPServersTab = () => {
     const [servers, setServers] = useState<MCPServer[]>([
         { id: '1', name: 'Local Dev Server', url: 'http://localhost:8000/sse', status: 'connected', type: 'sse' },
         { id: '2', name: 'PostgreSQL MCP', url: 'stdio: npx -y @modelcontextprotocol/server-postgres', status: 'disconnected', type: 'stdio' }
-    ])
+    ]);
 
     const handleDelete = (id: string) => {
-        setServers(prev => prev.filter(s => s.id !== id))
-    }
+        setServers(prev => prev.filter(s => s.id !== id));
+    };
 
     return (
         <div className="h-full flex flex-col p-6 space-y-6">
@@ -91,5 +91,5 @@ export const MCPServersTab = () => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

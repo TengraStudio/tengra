@@ -1,5 +1,5 @@
-import { Calendar } from 'lucide-react'
-import React from 'react'
+import { Calendar } from 'lucide-react';
+import React from 'react';
 
 interface CodexLimitsSectionProps {
     codexLimits?: {
@@ -24,8 +24,8 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
             </div>
 
             {(['daily', 'weekly'] as const).map((period) => {
-                const periodLimit = codexLimits?.[period] ?? { enabled: false, percentage: 50 }
-                const periodLabel = period.charAt(0).toUpperCase() + period.slice(1)
+                const periodLimit = codexLimits?.[period] ?? { enabled: false, percentage: 50 };
+                const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
 
                 return (
                     <div key={period} className="mb-4 p-4 bg-muted/10 rounded-lg border border-border/50">
@@ -62,8 +62,8 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
                             </div>
                         )}
                     </div>
-                )
+                );
             })}
         </div>
-    )
-}
+    );
+};

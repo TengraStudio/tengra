@@ -1,79 +1,79 @@
-import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { AppSettings } from '@/types'
+import { AppSettings } from '@/types';
 
 export function useModelManager(
     appSettings: AppSettings | null,
     setAppSettings: (settings: AppSettings) => void
 ) {
-    const [models, setModels] = useState<ModelInfo[]>([])
-    const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null)
-    const [selectedModel, setSelectedModel] = useState<string>('')
-    const [selectedProvider, setSelectedProvider] = useState<string>('')
-    const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([])
-    const [proxyModels, setProxyModels] = useState<ModelInfo[]>([])
-    const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
+    const [models, setModels] = useState<ModelInfo[]>([]);
+    const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [selectedProvider, setSelectedProvider] = useState<string>('');
+    const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([]);
+    const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
+    const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const refreshModels = useCallback(async () => {
-        setIsLoading(true)
+        setIsLoading(true);
         try {
-            const fetched = await fetchModels()
-            setModels(fetched)
+            const fetched = await fetchModels();
+            setModels(fetched);
             // Proxy models are those that are NOT local (ollama) or copilot (usually treated separately but can be considered proxy-like here depending on UI needs)
             // For now, let's include everything that isn't 'ollama' or 'local'
-            setProxyModels(fetched.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'))
-            setGroupedModels(groupModels(fetched))
+            setProxyModels(fetched.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
+            setGroupedModels(groupModels(fetched));
         } catch (error) {
-            console.error('Failed to refresh models:', error)
+            console.error('Failed to refresh models:', error);
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
-        void refreshModels()
-    }, [refreshModels])
+        void refreshModels();
+    }, [refreshModels]);
 
     useEffect(() => {
         if (appSettings?.general?.defaultModel) {
-            setSelectedModel(appSettings.general.defaultModel)
-            setSelectedProvider(appSettings.general.lastProvider ?? '')
+            setSelectedModel(appSettings.general.defaultModel);
+            setSelectedProvider(appSettings.general.lastProvider ?? '');
             
             // Initialize selectedModels with the default model if not already set
             if (selectedModels.length === 0) {
                 setSelectedModels([{
                     provider: appSettings.general.lastProvider ?? '',
                     model: appSettings.general.defaultModel
-                }])
+                }]);
             }
         }
-    }, [appSettings, selectedModels.length])
+    }, [appSettings, selectedModels.length]);
 
     const handleSelectModel = useCallback((provider: string, model: string, isMultiSelect = false) => {
-        if (!appSettings) { return }
+        if (!appSettings) { return; }
         
         if (isMultiSelect) {
             setSelectedModels(prev => {
                 // Check if already selected
-                const exists = prev.some(m => m.provider === provider && m.model === model)
+                const exists = prev.some(m => m.provider === provider && m.model === model);
                 if (exists) {
-                    return prev // Prevent duplicates
+                    return prev; // Prevent duplicates
                 }
                 
                 // Enforce max 4 models
                 if (prev.length >= 4) {
-                    return prev
+                    return prev;
                 }
                 
-                return [...prev, { provider, model }]
-            })
+                return [...prev, { provider, model }];
+            });
         } else {
             // Single selection - replace all
-            setSelectedModel(model)
-            setSelectedProvider(provider)
-            setSelectedModels([{ provider, model }])
+            setSelectedModel(model);
+            setSelectedProvider(provider);
+            setSelectedModels([{ provider, model }]);
             setAppSettings({
                 ...appSettings,
                 general: {
@@ -81,38 +81,38 @@ export function useModelManager(
                     defaultModel: model,
                     lastProvider: provider
                 }
-            })
-            setIsModelMenuOpen(false)
+            });
+            setIsModelMenuOpen(false);
         }
-    }, [appSettings, setAppSettings])
+    }, [appSettings, setAppSettings]);
     
     const removeSelectedModel = useCallback((provider: string, model: string) => {
         setSelectedModels(prev => {
-            const filtered = prev.filter(m => !(m.provider === provider && m.model === model))
+            const filtered = prev.filter(m => !(m.provider === provider && m.model === model));
             // If we removed the last one, keep at least one selected
             if (filtered.length === 0 && prev.length > 0) {
-                return prev
+                return prev;
             }
             // Update primary selection to the first remaining model
             if (filtered.length > 0) {
-                setSelectedModel(filtered[0].model)
-                setSelectedProvider(filtered[0].provider)
+                setSelectedModel(filtered[0].model);
+                setSelectedProvider(filtered[0].provider);
             }
-            return filtered
-        })
-    }, [])
+            return filtered;
+        });
+    }, []);
     
     const clearMultiSelection = useCallback(() => {
         if (selectedModels.length > 0) {
-            const first = selectedModels[0]
-            setSelectedModels([first])
-            setSelectedModel(first.model)
-            setSelectedProvider(first.provider)
+            const first = selectedModels[0];
+            setSelectedModels([first]);
+            setSelectedModel(first.model);
+            setSelectedProvider(first.provider);
         }
-    }, [selectedModels])
+    }, [selectedModels]);
 
     const persistLastSelection = useCallback((provider: string, model: string) => {
-        if (!appSettings) { return }
+        if (!appSettings) { return; }
         setAppSettings({
             ...appSettings,
             general: {
@@ -120,19 +120,19 @@ export function useModelManager(
                 defaultModel: model,
                 lastProvider: provider
             }
-        })
-    }, [appSettings, setAppSettings])
+        });
+    }, [appSettings, setAppSettings]);
 
     const toggleFavorite = useCallback((modelId: string) => {
-        if (!appSettings) { return }
-        const currentFavorites = appSettings.general.favoriteModels ?? []
-        const isFav = currentFavorites.includes(modelId)
+        if (!appSettings) { return; }
+        const currentFavorites = appSettings.general.favoriteModels ?? [];
+        const isFav = currentFavorites.includes(modelId);
 
-        let newFavorites: string[]
+        let newFavorites: string[];
         if (isFav) {
-            newFavorites = currentFavorites.filter(id => id !== modelId)
+            newFavorites = currentFavorites.filter(id => id !== modelId);
         } else {
-            newFavorites = [...currentFavorites, modelId]
+            newFavorites = [...currentFavorites, modelId];
         }
 
         setAppSettings({
@@ -141,12 +141,12 @@ export function useModelManager(
                 ...appSettings.general,
                 favoriteModels: newFavorites
             }
-        })
-    }, [appSettings, setAppSettings])
+        });
+    }, [appSettings, setAppSettings]);
 
     const isFavorite = useCallback((modelId: string) => {
-        return appSettings?.general.favoriteModels?.includes(modelId) ?? false
-    }, [appSettings])
+        return appSettings?.general.favoriteModels?.includes(modelId) ?? false;
+    }, [appSettings]);
 
     return useMemo(() => ({
         models,
@@ -173,5 +173,5 @@ export function useModelManager(
         models, groupedModels, selectedModel, selectedProvider, selectedModels,
         proxyModels, isModelMenuOpen, isLoading, refreshModels, handleSelectModel,
         persistLastSelection, toggleFavorite, isFavorite, removeSelectedModel, clearMultiSelection
-    ])
+    ]);
 }

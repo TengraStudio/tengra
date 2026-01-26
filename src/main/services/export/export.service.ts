@@ -1,0 +1,63 @@
+import * as fs from 'fs/promises';
+
+import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { BrowserWindow } from 'electron';
+
+export interface ExportOptions {
+    format: 'markdown' | 'pdf'
+    includeThoughts?: boolean
+    includeImages?: boolean
+}
+
+export class ExportService extends BaseService {
+    constructor() {
+        super('ExportService');
+    }
+
+    async initialize(): Promise<void> {
+        appLogger.info('ExportService', 'Initializing Export Service...');
+    }
+
+    async exportToMarkdown(content: string, filePath: string): Promise<{ success: boolean; error?: string }> {
+        try {
+            await fs.writeFile(filePath, content, 'utf-8');
+            return { success: true };
+        } catch (error) {
+            appLogger.error('ExportService', 'Failed to export to Markdown', error as Error);
+            return { success: false, error: (error as Error).message };
+        }
+    }
+
+    async exportToPDF(htmlContent: string, filePath: string): Promise<{ success: boolean; error?: string }> {
+        let printWindow: BrowserWindow | null = null;
+        try {
+            printWindow = new BrowserWindow({
+                show: false,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true
+                }
+            });
+
+            await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+            const pdfData = await printWindow.webContents.printToPDF({
+                printBackground: true,
+                pageSize: 'A4',
+                margins: { top: 1, bottom: 1, left: 1, right: 1 } // inches? Electron uses inches or microns usually, verify docs if issues arise. 0 is none.
+                // 1 might be too big if inches, usually it's inches. Let's try 0.5 or allow CSS to handle it mostly.
+            });
+
+            await fs.writeFile(filePath, pdfData);
+            return { success: true };
+        } catch (error) {
+            appLogger.error('ExportService', 'Failed to export to PDF', error as Error);
+            return { success: false, error: (error as Error).message };
+        } finally {
+            if (printWindow) {
+                printWindow.close();
+            }
+        }
+    }
+}

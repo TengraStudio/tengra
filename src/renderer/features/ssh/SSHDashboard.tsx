@@ -1,46 +1,46 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
+import { useTranslation } from '@/i18n';
 
 interface SSHDashboardProps {
     connectionId: string
     active: boolean
 }
 
-import { SSHDiskStat, SSHSystemStats } from '@/types'
+import { SSHDiskStat, SSHSystemStats } from '@/types';
 
 export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active }) => {
-    const { t } = useTranslation()
-    const [stats, setStats] = useState<SSHSystemStats | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const { t } = useTranslation();
+    const [stats, setStats] = useState<SSHSystemStats | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchStats = useCallback(async () => {
         try {
-            setLoading(true)
-            const data = await window.electron.ssh.getSystemStats(connectionId)
-            setStats(data)
-            setError(null)
+            setLoading(true);
+            const data = await window.electron.ssh.getSystemStats(connectionId);
+            setStats(data);
+            setError(null);
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Failed to fetch stats')
+            setError(error instanceof Error ? error.message : 'Failed to fetch stats');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [connectionId])
+    }, [connectionId]);
 
     useEffect(() => {
         if (active) {
-            void fetchStats()
-            const interval = setInterval(() => void fetchStats(), 5000) // Poll every 5s
-            return () => clearInterval(interval)
+            void fetchStats();
+            const interval = setInterval(() => void fetchStats(), 5000); // Poll every 5s
+            return () => clearInterval(interval);
         }
-        return undefined
-    }, [fetchStats, active])
+        return undefined;
+    }, [fetchStats, active]);
 
-    if (!active) { return null }
-    if (loading && !stats) { return <div className="p-8 text-center text-muted-foreground/60">{t('ssh.loadingStats')}</div> }
-    if (error) { return <div className="p-8 text-center text-destructive">{t('ssh.connectionError', { error })}</div> }
-    if (!stats) { return null }
+    if (!active) { return null; }
+    if (loading && !stats) { return <div className="p-8 text-center text-muted-foreground/60">{t('ssh.loadingStats')}</div>; }
+    if (error) { return <div className="p-8 text-center text-destructive">{t('ssh.connectionError', { error })}</div>; }
+    if (!stats) { return null; }
 
     return (
         <div className="p-6 space-y-6 h-full overflow-y-auto">
@@ -105,5 +105,5 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
                 {t('ssh.uptime')}: {stats.uptime}
             </div>
         </div>
-    )
-}
+    );
+};

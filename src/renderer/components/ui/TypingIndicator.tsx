@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
     className?: string
@@ -28,13 +28,13 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({
         sm: 'w-1.5 h-1.5',
         md: 'w-2 h-2',
         lg: 'w-2.5 h-2.5'
-    }
+    };
 
     const gapSizes = {
         sm: 'gap-1',
         md: 'gap-1.5',
         lg: 'gap-2'
-    }
+    };
 
     return (
         <div className={cn('flex items-center', gapSizes[size], className)}>
@@ -47,7 +47,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({
                 <span className="text-xs text-muted-foreground ml-2">{label}</span>
             )}
         </div>
-    )
-})
+    );
+});
 
-TypingIndicator.displayName = 'TypingIndicator'
+TypingIndicator.displayName = 'TypingIndicator';

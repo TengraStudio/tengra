@@ -1,14 +1,17 @@
-import { appLogger } from '@main/logging/logger'
-import { Migration } from '@main/services/data/db-migration.service'
-import { JsonObject } from '@shared/types/common'
-import { DatabaseAdapter } from '@shared/types/database'
+import { appLogger } from '@main/logging/logger';
+import { Migration } from '@main/services/data/db-migration.service';
+import { JsonObject } from '@shared/types/common';
+import { DatabaseAdapter } from '@shared/types/database';
 
 export function getMigrationDefinitions(isTest: boolean): Migration[] {
     return [
         ...getCoreSchemaMigrations(isTest),
         ...getCodeIntelligenceMigrations(isTest),
-        ...getUtilitySchemaMigrations()
-    ]
+        ...getUtilitySchemaMigrations(),
+        getCouncilConfigMigration(),
+        getCustomPromptMigration(),
+        ...getGalleryMigrations()
+    ];
 }
 
 function getCoreSchemaMigrations(isTest: boolean): Migration[] {
@@ -16,7 +19,7 @@ function getCoreSchemaMigrations(isTest: boolean): Migration[] {
         ...getProjectMigrations(),
         ...getChatMigrations(isTest),
         ...getFolderPromptCouncilMigrations()
-    ]
+    ];
 }
 
 function getProjectMigrations(): Migration[] {
@@ -49,7 +52,7 @@ function getProjectMigrations(): Migration[] {
                         metadata TEXT DEFAULT '{}'
                     );
                     CREATE INDEX IF NOT EXISTS idx_chat_events_thread_id ON chat_events(thread_id);
-                `)
+                `);
             }
         },
         {
@@ -68,10 +71,10 @@ function getProjectMigrations(): Migration[] {
                         updated_at BIGINT NOT NULL
                     );
                     CREATE INDEX IF NOT EXISTS idx_time_tracking_type ON time_tracking(type);
-                `)
+                `);
             }
         }
-    ]
+    ];
 }
 
 function getChatMigrations(isTest: boolean): Migration[] {
@@ -109,10 +112,10 @@ function getChatMigrations(isTest: boolean): Migration[] {
                     );
                     CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
                     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
-                `)
+                `);
             }
         }
-    ]
+    ];
 }
 
 function getFolderPromptCouncilMigrations(): Migration[] {
@@ -148,10 +151,10 @@ function getFolderPromptCouncilMigrations(): Migration[] {
                         created_at BIGINT NOT NULL,
                         updated_at BIGINT NOT NULL
                     );
-                `)
+                `);
             }
         }
-    ]
+    ];
 }
 
 function getCodeIntelligenceMigrations(isTest: boolean): Migration[] {
@@ -224,10 +227,10 @@ function getCodeIntelligenceMigrations(isTest: boolean): Migration[] {
                         source TEXT,
                         updated_at BIGINT
                     );
-                `)
+                `);
             }
         }
-    ]
+    ];
 }
 
 function getUtilitySchemaMigrations(): Migration[] {
@@ -236,7 +239,7 @@ function getUtilitySchemaMigrations(): Migration[] {
         ...getTokenAndUsageMigrations(),
         ...getMultiAccountMigrations(),
         ...getIdeaGeneratorMigrations()
-    ]
+    ];
 }
 
 function getIdeaGeneratorMigrations(): Migration[] {
@@ -314,7 +317,7 @@ function getIdeaGeneratorMigrations(): Migration[] {
                 }
             }
         }
-    ]
+    ];
 }
 
 function getTimestampAndIndexMigrations(): Migration[] {
@@ -384,7 +387,7 @@ function getTimestampAndIndexMigrations(): Migration[] {
                 }
             }
         }
-    ]
+    ];
 }
 
 function getTokenAndUsageMigrations(): Migration[] {
@@ -402,7 +405,7 @@ function getTokenAndUsageMigrations(): Migration[] {
                     );
                     CREATE INDEX IF NOT EXISTS idx_usage_tracking_timestamp ON usage_tracking(timestamp);
                     CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider ON usage_tracking(provider);
-                `)
+                `);
             }
         },
         {
@@ -422,7 +425,7 @@ function getTokenAndUsageMigrations(): Migration[] {
                         updated_at BIGINT NOT NULL
                     );
                     CREATE INDEX IF NOT EXISTS idx_prompt_templates_category ON prompt_templates(category);
-                `)
+                `);
             }
         },
         {
@@ -444,7 +447,7 @@ function getTokenAndUsageMigrations(): Migration[] {
                     );
                     CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
                     CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category);
-                `)
+                `);
             }
         },
         {
@@ -457,7 +460,7 @@ function getTokenAndUsageMigrations(): Migration[] {
                         last_run BIGINT NOT NULL,
                         updated_at BIGINT NOT NULL
                     );
-                `)
+                `);
             }
         },
         {
@@ -479,7 +482,7 @@ function getTokenAndUsageMigrations(): Migration[] {
                 `);
             }
         }
-    ]
+    ];
 }
 
 function getMultiAccountMigrations(): Migration[] {
@@ -489,7 +492,7 @@ function getMultiAccountMigrations(): Migration[] {
         getMigration15(),
         getMigration16(),
         getMigration17()
-    ]
+    ];
 }
 
 function getMigration13(): Migration {
@@ -542,7 +545,7 @@ function getMigration13(): Migration {
             await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
             await db.exec(`ALTER TABLE auth_tokens_new RENAME TO auth_tokens;`);
         }
-    }
+    };
 }
 
 function getMigration14(): Migration {
@@ -581,7 +584,7 @@ function getMigration14(): Migration {
             await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
             await db.exec(`ALTER TABLE auth_tokens_v14 RENAME TO auth_tokens;`);
         }
-    }
+    };
 }
 
 function getMigration15(): Migration {
@@ -615,13 +618,13 @@ function getMigration15(): Migration {
             try {
                 const existingTokens = await db.query<JsonObject>('SELECT * FROM auth_tokens');
                 for (const row of existingTokens.rows) {
-                    await handleLegacyTokenMigration(row, db, now)
+                    await handleLegacyTokenMigration(row, db, now);
                 }
             } catch {
                 appLogger.warn('DatabaseService', 'Migration 15: No tokens to migrate or failure.');
             }
         }
-    }
+    };
 }
 
 async function handleLegacyTokenMigration(row: JsonObject, db: DatabaseAdapter, now: number) {
@@ -663,7 +666,7 @@ function getMigration16(): Migration {
             await db.exec(`DROP TABLE IF EXISTS auth_tokens;`);
             await db.exec(`DROP TABLE IF EXISTS auth_accounts;`);
         }
-    }
+    };
 }
 
 function getMigration17(): Migration {
@@ -704,5 +707,61 @@ function getMigration17(): Migration {
                 appLogger.debug('DatabaseService', 'chat_id column may already exist in time_tracking');
             }
         }
-    }
+    };
+}
+
+/** Council session model/provider configuration migration */
+export function getCouncilConfigMigration(): Migration {
+    return {
+        id: 20,
+        name: 'Add model and provider to council sessions',
+        up: async (db: DatabaseAdapter) => {
+            try {
+                await db.exec(`ALTER TABLE council_sessions ADD COLUMN model TEXT DEFAULT 'gpt-4o';`);
+                await db.exec(`ALTER TABLE council_sessions ADD COLUMN provider TEXT DEFAULT 'openai';`);
+            } catch {
+                appLogger.debug('DatabaseService', 'model/provider columns may already exist in council_sessions');
+            }
+        }
+    };
+}
+
+function getCustomPromptMigration(): Migration {
+    return {
+        id: 21,
+        name: 'Add custom_prompt to idea_sessions',
+        up: async (db: DatabaseAdapter) => {
+            try {
+                await db.exec(`ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`);
+            } catch {
+                appLogger.debug('DatabaseService', 'custom_prompt column may already exist in idea_sessions');
+            }
+        }
+    };
+}
+
+function getGalleryMigrations(): Migration[] {
+    return [
+        {
+            id: 22,
+            name: 'Create gallery_items table',
+            up: async (db: DatabaseAdapter) => {
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS gallery_items (
+                        path TEXT PRIMARY KEY,
+                        prompt TEXT,
+                        negative_prompt TEXT,
+                        seed BIGINT,
+                        steps INTEGER,
+                        cfg_scale FLOAT,
+                        width INTEGER,
+                        height INTEGER,
+                        model TEXT,
+                        created_at BIGINT NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_gallery_items_created_at ON gallery_items(created_at DESC);
+                `);
+            }
+        }
+    ];
 }

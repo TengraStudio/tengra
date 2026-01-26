@@ -165,7 +165,7 @@ export class HttpService extends BaseService {
             const externalSignal = fetchOptions.signal;
             if (externalSignal) {
                 if (externalSignal.aborted) {
-                    throw externalSignal.reason || new Error('Aborted');
+                    throw externalSignal.reason ?? new Error('Aborted');
                 }
                 externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
             }

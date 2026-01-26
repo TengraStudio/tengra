@@ -1,9 +1,9 @@
-import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components'
-import { Brain, Cpu, Sparkles } from 'lucide-react'
-import React from 'react'
+import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
+import { Brain, Cpu, Sparkles } from 'lucide-react';
+import React from 'react';
 
-import { SettingsCategory } from '@/features/settings/types'
-import { Language, useTranslation } from '@/i18n'
+import { SettingsCategory } from '@/features/settings/types';
+import { Language, useTranslation } from '@/i18n';
 
 interface ProvidersSectionProps {
     isCollapsed: boolean;
@@ -16,10 +16,10 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
     language,
     onOpenSettings
 }) => {
-    const { t } = useTranslation(language as Language)
+    const { t } = useTranslation(language as Language);
 
     if (isCollapsed) {
-        return null
+        return null;
     }
 
     return (
@@ -65,5 +65,5 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
                 statusLabel="Active"
             />
         </SidebarSection>
-    )
-}
+    );
+};

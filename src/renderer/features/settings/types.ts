@@ -23,4 +23,4 @@ export interface AccountWrapper<T> {
     accounts: (T & { accountId?: string; email?: string; error?: string })[]
 }
 
-export * from './types/props'
+export * from './types/props';

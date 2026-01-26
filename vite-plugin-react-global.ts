@@ -1,7 +1,7 @@
 /**
  * Vite plugin to ensure React is globally available before vendor bundles load
  */
-import type { Plugin } from 'vite'
+import type { Plugin } from 'vite';
 
 export function reactGlobalPlugin(): Plugin {
     return {
@@ -29,9 +29,9 @@ export function reactGlobalPlugin(): Plugin {
       }
     }).catch(err => console.error('[react-global] Failed to load ReactDOM:', err));
   </script>`
-            )
+            );
         },
         // Removed transform hook - it was breaking ES modules like react-window
         // React is now properly available through normal module resolution
-    }
+    };
 }

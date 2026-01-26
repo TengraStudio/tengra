@@ -1,31 +1,35 @@
-import { appLogger } from '@main/logging/logger'
-import { CopilotService } from '@main/services/llm/copilot.service'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { AuthService, TokenData } from '@main/services/security/auth.service'
-import { SettingsService } from '@main/services/system/settings.service'
-import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { ipcMain } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { AuthService, TokenData } from '@main/services/security/auth.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow, ipcMain } from 'electron';
 
-export function registerAuthIpc(
-    proxyService: ProxyService,
-    settingsService: SettingsService,
-    copilotService: CopilotService,
-    authService: AuthService
-) {
+export interface AuthIpcDependencies {
+    proxyService: ProxyService;
+    copilotService: CopilotService;
+    authService: AuthService;
+    getMainWindow: () => BrowserWindow | null;
+    eventBus: EventBusService;
+}
+
+export function registerAuthIpc(deps: AuthIpcDependencies) {
+    const { proxyService, copilotService, authService, getMainWindow, eventBus } = deps;
     // --- GitHub/Copilot Device Code Flow ---
 
     ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
-        return await proxyService.initiateGitHubAuth(appId)
-    })
+        return await proxyService.initiateGitHubAuth(appId);
+    });
 
     ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
         try {
-            const response = await proxyService.waitForGitHubToken(deviceCode, interval, appId)
-            const token = response.access_token
-            const provider = appId === 'copilot' ? 'copilot' : 'github'
+            const response = await proxyService.waitForGitHubToken(deviceCode, interval, appId);
+            const token = response.access_token;
+            const provider = appId === 'copilot' ? 'copilot' : 'github';
 
-            const { email, displayName, avatarUrl } = await fetchGitHubIdentity(proxyService, token)
+            const { email, displayName, avatarUrl } = await fetchGitHubIdentity(proxyService, token);
 
             const tokenData: TokenData = {
                 accessToken: token,
@@ -35,124 +39,140 @@ export function registerAuthIpc(
                 email,
                 displayName,
                 avatarUrl
-            }
+            };
 
-            appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`)
-            await authService.linkAccount(provider, tokenData)
+            appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`);
+            await authService.linkAccount(provider, tokenData);
 
             if (appId === 'copilot') {
-                copilotService.setGithubToken(token)
+                copilotService.setGithubToken(token);
             }
 
-            return { success: true, token }
+            return { success: true, token };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) }
+            return { success: false, error: getErrorMessage(error as Error) };
         }
-    })
+    });
 
     ipcMain.handle('auth:get-linked-accounts', async (_event, provider?: string) => {
         try {
             if (provider) {
-                return await authService.getAccountsByProvider(provider)
+                return await authService.getAccountsByProvider(provider);
             }
-            return await authService.getAllAccounts()
+            return await authService.getAllAccounts();
         } catch (error) {
-            console.error('Failed to get linked accounts:', error)
-            return []
+            console.error('Failed to get linked accounts:', error);
+            return [];
         }
-    })
+    });
 
     ipcMain.handle('auth:get-active-linked-account', async (_event, provider: string) => {
         try {
-            return await authService.getActiveAccount(provider)
+            return await authService.getActiveAccount(provider);
         } catch (error) {
-            console.error('Failed to get active linked account:', error)
-            return null
+            console.error('Failed to get active linked account:', error);
+            return null;
         }
-    })
+    });
 
     ipcMain.handle('auth:set-active-linked-account', async (_event, provider: string, accountId: string) => {
         try {
-            await authService.setActiveAccount(provider, accountId)
-            return { success: true }
+            await authService.setActiveAccount(provider, accountId);
+            return { success: true };
         } catch (error) {
-            console.error('Failed to set active linked account:', error)
-            return { success: false, error: getErrorMessage(error as Error) }
+            console.error('Failed to set active linked account:', error);
+            return { success: false, error: getErrorMessage(error as Error) };
         }
-    })
+    });
 
     ipcMain.handle('auth:link-account', async (_event, provider: string, tokenData: TokenData) => {
         try {
-            const account = await authService.linkAccount(provider, tokenData)
-            return { success: true, account }
+            const account = await authService.linkAccount(provider, tokenData);
+            return { success: true, account };
         } catch (error) {
-            console.error('Failed to link account:', error)
-            return { success: false, error: getErrorMessage(error as Error) }
+            console.error('Failed to link account:', error);
+            return { success: false, error: getErrorMessage(error as Error) };
         }
-    })
+    });
 
     ipcMain.handle('auth:unlink-account', async (_event, accountId: string) => {
         try {
-            await authService.unlinkAccount(accountId)
-            return { success: true }
+            await authService.unlinkAccount(accountId);
+            return { success: true };
         } catch (error) {
-            console.error('Failed to unlink account:', error)
-            return { success: false, error: getErrorMessage(error as Error) }
+            console.error('Failed to unlink account:', error);
+            return { success: false, error: getErrorMessage(error as Error) };
         }
-    })
+    });
 
     ipcMain.handle('auth:unlink-provider', async (_event, provider: string) => {
         try {
-            await authService.unlinkAllForProvider(provider)
-            return { success: true }
+            await authService.unlinkAllForProvider(provider);
+            return { success: true };
         } catch (error) {
-            console.error('Failed to unlink provider:', error)
-            return { success: false, error: getErrorMessage(error as Error) }
+            console.error('Failed to unlink provider:', error);
+            return { success: false, error: getErrorMessage(error as Error) };
         }
-    })
+    });
 
     ipcMain.handle('auth:has-linked-account', async (_event, provider: string) => {
         try {
-            return await authService.hasLinkedAccount(provider)
+            return await authService.hasLinkedAccount(provider);
         } catch (error) {
-            console.error('Failed to check linked account:', error)
-            return false
+            console.error('Failed to check linked account:', error);
+            return false;
         }
-    })
+    });
 
     // Register commonly batched handlers
     registerBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
-        const provider = args[0] as string | undefined
+        const provider = args[0] as string | undefined;
         try {
             if (provider) {
-                return (await authService.getAccountsByProvider(provider)) as unknown as import('@shared/types/common').JsonValue
+                return (await authService.getAccountsByProvider(provider)) as unknown as import('@shared/types/common').JsonValue;
             }
-            return (await authService.getAllAccounts()) as unknown as import('@shared/types/common').JsonValue
+            return (await authService.getAllAccounts()) as unknown as import('@shared/types/common').JsonValue;
         } catch (error) {
-            console.error('Failed to get linked accounts:', error)
-            return []
+            console.error('Failed to get linked accounts:', error);
+            return [];
         }
-    })
+    });
 
     registerBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
-        const provider = args[0] as string
+        const provider = args[0] as string;
         try {
-            return (await authService.getActiveAccount(provider)) as unknown as import('@shared/types/common').JsonValue
+            return (await authService.getActiveAccount(provider)) as unknown as import('@shared/types/common').JsonValue;
         } catch (error) {
-            console.error('Failed to get active linked account:', error)
-            return null
+            console.error('Failed to get active linked account:', error);
+            return null;
         }
-    })
+    });
 
     registerBatchableHandler('auth:has-linked-account', async (_event, ...args) => {
-        const provider = args[0] as string
+        const provider = args[0] as string;
         try {
-            return await authService.hasLinkedAccount(provider)
+            return await authService.hasLinkedAccount(provider);
         } catch (error) {
-            console.error('Failed to check linked account:', error)
-            return false
+            console.error('Failed to check linked account:', error);
+            return false;
         }
-    })
+    });
+
+    // --- Event Bridge to Renderer ---
+
+    eventBus.on('account:linked', (payload) => {
+        appLogger.info('AuthIPC', `Bridging account:linked to renderer for ${payload.provider}`);
+        getMainWindow()?.webContents.send('auth:account-changed', { type: 'linked', ...payload });
+    });
+
+    eventBus.on('account:updated', (payload) => {
+        getMainWindow()?.webContents.send('auth:account-changed', { type: 'updated', ...payload });
+    });
+
+    eventBus.on('account:unlinked', (payload) => {
+        appLogger.info('AuthIPC', `Bridging account:unlinked to renderer for ${payload.provider}`);
+        getMainWindow()?.webContents.send('auth:account-changed', { type: 'unlinked', ...payload });
+    });
 }
 
 /**
@@ -164,31 +184,31 @@ async function fetchGitHubIdentity(proxyService: ProxyService, token: string): P
     displayName?: string,
     avatarUrl?: string
 }> {
-    let email: string | undefined
-    let displayName: string | undefined
-    let avatarUrl: string | undefined
+    let email: string | undefined;
+    let displayName: string | undefined;
+    let avatarUrl: string | undefined;
 
     try {
-        const profile = await proxyService.fetchGitHubProfile(token)
-        displayName = profile.displayName
-        avatarUrl = profile.avatarUrl
-        email = profile.email
-        appLogger.info('AuthIPC', `GitHub profile fetch result: ${displayName}, email=${email ? '[PRESENT]' : '[MISSING]'}`)
+        const profile = await proxyService.fetchGitHubProfile(token);
+        displayName = profile.displayName;
+        avatarUrl = profile.avatarUrl;
+        email = profile.email;
+        appLogger.info('AuthIPC', `GitHub profile fetch result: ${displayName}, email=${email ? '[PRESENT]' : '[MISSING]'}`);
 
         // If email still missing, fetch specifically
         if (!email) {
-            email = await proxyService.fetchGitHubEmails(token)
-            appLogger.info('AuthIPC', `GitHub email fallback fetch result: ${email ? '[PRESENT]' : '[MISSING]'}`)
+            email = await proxyService.fetchGitHubEmails(token);
+            appLogger.info('AuthIPC', `GitHub email fallback fetch result: ${email ? '[PRESENT]' : '[MISSING]'}`);
         }
 
         // Final fallback for user identity: use login (username) if email is still missing
         if (!email && profile.login) {
-            email = `${profile.login}@github.com`
-            appLogger.info('AuthIPC', `Using GitHub login as identity fallback: ${email}`)
+            email = `${profile.login}@github.com`;
+            appLogger.info('AuthIPC', `Using GitHub login as identity fallback: ${email}`);
         }
     } catch (err) {
-        appLogger.error('AuthIPC', 'Failed to fetch GitHub identity', err as Error)
+        appLogger.error('AuthIPC', 'Failed to fetch GitHub identity', err as Error);
     }
 
-    return { email, displayName, avatarUrl }
+    return { email, displayName, avatarUrl };
 }

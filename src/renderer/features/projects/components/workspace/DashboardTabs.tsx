@@ -50,7 +50,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             onClick={() => onDashboardTabChange?.(tab.id)}
                             className={cn(
                                 "p-1.5 rounded-md transition-all",
-                                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-white"
+                                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-foreground"
                             )}
                             title={tab.title}
                         >

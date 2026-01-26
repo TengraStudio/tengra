@@ -1,8 +1,8 @@
-import type { IpcRendererEvent } from 'electron'
-import React, { useEffect, useMemo,useRef, useState } from 'react'
+import type { IpcRendererEvent } from 'electron';
+import React, { useEffect, useMemo,useRef, useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useTranslation } from '@/i18n'
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/i18n';
 
 interface LogEntry {
     id: string
@@ -22,75 +22,75 @@ const levelColors = {
     info: 'text-blue-400',
     warn: 'text-yellow-400',
     error: 'text-red-400'
-}
+};
 
 const levelBadgeColors = {
     debug: 'bg-gray-500/20 text-gray-400',
     info: 'bg-blue-500/20 text-blue-400',
     warn: 'bg-yellow-500/20 text-yellow-400',
     error: 'bg-red-500/20 text-red-400'
-}
+};
 
 export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ isOpen, onClose }) => {
-    const { language } = useAuth()
-    const { t } = useTranslation(language || 'en')
-    const [logs, setLogs] = useState<LogEntry[]>([])
-    const [filter, setFilter] = useState<string>('')
-    const [levelFilter, setLevelFilter] = useState<string>('all')
-    const [autoScroll, setAutoScroll] = useState(true)
-    const [isPaused, setIsPaused] = useState(false)
-    const logsEndRef = useRef<HTMLDivElement>(null)
+    const { language } = useAuth();
+    const { t } = useTranslation(language || 'en');
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [filter, setFilter] = useState<string>('');
+    const [levelFilter, setLevelFilter] = useState<string>('all');
+    const [autoScroll, setAutoScroll] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
+    const logsEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!isOpen) {return}
+        if (!isOpen) {return;}
 
         // Subscribe to logs from main process
         const handler = (_event: IpcRendererEvent, log: LogEntry) => {
             if (!isPaused) {
-                setLogs(prev => [...prev.slice(-500), { ...log, id: `${Date.now()}-${Math.random()}` }])
+                setLogs(prev => [...prev.slice(-500), { ...log, id: `${Date.now()}-${Math.random()}` }]);
             }
-        }
+        };
 
-        window.electron?.ipcRenderer.on('log:entry', handler)
+        window.electron?.ipcRenderer.on('log:entry', handler);
 
         return () => {
-            window.electron?.ipcRenderer.off('log:entry', handler)
-        }
-    }, [isOpen, isPaused])
+            window.electron?.ipcRenderer.off('log:entry', handler);
+        };
+    }, [isOpen, isPaused]);
 
     useEffect(() => {
         if (autoScroll && logsEndRef.current) {
-            logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [logs, autoScroll])
+    }, [logs, autoScroll]);
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
             const matchesText = !filter ||
                 log.message.toLowerCase().includes(filter.toLowerCase()) ||
-                log.source.toLowerCase().includes(filter.toLowerCase())
-            const matchesLevel = levelFilter === 'all' || log.level === levelFilter
-            return matchesText && matchesLevel
-        })
-    }, [logs, filter, levelFilter])
+                log.source.toLowerCase().includes(filter.toLowerCase());
+            const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
+            return matchesText && matchesLevel;
+        });
+    }, [logs, filter, levelFilter]);
 
-    const clearLogs = () => setLogs([])
+    const clearLogs = () => setLogs([]);
 
     const exportLogs = () => {
         const content = filteredLogs.map(log =>
             `[${new Date(log.timestamp).toISOString()}] [${log.level.toUpperCase()}] [${log.source}] ${log.message}`
-        ).join('\n')
+        ).join('\n');
 
-        const blob = new Blob([content], { type: 'text/plain' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `orbit-logs-${new Date().toISOString().slice(0, 10)}.txt`
-        a.click()
-        URL.revokeObjectURL(url)
-    }
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `orbit-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
-    if (!isOpen) {return null}
+    if (!isOpen) {return null;}
 
     return (
         <div 
@@ -103,7 +103,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
                     <div className="flex items-center gap-4">
-                        <h2 id="logging-dashboard-title" className="text-lg font-semibold text-white flex items-center gap-2">
+                        <h2 id="logging-dashboard-title" className="text-lg font-semibold text-foreground flex items-center gap-2">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
@@ -115,7 +115,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-white"
+                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-foreground"
                         aria-label={t('shortcuts.close')}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -131,13 +131,13 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                         placeholder={t('logging.filterPlaceholder')}
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="flex-1 max-w-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        className="flex-1 max-w-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-blue-500"
                         aria-label={t('logging.filterPlaceholder')}
                     />
                     <select
                         value={levelFilter}
                         onChange={(e) => setLevelFilter(e.target.value)}
-                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground focus:outline-none focus:border-blue-500"
                         aria-label={t('logging.level')}
                     >
                         <option value="all">{t('logging.allLevels')}</option>
@@ -149,7 +149,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                     <div className="flex items-center gap-2 ml-auto">
                         <button
                             onClick={() => setIsPaused(!isPaused)}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isPaused ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isPaused ? 'bg-green-600 text-foreground' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                 }`}
                             aria-label={isPaused ? t('logging.resume') : t('logging.pause')}
                         >
@@ -157,7 +157,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                         </button>
                         <button
                             onClick={() => setAutoScroll(!autoScroll)}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${autoScroll ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${autoScroll ? 'bg-blue-600 text-foreground' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                 }`}
                             aria-label={`${t('logging.autoScroll')} ${autoScroll ? t('logging.on') : t('logging.off')}`}
                         >
@@ -237,9 +237,9 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                 </div>
             </div>
         </div>
-    )
-})
+    );
+});
 
-LoggingDashboard.displayName = 'LoggingDashboard'
+LoggingDashboard.displayName = 'LoggingDashboard';
 
-export default LoggingDashboard
+export default LoggingDashboard;

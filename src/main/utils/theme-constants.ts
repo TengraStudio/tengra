@@ -1,13 +1,13 @@
-import { ThemeCategory,ThemeDefinition } from '@shared/types/theme'
+import { ThemeCategory,ThemeDefinition } from '@shared/types/theme';
 
 function createHsl(h: number, s: number, l: number): string {
-    return `${h} ${s}% ${l}%`
+    return `${h} ${s}% ${l}%`;
 }
 
-const ELITE_DARK: ThemeCategory = 'elite-dark'
-const VIBRANT_NEON: ThemeCategory = 'vibrant-neon'
-const PROFESSIONAL_LIGHT: ThemeCategory = 'professional-light'
-const ARTISANAL: ThemeCategory = 'artisanal'
+const ELITE_DARK: ThemeCategory = 'elite-dark';
+const VIBRANT_NEON: ThemeCategory = 'vibrant-neon';
+const PROFESSIONAL_LIGHT: ThemeCategory = 'professional-light';
+const ARTISANAL: ThemeCategory = 'artisanal';
 
 export const BUILTIN_THEMES: ThemeDefinition[] = [
     {
@@ -474,24 +474,24 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
             radius: 1
         }
     }
-]
+];
 
 export function getThemeById(id: string): ThemeDefinition | undefined {
-    return BUILTIN_THEMES.find(t => t.id === id)
+    return BUILTIN_THEMES.find(t => t.id === id);
 }
 
 export function getThemesByCategory(category: ThemeCategory): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => t.category === category)
+    return BUILTIN_THEMES.filter(t => t.category === category);
 }
 
 export function getAllThemeCategories(): ThemeCategory[] {
-    return [...new Set(BUILTIN_THEMES.map(t => t.category))]
+    return [...new Set(BUILTIN_THEMES.map(t => t.category))];
 }
 
 export function getLightThemes(): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => !t.isDark)
+    return BUILTIN_THEMES.filter(t => !t.isDark);
 }
 
 export function getDarkThemes(): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => t.isDark)
+    return BUILTIN_THEMES.filter(t => t.isDark);
 }

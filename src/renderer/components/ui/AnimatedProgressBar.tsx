@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface AnimatedProgressBarProps {
     value: number
@@ -34,13 +34,13 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
     animated = false,
     striped = false
 }) => {
-    const percentage = Math.min(Math.max((value / max) * 100, 0), 100)
+    const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
     const sizeClasses = {
         sm: 'h-1',
         md: 'h-2',
         lg: 'h-3'
-    }
+    };
 
     const variantClasses = {
         default: 'bg-primary',
@@ -48,7 +48,7 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
         warning: 'bg-amber-500',
         error: 'bg-red-500',
         gradient: 'bg-gradient-to-r from-violet-500 via-primary to-cyan-500'
-    }
+    };
 
     return (
         <div className={cn('w-full', className)}>
@@ -79,7 +79,7 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
                 </div>
             )}
         </div>
-    )
-})
+    );
+});
 
-AnimatedProgressBar.displayName = 'AnimatedProgressBar'
+AnimatedProgressBar.displayName = 'AnimatedProgressBar';

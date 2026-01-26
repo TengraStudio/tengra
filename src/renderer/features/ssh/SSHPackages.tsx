@@ -1,8 +1,8 @@
-import { Search } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import { Search } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import type { SSHPackageInfo } from '@/types/ssh'
+import { useTranslation } from '@/i18n';
+import type { SSHPackageInfo } from '@/types/ssh';
 
 interface SSHPackagesProps {
     connectionId: string
@@ -10,32 +10,32 @@ interface SSHPackagesProps {
 }
 
 export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }) => {
-    const { t } = useTranslation()
-    const [packages, setPackages] = useState<SSHPackageInfo[]>([])
-    const [loading, setLoading] = useState(false)
-    const [search, setSearch] = useState('')
+    const { t } = useTranslation();
+    const [packages, setPackages] = useState<SSHPackageInfo[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState('');
 
     const loadPackages = useCallback(async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const data = await window.electron.ssh.getInstalledPackages(connectionId)
-            setPackages(data)
+            const data = await window.electron.ssh.getInstalledPackages(connectionId);
+            setPackages(data);
         } catch (e) {
-            console.error('Failed to load packages', e)
+            console.error('Failed to load packages', e);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [connectionId])
+    }, [connectionId]);
 
     useEffect(() => {
         if (active && packages.length === 0) {
-            void loadPackages()
+            void loadPackages();
         }
-    }, [active, packages.length, loadPackages])
+    }, [active, packages.length, loadPackages]);
 
-    const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
-    if (!active) { return null }
+    if (!active) { return null; }
 
     return (
         <div className="flex flex-col h-full">
@@ -92,5 +92,5 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
                 </table>
             </div>
         </div>
-    )
-}
+    );
+};

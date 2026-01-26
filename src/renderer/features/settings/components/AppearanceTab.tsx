@@ -1,8 +1,8 @@
-import { Palette, Type } from 'lucide-react'
-import React from 'react'
+import { Palette, Type } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@/types/settings'
+import { cn } from '@/lib/utils';
+import { AppSettings } from '@/types/settings';
 
 interface AppearanceTabProps {
     settings: AppSettings | null
@@ -14,7 +14,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
     const themeOptions = [
         { id: 'black', label: 'Black' },
         { id: 'white', label: 'White' }
-    ]
+    ];
 
     const fontOptions = [
         { id: "'Inter', system-ui, sans-serif", label: `Inter (${t('appearance.default')})` },
@@ -22,21 +22,21 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
         { id: "'Roboto', sans-serif", label: 'Roboto' },
         { id: "'Outfit', sans-serif", label: 'Outfit' },
         { id: "system-ui, sans-serif", label: t('appearance.system') }
-    ]
+    ];
 
-    const rawTheme = settings?.general?.theme || 'graphite'
-    const currentTheme = rawTheme === 'dark' || rawTheme === 'system' ? 'graphite' : rawTheme === 'light' ? 'snow' : rawTheme
-    const currentFont = settings?.general?.fontFamily || fontOptions[0]?.id
+    const rawTheme = settings?.general?.theme || 'graphite';
+    const currentTheme = rawTheme === 'dark' || rawTheme === 'system' ? 'graphite' : rawTheme === 'light' ? 'snow' : rawTheme;
+    const currentFont = settings?.general?.fontFamily || fontOptions[0]?.id;
 
     const handleThemeChange = (themeId: string) => {
-        updateGeneral({ theme: themeId })
-        document.documentElement.setAttribute('data-theme', themeId)
-    }
+        updateGeneral({ theme: themeId });
+        document.documentElement.setAttribute('data-theme', themeId);
+    };
 
     const handleFontChange = (fontId: string) => {
-        updateGeneral({ fontFamily: fontId })
-        document.documentElement.style.setProperty('--font-family', fontId)
-    }
+        updateGeneral({ fontFamily: fontId });
+        document.documentElement.style.setProperty('--font-family', fontId);
+    };
 
     return (
         <div className="space-y-6">
@@ -54,7 +54,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {themeOptions.map((theme) => {
-                        const isActive = currentTheme === theme.id
+                        const isActive = currentTheme === theme.id;
                         return (
                             <button
                                 key={theme.id}
@@ -77,7 +77,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                                     {isActive && <div className="h-2 w-2 rounded-full bg-primary" />}
                                 </div>
                             </button>
-                        )
+                        );
                     })}
                 </div>
             </div>
@@ -195,5 +195,5 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

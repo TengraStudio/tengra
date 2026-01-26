@@ -1,13 +1,13 @@
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { IPerformanceService } from '@main/types/services';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { appLogger } from '@main/logging/logger';
 
 export class PerformanceService extends BaseService implements IPerformanceService {
     private memoryHistory: number[] = [];
     private maxHistoryLength = 60; // 1 hour if sampled every minute
-    private monitoringInterval?: NodeJS.Timer;
+    private monitoringInterval?: NodeJS.Timeout;
 
     constructor() {
         super('PerformanceService');
@@ -33,7 +33,7 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         
         // Stop memory monitoring
         if (this.monitoringInterval) {
-            clearInterval(this.monitoringInterval as any);
+            clearInterval(this.monitoringInterval);
             this.monitoringInterval = undefined;
         }
         

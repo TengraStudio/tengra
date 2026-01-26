@@ -19,7 +19,8 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('Uncaught error:', error, errorInfo);
+        window.electron.log.error('Uncaught error', error);
+        window.electron.log.error('React error info', { componentStack: errorInfo.componentStack });
     }
 
     public render() {

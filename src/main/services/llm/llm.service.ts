@@ -10,7 +10,7 @@ import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, NetworkError } from '@main/utils/error.util';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { StreamParser } from '@main/utils/stream-parser.util';
-import { Message, ToolDefinition, SystemMode } from '@shared/types/chat';
+import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -177,7 +177,7 @@ export class LLMService {
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken(provider || 'openai');
+        await this.rateLimitService.waitForToken(provider ?? 'openai');
 
         const execute = async () => {
             const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: false, n });
@@ -235,7 +235,7 @@ export class LLMService {
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken(provider || 'openai');
+        await this.rateLimitService.waitForToken(provider ?? 'openai');
 
         const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: true });
         const requestInit = this.createOpenAIRequest(body, config.apiKey);
@@ -749,10 +749,10 @@ export class LLMService {
         appLogger.error('LLMService', `Error details: ${errorText}`);
 
         try {
-            const errorJson = safeJsonParse<Record<string, unknown>>(errorText, {});
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorObj = errorJson.error as any
-            if (errorObj?.message?.includes('quota')) {
+            type OpenAIErrorBody = { error?: { message?: string } }
+            const errorJson = safeJsonParse<OpenAIErrorBody>(errorText, {});
+            const errorMessage = errorJson.error?.message;
+            if (typeof errorMessage === 'string' && errorMessage.includes('quota')) {
                 appLogger.warn('LLMService', 'Possible quota exhaustion detected despite individual model capacity.');
             }
         } catch {

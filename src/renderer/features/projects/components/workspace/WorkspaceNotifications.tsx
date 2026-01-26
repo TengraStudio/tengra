@@ -1,7 +1,7 @@
-import { Activity, X } from 'lucide-react'
-import React from 'react'
+import { Activity, X } from 'lucide-react';
+import React from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 interface Notification {
     id: string
@@ -28,5 +28,5 @@ export const WorkspaceNotifications: React.FC<WorkspaceNotificationsProps> = ({ 
                 </div>
             ))}
         </div>
-    )
-}
+    );
+};
