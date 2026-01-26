@@ -1,13 +1,13 @@
-import path from 'path'
+import path from 'path';
 
-import { appLogger } from '@main/logging/logger'
-import { DatabaseService, EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service'
-import { EmbeddingService } from '@main/services/llm/embedding.service'
-import { LLMService } from '@main/services/llm/llm.service'
-import { ProcessManagerService } from '@main/services/system/process-manager.service'
-import { ChatMessage } from '@main/types/llm.types'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { app } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { DatabaseService, EntityKnowledge, EpisodicMemory, SemanticFragment } from '@main/services/data/database.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { ChatMessage } from '@main/types/llm.types';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { app } from 'electron';
 
 interface PersonalitySettings {
     traits: string[];
@@ -76,9 +76,9 @@ export class MemoryService {
 
     // Semantic Memory
     async rememberFact(content: string, source: string = 'user', sourceId: string = 'global', tags: string[] = []): Promise<SemanticFragment> {
-        const embedding = await this.embedding.generateEmbedding(content)
-        const id = Math.random().toString(36).substring(2, 15)
-        const now = Date.now()
+        const embedding = await this.embedding.generateEmbedding(content);
+        const id = Math.random().toString(36).substring(2, 15);
+        const now = Date.now();
 
         const fragment: SemanticFragment = {
             id,
@@ -90,9 +90,9 @@ export class MemoryService {
             importance: 1,
             createdAt: now,
             updatedAt: now
-        }
+        };
 
-        await this.db.storeSemanticFragment(fragment)
+        await this.db.storeSemanticFragment(fragment);
 
         // Also store in native vector store
         if (this.isInitialized) {
@@ -105,12 +105,12 @@ export class MemoryService {
             }).catch(e => appLogger.error('MemoryService', `Native insert failed: ${e}`));
         }
 
-        return fragment
+        return fragment;
     }
 
     async recallRelevantFacts(query: string, limit: number = 5): Promise<SemanticFragment[]> {
         if (this.embedding.getCurrentProvider() === 'none') {
-            return await this.db.searchSemanticFragmentsByText(query, limit)
+            return await this.db.searchSemanticFragmentsByText('global', query);
         }
 
         const queryEmbedding = await this.embedding.generateEmbedding(query);
@@ -136,7 +136,7 @@ export class MemoryService {
             }
         }
 
-        return await this.db.searchSemanticFragments(queryEmbedding, limit)
+        return await this.db.searchSemanticFragments(queryEmbedding, limit);
     }
 
     // Episodic Memory (Conversation History)
@@ -206,7 +206,8 @@ ${transcript}`;
             endDate: messages[messages.length - 1].timestamp || now,
             chatId,
             participants: ['user', 'assistant'],
-            createdAt: now
+            createdAt: now,
+            timestamp: now
         };
 
         // Store topics as semantic fragments for better retrieval if needed
@@ -234,7 +235,7 @@ ${transcript}`;
 
     async recallEpisodes(query: string, limit: number = 3): Promise<EpisodicMemory[]> {
         if (this.embedding.getCurrentProvider() === 'none') {
-            return await this.db.searchEpisodicMemoriesByText(query, limit)
+            return await this.db.searchEpisodicMemoriesByText(query);
         }
 
         const queryEmbedding = await this.embedding.generateEmbedding(query);
@@ -267,12 +268,12 @@ ${transcript}`;
             }
         }
 
-        return await this.db.searchEpisodicMemories(queryEmbedding, limit)
+        return await this.db.searchEpisodicMemories(queryEmbedding, limit);
     }
 
     // Entity Memory (Structured Facts)
     async setEntityFact(entityType: string, entityName: string, key: string, value: string): Promise<EntityKnowledge> {
-        const id = `${entityType}:${entityName}:${key}`.replace(/\s+/g, '_').toLowerCase()
+        const id = `${entityType}:${entityName}:${key}`.replace(/\s+/g, '_').toLowerCase();
         const knowledge: EntityKnowledge = {
             id,
             entityType,
@@ -282,44 +283,45 @@ ${transcript}`;
             confidence: 1.0,
             source: 'manual',
             updatedAt: Date.now()
-        }
-        await this.db.storeEntityKnowledge(knowledge)
-        return knowledge
+        };
+        await this.db.storeEntityKnowledge(knowledge);
+        return knowledge;
     }
 
     async getEntityFacts(entityName: string): Promise<EntityKnowledge[]> {
-        return await this.db.getEntityKnowledge(entityName)
+        return await this.db.getEntityKnowledge(entityName);
     }
 
     async removeEntityFact(id: string): Promise<boolean> {
-        return await this.db.deleteEntityKnowledge(id)
+        await this.db.deleteEntityKnowledge(id);
+        return true;
     }
 
     // High-level "Think" method to gather context
     async gatherContext(query: string): Promise<string> {
-        const facts = await this.recallRelevantFacts(query, 3)
-        const episodes = await this.recallEpisodes(query, 2)
+        const facts = await this.recallRelevantFacts(query, 3);
+        const episodes = await this.recallEpisodes(query, 2);
 
-        let context = ''
+        let context = '';
         if (facts.length > 0) {
-            context += 'Related Facts:\n' + facts.map(f => `- ${f.content}`).join('\n') + '\n\n'
+            context += 'Related Facts:\n' + facts.map(f => `- ${f.content}`).join('\n') + '\n\n';
         }
         if (episodes.length > 0) {
-            context += 'Related Episodes:\n' + episodes.map(e => `- ${e.summary}`).join('\n')
+            context += 'Related Episodes:\n' + episodes.map(e => `- ${e.summary}`).join('\n');
         }
-        return context
+        return context;
     }
 
     async getAllMemories(): Promise<{ facts: SemanticFragment[], episodes: EpisodicMemory[], entities: EntityKnowledge[] }> {
-        const facts = await this.db.getAllSemanticFragments()
-        const episodes = await this.db.getAllEpisodicMemories()
-        const entities = await this.db.getAllEntityKnowledge()
-        return { facts, episodes, entities }
+        const facts = await this.db.getAllSemanticFragments();
+        const episodes = await this.db.getAllEpisodicMemories();
+        const entities = await this.db.getAllEntityKnowledge();
+        return { facts, episodes, entities };
     }
 
     async forgetFact(id: string): Promise<boolean> {
         // Remove from database
-        await this.db.deleteSemanticFragment(id)
+        await this.db.deleteSemanticFragment(id);
 
         // Also remove from native vector store if possible
         // Note: The current native-service InsertVector doesn't have a 
@@ -331,20 +333,20 @@ ${transcript}`;
             }).catch(e => appLogger.error('MemoryService', `Native delete failed: ${e}`));
         }
 
-        return true
+        return true;
     }
 
     // --- Personality Memory ---
     async getPersonality(): Promise<PersonalitySettings | null> {
-        const value = await this.db.recallMemory('system:personality')
-        if (value) {
-            return safeJsonParse<PersonalitySettings | null>(value, null)
+        const value = await this.db.recallMemory('system:personality');
+        if (value?.content) {
+            return safeJsonParse<PersonalitySettings | null>(value.content, null);
         }
-        return null
+        return null;
     }
 
     async updatePersonality(personality: PersonalitySettings): Promise<void> {
-        await this.db.storeMemory('system:personality', JSON.stringify(personality))
+        await this.db.storeMemory('system:personality', JSON.stringify(personality));
         appLogger.info('MemoryService', `Personality updated: ${JSON.stringify(personality)}`);
     }
 
@@ -362,7 +364,7 @@ If no relevant facts are found, return an empty array.
 Message: "${content}"
 
 Example Output:
-["User prefers dark mode", "Working on Orbit project", "Wants to use LanceDB"]`
+["User prefers dark mode", "Working on Orbit project", "Wants to use LanceDB"]`;
 
         try {
             const res = await this.callLLM(

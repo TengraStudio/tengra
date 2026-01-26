@@ -48,4 +48,4 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
             {!activeTab && emptyState}
         </div>
     );
-}
+};

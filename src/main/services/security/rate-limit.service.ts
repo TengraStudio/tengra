@@ -9,7 +9,7 @@ interface RateLimitConfig {
 export class RateLimitService extends BaseService {
     // Simple Token Bucket state: provider -> { tokens: number, lastRefill: number }
     private buckets: Map<string, { tokens: number; lastRefill: number; config: RateLimitConfig }> = new Map();
-    private cleanupInterval?: NodeJS.Timer;
+    private cleanupInterval?: NodeJS.Timeout;
 
     constructor() {
         super('RateLimitService');
@@ -20,17 +20,18 @@ export class RateLimitService extends BaseService {
      */
     async initialize(): Promise<void> {
         appLogger.info(this.name, 'Initializing rate limit service...');
-        
+
         // Set default limits for providers
         this.setLimit('openai', { requestsPerMinute: 60, maxBurst: 10 });
         this.setLimit('anthropic', { requestsPerMinute: 50, maxBurst: 5 });
         this.setLimit('gemini', { requestsPerMinute: 60, maxBurst: 10 });
-        
+        this.setLimit('ssh:execute', { requestsPerMinute: 120, maxBurst: 20 });
+
         // Start cleanup interval to remove old buckets
         this.cleanupInterval = setInterval(() => {
             this.cleanupOldBuckets();
         }, 5 * 60 * 1000); // 5 minutes
-        
+
         appLogger.info(this.name, `Rate limiting initialized for ${this.buckets.size} providers`);
     }
 
@@ -39,16 +40,16 @@ export class RateLimitService extends BaseService {
      */
     async cleanup(): Promise<void> {
         appLogger.info(this.name, 'Cleaning up rate limit service...');
-        
+
         // Stop cleanup interval
         if (this.cleanupInterval) {
-            clearInterval(this.cleanupInterval as any);
+            clearInterval(this.cleanupInterval);
             this.cleanupInterval = undefined;
         }
-        
+
         // Clear all buckets
         this.buckets.clear();
-        
+
         appLogger.info(this.name, 'Rate limit service cleaned up');
     }
 
@@ -58,7 +59,7 @@ export class RateLimitService extends BaseService {
     private cleanupOldBuckets(): void {
         const now = Date.now();
         const maxAge = 30 * 60 * 1000; // 30 minutes
-        
+
         for (const [provider, bucket] of this.buckets) {
             if (now - bucket.lastRefill > maxAge) {
                 this.buckets.delete(provider);
@@ -85,7 +86,7 @@ export class RateLimitService extends BaseService {
         }
 
         const bucket = this.buckets.get(provider);
-        if (!bucket) {return;} // No limit set
+        if (!bucket) { return; } // No limit set
 
         const MAX_WAIT_ITERATIONS = 100; // Prevent infinite loops
         let iterations = 0;
@@ -112,7 +113,7 @@ export class RateLimitService extends BaseService {
 
     private async refillBucket(provider: string) {
         const bucket = this.buckets.get(provider);
-        if (!bucket) {return;}
+        if (!bucket) { return; }
 
         const now = Date.now();
         const elapsed = now - bucket.lastRefill;

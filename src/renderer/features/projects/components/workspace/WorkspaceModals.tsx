@@ -52,20 +52,20 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                     <div className="bg-[#121214] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
-                            <h3 className="text-sm font-bold text-white">{t('workspaceModals.mountTitle')}</h3>
-                            <button onClick={() => setShowMountModal(false)} className="text-zinc-500 hover:text-white"><X className="w-4 h-4" /></button>
+                            <h3 className="text-sm font-bold text-foreground">{t('workspaceModals.mountTitle')}</h3>
+                            <button onClick={() => setShowMountModal(false)} className="text-zinc-500 hover:text-foreground"><X className="w-4 h-4" /></button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-2 bg-black/20 p-1 rounded-lg">
                                 <button
                                     onClick={() => setMountForm((prev) => ({ ...prev, type: 'local' }))}
-                                    className={cn("py-2 text-xs font-medium rounded-md transition-all", mountForm.type === 'local' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}
+                                    className={cn("py-2 text-xs font-medium rounded-md transition-all", mountForm.type === 'local' ? "bg-white/10 text-foreground" : "text-zinc-500 hover:text-zinc-300")}
                                 >
                                     {t('workspaceModals.existingFolder')}
                                 </button>
                                 <button
                                     onClick={() => setMountForm((prev) => ({ ...prev, type: 'ssh' }))}
-                                    className={cn("py-2 text-xs font-medium rounded-md transition-all", mountForm.type === 'ssh' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}
+                                    className={cn("py-2 text-xs font-medium rounded-md transition-all", mountForm.type === 'ssh' ? "bg-white/10 text-foreground" : "text-zinc-500 hover:text-zinc-300")}
                                 >
                                     {t('workspaceModals.sshServer')}
                                 </button>
@@ -79,10 +79,10 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                             type="text"
                                             value={mountForm.rootPath || ''}
                                             onChange={e => setMountForm((prev) => ({ ...prev, rootPath: e.target.value }))}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-emerald-500/50"
                                             placeholder={t('workspace.placeholders.rootPath')}
                                         />
-                                        <button onClick={pickLocalFolder} className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-medium">{t('workspaceModals.pick')}</button>
+                                        <button onClick={pickLocalFolder} className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-foreground text-xs font-medium">{t('workspaceModals.pick')}</button>
                                     </div>
                                 </div>
                             ) : (
@@ -90,25 +90,25 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="col-span-2 space-y-1">
                                             <label className="text-xs text-zinc-400">{t('workspaceModals.host')}</label>
-                                            <input type="text" value={mountForm.host || ''} onChange={e => setMountForm((prev) => ({ ...prev, host: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                                            <input type="text" value={mountForm.host || ''} onChange={e => setMountForm((prev) => ({ ...prev, host: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground" />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs text-zinc-400">{t('workspaceModals.port')}</label>
-                                            <input type="text" value={mountForm.port || ''} onChange={e => setMountForm((prev) => ({ ...prev, port: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                                            <input type="text" value={mountForm.port || ''} onChange={e => setMountForm((prev) => ({ ...prev, port: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400">{t('workspaceModals.username')}</label>
-                                        <input type="text" value={mountForm.username || ''} onChange={e => setMountForm((prev) => ({ ...prev, username: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" />
+                                        <input type="text" value={mountForm.username || ''} onChange={e => setMountForm((prev) => ({ ...prev, username: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground" />
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex justify-end gap-2 mt-4">
-                                <button onClick={() => setShowMountModal(false)} className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5">{t('workspaceModals.cancel')}</button>
+                                <button onClick={() => setShowMountModal(false)} className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-foreground hover:bg-white/5">{t('workspaceModals.cancel')}</button>
                                 <button
                                     onClick={addMount}
-                                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-black hover:bg-emerald-400"
+                                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-background hover:bg-emerald-400"
                                 >
                                     {t('workspaceModals.add')}
                                 </button>
@@ -128,11 +128,11 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                 >
                     <div className="bg-[#121214] border border-white/10 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
                         <div className="p-4 border-b border-white/5 flex justify-between items-center">
-                            <h3 id="workspace-modal-title" className="text-sm font-bold text-white capitalize">{entryModal.type}</h3>
+                            <h3 id="workspace-modal-title" className="text-sm font-bold text-foreground capitalize">{entryModal.type}</h3>
                             <button
                                 onClick={closeEntryModal}
-                                className="text-zinc-500 hover:text-white"
-                                aria-label="Close modal"
+                                className="text-zinc-500 hover:text-foreground"
+                                aria-label={t('workspaceModals.closeModal')}
                             >
                                 <X className="w-4 h-4" aria-hidden="true" />
                             </button>
@@ -146,12 +146,12 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                                     onChange={(e) => setEntryName(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
-                                            submitEntryModal()
+                                            submitEntryModal();
                                         } else if (e.key === 'Escape') {
-                                            closeEntryModal()
+                                            closeEntryModal();
                                         }
                                     }}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-emerald-500/50"
                                     placeholder={t('workspace.placeholders.name')}
                                     aria-label={`${entryModal.type} name`}
                                 />
@@ -162,15 +162,15 @@ export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
                             <div className="flex justify-end gap-2">
                                 <button
                                     onClick={closeEntryModal}
-                                    className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/5"
-                                    aria-label="Cancel"
+                                    className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-foreground hover:bg-white/5"
+                                    aria-label={t('workspaceModals.cancel')}
                                 >
                                     {t('workspaceModals.cancel')}
                                 </button>
                                 <button
                                     onClick={submitEntryModal}
                                     disabled={entryBusy}
-                                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50"
+                                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-background hover:bg-emerald-400 disabled:opacity-50"
                                 >
                                     {entryBusy ? '...' : t('workspaceModals.confirm')}
                                 </button>

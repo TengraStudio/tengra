@@ -23,7 +23,6 @@ export type CatchError = Error | ErrorMessageLike | AppError | JsonValue | undef
 export interface AuthStatus {
     authenticated?: boolean;
     files?: Array<{ provider: string }>;
-    [key: string]: IpcValue;
 }
 
 export interface FileSearchResult {

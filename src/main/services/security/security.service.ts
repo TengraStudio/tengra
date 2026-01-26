@@ -47,9 +47,9 @@ export class SecurityService extends BaseService implements ISecurityService {
 
     private testEncryption() {
         try {
-            const test = 'orbit-test-string'
-            const encrypted = this.encryptSync(test)
-            const decrypted = this.decryptSync(encrypted)
+            const test = 'orbit-test-string';
+            const encrypted = this.encryptSync(test);
+            const decrypted = this.decryptSync(encrypted);
 
             if (decrypted === test) {
                 appLogger.info('SecurityService', 'Encryption self-test passed (Orbit Versioned).');
@@ -57,13 +57,21 @@ export class SecurityService extends BaseService implements ISecurityService {
                 appLogger.error('SecurityService', 'CRITICAL: Encryption self-test FAILED. Decrypted value verification mismatch.');
             }
         } catch (e) {
-            appLogger.error('SecurityService', `CRITICAL: Encryption self-test crashed: ${getErrorMessage(e)}`)
+            appLogger.error('SecurityService', `CRITICAL: Encryption self-test crashed: ${getErrorMessage(e)}`);
         }
     }
 
     /**
      * NASA Rule 8: Validate all input parameters.
      * Uses CSPRNG for cryptographic security.
+     */
+    /**
+     * Generates a cryptographically strong random password.
+     * 
+     * @param length - The length of the password (1-1024). Default is 16.
+     * @param numbers - Whether to include numbers. Default is true.
+     * @param symbols - Whether to include symbols. Default is true.
+     * @returns A ServiceResponse containing the generated password.
      */
     generatePassword(length: number = 16, numbers: boolean = true, symbols: boolean = true): ServiceResponse<{ password: string }> {
         if (length < 1 || length > 1024) {
@@ -89,6 +97,12 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
     }
 
+    /**
+     * Evaluates the strength of a given password.
+     * 
+     * @param password - The password string to evaluate.
+     * @returns A ServiceResponse containing a score (0-5) and a descriptive label.
+     */
     checkPasswordStrength(password: string): ServiceResponse<{ score: number; label: string }> {
         if (!password) {
             return { success: true, result: { score: 0, label: "Very Weak" } };
@@ -105,6 +119,13 @@ export class SecurityService extends BaseService implements ISecurityService {
         return { success: true, result: { score, label: labels[score] || "Unknown" } };
     }
 
+    /**
+     * Generates a cryptographic hash of the provided text.
+     * 
+     * @param text - The input text to hash.
+     * @param algorithm - The hashing algorithm to use ('md5', 'sha256', 'sha512'). Default is 'sha256'.
+     * @returns A ServiceResponse containing the hex-encoded hash.
+     */
     generateHash(text: string, algorithm: 'md5' | 'sha256' | 'sha512' = 'sha256'): ServiceResponse<{ hash: string }> {
         if (!text) {
             return { success: false, error: 'Input text is required for hashing' };
@@ -118,6 +139,14 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
     }
 
+    /**
+     * Strips metadata from a file by creating a copy at the output path.
+     * Note: Current implementation is limited to copying.
+     * 
+     * @param path - The source file path.
+     * @param outputPath - The destination file path.
+     * @returns A ServiceResponse indicating success or failure.
+     */
     async stripMetadata(path: string, outputPath: string): Promise<ServiceResponse> {
         if (!path || !outputPath) {
             return { success: false, error: 'Source and output paths are required' };
@@ -131,6 +160,13 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
     }
 
+    /**
+     * Synchronously encrypts text using Orbit Custom AES-256-GCM (v1)
+     * with a fallback to Electron's safeStorage if the master key is unavailable.
+     * 
+     * @param text - The plain text to encrypt.
+     * @returns The encrypted string with a version prefix, or the plain text if encryption fails.
+     */
     encryptSync(text: string): string {
         if (!text) { return ''; }
 
@@ -163,6 +199,13 @@ export class SecurityService extends BaseService implements ISecurityService {
         return text;
     }
 
+    /**
+     * Synchronously decrypts text. Handles Orbit Custom V1 format
+     * and legacy Electron safeStorage format.
+     * 
+     * @param encryptedText - The encrypted string to decrypt.
+     * @returns The decrypted plain text, or null if decryption fails.
+     */
     decryptSync(encryptedText: string): string | null {
         if (!encryptedText) { return null; }
 

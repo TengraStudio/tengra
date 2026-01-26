@@ -1,10 +1,10 @@
-import * as http from 'http'
+import * as http from 'http';
 
-import { appLogger } from '@main/logging/logger'
-import { BaseService } from '@main/services/base.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { JsonObject } from '@shared/types/common'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { JsonObject } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**
  * Auth API Service
@@ -13,109 +13,109 @@ import { safeJsonParse } from '@shared/utils/sanitize.util'
  * without needing to write temporary JSON files.
  */
 export class AuthAPIService extends BaseService {
-    private server: http.Server | null = null
-    private port: number = 0
-    private apiKey: string = ''
+    private server: http.Server | null = null;
+    private port: number = 0;
+    private apiKey: string = '';
 
     constructor(
         private authService: AuthService
     ) {
-        super('AuthAPIService')
+        super('AuthAPIService');
     }
 
     override async initialize(): Promise<void> {
         return new Promise((resolve, reject) => {
             this.server = http.createServer(async (req, res) => {
                 // CORS headers
-                res.setHeader('Access-Control-Allow-Origin', '*')
-                res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-                res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+                res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
                 if (req.method === 'OPTIONS') {
-                    res.writeHead(200)
-                    res.end()
-                    return
+                    res.writeHead(200);
+                    res.end();
+                    return;
                 }
 
                 // Authentication check
-                const authHeader = req.headers['authorization']
+                const authHeader = req.headers['authorization'];
                 if (this.apiKey && (!authHeader || authHeader !== `Bearer ${this.apiKey}`)) {
-                    res.writeHead(401, { 'Content-Type': 'application/json' })
-                    res.end(JSON.stringify({ error: 'Unauthorized' }))
-                    return
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Unauthorized' }));
+                    return;
                 }
 
                 if (req.url === '/api/auth/accounts' && req.method === 'GET') {
-                    await this.handleGetAccounts(req, res)
+                    await this.handleGetAccounts(req, res);
                 } else if (req.url?.startsWith('/api/auth/accounts/') && req.method === 'POST') {
-                    await this.handleUpdateAccount(req, res)
+                    await this.handleUpdateAccount(req, res);
                 } else {
-                    res.writeHead(404, { 'Content-Type': 'application/json' })
-                    res.end(JSON.stringify({ error: 'Not found' }))
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Not found' }));
                 }
-            })
+            });
 
             this.server.on('error', (err) => {
-                appLogger.error('AuthAPIService', `Server error: ${err.message}`)
-                reject(err)
-            })
+                appLogger.error('AuthAPIService', `Server error: ${err.message}`);
+                reject(err);
+            });
 
             // Listen on random available port
             this.server.listen(0, '127.0.0.1', () => {
-                const server = this.server
+                const server = this.server;
                 if (!server) {
-                    reject(new Error('Server not initialized'))
-                    return
+                    reject(new Error('Server not initialized'));
+                    return;
                 }
-                const address = server.address()
+                const address = server.address();
                 if (address && typeof address === 'object') {
-                    this.port = address.port
-                    appLogger.info('AuthAPIService', `Auth API listening on port ${this.port}`)
-                    resolve()
+                    this.port = address.port;
+                    appLogger.info('AuthAPIService', `Auth API listening on port ${this.port}`);
+                    resolve();
                 } else {
-                    reject(new Error('Failed to get server address'))
+                    reject(new Error('Failed to get server address'));
                 }
-            })
-        })
+            });
+        });
     }
 
     override async cleanup(): Promise<void> {
-        const server = this.server
+        const server = this.server;
         if (server) {
             return new Promise((resolve) => {
                 server.close(() => {
-                    appLogger.info('AuthAPIService', 'Auth API server stopped')
-                    resolve()
-                })
-            })
+                    appLogger.info('AuthAPIService', 'Auth API server stopped');
+                    resolve();
+                });
+            });
         }
     }
 
     getPort(): number {
-        return this.port
+        return this.port;
     }
 
     setApiKey(key: string): void {
-        this.apiKey = key
+        this.apiKey = key;
     }
 
     private async handleGetAccounts(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
-            const accounts = await this.authService.getAllAccountsFull()
+            const accounts = await this.authService.getAllAccountsFull();
 
             // Transform to format expected by Go proxy
             const authData = accounts
                 .map(acc => {
-                    const normalizedProvider = this.normalizeProviderName(acc.provider)
+                    const normalizedProvider = this.normalizeProviderName(acc.provider);
                     // Go proxy expects 'claude' for model routing
-                    const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider
-                    const isClaudeProvider = providerForGo === 'claude'
-                    const baseMetadata: JsonObject = { ...(acc.metadata ?? {}) }
+                    const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider;
+                    const isClaudeProvider = providerForGo === 'claude';
+                    const baseMetadata: JsonObject = { ...(acc.metadata ?? {}) };
 
                     if (isClaudeProvider) {
                         // Let Rust token-service own Claude refresh; proxy sees only access token
-                        delete (baseMetadata as { refresh_token?: unknown }).refresh_token
-                        delete (baseMetadata as { refreshToken?: unknown }).refreshToken
+                        delete (baseMetadata as { refresh_token?: unknown }).refresh_token;
+                        delete (baseMetadata as { refreshToken?: unknown }).refreshToken;
                     }
 
                     const metadata: JsonObject = {
@@ -123,7 +123,7 @@ export class AuthAPIService extends BaseService {
                         type: providerForGo,
                         auth_type: isClaudeProvider ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
                         email: acc.email
-                    }
+                    };
 
                     return {
                         id: acc.id || `${acc.provider}.json`,
@@ -139,43 +139,43 @@ export class AuthAPIService extends BaseService {
                         metadata,
                         created_at: acc.createdAt,
                         updated_at: acc.updatedAt
-                    }
-                })
+                    };
+                });
 
-            res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ accounts: authData }))
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ accounts: authData }));
         } catch (error) {
-            appLogger.error('AuthAPIService', `Failed to get accounts: ${error}`)
-            res.writeHead(500, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ error: 'Internal server error' }))
+            appLogger.error('AuthAPIService', `Failed to get accounts: ${error}`);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Internal server error' }));
         }
     }
 
     private async handleUpdateAccount(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
-            const urlParts = req.url?.split('/') ?? []
-            const accountId = urlParts[urlParts.length - 1]
+            const urlParts = req.url?.split('/') ?? [];
+            const accountId = urlParts[urlParts.length - 1];
 
             if (!accountId) {
-                res.writeHead(400, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ error: 'Missing account ID' }))
-                return
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Missing account ID' }));
+                return;
             }
 
-            let body = ''
+            let body = '';
             for await (const chunk of req) {
-                body += chunk
+                body += chunk;
             }
 
-            const data = safeJsonParse(body, {} as JsonObject)
+            const data = safeJsonParse(body, {} as JsonObject);
             if (!data || Object.keys(data).length === 0) {
-                res.writeHead(400, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ error: 'Invalid JSON body' }))
-                return
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+                return;
             }
-            appLogger.info('AuthAPIService', `Received update for account ${accountId}`)
+            appLogger.info('AuthAPIService', `Received update for account ${accountId}`);
 
-            const metadata = data.metadata as JsonObject | undefined
+            const metadata = data.metadata as JsonObject | undefined;
 
             // Map from Go proxy fields back to Orbit internal fields if needed
             // Currently updateToken accepts Partial<TokenData>
@@ -189,27 +189,27 @@ export class AuthAPIService extends BaseService {
                 displayName: (data.label ?? data.displayName ?? metadata?.label ?? metadata?.displayName) as string | undefined,
                 avatarUrl: (data.avatar_url ?? data.avatarUrl ?? metadata?.avatar_url ?? metadata?.avatarUrl) as string | undefined,
                 metadata
-            })
+            });
 
-            res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ success: true }))
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
         } catch (error) {
-            appLogger.error('AuthAPIService', `Failed to update account: ${error}`)
-            res.writeHead(500, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ error: 'Internal server error' }))
+            appLogger.error('AuthAPIService', `Failed to update account: ${error}`);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Internal server error' }));
         }
     }
 
     private normalizeProviderName(provider: string): string {
-        let p = provider.toLowerCase()
+        let p = provider.toLowerCase();
 
         // Strip emails (e.g. claude-user@gmail.com -> claude)
         if (p.includes('@')) {
-            p = p.split('-')[0].split('_')[0]
+            p = p.split('-')[0].split('_')[0];
         }
 
         // Strip common suffixes
-        p = p.replace(/(_token|_key|_auth)$/, '')
+        p = p.replace(/(_token|_key|_auth)$/, '');
 
         const mappings: Record<string, string> = {
             'github': 'github', 'github_token': 'github',
@@ -218,8 +218,8 @@ export class AuthAPIService extends BaseService {
             'anthropic': 'claude', 'anthropic_key': 'claude', 'claude': 'claude',
             'openai': 'codex', 'openai_key': 'codex', 'codex': 'codex',
             'gemini': 'gemini', 'gemini_key': 'gemini'
-        }
+        };
 
-        return mappings[p] ?? p
+        return mappings[p] ?? p;
     }
 }

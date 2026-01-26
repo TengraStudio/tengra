@@ -1,18 +1,18 @@
-import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal'
-import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace'
-import { AppSettings } from '@shared/types'
-import { CodexUsage, QuotaResponse } from '@shared/types/quota'
-import { Monitor } from 'lucide-react'
-import React, { memo, useState } from 'react'
+import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal';
+import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace';
+import { AppSettings } from '@shared/types';
+import { CodexUsage, QuotaResponse } from '@shared/types/quota';
+import { Monitor } from 'lucide-react';
+import React, { memo, useState } from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { Language, useTranslation } from '@/i18n'
-import { Message, Project, TerminalTab } from '@/types'
+import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { Language, useTranslation } from '@/i18n';
+import { Message, Project, TerminalTab } from '@/types';
 
-import { ProjectCard } from './components/ProjectCard'
-import { ProjectModals } from './components/ProjectModals'
-import { ProjectsHeader } from './components/ProjectsHeader'
-import { useProjectListStateMachine } from './hooks/useProjectListStateMachine'
+import { ProjectCard } from './components/ProjectCard';
+import { ProjectModals } from './components/ProjectModals';
+import { ProjectsHeader } from './components/ProjectsHeader';
+import { useProjectListStateMachine } from './hooks/useProjectListStateMachine';
 
 interface ProjectsPageProps {
     projects: Project[]
@@ -40,28 +40,28 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     selectedProvider, selectedModel, onSelectModel, groupedModels, quotas, codexUsage, settings,
     sendMessage, messages, isLoading
 }) => {
-    const { t } = useTranslation(language)
-    const [searchQuery, setSearchQuery] = useState('')
-    const [showWizard, setShowWizard] = useState(false)
-    const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null)
+    const { t } = useTranslation(language);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showWizard, setShowWizard] = useState(false);
+    const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null);
 
     const filteredProjects = React.useMemo(() => projects.filter(p =>
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase())
-    ), [projects, searchQuery])
+    ), [projects, searchQuery]);
 
     // Use state machine for coordinated state management
     const sm = useProjectListStateMachine({
         filteredProjects,
         onError: (error) => console.error('[ProjectsPage] Operation failed:', error)
-    })
+    });
 
     // Adapter: Map state machine state to modal props
-    const editingProject = sm.state.status === 'editing' ? sm.state.targetProject : null
-    const deletingProject = sm.state.status === 'deleting' ? sm.state.targetProject : null
-    const isArchiving = sm.state.status === 'archiving' ? sm.state.targetProject : null
-    const isBulkDeleting = sm.state.status === 'bulk_deleting'
-    const isBulkArchiving = sm.state.status === 'bulk_archiving'
+    const editingProject = sm.state.status === 'editing' ? sm.state.targetProject : null;
+    const deletingProject = sm.state.status === 'deleting' ? sm.state.targetProject : null;
+    const isArchiving = sm.state.status === 'archiving' ? sm.state.targetProject : null;
+    const isBulkDeleting = sm.state.status === 'bulk_deleting';
+    const isBulkArchiving = sm.state.status === 'bulk_archiving';
 
     if (selectedProject) {
         return (
@@ -108,7 +108,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     t={t}
                 />
             </>
-        )
+        );
     }
 
     return (
@@ -143,8 +143,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             onSelect={(p) => onSelectProject?.(p)}
                             showMenu={showProjectMenu === project.id}
                             setShowMenu={setShowProjectMenu}
-                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e) }}
-                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e) }}
+                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
+                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
                             onArchive={(p) => sm.startArchive(p)}
                             // Selection
                             isSelected={sm.state.selectedProjectIds.has(project.id)}
@@ -181,8 +181,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         onClose={() => setShowWizard(false)}
                         onProjectCreated={(...args) => {
                             void sm.executeCreate(...args).then((success: boolean) => {
-                                if (success) { setShowWizard(false) }
-                            })
+                                if (success) { setShowWizard(false); }
+                            });
                         }}
                         language={language}
                     />
@@ -198,8 +198,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 </div>
             </div>
         </div >
-    )
-}
+    );
+};
 
-export const MemoizedProjectsPage = memo(ProjectsPage)
+export const MemoizedProjectsPage = memo(ProjectsPage);
 

@@ -1,6 +1,7 @@
-import '@testing-library/jest-dom'
-import { beforeEach, afterEach, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeEach, vi } from 'vitest';
+
+import '@testing-library/jest-dom';
 
 // Mock Electron IPC
 declare global {
@@ -14,36 +15,36 @@ declare global {
     }
 }
 
-global.window = global.window || ({} as any)
+global.window = {} as any;
 global.window.electronAPI = {
     // Mock common IPC methods
     invoke: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),
     once: vi.fn(),
-}
+};
 
 // Mock i18n
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: any) => {
             if (options && typeof options === 'object' && 'defaultValue' in options) {
-                return options.defaultValue
+                return options.defaultValue;
             }
-            return key
+            return key;
         },
         i18n: { language: 'en' }
     }),
     Trans: ({ children }: { children: React.ReactNode }) => children,
-}))
+}));
 
 // Cleanup after each test
 afterEach(() => {
-    cleanup()
-    vi.clearAllMocks()
-})
+    cleanup();
+    vi.clearAllMocks();
+});
 
 // Reset mocks before each test  
 beforeEach(() => {
-    vi.clearAllMocks()
-})
+    vi.clearAllMocks();
+});

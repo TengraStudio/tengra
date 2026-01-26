@@ -163,15 +163,15 @@
 }
 
 .sidebar-badge--success {
-    @apply bg-emerald-500 text-white;
+    @apply bg-emerald-500 text-foreground;
 }
 
 .sidebar-badge--warning {
-    @apply bg-amber-500 text-white;
+    @apply bg-amber-500 text-foreground;
 }
 
 .sidebar-badge--error {
-    @apply bg-red-500 text-white;
+    @apply bg-red-500 text-foreground;
 }
 
 /* Badge animation on update */

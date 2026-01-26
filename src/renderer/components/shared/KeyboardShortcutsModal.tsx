@@ -1,7 +1,7 @@
-import { Keyboard, X } from 'lucide-react'
-import React, { useEffect, useRef } from 'react'
+import { Keyboard, X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
+import { Language, useTranslation } from '@/i18n';
 
 /**
  * Get all focusable elements within a container.
@@ -14,10 +14,10 @@ const getFocusableElements = (container: HTMLElement): HTMLElement[] => {
         'select:not([disabled])',
         'textarea:not([disabled])',
         '[tabindex]:not([tabindex="-1"])'
-    ].join(', ')
+    ].join(', ');
 
-    return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors))
-}
+    return Array.from(container.querySelectorAll<HTMLElement>(focusableSelectors));
+};
 
 interface ShortcutItemProps {
     keys: string[]
@@ -35,7 +35,7 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
             ))}
         </div>
     </div>
-)
+);
 
 interface KeyboardShortcutsModalProps {
     isOpen: boolean
@@ -44,73 +44,73 @@ interface KeyboardShortcutsModalProps {
 }
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = React.memo(({ isOpen, onClose, language = 'tr' }) => {
-    const { t } = useTranslation(language)
-    const modalRef = useRef<HTMLDivElement>(null)
-    const closeButtonRef = useRef<HTMLButtonElement>(null)
-    const previousActiveElementRef = useRef<HTMLElement | null>(null)
+    const { t } = useTranslation(language);
+    const modalRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {
-        if (!isOpen) { return }
+        if (!isOpen) { return; }
 
         // Save the previously focused element
-        previousActiveElementRef.current = document.activeElement as HTMLElement
+        previousActiveElementRef.current = document.activeElement as HTMLElement;
 
         // Focus the close button when modal opens
         if (closeButtonRef.current) {
-            setTimeout(() => closeButtonRef.current?.focus(), 50)
+            setTimeout(() => closeButtonRef.current?.focus(), 50);
         }
 
         // Handle Escape key to close modal
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                onClose()
+                onClose();
             }
-        }
+        };
 
         // Handle Tab key to trap focus
         const handleTab = (e: KeyboardEvent) => {
-            if (!modalRef.current || e.key !== 'Tab') { return }
+            if (!modalRef.current || e.key !== 'Tab') { return; }
 
-            const focusableElements = getFocusableElements(modalRef.current)
-            if (focusableElements.length === 0) { return }
+            const focusableElements = getFocusableElements(modalRef.current);
+            if (focusableElements.length === 0) { return; }
 
-            const firstElement = focusableElements[0]
-            const lastElement = focusableElements[focusableElements.length - 1]
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
 
             if (e.shiftKey) {
                 // Shift + Tab
                 if (document.activeElement === firstElement) {
-                    e.preventDefault()
-                    lastElement.focus()
+                    e.preventDefault();
+                    lastElement.focus();
                 }
             } else {
                 // Tab
                 if (document.activeElement === lastElement) {
-                    e.preventDefault()
-                    firstElement.focus()
+                    e.preventDefault();
+                    firstElement.focus();
                 }
             }
-        }
+        };
 
         // Lock body scroll when modal is open
-        document.body.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden';
 
-        document.addEventListener('keydown', handleEscape)
-        document.addEventListener('keydown', handleTab)
+        document.addEventListener('keydown', handleEscape);
+        document.addEventListener('keydown', handleTab);
 
         return () => {
-            document.body.style.overflow = ''
-            document.removeEventListener('keydown', handleEscape)
-            document.removeEventListener('keydown', handleTab)
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener('keydown', handleTab);
 
             // Restore focus to the previously focused element
             if (previousActiveElementRef.current) {
-                previousActiveElementRef.current.focus()
+                previousActiveElementRef.current.focus();
             }
-        }
-    }, [isOpen, onClose])
+        };
+    }, [isOpen, onClose]);
 
-    if (!isOpen) { return null }
+    if (!isOpen) { return null; }
 
     return (
         <div
@@ -181,7 +181,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 </div>
             </div>
         </div>
-    )
-})
+    );
+});
 
-KeyboardShortcutsModal.displayName = 'KeyboardShortcutsModal'
+KeyboardShortcutsModal.displayName = 'KeyboardShortcutsModal';

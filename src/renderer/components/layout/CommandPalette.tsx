@@ -1,15 +1,15 @@
-import { CommandFooter } from '@renderer/components/layout/command-palette/CommandFooter'
-import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader'
-import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel'
-import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList'
-import { Cpu, Folder, MessageSquare, MessageSquarePlus, RefreshCw, Server, Settings, Trash2 } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { CommandFooter } from '@renderer/components/layout/command-palette/CommandFooter';
+import { CommandHeader } from '@renderer/components/layout/command-palette/CommandHeader';
+import { PreviewPanel } from '@renderer/components/layout/command-palette/PreviewPanel';
+import { ResultsList } from '@renderer/components/layout/command-palette/ResultsList';
+import { Cpu, Folder, MessageSquare, MessageSquarePlus, RefreshCw, Server, Settings, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ModelInfo } from '@/features/models/utils/model-fetcher'
-import { SettingsCategory } from '@/features/settings/types'
-import { useDebounce } from '@/hooks/useDebounce'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { Chat, Project } from '@/types'
+import { ModelInfo } from '@/features/models/utils/model-fetcher';
+import { SettingsCategory } from '@/features/settings/types';
+import { useDebounce } from '@/hooks/useDebounce';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { Chat, Project } from '@/types';
 
 export interface CommandItem {
     id: string;
@@ -49,10 +49,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     onOpenSettings, onOpenSSHManager, onRefreshModels, models, onSelectModel,
     selectedModel, onClearChat, t
 }) => {
-    const [search, setSearch] = useState('')
-    const [selectedIndex, setSelectedIndex] = useState(0)
-    const inputRef = useRef<HTMLInputElement>(null)
-    const debouncedSearch = useDebounce(search, 200)
+    const [search, setSearch] = useState('');
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const debouncedSearch = useDebounce(search, 200);
 
     const commands: CommandItem[] = useMemo(() => {
         const base: CommandItem[] = [
@@ -60,60 +60,60 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             { id: 'clear-chat', label: t('commandPalette.clearChat'), description: t('commandPalette.clearChatDesc'), icon: <Trash2 className="w-4 h-4" />, action: () => { onClearChat(); onClose(); }, category: 'actions' },
             { id: 'settings', label: t('commandPalette.settings'), description: t('commandPalette.settingsDesc'), icon: <Settings className="w-4 h-4" />, shortcut: ',', action: () => { onOpenSettings(); onClose(); }, category: 'navigation' },
             { id: 'ssh-manager', label: t('commandPalette.sshManager'), description: t('commandPalette.sshManagerDesc'), icon: <Server className="w-4 h-4" />, action: () => { onOpenSSHManager(); onClose(); }, category: 'navigation' }
-        ]
+        ];
 
         const chatCmds: CommandItem[] = chats.slice(0, 5).map(c => ({
             id: `chat-${c.id}`, label: c.title ?? t('commandPalette.untitledChat'), description: t('commandPalette.goToChat'), icon: <MessageSquare className="w-4 h-4" />, action: () => { onSelectChat(c.id); onClose(); }, category: 'chat'
-        }))
+        }));
 
         const projCmds: CommandItem[] = projects.slice(0, 5).map(p => ({
             id: `project-${p.id}`, label: p.title ?? t('commandPalette.untitledProject'), description: t('commandPalette.goToProject'), icon: <Folder className="w-4 h-4" />, action: () => { onSelectProject(p.id); onClose(); }, category: 'projects',
             preview: { title: p.title ?? 'Untitled Project', content: p.path ?? 'No path', metadata: { 'Type': p.type ?? 'Unknown', 'Created': p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Unknown' } }
-        }))
+        }));
 
         const modelCmds: CommandItem[] = [
             { id: 'refresh-models', label: t('commandPalette.refreshModels'), description: t('commandPalette.refreshModelsDesc'), icon: <RefreshCw className="w-4 h-4" />, action: () => { onRefreshModels(); onClose(); }, category: 'model' },
             ...models.map(m => {
-                const name = m.name ?? m.id ?? 'Unknown'
+                const name = m.name ?? m.id ?? 'Unknown';
                 return {
                     id: `model-${name}`, label: name, description: name === selectedModel ? '✓ ' + t('commandPalette.activeModel') : t('commandPalette.switchToModel'), icon: <Cpu className="w-4 h-4" />, action: () => { onSelectModel(name); onClose(); }, category: 'model' as const,
                     preview: { title: name, content: m.id ?? 'No details', metadata: { 'Provider': m.id?.split(':')[0] ?? 'Unknown' } }
-                }
+                };
             })
-        ]
+        ];
 
-        return [...base, ...chatCmds, ...projCmds, ...modelCmds]
-    }, [chats, projects, models, selectedModel, onNewChat, onOpenSettings, onOpenSSHManager, onRefreshModels, onSelectModel, onSelectChat, onSelectProject, onClearChat, onClose, t])
+        return [...base, ...chatCmds, ...projCmds, ...modelCmds];
+    }, [chats, projects, models, selectedModel, onNewChat, onOpenSettings, onOpenSSHManager, onRefreshModels, onSelectModel, onSelectChat, onSelectProject, onClearChat, onClose, t]);
 
     const filtered = useMemo(() => {
-        const q = debouncedSearch.toLowerCase()
-        return commands.filter(c => c.label.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q) || c.category.includes(q))
-    }, [commands, debouncedSearch])
+        const q = debouncedSearch.toLowerCase();
+        return commands.filter(c => c.label.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q) || c.category.includes(q));
+    }, [commands, debouncedSearch]);
 
     useEffect(() => {
         if (isOpen) { setSearch(''); setSelectedIndex(0); setTimeout(() => inputRef.current?.focus(), 50); }
-    }, [isOpen])
+    }, [isOpen]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(prev => Math.min(prev + 1, filtered.length - 1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(prev => Math.max(prev - 1, 0)); }
         else if (e.key === 'Enter') { e.preventDefault(); if (filtered[selectedIndex]) { filtered[selectedIndex].action(); } }
         else if (e.key === 'Escape') { onClose(); }
-    }
+    };
 
     const grouped = useMemo(() => {
-        const groups: Record<string, CommandItem[]> = {}
+        const groups: Record<string, CommandItem[]> = {};
         filtered.forEach(c => {
             if (!groups[c.category]) {
-                groups[c.category] = []
+                groups[c.category] = [];
             }
-            groups[c.category]?.push(c)
-        })
-        return groups
-    }, [filtered])
+            groups[c.category]?.push(c);
+        });
+        return groups;
+    }, [filtered]);
 
-    const categoryLabels: Record<string, string> = { chat: t('commandPalette.chats'), projects: t('commandPalette.projects'), navigation: t('commandPalette.navigation'), actions: t('commandPalette.actions'), model: t('commandPalette.models') }
-    let flatIdx = -1
+    const categoryLabels: Record<string, string> = { chat: t('commandPalette.chats'), projects: t('commandPalette.projects'), navigation: t('commandPalette.navigation'), actions: t('commandPalette.actions'), model: t('commandPalette.models') };
+    let flatIdx = -1;
 
     return (
         <AnimatePresence>
@@ -131,5 +131,5 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 </motion.div>
             )}
         </AnimatePresence>
-    )
-}
+    );
+};

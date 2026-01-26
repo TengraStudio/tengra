@@ -1,6 +1,7 @@
-import React from 'react'
-import { FolderTree, Plus, Trash2 } from 'lucide-react'
-import { Project } from '@/types'
+import { FolderTree, Plus, Trash2 } from 'lucide-react';
+import React from 'react';
+
+import { Project } from '@/types';
 
 interface WorkspaceSectionProps {
     project: Project
@@ -66,4 +67,4 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onA
             )}
         </div>
     </section>
-)
+);

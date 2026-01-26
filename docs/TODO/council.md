@@ -245,7 +245,7 @@
 
 ### **🚀 ADVANCED FEATURES (Long-term Vision)**
 
-#### **COUNCIL-ADV-001**: AI-Powered Council Optimization
+#### **COUNCIL-ADV-001**: AI-Powered Council Optimization *(MEDIUM - Upgraded from LOW, performance improvement)*
 - **Description**: Machine learning for council performance improvement
 - **Features**:
   - Automatic agent selection for tasks
@@ -253,10 +253,10 @@
   - Predictive failure detection and prevention
   - Resource allocation optimization
   - Performance tuning recommendations
-- **Priority**: Low
+- **Priority**: Medium
 - **Effort**: Large
 
-#### **COUNCIL-ADV-002**: Multi-Project Council Coordination
+#### **COUNCIL-ADV-002**: Multi-Project Council Coordination *(MEDIUM - Upgraded from LOW, scalability)*
 - **Description**: Coordinate councils across multiple projects
 - **Features**:
   - Cross-project knowledge sharing
@@ -264,10 +264,10 @@
   - Global agent marketplace
   - Inter-project collaboration
   - Organization-wide council management
-- **Priority**: Low
+- **Priority**: Medium
 - **Effort**: Large
 
-#### **COUNCIL-ADV-003**: Human-AI Hybrid Workflows
+#### **COUNCIL-ADV-003**: Human-AI Hybrid Workflows *(MEDIUM - Upgraded from LOW, collaboration)*
 - **Description**: Seamless human-agent collaboration
 - **Features**:
   - Human expert integration in workflows
@@ -275,7 +275,7 @@
   - Human feedback incorporation
   - Escalation mechanisms
   - Training and onboarding assistance
-- **Priority**: Low
+- **Priority**: Medium
 - **Effort**: Large
 
 #### **COUNCIL-ADV-004**: Cloud-Native Council Platform
@@ -294,9 +294,12 @@
 ## 📈 **Implementation Strategy**
 
 ### **Phase 1: Critical Fixes (Weeks 1-2)**
-1. Fix hardcoded model/provider configuration (COUNCIL-CRIT-001)
-2. Implement basic security system for tools (COUNCIL-CRIT-002)
-3. Add error recovery and retry mechanisms (COUNCIL-CRIT-003)
+1. [x] Move hardcoded model/provider configuration to user settings (COUNCIL-CRIT-001) <!-- id: council-crit-1 -->
+   - *Status: COMPLETED 2026-01-25 - Session now stores model/provider, uses session config in runSessionStep*
+- [x] Implement permission system for powerful tools (fs, shell) (COUNCIL-CRIT-002) <!-- id: council-crit-2 -->
+   - *Status: COMPLETED 2026-01-25 - ToolPermissions system with protected paths, callSystem whitelist*
+- [x] Add robust error recovery and retry logic for tool calls (COUNCIL-CRIT-003) <!-- id: council-crit-3 -->
+   - *Status: COMPLETED 2026-01-25 - Exponential backoff (3 retries), retryable error detection*
 
 ### **Phase 2: Core Features (Weeks 3-6)**
 1. Custom agent system development (COUNCIL-HIGH-001)

@@ -1,9 +1,9 @@
-import { resolve } from 'path'
+import { resolve } from 'path';
 
-import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
-import { defineConfig } from 'vite'
-import electron from 'vite-plugin-electron'
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
+import electron from 'vite-plugin-electron';
 // import { reactGlobalPlugin } from './vite-plugin-react-global' // Removed causing errors
 
 export default defineConfig({
@@ -25,9 +25,9 @@ export default defineConfig({
                 onstart(options) {
                     // Unset ELECTRON_RUN_AS_NODE to ensure Electron runs properly
                     // This variable may be set by IDE environments like VSCode
-                    const env = { ...process.env }
-                    delete env.ELECTRON_RUN_AS_NODE
-                    void options.startup(['.', '--no-sandbox'], { env })
+                    const env = { ...process.env };
+                    delete env.ELECTRON_RUN_AS_NODE;
+                    void options.startup(['.', '--no-sandbox'], { env });
                 },
                 vite: {
                     resolve: {
@@ -77,7 +77,7 @@ export default defineConfig({
             {
                 entry: 'src/main/preload.ts',
                 onstart(options) {
-                    options.reload()
+                    options.reload();
                 },
                 vite: {
                     resolve: {
@@ -135,7 +135,7 @@ export default defineConfig({
                 // Better code splitting for faster builds
                 manualChunks: (id) => {
                     if (id.includes('node_modules')) {
-                        return 'vendor'
+                        return 'vendor';
                     }
                 }
             }
@@ -187,4 +187,4 @@ export default defineConfig({
         include: ['src/tests/main/**/*.{test,spec}.{ts,tsx}'],
         exclude: ['src/tests/e2e/**', 'node_modules', 'dist']
     }
-})
+});

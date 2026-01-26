@@ -5,12 +5,12 @@ import {
     offset,
     shift,
     useFloating,
-} from '@floating-ui/react'
-import { Check,ChevronDown } from 'lucide-react'
-import React, { useState } from 'react'
+} from '@floating-ui/react';
+import { Check,ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 interface SelectOption {
     value: string
@@ -32,8 +32,8 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     placeholder = 'Select...',
     className
 }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [width, setWidth] = useState<number>(0)
+    const [isOpen, setIsOpen] = useState(false);
+    const [width, setWidth] = useState<number>(0);
 
     const {
         x,
@@ -50,38 +50,38 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
             shift({ padding: 8 }),
         ],
         whileElementsMounted: autoUpdate,
-    })
+    });
 
     const setReferenceNode = React.useCallback((node: HTMLElement | null) => {
-        refs.setReference(node)
-    }, [refs])
+        refs.setReference(node);
+    }, [refs]);
 
     const setFloatingNode = React.useCallback((node: HTMLElement | null) => {
-        refs.setFloating(node)
-    }, [refs])
+        refs.setFloating(node);
+    }, [refs]);
 
-    const selectedOption = options.find(opt => opt.value === value)
-    const isUp = placement.startsWith('top')
+    const selectedOption = options.find(opt => opt.value === value);
+    const isUp = placement.startsWith('top');
 
     const handleSelect = (optValue: string) => {
-        onChange(optValue)
-        setIsOpen(false)
-    }
+        onChange(optValue);
+        setIsOpen(false);
+    };
 
     React.useEffect(() => {
-        const reference = refs.domReference.current
+        const reference = refs.domReference.current;
         if (isOpen && reference) {
-            setWidth((reference as HTMLElement).offsetWidth)
+            setWidth((reference as HTMLElement).offsetWidth);
         }
-    }, [isOpen, refs.domReference])
+    }, [isOpen, refs.domReference]);
 
     return (
         <div ref={setReferenceNode} className={cn("relative w-full", className)}>
             <button
                 type="button"
                 onClick={(e) => {
-                    e.stopPropagation()
-                    setIsOpen(!isOpen)
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
                 }}
                 className={cn(
                     "w-full flex items-center justify-between bg-muted/20 border border-border/50 rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 group/select shadow-sm hover:border-white/20",
@@ -121,7 +121,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                                             "w-full px-4 py-2 text-left text-sm font-medium transition-all flex items-center justify-between group/item",
                                             opt.value === value
                                                 ? "bg-primary/15 text-primary"
-                                                : "text-zinc-400 hover:bg-white/5 hover:text-white"
+                                                : "text-zinc-400 hover:bg-white/5 hover:text-foreground"
                                         )}
                                     >
                                         <span className="truncate">{opt.label}</span>
@@ -134,5 +134,5 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                 )}
             </AnimatePresence>
         </div>
-    )
-}
+    );
+};

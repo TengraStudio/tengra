@@ -1,7 +1,7 @@
-import { FolderPlus,Search } from 'lucide-react'
-import React from 'react'
+import { FolderPlus,Search } from 'lucide-react';
+import React from 'react';
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 
 interface ChatSearchProps {
     searchQuery: string;
@@ -38,5 +38,5 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                 {t('sidebar.newFolder')}
             </Button>
         </div>
-    )
-}
+    );
+};

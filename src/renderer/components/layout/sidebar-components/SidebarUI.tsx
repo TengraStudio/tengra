@@ -1,9 +1,9 @@
-import { PanelLeft, PanelLeftClose, Plus, Search } from 'lucide-react'
-import React from 'react'
+import { PanelLeft, PanelLeftClose, Plus, Search } from 'lucide-react';
+import React from 'react';
 
-import { Button } from '@/components/ui/button'
-import { AppView } from '@/hooks/useAppState'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button';
+import { AppView } from '@/hooks/useAppState';
+import { cn } from '@/lib/utils';
 
 interface SidebarHeaderProps {
     isCollapsed: boolean
@@ -16,7 +16,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggl
         {!isCollapsed && (
             <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onChangeView('chat')}>
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                    <span className="text-white font-black text-xs">O</span>
+                    <span className="text-foreground font-black text-xs">O</span>
                 </div>
                 <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">ORBIT</span>
             </div>
@@ -32,7 +32,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggl
             {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </Button>
     </div>
-)
+);
 
 interface SidebarNewChatButtonProps {
     isCollapsed: boolean
@@ -58,7 +58,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({ isCo
             )}
         </Button>
     </div>
-)
+);
 
 interface SidebarFooterProps {
     isCollapsed: boolean
@@ -66,7 +66,7 @@ interface SidebarFooterProps {
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSearch }) => {
-    if (isCollapsed) { return null }
+    if (isCollapsed) { return null; }
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest px-1">
@@ -77,5 +77,5 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

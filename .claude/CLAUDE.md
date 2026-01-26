@@ -50,10 +50,22 @@ npm run test         # Run tests
 4. Check all return values
 5. Minimal variable scope
 
-### TypeScript
-- Use path aliases: `@/`, `@main/`, `@shared/`
 - Strict types, no `any`
 - All public methods need JSDoc
+
+### Performance
+1. Lazy Loading: `React.lazy()` for heavy components.
+2. Memoization: `useMemo`/`useCallback` for computations.
+3. IPC Batching: Combine IPC calls to minimize overhead.
+4. Virtualization: Virtualize lists > 50 items.
+5. Lazy Services: Main services use lazy instantiation.
+6. Indexing: Mandatory indexes for query-critical fields.
+7. Disposal: Call `dispose()`/cleanup for all resources.
+8. Responsive: Use worker threads for blocking tasks.
+9. Lookups: Use `Map`/`Set` for collections.
+10. Tree Shaking: Use explicit library imports.
+11. UI Cost: `content-visibility: auto` where appropriate.
+12. State: Keep state local; avoid global UI state.
 
 ### i18n
 - Never hardcode user-facing strings

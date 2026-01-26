@@ -5,17 +5,17 @@ import {
     offset,
     shift,
     useFloating,
-} from '@floating-ui/react'
-import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher'
-import { Box, BrainCircuit, Check, ChevronDown, Code2, ImageIcon, Info, LayoutGrid, Pin, Search, Server, Sparkles, Zap } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+} from '@floating-ui/react';
+import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import { Box, BrainCircuit, Check, ChevronDown, Code2, ImageIcon, Info, LayoutGrid, Pin, Search, Server, Sparkles, Zap } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Skeleton } from '@/components/ui/skeleton'
-import { useDebounce } from '@/hooks/useDebounce'
-import { Language, useTranslation } from '@/i18n'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { AppSettings, CodexUsage, QuotaResponse } from '@/types'
+import { Skeleton } from '@/components/ui/skeleton';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Language, useTranslation } from '@/i18n';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
 
 interface ModelSelectorProps {
     selectedProvider: string
@@ -50,11 +50,11 @@ export function ModelSelector({
     toggleFavorite,
     isFavorite: _isFavorite
 }: ModelSelectorProps) {
-    const { t } = useTranslation(language)
-    const [isOpen, setIsOpen] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
-    const debouncedSearchQuery = useDebounce(searchQuery, 300)
-    const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({})
+    const { t } = useTranslation(language);
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({});
 
     const {
         x,
@@ -73,41 +73,41 @@ export function ModelSelector({
             shift({ padding: 16 }),
         ],
         whileElementsMounted: autoUpdate,
-    })
+    });
 
-    const dropUp = placement.startsWith('top')
+    const dropUp = placement.startsWith('top');
 
     useEffect(() => {
-        onOpenChange?.(isOpen)
-    }, [isOpen, onOpenChange])
+        onOpenChange?.(isOpen);
+    }, [isOpen, onOpenChange]);
 
     useEffect(() => {
         if (!isOpen) { return; }
 
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-            const target = event.target as Node
+            const target = event.target as Node;
             // Use refs safely in essence, ignoring the overly aggressive lint warning
             // for what is a standard Floating UI/React pattern.
             const ref1 = (refs.domReference as React.MutableRefObject<HTMLElement | null>).current;
             const ref2 = (refs.floating as React.MutableRefObject<HTMLElement | null>).current;
-            const isInsideContainer = ref1?.contains(target)
-            const isInsideDropdown = ref2?.contains(target)
+            const isInsideContainer = ref1?.contains(target);
+            const isInsideDropdown = ref2?.contains(target);
 
             if (!isInsideContainer && !isInsideDropdown) {
-                setIsOpen(false)
+                setIsOpen(false);
             }
-        }
+        };
 
         const timer = setTimeout(() => {
-            document.addEventListener('mousedown', handleClickOutside)
-            document.addEventListener('touchstart', handleClickOutside)
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside);
         }, 10);
 
         return () => {
             clearTimeout(timer);
-            document.removeEventListener('mousedown', handleClickOutside)
-            document.removeEventListener('touchstart', handleClickOutside)
-        }
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
     }, [isOpen, refs.domReference, refs.floating]);
 
 
@@ -127,43 +127,43 @@ export function ModelSelector({
 
     // Check usage limits for all models
     useEffect(() => {
-        if (!settings?.modelUsageLimits) { return }
+        if (!settings?.modelUsageLimits) { return; }
 
         const checkLimits = async () => {
-            const checks: Record<string, { allowed: boolean; reason?: string }> = {}
+            const checks: Record<string, { allowed: boolean; reason?: string }> = {};
 
             // Check limits for all models in groupedModels
             if (groupedModels) {
                 for (const [provider, group] of Object.entries(groupedModels)) {
                     for (const model of group.models) {
-                        const modelId = model.id || ''
-                        if (!modelId) { continue }
-                        const key = `${provider}:${modelId}`
+                        const modelId = model.id || '';
+                        if (!modelId) { continue; }
+                        const key = `${provider}:${modelId}`;
                         try {
-                            const result = await window.electron.checkUsageLimit(provider, modelId)
-                            checks[key] = result
+                            const result = await window.electron.checkUsageLimit(provider, modelId);
+                            checks[key] = result;
                         } catch {
-                            checks[key] = { allowed: true } // Default to allowed on error
+                            checks[key] = { allowed: true }; // Default to allowed on error
                         }
                     }
                 }
             }
 
-            setUsageLimitChecks(checks)
-        }
+            setUsageLimitChecks(checks);
+        };
 
-        void checkLimits()
-    }, [settings?.modelUsageLimits, groupedModels])
+        void checkLimits();
+    }, [settings?.modelUsageLimits, groupedModels]);
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
         if (!quotas && !codexUsage && !settings?.modelUsageLimits) { return false; }
         const lowerModelId = modelId.toLowerCase();
 
         // Check usage limits first
-        const limitKey = `${provider}:${modelId}`
-        const limitCheck = usageLimitChecks[limitKey]
+        const limitKey = `${provider}:${modelId}`;
+        const limitCheck = usageLimitChecks[limitKey];
         if (limitCheck && !limitCheck.allowed) {
-            return true
+            return true;
         }
 
         // 1. Check Codex/OpenAI Quotas and Usage Limits
@@ -172,12 +172,12 @@ export function ModelSelector({
             const usage = codex?.usage || codex?.data?.usage;
             if (usage) {
                 // Check user-defined usage limits from settings
-                const codexLimits = settings?.modelUsageLimits?.codex
+                const codexLimits = settings?.modelUsageLimits?.codex;
 
                 // Check weekly limit from settings
                 if (codexLimits?.weekly?.enabled && usage.weeklyLimit !== undefined && usage.weeklyLimit > 0) {
-                    const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0)
-                    const maxAllowedPercent = codexLimits.weekly.percentage
+                    const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0);
+                    const maxAllowedPercent = codexLimits.weekly.percentage;
                     if (weeklyRemainingPercent < maxAllowedPercent) {
                         if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
                             return true;
@@ -186,10 +186,10 @@ export function ModelSelector({
                 }
 
                 // Check daily limit from settings
-                const usageExt = usage as { dailyLimit?: number }
+                const usageExt = usage as { dailyLimit?: number };
                 if (codexLimits?.daily?.enabled && usageExt.dailyLimit !== undefined && usageExt.dailyLimit > 0) {
-                    const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0)
-                    const maxAllowedPercent = codexLimits.daily.percentage
+                    const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0);
+                    const maxAllowedPercent = codexLimits.daily.percentage;
                     if (dailyRemainingPercent < maxAllowedPercent) {
                         if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
                             return true;
@@ -239,8 +239,8 @@ export function ModelSelector({
         // 3. Antigravity Quota Handling - disable if percentage is 0-5% or below user-defined limit
         if (provider === 'antigravity') {
             // Check user-defined usage limits from settings
-            const antigravityLimits = settings?.modelUsageLimits?.antigravity
-            const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId]
+            const antigravityLimits = settings?.modelUsageLimits?.antigravity;
+            const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId];
 
             if (modelLimit?.enabled) {
                 // Check models array in quotas for percentage
@@ -316,7 +316,7 @@ export function ModelSelector({
     }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS, settings, usageLimitChecks]);
 
     const categories = useMemo(() => {
-        if (!groupedModels) { return [] }
+        if (!groupedModels) { return []; }
 
         interface ModelItem {
             id: string;
@@ -347,7 +347,7 @@ export function ModelSelector({
             { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-cyan-400', bg: 'bg-cyan-500/10', providerId: 'opencode', models: [] },
             { id: 'ollama', name: t('modelSelector.ollamaLocal'), icon: Server, color: 'text-orange-400', bg: 'bg-orange-500/10', providerId: 'ollama', models: [] },
             { id: 'custom', name: t('modelSelector.proxyCustom'), icon: Box, color: 'text-zinc-400', bg: 'bg-zinc-500/10', providerId: 'openai', models: [] }
-        ]
+        ];
 
         const brandsMapping: Array<{ key: keyof GroupedModels, catId: string }> = [
             { key: 'ollama', catId: 'ollama' },
@@ -357,18 +357,18 @@ export function ModelSelector({
             { key: 'antigravity', catId: 'antigravity' },
             { key: 'opencode', catId: 'opencode' },
             { key: 'custom', catId: 'custom' }
-        ]
+        ];
 
-        const hidden = new Set<string>(settings?.general?.hiddenModels ?? [])
-        const searchLower = debouncedSearchQuery.toLowerCase()
-        const favorites = new Set(settings?.general?.favoriteModels ?? [])
+        const hidden = new Set<string>(settings?.general?.hiddenModels ?? []);
+        const searchLower = debouncedSearchQuery.toLowerCase();
+        const favorites = new Set(settings?.general?.favoriteModels ?? []);
 
         for (const mapping of brandsMapping) {
-            const group = groupedModels[mapping.key]
-            const models = group?.models ?? []
-            const cat = cats.find(c => c.id === mapping.catId)
-            if (!cat) { continue }
-            const favCat = cats.find(c => c.id === 'favorites')
+            const group = groupedModels[mapping.key];
+            const models = group?.models ?? [];
+            const cat = cats.find(c => c.id === mapping.catId);
+            if (!cat) { continue; }
+            const favCat = cats.find(c => c.id === 'favorites');
 
             interface RawModel {
                 id?: string
@@ -387,7 +387,7 @@ export function ModelSelector({
                     (m.name || '').toLowerCase().includes(searchLower) ||
                     id.toLowerCase().includes(searchLower);
 
-                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) { continue }
+                if (!matchesSearch || (hidden.has(id) && id !== selectedModel)) { continue; }
 
                 let label = m.label || m.name || id;
                 label = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
@@ -401,7 +401,7 @@ export function ModelSelector({
                     type: m.type ?? 'text',
                     contextWindow: m.contextWindow,
                     pinned: favorites.has(id)
-                }
+                };
 
                 cat.models.push(modelItem);
 
@@ -412,47 +412,47 @@ export function ModelSelector({
                     favCat.models.push({
                         ...modelItem,
                         // Keep original provider info for selection logic
-                    })
+                    });
                 }
             }
-            cat.models.sort((a, b) => a.label.localeCompare(b.label))
+            cat.models.sort((a, b) => a.label.localeCompare(b.label));
         }
 
         // Sort favorites
         if (cats[0].id === 'favorites') {
-            cats[0].models.sort((a, b) => a.label.localeCompare(b.label))
+            cats[0].models.sort((a, b) => a.label.localeCompare(b.label));
         }
 
-        return cats.filter(cat => cat.models.length > 0)
-    }, [groupedModels, debouncedSearchQuery, settings, selectedModel, t, isModelDisabled])
+        return cats.filter(cat => cat.models.length > 0);
+    }, [groupedModels, debouncedSearchQuery, settings, selectedModel, t, isModelDisabled]);
 
     const currentModelInfo = useMemo(() => {
         const normalizedSelectedModel = selectedModel.toLowerCase();
         for (const cat of categories) {
             const match = cat.models.find(m => m.id === selectedModel)
                 || cat.models.find(m => m.id.toLowerCase() === normalizedSelectedModel)
-                || cat.models.find(m => m.id.replace(/\./g, '-').toLowerCase() === normalizedSelectedModel.replace(/\./g, '-'))
-            if (match) { return match }
+                || cat.models.find(m => m.id.replace(/\./g, '-').toLowerCase() === normalizedSelectedModel.replace(/\./g, '-'));
+            if (match) { return match; }
         }
-        return null
-    }, [categories, selectedModel])
+        return null;
+    }, [categories, selectedModel]);
 
     const currentModelLabel: string = currentModelInfo?.label || selectedModel || '';
     const currentCategory = categories.find(c => c.models.some(m => m.id === selectedModel))
         || categories.find(c => c.id === selectedProvider);
 
     const contextLimit = useMemo(() => {
-        if (currentModelInfo?.contextWindow) { return currentModelInfo.contextWindow }
-        const id = selectedModel.toLowerCase()
-        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) { return 128000 }
-        if (id.includes('claude-3-5') || id.includes('claude-3')) { return 200000 }
-        if (id.includes('gemini-1.5')) { return 1000000 }
-        if (id.includes('gemini-3')) { return 2000000 }
-        if (id.includes('gpt-3.5')) { return 160000 }
-        return 32000
+        if (currentModelInfo?.contextWindow) { return currentModelInfo.contextWindow; }
+        const id = selectedModel.toLowerCase();
+        if (id.includes('gpt-4') || id.includes('o1-') || id.includes('gpt-5') || id.includes('codex')) { return 128000; }
+        if (id.includes('claude-3-5') || id.includes('claude-3')) { return 200000; }
+        if (id.includes('gemini-1.5')) { return 1000000; }
+        if (id.includes('gemini-3')) { return 2000000; }
+        if (id.includes('gpt-3.5')) { return 160000; }
+        return 32000;
     }, [selectedModel, currentModelInfo]);
 
-    const contextUsagePercent = Math.min(100, ((contextTokens ?? 0) / (contextLimit ?? 32000)) * 100)
+    const contextUsagePercent = Math.min(100, ((contextTokens ?? 0) / (contextLimit ?? 32000)) * 100);
 
     // Callback refs to satisfy aggressive linting
     const setReferenceNode = useCallback((node: HTMLElement | null) => {
@@ -467,8 +467,8 @@ export function ModelSelector({
         <div className="relative" ref={setReferenceNode}>
             <button
                 onClick={(e) => {
-                    e.stopPropagation()
-                    setIsOpen(!isOpen)
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
                 }}
                 className="flex items-center gap-2.5 bg-muted/30 hover:bg-muted/40 border border-border/50 hover:border-border rounded-xl px-3 py-1.5 transition-all outline-none min-w-[150px] justify-between group/sel shadow-sm"
             >
@@ -575,8 +575,8 @@ export function ModelSelector({
                                             </div>
                                             <div className="px-1">
                                                 {category.models.map(model => {
-                                                    const isSelected = selectedModels.some(m => m.provider === model.provider && m.model === model.id)
-                                                    const isPrimary = selectedModel === model.id && selectedProvider === model.provider
+                                                    const isSelected = selectedModels.some(m => m.provider === model.provider && m.model === model.id);
+                                                    const isPrimary = selectedModel === model.id && selectedProvider === model.provider;
 
                                                     return (
                                                         <button
@@ -585,11 +585,11 @@ export function ModelSelector({
                                                                 e.stopPropagation();
 
                                                                 // Shift+Click for multi-select
-                                                                const isMultiSelect = e.shiftKey
+                                                                const isMultiSelect = e.shiftKey;
 
                                                                 if (isMultiSelect && selectedModels.length >= 4 && !isSelected) {
                                                                     // Max 4 models - show feedback (could add toast here)
-                                                                    return
+                                                                    return;
                                                                 }
 
                                                                 onSelect(model.provider, model.id, isMultiSelect);
@@ -631,8 +631,8 @@ export function ModelSelector({
                                                             {toggleFavorite && (
                                                                 <div
                                                                     onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        toggleFavorite(model.id)
+                                                                        e.stopPropagation();
+                                                                        toggleFavorite(model.id);
                                                                     }}
                                                                     className={cn(
                                                                         "p-1 rounded hover:bg-muted/50 transition-colors cursor-pointer mr-1",
@@ -651,7 +651,7 @@ export function ModelSelector({
                                                                 </span>
                                                             )}
                                                         </button>
-                                                    )
+                                                    );
                                                 })}
                                             </div>
                                         </div>
@@ -663,5 +663,5 @@ export function ModelSelector({
                 )}
             </AnimatePresence>
         </div>
-    )
+    );
 }

@@ -1,16 +1,19 @@
-import React, { useState } from 'react'
-import { Language, useTranslation } from '@/i18n'
-import { AgentDefinition, Project } from '@/types'
-import { useProjectSettingsForm } from '../hooks/useProjectSettingsForm'
-import { SettingsHeader } from './settings/SettingsHeader'
-import { SettingsSidebar } from './settings/SettingsSidebar'
-import { GeneralSection } from './settings/GeneralSection'
-import { CouncilSection } from './settings/CouncilSection'
-import { WorkspaceSection } from './settings/WorkspaceSection'
-import { BuildSection } from './settings/BuildSection'
-import { DevServerSection } from './settings/DevServerSection'
-import { AdvancedSection } from './settings/AdvancedSection'
-import { ProjectSettingsSection } from './settings/types'
+import React, { useState } from 'react';
+
+import { Language, useTranslation } from '@/i18n';
+import { AgentDefinition, Project } from '@/types';
+
+import { useProjectSettingsForm } from '../hooks/useProjectSettingsForm';
+
+import { AdvancedSection } from './settings/AdvancedSection';
+import { BuildSection } from './settings/BuildSection';
+import { CouncilSection } from './settings/CouncilSection';
+import { DevServerSection } from './settings/DevServerSection';
+import { GeneralSection } from './settings/GeneralSection';
+import { SettingsHeader } from './settings/SettingsHeader';
+import { SettingsSidebar } from './settings/SettingsSidebar';
+import { ProjectSettingsSection } from './settings/types';
+import { WorkspaceSection } from './settings/WorkspaceSection';
 
 interface ProjectSettingsPanelProps {
     project: Project
@@ -24,8 +27,8 @@ interface ProjectSettingsPanelProps {
 export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
     project, onUpdate, language, availableAgents, onAddMount, onRemoveMount
 }) => {
-    const { t } = useTranslation(language)
-    const [activeSection, setActiveSection] = useState<ProjectSettingsSection>('general')
+    const { t } = useTranslation(language);
+    const [activeSection, setActiveSection] = useState<ProjectSettingsSection>('general');
 
     const {
         formData,
@@ -34,7 +37,7 @@ export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
         handleSave,
         handleReset,
         toggleMember
-    } = useProjectSettingsForm(project, onUpdate)
+    } = useProjectSettingsForm(project, onUpdate);
 
     return (
         <div className="h-full flex flex-col bg-background/50 backdrop-blur-md overflow-hidden">
@@ -93,5 +96,5 @@ export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

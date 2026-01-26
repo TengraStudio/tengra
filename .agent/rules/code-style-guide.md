@@ -35,6 +35,14 @@ npm run build → npm run lint → npm run type-check → commit → push
 - Use path aliases (@/, @main/, @shared/)
 - Write clean, documented code
 
+**Performance Standards:**
+- Mandatory `React.lazy()` for heavy components
+- Mandatory `useMemo`/`useCallback` for computations
+- Batch IPC calls and virtualize lists > 50 items
+- Lazy service instantiation in main process
+- Offload heavy tasks to worker threads
+- Implement `dispose()`/cleanup for all resources
+
 ## For Full Details
 
 See `docs/AI_RULES.md` for complete guidelines including:

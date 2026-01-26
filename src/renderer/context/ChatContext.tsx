@@ -1,16 +1,16 @@
-import { useAuth } from '@renderer/context/AuthContext'
-import { useModel } from '@renderer/context/ModelContext'
-import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory'
-import { useChatManager } from '@renderer/features/chat/hooks/useChatManager'
-import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech'
-import { useProject } from '@renderer/context/ProjectContext'
-import { useTranslation } from '@renderer/i18n'
-import { CatchError } from '@shared/types/common'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react'
-import React from 'react'
+import { useAuth } from '@renderer/context/AuthContext';
+import { useModel } from '@renderer/context/ModelContext';
+import { useProject } from '@renderer/context/ProjectContext';
+import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory';
+import { useChatManager } from '@renderer/features/chat/hooks/useChatManager';
+import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
+import { useTranslation } from '@renderer/i18n';
+import { CatchError } from '@shared/types/common';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
+import React from 'react';
 
-import { Project } from '@/types'
+import { Project } from '@/types';
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {
@@ -32,130 +32,137 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     setSystemMode: (mode: 'thinking' | 'agent' | 'fast') => void
 }
 
-const ChatContext = createContext<ChatContextType | null>(null)
+const ChatContext = createContext<ChatContextType | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const { appSettings, language } = useAuth()
-    const { selectedModel, selectedProvider, selectedModels } = useModel()
-    const { t } = useTranslation()
+    const { appSettings, language } = useAuth();
+    const { selectedModel, selectedProvider, selectedModels } = useModel();
+    const { t } = useTranslation();
 
     // Consume Project Context instead of re-instantiating the manager
     const {
         projects, selectedProject, setSelectedProject, loadProjects
-    } = useProject()
+    } = useProject();
 
-    const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech()
+    const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
 
     // Chat History Manager for undo/redo
-    const historyManager = useChatHistory()
+    const historyManager = useChatHistory();
 
     const handleSpeakAdapter = useCallback((id: string, text: string) => {
         handleSpeak(text, id);
     }, [handleSpeak]);
+
+    // Helper functions for error formatting to reduce complexity
+    const formatRateLimitError = useCallback((message: string): string => {
+        try {
+            const jsonMatch = message.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {});
+                const errorMsg = errData.error?.message ?? errData.message ?? message;
+                if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
+                    return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
+                }
+            }
+        } catch {
+            // Not JSON
+        }
+        return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
+    }, []);
+
+    const handleChatError = useCallback((e: Error): string => {
+        const message = e.message;
+        if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota')) {
+            return formatRateLimitError(message);
+        }
+        return message;
+    }, [formatRateLimitError]);
 
     const chatManager = useChatManager({
         selectedModel,
         selectedProvider,
         selectedModels,
         language,
-        appSettings: appSettings || undefined,
+        appSettings: appSettings ?? undefined,
         autoReadEnabled: false, // Could be moved to settings/context
         handleSpeak: handleSpeakAdapter, // Stable Adapter
         formatChatError: (e: CatchError) => {
-            if (e instanceof Error) {
-                const message = e.message;
-                // Handle 429 rate limit/quota errors
-                if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota')) {
-                    try {
-                        // Try to parse JSON error if present
-                        const jsonMatch = message.match(/\{[\s\S]*\}/);
-                        if (jsonMatch) {
-                            const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {})
-                            const errorMsg = errData.error?.message ?? errData.message ?? message;
-                            if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
-                                return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
-                            }
-                        }
-                    } catch {
-                        // Not JSON, use default message
-                    }
-                    return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
-                }
-                return message;
+            if (!(e instanceof Error)) {
+                return String(e ?? 'Unknown error');
             }
-            return String(e || 'Unknown error');
+            return handleChatError(e);
         },
         t,
         projectId: selectedProject?.id,
         activeWorkspacePath: selectedProject?.path
-    })
+    });
 
     // Track if we're currently restoring from history to avoid saving during undo/redo
-    const isRestoringRef = React.useRef(false)
+    const isRestoringRef = React.useRef(false);
 
     // Save state to history when chats or currentChatId changes (but not during undo/redo)
     useEffect(() => {
         if (isRestoringRef.current) {
-            isRestoringRef.current = false
-            return
+            isRestoringRef.current = false;
+            return;
         }
-        if (chatManager.chats && chatManager.chats.length >= 0) {
-            historyManager.saveState(chatManager.chats, chatManager.currentChatId)
+        if (chatManager.chats && chatManager.chats.length > 0) {
+            historyManager.saveState(chatManager.chats, chatManager.currentChatId);
         }
-    }, [chatManager.chats, chatManager.currentChatId, historyManager])
+    }, [chatManager.chats, chatManager.currentChatId, historyManager]);
 
     // Handle undo/redo keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const activeTag = document.activeElement?.tagName.toLowerCase()
+            const activeTag = document.activeElement?.tagName.toLowerCase();
             // Don't trigger undo/redo in input fields
             if (activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable) {
-                return
+                return;
             }
 
             // Ctrl+Z or Cmd+Z for undo
             if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault()
-                isRestoringRef.current = true
-                const state = historyManager.undo()
+                e.preventDefault();
+                isRestoringRef.current = true;
+                const state = historyManager.undo();
                 if (state) {
-                    chatManager.setChats(state.chats)
-                    chatManager.setCurrentChatId(state.currentChatId)
+                    chatManager.setChats(state.chats);
+                    chatManager.setCurrentChatId(state.currentChatId);
                 }
             }
             // Ctrl+Shift+Z or Cmd+Shift+Z for redo (or Ctrl+Y)
             if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
-                e.preventDefault()
-                isRestoringRef.current = true
-                const state = historyManager.redo()
+                e.preventDefault();
+                isRestoringRef.current = true;
+                const state = historyManager.redo();
                 if (state) {
-                    chatManager.setChats(state.chats)
-                    chatManager.setCurrentChatId(state.currentChatId)
+                    chatManager.setChats(state.chats);
+                    chatManager.setCurrentChatId(state.currentChatId);
                 }
             }
-        }
+        };
 
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [historyManager, chatManager])
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [historyManager, chatManager]);
 
     const undo = useCallback(() => {
-        isRestoringRef.current = true
-        const state = historyManager.undo()
+        isRestoringRef.current = true;
+        const state = historyManager.undo();
         if (state) {
-            chatManager.setChats(state.chats)
-            chatManager.setCurrentChatId(state.currentChatId)
+            chatManager.setChats(state.chats);
+            chatManager.setCurrentChatId(state.currentChatId);
         }
-    }, [historyManager, chatManager])
+    }, [historyManager, chatManager]);
 
     const redo = useCallback(() => {
-        isRestoringRef.current = true
-        const state = historyManager.redo()
+        isRestoringRef.current = true;
+        const state = historyManager.redo();
         if (state) {
-            chatManager.setChats(state.chats)
-            chatManager.setCurrentChatId(state.currentChatId)
+            chatManager.setChats(state.chats);
+            chatManager.setCurrentChatId(state.currentChatId);
         }
-    }, [historyManager, chatManager])
+    }, [historyManager, chatManager]);
 
     const value = useMemo(() => ({
         ...chatManager,
@@ -176,21 +183,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
         projects, selectedProject, setSelectedProject, loadProjects,
-        historyManager.canUndo, historyManager.canRedo, undo, redo,
-        chatManager.systemMode, chatManager.setSystemMode
-    ])
+        historyManager.canUndo, historyManager.canRedo, undo, redo
+    ]);
 
     return (
         <ChatContext.Provider value={value}>
             {children}
         </ChatContext.Provider>
-    )
+    );
 }
 
 export function useChat() {
-    const context = useContext(ChatContext)
+    const context = useContext(ChatContext);
     if (!context) {
-        throw new Error('useChat must be used within a ChatProvider')
+        throw new Error('useChat must be used within a ChatProvider');
     }
-    return context
+    return context;
 }

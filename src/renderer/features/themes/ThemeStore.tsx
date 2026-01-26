@@ -3,11 +3,11 @@
  * Browse, preview, and install themes for the application.
  */
 
-import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react'
-import React, { useMemo, useState } from 'react'
+import { Check, Download, Moon, Palette, Search, Star, Sun } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface Theme {
     id: string
@@ -50,10 +50,9 @@ const BUILT_IN_THEMES: Theme[] = [
         rating: 5.0,
         isInstalled: true
     }
-]
+];
 
 interface ThemeStoreProps {
-    onInstallTheme?: (themeId: string) => void
     onApplyTheme?: (themeId: string) => void
     currentThemeId?: string
     language: Language
@@ -64,42 +63,42 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
     currentThemeId = 'dark-default',
     language
 }) => {
-    const { t } = useTranslation(language)
-    const [searchQuery, setSearchQuery] = useState('')
-    const [filter, setFilter] = useState<'all' | 'installed' | 'dark' | 'light'>('all')
-    const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
+    const { t } = useTranslation(language);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filter, setFilter] = useState<'all' | 'installed' | 'dark' | 'light'>('all');
+    const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
 
     const builtInThemes = useMemo(() => BUILT_IN_THEMES.map(theme => ({
         ...theme,
         name: t(`themeStore.themes.${theme.id}.name`),
         description: t(`themeStore.themes.${theme.id}.description`)
-    })), [t])
+    })), [t]);
 
     const filteredThemes = useMemo(() => {
-        let themes = builtInThemes
+        let themes = builtInThemes;
 
         if (searchQuery) {
-            const q = searchQuery.toLowerCase()
+            const q = searchQuery.toLowerCase();
             themes = themes.filter(t =>
                 t.name.toLowerCase().includes(q) ||
                 t.author.toLowerCase().includes(q) ||
                 t.description.toLowerCase().includes(q)
-            )
+            );
         }
 
         if (filter === 'installed') {
-            themes = themes.filter(t => t.isInstalled)
+            themes = themes.filter(t => t.isInstalled);
         } else if (filter === 'dark') {
-            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.colors.background.startsWith('#0') || t.colors.background.startsWith('#1') || t.colors.background.startsWith('#2'))
+            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.colors.background.startsWith('#0') || t.colors.background.startsWith('#1') || t.colors.background.startsWith('#2'));
         } else if (filter === 'light') {
-            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.colors.background.startsWith('#f') || t.colors.background.startsWith('#e'))
+            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.colors.background.startsWith('#f') || t.colors.background.startsWith('#e'));
         }
 
-        return themes
-    }, [searchQuery, filter, builtInThemes])
+        return themes;
+    }, [searchQuery, filter, builtInThemes]);
 
     const ThemeCard = ({ theme }: { theme: Theme }) => {
-        const isActive = currentThemeId === theme.id
+        const isActive = currentThemeId === theme.id;
 
         return (
             <div
@@ -157,8 +156,8 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                         {!isActive && (
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    void onApplyTheme?.(theme.id)
+                                    e.stopPropagation();
+                                    void onApplyTheme?.(theme.id);
                                 }}
                                 className="px-2 py-1 text-[10px] font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
                             >
@@ -168,8 +167,8 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                     </div>
                 </div>
             </div>
-        )
-    }
+        );
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -273,8 +272,8 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => {
-                                        onApplyTheme?.(selectedTheme.id)
-                                        setSelectedTheme(null)
+                                        onApplyTheme?.(selectedTheme.id);
+                                        setSelectedTheme(null);
                                     }}
                                     className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90"
                                 >
@@ -292,7 +291,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default ThemeStore
+export default ThemeStore;

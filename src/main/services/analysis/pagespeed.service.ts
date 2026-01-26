@@ -1,4 +1,4 @@
-import { appLogger } from '@main/logging/logger'
+import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 

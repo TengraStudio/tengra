@@ -1,8 +1,8 @@
-import React from 'react'
+import React from 'react';
 
-import { Modal } from '@/components/ui/modal'
-import { AnimatePresence } from '@/lib/framer-motion-compat'
-import { Project } from '@/types'
+import { Modal } from '@/components/ui/modal';
+import { AnimatePresence } from '@/lib/framer-motion-compat';
+import { Project } from '@/types';
 
 interface ProjectModalsProps {
     editingProject: Project | null
@@ -61,7 +61,7 @@ const EditProjectModal: React.FC<{
                             {t('common.cancel')}
                         </button>
                         <button
-                            onClick={() => { void onSubmit() }}
+                            onClick={() => { void onSubmit(); }}
                             disabled={!form.title.trim()}
                             className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                         >
@@ -72,7 +72,7 @@ const EditProjectModal: React.FC<{
             </Modal>
         )}
     </AnimatePresence>
-)
+);
 
 const DeleteProjectModal: React.FC<{
     project: Project | null;
@@ -80,8 +80,8 @@ const DeleteProjectModal: React.FC<{
     onSubmit: (deleteFiles: boolean) => Promise<void>;
     t: (key: string) => string;
 }> = ({ project, onClose, onSubmit, t }) => {
-    const [deleteFiles, setDeleteFiles] = React.useState(false)
-    React.useEffect(() => { if (!project) { setDeleteFiles(false) } }, [project])
+    const [deleteFiles, setDeleteFiles] = React.useState(false);
+    React.useEffect(() => { if (!project) { setDeleteFiles(false); } }, [project]);
 
     return (
         <AnimatePresence>
@@ -100,7 +100,7 @@ const DeleteProjectModal: React.FC<{
                                 {t('common.cancel')}
                             </button>
                             <button
-                                onClick={() => { void onSubmit(deleteFiles) }}
+                                onClick={() => { void onSubmit(deleteFiles); }}
                                 className="px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
                                 {t('common.delete')}
@@ -110,8 +110,8 @@ const DeleteProjectModal: React.FC<{
                 </Modal>
             )}
         </AnimatePresence>
-    )
-}
+    );
+};
 
 const ArchiveProjectModal: React.FC<{
     project: Project | null;
@@ -134,8 +134,8 @@ const ArchiveProjectModal: React.FC<{
                             {t('common.cancel')}
                         </button>
                         <button
-                            onClick={() => { void onSubmit() }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            onClick={() => { void onSubmit(); }}
+                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-foreground hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
                         </button>
@@ -144,7 +144,7 @@ const ArchiveProjectModal: React.FC<{
             </Modal>
         )}
     </AnimatePresence>
-)
+);
 
 const BulkArchiveModal: React.FC<{
     isOpen: boolean;
@@ -168,8 +168,8 @@ const BulkArchiveModal: React.FC<{
                             {t('common.cancel')}
                         </button>
                         <button
-                            onClick={() => { void onSubmit() }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            onClick={() => { void onSubmit(); }}
+                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-foreground hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {t('projects.bulkArchive')}
                         </button>
@@ -178,7 +178,7 @@ const BulkArchiveModal: React.FC<{
             </Modal>
         )}
     </AnimatePresence>
-)
+);
 
 const BulkDeleteModal: React.FC<{
     isOpen: boolean;
@@ -187,8 +187,8 @@ const BulkDeleteModal: React.FC<{
     onSubmit: (deleteFiles: boolean) => Promise<void>;
     t: (key: string) => string;
 }> = ({ isOpen, count, onClose, onSubmit, t }) => {
-    const [deleteFiles, setDeleteFiles] = React.useState(false)
-    React.useEffect(() => { if (!isOpen) { setDeleteFiles(false) } }, [isOpen])
+    const [deleteFiles, setDeleteFiles] = React.useState(false);
+    React.useEffect(() => { if (!isOpen) { setDeleteFiles(false); } }, [isOpen]);
 
     return (
         <AnimatePresence>
@@ -207,7 +207,7 @@ const BulkDeleteModal: React.FC<{
                                 {t('common.cancel')}
                             </button>
                             <button
-                                onClick={() => { void onSubmit(deleteFiles) }}
+                                onClick={() => { void onSubmit(deleteFiles); }}
                                 className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
                                 {t('projects.bulkDelete')}
@@ -217,8 +217,8 @@ const BulkDeleteModal: React.FC<{
                 </Modal>
             )}
         </AnimatePresence>
-    )
-}
+    );
+};
 
 const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) => void; t: (key: string) => string }> = ({ checked, onChange, t }) => (
     <label className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors group">
@@ -230,7 +230,7 @@ const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) =
                 className="peer appearance-none w-5 h-5 border border-border/50 rounded bg-muted/20 checked:bg-destructive checked:border-destructive transition-all cursor-pointer"
             />
             <svg
-                className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+                className="absolute w-3.5 h-3.5 text-foreground opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -253,7 +253,7 @@ const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) =
             )}
         </div>
     </label>
-)
+);
 
 export const ProjectModals: React.FC<ProjectModalsProps> = ({
     editingProject, setEditingProject, deletingProject, setDeletingProject,
@@ -298,4 +298,4 @@ export const ProjectModals: React.FC<ProjectModalsProps> = ({
             t={t}
         />
     </>
-)
+);

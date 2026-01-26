@@ -1,8 +1,8 @@
-import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react'
-import React, { memo } from 'react'
+import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react';
+import React, { memo } from 'react';
 
-import { cn } from '@/lib/utils'
-import { Chat, Folder } from '@/types'
+import { cn } from '@/lib/utils';
+import { Chat, Folder } from '@/types';
 
 interface ChatListItemProps {
     chat: Chat;
@@ -20,7 +20,7 @@ export const ChatListItem = memo<ChatListItemProps>(({
     chat, currentChatId, isGenerating, onSelect, onDelete, onTogglePin,
     onMoveToFolder, folders, t
 }) => {
-    const isActive = currentChatId === chat.id
+    const isActive = currentChatId === chat.id;
 
     return (
         <div className="relative group chat-item">
@@ -63,5 +63,5 @@ export const ChatListItem = memo<ChatListItemProps>(({
                 </div>
             </div>
         </div>
-    )
-})
+    );
+});

@@ -1,7 +1,7 @@
-import { Activity, AlertTriangle, ExternalLink } from 'lucide-react'
-import React from 'react'
+import { Activity, AlertTriangle, ExternalLink } from 'lucide-react';
+import React from 'react';
 
-import antigravityLogo from '@/assets/antigravity.svg'
+import antigravityLogo from '@/assets/antigravity.svg';
 
 interface AboutTabProps {
     onReset: () => void
@@ -74,5 +74,5 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

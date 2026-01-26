@@ -1,3 +1,4 @@
+import { useTranslation } from '@renderer/i18n';
 import { EntityKnowledge, EpisodicMemory, SemanticFragment } from '@shared/types/memory';
 import { formatDistanceToNow } from 'date-fns';
 import { LucideIcon } from 'lucide-react';
@@ -14,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@renderer/i18n';
 
 import { useMemory } from '../hooks/useMemory';
 

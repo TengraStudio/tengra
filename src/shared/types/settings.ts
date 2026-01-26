@@ -1,4 +1,4 @@
-import { JsonValue } from '@/types/common'
+import { JsonValue } from '@/types/common';
 
 export type AppSettings = {
     ollama: {
@@ -27,7 +27,7 @@ export type AppSettings = {
         enabled: boolean
     }
     general: {
-        language: 'tr' | 'en' | 'de' | 'fr' | 'es'
+        language: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar'
         theme: string
         resolution: string
         fontSize: number

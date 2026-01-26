@@ -1,11 +1,12 @@
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react'
-import React from 'react'
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import React from 'react';
 
-import { SettingsCategory } from '@/features/settings/types'
-import { Project } from '@/types'
+import { SettingsCategory } from '@/features/settings/types';
+import { Language } from '@/i18n';
+import { Project } from '@/types';
 
-import { SidebarItem } from './SidebarItem'
-import { SidebarSettingsMenu } from './SidebarSettingsMenu'
+import { SidebarItem } from './SidebarItem';
+import { SidebarSettingsMenu } from './SidebarSettingsMenu';
 
 interface SidebarFooterProps {
     isCollapsed: boolean
@@ -16,6 +17,7 @@ interface SidebarFooterProps {
     toggleSidebar: () => void
     onOpenSettings: (category?: SettingsCategory) => void
     t: (key: string) => string
+    language?: Language
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
@@ -26,8 +28,11 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
     toggleSettingsMenu,
     toggleSidebar,
     onOpenSettings,
-    t
+    t,
+    language
 }) => {
+    const isRTL = language === 'ar';
+
     return (
         <div className="p-2 border-t border-border/30 space-y-1">
             {selectedProject && !isCollapsed && (
@@ -61,10 +66,13 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                 onClick={toggleSidebar}
                 className="w-full flex items-center justify-center p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 rounded-md transition-colors"
             >
-                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                {/* Rotate 180 if RTL so Right becomes Left and vice versa */}
+                <div className={isRTL ? "rotate-180 transition-transform" : "transition-transform"}>
+                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                </div>
             </button>
         </div>
-    )
-}
+    );
+};
 
-SidebarFooter.displayName = 'SidebarFooter'
+SidebarFooter.displayName = 'SidebarFooter';

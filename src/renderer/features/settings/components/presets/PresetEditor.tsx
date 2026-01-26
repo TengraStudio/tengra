@@ -1,6 +1,6 @@
-import React from 'react'
+import React from 'react';
 
-import { ParameterPreset } from '../ParameterPresets'
+import { ParameterPreset } from '../ParameterPresets';
 
 interface PresetEditorProps {
     preset: ParameterPreset
@@ -65,5 +65,5 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                 </button>
             </div>
         </div>
-    )
-}
+    );
+};

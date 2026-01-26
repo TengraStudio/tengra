@@ -1,23 +1,23 @@
+import { useTranslation } from '@renderer/i18n';
 import {
     ChevronDown,
     Maximize2, Minimize2, Plus, Terminal, TerminalSquare,
     X
-} from 'lucide-react'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { Terminal as XTerm } from 'xterm'
-import { FitAddon } from 'xterm-addon-fit'
+} from 'lucide-react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { Terminal as XTerm } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
 
-import { useTheme } from '@/hooks/useTheme'
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
-import { TerminalTab } from '@/types'
-import { useTranslation } from '@renderer/i18n'
+import { useTheme } from '@/hooks/useTheme';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
+import { TerminalTab } from '@/types';
 
-import 'xterm/css/xterm.css'
+import 'xterm/css/xterm.css';
 
 // Global registry to track initialized terminal sessions (prevents duplicate spawns across remounts)
-const initializedTerminals = new Set<string>()
-const initializingTerminals = new Set<string>()
+const initializedTerminals = new Set<string>();
+const initializingTerminals = new Set<string>();
 
 interface TerminalPanelProps {
     isOpen: boolean
@@ -43,15 +43,15 @@ const TerminalSession = memo(({
     onClose: () => void,
     projectPath?: string
 }) => {
-    const { t } = useTranslation()
-    const containerRef = useRef<HTMLDivElement>(null)
-    const xtermRef = useRef<XTerm | null>(null)
-    const fitAddonRef = useRef<FitAddon | null>(null)
-    const { theme } = useTheme()
-    const [isReady, setIsReady] = useState(false)
-    const [hasError, setHasError] = useState(false)
-    const sessionIdRef = useRef<string | null>(null)
-    const isInitializedRef = useRef(false) // Prevent multiple initializations
+    const { t } = useTranslation();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const xtermRef = useRef<XTerm | null>(null);
+    const fitAddonRef = useRef<FitAddon | null>(null);
+    const { theme } = useTheme();
+    const [isReady, setIsReady] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const sessionIdRef = useRef<string | null>(null);
+    const isInitializedRef = useRef(false); // Prevent multiple initializations
 
     // Theme definitions
     const getTheme = useCallback((isDark: boolean) => ({
@@ -75,42 +75,42 @@ const TerminalSession = memo(({
         brightMagenta: '#e879f9',
         brightCyan: '#22d3ee',
         brightWhite: '#ffffff'
-    }), [])
+    }), []);
 
     // Update theme on change
     useEffect(() => {
         if (xtermRef.current) {
-            xtermRef.current.options.theme = getTheme(theme === 'dark')
+            xtermRef.current.options.theme = getTheme(theme === 'dark');
         }
-    }, [theme, getTheme])
+    }, [theme, getTheme]);
 
     // Initialize xterm - only once per tab.id using global registry
     useEffect(() => {
         // Use global registry to prevent duplicate sessions even across remounts
         if (initializedTerminals.has(tab.id)) {
-            console.warn(`[TerminalSession] Terminal ${tab.id} already initialized globally, skipping`)
-            return
+            console.warn(`[TerminalSession] Terminal ${tab.id} already initialized globally, skipping`);
+            return;
         }
 
         if (initializingTerminals.has(tab.id)) {
-            console.warn(`[TerminalSession] Terminal ${tab.id} is already initializing, skipping`)
-            return
+            console.warn(`[TerminalSession] Terminal ${tab.id} is already initializing, skipping`);
+            return;
         }
 
         if (!containerRef.current) {
-            console.warn(`[TerminalSession] No container for tab ${tab.id}, skipping`)
-            return
+            console.warn(`[TerminalSession] No container for tab ${tab.id}, skipping`);
+            return;
         }
 
         // Prevent multiple initializations for the same tab
         if (isInitializedRef.current) {
-            console.warn(`[TerminalSession] Already initialized locally for tab ${tab.id}, skipping`)
-            return
+            console.warn(`[TerminalSession] Already initialized locally for tab ${tab.id}, skipping`);
+            return;
         }
 
-        console.warn(`[TerminalSession] Initializing terminal for tab ${tab.id}`)
-        isInitializedRef.current = true
-        initializingTerminals.add(tab.id)
+        console.warn(`[TerminalSession] Initializing terminal for tab ${tab.id}`);
+        isInitializedRef.current = true;
+        initializingTerminals.add(tab.id);
 
         const term = new XTerm({
             cursorBlink: true,
@@ -121,215 +121,215 @@ const TerminalSession = memo(({
             scrollback: 10000,
             cols: 80,
             rows: 24
-        })
+        });
 
-        const fitAddon = new FitAddon()
-        term.loadAddon(fitAddon)
-        term.open(containerRef.current)
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(containerRef.current);
 
-        xtermRef.current = term
-        fitAddonRef.current = fitAddon
+        xtermRef.current = term;
+        fitAddonRef.current = fitAddon;
 
-        let sessionCreated = false
+        let sessionCreated = false;
 
         // Initialize backend session
         const initSession = async () => {
             // Final check - if someone else initialized while we were setting up
             if (initializedTerminals.has(tab.id)) {
-                console.warn(`[TerminalSession] Terminal ${tab.id} was initialized by another component, skipping`)
-                initializingTerminals.delete(tab.id)
-                return
+                console.warn(`[TerminalSession] Terminal ${tab.id} was initialized by another component, skipping`);
+                initializingTerminals.delete(tab.id);
+                return;
             }
 
             // Mark that we're initializing to prevent concurrent calls
-            sessionIdRef.current = tab.id
+            sessionIdRef.current = tab.id;
 
             // Give a moment for the DOM to settle
-            await new Promise(resolve => setTimeout(resolve, 50))
+            await new Promise(resolve => setTimeout(resolve, 50));
 
             try {
                 if (containerRef.current && (containerRef.current as HTMLElement).offsetParent) {
-                    fitAddon.fit()
+                    fitAddon.fit();
                 }
             } catch (e) {
-                console.warn('[TerminalSession] Initial terminal fit failed', e)
+                console.warn('[TerminalSession] Initial terminal fit failed', e);
             }
 
-            const cols = term.cols || 80
-            const rows = term.rows || 24
+            const cols = term.cols || 80;
+            const rows = term.rows || 24;
 
             try {
                 // Check if terminal service is available
-                const isAvailable = await window.electron.terminal.isAvailable()
+                const isAvailable = await window.electron.terminal.isAvailable();
                 if (!isAvailable) {
-                    term.write('\r\n\x1b[31m[ERROR] Terminal service is not available. Please ensure node-pty is installed.\x1b[0m\r\n')
-                    console.error('[TerminalSession] Terminal service not available')
-                    sessionIdRef.current = null
-                    initializingTerminals.delete(tab.id)
-                    return
+                    term.write('\r\n\x1b[31m[ERROR] Terminal service is not available. Please ensure node-pty is installed.\x1b[0m\r\n');
+                    console.error('[TerminalSession] Terminal service not available');
+                    sessionIdRef.current = null;
+                    initializingTerminals.delete(tab.id);
+                    return;
                 }
 
                 // Create the terminal session
-                console.warn(`[TerminalSession] Creating terminal session: ${tab.id}`)
+                console.warn(`[TerminalSession] Creating terminal session: ${tab.id}`);
                 const result = await window.electron.terminal.create({
                     id: tab.id,
                     shell: tab.type,
                     ...(projectPath ? { cwd: projectPath } : {}),
                     cols,
                     rows
-                })
+                });
 
                 if (!result.success) {
-                    const errorMsg = result.error || 'Failed to create terminal session'
-                    term.write(`\r\n\x1b[31m[ERROR] ${errorMsg}\x1b[0m\r\n`)
-                    console.error('[TerminalSession] Failed to create session:', errorMsg)
-                    setHasError(true)
-                    sessionIdRef.current = null
-                    initializingTerminals.delete(tab.id)
-                    return
+                    const errorMsg = result.error || 'Failed to create terminal session';
+                    term.write(`\r\n\x1b[31m[ERROR] ${errorMsg}\x1b[0m\r\n`);
+                    console.error('[TerminalSession] Failed to create session:', errorMsg);
+                    setHasError(true);
+                    sessionIdRef.current = null;
+                    initializingTerminals.delete(tab.id);
+                    return;
                 }
 
-                sessionCreated = true
-                initializedTerminals.add(tab.id)
-                initializingTerminals.delete(tab.id)
+                sessionCreated = true;
+                initializedTerminals.add(tab.id);
+                initializingTerminals.delete(tab.id);
 
                 // Hook up resize
                 term.onResize((size) => {
                     if (sessionCreated) {
                         window.electron.terminal.resize(tab.id, size.cols, size.rows).catch(err => {
-                            console.error('[TerminalSession] Resize failed:', err)
-                        })
+                            console.error('[TerminalSession] Resize failed:', err);
+                        });
                     }
-                })
+                });
 
                 // Hook up data input
                 term.onData((data) => {
                     if (sessionCreated) {
                         window.electron.terminal.write(tab.id, data).catch(err => {
-                            console.error('[TerminalSession] Write failed:', err)
-                        })
+                            console.error('[TerminalSession] Write failed:', err);
+                        });
                     }
-                })
+                });
 
                 // Request initial buffer if any (re-attachment support)
                 try {
-                    const buffer = await window.electron.terminal.readBuffer(tab.id)
+                    const buffer = await window.electron.terminal.readBuffer(tab.id);
                     if (buffer) {
-                        term.write(buffer)
+                        term.write(buffer);
                     }
                 } catch (err) {
-                    console.warn('[TerminalSession] Failed to read buffer:', err)
+                    console.warn('[TerminalSession] Failed to read buffer:', err);
                 }
 
-                setIsReady(true)
-                setHasError(false)
+                setIsReady(true);
+                setHasError(false);
             } catch (error) {
-                const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-                term.write(`\r\n\x1b[31m[ERROR] Failed to initialize terminal: ${errorMsg}\x1b[0m\r\n`)
-                console.error('[TerminalSession] Initialization error:', error)
-                setHasError(true)
-                initializingTerminals.delete(tab.id)
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                term.write(`\r\n\x1b[31m[ERROR] Failed to initialize terminal: ${errorMsg}\x1b[0m\r\n`);
+                console.error('[TerminalSession] Initialization error:', error);
+                setHasError(true);
+                initializingTerminals.delete(tab.id);
             }
-        }
+        };
 
-        void initSession()
+        void initSession();
 
         // Cleanup
         return () => {
-            isInitializedRef.current = false
-            const sessionId = sessionIdRef.current || tab.id
+            isInitializedRef.current = false;
+            const sessionId = sessionIdRef.current || tab.id;
             if (sessionCreated && sessionId) {
                 // Remove from registry and kill the backend session on cleanup
-                initializedTerminals.delete(tab.id)
+                initializedTerminals.delete(tab.id);
                 window.electron.terminal.kill(sessionId).catch(err => {
-                    console.error('[TerminalSession] Failed to kill session on cleanup:', err)
-                })
+                    console.error('[TerminalSession] Failed to kill session on cleanup:', err);
+                });
             }
-            initializingTerminals.delete(tab.id)
+            initializingTerminals.delete(tab.id);
             try {
-                term.dispose()
+                term.dispose();
             } catch (err) {
-                console.error('[TerminalSession] Error disposing terminal:', err)
+                console.error('[TerminalSession] Error disposing terminal:', err);
             }
-        }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tab.id, projectPath]) // Only depend on tab.id and projectPath
+    }, [tab.id, projectPath]); // Only depend on tab.id and projectPath
 
     // Helper to safely fit terminal
     const safeFit = useCallback(() => {
-        if (!fitAddonRef.current || !containerRef.current || !isActive) { return }
+        if (!fitAddonRef.current || !containerRef.current || !isActive) { return; }
         try {
             // Check if element is actually visible and has dimensions
-            const rect = containerRef.current.getBoundingClientRect()
+            const rect = containerRef.current.getBoundingClientRect();
             if (rect.width > 0 && rect.height > 0 && (containerRef.current as HTMLElement).offsetParent) {
-                fitAddonRef.current.fit()
+                fitAddonRef.current.fit();
             }
         } catch (e) {
-            console.warn('[TerminalSession] Fit failed:', e)
+            console.warn('[TerminalSession] Fit failed:', e);
         }
-    }, [isActive])
+    }, [isActive]);
 
     // Handle incoming data via global multiplexer
     useEffect(() => {
-        if (!isReady || !xtermRef.current) { return }
+        if (!isReady || !xtermRef.current) { return; }
 
         const handleData = (e: Event) => {
             try {
-                const detail = (e as CustomEvent).detail
+                const detail = (e as CustomEvent).detail;
                 if (detail?.id === tab.id && xtermRef.current) {
-                    xtermRef.current.write(detail.data)
+                    xtermRef.current.write(detail.data);
                 }
             } catch (error) {
-                console.error('[TerminalSession] Error handling data:', error)
+                console.error('[TerminalSession] Error handling data:', error);
             }
-        }
+        };
 
         const handleExit = (e: Event) => {
             try {
-                const detail = (e as CustomEvent).detail
+                const detail = (e as CustomEvent).detail;
                 if (detail?.id === tab.id) {
                     // Write exit message to terminal
                     if (xtermRef.current) {
-                        xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code ?? 0}]\x1b[0m\r\n`)
+                        xtermRef.current.write(`\r\n\x1b[33m[Terminal exited with code ${detail.code ?? 0}]\x1b[0m\r\n`);
                     }
-                    onClose()
+                    onClose();
                 }
             } catch (error) {
-                console.error('[TerminalSession] Error handling exit:', error)
+                console.error('[TerminalSession] Error handling exit:', error);
             }
-        }
+        };
 
-        window.addEventListener('terminal-data-multiplex', handleData)
-        window.addEventListener('terminal-exit-multiplex', handleExit)
+        window.addEventListener('terminal-data-multiplex', handleData);
+        window.addEventListener('terminal-exit-multiplex', handleExit);
 
         return () => {
-            window.removeEventListener('terminal-data-multiplex', handleData)
-            window.removeEventListener('terminal-exit-multiplex', handleExit)
-        }
-    }, [tab.id, isReady, onClose])
+            window.removeEventListener('terminal-data-multiplex', handleData);
+            window.removeEventListener('terminal-exit-multiplex', handleExit);
+        };
+    }, [tab.id, isReady, onClose]);
 
     // Handle fit on resize or visibility change
     useEffect(() => {
         if (isActive) {
-            const timer = setTimeout(safeFit, 100)
-            return () => clearTimeout(timer)
+            const timer = setTimeout(safeFit, 100);
+            return () => clearTimeout(timer);
         }
-        return undefined
-    }, [isActive, safeFit])
+        return undefined;
+    }, [isActive, safeFit]);
 
     // Resize observer for container
     useEffect(() => {
-        if (!containerRef.current) { return }
+        if (!containerRef.current) { return; }
 
         const observer = new ResizeObserver(() => {
             if (isActive) {
-                safeFit()
+                safeFit();
             }
-        })
+        });
 
-        observer.observe(containerRef.current)
-        return () => observer.disconnect()
-    }, [isActive, safeFit])
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, [isActive, safeFit]);
 
     return (
         <div
@@ -346,9 +346,9 @@ const TerminalSession = memo(({
             )}
             <div ref={containerRef} className="h-full w-full" />
         </div>
-    )
-})
-TerminalSession.displayName = 'TerminalSession'
+    );
+});
+TerminalSession.displayName = 'TerminalSession';
 
 export function TerminalPanel({
     isOpen,
@@ -361,19 +361,19 @@ export function TerminalPanel({
     setTabs,
     setActiveTabId
 }: TerminalPanelProps) {
-    const { t } = useTranslation()
-    const [isResizing, setIsResizing] = useState(false)
-    const [isMaximized, setIsMaximized] = useState(false)
-    const [showNewTerminalMenu, setShowNewTerminalMenu] = useState(false)
-    const [availableShells, setAvailableShells] = useState<{ id: string, name: string, path: string }[]>([])
+    const { t } = useTranslation();
+    const [isResizing, setIsResizing] = useState(false);
+    const [isMaximized, setIsMaximized] = useState(false);
+    const [showNewTerminalMenu, setShowNewTerminalMenu] = useState(false);
+    const [availableShells, setAvailableShells] = useState<{ id: string, name: string, path: string }[]>([]);
 
     const createTerminal = useCallback((type: string) => {
-        const id = Math.random().toString(36).substring(2, 9)
-        const shellInfo = availableShells.find(s => s.id === type)
-        const typeLabel = shellInfo?.name || type
+        const id = Math.random().toString(36).substring(2, 9);
+        const shellInfo = availableShells.find(s => s.id === type);
+        const typeLabel = shellInfo?.name || type;
 
         setTabs(prev => {
-            const count = prev.filter(t => t.type === type).length + 1
+            const count = prev.filter(t => t.type === type).length + 1;
             const newTab: TerminalTab = {
                 id,
                 name: `${typeLabel} ${count}`,
@@ -383,135 +383,135 @@ export function TerminalPanel({
                 status: 'idle',
                 history: [],
                 command: ''
-            }
-            return [...prev, newTab]
-        })
-        setActiveTabId(id)
-        setShowNewTerminalMenu(false)
-    }, [availableShells, projectPath, setTabs, setActiveTabId])
+            };
+            return [...prev, newTab];
+        });
+        setActiveTabId(id);
+        setShowNewTerminalMenu(false);
+    }, [availableShells, projectPath, setTabs, setActiveTabId]);
 
     // Track if we're currently creating a terminal to prevent infinite loops
-    const isCreatingRef = useRef(false)
-    const hasAutoCreatedRef = useRef(false)
+    const isCreatingRef = useRef(false);
+    const hasAutoCreatedRef = useRef(false);
 
     // Reset auto-create flag when panel closes
     useEffect(() => {
         if (!isOpen) {
-            hasAutoCreatedRef.current = false
-            isCreatingRef.current = false
+            hasAutoCreatedRef.current = false;
+            isCreatingRef.current = false;
         }
-    }, [isOpen])
+    }, [isOpen]);
 
     useEffect(() => {
         const loadShells = async () => {
             // Prevent multiple simultaneous terminal creations
             if (isCreatingRef.current || hasAutoCreatedRef.current) {
-                console.warn('[TerminalPanel] Already creating or has created, skipping')
-                return
+                console.warn('[TerminalPanel] Already creating or has created, skipping');
+                return;
             }
 
             // Double-check tabs length to prevent race conditions
             if (tabs.length > 0) {
-                console.warn(`[TerminalPanel] Tabs already exist (${tabs.length}), skipping auto-create`)
-                return
+                console.warn(`[TerminalPanel] Tabs already exist (${tabs.length}), skipping auto-create`);
+                return;
             }
 
             try {
                 // Check if terminal is available
-                const isAvailable = await window.electron.terminal.isAvailable()
+                const isAvailable = await window.electron.terminal.isAvailable();
                 if (!isAvailable) {
-                    console.warn('[TerminalPanel] Terminal service not available')
-                    return
+                    console.warn('[TerminalPanel] Terminal service not available');
+                    return;
                 }
 
-                const shells = await window.electron.terminal.getShells()
-                setAvailableShells(shells)
+                const shells = await window.electron.terminal.getShells();
+                setAvailableShells(shells);
 
                 // Only auto-create if panel is open, no tabs exist, and we have shells
                 if (isOpen && tabs.length === 0 && shells.length > 0) {
-                    console.warn('[TerminalPanel] Auto-creating terminal')
-                    isCreatingRef.current = true
-                    hasAutoCreatedRef.current = true
+                    console.warn('[TerminalPanel] Auto-creating terminal');
+                    isCreatingRef.current = true;
+                    hasAutoCreatedRef.current = true;
                     setTimeout(() => {
                         // Final check before creating
                         if (tabs.length === 0 && shells[0]) {
-                            createTerminal(shells[0].id)
+                            createTerminal(shells[0].id);
                         } else {
-                            console.warn('[TerminalPanel] Tabs appeared before creation, cancelling')
-                            hasAutoCreatedRef.current = false
+                            console.warn('[TerminalPanel] Tabs appeared before creation, cancelling');
+                            hasAutoCreatedRef.current = false;
                         }
                         // Reset creating flag after a delay to allow state to update
                         setTimeout(() => {
-                            isCreatingRef.current = false
-                        }, 200)
-                    }, 100)
+                            isCreatingRef.current = false;
+                        }, 200);
+                    }, 100);
                 }
             } catch (error) {
-                console.error('[TerminalPanel] Failed to load shells:', error)
-                isCreatingRef.current = false
-                hasAutoCreatedRef.current = false
+                console.error('[TerminalPanel] Failed to load shells:', error);
+                isCreatingRef.current = false;
+                hasAutoCreatedRef.current = false;
             }
-        }
+        };
         if (isOpen) {
-            void loadShells()
+            void loadShells();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, tabs.length]) // Removed createTerminal from dependencies to prevent infinite loop
+    }, [isOpen, tabs.length]); // Removed createTerminal from dependencies to prevent infinite loop
 
     const closeTab = useCallback((id: string) => {
         // Clean up from global registry
-        initializedTerminals.delete(id)
-        initializingTerminals.delete(id)
+        initializedTerminals.delete(id);
+        initializingTerminals.delete(id);
 
         // Kill the terminal session on close
         window.electron.terminal.kill(id).catch(err => {
-            console.error('[TerminalPanel] Failed to kill terminal session:', err)
-        })
+            console.error('[TerminalPanel] Failed to kill terminal session:', err);
+        });
 
         setTabs(prev => {
-            const newTabs = prev.filter(t => t.id !== id)
+            const newTabs = prev.filter(t => t.id !== id);
             if (activeTabId === id && newTabs.length > 0) {
-                setActiveTabId(newTabs[newTabs.length - 1]?.id)
+                setActiveTabId(newTabs[newTabs.length - 1]?.id);
             } else if (newTabs.length === 0) {
-                setActiveTabId(null)
+                setActiveTabId(null);
             }
-            return newTabs
-        })
-    }, [activeTabId, setTabs, setActiveTabId])
+            return newTabs;
+        });
+    }, [activeTabId, setTabs, setActiveTabId]);
 
     // Centralized IPC Listeners to prevent MaxListenersExceeded
     useEffect(() => {
         const cleanupData = window.electron.terminal.onData((payload) => {
-            window.dispatchEvent(new CustomEvent('terminal-data-multiplex', { detail: payload }))
-        })
+            window.dispatchEvent(new CustomEvent('terminal-data-multiplex', { detail: payload }));
+        });
         const cleanupExit = window.electron.terminal.onExit((payload) => {
-            window.dispatchEvent(new CustomEvent('terminal-exit-multiplex', { detail: payload }))
-        })
+            window.dispatchEvent(new CustomEvent('terminal-exit-multiplex', { detail: payload }));
+        });
 
         return () => {
-            if (cleanupData) { cleanupData() }
-            if (cleanupExit) { cleanupExit() }
-        }
-    }, [])
+            if (cleanupData) { cleanupData(); }
+            if (cleanupExit) { cleanupExit(); }
+        };
+    }, []);
 
     // Resize logic
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) { return }
-            const newHeight = window.innerHeight - e.clientY
-            onHeightChange(Math.min(Math.max(150, newHeight), window.innerHeight * 0.8))
-        }
-        const handleMouseUp = () => setIsResizing(false)
+            if (!isResizing) { return; }
+            const newHeight = window.innerHeight - e.clientY;
+            onHeightChange(Math.min(Math.max(150, newHeight), window.innerHeight * 0.8));
+        };
+        const handleMouseUp = () => setIsResizing(false);
 
         if (isResizing) {
-            document.addEventListener('mousemove', handleMouseMove)
-            document.addEventListener('mouseup', handleMouseUp)
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
         }
         return () => {
-            document.removeEventListener('mousemove', handleMouseMove)
-            document.removeEventListener('mouseup', handleMouseUp)
-        }
-    }, [isResizing, onHeightChange])
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing, onHeightChange]);
 
     return (
         <motion.div
@@ -522,7 +522,7 @@ export function TerminalPanel({
         >
             {/* Resize Handle */}
             <div
-                onMouseDown={(e) => { e.preventDefault(); setIsResizing(true) }}
+                onMouseDown={(e) => { e.preventDefault(); setIsResizing(true); }}
                 className={cn(
                     "h-1 cursor-ns-resize bg-transparent hover:bg-primary/50 transition-colors w-full relative z-10",
                     isResizing && "bg-primary"
@@ -546,7 +546,7 @@ export function TerminalPanel({
                             <TerminalSquare className={cn("w-3.5 h-3.5", activeTabId === tab.id ? "text-primary" : "opacity-70")} />
                             {tab.name}
                             <div
-                                onClick={(e) => { e.stopPropagation(); closeTab(tab.id) }}
+                                onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
                                 className="ml-1 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                             >
                                 <X className="w-3 h-3" />
@@ -623,5 +623,5 @@ export function TerminalPanel({
                 )}
             </div>
         </motion.div>
-    )
+    );
 }

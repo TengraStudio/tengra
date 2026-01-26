@@ -1,10 +1,10 @@
-import { Edit2, Plus, Save, Trash2, X } from 'lucide-react'
-import React, { useState } from 'react'
+import { Edit2, Plus, Save, Trash2, X } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { Language, useTranslation } from '@/i18n'
-import { Prompt } from '@/types'
+import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { Language, useTranslation } from '@/i18n';
+import { Prompt } from '@/types';
 
 interface PromptManagerModalProps {
     isOpen: boolean
@@ -25,30 +25,30 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
     onDeletePrompt,
     language
 }) => {
-    const { t } = useTranslation(language)
-    const [isEditing, setIsEditing] = useState<string | 'new' | null>(null)
-    const [editForm, setEditForm] = useState({ title: '', content: '' })
+    const { t } = useTranslation(language);
+    const [isEditing, setIsEditing] = useState<string | 'new' | null>(null);
+    const [editForm, setEditForm] = useState({ title: '', content: '' });
 
     const handleStartEdit = (prompt?: Prompt) => {
         if (prompt) {
-            setIsEditing(prompt.id)
-            setEditForm({ title: prompt.title, content: prompt.content })
+            setIsEditing(prompt.id);
+            setEditForm({ title: prompt.title, content: prompt.content });
         } else {
-            setIsEditing('new')
-            setEditForm({ title: '', content: '' })
+            setIsEditing('new');
+            setEditForm({ title: '', content: '' });
         }
-    }
+    };
 
     const handleSave = () => {
-        if (!editForm.title.trim() || !editForm.content.trim()) { return }
+        if (!editForm.title.trim() || !editForm.content.trim()) { return; }
 
         if (isEditing === 'new') {
-            onCreatePrompt(editForm.title, editForm.content)
+            onCreatePrompt(editForm.title, editForm.content);
         } else if (isEditing) {
-            onUpdatePrompt(isEditing, editForm)
+            onUpdatePrompt(isEditing, editForm);
         }
-        setIsEditing(null)
-    }
+        setIsEditing(null);
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('ssh.promptManager.title')}>
@@ -137,5 +137,5 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
                 )}
             </div>
         </Modal>
-    )
-}
+    );
+};

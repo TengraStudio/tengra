@@ -1,9 +1,9 @@
-import { FEEDBACK_TIMEOUTS } from '@shared/constants'
-import { Bookmark, Check, Code2, Copy, RotateCcw, Smile, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
-import React, { useState } from 'react'
+import { FEEDBACK_TIMEOUTS } from '@shared/constants';
+import { Bookmark, Check, Code2, Copy, RotateCcw, Smile, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface ActionButtonProps {
     label: string
@@ -27,25 +27,25 @@ const ActionButton: React.FC<ActionButtonProps> = ({ label, onClick, children, a
     >
         {children}
     </button>
-)
+);
 
 export const CopyButton = ({ text }: { text: string }) => {
-    const { t } = useTranslation()
-    const [copied, setCopied] = useState(false)
+    const { t } = useTranslation();
+    const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK)
-    }
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
+    };
     return (
         <ActionButton label={t('messageBubble.copy')} onClick={handleCopy}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
-    )
-}
+    );
+};
 
 export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: () => void }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
     return (
         <ActionButton
             label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
@@ -55,11 +55,11 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
         >
             <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} aria-hidden="true" />
         </ActionButton>
-    )
-}
+    );
+};
 
 export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefined; onRate: (val: 1 | -1 | 0) => void }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
     return (
         <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1" role="group" aria-label={t('messageBubble.rating') || 'Rate response'}>
             <button
@@ -89,25 +89,25 @@ export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefi
                 <ThumbsDown className={cn("w-3.5 h-3.5", rating === -1 && "fill-current")} aria-hidden="true" />
             </button>
         </div>
-    )
-}
+    );
+};
 
 export const CopyMarkdownButton = ({ text, role }: { text: string; role: string }) => {
-    const { t } = useTranslation()
-    const [copied, setCopied] = useState(false)
+    const { t } = useTranslation();
+    const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
-        const roleLabel = role === 'user' ? t('messageBubble.user') : t('messageBubble.assistant')
-        const markdown = `**${roleLabel}:**\n\n${text}`
-        await navigator.clipboard.writeText(markdown)
-        setCopied(true)
-        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK)
-    }
+        const roleLabel = role === 'user' ? t('messageBubble.user') : t('messageBubble.assistant');
+        const markdown = `**${roleLabel}:**\n\n${text}`;
+        await navigator.clipboard.writeText(markdown);
+        setCopied(true);
+        setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
+    };
     return (
         <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={handleCopy}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Code2 className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
-    )
-}
+    );
+};
 
 interface MessageActionsGroupProps {
     displayContent: string
@@ -128,7 +128,7 @@ const EMOJI_REACTIONS = [
     { emoji: '\u{2764}\u{FE0F}', label: 'Heart' },
     { emoji: '\u{1F389}', label: 'Celebrate' },
     { emoji: '\u{1F680}', label: 'Rocket' }
-]
+];
 
 export const MessageActionsGroup = ({
     displayContent,
@@ -142,7 +142,7 @@ export const MessageActionsGroup = ({
     onStop,
     onReact
 }: MessageActionsGroupProps) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
 
     return (
         <div
@@ -192,5 +192,5 @@ export const MessageActionsGroup = ({
 
             {onRate && <RatingButtons rating={rating} onRate={onRate} />}
         </div>
-    )
-}
+    );
+};

@@ -1,11 +1,11 @@
-﻿import React, { useMemo, useState } from 'react'
+﻿import React, { useMemo, useState } from 'react';
 
-import { ModelExplorer } from '@/features/models/components/ModelExplorer'
-import type { ModelInfo } from '@/features/models/utils/model-fetcher'
-import { cn } from '@/lib/utils'
-import { AppSettings } from '@/types/settings'
+import { ModelExplorer } from '@/features/models/components/ModelExplorer';
+import type { ModelInfo } from '@/features/models/utils/model-fetcher';
+import { cn } from '@/lib/utils';
+import { AppSettings } from '@/types/settings';
 
-import { InstalledModelsList } from './models/InstalledModelsList'
+import { InstalledModelsList } from './models/InstalledModelsList';
 
 interface ModelsTabProps {
     settings: AppSettings | null
@@ -18,52 +18,52 @@ interface ModelsTabProps {
 }
 
 export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels, proxyModels, setSettings, handleSave, onRefreshModels, t }) => {
-    const [modelsTab, setModelsTab] = useState<'installed' | 'discover'>('installed')
-    const [modelSearch, setModelSearch] = useState('')
-    const [showHiddenModels, setShowHiddenModels] = useState(false)
+    const [modelsTab, setModelsTab] = useState<'installed' | 'discover'>('installed');
+    const [modelSearch, setModelSearch] = useState('');
+    const [showHiddenModels, setShowHiddenModels] = useState(false);
 
     const combined = useMemo(() => {
-        const map = new Map<string, { id: string; sources: string[]; details?: ModelInfo }>()
+        const map = new Map<string, { id: string; sources: string[]; details?: ModelInfo }>();
         for (const model of installedModels) {
-            if (!model.id) { continue }
-            map.set(model.id, { id: model.id, sources: ['ollama'], details: model })
+            if (!model.id) { continue; }
+            map.set(model.id, { id: model.id, sources: ['ollama'], details: model });
         }
         for (const model of (proxyModels ?? [])) {
-            const id = String(model.id ?? '').trim()
-            if (!id) { continue }
-            const existing = map.get(id)
-            const source = model.provider ?? 'proxy'
-            if (existing) { existing.sources = Array.from(new Set([...existing.sources, source])) }
-            else { map.set(id, { id, sources: [source] }) }
+            const id = String(model.id ?? '').trim();
+            if (!id) { continue; }
+            const existing = map.get(id);
+            const source = model.provider ?? 'proxy';
+            if (existing) { existing.sources = Array.from(new Set([...existing.sources, source])); }
+            else { map.set(id, { id, sources: [source] }); }
         }
-        return map
-    }, [installedModels, proxyModels])
+        return map;
+    }, [installedModels, proxyModels]);
 
-    const hiddenModels = useMemo(() => settings?.general.hiddenModels ?? [], [settings?.general.hiddenModels])
-    const defaultModel = settings?.general.defaultModel ?? ''
+    const hiddenModels = useMemo(() => settings?.general.hiddenModels ?? [], [settings?.general.hiddenModels]);
+    const defaultModel = settings?.general.defaultModel ?? '';
 
     const filtered = useMemo(() => {
         return Array.from(combined.values()).filter((m) => {
-            if (!showHiddenModels && hiddenModels.includes(m.id)) { return false }
-            if (!modelSearch) { return true }
-            return m.id.toLowerCase().includes(modelSearch.toLowerCase())
-        })
-    }, [combined, showHiddenModels, hiddenModels, modelSearch])
+            if (!showHiddenModels && hiddenModels.includes(m.id)) { return false; }
+            if (!modelSearch) { return true; }
+            return m.id.toLowerCase().includes(modelSearch.toLowerCase());
+        });
+    }, [combined, showHiddenModels, hiddenModels, modelSearch]);
 
-    if (!settings) { return null }
+    if (!settings) { return null; }
 
     const updateHidden = (modelId: string, hide: boolean) => {
-        const nextHidden = hide ? Array.from(new Set([...hiddenModels, modelId])) : hiddenModels.filter(m => m !== modelId)
-        const updated = { ...settings, general: { ...settings.general, hiddenModels: nextHidden } }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        const nextHidden = hide ? Array.from(new Set([...hiddenModels, modelId])) : hiddenModels.filter(m => m !== modelId);
+        const updated = { ...settings, general: { ...settings.general, hiddenModels: nextHidden } };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
     const setDefault = (modelId: string) => {
-        const updated = { ...settings, general: { ...settings.general, defaultModel: modelId } }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        const updated = { ...settings, general: { ...settings.general, defaultModel: modelId } };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
     return (
         <div className="space-y-6">
@@ -94,5 +94,5 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
                 </div>
             )}
         </div>
-    )
-}
+    );
+};

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
 interface ConfettiPiece {
     id: number
@@ -33,12 +33,12 @@ export const Confetti: React.FC<ConfettiProps> = ({
     particleCount = 50,
     colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4fd1c5', '#ffd93d']
 }) => {
-    const [pieces, setPieces] = useState<ConfettiPiece[]>([])
+    const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
 
     useEffect(() => {
         if (!active) {
-            setTimeout(() => setPieces([]), 0)
-            return
+            setTimeout(() => setPieces([]), 0);
+            return;
         }
 
         // Generate confetti pieces
@@ -50,19 +50,19 @@ export const Confetti: React.FC<ConfettiProps> = ({
             duration: 2 + Math.random() * 2,
             size: 8 + Math.random() * 8,
             isRound: Math.random() > 0.5
-        }))
+        }));
 
-        setTimeout(() => setPieces(newPieces), 0)
+        setTimeout(() => setPieces(newPieces), 0);
 
         // Clean up after animation
         const timer = setTimeout(() => {
-            setPieces([])
-        }, duration)
+            setPieces([]);
+        }, duration);
 
-        return () => clearTimeout(timer)
-    }, [active, particleCount, colors, duration])
+        return () => clearTimeout(timer);
+    }, [active, particleCount, colors, duration]);
 
-    if (!active || pieces.length === 0) { return null }
+    if (!active || pieces.length === 0) { return null; }
 
     return (
         <>
@@ -82,7 +82,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
                 />
             ))}
         </>
-    )
-}
+    );
+};
 
-Confetti.displayName = 'Confetti'
+Confetti.displayName = 'Confetti';

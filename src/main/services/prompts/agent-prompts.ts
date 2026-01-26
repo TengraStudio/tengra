@@ -10,7 +10,7 @@ Rules:
 - Keep steps granular but not overly detailed.
 - Focus on logical dependency order.
 - Do not include preamble or conversational filler. Just the list.
-- If the goal is simple, a single step is fine.`
+- If the goal is simple, a single step is fine.`;
 
 export const EXECUTOR_SYSTEM_PROMPT = `You are the EXECUTOR agent of the Council.
 Your goal is to execute the current step of the plan.
@@ -61,7 +61,7 @@ Example:
 **Thinking Process:**
 Before using tools, you should briefly explain your reasoning or plan for this step in plain text. This helps the user understand your "thought process".
 Then, generate the JSON block(s).
-`
+`;
 
 export const REVIEWER_SYSTEM_PROMPT = `You are the REVIEWER agent of the Council.
 Your goal is to critique the actions and code produced by the Executor.
@@ -84,4 +84,4 @@ Criteria for Approval:
 
 If you reject, the Executor will be given your feedback to retry the step.
 If you approve, the task will be marked as complete or proceed to the next major milestone.
-`
+`;

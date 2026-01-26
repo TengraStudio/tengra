@@ -2,11 +2,11 @@
  * IPC Handlers for Model Collaboration
  */
 
-import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service'
-import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service'
-import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util'
-import { Message } from '@shared/types/chat'
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
+import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
+import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
+import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { Message } from '@shared/types/chat';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export function registerCollaborationIpc(collaborationService: ModelCollaborationService) {
     /**
@@ -25,18 +25,18 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         }
     ) => {
         if (!Array.isArray(request.messages)) {
-            throw new Error('Messages must be an array')
+            throw new Error('Messages must be an array');
         }
         if (!Array.isArray(request.models) || request.models.length === 0) {
-            throw new Error('Models must be a non-empty array')
+            throw new Error('Models must be a non-empty array');
         }
-        const validStrategies = ['consensus', 'vote', 'best-of-n', 'chain-of-thought'] as const
+        const validStrategies = ['consensus', 'vote', 'best-of-n', 'chain-of-thought'] as const;
         if (!validStrategies.includes(request.strategy)) {
-            throw new Error('Strategy must be one of: consensus, vote, best-of-n, chain-of-thought')
+            throw new Error('Strategy must be one of: consensus, vote, best-of-n, chain-of-thought');
         }
 
-        return await collaborationService.collaborate(request)
-    }))
+        return await collaborationService.collaborate(request);
+    }));
 
     /**
      * Get provider statistics
@@ -46,10 +46,10 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         provider?: string
     ) => {
         if (provider) {
-            return multiLLMOrchestrator.getProviderStats(provider) ?? null
+            return multiLLMOrchestrator.getProviderStats(provider) ?? null;
         }
-        return Object.fromEntries(multiLLMOrchestrator.getAllStats())
-    }, {}))
+        return Object.fromEntries(multiLLMOrchestrator.getAllStats());
+    }, {}));
 
     /**
      * Get active task count for a provider
@@ -59,10 +59,10 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         provider: string
     ) => {
         if (typeof provider !== 'string') {
-            throw new Error('Provider must be a string')
+            throw new Error('Provider must be a string');
         }
-        return multiLLMOrchestrator.getActiveTaskCount(provider)
-    }, 0))
+        return multiLLMOrchestrator.getActiveTaskCount(provider);
+    }, 0));
 
     /**
      * Configure provider settings
@@ -77,19 +77,19 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
         }
     ) => {
         if (typeof provider !== 'string') {
-            throw new Error('Provider must be a string')
+            throw new Error('Provider must be a string');
         }
         if (typeof config.maxConcurrent !== 'number' || config.maxConcurrent < 1) {
-            throw new Error('maxConcurrent must be a positive number')
+            throw new Error('maxConcurrent must be a positive number');
         }
         if (typeof config.priority !== 'number') {
-            throw new Error('priority must be a number')
+            throw new Error('priority must be a number');
         }
         if (typeof config.rateLimitPerMinute !== 'number' || config.rateLimitPerMinute < 1) {
-            throw new Error('rateLimitPerMinute must be a positive number')
+            throw new Error('rateLimitPerMinute must be a positive number');
         }
 
-        multiLLMOrchestrator.setProviderConfig(provider, config)
-        return { success: true }
-    }))
+        multiLLMOrchestrator.setProviderConfig(provider, config);
+        return { success: true };
+    }));
 }

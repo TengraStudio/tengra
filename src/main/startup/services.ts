@@ -1,82 +1,85 @@
-import { Container } from '@main/core/container'
-import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services'
-import { appLogger } from '@main/logging/logger'
-import { AuditLogService } from '@main/services/analysis/audit-log.service'
-import { MonitoringService } from '@main/services/analysis/monitoring.service'
-import { PageSpeedService } from '@main/services/analysis/pagespeed.service'
-import { PerformanceService } from '@main/services/analysis/performance.service'
-import { ScannerService } from '@main/services/analysis/scanner.service'
-import { SentryService } from '@main/services/analysis/sentry.service'
-import { TelemetryService } from '@main/services/analysis/telemetry.service'
-import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service'
-import { BackupService } from '@main/services/data/backup.service'
-import { ChatEventService } from '@main/services/data/chat-event.service'
-import { DataService } from '@main/services/data/data.service'
-import { DatabaseService } from '@main/services/data/database.service'
-import { FileManagementService } from '@main/services/data/file.service'
-import { FileChangeTracker } from '@main/services/data/file-change-tracker.service'
-import { FileSystemService } from '@main/services/data/filesystem.service'
-import { ImagePersistenceService } from '@main/services/data/image-persistence.service'
-import { CollaborationService } from '@main/services/external/collaboration.service'
-import { ContentService } from '@main/services/external/content.service'
-import { FeatureFlagService } from '@main/services/external/feature-flag.service'
-import { HistoryImportService } from '@main/services/external/history-import.service'
-import { HttpService } from '@main/services/external/http.service'
-import { LogoService } from '@main/services/external/logo.service'
-import { MarketResearchService } from '@main/services/external/market-research.service'
-import { RuleService } from '@main/services/external/rule.service'
-import { UtilityService } from '@main/services/external/utility.service'
-import { WebService } from '@main/services/external/web.service'
-import { AgentService } from '@main/services/llm/agent.service'
-import { AgentCouncilService } from '@main/services/llm/agent-council.service'
-import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service'
-import { CopilotService } from '@main/services/llm/copilot.service'
-import { EmbeddingService } from '@main/services/llm/embedding.service'
-import { HuggingFaceService } from '@main/services/llm/huggingface.service'
-import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service'
-import { LlamaService } from '@main/services/llm/llama.service'
-import { LLMService } from '@main/services/llm/llm.service'
-import { LocalAIService } from '@main/services/llm/local-ai.service'
-import { LocalImageService } from '@main/services/llm/local-image.service'
-import { MemoryService } from '@main/services/llm/memory.service'
-import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service'
-import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/llm/model-registry.service'
-import { MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service'
-import { MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service'
-import { OllamaService } from '@main/services/llm/ollama.service'
-import { getOllamaHealthService } from '@main/services/llm/ollama-health.service'
-import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service'
-import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service'
-import { DockerService } from '@main/services/project/docker.service'
-import { GitService } from '@main/services/project/git.service'
-import { ProjectService } from '@main/services/project/project.service'
-import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service'
-import { SSHService } from '@main/services/project/ssh.service'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
-import { QuotaService } from '@main/services/proxy/quota.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { AuthAPIService } from '@main/services/security/auth-api.service'
-import { KeyRotationService } from '@main/services/security/key-rotation.service'
-import { RateLimitService } from '@main/services/security/rate-limit.service'
-import { SecurityService } from '@main/services/security/security.service'
-import { TokenService } from '@main/services/security/token.service'
-import { CommandService } from '@main/services/system/command.service'
-import { ConfigService } from '@main/services/system/config.service'
-import { EventBusService } from '@main/services/system/event-bus.service'
-import { getHealthCheckService, HealthCheckService } from '@main/services/system/health-check.service'
-import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
-import { NetworkService } from '@main/services/system/network.service'
-import { ProcessService } from '@main/services/system/process.service'
-import { ProcessManagerService } from '@main/services/system/process-manager.service'
-import { SettingsService } from '@main/services/system/settings.service'
-import { SystemService } from '@main/services/system/system.service'
-import { UpdateService } from '@main/services/system/update.service'
-import { ClipboardService } from '@main/services/ui/clipboard.service'
-import { NotificationService } from '@main/services/ui/notification.service'
-import { ScreenshotService } from '@main/services/ui/screenshot.service'
-import { Logger } from '@main/utils/logger'
-import { JsonObject } from '@shared/types/common'
+import { Container } from '@main/core/container';
+import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services';
+import { appLogger } from '@main/logging/logger';
+import { AuditLogService } from '@main/services/analysis/audit-log.service';
+import { MonitoringService } from '@main/services/analysis/monitoring.service';
+import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
+import { PerformanceService } from '@main/services/analysis/performance.service';
+import { ScannerService } from '@main/services/analysis/scanner.service';
+import { SentryService } from '@main/services/analysis/sentry.service';
+import { TelemetryService } from '@main/services/analysis/telemetry.service';
+import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service';
+import { BackupService } from '@main/services/data/backup.service';
+import { ChatEventService } from '@main/services/data/chat-event.service';
+import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
+import { FileManagementService } from '@main/services/data/file.service';
+import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
+import { FileSystemService } from '@main/services/data/filesystem.service';
+import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
+import { ExportService } from '@main/services/export/export.service';
+import { CollaborationService } from '@main/services/external/collaboration.service';
+import { ContentService } from '@main/services/external/content.service';
+import { FeatureFlagService } from '@main/services/external/feature-flag.service';
+import { HistoryImportService } from '@main/services/external/history-import.service';
+import { HttpService } from '@main/services/external/http.service';
+import { LogoService } from '@main/services/external/logo.service';
+import { MarketResearchService } from '@main/services/external/market-research.service';
+import { RuleService } from '@main/services/external/rule.service';
+import { UtilityService } from '@main/services/external/utility.service';
+import { WebService } from '@main/services/external/web.service';
+import { AgentService } from '@main/services/llm/agent.service';
+import { AgentCouncilService } from '@main/services/llm/agent-council.service';
+import { BrainService } from '@main/services/llm/brain.service';
+import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
+import { LlamaService } from '@main/services/llm/llama.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { LocalAIService } from '@main/services/llm/local-ai.service';
+import { LocalImageService } from '@main/services/llm/local-image.service';
+import { MemoryService } from '@main/services/llm/memory.service';
+import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
+import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/llm/model-registry.service';
+import { MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
+import { MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
+import { OllamaService } from '@main/services/llm/ollama.service';
+import { getOllamaHealthService } from '@main/services/llm/ollama-health.service';
+import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
+import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
+import { DockerService } from '@main/services/project/docker.service';
+import { GitService } from '@main/services/project/git.service';
+import { ProjectService } from '@main/services/project/project.service';
+import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
+import { SSHService } from '@main/services/project/ssh.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
+import { QuotaService } from '@main/services/proxy/quota.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { AuthAPIService } from '@main/services/security/auth-api.service';
+import { KeyRotationService } from '@main/services/security/key-rotation.service';
+import { RateLimitService } from '@main/services/security/rate-limit.service';
+import { SecurityService } from '@main/services/security/security.service';
+import { TokenService } from '@main/services/security/token.service';
+import { CommandService } from '@main/services/system/command.service';
+import { ConfigService } from '@main/services/system/config.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { getHealthCheckService, HealthCheckService } from '@main/services/system/health-check.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { NetworkService } from '@main/services/system/network.service';
+import { ProcessService } from '@main/services/system/process.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { SystemService } from '@main/services/system/system.service';
+import { UpdateService } from '@main/services/system/update.service';
+import { ClipboardService } from '@main/services/ui/clipboard.service';
+import { NotificationService } from '@main/services/ui/notification.service';
+import { ScreenshotService } from '@main/services/ui/screenshot.service';
+import { Logger } from '@main/utils/logger';
+import { JsonObject } from '@shared/types/common';
 
 // Export the container instance so it can be accessed if needed
 export const container = new Container();
@@ -120,6 +123,7 @@ export interface Services {
     jobSchedulerService: JobSchedulerService;
     webService: WebService;
     memoryService: MemoryService;
+    brainService: BrainService;
     pageSpeedService: PageSpeedService;
     ruleService: RuleService;
     agentService: AgentService;
@@ -150,6 +154,8 @@ export interface Services {
     marketResearchService: MarketResearchService;
     projectScaffoldService: ProjectScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
+    projectAgentService: ProjectAgentService;
+    exportService: ExportService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -216,12 +222,12 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('processService', () => new ProcessService());
     container.register('processManagerService', () => new ProcessManagerService());
     container.register('webService', () => {
-        const ws = new WebService()
+        const ws = new WebService();
         if (process.env['TAVILY_API_KEY']) {
-            ws.setTavilyKey(process.env['TAVILY_API_KEY'])
+            ws.setTavilyKey(process.env['TAVILY_API_KEY']);
         }
-        return ws
-    })
+        return ws;
+    });
     container.register('updateService', (ss, ds) => new UpdateService(ss as SettingsService, ds as DataService), ['settingsService', 'dataService']);
     container.register('configService', (ss) => new ConfigService(ss as SettingsService), ['settingsService']);
     container.register('jobSchedulerService', (dbs) => new JobSchedulerService(dbs as DatabaseService), ['databaseService']);
@@ -236,12 +242,12 @@ function registerDataServices() {
     container.register('fileChangeTracker', (dbs, ebs) => new FileChangeTracker(dbs as DatabaseService, ebs as EventBusService), ['databaseService', 'eventBusService']);
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
     container.register('fileManagementService', () => new FileManagementService());
-    container.register('imagePersistenceService', (ds) => new ImagePersistenceService(ds as DataService), ['dataService']);
+    container.register('imagePersistenceService', (ds, dbs) => new ImagePersistenceService(ds as DataService, dbs as DatabaseService), ['dataService', 'databaseService']);
     container.register('backupService', (ds, dbs) => new BackupService(ds as DataService, dbs as DatabaseService), ['dataService', 'databaseService']);
 }
 
 function registerSecurityServices() {
-    container.register('authService', (dbs, ss, ebs) => new AuthService(dbs as DatabaseService, ss as SecurityService, ebs as EventBusService), ['databaseService', 'securityService', 'eventBusService']);
+    container.register('authService', (dbs, ss, ebs, ds) => new AuthService(dbs as DatabaseService, ss as SecurityService, ebs as EventBusService, ds as DataService), ['databaseService', 'securityService', 'eventBusService', 'dataService']);
     container.register('authAPIService', (as) => new AuthAPIService(as as AuthService), ['authService']);
     container.register('keyRotationService', (ss) => new KeyRotationService(ss as SettingsService), ['settingsService']);
     container.register('copilotService', (as, ns) => new CopilotService(as as AuthService, ns as NotificationService), ['authService', 'notificationService']);
@@ -254,14 +260,14 @@ function registerSecurityServices() {
         ebs: ebs as EventBusService
     }), ['settingsService', 'copilotService', 'authService', 'eventBusService']);
     container.register('tokenService', (base, pm, js) => {
-        const d = base as { ss: SettingsService, cs: CopilotService, as: AuthService, ebs: EventBusService }
+        const d = base as { ss: SettingsService, cs: CopilotService, as: AuthService, ebs: EventBusService };
         return new TokenService(
             d.ss, d.cs, d.as, d.ebs,
             {
                 processManager: pm as ProcessManagerService,
                 jobScheduler: js as JobSchedulerService
             }
-        )
+        );
     }, ['tokenDepsBase', 'processManagerService', 'jobSchedulerService']);
 }
 
@@ -273,6 +279,7 @@ function registerLLMServices() {
     container.register('llmService', (hs, cs, krs, rls, ts) => new LLMService(hs as HttpService, cs as ConfigService, krs as KeyRotationService, rls as RateLimitService, ts as TokenService), ['httpService', 'configService', 'keyRotationService', 'rateLimitService', 'tokenService']);
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(os as OllamaService, ls as LLMService, lms as LlamaService, ss as SettingsService), ['ollamaService', 'llmService', 'llamaService', 'settingsService']);
     container.register('memoryService', (dbs, es, ls, pm) => new MemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
+    container.register('brainService', (dbs, es, ls, pm) => new BrainService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
     container.register('agentService', (dbs) => new AgentService(dbs as DatabaseService), ['databaseService']);
     container.register('modelCollaborationService', (ls) => new ModelCollaborationService(ls as LLMService), ['llmService']);
     container.register('multiLLMOrchestrator', () => new MultiLLMOrchestrator());
@@ -290,12 +297,12 @@ function registerLLMServices() {
         eventBus: ebs as EventBusService
     }), ['processManagerService', 'jobSchedulerService', 'settingsService', 'proxyService', 'eventBusService']);
     container.register('modelRegistryService', (deps, as, ts) => {
-        const d = deps as ModelRegistryDependencies
+        const d = deps as ModelRegistryDependencies;
         return new ModelRegistryService({
             ...d,
             authService: as as AuthService,
             tokenService: ts as TokenService
-        })
+        });
     }, ['modelRegistryDeps', 'authService', 'tokenService']);
 }
 
@@ -310,16 +317,18 @@ function registerLazyServices() {
 
     lazyServiceRegistry.register('sshService', async () => {
         const dataService = container.resolve<DataService>('dataService');
+        const securityService = container.resolve<SecurityService>('securityService');
         const { SSHService } = await import('@main/services/project/ssh.service');
-        return new SSHService(dataService.getPath('config'));
+        return new SSHService(dataService.getPath('config'), securityService);
     });
 
     lazyServiceRegistry.register('logoService', async () => {
         const llmService = container.resolve<LLMService>('llmService');
         const projectService = container.resolve<ProjectService>('projectService');
         const localImageService = container.resolve<LocalImageService>('localImageService');
+        const imagePersistenceService = container.resolve<ImagePersistenceService>('imagePersistenceService');
         const { LogoService } = await import('@main/services/external/logo.service');
-        return new LogoService(llmService, projectService, localImageService);
+        return new LogoService(llmService, projectService, localImageService, imagePersistenceService);
     });
 
     lazyServiceRegistry.register('scannerService', async () => {
@@ -351,7 +360,7 @@ function registerProjectServices() {
     container.register('projectScaffoldService', () => new ProjectScaffoldService());
     container.register('marketResearchService', (ws) => new MarketResearchService(ws as WebService), ['webService']);
     container.register('ideaGeneratorService', (...deps) => {
-        const [dbs, ls, mrs, pss, as, ebs, lis] = deps
+        const [dbs, ls, mrs, pss, as, ebs, lis, bs] = deps;
         return new IdeaGeneratorService({
             databaseService: dbs as DatabaseService,
             llmService: ls as LLMService,
@@ -359,9 +368,13 @@ function registerProjectServices() {
             projectScaffoldService: pss as ProjectScaffoldService,
             authService: as as AuthService,
             eventBus: ebs as EventBusService,
-            localImageService: lis as LocalImageService
-        })
-    }, ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService']);
+            localImageService: lis as LocalImageService,
+            brainService: bs as BrainService
+        });
+    }, ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService', 'brainService']);
+
+    // Project Agent Service
+    container.register('projectAgentService', (ds, ls, ebs) => new ProjectAgentService(ds as DataService, ls as LLMService, ebs as EventBusService), ['dataService', 'llmService', 'eventBusService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
@@ -375,7 +388,7 @@ function registerProjectServices() {
         ebs: ebs as EventBusService
     }), ['settingsService', 'dataService', 'securityService', 'authService', 'eventBusService']);
     container.register('proxyService', (core, ppm, qs) => {
-        const c = core as { ss: SettingsService, ds: DataService, sec: SecurityService, as: AuthService, ebs: EventBusService }
+        const c = core as { ss: SettingsService, ds: DataService, sec: SecurityService, as: AuthService, ebs: EventBusService };
         return new ProxyService({
             settingsService: c.ss,
             dataService: c.ds,
@@ -384,7 +397,7 @@ function registerProjectServices() {
             eventBus: c.ebs,
             processManager: ppm as ProxyProcessManager,
             quotaService: qs as QuotaService
-        })
+        });
     }, ['proxyCore', 'proxyProcessManager', 'quotaService']);
 
     container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
@@ -397,8 +410,8 @@ function registerProjectServices() {
         ps: ps as ProcessService,
         cis: cis as CodeIntelligenceService
     }), ['llmService', 'databaseService', 'fileSystemService', 'processService', 'codeIntelligenceService']);
-    container.register('agentCouncilService', (d1, ws, cos, es) => {
-        const d = d1 as { ls: LLMService, dbs: DatabaseService, fss: FileSystemService, ps: ProcessService, cis: CodeIntelligenceService }
+    container.register('agentCouncilService', (d1, ws, cos, es, bs) => {
+        const d = d1 as { ls: LLMService, dbs: DatabaseService, fss: FileSystemService, ps: ProcessService, cis: CodeIntelligenceService };
         return new AgentCouncilService({
             llm: d.ls,
             db: d.dbs,
@@ -407,9 +420,10 @@ function registerProjectServices() {
             codeIntel: d.cis,
             web: ws as WebService,
             collaboration: cos as CollaborationService,
-            embedding: es as EmbeddingService
-        })
-    }, ['councilDeps1', 'webService', 'collaborationService', 'embeddingService']);
+            embedding: es as EmbeddingService,
+            brain: bs as BrainService
+        });
+    }, ['councilDeps1', 'webService', 'collaborationService', 'embeddingService', 'brainService']);
 }
 
 function registerAnalysisServices() {
@@ -423,6 +437,7 @@ function registerAnalysisServices() {
     container.register('ruleService', () => new RuleService());
     container.register('featureFlagService', (ds) => new FeatureFlagService(ds as DataService), ['dataService']);
     container.register('collaborationService', () => new CollaborationService());
+    container.register('exportService', () => new ExportService());
 }
 
 function initOllamaHealth(settings: Record<string, unknown>) {
@@ -479,6 +494,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
         webService: container.resolve<WebService>('webService'),
         memoryService: container.resolve<MemoryService>('memoryService'),
+        brainService: container.resolve<BrainService>('brainService'),
         pageSpeedService: createLazyServiceProxy<PageSpeedService>('pageSpeedService'),
         ruleService: container.resolve<RuleService>('ruleService'),
         agentService: container.resolve<AgentService>('agentService'),
@@ -506,6 +522,8 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         eventBusService: container.resolve<EventBusService>('eventBusService'),
         marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
         projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
-        ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService')
+        ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
+        projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
+        exportService: container.resolve<ExportService>('exportService')
     };
 }

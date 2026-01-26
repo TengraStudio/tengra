@@ -3,7 +3,7 @@
  * Reusable prompts with variable substitution
  */
 
-import { JsonObject } from '@shared/types/common'
+import { JsonObject } from '@shared/types/common';
 
 export interface PromptTemplate {
     id: string
@@ -40,48 +40,48 @@ export function renderTemplate(
     template: string,
     variables: JsonObject
 ): RenderResult {
-    const missingVariables: string[] = []
-    const usedVariables: string[] = []
+    const missingVariables: string[] = [];
+    const usedVariables: string[] = [];
 
     // Find all variable placeholders: {{variableName}} or {{variableName|default}}
-    const varPattern = /\{\{(\w+)(?:\|([^}]*))?\}\}/g
+    const varPattern = /\{\{(\w+)(?:\|([^}]*))?\}\}/g;
 
     const content = template.replace(varPattern, (match, varName: string, defaultValue) => {
         if (variables[varName] !== undefined) {
-            usedVariables.push(varName)
-            return String(variables[varName])
+            usedVariables.push(varName);
+            return String(variables[varName]);
         }
 
         if (defaultValue !== undefined) {
-            return defaultValue as string
+            return defaultValue as string;
         }
 
-        missingVariables.push(varName)
-        return match // Keep placeholder if no value
-    })
+        missingVariables.push(varName);
+        return match; // Keep placeholder if no value
+    });
 
     return {
         content,
         missingVariables,
         usedVariables
-    }
+    };
 }
 
 /**
  * Extract variables from a template string
  */
 export function extractVariables(template: string): string[] {
-    const varPattern = /\{\{(\w+)(?:\|[^}]*)?\}\}/g
-    const variables: string[] = []
-    let match: RegExpExecArray | null
+    const varPattern = /\{\{(\w+)(?:\|[^}]*)?\}\}/g;
+    const variables: string[] = [];
+    let match: RegExpExecArray | null;
 
     while ((match = varPattern.exec(template)) !== null) {
         if (!variables.includes(match[1])) {
-            variables.push(match[1])
+            variables.push(match[1]);
         }
     }
 
-    return variables
+    return variables;
 }
 
 /**
@@ -91,31 +91,31 @@ export function validateTemplate(template: PromptTemplate): {
     valid: boolean
     errors: string[]
 } {
-    const errors: string[] = []
+    const errors: string[] = [];
 
-    if (!template.id) {errors.push('Template ID is required')}
-    if (!template.name) {errors.push('Template name is required')}
-    if (!template.template) {errors.push('Template content is required')}
+    if (!template.id) {errors.push('Template ID is required');}
+    if (!template.name) {errors.push('Template name is required');}
+    if (!template.template) {errors.push('Template content is required');}
 
     // Check that all declared variables exist in template
-    const templateVars = extractVariables(template.template)
+    const templateVars = extractVariables(template.template);
     for (const variable of template.variables) {
         if (!templateVars.includes(variable.name)) {
-            errors.push(`Variable "${variable.name}" is declared but not used in template`)
+            errors.push(`Variable "${variable.name}" is declared but not used in template`);
         }
     }
 
     // Check that all template variables are declared
     for (const varName of templateVars) {
         if (!template.variables.find(v => v.name === varName)) {
-            errors.push(`Variable "${varName}" is used but not declared`)
+            errors.push(`Variable "${varName}" is used but not declared`);
         }
     }
 
     return {
         valid: errors.length === 0,
         errors
-    }
+    };
 }
 
 // Built-in templates
@@ -267,33 +267,33 @@ Preserve the original tone and style. If there are idioms or cultural references
         createdAt: Date.now(),
         updatedAt: Date.now()
     }
-]
+];
 
 /**
  * Template Manager class
  */
 export class TemplateManager {
-    private customTemplates: PromptTemplate[] = []
+    private customTemplates: PromptTemplate[] = [];
 
     /**
      * Get all templates (builtin + custom)
      */
     getAllTemplates(): PromptTemplate[] {
-        return [...BUILTIN_TEMPLATES, ...this.customTemplates]
+        return [...BUILTIN_TEMPLATES, ...this.customTemplates];
     }
 
     /**
      * Get templates by category
      */
     getByCategory(category: string): PromptTemplate[] {
-        return this.getAllTemplates().filter(t => t.category === category)
+        return this.getAllTemplates().filter(t => t.category === category);
     }
 
     /**
      * Find template by ID
      */
     findById(id: string): PromptTemplate | undefined {
-        return this.getAllTemplates().find(t => t.id === id)
+        return this.getAllTemplates().find(t => t.id === id);
     }
 
     /**
@@ -304,69 +304,69 @@ export class TemplateManager {
             ...template,
             createdAt: Date.now(),
             updatedAt: Date.now()
-        }
+        };
 
-        const validation = validateTemplate(newTemplate)
+        const validation = validateTemplate(newTemplate);
         if (!validation.valid) {
-            throw new Error(`Invalid template: ${validation.errors.join(', ')}`)
+            throw new Error(`Invalid template: ${validation.errors.join(', ')}`);
         }
 
-        this.customTemplates.push(newTemplate)
-        return newTemplate
+        this.customTemplates.push(newTemplate);
+        return newTemplate;
     }
 
     /**
      * Update a custom template
      */
     updateTemplate(id: string, updates: Partial<PromptTemplate>): PromptTemplate | null {
-        const index = this.customTemplates.findIndex(t => t.id === id)
-        if (index === -1) {return null}
+        const index = this.customTemplates.findIndex(t => t.id === id);
+        if (index === -1) {return null;}
 
         this.customTemplates[index] = {
             ...this.customTemplates[index],
             ...updates,
             updatedAt: Date.now()
-        }
+        };
 
-        return this.customTemplates[index]
+        return this.customTemplates[index];
     }
 
     /**
      * Delete a custom template
      */
     deleteTemplate(id: string): boolean {
-        const index = this.customTemplates.findIndex(t => t.id === id)
-        if (index === -1) {return false}
+        const index = this.customTemplates.findIndex(t => t.id === id);
+        if (index === -1) {return false;}
 
-        this.customTemplates.splice(index, 1)
-        return true
+        this.customTemplates.splice(index, 1);
+        return true;
     }
 
     /**
      * Render a template by ID
      */
     render(templateId: string, variables: JsonObject): RenderResult {
-        const template = this.findById(templateId)
+        const template = this.findById(templateId);
         if (!template) {
-            throw new Error(`Template not found: ${templateId}`)
+            throw new Error(`Template not found: ${templateId}`);
         }
 
-        return renderTemplate(template.template, variables)
+        return renderTemplate(template.template, variables);
     }
 
     /**
      * Get all categories
      */
     getCategories(): string[] {
-        const categories = new Set<string>()
+        const categories = new Set<string>();
         for (const template of this.getAllTemplates()) {
             if (template.category) {
-                categories.add(template.category)
+                categories.add(template.category);
             }
         }
-        return Array.from(categories)
+        return Array.from(categories);
     }
 }
 
 // Singleton
-export const templateManager = new TemplateManager()
+export const templateManager = new TemplateManager();

@@ -3,8 +3,8 @@
  * Define all schema migrations here
  */
 
-import { appLogger } from '@main/logging/logger'
-import { Migration } from '@main/services/data/migration.service'
+import { appLogger } from '@main/logging/logger';
+import { Migration } from '@main/services/data/migration.service';
 
 /**
  * Migration v1: Initial schema setup
@@ -17,9 +17,9 @@ export const migration_v1_initial_setup: Migration = {
     up: async () => {
         // This migration documents the initial schema
         // Most directories are already created by DataService.migrate()
-        appLogger.info('Migration', '[Migration v1] Initial schema documented')
+        appLogger.info('Migration', '[Migration v1] Initial schema documented');
     }
-}
+};
 
 /**
  * Migration v2: Add pinned field to chats
@@ -29,11 +29,11 @@ export const migration_v2_add_chat_pinned: Migration = {
     version: 2,
     name: 'add_chat_pinned_field',
     up: async () => {
-        appLogger.info('Migration', '[Migration v2] Chat pinning field is now supported')
+        appLogger.info('Migration', '[Migration v2] Chat pinning field is now supported');
         // The field is optional and defaults to false when not present
         // No data modification needed - UI handles missing field gracefully
     }
-}
+};
 
 /**
  * Migration v3: Add folder support
@@ -43,10 +43,10 @@ export const migration_v3_add_folders: Migration = {
     version: 3,
     name: 'add_folder_support',
     up: async () => {
-        appLogger.info('Migration', '[Migration v3] Folder support initialized')
+        appLogger.info('Migration', '[Migration v3] Folder support initialized');
         // Folders are created via DatabaseService when needed
     }
-}
+};
 
 /**
  * Migration v4: Add memory system tables
@@ -58,10 +58,10 @@ export const migration_v4_add_memory_system: Migration = {
     version: 4,
     name: 'add_memory_system',
     up: async () => {
-        appLogger.info('Migration', '[Migration v4] Memory system tables initialized')
+        appLogger.info('Migration', '[Migration v4] Memory system tables initialized');
         // LanceDB tables are created on first use by MemoryService
     }
-}
+};
 
 /**
  * Migration v5: Add file diff tracking
@@ -71,10 +71,10 @@ export const migration_v5_add_file_diff_tracking: Migration = {
     version: 5,
     name: 'add_file_diff_tracking',
     up: async () => {
-        appLogger.info('Migration', '[Migration v5] File diff tracking table initialized')
+        appLogger.info('Migration', '[Migration v5] File diff tracking table initialized');
         // Table creation is handled by FileChangeTracker.ensureDiffTable()
     }
-}
+};
 
 /**
  * Get all registered migrations
@@ -86,5 +86,5 @@ export function getAllMigrations(): Migration[] {
         migration_v3_add_folders,
         migration_v4_add_memory_system,
         migration_v5_add_file_diff_tracking
-    ]
+    ];
 }

@@ -1,8 +1,8 @@
-import { Activity, FileText, Folder, Package } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Activity, FileText, Folder, Package } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import type { IpcValue } from '@/types'
+import { useTranslation } from '@/i18n';
+import type { IpcValue } from '@/types';
 
 interface DirectoryAnalysis {
     hasPackageJson: boolean
@@ -17,43 +17,43 @@ interface FolderInspectorProps {
 }
 
 export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) => {
-    const { t } = useTranslation()
-    const [data, setData] = useState<DirectoryAnalysis | null>(null)
-    const [loading, setLoading] = useState(false)
+    const { t } = useTranslation();
+    const [data, setData] = useState<DirectoryAnalysis | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
             if (!folderPath) {
-                setData(null)
-                return
+                setData(null);
+                return;
             }
-            setLoading(true)
+            setLoading(true);
             try {
-                const res = await window.electron.project.analyzeDirectory(folderPath)
-                setData(res)
+                const res = await window.electron.project.analyzeDirectory(folderPath);
+                setData(res);
             } catch (error) {
-                console.error('Failed to analyze folder:', error)
+                console.error('Failed to analyze folder:', error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        void loadData()
-    }, [folderPath])
+        };
+        void loadData();
+    }, [folderPath]);
 
     if (!folderPath) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
                 <Folder className="w-12 h-12 mb-4 opacity-20" />
-                <p className="text-sm">{t('inspector.selectFolder') || 'Select a folder to view details'}</p>
+                <p className="text-sm">{t('inspector.selectFolder')}</p>
             </div>
-        )
+        );
     }
 
-    if (loading) { return <div className="p-4 text-sm text-muted-foreground flex items-center gap-2"><Activity className="w-4 h-4 animate-spin" /> {t('inspector.analyzing') || 'Analyzing folder...'}</div> }
+    if (loading) { return <div className="p-4 text-sm text-muted-foreground flex items-center gap-2"><Activity className="w-4 h-4 animate-spin" /> {t('inspector.analyzing')}</div>; }
 
-    if (!data) { return null }
+    if (!data) { return null; }
 
-    const relativePath = folderPath.replace(rootPath, '') || '/'
+    const relativePath = folderPath.replace(rootPath, '') || '/';
 
     return (
         <div className="h-full flex flex-col bg-card rounded-xl border border-border/50 overflow-hidden">
@@ -71,11 +71,11 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
                         <div className="text-[10px] uppercase text-muted-foreground mb-1">Files</div>
-                        <div className="text-xl font-bold">{data.stats?.fileCount ?? 0}</div>
+                        <div className="text-xl font-bold">{data.stats.fileCount}</div>
                     </div>
                     <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
                         <div className="text-[10px] uppercase text-muted-foreground mb-1">Size</div>
-                        <div className="text-xl font-bold">{(data.stats?.totalSize / 1024).toFixed(1)} KB</div>
+                        <div className="text-xl font-bold">{(data.stats.totalSize / 1024).toFixed(1)} KB</div>
                     </div>
                 </div>
 
@@ -88,11 +88,11 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-2">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Name:</span>
-                                <span className="font-mono text-emerald-400">{String(data.pkg.name || 'unnamed')}</span>
+                                <span className="font-mono text-emerald-400">{String(data.pkg.name)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Version:</span>
-                                <span className="font-mono">{String(data.pkg.version || '0.0.0')}</span>
+                                <span className="font-mono">{String(data.pkg.version)}</span>
                             </div>
 
                             {/* Scripts */}
@@ -145,5 +145,5 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                 )}
             </div>
         </div>
-    )
-}
+    );
+};

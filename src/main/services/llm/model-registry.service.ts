@@ -1,13 +1,13 @@
-import { appLogger } from '@main/logging/logger'
-import { BaseService } from '@main/services/base.service'
-import { ProxyService } from '@main/services/proxy/proxy.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { TokenService } from '@main/services/security/token.service'
-import { EventBusService } from '@main/services/system/event-bus.service'
-import { JobSchedulerService } from '@main/services/system/job-scheduler.service'
-import { SettingsService } from '@main/services/system/settings.service'
-import { JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { TokenService } from '@main/services/security/token.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface ModelProviderInfo {
     id: string
@@ -33,28 +33,28 @@ export interface ModelRegistryDependencies {
 }
 
 export class ModelRegistryService extends BaseService {
-    private cachedModels: ModelProviderInfo[] = []
-    private lastUpdate: number = 0
+    private cachedModels: ModelProviderInfo[] = [];
+    private lastUpdate: number = 0;
 
     constructor(private deps: ModelRegistryDependencies) {
-        super('ModelRegistryService')
-        this.initializeScheduler()
+        super('ModelRegistryService');
+        this.initializeScheduler();
     }
 
     private initializeScheduler() {
         this.deps.jobScheduler.registerRecurringJob(
             'model-registry-update',
             async () => {
-                await this.updateCache()
+                await this.updateCache();
             },
             () => {
                 // Get interval from settings, default to 1 hour (3600000 ms)
                 // User asked for capability to set e.g. 5 minutes.
                 // Assuming settings structure has 'modelUpdateInterval' in ms or similar.
-                const settings = this.deps.settingsService.getSettings()
-                return settings.ai?.modelUpdateInterval ?? 60 * 60 * 1000
+                const settings = this.deps.settingsService.getSettings();
+                return settings.ai?.modelUpdateInterval ?? 60 * 60 * 1000;
             }
-        )
+        );
     }
 
     override async initialize(): Promise<void> {
@@ -63,25 +63,25 @@ export class ModelRegistryService extends BaseService {
             name: 'model-service',
             executable: 'orbit-model-service.exe',
             persistent: true
-        })
+        });
 
         // Initial load if empty
         if (this.cachedModels.length === 0) {
-            appLogger.info('ModelRegistry', 'Initializing model cache...')
-            await this.updateCache()
+            appLogger.info('ModelRegistry', 'Initializing model cache...');
+            await this.updateCache();
         }
     }
 
     private async updateCache() {
-        appLogger.info('ModelRegistry', 'Updating remote model cache...')
-        this.cachedModels = await this.fetchRemoteModels()
-        this.lastUpdate = Date.now()
-        appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`)
+        appLogger.info('ModelRegistry', 'Updating remote model cache...');
+        this.cachedModels = await this.fetchRemoteModels();
+        this.lastUpdate = Date.now();
+        appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
         this.deps.eventBus.emit('model:updated', {
             provider: 'all',
             count: this.cachedModels.length,
             timestamp: this.lastUpdate
-        })
+        });
     }
 
     /**
@@ -157,9 +157,9 @@ export class ModelRegistryService extends BaseService {
                 token,
                 proxy_port: proxyPort,
                 proxy_key: proxyKey
-            })
+            });
 
-            appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`)
+            appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`);
 
             if (response.success && response.models.length > 0) {
                 return response.models.map(m => ({
@@ -168,9 +168,9 @@ export class ModelRegistryService extends BaseService {
                 }));
             }
         } catch (e) {
-            appLogger.debug('ModelRegistry', `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`)
+            appLogger.debug('ModelRegistry', `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`);
         }
-        return []
+        return [];
     }
 
     // Removed fetchProxyModels and fetchLlamaModels
@@ -180,19 +180,19 @@ export class ModelRegistryService extends BaseService {
      */
     async getRemoteModels(): Promise<ModelProviderInfo[]> {
         if (this.cachedModels.length === 0) {
-            await this.updateCache()
+            await this.updateCache();
         }
-        return this.cachedModels
+        return this.cachedModels;
     }
 
     getLastUpdate(): number {
-        return this.lastUpdate
+        return this.lastUpdate;
     }
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
-        const models: ModelProviderInfo[] = []
-        models.push(...await this.fetchHuggingFaceModels())
-        return models.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0))
+        const models: ModelProviderInfo[] = [];
+        models.push(...await this.fetchHuggingFaceModels());
+        return models.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
     }
 
 
@@ -201,34 +201,34 @@ export class ModelRegistryService extends BaseService {
             const response = await this.deps.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
                 type: 'FetchModels',
                 provider: 'huggingface'
-            })
+            });
 
             if (response.success && response.models.length > 0) {
-                return response.models
+                return response.models;
             } else if (response.error) {
-                appLogger.error('ModelRegistry', `Native HF fetch failed: ${response.error}`)
+                appLogger.error('ModelRegistry', `Native HF fetch failed: ${response.error}`);
             }
         } catch (e) {
-            appLogger.error('ModelRegistry', `Failed to fetch HuggingFace models: ${getErrorMessage(e as Error)}`)
+            appLogger.error('ModelRegistry', `Failed to fetch HuggingFace models: ${getErrorMessage(e as Error)}`);
         }
-        return []
+        return [];
     }
 
     private parseCount(str: string): number {
-        const lower = str.toLowerCase().trim()
-        let multiplier = 1
-        if (lower.endsWith('k')) { multiplier = 1000 }
-        if (lower.endsWith('m')) { multiplier = 1000000 }
-        if (lower.endsWith('b')) { multiplier = 1000000000 }
+        const lower = str.toLowerCase().trim();
+        let multiplier = 1;
+        if (lower.endsWith('k')) { multiplier = 1000; }
+        if (lower.endsWith('m')) { multiplier = 1000000; }
+        if (lower.endsWith('b')) { multiplier = 1000000000; }
 
-        const num = parseFloat(lower.replace(/[kmb]/g, ''))
-        return Math.floor(num * multiplier)
+        const num = parseFloat(lower.replace(/[kmb]/g, ''));
+        return Math.floor(num * multiplier);
     }
 
     /**
      * Get locally installed models
      */
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
-        return this.fetchModelProvider('ollama')
+        return this.fetchModelProvider('ollama');
     }
 }

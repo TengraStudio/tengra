@@ -9,19 +9,19 @@ interface PerformanceMark {
 }
 
 class PerformanceMonitor {
-    private marks: Map<string, PerformanceMark> = new Map()
-    private measures: PerformanceMark[] = []
-    private startTime: number = Date.now()
+    private marks: Map<string, PerformanceMark> = new Map();
+    private measures: PerformanceMark[] = [];
+    private startTime: number = Date.now();
 
     /**
      * Mark a point in time
      */
     mark(name: string): void {
-        const timestamp = Date.now() - this.startTime
-        this.marks.set(name, { name, timestamp })
+        const timestamp = Date.now() - this.startTime;
+        this.marks.set(name, { name, timestamp });
 
         if (process.env.NODE_ENV === 'development') {
-            console.warn(`[Perf] ${name}: ${timestamp}ms`)
+            console.warn(`[Perf] ${name}: ${timestamp}ms`);
         }
     }
 
@@ -29,22 +29,22 @@ class PerformanceMonitor {
      * Measure duration between two marks
      */
     measure(name: string, startMark: string, endMark: string): number | null {
-        const start = this.marks.get(startMark)
-        const end = this.marks.get(endMark)
+        const start = this.marks.get(startMark);
+        const end = this.marks.get(endMark);
 
         if (!start || !end) {
-            console.warn(`[Perf] Missing marks for measure: ${startMark} -> ${endMark}`)
-            return null
+            console.warn(`[Perf] Missing marks for measure: ${startMark} -> ${endMark}`);
+            return null;
         }
 
-        const duration = end.timestamp - start.timestamp
-        this.measures.push({ name, timestamp: start.timestamp, duration })
+        const duration = end.timestamp - start.timestamp;
+        this.measures.push({ name, timestamp: start.timestamp, duration });
 
         if (process.env.NODE_ENV === 'development') {
-            console.warn(`[Perf] ${name}: ${duration}ms`)
+            console.warn(`[Perf] ${name}: ${duration}ms`);
         }
 
-        return duration
+        return duration;
     }
 
     /**
@@ -55,19 +55,19 @@ class PerformanceMonitor {
             marks: Array.from(this.marks.values()),
             measures: this.measures,
             totalTime: Date.now() - this.startTime
-        }
+        };
     }
 
     /**
      * Log a summary of performance data
      */
     logSummary(): void {
-        const report = this.getReport()
-        console.warn('[Performance Summary]')
-        console.warn(`Total time: ${report.totalTime}ms`)
-        console.warn('Marks:', report.marks)
+        const report = this.getReport();
+        console.warn('[Performance Summary]');
+        console.warn(`Total time: ${report.totalTime}ms`);
+        console.warn('Marks:', report.marks);
         if (report.measures.length > 0) {
-            console.warn('Measures:', report.measures)
+            console.warn('Measures:', report.measures);
         }
     }
 
@@ -75,44 +75,44 @@ class PerformanceMonitor {
      * Reset all marks and measures
      */
     reset(): void {
-        this.marks.clear()
-        this.measures = []
-        this.startTime = Date.now()
+        this.marks.clear();
+        this.measures = [];
+        this.startTime = Date.now();
     }
 }
 
 // Singleton instance
-export const performanceMonitor = new PerformanceMonitor()
+export const performanceMonitor = new PerformanceMonitor();
 
 // Convenience function for timing async operations
 export async function measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-    const startMark = `${name}-start`
-    const endMark = `${name}-end`
+    const startMark = `${name}-start`;
+    const endMark = `${name}-end`;
 
-    performanceMonitor.mark(startMark)
+    performanceMonitor.mark(startMark);
     try {
-        const result = await fn()
-        performanceMonitor.mark(endMark)
-        performanceMonitor.measure(name, startMark, endMark)
-        return result
+        const result = await fn();
+        performanceMonitor.mark(endMark);
+        performanceMonitor.measure(name, startMark, endMark);
+        return result;
     } catch (error) {
-        performanceMonitor.mark(endMark)
-        performanceMonitor.measure(`${name} (failed)`, startMark, endMark)
-        throw error
+        performanceMonitor.mark(endMark);
+        performanceMonitor.measure(`${name} (failed)`, startMark, endMark);
+        throw error;
     }
 }
 
 // React hook for component render timing
 export function useRenderTiming(componentName: string): void {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     // Use useEffect to mark when component is mounted
     if (typeof window !== 'undefined') {
         setTimeout(() => {
-            const renderTime = Date.now() - startTime
+            const renderTime = Date.now() - startTime;
             if (process.env.NODE_ENV === 'development' && renderTime > 100) {
-                console.warn(`[Perf] Slow render: ${componentName} took ${renderTime}ms`)
+                console.warn(`[Perf] Slow render: ${componentName} took ${renderTime}ms`);
             }
-        }, 0)
+        }, 0);
     }
 }

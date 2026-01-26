@@ -1,8 +1,8 @@
-import { LucideIcon } from 'lucide-react'
-import React from 'react'
+import { LucideIcon } from 'lucide-react';
+import React from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     icon: LucideIcon
@@ -83,5 +83,5 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
             {/* Inline children (like edit input) */}
             {children}
         </div>
-    )
-}
+    );
+};

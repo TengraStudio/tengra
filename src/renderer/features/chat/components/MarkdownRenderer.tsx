@@ -1,16 +1,16 @@
-import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock'
-import DOMPurify from 'dompurify'
-import { Code2 } from 'lucide-react'
-import React, { isValidElement, memo, useEffect, useId, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import rehypeKatex from 'rehype-katex'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
+import { MonacoBlock } from '@renderer/features/chat/components/MonacoBlock';
+import DOMPurify from 'dompurify';
+import { Code2 } from 'lucide-react';
+import React, { isValidElement, memo, useEffect, useId, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import 'katex/dist/katex.min.css'
+import 'katex/dist/katex.min.css';
 
 // Dynamic mermaid loader
 const loadMermaid = async () => {
@@ -30,28 +30,28 @@ const loadMermaid = async () => {
 };
 
 const MermaidDiagram = ({ code }: { code: string }) => {
-    const [svg, setSvg] = useState<string>('')
-    const [error, setError] = useState<string | null>(null)
-    const [loading, setLoading] = useState(true)
-    const id = useId()
+    const [svg, setSvg] = useState<string>('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const id = useId();
 
     useEffect(() => {
         const render = async () => {
             try {
-                setLoading(true)
+                setLoading(true);
                 const mermaid = await loadMermaid();
-                const { svg } = await mermaid.render(id, code)
-                setSvg(DOMPurify.sanitize(svg))
-                setError(null)
+                const { svg } = await mermaid.render(id, code);
+                setSvg(DOMPurify.sanitize(svg));
+                setError(null);
             } catch (err) {
-                const message = err instanceof Error ? err.message : String(err)
-                setError(message)
+                const message = err instanceof Error ? err.message : String(err);
+                setError(message);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-        void render()
-    }, [code, id])
+        };
+        void render();
+    }, [code, id]);
 
     if (loading) {
         return (
@@ -61,12 +61,12 @@ const MermaidDiagram = ({ code }: { code: string }) => {
                     <span className="text-sm">Loading diagram...</span>
                 </div>
             </div>
-        )
+        );
     }
 
-    if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre> }
-    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />
-}
+    if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>; }
+    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />;
+};
 
 interface MarkdownRendererProps {
     content: string
@@ -87,7 +87,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
     isUser,
     language = 'en'
 }) => {
-    const { t } = useTranslation(language)
+    const { t } = useTranslation(language);
     return (
         <div className="markdown-body">
             <ReactMarkdown
@@ -95,9 +95,9 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                 rehypePlugins={[rehypeKatex]}
                 components={{
                     code({ className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className ?? '')
-                        const codeString = String(children).replace(/\n$/, '')
-                        if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} /> }
+                        const match = /language-(\w+)/.exec(className ?? '');
+                        const codeString = String(children).replace(/\n$/, '');
+                        if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} />; }
 
                         return !match ? (
                             <code {...props}>
@@ -112,7 +112,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                                 onStop={onStop}
                                 i18nLanguage={language}
                             />
-                        )
+                        );
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
@@ -121,10 +121,10 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                             {src && !isUser && onCodeConvert && (
                                 <button
                                     onClick={(e) => {
-                                        e.stopPropagation()
-                                        onCodeConvert(src)
+                                        e.stopPropagation();
+                                        onCodeConvert(src);
                                     }}
-                                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
                                     {t('workspace.convertToCode')}
@@ -137,15 +137,15 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     ),
                     li: ({ children }) => {
                         const isCheckbox = Array.isArray(children) && children.some(c => {
-                            if (!isValidElement(c)) { return false }
-                            const element = c as React.ReactElement<{ type?: string }>
-                            return element.props?.type === 'checkbox'
-                        })
-                        return <li className={cn(isCheckbox ? "list-none -ml-4" : "")}>{children}</li>
+                            if (!isValidElement(c)) { return false; }
+                            const element = c as React.ReactElement<{ type?: string }>;
+                            return element.props?.type === 'checkbox';
+                        });
+                        return <li className={cn(isCheckbox ? "list-none -ml-4" : "")}>{children}</li>;
                     },
                     input: ({ type, checked, ...props }) => {
-                        if (type === 'checkbox') { return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} /> }
-                        return <input {...props} />
+                        if (type === 'checkbox') { return <input type="checkbox" checked={checked} readOnly className="mr-2 accent-primary scale-110 align-middle" {...props} />; }
+                        return <input {...props} />;
                     },
                     ul: ({ children }) => <ul>{children}</ul>,
                     ol: ({ children }) => <ol>{children}</ol>,
@@ -154,6 +154,6 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                 {content}
             </ReactMarkdown>
         </div>
-    )
-})
-MarkdownRenderer.displayName = 'MarkdownRenderer'
+    );
+});
+MarkdownRenderer.displayName = 'MarkdownRenderer';

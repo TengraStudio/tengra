@@ -18,6 +18,7 @@ This document contains mandatory rules and guidelines for all AI agents working 
 10. [Code Style & Conventions](#10-code-style--conventions)
 11. [Forbidden Actions](#11-forbidden-actions)
 12. [Checklist Before Committing](#12-checklist-before-committing)
+13. [Performance Optimization Rules](#13-performance-optimization-rules)
 
 ---
 
@@ -298,6 +299,7 @@ container.register(
 2. **Files WITHOUT extensions are FORBIDDEN**
 3. Valid log extensions: `.log`, `.txt`, `.json`
 4. Log file format: `{service}_{date}.log`
+5. **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
 
 ### 5.2 Valid Log File Examples
 
@@ -621,6 +623,10 @@ interface UserData {
 
 // Use type for unions/primitives
 type Status = 'pending' | 'complete' | 'failed';
+
+### 10.6 Linting Priority
+
+**CRITICAL**: Agents MUST check [LINT_ISSUES.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/LINT_ISSUES.md) before starting work. Fixing the categorized issues in that file is currently the top priority for codebase maintenance.
 ```
 
 ### 10.2 Async/Await Rules
@@ -798,6 +804,25 @@ Never access or modify files in these directories:
 - node_modules/
 - vendor/
 - [user-defined paths]
+
+---
+
+## 13. Performance Optimization Rules
+
+To ensure a "best performance" experience, agents MUST follow these 12 rules:
+
+1.  **Lazy Load Heavy Assets**: Mandatory use of `React.lazy()` and `Suspense` for heavy UI components (Code Editors, Mermaid, Monaco).
+2.  **Memoization Strategy**: Wrap expensive data processing or non-primitive props in `useMemo` or `useCallback` to prevent unnecessary re-renders.
+3.  **IPC Batching**: Consolidate multiple Renderer-to-Main requests into single payload batch requests where possible.
+4.  **Virtualization**: Large data lists (expected >50 items) MUST be virtualized (e.g., using `react-virtuoso`).
+5.  **Lazy Service Instantiation**: Main process services should be initialized lazily using proxies or lazy-getters to improve startup time.
+6.  **Database Indexing**: All frequently filtered or sorted columns in PGlite MUST have appropriate indexes.
+7.  **Resource Cleanup**: Every service MUST implement a `dispose()` method, and React effects must return cleanup functions for all event listeners and timers.
+8.  **Main Process Responsiveness**: Never run synchronous I/O or heavy CPU tasks (parsing, encryption) on the main Electron thread; use worker threads.
+9.  **Lookup Efficiency**: Use `Map` or `Set` instead of `Array.find()` or standard `Object` for high-frequency lookups or large collections.
+10. **Import Hygiene**: Enforce tree-shakeable imports (e.g., `import { func } from 'lodash-es'`) to keep bundle sizes minimal.
+11. **Render Optimization**: Use `content-visibility: auto` CSS for off-screen UI sections to reduce initial paint costs.
+12. **State Granularity**: Keep React state as local as possible to prevent deep re-render trees in the application layout.
 
 If a task requires accessing a forbidden path, stop and ask the user.
 ```

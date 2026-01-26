@@ -1,8 +1,10 @@
-import { DatabaseService } from '@main/services/data/database.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { SecurityService } from '@main/services/security/security.service'
-import { EventBusService } from '@main/services/system/event-bus.service'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { SecurityService } from '@main/services/security/security.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('@main/logging/logger', () => ({
@@ -12,21 +14,32 @@ vi.mock('@main/logging/logger', () => ({
         debug: vi.fn(),
         warn: vi.fn(),
     }
-}))
+}));
+
+vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(false),
+    promises: {
+        readdir: vi.fn().mockResolvedValue([]),
+        readFile: vi.fn(),
+        unlink: vi.fn(),
+    },
+    mkdirSync: vi.fn(),
+}));
 
 describe('AuthService (New Multi-Account System)', () => {
-    let mockSecurityService: SecurityService
-    let mockDatabaseService: DatabaseService
-    let mockEventBusService: EventBusService
-    let authService: AuthService
+    let mockSecurityService: SecurityService;
+    let mockDatabaseService: DatabaseService;
+    let mockEventBusService: EventBusService;
+    let mockDataService: DataService;
+    let authService: AuthService;
 
     beforeEach(() => {
-        vi.clearAllMocks()
+        vi.clearAllMocks();
 
         mockSecurityService = {
             encryptSync: vi.fn((text) => `encrypted_${text}`),
             decryptSync: vi.fn((text) => text?.replace('encrypted_', ''))
-        } as unknown as SecurityService
+        } as unknown as SecurityService;
 
         mockDatabaseService = {
             initialize: vi.fn().mockResolvedValue(undefined),
@@ -35,51 +48,55 @@ describe('AuthService (New Multi-Account System)', () => {
             saveLinkedAccount: vi.fn().mockResolvedValue(undefined),
             deleteLinkedAccount: vi.fn().mockResolvedValue(undefined),
             setActiveLinkedAccount: vi.fn().mockResolvedValue(undefined),
-        } as unknown as DatabaseService
+        } as unknown as DatabaseService;
 
         mockEventBusService = {
             emit: vi.fn()
-        } as unknown as EventBusService
+        } as unknown as EventBusService;
 
-        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService)
-    })
+        mockDataService = {
+            getPath: vi.fn().mockReturnValue('/mock/auth/path'),
+        } as unknown as DataService;
+
+        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService, mockDataService);
+    });
 
     describe('Initialization', () => {
         it('should initialize with database service', async () => {
-            await authService.initialize()
-            expect(mockDatabaseService.initialize).toHaveBeenCalled()
-        })
-    })
+            await authService.initialize();
+            expect(mockDatabaseService.initialize).toHaveBeenCalled();
+        });
+    });
 
     describe('Linked Accounts', () => {
         it('should get accounts by provider', async () => {
             const mockAccounts = [
                 { id: '1', provider: 'github', email: 'user@test.com', isActive: true, createdAt: Date.now(), updatedAt: Date.now() }
-            ]
-            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts)
+            ];
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts);
 
-            const accounts = await authService.getAccountsByProvider('github')
+            const accounts = await authService.getAccountsByProvider('github');
 
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('github')
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0]?.provider).toBe('github')
-        })
+            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('github');
+            expect(accounts).toHaveLength(1);
+            expect(accounts[0]?.provider).toBe('github');
+        });
 
         it('should normalize provider names', async () => {
-            await authService.getAccountsByProvider('openai')
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('codex')
+            await authService.getAccountsByProvider('openai');
+            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('codex');
 
-            await authService.getAccountsByProvider('anthropic')
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('claude')
-        })
+            await authService.getAccountsByProvider('anthropic');
+            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('claude');
+        });
 
         it('should link new account', async () => {
             const tokenData = {
                 accessToken: 'test-token',
                 email: 'user@test.com'
-            }
+            };
 
-            await authService.linkAccount('github', tokenData)
+            await authService.linkAccount('github', tokenData);
 
             expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -88,34 +105,34 @@ describe('AuthService (New Multi-Account System)', () => {
                     accessToken: 'encrypted_test-token',
                     isActive: true  // First account is active
                 })
-            )
-        })
+            );
+        });
 
         it('should unlink account', async () => {
             const mockAccounts = [
                 { id: '1', provider: 'github', isActive: true, createdAt: Date.now(), updatedAt: Date.now() }
-            ]
-            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts)
+            ];
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts);
 
-            await authService.unlinkAccount('1')
+            await authService.unlinkAccount('1');
 
-            expect(mockDatabaseService.deleteLinkedAccount).toHaveBeenCalledWith('1')
-        })
-    })
+            expect(mockDatabaseService.deleteLinkedAccount).toHaveBeenCalledWith('1');
+        });
+    });
 
     describe('Token Access', () => {
         it('should provide getAllAccountsFull', async () => {
             const mockAccounts = [
                 { id: '1', provider: 'github', email: 'user@test.com', accessToken: 'encrypted_token', isActive: true, createdAt: Date.now(), updatedAt: Date.now() }
-            ]
-            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts)
+            ];
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts);
 
-            const accounts = await authService.getAllAccountsFull()
+            const accounts = await authService.getAllAccountsFull();
 
-            expect(accounts).toHaveLength(1)
-            expect(accounts[0]?.provider).toBe('github')
-            expect(accounts[0]?.accessToken).toBe('token') // Decrypted
-        })
+            expect(accounts).toHaveLength(1);
+            expect(accounts[0]?.provider).toBe('github');
+            expect(accounts[0]?.accessToken).toBe('token'); // Decrypted
+        });
 
         it('should provide getActiveToken', async () => {
             const mockAccount = {
@@ -125,12 +142,12 @@ describe('AuthService (New Multi-Account System)', () => {
                 isActive: true,
                 createdAt: Date.now(),
                 updatedAt: Date.now()
-            }
-            vi.mocked(mockDatabaseService.getActiveLinkedAccount).mockResolvedValue(mockAccount)
+            };
+            vi.mocked(mockDatabaseService.getActiveLinkedAccount).mockResolvedValue(mockAccount);
 
-            const token = await authService.getActiveToken('github')
+            const token = await authService.getActiveToken('github');
 
-            expect(token).toBe('token') // Decrypted
-        })
-    })
-})
+            expect(token).toBe('token'); // Decrypted
+        });
+    });
+});

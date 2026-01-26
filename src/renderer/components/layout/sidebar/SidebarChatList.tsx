@@ -1,9 +1,9 @@
-import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react'
-import React from 'react'
+import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
+import React from 'react';
 
-import { Chat, Folder } from '@/types'
+import { Chat, Folder } from '@/types';
 
-import { SidebarFolderSection } from './SidebarFolderSection'
+import { SidebarFolderSection } from './SidebarFolderSection';
 
 interface SidebarChatListProps {
     isCollapsed: boolean
@@ -117,7 +117,7 @@ export const SidebarChatList = React.memo(({
                 )}
             </div>
         </>
-    )
-})
+    );
+});
 
-SidebarChatList.displayName = 'SidebarChatList'
+SidebarChatList.displayName = 'SidebarChatList';

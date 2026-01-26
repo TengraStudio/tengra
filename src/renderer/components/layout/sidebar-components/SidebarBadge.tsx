@@ -1,7 +1,7 @@
-import React from 'react'
+import React from 'react';
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export interface SidebarBadgeProps {
     /** Badge content - number or string */
@@ -32,19 +32,19 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
     const variantClasses = {
         default: 'bg-muted text-muted-foreground',
         primary: 'bg-primary text-primary-foreground',
-        warning: 'bg-amber-500 text-white',
-        error: 'bg-red-500 text-white',
-        success: 'bg-emerald-500 text-white'
-    }
+        warning: 'bg-amber-500 text-foreground',
+        error: 'bg-red-500 text-foreground',
+        success: 'bg-emerald-500 text-foreground'
+    };
 
     const sizeClasses = {
         sm: dot ? 'w-2 h-2' : 'min-w-[18px] h-[18px] px-1.5 text-[10px]',
         md: dot ? 'w-2.5 h-2.5' : 'min-w-[22px] h-[22px] px-2 text-xs'
-    }
+    };
 
     const displayValue = typeof value === 'number' && value > max
         ? `${max}+`
-        : value
+        : value;
 
     if (dot) {
         return (
@@ -54,7 +54,7 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
                 variantClasses[variant],
                 className
             )} />
-        )
+        );
     }
 
     return (
@@ -74,7 +74,7 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
                 {displayValue}
             </motion.span>
         </AnimatePresence>
-    )
-})
+    );
+});
 
-SidebarBadge.displayName = 'SidebarBadge'
+SidebarBadge.displayName = 'SidebarBadge';

@@ -1,6 +1,6 @@
-import { JsonValue } from '@shared/types/common'
-import { QuotaResponse } from '@shared/types/quota'
-import { AppSettings } from '@shared/types/settings'
+import { JsonValue } from '@shared/types/common';
+import { QuotaResponse } from '@shared/types/quota';
+import { AppSettings } from '@shared/types/settings';
 
 /**
  * @fileoverview In-memory cache utility with TTL and LRU eviction.
@@ -52,10 +52,10 @@ interface CacheEntry<T> {
  * ```
  */
 export class Cache<T = JsonValue> {
-    private entries: Map<string, CacheEntry<T>> = new Map()
-    private readonly maxSize: number
-    private readonly defaultTTL: number
-    private readonly onEvict?: (key: string, value: T) => void
+    private entries: Map<string, CacheEntry<T>> = new Map();
+    private readonly maxSize: number;
+    private readonly defaultTTL: number;
+    private readonly onEvict?: (key: string, value: T) => void;
 
     /**
      * Creates a new Cache instance.
@@ -63,9 +63,9 @@ export class Cache<T = JsonValue> {
      * @param options - Cache configuration options
      */
     constructor(options: CacheOptions<T> = {}) {
-        this.maxSize = options.maxSize ?? 100
-        this.defaultTTL = options.defaultTTL ?? 5 * 60 * 1000 // 5 minutes
-        this.onEvict = options.onEvict
+        this.maxSize = options.maxSize ?? 100;
+        this.defaultTTL = options.defaultTTL ?? 5 * 60 * 1000; // 5 minutes
+        this.onEvict = options.onEvict;
     }
 
     /**
@@ -78,18 +78,18 @@ export class Cache<T = JsonValue> {
      * @returns The cached value or undefined
      */
     get(key: string): T | undefined {
-        const entry = this.entries.get(key)
-        if (!entry) {return undefined}
+        const entry = this.entries.get(key);
+        if (!entry) {return undefined;}
 
         // Check expiration
         if (Date.now() > entry.expiresAt) {
-            this.delete(key)
-            return undefined
+            this.delete(key);
+            return undefined;
         }
 
         // Update last accessed time for LRU
-        entry.lastAccessed = Date.now()
-        return entry.value
+        entry.lastAccessed = Date.now();
+        return entry.value;
     }
 
     /**
@@ -104,15 +104,15 @@ export class Cache<T = JsonValue> {
     set(key: string, value: T, ttl?: number): void {
         // Evict if at capacity
         if (this.entries.size >= this.maxSize && !this.entries.has(key)) {
-            this.evictLRU()
+            this.evictLRU();
         }
 
-        const expiresAt = Date.now() + (ttl ?? this.defaultTTL)
+        const expiresAt = Date.now() + (ttl ?? this.defaultTTL);
         this.entries.set(key, {
             value,
             expiresAt,
             lastAccessed: Date.now()
-        })
+        });
     }
 
     /**
@@ -124,13 +124,13 @@ export class Cache<T = JsonValue> {
      * @returns True if the key exists and is valid
      */
     has(key: string): boolean {
-        const entry = this.entries.get(key)
-        if (!entry) {return false}
+        const entry = this.entries.get(key);
+        if (!entry) {return false;}
         if (Date.now() > entry.expiresAt) {
-            this.delete(key)
-            return false
+            this.delete(key);
+            return false;
         }
-        return true
+        return true;
     }
 
     /**
@@ -142,11 +142,11 @@ export class Cache<T = JsonValue> {
      * @returns True if an entry was removed, false if it didn't exist
      */
     delete(key: string): boolean {
-        const entry = this.entries.get(key)
+        const entry = this.entries.get(key);
         if (entry && this.onEvict) {
-            this.onEvict(key, entry.value)
+            this.onEvict(key, entry.value);
         }
-        return this.entries.delete(key)
+        return this.entries.delete(key);
     }
 
     /**
@@ -157,10 +157,10 @@ export class Cache<T = JsonValue> {
     clear(): void {
         if (this.onEvict) {
             for (const [key, entry] of this.entries) {
-                this.onEvict(key, entry.value)
+                this.onEvict(key, entry.value);
             }
         }
-        this.entries.clear()
+        this.entries.clear();
     }
 
     /**
@@ -169,7 +169,7 @@ export class Cache<T = JsonValue> {
      * @returns The count of cached items
      */
     size(): number {
-        return this.entries.size
+        return this.entries.size;
     }
 
     /**
@@ -178,7 +178,7 @@ export class Cache<T = JsonValue> {
      * @returns Array of cache keys
      */
     keys(): string[] {
-        return Array.from(this.entries.keys())
+        return Array.from(this.entries.keys());
     }
 
     /**
@@ -187,18 +187,18 @@ export class Cache<T = JsonValue> {
      * @private
      */
     private evictLRU(): void {
-        let oldestKey: string | null = null
-        let oldestTime = Infinity
+        let oldestKey: string | null = null;
+        let oldestTime = Infinity;
 
         for (const [key, entry] of this.entries) {
             if (entry.lastAccessed < oldestTime) {
-                oldestTime = entry.lastAccessed
-                oldestKey = key
+                oldestTime = entry.lastAccessed;
+                oldestKey = key;
             }
         }
 
         if (oldestKey) {
-            this.delete(oldestKey)
+            this.delete(oldestKey);
         }
     }
 
@@ -208,17 +208,17 @@ export class Cache<T = JsonValue> {
      * @returns The number of entries removed
      */
     prune(): number {
-        const now = Date.now()
-        let removed = 0
+        const now = Date.now();
+        let removed = 0;
 
         for (const [key, entry] of this.entries) {
             if (now > entry.expiresAt) {
-                this.delete(key)
-                removed++
+                this.delete(key);
+                removed++;
             }
         }
 
-        return removed
+        return removed;
     }
 
     /**
@@ -230,7 +230,7 @@ export class Cache<T = JsonValue> {
         return {
             size: this.entries.size,
             maxSize: this.maxSize
-        }
+        };
     }
 }
 
@@ -257,21 +257,21 @@ export function memoize<Args extends JsonValue[], Result extends JsonValue>(
         ttl?: number
     }
 ): (...args: Args) => Promise<Result> {
-    const cache = options?.cache ?? new Cache<Result>({ defaultTTL: options?.ttl ?? 60000 })
-    const keyFn = options?.keyFn ?? ((...args) => JSON.stringify(args))
+    const cache = options?.cache ?? new Cache<Result>({ defaultTTL: options?.ttl ?? 60000 });
+    const keyFn = options?.keyFn ?? ((...args) => JSON.stringify(args));
 
     return async (...args: Args) => {
-        const key = keyFn(...args)
+        const key = keyFn(...args);
 
-        const cached = cache.get(key)
+        const cached = cache.get(key);
         if (cached !== undefined) {
-            return cached
+            return cached;
         }
 
-        const result = await fn(...args)
-        cache.set(key, result, options?.ttl)
-        return result
-    }
+        const result = await fn(...args);
+        cache.set(key, result, options?.ttl);
+        return result;
+    };
 }
 
 // Pre-configured caches for common use cases
@@ -280,16 +280,16 @@ export function memoize<Args extends JsonValue[], Result extends JsonValue>(
 export const modelCache = new Cache<JsonValue[]>({
     maxSize: 10,
     defaultTTL: 5 * 60 * 1000 // 5 minutes
-})
+});
 
 /** Cache for API quota information (Very short TTL) */
 export const quotaCache = new Cache<QuotaResponse>({
     maxSize: 20,
     defaultTTL: 60 * 1000 // 1 minute
-})
+});
 
 /** Cache for application settings (Short TTL) */
 export const settingsCache = new Cache<AppSettings>({
     maxSize: 5,
     defaultTTL: 30 * 1000 // 30 seconds
-})
+});

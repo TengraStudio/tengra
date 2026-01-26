@@ -1,12 +1,12 @@
-import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components'
-import { Book, Folder as FolderIcon,MessageSquare, Rocket, Users } from 'lucide-react'
-import React from 'react'
+import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components';
+import { Book, Folder as FolderIcon,MessageSquare, Rocket, Users } from 'lucide-react';
+import React from 'react';
 
-import { Button } from '@/components/ui/button'
-import { AppView } from '@/hooks/useAppState'
-import { Language,useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { Project } from '@/types'
+import { Button } from '@/components/ui/button';
+import { AppView } from '@/hooks/useAppState';
+import { Language,useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { Project } from '@/types';
 
 interface WorkspaceSectionProps {
     isCollapsed: boolean;
@@ -21,15 +21,15 @@ interface WorkspaceSectionProps {
 }
 
 export const WorkspaceSectionComponent: React.FC<WorkspaceSectionProps> = (props) => {
-    const { isCollapsed, language } = props
-    const { t } = useTranslation(language as Language)
+    const { isCollapsed, language } = props;
+    const { t } = useTranslation(language as Language);
 
     if (isCollapsed) {
-        return <CollapsedWorkspace {...props} t={t} />
+        return <CollapsedWorkspace {...props} t={t} />;
     }
 
-    return <ExpandedWorkspace {...props} t={t} />
-}
+    return <ExpandedWorkspace {...props} t={t} />;
+};
 
 const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => string }> = ({
     currentView, onChangeView, t
@@ -60,7 +60,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             <Users className="w-4 h-4 shrink-0" />
         </Button>
     </div>
-)
+);
 
 const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => string }> = ({
     currentView, onChangeView, chatsCount, promptsCount, selectedProject, setShowPrompts, t
@@ -106,4 +106,4 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
             badge={promptsCount}
         />
     </SidebarSection>
-)
+);

@@ -1,8 +1,8 @@
-import { BarChart, Code, Image, MessageSquare, Mic, Palette, Rocket,Server, Settings, Shield, Sparkles, User, Users } from 'lucide-react'
-import React from 'react'
+import { BarChart, Code, Image, MessageSquare, Mic, Palette, Rocket,Server, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
+import React from 'react';
 
-import { SettingsCategory } from '@/features/settings/types'
-import { cn } from '@/lib/utils'
+import { SettingsCategory } from '@/features/settings/types';
+import { cn } from '@/lib/utils';
 
 interface SidebarSettingsMenuProps {
     onOpenSettings: (category?: SettingsCategory) => void
@@ -29,7 +29,7 @@ export const SidebarSettingsMenu: React.FC<SidebarSettingsMenuProps> = ({
         { id: 'developer', label: t('settings.developer') || 'Developer', icon: Code },
         { id: 'advanced', label: t('settings.advanced') || 'Advanced', icon: Shield },
         { id: 'about', label: t('settings.about') || 'About', icon: Rocket }
-    ]
+    ];
 
     return (
         <>
@@ -44,8 +44,8 @@ export const SidebarSettingsMenu: React.FC<SidebarSettingsMenuProps> = ({
                     <button
                         key={item.id}
                         onClick={() => {
-                            onOpenSettings(item.id as SettingsCategory)
-                            onClose()
+                            onOpenSettings(item.id as SettingsCategory);
+                            onClose();
                         }}
                         className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors text-left"
                     >
@@ -55,7 +55,7 @@ export const SidebarSettingsMenu: React.FC<SidebarSettingsMenuProps> = ({
                 ))}
             </div>
         </>
-    )
-}
+    );
+};
 
-SidebarSettingsMenu.displayName = 'SidebarSettingsMenu'
+SidebarSettingsMenu.displayName = 'SidebarSettingsMenu';

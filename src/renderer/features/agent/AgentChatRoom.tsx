@@ -1,10 +1,10 @@
-import { AgentLog, AgentMessage } from '@shared/types/agent'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { Bot, Clock, Sparkles, Terminal } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import { AgentLog, AgentMessage } from '@shared/types/agent';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { Bot, Clock, Sparkles, Terminal } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 
 interface AgentChatRoomProps {
@@ -14,8 +14,8 @@ interface AgentChatRoomProps {
 }
 
 export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initialLogs, isRunning }) => {
-    const [messages, setMessages] = useState<AgentMessage[]>([])
-    const scrollRef = useRef<HTMLDivElement>(null)
+    const [messages, setMessages] = useState<AgentMessage[]>([]);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     // Initial load from logs
     useEffect(() => {
@@ -26,78 +26,78 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
             content: log.message,
             timestamp: log.timestamp,
             type: (log.type === 'plan' || log.type === 'action') ? 'code' : 'text'
-        }))
+        }));
         const timer = setTimeout(() => {
-            setMessages(history)
-        }, 0)
-        return () => clearTimeout(timer)
-    }, [initialLogs])
+            setMessages(history);
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [initialLogs]);
 
     // WebSocket Connection
     useEffect(() => {
-        if (!sessionId) { return }
+        if (!sessionId) { return; }
 
         // Get WebSocket URL from environment or use default
         // In production, this should use wss:// for secure connections
         // Note: For Vite, use import.meta.env.VITE_* prefix for env vars
-        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) ?? 'ws://localhost:3001'
+        const wsUrl = (import.meta.env.VITE_WEBSOCKET_URL as string | undefined) ?? 'ws://localhost:3001';
 
         // Validate WebSocket URL
         if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-            console.error('[AgentChatRoom] Invalid WebSocket URL:', wsUrl)
-            return
+            console.error('[AgentChatRoom] Invalid WebSocket URL:', wsUrl);
+            return;
         }
 
-        const socket = new WebSocket(wsUrl)
+        const socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {
             // Join room
-            socket.send(JSON.stringify({ type: 'join', sessionId }))
-        }
+            socket.send(JSON.stringify({ type: 'join', sessionId }));
+        };
 
         socket.onmessage = (event) => {
             try {
-                const msg = safeJsonParse<AgentMessage>(event.data, {} as AgentMessage)
-                if (!msg?.id) { return }
+                const msg = safeJsonParse<AgentMessage>(event.data, {} as AgentMessage);
+                if (!msg?.id) { return; }
                 // Deduping based on ID in case of overlapping log polls/WS
                 setMessages(prev => {
-                    if (prev.some(p => p.id === msg.id)) { return prev }
-                    return [...prev, msg]
-                })
+                    if (prev.some(p => p.id === msg.id)) { return prev; }
+                    return [...prev, msg];
+                });
             } catch (e) {
-                console.error('[AgentChatRoom] WS Parse error', e)
+                console.error('[AgentChatRoom] WS Parse error', e);
             }
-        }
+        };
 
         socket.onerror = (error) => {
-            console.error('[AgentChatRoom] WebSocket error:', error)
-        }
+            console.error('[AgentChatRoom] WebSocket error:', error);
+        };
 
         socket.onclose = () => {
-            console.warn('[AgentChatRoom] WebSocket connection closed')
-        }
+            console.warn('[AgentChatRoom] WebSocket connection closed');
+        };
 
         return () => {
             if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-                socket.close()
+                socket.close();
             }
-        }
-    }, [sessionId])
+        };
+    }, [sessionId]);
 
     // Auto-scroll
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: 'smooth' })
+            scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages.length])
+    }, [messages.length]);
 
     return (
         <div className="flex flex-col h-full bg-zinc-950/50 rounded-xl overflow-hidden border border-border/40 relative">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => {
-                    const isSystem = msg.sender === 'system'
-                    const isPlanner = msg.sender === 'planner'
-                    const isExecutor = msg.sender === 'executor'
+                    const isSystem = msg.sender === 'system';
+                    const isPlanner = msg.sender === 'planner';
+                    const isExecutor = msg.sender === 'executor';
 
                     return (
                         <motion.div
@@ -148,7 +148,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                                 </div>
                             </div>
                         </motion.div>
-                    )
+                    );
                 })}
 
                 {isRunning && (
@@ -165,5 +165,5 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                 <div ref={scrollRef} />
             </div>
         </div>
-    )
-}
+    );
+};

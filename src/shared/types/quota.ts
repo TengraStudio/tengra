@@ -1,4 +1,4 @@
-import { JsonValue } from '@/types/common'
+import { JsonValue } from '@/types/common';
 
 export type QuotaInfo = {
     remainingQuota: number;

@@ -1,21 +1,21 @@
-import type { ElectronAPI } from '@renderer/electron.d'
-import type { CouncilSession } from '@shared/types/agent'
-import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat'
-import type { AuthStatus, IpcValue } from '@shared/types/common'
-import type { Project, ProjectAnalysis } from '@shared/types/project'
-import type { ClaudeQuota, CodexUsage } from '@shared/types/quota'
-import type { AppSettings } from '@shared/types/settings'
-import type { IpcRendererEvent } from 'electron'
+import type { ElectronAPI } from '@renderer/electron.d';
+import type { CouncilSession } from '@shared/types/agent';
+import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
+import type { AuthStatus, IpcValue } from '@shared/types/common';
+import type { Project, ProjectAnalysis } from '@shared/types/project';
+import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
+import type { AppSettings } from '@shared/types/settings';
+import type { IpcRendererEvent } from 'electron';
 
-import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh'
+import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh';
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
-    minimize: () => console.warn('minimize'),
-    maximize: () => console.warn('maximize'),
-    close: () => console.warn('close'),
-    resizeWindow: (res: string) => console.warn('resize', res),
-    toggleCompact: (enabled: boolean) => console.warn('compact', enabled),
+    minimize: () => window.electron.log.warn('minimize'),
+    maximize: () => window.electron.log.warn('maximize'),
+    close: () => window.electron.log.warn('close'),
+    resizeWindow: (res: string) => window.electron.log.warn('resize', res),
+    toggleCompact: (enabled: boolean) => window.electron.log.warn('compact', enabled),
 
     githubLogin: async (_appId?: 'profile' | 'copilot') => ({ device_code: '123', user_code: 'ABC', verification_uri: 'http://locahost', expires_in: 900, interval: 5 }),
     pollToken: async (_deviceCode: string, _interval: number, _appId?: 'profile' | 'copilot') => ({ success: true, token: 'mock-token' }),
@@ -420,6 +420,10 @@ export const webElectronMock: ElectronAPI = {
     saveFile: async (_content: string, _filename: string) => ({ success: true, path: '' }),
     exportChatToPdf: async (_chatId: string, _title: string) => ({ success: true, path: '' }),
 
+    // Export
+    exportMarkdown: async (_content: string, _filePath: string) => ({ success: true }),
+    exportPDF: async (_htmlContent: string, _filePath: string) => ({ success: true }),
+
     getSettings: async () => ({} as AppSettings),
     saveSettings: async (_settings: AppSettings) => { },
 
@@ -481,11 +485,13 @@ export const webElectronMock: ElectronAPI = {
         getSession: async (_id) => null,
         getSessions: async () => [],
         cancelSession: async (_id) => ({ success: true }),
+        generateMarketPreview: async (_categories) => ({ success: true, data: [] }),
         startResearch: async (_sessionId) => ({ success: true }),
         startGeneration: async (_sessionId) => ({ success: true }),
         enrichIdea: async (_ideaId) => ({ success: true }),
         getIdea: async (_id) => null,
         getIdeas: async (_sessionId) => [],
+        regenerateIdea: async (_ideaId) => ({ success: true, idea: null as unknown }),
         approveIdea: async (_ideaId, _projectPath) => ({ success: true }),
         rejectIdea: async (_ideaId) => ({ success: true }),
         canGenerateLogo: async () => false,
@@ -513,11 +519,11 @@ export const webElectronMock: ElectronAPI = {
     },
 
     batch: {
-        invoke: async (_requests: Array<{ channel: string; args: any[] }>) => ({
+        invoke: async (_requests: Array<{ channel: string; args: IpcValue[] }>) => ({
             results: [],
             timing: { startTime: Date.now(), endTime: Date.now(), totalMs: 0 }
         }),
-        invokeSequential: async (_requests: Array<{ channel: string; args: any[] }>) => ({
+        invokeSequential: async (_requests: Array<{ channel: string; args: IpcValue[] }>) => ({
             results: [],
             timing: { startTime: Date.now(), endTime: Date.now(), totalMs: 0 }
         }),
@@ -532,10 +538,10 @@ export const webElectronMock: ElectronAPI = {
         removeAllListeners: (_channel: string) => { }
     },
     on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { }
-}
+};
 
 if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).electron) {
-    (window as unknown as Record<string, unknown>).electron = webElectronMock
+    (window as unknown as Record<string, unknown>).electron = webElectronMock;
 }
 
-export default webElectronMock
+export default webElectronMock;

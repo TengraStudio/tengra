@@ -1,12 +1,13 @@
-import { appLogger } from '@main/logging/logger'
-import { AuditLogService } from '@main/services/analysis/audit-log.service'
-import { CopilotService } from '@main/services/llm/copilot.service'
-import { LLMService } from '@main/services/llm/llm.service'
-import { SettingsService } from '@main/services/system/settings.service'
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
-import { registerBatchableHandler } from '@main/utils/ipc-batch.util'
-import { AppSettings } from '@shared/types/settings'
-import { ipcMain, IpcMainInvokeEvent } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { AuditLogService } from '@main/services/analysis/audit-log.service';
+import { CopilotService } from '@main/services/llm/copilot.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { IpcValue } from '@shared/types/common';
+import { AppSettings } from '@shared/types/settings';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export function registerSettingsIpc(options: {
     settingsService: SettingsService
@@ -16,36 +17,36 @@ export function registerSettingsIpc(options: {
     updateOpenAIConnection: () => void
     updateOllamaConnection: () => void | Promise<void>
 }) {
-    const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options
+    const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
 
     // Register batchable settings handlers
-    registerBatchableHandler('getSettings', async () => {
-        return settingsService.getSettings() as any
-    })
+    registerBatchableHandler('getSettings', async (): Promise<IpcValue> => {
+        return settingsService.getSettings();
+    });
 
-    registerBatchableHandler('saveSettings', async (_event, ...args) => {
-        const settings = args[0] as AppSettings
-        settingsService.saveSettings(settings)
-        return { success: true } as any
-    })
+    registerBatchableHandler('saveSettings', async (_event, ...args): Promise<IpcValue> => {
+        const settings = args[0] as AppSettings;
+        await settingsService.saveSettings(settings);
+        return { success: true };
+    });
 
     ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
-        const settings = settingsService.getSettings()
-        return settings
-    }))
+        const settings = settingsService.getSettings();
+        return settings;
+    }));
 
     async function auditSensitiveChanges(newSettings: AppSettings, oldSettings: AppSettings, auditService: AuditLogService | undefined) {
-        if (!auditService) { return }
-        const sensitiveChanges: string[] = []
+        if (!auditService) { return; }
+        const sensitiveChanges: string[] = [];
         const fields = [
             { key: 'openai', label: 'OpenAI API key' },
             { key: 'anthropic', label: 'Anthropic API key' },
             { key: 'groq', label: 'Groq API key' },
             { key: 'proxy', label: 'Proxy key' }
-        ] as const
+        ] as const;
 
         for (const field of fields) {
-            checkSensitiveField(field, newSettings, oldSettings, sensitiveChanges)
+            checkSensitiveField(field, newSettings, oldSettings, sensitiveChanges);
         }
 
         if (sensitiveChanges.length > 0) {
@@ -54,46 +55,46 @@ export function registerSettingsIpc(options: {
                 category: 'settings',
                 success: true,
                 details: { changes: sensitiveChanges, changedFields: Object.keys(newSettings) }
-            })
+            });
         }
     }
 
     function checkSensitiveField(field: { key: 'openai' | 'anthropic' | 'groq' | 'proxy'; label: string }, newSettings: AppSettings, oldSettings: AppSettings, changes: string[]) {
-        const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key
-        const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key
+        const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key;
+        const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key;
 
         if (typeof newVal === 'string' && newVal !== oldVal) {
-            changes.push(`${field.label} updated`)
+            changes.push(`${field.label} updated`);
         }
     }
 
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
-        updateLlmCredentials(finalSettings, newSettings)
-        updateCopilotCredentials(finalSettings)
-        updateProxyConfig(newSettings)
+        updateLlmCredentials(finalSettings, newSettings);
+        updateCopilotCredentials(finalSettings);
+        updateProxyConfig(newSettings);
     }
 
     function updateLlmCredentials(finalSettings: AppSettings, newSettings: AppSettings) {
-        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey) }
-        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey) }
-        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey) }
+        if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey); }
+        if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey); }
+        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
     }
 
     function updateCopilotCredentials(finalSettings: AppSettings) {
-        if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token) }
-        if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token) }
+        if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token); }
+        if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }
     }
 
     function updateProxyConfig(newSettings: AppSettings) {
-        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1'
-        const proxyKey = newSettings.proxy?.key ?? 'connected'
-        llmService.setProxySettings(proxyUrl, proxyKey)
+        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1';
+        const proxyKey = newSettings.proxy?.key ?? 'connected';
+        llmService.setProxySettings(proxyUrl, proxyKey);
     }
 
     ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
-        const oldSettings = settingsService.getSettings()
+        const oldSettings = settingsService.getSettings();
         // Await the save to get the final merged settings (with preserved secrets)
-        const finalSettings = await settingsService.saveSettings(newSettings)
+        const finalSettings = await settingsService.saveSettings(newSettings);
 
         // Audit log for sensitive settings changes
         await auditSensitiveChanges(newSettings, oldSettings, auditLogService);
@@ -109,6 +110,6 @@ export function registerSettingsIpc(options: {
         updateServices(finalSettings, newSettings);
         updateOpenAIConnection();
 
-        return finalSettings
-    }))
+        return finalSettings;
+    }));
 }

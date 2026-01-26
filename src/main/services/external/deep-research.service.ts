@@ -1,11 +1,11 @@
-import { BaseService } from '@main/services/base.service'
-import { WebService } from '@main/services/external/web.service'
-import { LLMService } from '@main/services/llm/llm.service'
-import { Message } from '@shared/types/chat'
-import { IdeaCategory } from '@shared/types/ideas'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
-import { v4 as uuidv4 } from 'uuid'
+import { BaseService } from '@main/services/base.service';
+import { WebService } from '@main/services/external/web.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { Message } from '@shared/types/chat';
+import { IdeaCategory } from '@shared/types/ideas';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Research source with credibility metadata
@@ -56,7 +56,7 @@ interface ResearchQuery {
     weight: number
 }
 
-const CURRENT_YEAR = new Date().getFullYear()
+const CURRENT_YEAR = new Date().getFullYear();
 
 /**
  * Deep Research Service
@@ -64,14 +64,14 @@ const CURRENT_YEAR = new Date().getFullYear()
  */
 export class DeepResearchService extends BaseService {
     /** Cache for recent research to avoid redundant queries */
-    private researchCache: Map<string, DeepResearchReport> = new Map()
-    private readonly CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutes
+    private researchCache: Map<string, DeepResearchReport> = new Map();
+    private readonly CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
     constructor(
         private webService: WebService,
         private llmService: LLMService
     ) {
-        super('DeepResearchService')
+        super('DeepResearchService');
     }
 
     /**
@@ -82,59 +82,59 @@ export class DeepResearchService extends BaseService {
         category: IdeaCategory,
         onProgress?: (stage: string, progress: number) => void
     ): Promise<DeepResearchReport> {
-        const startTime = Date.now()
-        const cacheKey = `${topic}-${category}`.toLowerCase()
+        const startTime = Date.now();
+        const cacheKey = `${topic}-${category}`.toLowerCase();
 
         // Check cache
-        const cached = this.researchCache.get(cacheKey)
+        const cached = this.researchCache.get(cacheKey);
         if (cached && (Date.now() - cached.generatedAt) < this.CACHE_TTL_MS) {
-            this.logInfo(`Using cached research for: ${topic}`)
-            return cached
+            this.logInfo(`Using cached research for: ${topic}`);
+            return cached;
         }
 
-        this.logInfo(`Starting deep research for: ${topic} (${category})`)
+        this.logInfo(`Starting deep research for: ${topic} (${category})`);
 
         // Generate multi-angle research queries
-        onProgress?.('Generating research queries', 5)
-        const queries = this.generateResearchQueries(topic, category)
+        onProgress?.('Generating research queries', 5);
+        const queries = this.generateResearchQueries(topic, category);
 
         // Execute all research queries
-        const allSources: ResearchSource[] = []
+        const allSources: ResearchSource[] = [];
         for (let i = 0; i < queries.length; i++) {
-            const query = queries[i]
-            onProgress?.(`Researching: ${query.purpose}`, 10 + Math.floor((i / queries.length) * 50))
+            const query = queries[i];
+            onProgress?.(`Researching: ${query.purpose}`, 10 + Math.floor((i / queries.length) * 50));
 
-            const sources = await this.executeResearchQuery(query)
-            allSources.push(...sources)
+            const sources = await this.executeResearchQuery(query);
+            allSources.push(...sources);
 
             // Fetch full content for top sources
-            const topSources = sources.slice(0, 3)
+            const topSources = sources.slice(0, 3);
             for (const source of topSources) {
                 if (!source.fullContent) {
-                    const fullContent = await this.fetchFullContent(source.url)
+                    const fullContent = await this.fetchFullContent(source.url);
                     if (fullContent) {
-                        source.fullContent = fullContent
+                        source.fullContent = fullContent;
                     }
                 }
             }
 
-            await this.delay(1000) // Rate limiting
+            await this.delay(1000); // Rate limiting
         }
 
         // Deduplicate sources
-        const uniqueSources = this.deduplicateSources(allSources)
-        this.logInfo(`Gathered ${uniqueSources.length} unique sources`)
+        const uniqueSources = this.deduplicateSources(allSources);
+        this.logInfo(`Gathered ${uniqueSources.length} unique sources`);
 
         // Analyze and synthesize findings
-        onProgress?.('Analyzing findings', 70)
-        const findings = await this.synthesizeFindings(topic, category, uniqueSources)
+        onProgress?.('Analyzing findings', 70);
+        const findings = await this.synthesizeFindings(topic, category, uniqueSources);
 
         // Calculate metrics
-        onProgress?.('Calculating metrics', 85)
-        const metrics = this.calculateMetrics(findings, uniqueSources)
+        onProgress?.('Calculating metrics', 85);
+        const metrics = this.calculateMetrics(findings, uniqueSources);
 
         // Build final report
-        onProgress?.('Building report', 95)
+        onProgress?.('Building report', 95);
         const report: DeepResearchReport = {
             query: topic,
             category,
@@ -147,22 +147,22 @@ export class DeepResearchService extends BaseService {
             rawSources: uniqueSources,
             generatedAt: Date.now(),
             researchDurationMs: Date.now() - startTime
-        }
+        };
 
         // Cache the report
-        this.researchCache.set(cacheKey, report)
+        this.researchCache.set(cacheKey, report);
 
-        onProgress?.('Research complete', 100)
-        this.logInfo(`Deep research completed in ${report.researchDurationMs}ms`)
+        onProgress?.('Research complete', 100);
+        this.logInfo(`Deep research completed in ${report.researchDurationMs}ms`);
 
-        return report
+        return report;
     }
 
     /**
      * Generate multi-angle research queries for thorough investigation
      */
     private generateResearchQueries(topic: string, category: IdeaCategory): ResearchQuery[] {
-        const categoryContext = this.getCategoryContext(category)
+        const categoryContext = this.getCategoryContext(category);
 
         return [
             // Market trends
@@ -236,21 +236,21 @@ export class DeepResearchService extends BaseService {
                 purpose: 'risks',
                 weight: 0.8
             }
-        ]
+        ];
     }
 
     /**
      * Execute a single research query
      */
     private async executeResearchQuery(query: ResearchQuery): Promise<ResearchSource[]> {
-        const sources: ResearchSource[] = []
+        const sources: ResearchSource[] = [];
 
         try {
-            const result = await this.webService.searchWeb(query.query, 8)
+            const result = await this.webService.searchWeb(query.query, 8);
 
             if (result.success && result.results) {
                 for (const searchResult of result.results) {
-                    const domain = this.extractDomain(searchResult.url)
+                    const domain = this.extractDomain(searchResult.url);
                     sources.push({
                         url: searchResult.url,
                         title: searchResult.title,
@@ -258,14 +258,14 @@ export class DeepResearchService extends BaseService {
                         credibilityScore: this.calculateCredibilityScore(domain, searchResult.title),
                         domain,
                         fetchedAt: Date.now()
-                    })
+                    });
                 }
             }
         } catch (error) {
-            this.logWarn(`Research query failed: ${query.query}`, getErrorMessage(error as Error))
+            this.logWarn(`Research query failed: ${query.query}`, getErrorMessage(error as Error));
         }
 
-        return sources
+        return sources;
     }
 
     /**
@@ -273,22 +273,22 @@ export class DeepResearchService extends BaseService {
      */
     private async fetchFullContent(url: string): Promise<string | null> {
         try {
-            const result = await this.webService.fetchWebPage(url)
+            const result = await this.webService.fetchWebPage(url);
             if (result.success && result.content) {
                 // Limit content length to avoid token limits
-                return result.content.slice(0, 5000)
+                return result.content.slice(0, 5000);
             }
         } catch {
-            this.logDebug(`Failed to fetch full content from ${url}`)
+            this.logDebug(`Failed to fetch full content from ${url}`);
         }
-        return null
+        return null;
     }
 
     /**
      * Calculate credibility score for a source
      */
     private calculateCredibilityScore(domain: string, title: string): number {
-        let score = 50 // Base score
+        let score = 50; // Base score
 
         // High credibility domains
         const highCredibilityDomains = [
@@ -297,58 +297,58 @@ export class DeepResearchService extends BaseService {
             'gartner.com', 'mckinsey.com', 'hbr.org', 'nature.com',
             'ieee.org', 'acm.org', 'ycombinator.com', 'producthunt.com',
             'crunchbase.com', 'pitchbook.com', 'stackshare.io'
-        ]
+        ];
 
         // Medium credibility domains
         const mediumCredibilityDomains = [
             'medium.com', 'dev.to', 'hackernews.com', 'reddit.com',
             'quora.com', 'stackoverflow.com', 'github.com'
-        ]
+        ];
 
         // Check domain credibility
         for (const d of highCredibilityDomains) {
             if (domain.includes(d)) {
-                score += 30
-                break
+                score += 30;
+                break;
             }
         }
 
         for (const d of mediumCredibilityDomains) {
             if (domain.includes(d)) {
-                score += 15
-                break
+                score += 15;
+                break;
             }
         }
 
         // Check for data/statistics in title
-        const dataKeywords = ['statistics', 'data', 'report', 'study', 'research', 'analysis', 'survey', 'market']
+        const dataKeywords = ['statistics', 'data', 'report', 'study', 'research', 'analysis', 'survey', 'market'];
         for (const keyword of dataKeywords) {
             if (title.toLowerCase().includes(keyword)) {
-                score += 10
-                break
+                score += 10;
+                break;
             }
         }
 
         // Check for recency in title
         if (title.includes(String(CURRENT_YEAR)) || title.includes(String(CURRENT_YEAR - 1))) {
-            score += 10
+            score += 10;
         }
 
-        return Math.min(100, score)
+        return Math.min(100, score);
     }
 
     /**
      * Deduplicate sources by URL
      */
     private deduplicateSources(sources: ResearchSource[]): ResearchSource[] {
-        const seen = new Set<string>()
+        const seen = new Set<string>();
         return sources.filter(source => {
             if (seen.has(source.url)) {
-                return false
+                return false;
             }
-            seen.add(source.url)
-            return true
-        }).sort((a, b) => b.credibilityScore - a.credibilityScore)
+            seen.add(source.url);
+            return true;
+        }).sort((a, b) => b.credibilityScore - a.credibilityScore);
     }
 
     /**
@@ -363,7 +363,7 @@ export class DeepResearchService extends BaseService {
         const sourceContext = sources
             .slice(0, 20)
             .map((s, i) => `[${i + 1}] ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}\n${s.fullContent ? `Content: ${s.fullContent.slice(0, 1500)}` : ''}`)
-            .join('\n\n')
+            .join('\n\n');
 
         const prompt = `Analyze these research sources about "${topic}" in the ${category} space.
 
@@ -395,7 +395,7 @@ Respond in JSON:
     ],
     "marketSizeEstimate": "$X billion" or null,
     "overallTrendDirection": "rising|stable|declining"
-}`
+}`;
 
         const messages: Message[] = [
             {
@@ -410,15 +410,15 @@ Respond in JSON:
                 content: prompt,
                 timestamp: new Date()
             }
-        ]
+        ];
 
         try {
-            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai')
-            const parsed = this.parseSynthesisResponse(response.content, sources)
-            return parsed.findings
+            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai');
+            const parsed = this.parseSynthesisResponse(response.content, sources);
+            return parsed.findings;
         } catch (error) {
-            this.logError(`Failed to synthesize findings: ${getErrorMessage(error as Error)}`)
-            return []
+            this.logError(`Failed to synthesize findings: ${getErrorMessage(error as Error)}`);
+            return [];
         }
     }
 
@@ -431,9 +431,9 @@ Respond in JSON:
     } {
         try {
             // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
+            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0];
             if (!jsonMatch) {
-                throw new Error('No JSON found in response')
+                throw new Error('No JSON found in response');
             }
 
             const data = safeJsonParse(jsonMatch, {
@@ -444,24 +444,24 @@ Respond in JSON:
                     sourceRefs: []
                 }],
                 marketSizeEstimate: 'Unable to estimate market size'
-            })
+            });
 
-            const findings: ResearchFinding[] = (data.findings ?? []).map(f => ({
-                insight: f.insight,
-                confidence: (f.confidence || 'medium') as 'low' | 'medium' | 'high',
-                category: (f.category || 'opportunity') as ResearchFinding['category'],
+            const findings: ResearchFinding[] = (data.findings ?? []).map((f: { insight?: string; confidence?: string; category?: string; sourceRefs?: unknown[] }) => ({
+                insight: f.insight ?? 'Unknown insight',
+                confidence: (f.confidence ?? 'medium') as 'low' | 'medium' | 'high',
+                category: (f.category ?? 'opportunity') as ResearchFinding['category'],
                 sources: (f.sourceRefs ?? [])
-                    .filter((ref: any) => ref > 0 && ref <= sources.length)
-                    .map((ref: any) => sources[ref - 1])
-            }))
+                    .filter((ref: unknown): ref is number => typeof ref === 'number' && ref > 0 && ref <= sources.length)
+                    .map((ref) => sources[ref - 1])
+            }));
 
             return {
                 findings,
                 marketSizeEstimate: data.marketSizeEstimate ?? undefined
-            }
+            };
         } catch (error) {
-            this.logWarn(`Failed to parse synthesis response: ${getErrorMessage(error as Error)}`)
-            return { findings: [] }
+            this.logWarn(`Failed to parse synthesis response: ${getErrorMessage(error as Error)}`);
+            return { findings: [] };
         }
     }
 
@@ -476,50 +476,50 @@ Respond in JSON:
         riskFactors: string[]
     } {
         // Count findings by category
-        const trendFindings = findings.filter(f => f.category === 'trend')
-        const competitorFindings = findings.filter(f => f.category === 'competitor')
-        const opportunityFindings = findings.filter(f => f.category === 'opportunity')
-        const riskFindings = findings.filter(f => f.category === 'risk')
-        const marketFindings = findings.filter(f => f.category === 'market-size')
+        const trendFindings = findings.filter(f => f.category === 'trend');
+        const competitorFindings = findings.filter(f => f.category === 'competitor');
+        const opportunityFindings = findings.filter(f => f.category === 'opportunity');
+        const riskFindings = findings.filter(f => f.category === 'risk');
+        const marketFindings = findings.filter(f => f.category === 'market-size');
 
         // Determine trend momentum
-        let trendMomentum: 'rising' | 'stable' | 'declining' = 'stable'
-        const positiveKeywords = ['growing', 'rising', 'increasing', 'booming', 'surge', 'expanding']
-        const negativeKeywords = ['declining', 'falling', 'decreasing', 'shrinking', 'slowing']
+        let trendMomentum: 'rising' | 'stable' | 'declining' = 'stable';
+        const positiveKeywords = ['growing', 'rising', 'increasing', 'booming', 'surge', 'expanding'];
+        const negativeKeywords = ['declining', 'falling', 'decreasing', 'shrinking', 'slowing'];
 
-        let positiveCount = 0
-        let negativeCount = 0
+        let positiveCount = 0;
+        let negativeCount = 0;
         for (const finding of trendFindings) {
-            const text = finding.insight.toLowerCase()
-            if (positiveKeywords.some(k => text.includes(k))) {positiveCount++}
-            if (negativeKeywords.some(k => text.includes(k))) {negativeCount++}
+            const text = finding.insight.toLowerCase();
+            if (positiveKeywords.some(k => text.includes(k))) {positiveCount++;}
+            if (negativeKeywords.some(k => text.includes(k))) {negativeCount++;}
         }
 
-        if (positiveCount > negativeCount + 1) {trendMomentum = 'rising'}
-        else if (negativeCount > positiveCount + 1) {trendMomentum = 'declining'}
+        if (positiveCount > negativeCount + 1) {trendMomentum = 'rising';}
+        else if (negativeCount > positiveCount + 1) {trendMomentum = 'declining';}
 
         // Determine competitor density
-        let competitorDensity: 'low' | 'medium' | 'high' = 'medium'
-        if (competitorFindings.length >= 5) {competitorDensity = 'high'}
-        else if (competitorFindings.length <= 2) {competitorDensity = 'low'}
+        let competitorDensity: 'low' | 'medium' | 'high' = 'medium';
+        if (competitorFindings.length >= 5) {competitorDensity = 'high';}
+        else if (competitorFindings.length <= 2) {competitorDensity = 'low';}
 
         // Calculate opportunity score
-        const highConfidenceOpportunities = opportunityFindings.filter(f => f.confidence === 'high').length
+        const highConfidenceOpportunities = opportunityFindings.filter(f => f.confidence === 'high').length;
         const opportunityScore = Math.min(100, Math.round(
             (opportunityFindings.length * 15) +
             (highConfidenceOpportunities * 20) +
             (trendMomentum === 'rising' ? 20 : 0) +
             (competitorDensity === 'low' ? 15 : 0) -
             (riskFindings.length * 5)
-        ))
+        ));
 
         // Extract market size estimate
-        let marketSizeEstimate: string | undefined
+        let marketSizeEstimate: string | undefined;
         for (const finding of marketFindings) {
-            const match = finding.insight.match(/\$[\d.]+\s*(billion|million|trillion)/i)
+            const match = finding.insight.match(/\$[\d.]+\s*(billion|million|trillion)/i);
             if (match) {
-                marketSizeEstimate = match[0]
-                break
+                marketSizeEstimate = match[0];
+                break;
             }
         }
 
@@ -527,7 +527,7 @@ Respond in JSON:
         const riskFactors = riskFindings
             .filter(f => f.confidence !== 'low')
             .map(f => f.insight)
-            .slice(0, 5)
+            .slice(0, 5);
 
         return {
             marketSizeEstimate,
@@ -535,7 +535,7 @@ Respond in JSON:
             competitorDensity,
             opportunityScore,
             riskFactors
-        }
+        };
     }
 
     /**
@@ -543,9 +543,9 @@ Respond in JSON:
      */
     private extractDomain(url: string): string {
         try {
-            return new URL(url).hostname.replace('www.', '')
+            return new URL(url).hostname.replace('www.', '');
         } catch {
-            return url
+            return url;
         }
     }
 
@@ -560,8 +560,8 @@ Respond in JSON:
             'cli-tool': 'developer tool CLI command line',
             'desktop': 'desktop application software',
             'other': 'software application'
-        }
-        return contexts[category]
+        };
+        return contexts[category];
     }
 
     /**
@@ -578,13 +578,13 @@ Respond in JSON:
         recommendations: string[]
         concerns: string[]
     }> {
-        this.logInfo(`Validating idea: ${ideaTitle}`)
+        this.logInfo(`Validating idea: ${ideaTitle}`);
 
         // Perform targeted research for this specific idea
         const research = await this.performDeepResearch(
             `${ideaTitle} ${ideaDescription.slice(0, 100)}`,
             category
-        )
+        );
 
         // Use LLM to analyze fit
         const prompt = `Evaluate this project idea based on market research:
@@ -617,7 +617,7 @@ Respond in JSON:
     "competitionLevel": "medium",
     "recommendations": ["...", "..."],
     "concerns": ["...", "..."]
-}`
+}`;
 
         const messages: Message[] = [
             {
@@ -632,20 +632,20 @@ Respond in JSON:
                 content: prompt,
                 timestamp: new Date()
             }
-        ]
+        ];
 
         try {
-            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai')
-            return this.parseValidationResponse(response.content)
+            const response = await this.llmService.chat(messages, 'gpt-4o-mini', undefined, 'openai');
+            return this.parseValidationResponse(response.content);
         } catch (error) {
-            this.logError(`Failed to validate idea: ${getErrorMessage(error as Error)}`)
+            this.logError(`Failed to validate idea: ${getErrorMessage(error as Error)}`);
             return {
                 feasibilityScore: 50,
                 marketFitScore: 50,
                 competitionLevel: 'medium',
                 recommendations: ['Unable to fully analyze - try again'],
                 concerns: ['Validation could not be completed']
-            }
+            };
         }
     }
 
@@ -660,8 +660,8 @@ Respond in JSON:
         concerns: string[]
     } {
         try {
-            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0]
-            if (!jsonMatch) {throw new Error('No JSON found')}
+            const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0];
+            if (!jsonMatch) {throw new Error('No JSON found');}
 
             const data = safeJsonParse(jsonMatch, {
                 feasibilityScore: 50,
@@ -669,7 +669,7 @@ Respond in JSON:
                 competitionLevel: 'medium' as const,
                 recommendations: [],
                 concerns: []
-            })
+            });
 
             return {
                 feasibilityScore: Math.max(0, Math.min(100, data.feasibilityScore ?? 50)),
@@ -677,7 +677,7 @@ Respond in JSON:
                 competitionLevel: data.competitionLevel ?? 'medium',
                 recommendations: data.recommendations ?? [],
                 concerns: data.concerns ?? []
-            }
+            };
         } catch {
             return {
                 feasibilityScore: 50,
@@ -685,7 +685,7 @@ Respond in JSON:
                 competitionLevel: 'medium',
                 recommendations: [],
                 concerns: []
-            }
+            };
         }
     }
 
@@ -693,11 +693,11 @@ Respond in JSON:
      * Clear the research cache
      */
     clearCache(): void {
-        this.researchCache.clear()
-        this.logInfo('Research cache cleared')
+        this.researchCache.clear();
+        this.logInfo('Research cache cleared');
     }
 
     private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms))
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }

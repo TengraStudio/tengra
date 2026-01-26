@@ -1,9 +1,9 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'events';
 
-import { appLogger } from '@main/logging/logger'
-import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service'
-import { BrowserWindow } from 'electron'
-import { v4 as uuidv4 } from 'uuid'
+import { appLogger } from '@main/logging/logger';
+import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
+import { BrowserWindow } from 'electron';
+import { v4 as uuidv4 } from 'uuid';
 
 export type OrchestrationPolicy = 'auto' | 'fifo' | 'parallel'
 
@@ -20,30 +20,30 @@ export interface ChatTask {
  * Now delegates to MultiLLMOrchestrator for better concurrency
  */
 export class ChatQueueManager extends EventEmitter {
-    private queue: ChatTask[] = []
-    private activeCount = 0
-    private policy: OrchestrationPolicy = 'auto'
-    private generatingChats: Set<string> = new Set()
-    private useMultiLLM: boolean = true // Use new orchestrator by default
+    private queue: ChatTask[] = [];
+    private activeCount = 0;
+    private policy: OrchestrationPolicy = 'auto';
+    private generatingChats: Set<string> = new Set();
+    private useMultiLLM: boolean = true; // Use new orchestrator by default
 
     constructor() {
-        super()
+        super();
     }
 
     /**
      * Enable or disable the multi-LLM orchestrator
      */
     setUseMultiLLM(use: boolean) {
-        this.useMultiLLM = use
+        this.useMultiLLM = use;
     }
 
     setPolicy(policy: OrchestrationPolicy) {
-        this.policy = policy
+        this.policy = policy;
         if (this.useMultiLLM) {
             // Multi-LLM orchestrator handles its own processing
-            return
+            return;
         }
-        void this.processQueue()
+        void this.processQueue();
     }
 
     async addTask(chatId: string, execute: () => Promise<void>, options?: {
@@ -53,7 +53,7 @@ export class ChatQueueManager extends EventEmitter {
     }) {
         if (this.useMultiLLM && options?.provider) {
             // Use new multi-LLM orchestrator
-            const taskId = uuidv4()
+            const taskId = uuidv4();
             await multiLLMOrchestrator.addTask({
                 taskId,
                 chatId,
@@ -61,71 +61,71 @@ export class ChatQueueManager extends EventEmitter {
                 model: options.model ?? 'default',
                 execute,
                 priority: options.priority
-            })
-            return
+            });
+            return;
         }
 
         // Fallback to legacy queue system
-        this.queue.push({ chatId, execute, ...options })
-        this.updateStatus(chatId, true)
-        void this.processQueue()
+        this.queue.push({ chatId, execute, ...options });
+        this.updateStatus(chatId, true);
+        void this.processQueue();
     }
 
     private updateStatus(chatId: string, isGenerating: boolean) {
         if (isGenerating) {
-            this.generatingChats.add(chatId)
+            this.generatingChats.add(chatId);
         } else {
-            this.generatingChats.delete(chatId)
+            this.generatingChats.delete(chatId);
         }
 
         // Broadcast to all windows for Sidebar UI
-        const windows = BrowserWindow.getAllWindows()
+        const windows = BrowserWindow.getAllWindows();
         windows.forEach(win => {
-            win.webContents.send('chat:generation-status', { chatId, isGenerating })
-        })
+            win.webContents.send('chat:generation-status', { chatId, isGenerating });
+        });
     }
 
     private async processQueue() {
-        const maxConcurrency = this.getMaxConcurrency()
+        const maxConcurrency = this.getMaxConcurrency();
 
         if (this.activeCount >= maxConcurrency || this.queue.length === 0) {
-            return
+            return;
         }
 
         const MAX_PROCESS_ITERATIONS = 10000;
         let iterations = 0;
 
         while (this.activeCount < maxConcurrency && this.queue.length > 0 && iterations < MAX_PROCESS_ITERATIONS) {
-            const task = this.queue.shift()
-            if (!task) { break }
+            const task = this.queue.shift();
+            if (!task) { break; }
 
-            this.activeCount++
-            iterations++
+            this.activeCount++;
+            iterations++;
 
             void this.processTask(task).finally(() => {
-                this.activeCount--
-                this.updateStatus(task.chatId, false)
-            })
+                this.activeCount--;
+                this.updateStatus(task.chatId, false);
+            });
         }
 
         if (iterations >= MAX_PROCESS_ITERATIONS) {
-            appLogger.error('ChatQueueManager', 'Queue processing exceeded maximum iterations')
+            appLogger.error('ChatQueueManager', 'Queue processing exceeded maximum iterations');
         }
     }
 
     private getMaxConcurrency(): number {
-        if (this.policy === 'parallel') { return 10 } // Arbitrary high number
-        if (this.policy === 'fifo') { return 1 }
+        if (this.policy === 'parallel') { return 10; } // Arbitrary high number
+        if (this.policy === 'fifo') { return 1; }
 
         // Auto: Use multi-LLM orchestrator's intelligent concurrency
-        return this.useMultiLLM ? 10 : 1
+        return this.useMultiLLM ? 10 : 1;
     }
 
     isGenerating(chatId: string): boolean {
         if (this.useMultiLLM) {
-            return multiLLMOrchestrator.isGenerating(chatId)
+            return multiLLMOrchestrator.isGenerating(chatId);
         }
-        return this.generatingChats.has(chatId)
+        return this.generatingChats.has(chatId);
     }
 
     /**
@@ -133,18 +133,18 @@ export class ChatQueueManager extends EventEmitter {
      */
     getProviderStats(provider: string) {
         if (this.useMultiLLM) {
-            return multiLLMOrchestrator.getProviderStats(provider)
+            return multiLLMOrchestrator.getProviderStats(provider);
         }
-        return null
+        return null;
     }
 
     private async processTask(task: ChatTask) {
         try {
             await task.execute();
         } catch (error) {
-            appLogger.error('ChatQueueManager', `Error in task ${task.chatId}`, error as Error)
+            appLogger.error('ChatQueueManager', `Error in task ${task.chatId}`, error as Error);
         }
     }
 }
 
-export const chatQueueManager = new ChatQueueManager()
+export const chatQueueManager = new ChatQueueManager();

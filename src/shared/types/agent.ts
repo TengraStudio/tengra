@@ -1,4 +1,4 @@
-import { JsonObject } from '@/types/common'
+import { JsonObject } from '@/types/common';
 
 // Basic agent definition
 export interface AgentDefinition {
@@ -32,11 +32,13 @@ export interface AgentLog {
     type: string
 }
 
+export type CouncilSessionStatus = 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'
+
 // Session schema
 export interface CouncilSession {
     id: string
     goal: string
-    status: 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'
+    status: CouncilSessionStatus
     createdAt: number
     updatedAt: number
     agents: AgentDefinition[]

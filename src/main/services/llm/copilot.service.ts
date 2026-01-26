@@ -1,11 +1,11 @@
-import { randomUUID } from 'crypto'
+import { randomUUID } from 'crypto';
 
-import { BaseService } from '@main/services/base.service'
-import { AuthService } from '@main/services/security/auth.service'
-import { Message, ToolCall, ToolDefinition } from '@shared/types/chat'
-import { JsonObject, JsonValue } from '@shared/types/common'
-import { getErrorMessage } from '@shared/utils/error.util'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { BaseService } from '@main/services/base.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 
 const USER_AGENT = 'GithubCopilot/1.250.0';
@@ -44,6 +44,9 @@ interface CopilotPayload {
     stop?: string[];
     tools?: CopilotTool[];
     tool_choice?: 'auto' | 'none' | 'required';
+    stream_options?: {
+        include_usage: boolean;
+    };
 }
 
 export interface CopilotChatResponse {
@@ -105,7 +108,7 @@ export class CopilotService extends BaseService {
     }
 
     async initialize(): Promise<void> {
-        this.logInfo('Initializing Copilot service...')
+        this.logInfo('Initializing Copilot service...');
 
         // Delay VSCode version fetch to avoid startup rate limiting
         setTimeout(() => { void this.fetchVsCodeVersion(); }, 5000);
@@ -113,11 +116,11 @@ export class CopilotService extends BaseService {
         // Start monitoring after initial delay
         setTimeout(() => { void this.startRateLimitMonitoring(); }, 10000);
 
-        this.logInfo('Copilot service initialized successfully')
+        this.logInfo('Copilot service initialized successfully');
     }
 
     async cleanup(): Promise<void> {
-        this.logInfo('Cleaning up Copilot service...')
+        this.logInfo('Cleaning up Copilot service...');
 
         if (this.rateLimitInterval) {
             clearInterval(this.rateLimitInterval);
@@ -760,8 +763,7 @@ export class CopilotService extends BaseService {
 
         if (stream) {
             // measurable impact? unsure, but standard OpenAI supports it
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (payload as any).stream_options = { include_usage: true };
+            payload.stream_options = { include_usage: true };
         }
 
         return { headers, payload, finalModel };
@@ -791,7 +793,7 @@ export class CopilotService extends BaseService {
     }
 
     private shouldRequestDiagnostic(response: Response, finalModel: string, errText: string): boolean {
-        const errorBody = safeJsonParse(errText, { error: { code: '' } }) as { error?: { code?: string } }
+        const errorBody = safeJsonParse(errText, { error: { code: '' } }) as { error?: { code?: string } };
 
         const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
         const isCodexError = response.status === 400 && finalModel.toLowerCase().includes('codex');

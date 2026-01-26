@@ -1,15 +1,16 @@
-import { IdeaCategory, IdeaSessionConfig } from '@shared/types/ideas'
-import { Loader2, Sparkles } from 'lucide-react'
-import React, { useState } from 'react'
+import { IdeaCategory, IdeaSessionConfig } from '@shared/types/ideas';
+import { Eye, Loader2, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useModel } from '@/context/ModelContext'
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext';
+import { useModel } from '@/context/ModelContext';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { ModelSelector } from '../../models/components/ModelSelector'
+import { ModelSelector } from '../../models/components/ModelSelector';
 
-import { CategorySelector } from './CategorySelector'
+import { CategorySelector } from './CategorySelector';
+import { MarketPreviewModal } from './MarketPreviewModal';
 
 interface SessionSetupProps {
     onCreateSession: (config: IdeaSessionConfig) => Promise<void>
@@ -20,7 +21,7 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
     onCreateSession,
     isLoading
 }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
     const {
         selectedProvider,
         selectedModel,
@@ -29,26 +30,56 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
         setIsModelMenuOpen,
         toggleFavorite,
         isFavorite
-    } = useModel()
+    } = useModel();
 
-    const { appSettings, quotas, codexUsage } = useAuth()
+    const { appSettings, quotas, codexUsage } = useAuth();
 
-    const [categories, setCategories] = useState<IdeaCategory[]>([])
-    const [maxIdeas, setMaxIdeas] = useState(5)
+    const [categories, setCategories] = useState<IdeaCategory[]>([]);
+    const [maxIdeas, setMaxIdeas] = useState(5);
+    const [customPrompt, setCustomPrompt] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [marketPreview, setMarketPreview] = useState<Array<{
+        category: IdeaCategory
+        summary: string
+        keyTrends: string[]
+        marketSize: string
+        competition: string
+    }> | null>(null);
+
+    const handlePreviewMarket = async () => {
+        if (categories.length === 0) { return; }
+
+        setShowPreview(true);
+        setIsLoadingPreview(true);
+        setMarketPreview(null);
+
+        try {
+            const response = await window.electron.ideas.generateMarketPreview(categories);
+            if (response.success && response.data) {
+                setMarketPreview(response.data);
+            }
+        } catch (err) {
+            console.error('Failed to generate market preview:', err);
+        } finally {
+            setIsLoadingPreview(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!selectedModel || categories.length === 0) { return }
+        e.preventDefault();
+        if (!selectedModel || categories.length === 0) { return; }
 
         await onCreateSession({
             model: selectedModel,
             provider: selectedProvider,
             categories,
-            maxIdeas
-        })
-    }
+            maxIdeas,
+            customPrompt: customPrompt.trim() || undefined
+        });
+    };
 
-    const isValid = selectedModel && categories.length > 0
+    const isValid = selectedModel && categories.length > 0;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 text-left">
@@ -114,6 +145,38 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
                 </div>
             </div>
 
+            {/* Custom prompt (optional) */}
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground/90 flex items-center justify-between">
+                    <span>{t('ideas.customPrompt.label')}</span>
+                    <span className="text-xs text-muted-foreground font-normal">{t('ideas.customPrompt.optional')}</span>
+                </label>
+                <textarea
+                    value={customPrompt}
+                    onChange={e => setCustomPrompt(e.target.value)}
+                    disabled={isLoading}
+                    placeholder={t('ideas.customPrompt.placeholder')}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                />
+                <p className="text-xs text-muted-foreground/60">
+                    {t('ideas.customPrompt.hint')}
+                </p>
+            </div>
+
+            {/* Preview Market Button */}
+            {categories.length > 0 && (
+                <button
+                    type="button"
+                    onClick={() => void handlePreviewMarket()}
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-muted/30 hover:bg-muted/50 text-foreground border border-border/50"
+                >
+                    <Eye className="w-4 h-4" />
+                    {t('ideas.previewMarket') || 'Preview Market Research'}
+                </button>
+            )}
+
             {/* Submit button */}
             <button
                 type="submit"
@@ -137,6 +200,21 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
                     </>
                 )}
             </button>
+
+            {/* Market Preview Modal */}
+            {showPreview && (
+                <MarketPreviewModal
+                    categories={categories}
+                    onClose={() => setShowPreview(false)}
+                    onContinue={() => {
+                        setShowPreview(false);
+                        // Submit the form to start research
+                        void handleSubmit(new Event('submit') as unknown as React.FormEvent);
+                    }}
+                    isLoading={isLoadingPreview}
+                    preview={marketPreview}
+                />
+            )}
         </form>
-    )
-}
+    );
+};

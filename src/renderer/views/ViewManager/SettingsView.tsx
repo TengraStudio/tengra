@@ -1,17 +1,17 @@
-import { GroupedModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher'
-import React, { lazy, Suspense, useCallback } from 'react'
+import { GroupedModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import React, { lazy, Suspense, useCallback } from 'react';
 
-import { LoadingState } from '@/components/ui/LoadingState'
-import { SettingsCategory } from '@/features/settings/types'
+import { LoadingState } from '@/components/ui/LoadingState';
+import { SettingsCategory } from '@/features/settings/types';
 
-const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 
 interface SettingsViewProps {
     installedModels: ModelInfo[]
     proxyModels: ModelInfo[]
     loadModels: () => void
     settingsCategory: SettingsCategory
-    groupedModels: GroupedModels | null
+    groupedModels?: GroupedModels | null
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -22,8 +22,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     groupedModels
 }) => {
     const onRefreshModels = useCallback(() => {
-        void loadModels()
-    }, [loadModels])
+        void loadModels();
+    }, [loadModels]);
 
     return (
         <Suspense fallback={<LoadingState size="md" />}>
@@ -35,7 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 groupedModels={groupedModels}
             />
         </Suspense>
-    )
-}
+    );
+};
 
-SettingsView.displayName = 'SettingsView'
+SettingsView.displayName = 'SettingsView';

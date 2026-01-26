@@ -3,9 +3,9 @@
  * Provides undo/redo functionality for chat operations
  */
 
-import { useCallback, useRef,useState } from 'react'
+import { useCallback, useRef,useState } from 'react';
 
-import { Chat } from '@/types'
+import { Chat } from '@/types';
 
 export interface ChatHistoryState {
     chats: Chat[]
@@ -22,19 +22,19 @@ export interface ChatHistoryManager {
     clearHistory: () => void
 }
 
-const MAX_HISTORY_SIZE = 50
+const MAX_HISTORY_SIZE = 50;
 
 /**
  * Hook for managing chat history with undo/redo
  */
 export function useChatHistory(): ChatHistoryManager {
-    const [history, setHistory] = useState<ChatHistoryState[]>([])
-    const [historyIndex, setHistoryIndex] = useState(-1)
-    const isSavingRef = useRef(false)
+    const [history, setHistory] = useState<ChatHistoryState[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    const isSavingRef = useRef(false);
 
     const saveState = useCallback((chats: Chat[], currentChatId: string | null) => {
         // Prevent saving during undo/redo operations
-        if (isSavingRef.current) {return}
+        if (isSavingRef.current) {return;}
 
         const newState: ChatHistoryState = {
             chats: chats.map(chat => ({
@@ -43,59 +43,59 @@ export function useChatHistory(): ChatHistoryManager {
             })),
             currentChatId,
             timestamp: Date.now()
-        }
+        };
 
         setHistory(prev => {
             // Remove any states after current index (when undoing then making new changes)
-            const newHistory = prev.slice(0, historyIndex + 1)
+            const newHistory = prev.slice(0, historyIndex + 1);
             
             // Add new state
-            newHistory.push(newState)
+            newHistory.push(newState);
             
             // Limit history size
             if (newHistory.length > MAX_HISTORY_SIZE) {
-                newHistory.shift()
-                return newHistory
+                newHistory.shift();
+                return newHistory;
             }
             
-            return newHistory
-        })
+            return newHistory;
+        });
 
         setHistoryIndex(prev => {
-            const newIndex = prev + 1
+            const newIndex = prev + 1;
             // If we're adding after an undo, limit to max size
-            return Math.min(newIndex, MAX_HISTORY_SIZE - 1)
-        })
-    }, [historyIndex])
+            return Math.min(newIndex, MAX_HISTORY_SIZE - 1);
+        });
+    }, [historyIndex]);
 
     const undo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex <= 0) {return null}
+        if (historyIndex <= 0) {return null;}
 
-        isSavingRef.current = true
-        const newIndex = historyIndex - 1
-        setHistoryIndex(newIndex)
-        const state = history[newIndex]
-        isSavingRef.current = false
+        isSavingRef.current = true;
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        const state = history[newIndex];
+        isSavingRef.current = false;
 
-        return state ? { ...state } : null
-    }, [history, historyIndex])
+        return state ? { ...state } : null;
+    }, [history, historyIndex]);
 
     const redo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex >= history.length - 1) {return null}
+        if (historyIndex >= history.length - 1) {return null;}
 
-        isSavingRef.current = true
-        const newIndex = historyIndex + 1
-        setHistoryIndex(newIndex)
-        const state = history[newIndex]
-        isSavingRef.current = false
+        isSavingRef.current = true;
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        const state = history[newIndex];
+        isSavingRef.current = false;
 
-        return state ? { ...state } : null
-    }, [history, historyIndex])
+        return state ? { ...state } : null;
+    }, [history, historyIndex]);
 
     const clearHistory = useCallback(() => {
-        setHistory([])
-        setHistoryIndex(-1)
-    }, [])
+        setHistory([]);
+        setHistoryIndex(-1);
+    }, []);
 
     return {
         canUndo: historyIndex > 0,
@@ -104,5 +104,5 @@ export function useChatHistory(): ChatHistoryManager {
         redo,
         saveState,
         clearHistory
-    }
+    };
 }

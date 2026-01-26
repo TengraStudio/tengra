@@ -3,14 +3,14 @@
  * Uses react-virtuoso for efficient rendering of large idea lists
  */
 
-import { ProjectIdea } from '@shared/types/ideas'
-import { Lightbulb } from 'lucide-react'
-import React, { useMemo } from 'react'
-import { Virtuoso } from 'react-virtuoso'
+import { ProjectIdea } from '@shared/types/ideas';
+import { Lightbulb } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
-import { useTranslation } from '@/i18n'
+import { useTranslation } from '@/i18n';
 
-import { IdeaCard } from './IdeaCard'
+import { IdeaCard } from './IdeaCard';
 
 interface VirtualizedIdeaGridProps {
     ideas: ProjectIdea[]
@@ -25,21 +25,21 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
     itemsPerRow = 2,
     itemHeight = 320
 }) => {
-    const { t } = useTranslation()
+    const { t } = useTranslation();
 
     // Create rows of ideas for virtualization
     const ideaRows = useMemo(() => {
-        const rows = []
+        const rows = [];
         for (let i = 0; i < ideas.length; i += itemsPerRow) {
-            rows.push(ideas.slice(i, i + itemsPerRow))
+            rows.push(ideas.slice(i, i + itemsPerRow));
         }
-        return rows
-    }, [ideas, itemsPerRow])
+        return rows;
+    }, [ideas, itemsPerRow]);
 
     const renderRow = (index: number) => {
-        const row = ideaRows[index]
+        const row = ideaRows[index];
         if (!row) {
-            return null
+            return null;
         }
 
         return (
@@ -59,8 +59,8 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
                     <div key={`empty-${emptyIndex}`} />
                 ))}
             </div>
-        )
-    }
+        );
+    };
 
     if (ideas.length === 0) {
         return (
@@ -75,7 +75,7 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
                     {t('ideas.empty.noIdeasDesc')}
                 </p>
             </div>
-        )
+        );
     }
 
     // For small lists (< 20 items), use regular grid for better UX
@@ -90,7 +90,7 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
                     />
                 ))}
             </div>
-        )
+        );
     }
 
     return (
@@ -101,7 +101,7 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
             overscan={2}
             data={ideaRows}
         />
-    )
-}
+    );
+};
 
-export default VirtualizedIdeaGrid
+export default VirtualizedIdeaGrid;

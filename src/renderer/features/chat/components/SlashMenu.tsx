@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
-import { motion } from '@/lib/framer-motion-compat'
-import { cn } from '@/lib/utils'
+import { motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 
 export interface SlashCommand {
     id: string
@@ -21,47 +21,47 @@ interface SlashMenuProps {
 }
 
 export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: SlashMenuProps) {
-    const [selectedIndex, setSelectedIndex] = useState(0)
+    const [selectedIndex, setSelectedIndex] = useState(0);
 
     // Filter commands based on query (after the slash)
     const filteredCommands = commands.filter(c =>
         (c.label.toLowerCase() || '').includes(query.toLowerCase() || '') ||
         (c.description.toLowerCase() || '').includes(query.toLowerCase() || '')
-    )
+    );
 
-    const [prevQuery, setPrevQuery] = useState(query)
+    const [prevQuery, setPrevQuery] = useState(query);
 
     // Reset selection when query changes
     if (prevQuery !== query) {
-        setPrevQuery(query)
-        setSelectedIndex(0)
+        setPrevQuery(query);
+        setSelectedIndex(0);
     }
 
     // Keyboard navigation
     useEffect(() => {
-        if (!isOpen) { return }
+        if (!isOpen) { return; }
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowDown') {
-                e.preventDefault()
-                setSelectedIndex(prev => (prev + 1) % filteredCommands.length)
+                e.preventDefault();
+                setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
             } else if (e.key === 'ArrowUp') {
-                e.preventDefault()
-                setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length)
+                e.preventDefault();
+                setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
             } else if (e.key === 'Enter' || e.key === 'Tab') {
-                e.preventDefault()
-                const cmd = filteredCommands[selectedIndex]
-                if (cmd) { onSelect(cmd) }
+                e.preventDefault();
+                const cmd = filteredCommands[selectedIndex];
+                if (cmd) { onSelect(cmd); }
             } else if (e.key === 'Escape') {
-                onClose()
+                onClose();
             }
-        }
+        };
 
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isOpen, filteredCommands, selectedIndex, onSelect, onClose])
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, filteredCommands, selectedIndex, onSelect, onClose]);
 
-    if (!isOpen || filteredCommands.length === 0) { return null }
+    if (!isOpen || filteredCommands.length === 0) { return null; }
 
     return (
         <motion.div
@@ -94,12 +94,12 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
                             <div className="text-sm font-bold truncate leading-tight">{cmd.label}</div>
                             <div className={cn(
                                 "text-[11px] truncate mt-0.5",
-                                idx === selectedIndex ? "text-white/70" : "text-zinc-500"
+                                idx === selectedIndex ? "text-foreground/70" : "text-zinc-500"
                             )}>{cmd.description}</div>
                         </div>
                     </button>
                 ))}
             </div>
         </motion.div>
-    )
+    );
 }

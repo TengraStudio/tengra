@@ -1,14 +1,14 @@
 /**
  * Card component for displaying a generated idea
  */
-import { ProjectIdea } from '@shared/types/ideas'
-import { ChevronRight, Sparkles } from 'lucide-react'
-import React from 'react'
+import { ProjectIdea } from '@shared/types/ideas';
+import { ChevronRight, Sparkles } from 'lucide-react';
+import React from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
-import { getCategoryMeta } from '../utils/categories'
+import { getCategoryMeta } from '../utils/categories';
 
 interface IdeaCardProps {
     idea: ProjectIdea
@@ -16,9 +16,9 @@ interface IdeaCardProps {
 }
 
 export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
-    const { t } = useTranslation()
-    const meta = getCategoryMeta(idea.category)
-    const Icon = meta.icon
+    const { t } = useTranslation();
+    const meta = getCategoryMeta(idea.category);
+    const Icon = meta.icon;
 
     return (
         <button
@@ -78,5 +78,5 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
                 </div>
             </div>
         </button>
-    )
-}
+    );
+};

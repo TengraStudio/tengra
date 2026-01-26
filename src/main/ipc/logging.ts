@@ -1,6 +1,6 @@
-import { appLogger, LogLevel } from '@main/logging/logger'
-import { JsonValue } from '@shared/types/common'
-import { BrowserWindow, ipcMain } from 'electron'
+import { appLogger, LogLevel } from '@main/logging/logger';
+import { JsonValue } from '@shared/types/common';
+import { BrowserWindow, ipcMain } from 'electron';
 
 // Log buffer for streaming to renderer
 const logBuffer: Array<{
@@ -9,9 +9,9 @@ const logBuffer: Array<{
     level: 'debug' | 'info' | 'warn' | 'error'
     source: string
     message: string
-}> = []
-const MAX_BUFFER_SIZE = 1000
-let streamingEnabled = false
+}> = [];
+const MAX_BUFFER_SIZE = 1000;
+let streamingEnabled = false;
 
 /**
  * Add a log entry to the buffer and send to all renderer windows
@@ -23,19 +23,19 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
         level,
         source,
         message
-    }
+    };
 
     // Add to buffer
-    logBuffer.push(entry)
+    logBuffer.push(entry);
     if (logBuffer.length > MAX_BUFFER_SIZE) {
-        logBuffer.shift()
+        logBuffer.shift();
     }
 
     // Stream to all windows if enabled
     if (streamingEnabled) {
         for (const win of BrowserWindow.getAllWindows()) {
             try {
-                win.webContents.send('log:entry', entry)
+                win.webContents.send('log:entry', entry);
             } catch {
                 // Window might be destroyed
             }

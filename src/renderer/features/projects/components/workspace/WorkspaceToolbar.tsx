@@ -72,7 +72,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
                 <button
                     onClick={onBack}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-white transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </button>
@@ -87,14 +87,14 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 onChange={(e) => setEditedName(e.target.value)}
                                 onBlur={handleNameSubmit}
                                 onKeyDown={handleKeyDown}
-                                className="bg-white/10 text-sm font-medium px-1.5 py-0.5 rounded border border-white/20 focus:outline-none focus:border-primary/50 text-white min-w-[200px]"
+                                className="bg-white/10 text-sm font-medium px-1.5 py-0.5 rounded border border-white/20 focus:outline-none focus:border-primary/50 text-foreground min-w-[200px]"
                             />
                         ) : (
                             <div
                                 onClick={() => setIsEditingName(true)}
                                 className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
                             >
-                                <span className="font-medium text-sm text-white truncate max-w-[300px]">
+                                <span className="font-medium text-sm text-foreground truncate max-w-[300px]">
                                     {projectName}
                                 </span>
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -112,7 +112,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                 {/* Sidebar Toggle */}
                 <button
                     onClick={toggleSidebar}
-                    className={cn("p-1.5 rounded-md transition-colors", sidebarCollapsed ? "text-muted-foreground hover:text-white" : "text-white bg-white/10")}
+                    className={cn("p-1.5 rounded-md transition-colors", sidebarCollapsed ? "text-muted-foreground hover:text-foreground" : "text-foreground bg-white/10")}
                     title={t('workspace.toggleSidebar')}
                 >
                     {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
@@ -130,7 +130,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             <div className="flex items-center gap-3">
                 <button
                     onClick={toggleAgentPanel}
-                    className={cn("p-1.5 rounded-md transition-colors", showAgentPanel ? "text-white bg-white/10" : "text-muted-foreground hover:text-white")}
+                    className={cn("p-1.5 rounded-md transition-colors", showAgentPanel ? "text-foreground bg-white/10" : "text-muted-foreground hover:text-foreground")}
                     title={t('workspace.toggleAgentPanel')}
                 >
                     {showAgentPanel ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}

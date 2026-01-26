@@ -2,11 +2,11 @@ import { exec } from 'child_process';
 import * as os from 'os';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { ServiceResponse, SystemInfo } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { appLogger } from '@main/logging/logger';
 
 const execAsync = promisify(exec);
 

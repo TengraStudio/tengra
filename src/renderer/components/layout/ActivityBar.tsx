@@ -7,10 +7,10 @@ import {
     Bug, ChevronLeft, ChevronRight,
 FolderTree, GitBranch,
     MessageSquare,     Puzzle,
-Search, Settings} from 'lucide-react'
-import React, { createContext, useContext,useState } from 'react'
+Search, Settings} from 'lucide-react';
+import React, { createContext, useContext,useState } from 'react';
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
 
 export interface ActivityItem {
     id: string
@@ -27,13 +27,13 @@ interface ActivityBarContextType {
     setCollapsed: (collapsed: boolean) => void
 }
 
-const ActivityBarContext = createContext<ActivityBarContextType | null>(null)
+const ActivityBarContext = createContext<ActivityBarContextType | null>(null);
 
 export const useActivityBar = () => {
-    const context = useContext(ActivityBarContext)
-    if (!context) {throw new Error('useActivityBar must be used within ActivityBarProvider')}
-    return context
-}
+    const context = useContext(ActivityBarContext);
+    if (!context) {throw new Error('useActivityBar must be used within ActivityBarProvider');}
+    return context;
+};
 
 // Default activities
 export const DEFAULT_ACTIVITIES: ActivityItem[] = [
@@ -43,7 +43,7 @@ export const DEFAULT_ACTIVITIES: ActivityItem[] = [
     { id: 'git', icon: <GitBranch className="w-5 h-5" />, label: 'Source Control' },
     { id: 'debug', icon: <Bug className="w-5 h-5" />, label: 'Debug' },
     { id: 'extensions', icon: <Puzzle className="w-5 h-5" />, label: 'Extensions' }
-]
+];
 
 // Activity Button Component
 const ActivityButton: React.FC<{
@@ -76,22 +76,22 @@ const ActivityButton: React.FC<{
             </span>
         )}
     </button>
-)
+);
 
 // Activity Bar Provider
 export const ActivityBarProvider: React.FC<{
     children: React.ReactNode
     defaultActive?: string
 }> = ({ children, defaultActive = 'chat' }) => {
-    const [activeItem, setActiveItem] = useState(defaultActive)
-    const [collapsed, setCollapsed] = useState(false)
+    const [activeItem, setActiveItem] = useState(defaultActive);
+    const [collapsed, setCollapsed] = useState(false);
 
     return (
         <ActivityBarContext.Provider value={{ activeItem, setActiveItem, collapsed, setCollapsed }}>
             {children}
         </ActivityBarContext.Provider>
-    )
-}
+    );
+};
 
 // Main Activity Bar Component
 export const ActivityBar: React.FC<{
@@ -107,12 +107,12 @@ export const ActivityBar: React.FC<{
     className,
     onItemClick
 }) => {
-        const { activeItem, setActiveItem } = useActivityBar()
+        const { activeItem, setActiveItem } = useActivityBar();
 
         const handleClick = (id: string) => {
-            setActiveItem(id)
-            onItemClick?.(id)
-        }
+            setActiveItem(id);
+            onItemClick?.(id);
+        };
 
         return (
             <div className={cn(
@@ -144,8 +144,8 @@ export const ActivityBar: React.FC<{
                     ))}
                 </div>
             </div>
-        )
-    }
+        );
+    };
 
 // Composite Layout with Activity Bar + Sidebar
 export const ActivityBarLayout: React.FC<{
@@ -163,8 +163,8 @@ export const ActivityBarLayout: React.FC<{
     children,
     className
 }) => {
-        const { activeItem, collapsed, setCollapsed } = useActivityBar()
-        const activeSidebar = sidebarContent[activeItem]
+        const { activeItem, collapsed, setCollapsed } = useActivityBar();
+        const activeSidebar = sidebarContent[activeItem];
 
         return (
             <div className={cn("flex h-full w-full", className)}>
@@ -214,7 +214,7 @@ export const ActivityBarLayout: React.FC<{
                     {children}
                 </div>
             </div>
-        )
-    }
+        );
+    };
 
-export default ActivityBar
+export default ActivityBar;

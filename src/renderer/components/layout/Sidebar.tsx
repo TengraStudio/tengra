@@ -1,24 +1,24 @@
-import { SidebarChatItem } from '@renderer/components/layout/sidebar/SidebarChatItem'
-import { SidebarChatList } from '@renderer/components/layout/sidebar/SidebarChatList'
-import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter'
-import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader'
-import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SidebarChatItem } from '@renderer/components/layout/sidebar/SidebarChatItem';
+import { SidebarChatList } from '@renderer/components/layout/sidebar/SidebarChatList';
+import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter';
+import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader';
+import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext'
-import { useChat } from '@/context/ChatContext'
-import { useProject } from '@/context/ProjectContext'
-import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal'
-import { SettingsCategory } from '@/features/settings/types'
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { Chat } from '@/types'
+import { useAuth } from '@/context/AuthContext';
+import { useChat } from '@/context/ChatContext';
+import { useProject } from '@/context/ProjectContext';
+import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal';
+import { SettingsCategory } from '@/features/settings/types';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { Chat } from '@/types';
 
 interface SidebarProps {
     isCollapsed: boolean
     toggleSidebar: () => void
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas') => void
+    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas' | 'project-agent'
+    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas' | 'project-agent') => void
     onOpenSettings: (category?: SettingsCategory) => void
     onSearch: (query: string) => void
 }
@@ -35,54 +35,54 @@ export const Sidebar = React.memo(({
         chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
         folders, createFolder, deleteFolder,
         prompts, createPrompt, updatePrompt, deletePrompt, togglePin
-    } = useChat()
+    } = useChat();
 
-    const { language } = useAuth()
-    const { selectedProject } = useProject()
-    const { t } = useTranslation(language || 'en')
+    // const { language: authLanguage } = useAuth() // Removed unused
+    const { selectedProject } = useProject();
+    const { t, language } = useTranslation();
 
-    const [searchQuery, setSearchQuery] = useState('')
-    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
-    const [showPrompts, setShowPrompts] = useState(false)
-    const [editingId, setEditingId] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('');
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+    const [showPrompts, setShowPrompts] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     // editValue state removed for performance (uncontrolled input)
-    const editRef = useRef<HTMLInputElement>(null)
-    const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+    const editRef = useRef<HTMLInputElement>(null);
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
-    const activeFolders = useMemo(() => folders ?? [], [folders])
+    const activeFolders = useMemo(() => folders ?? [], [folders]);
 
     const filteredChats = useMemo(() => {
-        if (!searchQuery) { return chats }
-        const q = searchQuery.toLowerCase()
-        return chats.filter(c => c.title.toLowerCase().includes(q))
-    }, [chats, searchQuery])
+        if (!searchQuery) { return chats; }
+        const q = searchQuery.toLowerCase();
+        return chats.filter(c => c.title.toLowerCase().includes(q));
+    }, [chats, searchQuery]);
 
-    const pinnedChats = useMemo(() => filteredChats.filter(c => c.isPinned), [filteredChats])
-    const recentChats = useMemo(() => filteredChats.filter(c => !c.isPinned && !c.folderId).slice(0, 20), [filteredChats])
+    const pinnedChats = useMemo(() => filteredChats.filter(c => c.isPinned), [filteredChats]);
+    const recentChats = useMemo(() => filteredChats.filter(c => !c.isPinned && !c.folderId).slice(0, 20), [filteredChats]);
 
     useEffect(() => {
         if (editingId && editRef.current) {
-            editRef.current.focus()
-            editRef.current.select()
+            editRef.current.focus();
+            editRef.current.select();
         }
-    }, [editingId])
+    }, [editingId]);
 
     const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value)
-        onSearch(e.target.value)
-    }, [onSearch])
+        setSearchQuery(e.target.value);
+        onSearch(e.target.value);
+    }, [onSearch]);
 
     const startEdit = useCallback((id: string, _title: string) => {
-        setEditingId(id)
+        setEditingId(id);
         // No need to set editValue, input uses defaultValue
-    }, [])
+    }, []);
 
     const saveEdit = useCallback(() => {
         if (editingId && editRef.current?.value.trim()) {
-            void updateChat(editingId, { title: editRef.current.value.trim() })
+            void updateChat(editingId, { title: editRef.current.value.trim() });
         }
-        setEditingId(null)
-    }, [editingId, updateChat])
+        setEditingId(null);
+    }, [editingId, updateChat]);
 
     // NavButton replaced by SidebarItem
 
@@ -97,13 +97,13 @@ export const Sidebar = React.memo(({
             // setEditValue removed
             saveEdit={saveEdit}
             startEdit={startEdit}
-            togglePin={(id, p) => { void togglePin(id, p) }}
-            deleteChat={(id) => { void deleteChat(id) }}
-            onSelect={(id) => { onChangeView('chat'); void setCurrentChatId(id) }}
+            togglePin={(id, p) => { void togglePin(id, p); }}
+            deleteChat={(id) => { void deleteChat(id); }}
+            onSelect={(id) => { onChangeView('chat'); void setCurrentChatId(id); }}
             editRef={editRef}
             cancelEdit={() => setEditingId(null)}
         />
-    ), [currentView, currentChatId, isCollapsed, editingId, saveEdit, startEdit, togglePin, deleteChat, onChangeView, setCurrentChatId])
+    ), [currentView, currentChatId, isCollapsed, editingId, saveEdit, startEdit, togglePin, deleteChat, onChangeView, setCurrentChatId]);
 
     return (
         <>
@@ -116,7 +116,7 @@ export const Sidebar = React.memo(({
                 <SidebarHeader
                     isCollapsed={isCollapsed}
                     newChatLabel={t('sidebar.newChat')}
-                    onClickNewChat={() => { onChangeView('chat'); void createNewChat() }}
+                    onClickNewChat={() => { onChangeView('chat'); void createNewChat(); }}
                 />
 
                 <SidebarNavigation
@@ -141,13 +141,13 @@ export const Sidebar = React.memo(({
                     chatsCount={chats.length}
                     t={t}
                     toggleFolder={(id: string) => setExpandedFolders(prev => {
-                        const next = new Set(prev)
-                        if (next.has(id)) { next.delete(id) }
-                        else { next.add(id) }
-                        return next
+                        const next = new Set(prev);
+                        if (next.has(id)) { next.delete(id); }
+                        else { next.add(id); }
+                        return next;
                     })}
-                    deleteFolder={(id) => { void deleteFolder(id) }}
-                    createFolder={(name) => { void createFolder(name) }}
+                    deleteFolder={(id) => { void deleteFolder(id); }}
+                    createFolder={(name) => { void createFolder(name); }}
                     renderChatItem={renderChatItem}
                 />
 
@@ -160,6 +160,7 @@ export const Sidebar = React.memo(({
                     toggleSidebar={toggleSidebar}
                     onOpenSettings={onOpenSettings}
                     t={t}
+                    language={language}
                 />
             </aside>
 
@@ -167,11 +168,11 @@ export const Sidebar = React.memo(({
                 isOpen={showPrompts}
                 onClose={() => setShowPrompts(false)}
                 prompts={prompts}
-                onCreatePrompt={(title, content) => { void createPrompt(title, content) }}
-                onUpdatePrompt={(id, p) => { void updatePrompt(id, p) }}
-                onDeletePrompt={(id) => { void deletePrompt(id) }}
+                onCreatePrompt={(title, content) => { void createPrompt(title, content); }}
+                onUpdatePrompt={(id, p) => { void updatePrompt(id, p); }}
+                onDeletePrompt={(id) => { void deletePrompt(id); }}
             />
         </>
-    )
-})
-Sidebar.displayName = 'Sidebar'
+    );
+});
+Sidebar.displayName = 'Sidebar';

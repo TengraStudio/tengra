@@ -1,8 +1,8 @@
-import { randomUUID } from 'crypto'
+import { randomUUID } from 'crypto';
 
-import { BaseService } from '@main/services/base.service'
-import { DatabaseService } from '@main/services/data/database.service'
-import { safeJsonParse } from '@shared/utils/sanitize.util'
+import { BaseService } from '@main/services/base.service';
+import { DatabaseService } from '@main/services/data/database.service';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface AgentDefinition {
     id?: string
@@ -26,21 +26,21 @@ interface AgentRow {
 
 export class AgentService extends BaseService {
     constructor(private dbService: DatabaseService) {
-        super('AgentService')
+        super('AgentService');
     }
 
     override async initialize(): Promise<void> {
-        await this.seedBuiltInAgents()
+        await this.seedBuiltInAgents();
     }
 
     async registerAgent(agent: AgentDefinition): Promise<string> {
-        const id = agent.id ?? randomUUID()
-        const now = Date.now()
-        const toolsJson = JSON.stringify(agent.tools)
-        const db = this.dbService.getDatabase()
+        const id = agent.id ?? randomUUID();
+        const now = Date.now();
+        const toolsJson = JSON.stringify(agent.tools);
+        const db = this.dbService.getDatabase();
 
         // Check for existing by name
-        const existing = await db.prepare('SELECT id FROM agents WHERE name = $1').get(agent.name) as { id: string } | undefined
+        const existing = await db.prepare('SELECT id FROM agents WHERE name = $1').get(agent.name) as { id: string } | undefined;
 
         if (existing) {
             // Update
@@ -48,24 +48,24 @@ export class AgentService extends BaseService {
                 UPDATE agents
                 SET system_prompt = $1, tools = $2, parent_model = $3, updated_at = $4
                 WHERE name = $5
-             `).run(agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, agent.name)
-            return existing.id
+             `).run(agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, agent.name);
+            return existing.id;
         } else {
             await db.prepare(`
                 INSERT INTO agents (id, name, system_prompt, tools, parent_model, created_at, updated_at) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, now)
-            return id
+             `).run(id, agent.name, agent.systemPrompt, toolsJson, agent.parentModel ?? 'gpt-4o', now, now);
+            return id;
         }
     }
 
     async getAgent(idOrName: string): Promise<AgentDefinition | null> {
-        const db = this.dbService.getDatabase()
-        let result = await db.prepare('SELECT * FROM agents WHERE id = $1').get(idOrName) as AgentRow | undefined
+        const db = this.dbService.getDatabase();
+        let result = await db.prepare('SELECT * FROM agents WHERE id = $1').get(idOrName) as AgentRow | undefined;
 
-        result ??= (await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)) as AgentRow | undefined
+        result ??= (await db.prepare('SELECT * FROM agents WHERE name = $1').get(idOrName)) as AgentRow | undefined;
 
-        if (!result) { return null }
+        if (!result) { return null; }
 
         return {
             id: result.id,
@@ -74,12 +74,12 @@ export class AgentService extends BaseService {
             systemPrompt: result.system_prompt,
             tools: safeJsonParse(result.tools, []),
             parentModel: result.parent_model
-        }
+        };
     }
 
     async getAllAgents(): Promise<AgentDefinition[]> {
-        const db = this.dbService.getDatabase()
-        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all<AgentRow>()
+        const db = this.dbService.getDatabase();
+        const results = await db.prepare('SELECT * FROM agents ORDER BY name').all<AgentRow>();
         return results.map(result => ({
             id: result.id,
             name: result.name,
@@ -87,7 +87,7 @@ export class AgentService extends BaseService {
             systemPrompt: result.system_prompt,
             tools: safeJsonParse(result.tools, []),
             parentModel: result.parent_model
-        }))
+        }));
     }
 
     private async seedBuiltInAgents() {
@@ -113,14 +113,14 @@ export class AgentService extends BaseService {
                 tools: [],
                 parentModel: 'gpt-4o'
             }
-        ]
+        ];
 
         for (const agent of builtIns) {
             try {
-                await this.registerAgent(agent)
+                await this.registerAgent(agent);
             } catch (error) {
                 // Database might not be ready yet (table doesn't exist)
-                this.logWarn(`Failed to seed agent ${agent.name}`, error as Error)
+                this.logWarn(`Failed to seed agent ${agent.name}`, error as Error);
             }
         }
     }

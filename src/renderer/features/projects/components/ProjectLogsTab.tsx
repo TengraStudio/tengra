@@ -1,8 +1,8 @@
-import { FileText, RefreshCw, Search, Trash2 } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface LogEntry {
     timestamp: string
@@ -16,70 +16,70 @@ interface ProjectLogsTabProps {
 }
 
 export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, language }) => {
-    const { t } = useTranslation(language)
-    const [logs, setLogs] = useState<LogEntry[]>([])
-    const [filter, setFilter] = useState('')
-    const [autoScroll, setAutoScroll] = useState(true)
-    const logsEndRef = useRef<HTMLDivElement>(null)
+    const { t } = useTranslation(language);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [filter, setFilter] = useState('');
+    const [autoScroll, setAutoScroll] = useState(true);
+    const logsEndRef = useRef<HTMLDivElement>(null);
 
     // Listen for terminal output as logs
     useEffect(() => {
         const handleTerminalData = (_event: unknown, data: { sessionId: string; data: string }) => {
-            const lines = data.data.split('\n').filter(line => line.trim())
+            const lines = data.data.split('\n').filter(line => line.trim());
             const newEntries: LogEntry[] = lines.map(line => {
-                let level: LogEntry['level'] = 'info'
-                if (line.toLowerCase().includes('error')) { level = 'error' }
-                else if (line.toLowerCase().includes('warn')) { level = 'warn' }
-                else if (line.toLowerCase().includes('debug')) { level = 'debug' }
+                let level: LogEntry['level'] = 'info';
+                if (line.toLowerCase().includes('error')) { level = 'error'; }
+                else if (line.toLowerCase().includes('warn')) { level = 'warn'; }
+                else if (line.toLowerCase().includes('debug')) { level = 'debug'; }
 
                 return {
                     timestamp: new Date().toISOString(),
                     level,
                     message: line
-                }
-            })
-            setLogs(prev => [...prev.slice(-500), ...newEntries]) // Keep last 500 lines
-        }
+                };
+            });
+            setLogs(prev => [...prev.slice(-500), ...newEntries]); // Keep last 500 lines
+        };
 
-        const listener = handleTerminalData as Parameters<typeof window.electron.ipcRenderer.on>[1]
-        window.electron.ipcRenderer.on('terminal:data', listener)
+        const listener = handleTerminalData as Parameters<typeof window.electron.ipcRenderer.on>[1];
+        window.electron.ipcRenderer.on('terminal:data', listener);
 
         return () => {
-            window.electron.ipcRenderer.off('terminal:data', listener)
-        }
-    }, [projectPath])
+            window.electron.ipcRenderer.off('terminal:data', listener);
+        };
+    }, [projectPath]);
 
     useEffect(() => {
         if (autoScroll && logsEndRef.current) {
-            logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
+            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [logs, autoScroll])
+    }, [logs, autoScroll]);
 
     const clearLogs = useCallback(() => {
-        setLogs([])
-    }, [])
+        setLogs([]);
+    }, []);
 
     const filteredLogs = logs.filter(log =>
         log.message.toLowerCase().includes(filter.toLowerCase())
-    )
+    );
 
     const getLevelColor = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'text-red-400'
-            case 'warn': return 'text-amber-400'
-            case 'debug': return 'text-zinc-500'
-            default: return 'text-zinc-300'
+            case 'error': return 'text-red-400';
+            case 'warn': return 'text-amber-400';
+            case 'debug': return 'text-zinc-500';
+            default: return 'text-zinc-300';
         }
-    }
+    };
 
     const getLevelBg = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'bg-red-500/10 border-red-500/20'
-            case 'warn': return 'bg-amber-500/10 border-amber-500/20'
-            case 'debug': return 'bg-zinc-500/10 border-zinc-500/20'
-            default: return 'bg-muted/10 border-border/10'
+            case 'error': return 'bg-red-500/10 border-red-500/20';
+            case 'warn': return 'bg-amber-500/10 border-amber-500/20';
+            case 'debug': return 'bg-zinc-500/10 border-zinc-500/20';
+            default: return 'bg-muted/10 border-border/10';
         }
-    }
+    };
 
     return (
         <div className="flex-1 flex flex-col gap-6 p-4 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -111,7 +111,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                             "p-2 rounded-lg border transition-colors",
                             autoScroll ? "bg-primary/10 border-primary/20 text-primary" : "bg-muted/30 border-border/50 text-muted-foreground"
                         )}
-                        title="Auto-scroll"
+                        title={t('logging.autoScroll')}
                     >
                         <RefreshCw className="w-4 h-4" />
                     </button>
@@ -160,5 +160,5 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};

@@ -1,8 +1,10 @@
-import React from 'react'
-import { Bot, Save, Shield } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { AgentDefinition } from '@/types'
-import { SettingsSectionProps } from './types'
+import { Bot, Save, Shield } from 'lucide-react';
+import React from 'react';
+
+import { cn } from '@/lib/utils';
+import { AgentDefinition } from '@/types';
+
+import { SettingsSectionProps } from './types';
 
 interface CouncilSectionProps extends SettingsSectionProps {
     availableAgents: AgentDefinition[]
@@ -100,4 +102,4 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
             </div>
         </div>
     </section>
-)
+);

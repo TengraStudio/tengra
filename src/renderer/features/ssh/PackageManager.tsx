@@ -1,40 +1,40 @@
 
-import { Layers, RefreshCw, Search } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { Layers, RefreshCw, Search } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import type { SSHPackageInfo } from '@/types/ssh'
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import type { SSHPackageInfo } from '@/types/ssh';
 
 interface PackageManagerProps {
     connectionId: string
 }
 
 export function PackageManager({ connectionId }: PackageManagerProps) {
-    const { t } = useTranslation()
-    const [manager, setManager] = useState<'apt' | 'npm' | 'pip'>('apt')
-    const [packages, setPackages] = useState<SSHPackageInfo[]>([])
-    const [search, setSearch] = useState('')
-    const [loading, setLoading] = useState(false)
+    const { t } = useTranslation();
+    const [manager, setManager] = useState<'apt' | 'npm' | 'pip'>('apt');
+    const [packages, setPackages] = useState<SSHPackageInfo[]>([]);
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const fetchPackages = useCallback(async () => {
-        setLoading(true)
-        setPackages([])
+        setLoading(true);
+        setPackages([]);
         try {
-            const data = await window.electron.ssh.getInstalledPackages(connectionId, manager)
-            setPackages(data)
+            const data = await window.electron.ssh.getInstalledPackages(connectionId, manager);
+            setPackages(data);
         } catch (e) {
-            console.error(e)
+            console.error(e);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [connectionId, manager])
+    }, [connectionId, manager]);
 
     useEffect(() => {
-        void fetchPackages()
-    }, [fetchPackages])
+        void fetchPackages();
+    }, [fetchPackages]);
 
-    const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    const filtered = packages.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
         <div className="flex flex-col h-full bg-background">
@@ -93,5 +93,5 @@ export function PackageManager({ connectionId }: PackageManagerProps) {
                 </div>
             </div>
         </div>
-    )
+    );
 }

@@ -1,12 +1,12 @@
-import { Settings } from 'lucide-react'
-import React, { useMemo } from 'react'
+import { Settings } from 'lucide-react';
+import React, { useMemo } from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher'
-import { AppSettings } from '@/types/settings'
+import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { AppSettings } from '@/types/settings';
 
-import { AntigravityLimitsSection } from './limits/AntigravityLimitsSection'
-import { CodexLimitsSection } from './limits/CodexLimitsSection'
-import { CopilotLimitsSection } from './limits/CopilotLimitsSection'
+import { AntigravityLimitsSection } from './limits/AntigravityLimitsSection';
+import { CodexLimitsSection } from './limits/CodexLimitsSection';
+import { CopilotLimitsSection } from './limits/CopilotLimitsSection';
 
 interface ModelUsageLimitsTabProps {
     settings: AppSettings | null
@@ -26,17 +26,17 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     t: _t
 }) => {
     const antigravityModels = useMemo(() => {
-        if (!groupedModels) { return [] }
-        const agGroup = groupedModels['antigravity']
-        return agGroup.models
-    }, [groupedModels])
+        if (!groupedModels) { return []; }
+        const agGroup = groupedModels['antigravity'];
+        return agGroup.models;
+    }, [groupedModels]);
 
-    if (!settings) { return null }
+    if (!settings) { return null; }
 
-    const limits = settings.modelUsageLimits ?? {}
-    const copilotLimits = limits.copilot
-    const antigravityLimits = limits.antigravity
-    const codexLimits = limits.codex
+    const limits = settings.modelUsageLimits ?? {};
+    const copilotLimits = limits.copilot;
+    const antigravityLimits = limits.antigravity;
+    const codexLimits = limits.codex;
 
     const updateCopilotLimit = (period: 'hourly' | 'daily' | 'weekly', field: 'enabled' | 'type' | 'value', value: boolean | string | number) => {
         const updated = {
@@ -51,10 +51,10 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     }
                 }
             }
-        }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
     const updateAntigravityLimit = (modelId: string, enabled: boolean, percentage: number) => {
         const updated = {
@@ -69,10 +69,10 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     }
                 }
             }
-        }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
     const updateCodexLimit = (period: 'daily' | 'weekly', field: 'enabled' | 'percentage', value: boolean | number) => {
         const updated = {
@@ -87,14 +87,14 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                     }
                 }
             }
-        }
-        setSettings(updated)
-        handleSave(updated)
-    }
+        };
+        setSettings(updated);
+        handleSave(updated);
+    };
 
-    const firstAccount = copilotQuota?.accounts[0]
-    const copilotRemaining = firstAccount?.remaining ?? 0
-    const copilotLimit = firstAccount?.limit ?? 0
+    const firstAccount = copilotQuota?.accounts[0];
+    const copilotRemaining = firstAccount?.remaining ?? 0;
+    const copilotLimit = firstAccount?.limit ?? 0;
 
     return (
         <div className="space-y-6">
@@ -121,5 +121,5 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
                 updateCodexLimit={updateCodexLimit}
             />
         </div>
-    )
-}
+    );
+};

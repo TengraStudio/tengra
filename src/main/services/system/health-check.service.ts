@@ -2,11 +2,11 @@
  * Health Check Service - monitors external dependencies
  */
 
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'events';
 
-import { appLogger } from '@main/logging/logger'
-import { BaseService } from '@main/services/base.service'
-import { getErrorMessage } from '@shared/utils/error.util'
+import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface HealthStatus {
     name: string
@@ -33,27 +33,27 @@ interface ServiceCheck {
 }
 
 export class HealthCheckService extends BaseService {
-    private checks: Map<string, ServiceCheck> = new Map()
-    private statuses: Map<string, HealthStatus> = new Map()
-    private intervals: Map<string, NodeJS.Timeout> = new Map()
-    private running = false
-    private events = new EventEmitter()
+    private checks: Map<string, ServiceCheck> = new Map();
+    private statuses: Map<string, HealthStatus> = new Map();
+    private intervals: Map<string, NodeJS.Timeout> = new Map();
+    private running = false;
+    private events = new EventEmitter();
 
     constructor() {
-        super('HealthCheckService')
+        super('HealthCheckService');
     }
 
     override async cleanup(): Promise<void> {
-        this.stop()
+        this.stop();
     }
 
     on(event: string, listener: (...args: unknown[]) => void) {
-        this.events.on(event, listener)
-        return this
+        this.events.on(event, listener);
+        return this;
     }
 
     emit(event: string, ...args: unknown[]) {
-        return this.events.emit(event, ...args)
+        return this.events.emit(event, ...args);
     }
 
     /**
@@ -74,60 +74,60 @@ export class HealthCheckService extends BaseService {
             intervalMs: options?.intervalMs ?? 30000,
             timeoutMs: options?.timeoutMs ?? 5000,
             critical: options?.critical ?? false
-        }
+        };
 
-        this.checks.set(name, serviceCheck)
+        this.checks.set(name, serviceCheck);
         this.statuses.set(name, {
             name,
             status: 'unknown',
             lastChecked: new Date()
-        })
+        });
     }
 
     /**
      * Start all health checks
      */
     start() {
-        if (this.running) {return}
-        this.running = true
+        if (this.running) {return;}
+        this.running = true;
 
         for (const [name, check] of this.checks) {
             // Run immediately
-            void this.runCheck(name)
+            void this.runCheck(name);
 
             // Schedule periodic checks
             const interval = setInterval(() => {
-                void this.runCheck(name)
-            }, check.intervalMs)
+                void this.runCheck(name);
+            }, check.intervalMs);
 
-            this.intervals.set(name, interval)
+            this.intervals.set(name, interval);
         }
 
-        appLogger.info('health-check.service', `[HealthCheck] Started monitoring ${this.checks.size} services`)
+        appLogger.info('health-check.service', `[HealthCheck] Started monitoring ${this.checks.size} services`);
     }
 
     /**
      * Stop all health checks
      */
     stop() {
-        this.running = false
+        this.running = false;
 
         for (const interval of this.intervals.values()) {
-            clearInterval(interval)
+            clearInterval(interval);
         }
-        this.intervals.clear()
+        this.intervals.clear();
 
-        appLogger.info('health-check.service', '[HealthCheck] Stopped monitoring')
+        appLogger.info('health-check.service', '[HealthCheck] Stopped monitoring');
     }
 
     /**
      * Run a specific check
      */
     private async runCheck(name: string) {
-        const check = this.checks.get(name)
-        if (!check) {return}
+        const check = this.checks.get(name);
+        if (!check) {return;}
 
-        const startTime = Date.now()
+        const startTime = Date.now();
 
         try {
             const result = await Promise.race([
@@ -135,24 +135,24 @@ export class HealthCheckService extends BaseService {
                 new Promise<boolean>((_, reject) =>
                     setTimeout(() => reject(new Error('Timeout')), check.timeoutMs)
                 )
-            ])
+            ]);
 
-            const latencyMs = Date.now() - startTime
+            const latencyMs = Date.now() - startTime;
 
             const status: HealthStatus = {
                 name,
                 status: result ? 'healthy' : 'unhealthy',
                 latencyMs,
                 lastChecked: new Date()
-            }
+            };
 
-            const previous = this.statuses.get(name)
-            this.statuses.set(name, status)
+            const previous = this.statuses.get(name);
+            this.statuses.set(name, status);
 
             // Emit event if status changed
             if (previous?.status !== status.status) {
-                this.emit('statusChange', status)
-                appLogger.info('health-check.service', `[HealthCheck] ${name}: ${previous?.status ?? 'unknown'} -> ${status.status}`)
+                this.emit('statusChange', status);
+                appLogger.info('health-check.service', `[HealthCheck] ${name}: ${previous?.status ?? 'unknown'} -> ${status.status}`);
             }
         } catch (error) {
             const status: HealthStatus = {
@@ -161,14 +161,14 @@ export class HealthCheckService extends BaseService {
                 latencyMs: Date.now() - startTime,
                 lastChecked: new Date(),
                 error: getErrorMessage(error)
-            }
+            };
 
-            const previous = this.statuses.get(name)
-            this.statuses.set(name, status)
+            const previous = this.statuses.get(name);
+            this.statuses.set(name, status);
 
             if (previous?.status !== 'unhealthy') {
-                this.emit('statusChange', status)
-                console.warn(`[HealthCheck] ${name} failed:`, status.error)
+                this.emit('statusChange', status);
+                console.warn(`[HealthCheck] ${name} failed:`, status.error);
             }
         }
     }
@@ -177,38 +177,38 @@ export class HealthCheckService extends BaseService {
      * Get current health status
      */
     getStatus(): HealthCheckResult {
-        const services = Array.from(this.statuses.values())
+        const services = Array.from(this.statuses.values());
 
         const criticalServices = services.filter(s => {
-            const check = this.checks.get(s.name)
-            return check?.critical
-        })
+            const check = this.checks.get(s.name);
+            return check?.critical;
+        });
 
-        const criticalUnhealthy = criticalServices.some(s => s.status === 'unhealthy')
-        const anyUnhealthy = services.some(s => s.status === 'unhealthy')
+        const criticalUnhealthy = criticalServices.some(s => s.status === 'unhealthy');
+        const anyUnhealthy = services.some(s => s.status === 'unhealthy');
 
-        let overall: 'healthy' | 'degraded' | 'unhealthy'
+        let overall: 'healthy' | 'degraded' | 'unhealthy';
         if (criticalUnhealthy) {
-            overall = 'unhealthy'
+            overall = 'unhealthy';
         } else if (anyUnhealthy) {
-            overall = 'degraded'
+            overall = 'degraded';
         } else {
-            overall = 'healthy'
+            overall = 'healthy';
         }
 
         return {
             overall,
             services,
             timestamp: new Date()
-        }
+        };
     }
 
     /**
      * Check a specific service immediately
      */
     async checkNow(name: string): Promise<HealthStatus | null> {
-        await this.runCheck(name)
-        return this.statuses.get(name) ?? null
+        await this.runCheck(name);
+        return this.statuses.get(name) ?? null;
     }
 
     /**
@@ -258,9 +258,9 @@ export class HealthCheckService extends BaseService {
 }
 
 // Singleton instance
-let instance: HealthCheckService | null = null
+let instance: HealthCheckService | null = null;
 
 export function getHealthCheckService(): HealthCheckService {
-    instance ??= new HealthCheckService()
-    return instance
+    instance ??= new HealthCheckService();
+    return instance;
 }
