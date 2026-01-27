@@ -46,7 +46,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
 
     const { language } = useAuth();
     const { selectedProvider, selectedModel } = useModel();
-    const { t } = useTranslation(language || 'en');
+    const { t } = useTranslation(language);
 
     const virtuosoRef = useRef<VirtuosoHandle>(null);
 
@@ -96,7 +96,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         streamingReasoning={streamingReasoning}
                         streamingSpeed={streamingSpeed ?? null}
                         isLoading={isLoading}
-                        language={language || 'en'}
+                        language={language}
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}
                         onSpeak={(text, id) => handleSpeak(id, text)}

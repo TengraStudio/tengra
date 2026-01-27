@@ -70,7 +70,7 @@ export class CodeIntelligenceService {
     }
 
     async indexProject(rootPath: string, projectId: string, force = false): Promise<void> {
-        if (!await this.shouldStartIndexing(projectId, force)) { return; }
+        if (!await this.shouldStartIndexing(projectId, rootPath, force)) { return; }
 
         this.indexingInProgress.add(projectId);
         appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing project ${projectId} at ${rootPath} (force=${force})`);
@@ -83,11 +83,11 @@ export class CodeIntelligenceService {
             const total = files.length;
             appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} files. Clearing old index...`);
 
-            await this.db.clearCodeSymbols(projectId);
-            await this.db.clearSemanticFragments(projectId);
+            await this.db.clearCodeSymbols(rootPath);
+            await this.db.clearSemanticFragments(rootPath);
 
             for (let i = 0; i < total; i++) {
-                await this.processProjectFile(projectId, files[i], i, total);
+                await this.processProjectFile(projectId, rootPath, files[i], i, total);
             }
 
             this.indexedProjects.add(projectId);
@@ -101,11 +101,11 @@ export class CodeIntelligenceService {
         }
     }
 
-    private async shouldStartIndexing(projectId: string, force: boolean): Promise<boolean> {
+    private async shouldStartIndexing(projectId: string, rootPath: string, force: boolean): Promise<boolean> {
         if (this.indexingInProgress.has(projectId)) { return false; }
         if (!force && this.indexedProjects.has(projectId)) { return false; }
         if (!force) {
-            const alreadyHasData = await this.db.hasIndexedSymbols(projectId);
+            const alreadyHasData = await this.db.hasIndexedSymbols(rootPath);
             if (alreadyHasData) {
                 this.indexedProjects.add(projectId);
                 return false;
@@ -120,7 +120,7 @@ export class CodeIntelligenceService {
         windows.forEach((win) => win.webContents.send('code:indexing-progress', progress));
     }
 
-    private async processProjectFile(projectId: string, filePath: string, index: number, total: number) {
+    private async processProjectFile(projectId: string, rootPath: string, filePath: string, index: number, total: number) {
         const relativeName = path.basename(filePath);
         this.sendIndexingProgress(projectId, index + 1, total, `Indexing ${relativeName}...`);
 
@@ -133,7 +133,7 @@ export class CodeIntelligenceService {
                 const vector = await this.embedding.generateEmbedding(text);
                 await this.db.storeCodeSymbol({
                     id: crypto.randomUUID(),
-                    project_path: projectId,
+                    project_path: rootPath,
                     file_path: sym.file,
                     name: sym.name,
                     kind: sym.kind,
@@ -147,7 +147,7 @@ export class CodeIntelligenceService {
             const ext = path.extname(filePath).toLowerCase();
             const supported = ['.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.kt', '.kts', '.java', '.xml', '.gradle', '.cpp', '.h'];
             if (supported.includes(ext)) {
-                await this.chunkAndIndexFile(projectId, filePath, content);
+                await this.chunkAndIndexFile(projectId, rootPath, filePath, content);
             }
 
             if ((index + 1) % 50 === 0) {
@@ -158,13 +158,13 @@ export class CodeIntelligenceService {
         }
     }
 
-    async updateFileIndex(projectId: string, filePath: string): Promise<void> {
+    async updateFileIndex(projectId: string, rootPath: string, filePath: string): Promise<void> {
         try {
             appLogger.info('code-intelligence.service', `[CodeIntelligence] Updating index for ${filePath}`);
 
             // 1. Clear existing data for this file
-            await this.db.deleteCodeSymbolsForFile(projectId, filePath);
-            await this.db.deleteSemanticFragmentsForFile(projectId, filePath);
+            await this.db.deleteCodeSymbolsForFile(rootPath, filePath);
+            await this.db.deleteSemanticFragmentsForFile(rootPath, filePath);
 
             // 2. Read content
             const content = await fs.readFile(filePath, 'utf-8');
@@ -176,7 +176,7 @@ export class CodeIntelligenceService {
                 const vector = await this.embedding.generateEmbedding(text);
                 await this.db.storeCodeSymbol({
                     id: crypto.randomUUID(),
-                    project_path: projectId,
+                    project_path: rootPath,
                     file_path: sym.file,
                     name: sym.name,
                     kind: sym.kind,
@@ -190,7 +190,7 @@ export class CodeIntelligenceService {
             // 4. Re-index Chunks
             const ext = path.extname(filePath).toLowerCase();
             if (['.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs'].includes(ext)) {
-                await this.chunkAndIndexFile(projectId, filePath, content);
+                await this.chunkAndIndexFile(projectId, rootPath, filePath, content);
             }
         } catch (error) {
             console.error(`[CodeIntelligence] Failed to update index for ${filePath}:`, getErrorMessage(error as Error));
@@ -215,7 +215,7 @@ export class CodeIntelligenceService {
         }
     }
 
-    private async chunkAndIndexFile(projectId: string, filePath: string, content: string) {
+    private async chunkAndIndexFile(projectId: string, rootPath: string, filePath: string, content: string) {
         // Simple sliding window
         // Chunk size ~500 chars, overlap 100
         const CHUNK_SIZE = 1000;
@@ -240,7 +240,7 @@ export class CodeIntelligenceService {
                     importance: 0.5,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
-                    projectId // Extra metadata
+                    projectPath: rootPath
                 };
 
                 await this.db.storeSemanticFragment(fragment);
@@ -332,7 +332,7 @@ export class CodeIntelligenceService {
             const project = projects.find(p => p.path === rootPath || rootPath.startsWith(p.path)); // Flexible match
 
             if (project) {
-                const dbSymbols = await this.db.findCodeSymbolsByName(project.id, query);
+                const dbSymbols = await this.db.findCodeSymbolsByName(project.path, query);
                 if (dbSymbols.length > 0) {
                     return dbSymbols.map(s => ({
                         file: s.path,
@@ -360,9 +360,8 @@ export class CodeIntelligenceService {
         try {
             // 1. Try Indexed Database Search if projectId is available
             if (projectId || rootPath) {
-                const targetId = (projectId && projectId.length > 0) ? projectId : rootPath;
                 // A. Indexed Symbols (Name matches)
-                const symbols = await this.db.findCodeSymbolsByName(targetId, query);
+                const symbols = await this.db.findCodeSymbolsByName(rootPath, query);
                 appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed symbols found: ${symbols.length}`);
                 results.push(...symbols.map(s => ({
                     file: s.path,
@@ -373,7 +372,7 @@ export class CodeIntelligenceService {
                 })));
 
                 // B. Indexed Content (Text fragments)
-                const fragments = await this.db.searchCodeContentByText(targetId, query);
+                const fragments = await this.db.searchCodeContentByText(rootPath, query);
                 appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed content fragments found: ${fragments.length}`);
                 results.push(...fragments.map(f => ({
                     file: f.path,

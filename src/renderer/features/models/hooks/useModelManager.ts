@@ -37,7 +37,7 @@ export function useModelManager(
     }, [refreshModels]);
 
     useEffect(() => {
-        if (appSettings?.general?.defaultModel) {
+        if (appSettings?.general.defaultModel) {
             setSelectedModel(appSettings.general.defaultModel);
             setSelectedProvider(appSettings.general.lastProvider ?? '');
             

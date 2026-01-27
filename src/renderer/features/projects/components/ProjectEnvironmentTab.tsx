@@ -113,7 +113,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                         {t('projectDashboard.envAddVar')}
                     </button>
                     <button
-                        onClick={handleSave}
+                        onClick={() => void handleSave()}
                         disabled={!hasChanges || saving}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",

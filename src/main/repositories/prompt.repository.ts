@@ -1,5 +1,4 @@
 import { IRepository } from '@main/core/repository.interface';
-import { appLogger } from '@main/logging/logger';
 import { DatabaseService, Prompt } from '@main/services/data/database.service';
 
 /**

@@ -150,11 +150,12 @@ export function normalizeOllamaResponse(response: JsonValue, model: string): Nor
 }
 
 function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
-    if (!res.eval_count) { return undefined; }
+    const evalCount = res.eval_count;
+    if (!evalCount) { return undefined; }
     return {
-        promptTokens: Number(res.prompt_eval_count ?? 0),
-        completionTokens: Number(res.eval_count ?? 0),
-        totalTokens: Number(res.prompt_eval_count ?? 0) + Number(res.eval_count ?? 0)
+        promptTokens: Number(res.prompt_eval_count || 0),
+        completionTokens: Number(evalCount),
+        totalTokens: Number(res.prompt_eval_count || 0) + Number(evalCount)
     };
 }
 

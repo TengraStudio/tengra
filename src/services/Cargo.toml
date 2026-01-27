@@ -3,7 +3,8 @@ members = [
     "token-service",
     "model-service",
     "quota-service",
-    "memory-service"
+    "memory-service",
+    "db-service"
 ]
 resolver = "2"
 

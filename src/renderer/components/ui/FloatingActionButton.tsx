@@ -143,7 +143,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                         )}
                         style={{
                             transform: `translate(${x - 40}px, ${y + 50}px)`,
-                            opacity: isOpen ? 1 : 0
+                            opacity: Number(isOpen)
                         }}
                     >
                         {action.label}

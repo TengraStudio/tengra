@@ -38,9 +38,6 @@ export const VirtualizedIdeaGrid: React.FC<VirtualizedIdeaGridProps> = ({
 
     const renderRow = (index: number) => {
         const row = ideaRows[index];
-        if (!row) {
-            return null;
-        }
 
         return (
             <div

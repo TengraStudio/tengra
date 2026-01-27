@@ -309,7 +309,9 @@ app.whenReady().then(async () => {
         .catch(e => appLogger.error('Main', `Failed to start embedded proxy: ${e}`));
 
     appLogger.info('Main', 'Initializing ToolExecutor...');
-    const mcpDispatcher = new McpDispatcher([], services.settingsService);
+    const mcpDispatcher = new McpDispatcher([], services.settingsService, services.mcpPluginService);
+    // Explicitly initialize McpPluginService (though container.init() might have done it, we ensure order here)
+    await services.mcpPluginService.initialize();
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,

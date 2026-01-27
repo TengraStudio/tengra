@@ -764,10 +764,10 @@ export class ProjectService {
         const depRegex = /(?:implementation|api|compile|runtimeOnly|compileOnly|testImplementation|classpath)\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g;
         let match;
         while ((match = depRegex.exec(content)) !== null) {
-            const dep = match[1] ?? '';
+            const dep = match[1] || '';
             const parts = dep.split(':');
-            const name = parts.length > 1 ? (parts[1] ?? dep) : dep;
-            dependencies[name] = parts.length > 2 ? (parts[2] ?? '*') : '*';
+            const name = parts.length > 1 ? (parts[1] || dep) : dep;
+            dependencies[name] = parts.length > 2 ? (parts[2] || '*') : '*';
         }
     }
 

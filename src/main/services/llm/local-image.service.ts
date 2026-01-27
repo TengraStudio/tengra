@@ -60,8 +60,8 @@ export class LocalImageService {
 
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
         const settings = this.settingsService.getSettings();
-        const model = settings.images?.ollamaModel ?? 'stable-diffusion-v1-5';
-        const baseUrl = settings.ollama?.url ?? 'http://127.0.0.1:11434';
+        const model = settings.images?.ollamaModel || 'stable-diffusion-v1-5';
+        const baseUrl = settings.ollama.url || 'http://127.0.0.1:11434';
 
         try {
             // Ollama image generation is usually via a POST to /api/generate or /api/chat if it's a multimodal model

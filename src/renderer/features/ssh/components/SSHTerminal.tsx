@@ -1,8 +1,6 @@
 
 import React from 'react';
 
-import { cn } from '@/lib/utils';
-
 interface SSHTerminalProps {
     terminalOutput: string
     t: (key: string) => string

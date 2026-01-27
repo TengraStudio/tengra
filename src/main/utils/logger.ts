@@ -10,12 +10,9 @@ export class Logger {
     private static logFile: string;
 
     static init(logDir?: string) {
-        if (logDir) {
-            this.logFile = path.join(logDir, 'orbit.log');
-        } else if (app) {
-            const userData = app.getPath('userData');
-            this.logFile = path.join(userData, 'orbit.log');
-        }
+        const userData = app.getPath('userData');
+        const targetDir = logDir || userData;
+        this.logFile = path.join(targetDir, 'orbit.log');
     }
 
     private static format(level: LogLevel, message: string, meta?: JsonValue): string {

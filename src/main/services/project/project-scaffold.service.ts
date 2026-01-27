@@ -711,7 +711,7 @@ MIT
 ├── package.json
 └── README.md`
         };
-        return structures[category] ?? structures['other'];
+        return structures[category] || structures['other'];
     }
 
     /**

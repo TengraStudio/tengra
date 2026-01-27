@@ -33,7 +33,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                 try {
                     const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
                     // Handle ServiceResponse format: { success, data } or direct array
-                    const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
+                    const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
                     const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                         name: f.name,
                         path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
@@ -68,7 +68,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
                     "text-sm text-muted-foreground hover:text-foreground"
                 )}
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                onClick={handleToggle}
+                onClick={() => { void (async () => { await handleToggle({ stopPropagation: () => {} } as React.MouseEvent); })(); }}
             >
                 <span className="opacity-70 w-4 flex justify-center">
                     {node.isDirectory && (

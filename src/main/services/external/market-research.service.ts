@@ -235,6 +235,24 @@ export class MarketResearchService extends BaseService {
         return trends.slice(0, 10);
     }
 
+    private addCompetitorFromSearchResult(
+        competitors: Competitor[],
+        searchResult: WebSearchResult
+    ): void {
+        // Avoid duplicates
+        if (competitors.some(c => c.url === searchResult.url)) {
+            return;
+        }
+
+        competitors.push({
+            name: searchResult.title.split(' - ')[0].split(' | ')[0],
+            description: searchResult.snippet || 'Competitor from web search',
+            url: searchResult.url,
+            strengths: [],
+            weaknesses: []
+        });
+    }
+
     /**
      * Search for competitors in the category
      */
@@ -250,19 +268,12 @@ export class MarketResearchService extends BaseService {
 
             for (const query of queries) {
                 const result = await this.webService.searchWeb(query, 5);
-                if (result.success && result.results) {
-                    for (const searchResult of result.results) {
-                        // Avoid duplicates
-                        if (!competitors.some(c => c.url === searchResult.url)) {
-                            competitors.push({
-                                name: searchResult.title.split(' - ')[0].split(' | ')[0],
-                                description: searchResult.snippet || 'Competitor from web search',
-                                url: searchResult.url,
-                                strengths: [],
-                                weaknesses: []
-                            });
-                        }
-                    }
+                if (!result.success || !result.results) {
+                    continue;
+                }
+
+                for (const searchResult of result.results) {
+                    this.addCompetitorFromSearchResult(competitors, searchResult);
                 }
             }
         } catch (error) {

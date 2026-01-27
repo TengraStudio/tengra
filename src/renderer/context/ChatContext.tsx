@@ -106,7 +106,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             isRestoringRef.current = false;
             return;
         }
-        if (chatManager.chats && chatManager.chats.length > 0) {
+        if (chatManager.chats.length > 0) {
             historyManager.saveState(chatManager.chats, chatManager.currentChatId);
         }
     }, [chatManager.chats, chatManager.currentChatId, historyManager]);

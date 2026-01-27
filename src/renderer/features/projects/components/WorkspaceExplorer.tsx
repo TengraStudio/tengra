@@ -51,7 +51,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     variant = 'panel',
     language
 }) => {
-    const { t } = useTranslation(language || 'en');
+    const { t } = useTranslation(language);
     const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({});
     const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({});
     const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({});
@@ -68,7 +68,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             const result = mount.type === 'local'
                 ? await window.electron.listDirectory(mount.rootPath)
                 : await window.electron.ssh.listDir(mount.id, mount.rootPath);
-            if (result?.success) {
+            if (result.success) {
                 // Handle both response formats: { files } or { data }
                 const anyResult = result as { files?: MountFileEntry[]; data?: MountFileEntry[] };
                 const fileList = anyResult.files ?? anyResult.data ?? [];

@@ -131,16 +131,14 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                         setSidebarWidth(newWidth);
                         localStorage.setItem('sidebarWidth', newWidth.toString());
                     } else if (e.key === 'Enter' || e.key === ' ') {
-                        if (setIsSidebarCollapsed) {
-                            setIsSidebarCollapsed(!isSidebarCollapsed);
-                        }
+                        setIsSidebarCollapsed?.(!isSidebarCollapsed);
                     }
                 }}
                 onDoubleClick={() => {
                     setSidebarWidth(280);
                     localStorage.setItem('sidebarWidth', '280');
-                    if (isSidebarCollapsed && setIsSidebarCollapsed) {
-                        setIsSidebarCollapsed(false);
+                    if (isSidebarCollapsed) {
+                        setIsSidebarCollapsed?.(false);
                     }
                 }}
                 className={cn(

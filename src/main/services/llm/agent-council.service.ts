@@ -425,9 +425,9 @@ export class AgentCouncilService {
             ], model, undefined, provider);
 
             const content = response.content;
-            const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) ?? content.match(/{[\s\S]*}/);
+            const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*}/);
             const verdict = jsonMatch
-                ? safeJsonParse<{ status: string, feedback: string } | null>(jsonMatch[1] ?? jsonMatch[0], null)
+                ? safeJsonParse<{ status: string, feedback: string } | null>(jsonMatch[1] || jsonMatch[0], null)
                 : null;
 
             if (verdict) {
@@ -539,7 +539,7 @@ export class AgentCouncilService {
             if (toolName === 'runCommand' && args?.command) {
                 // Block potentially dangerous commands
                 const dangerousPatterns = [/rm\s+-rf/i, /del\s+\/s/i, /format\s+/i, /mkfs/i];
-                if (dangerousPatterns.some(p => p.test(args.command!))) {
+                if (dangerousPatterns.some(p => p.test(args.command as string))) {
                     throw new Error('Potentially dangerous command blocked');
                 }
             }

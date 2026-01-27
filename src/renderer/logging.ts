@@ -9,7 +9,7 @@ export function installRendererLogger() {
     if (installed) {return;}
     installed = true;
 
-    const logger = window.electron?.log;
+    const logger = window.electron.log;
     if (!logger) {return;}
 
     const original = {

@@ -26,7 +26,7 @@ export class SystemService extends BaseService implements ISystemService {
         // Cache system info at startup
         try {
             this.systemInfo = await this.getSystemInfo();
-            appLogger.info(this.name, `System info cached: ${this.systemInfo?.platform || 'unknown'} ${this.systemInfo?.release || 'unknown'}`);
+            appLogger.info(this.name, `System info cached: ${this.systemInfo.platform || 'unknown'} ${this.systemInfo.release || 'unknown'}`);
         } catch (error) {
             appLogger.error(this.name, 'Failed to cache system info', error as Error);
         }

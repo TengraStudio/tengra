@@ -170,7 +170,7 @@ export class SystemRepository extends BaseRepository {
         const id = uuidv4();
         const timestamp = record.timestamp ?? Date.now();
         await this.adapter.prepare(`
-            INSERT INTO token_usage(id, chat_id, project_id, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
+            INSERT INTO token_usage(id, chat_id, project_path, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(id, record.chatId, record.projectId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }

@@ -38,7 +38,7 @@ export const CopyButton = ({ text }: { text: string }) => {
         setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
     };
     return (
-        <ActionButton label={t('messageBubble.copy')} onClick={handleCopy}>
+        <ActionButton label={t('messageBubble.copy')} onClick={() => void handleCopy()}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     );
@@ -103,7 +103,7 @@ export const CopyMarkdownButton = ({ text, role }: { text: string; role: string 
         setTimeout(() => setCopied(false), FEEDBACK_TIMEOUTS.COPY_FEEDBACK);
     };
     return (
-        <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={handleCopy}>
+        <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={() => void handleCopy()}>
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Code2 className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     );

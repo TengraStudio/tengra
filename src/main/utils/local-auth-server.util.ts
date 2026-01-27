@@ -26,6 +26,17 @@ export interface AuthCallbackData extends AuthTokenData {
     project_id?: string
 }
 
+interface ClaudeCallbackParams {
+    code: string
+    verifier: string
+    redirectUri: string
+    callbackState: string | null
+    oauthState: string
+    onSuccess: (data: AuthCallbackData) => Promise<void> | void
+    onError: (err: CatchError) => void
+    res: http.ServerResponse
+}
+
 export class LocalAuthServer {
     private static readonly CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
     private static readonly AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -36,6 +47,45 @@ export class LocalAuthServer {
     private static readonly CLAUDE_AUTH_ENDPOINT = 'https://claude.ai/oauth/authorize';
     private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://api.anthropic.com/v1/oauth/token';
 
+    private static async handleAntigravityCallback(
+        code: string,
+        verifier: string,
+        redirectUri: string,
+        onSuccess: (data: AuthCallbackData) => void,
+        onError: (err: CatchError) => void
+    ): Promise<void> {
+        try {
+            if (!verifier) { throw new Error('Code verifier missing'); }
+            const tokenData = await LocalAuthServer.exchangeCodeForToken(code, verifier, redirectUri);
+            onSuccess(tokenData);
+        } catch (e) {
+            onError(e as Error);
+        }
+    }
+
+    private static async handleClaudeCallback(params: ClaudeCallbackParams): Promise<void> {
+        const { code, verifier, redirectUri, callbackState, oauthState, onSuccess, onError, res } = params;
+        try {
+            if (!verifier) { throw new Error('Code verifier missing'); }
+
+            // Use callback state if present, otherwise use the original state
+            const stateToUse = callbackState ?? oauthState;
+
+            const tokenData = await LocalAuthServer.exchangeCodeForClaudeToken(code, verifier, redirectUri, stateToUse);
+
+            await onSuccess(tokenData);
+
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end('<h1>Login Successful!</h1><p>You can close this window and return to Orbit.</p>');
+        } catch (e) {
+            const err = e as Error;
+            console.error('[LocalAuthServer] Claude Auth Failed:', err);
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
+            onError(err);
+        }
+    }
+
 
     /**
      * Starts the Antigravity OAuth flow using PKCE.
@@ -45,13 +95,14 @@ export class LocalAuthServer {
         onError: (err: CatchError) => void
     ): Promise<AuthResult> {
         return new Promise((resolve, reject) => {
-            const server = http.createServer(async (req, res) => {
-                try {
-                    const address = server.address() as AddressInfo | null;
-                    if (!address) {
-                        // Server is closed or closing
-                        return;
-                    }
+            const server = http.createServer((req, res) => {
+                void (async () => {
+                    try {
+                        const address = server.address() as AddressInfo | null;
+                        if (!address) {
+                            // Server is closed or closing
+                            return;
+                        }
 
                     const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
 
@@ -72,25 +123,17 @@ export class LocalAuthServer {
                             res.writeHead(200, { 'Content-Type': 'text/html' });
                             res.end('<h1>Auth Successful</h1><p>You can close this window and return to Orbit.</p><script>setTimeout(() => window.close(), 1000)</script>');
 
-                            try {
-                                const redirectUri = `http://127.0.0.1:${address.port}/callback`;
-                                // Explicitly passing verifier from closure
-                                if (!verifier) { throw new Error('Code verifier missing'); }
-                                const tokenData = await LocalAuthServer.exchangeCodeForToken(code, verifier, redirectUri);
-                                onSuccess(tokenData);
-                            } catch (e) {
-                                onError(e as Error);
-                            } finally {
-                                server.close();
-                            }
+                            await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
+                            server.close();
                         }
                     } else {
                         res.writeHead(404);
                         res.end();
                     }
-                } catch (err) {
-                    console.error('[LocalAuthServer] Server handler error:', err);
-                }
+                    } catch (err) {
+                        console.error('[LocalAuthServer] Server handler error:', err);
+                    }
+                })();
             });
 
             // PKCE Variables (captured by closure)
@@ -138,10 +181,11 @@ export class LocalAuthServer {
             let verifier: string;
             let oauthState: string;
 
-            const server = http.createServer(async (req, res) => {
-                try {
-                    const address = server.address() as AddressInfo | null;
-                    if (!address) { return; }
+            const server = http.createServer((req, res) => {
+                void (async () => {
+                    try {
+                        const address = server.address() as AddressInfo | null;
+                        if (!address) { return; }
 
                     const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
 
@@ -160,36 +204,26 @@ export class LocalAuthServer {
                         }
 
                         if (code) {
-                            try {
-                                const redirectUri = `http://localhost:${address.port}/callback`;
-                                if (!verifier) { throw new Error('Code verifier missing'); }
-
-                                // Use callback state if present, otherwise use the original state
-                                const stateToUse = callbackState ?? oauthState;
-
-                                const tokenData = await LocalAuthServer.exchangeCodeForClaudeToken(code, verifier, redirectUri, stateToUse);
-
-                                await onSuccess(tokenData);
-
-                                res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.end('<h1>Login Successful!</h1><p>You can close this window and return to Orbit.</p>');
-                            } catch (e) {
-                                const err = e as Error;
-                                console.error('[LocalAuthServer] Claude Auth Failed:', err);
-                                res.writeHead(500, { 'Content-Type': 'text/html' });
-                                res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
-                                onError(err);
-                            } finally {
-                                server.close();
-                            }
+                            await LocalAuthServer.handleClaudeCallback({
+                                code,
+                                verifier,
+                                redirectUri: `http://localhost:${address.port}/callback`,
+                                callbackState,
+                                oauthState,
+                                onSuccess,
+                                onError,
+                                res
+                            });
+                            server.close();
                         }
                     } else {
                         res.writeHead(404);
                         res.end();
                     }
-                } catch (err) {
-                    console.error('[LocalAuthServer] Server handler error:', err);
-                }
+                    } catch (err) {
+                        console.error('[LocalAuthServer] Server handler error:', err);
+                    }
+                })();
             });
 
             server.listen(0, '127.0.0.1', () => {
@@ -271,7 +305,7 @@ export class LocalAuthServer {
                     }
                     try {
                         const json = safeJsonParse<AuthCallbackData & { id_token?: string }>(data, {} as AuthCallbackData);
-                        if (!json || Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
+                        if (Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
 
                         // Extract email from id_token if present (Google/Antigravity)
                         if (json.id_token) {
@@ -355,7 +389,7 @@ export class LocalAuthServer {
                     }
                     try {
                         const json = safeJsonParse<AuthCallbackData & { account?: { email_address?: string }; id_token?: string }>(data, {} as AuthCallbackData);
-                        if (!json || Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
+                        if (Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
                         appLogger.info('LocalAuthServer', 'Token exchange successful');
 
                         // Handle Claude's nested email field

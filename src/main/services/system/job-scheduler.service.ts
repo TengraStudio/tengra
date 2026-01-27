@@ -50,13 +50,11 @@ export class JobSchedulerService extends BaseService {
             }
         }
 
-        const timeout = setTimeout(async () => {
+        const timeout = setTimeout(() => {
             this.tasks.delete(key);
-            try {
-                await task();
-            } catch (error) {
+            void task().catch((error) => {
                 appLogger.error('JobScheduler', `Task ${key} failed:`, error as Error);
-            }
+            });
         }, delay);
 
         this.tasks.set(key, timeout);
@@ -96,7 +94,8 @@ export class JobSchedulerService extends BaseService {
         const states = await this.databaseService.getAllJobStates();
 
         for (const [id, job] of this.recurringJobs) {
-            const lastRun = states[id]?.lastRun ?? 0;
+            const jobState = states[id];
+            const lastRun = jobState?.lastRun || 0;
             job.lastRun = lastRun;
             this.scheduleNextRun(job);
         }
@@ -115,8 +114,9 @@ export class JobSchedulerService extends BaseService {
             const state = safeJsonParse<Record<string, JobState>>(content, {});
 
             for (const [id, jobState] of Object.entries(state)) {
-                if (jobState && typeof jobState.lastRun === 'number') {
-                    await this.databaseService.updateJobLastRun(id, jobState.lastRun);
+                const lastRunVal = jobState.lastRun;
+                if (typeof lastRunVal === 'number') {
+                    await this.databaseService.updateJobLastRun(id, lastRunVal);
                 }
             }
 
@@ -151,8 +151,8 @@ export class JobSchedulerService extends BaseService {
             }
         }
 
-        const timer = setTimeout(async () => {
-            await this.executeJob(job);
+        const timer = setTimeout(() => {
+            void this.executeJob(job);
         }, delay);
 
         this.recurringTimers.set(job.id, timer);

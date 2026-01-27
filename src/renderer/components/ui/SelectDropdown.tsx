@@ -103,8 +103,8 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                             transition={{ duration: 0.15, ease: "easeOut" }}
                             style={{
                                 position: strategy,
-                                top: y ?? 0,
-                                left: x ?? 0,
+                                top: y || 0,
+                                left: x || 0,
                                 zIndex: 10000,
                                 width: width || 'auto'
                             }}

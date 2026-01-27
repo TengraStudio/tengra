@@ -47,7 +47,6 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
 
     const renderRow = (index: number) => {
         const row = projectRows[index];
-        if (!row) {return null;}
 
         return (
             <div 

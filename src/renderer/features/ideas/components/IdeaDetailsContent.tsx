@@ -595,7 +595,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                         type="text"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
+                        onKeyPress={(e) => e.key === 'Enter' && void handleAsk()}
                         placeholder="Ask about competitors, gaps, or logic..."
                         className="w-full bg-muted/20 border border-border/50 rounded-xl py-2.5 pl-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-colors"
                     />

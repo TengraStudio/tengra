@@ -253,7 +253,7 @@ logging-to-file: false
     private async handleAuthUpdateFromProxy(jsonString: string) {
         try {
             const data = safeJsonParse<JsonObject>(jsonString, {});
-            const provider = (data.type as string) ?? 'unknown';
+            const provider = (data.type as string) || 'unknown';
 
             appLogger.info('Proxy', `Received direct auth update for provider: ${provider}`);
 

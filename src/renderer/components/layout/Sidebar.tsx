@@ -5,7 +5,6 @@ import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader
 import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useProject } from '@/context/ProjectContext';
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal';
@@ -49,7 +48,7 @@ export const Sidebar = React.memo(({
     const editRef = useRef<HTMLInputElement>(null);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
-    const activeFolders = useMemo(() => folders ?? [], [folders]);
+    const activeFolders = useMemo(() => folders, [folders]);
 
     const filteredChats = useMemo(() => {
         if (!searchQuery) { return chats; }
@@ -83,8 +82,6 @@ export const Sidebar = React.memo(({
         }
         setEditingId(null);
     }, [editingId, updateChat]);
-
-    // NavButton replaced by SidebarItem
 
     const renderChatItem = useCallback((chat: Chat) => (
         <SidebarChatItem

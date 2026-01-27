@@ -218,7 +218,7 @@ const PanelGroupView: React.FC<{
                 group={group}
                 onToggleCollapse={() => toggleCollapse(group.id)}
             />
-            {!group.collapsed && activePanel && (
+            {group.collapsed ? null : (
                 <div className="flex-1 overflow-auto">
                     {activePanel.content}
                 </div>
@@ -246,7 +246,7 @@ export const PanelLayoutProvider: React.FC<{
             const group = groups[panel.position];
             if (group) {
                 group.panels.push(panel);
-                group.activePanel ??= panel.id;
+                group.activePanel = group.activePanel || panel.id;
             }
         }
 
@@ -292,12 +292,10 @@ export const PanelLayoutProvider: React.FC<{
                 const index = group.panels.findIndex(p => p.id === panelId);
                 if (index >= 0) {
                     const panelAtIndex = group.panels[index];
-                    if (panelAtIndex) {
-                        movedPanel = { ...panelAtIndex, position: newPosition };
-                    }
+                    movedPanel = { ...panelAtIndex, position: newPosition };
                     group.panels = group.panels.filter(p => p.id !== panelId);
                     if (group.activePanel === panelId) {
-                        group.activePanel = group.panels[0]?.id || '';
+                        group.activePanel = group.panels[0]?.id ?? '';
                     }
                     break;
                 }
@@ -306,10 +304,8 @@ export const PanelLayoutProvider: React.FC<{
             // Add to new position
             if (movedPanel) {
                 const targetGroup = newGroups[newPosition];
-                if (targetGroup) {
-                    targetGroup.panels = [...targetGroup.panels, movedPanel];
-                    targetGroup.activePanel = movedPanel.id;
-                }
+                targetGroup.panels = [...targetGroup.panels, movedPanel];
+                targetGroup.activePanel = movedPanel.id;
             }
 
             return { ...prev, groups: newGroups };

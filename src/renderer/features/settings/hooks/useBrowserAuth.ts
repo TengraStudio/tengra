@@ -67,6 +67,18 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         void refreshAuthStatus();
     }, [refreshAuthStatus]);
 
+    const handleClaudeAccountShow = useCallback(async () => {
+        try {
+            const accounts = await window.electron.getAccountsByProvider('claude');
+            const newest = accounts[0];
+            if (newest) {
+                onShowManualSession?.(newest.id, newest.email);
+            }
+        } catch (err) {
+            console.error('Failed to fetch Claude accounts:', err);
+        }
+    }, [onShowManualSession]);
+
     const pollConnection = useCallback((provider: string, identifiers: string[]) => {
         let attempts = 0;
         const maxAttempts = 30;
@@ -93,15 +105,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     setAuthBusy(null);
 
                     if (provider === 'claude') {
-                        try {
-                            const accounts = await window.electron.getAccountsByProvider('claude');
-                            const newest = accounts[0];
-                            if (newest) {
-                                onShowManualSession?.(newest.id, newest.email);
-                            }
-                        } catch (err) {
-                            console.error('Failed to fetch Claude accounts:', err);
-                        }
+                        await handleClaudeAccountShow();
                     }
                     return;
                 }
@@ -122,7 +126,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         };
 
         setTimeout(() => { void poll(); }, 2000);
-    }, [refreshAuthStatus, onRefreshAccounts, onRefreshModels, setAuthBusy, setAuthNotice, onShowManualSession]);
+    }, [refreshAuthStatus, onRefreshAccounts, onRefreshModels, setAuthBusy, setAuthNotice, handleClaudeAccountShow]);
 
     const connectBrowserProvider = useCallback(async (provider: 'codex' | 'claude' | 'antigravity') => {
         if (authBusy) { return; }

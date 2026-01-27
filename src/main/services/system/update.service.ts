@@ -40,7 +40,7 @@ export class UpdateService {
         this.registerIpcHandlers();
 
         const settings = this.settingsService.getSettings();
-        if (settings.autoUpdate?.enabled && settings.autoUpdate?.checkOnStartup) {
+        if (settings.autoUpdate?.enabled && settings.autoUpdate.checkOnStartup) {
             // Delay check slightly to not slow down startup
             setTimeout(() => {
                 void this.checkForUpdates();
@@ -58,7 +58,7 @@ export class UpdateService {
             this.sendToWindow('update:status', { state: 'available', version: info.version });
 
             const settings = this.settingsService.getSettings();
-            if (settings.autoUpdate?.downloadAutomatically && !settings.autoUpdate?.notifyOnly) {
+            if (settings.autoUpdate?.downloadAutomatically && !settings.autoUpdate.notifyOnly) {
                 void this.downloadUpdate();
             }
         });

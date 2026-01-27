@@ -82,19 +82,19 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
             if (e.shiftKey) {
                 if (document.activeElement === firstElement) {
-                    lastElement?.focus();
+                    lastElement.focus();
                     e.preventDefault();
                 }
             } else {
                 if (document.activeElement === lastElement) {
-                    firstElement?.focus();
+                    firstElement.focus();
                     e.preventDefault();
                 }
             }
         };
 
         document.addEventListener('keydown', handleTab);
-        firstElement?.focus();
+        firstElement.focus();
 
         return () => document.removeEventListener('keydown', handleTab);
     }, [isOpen]);

@@ -101,7 +101,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                                     Incompatible with {incompatibleWithLabel}
                                 </div>
                             )}
-                            {isAtLimit && !isSelected && !incompatibleWithLabel && (
+                            {isAtLimit && !incompatibleWithLabel && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-[10px] text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
                                     Max 3 categories
                                 </div>

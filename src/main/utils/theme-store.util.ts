@@ -252,12 +252,13 @@ class ThemeStore {
     async importTheme(jsonString: string): Promise<CustomTheme | null> {
         try {
             const data = safeJsonParse<{ version?: string; theme?: CustomTheme }>(jsonString, {});
-            if (data?.version !== '1.0' || !data.theme) {
+            if (data.version !== '1.0' || !data.theme) {
                 throw new Error('Invalid theme format');
             }
 
             const theme = data.theme;
-            if (!theme.id || !theme.name || !theme.colors) {
+            const themeName = theme.name;
+            if (!themeName) {
                 throw new Error('Missing required theme properties');
             }
 

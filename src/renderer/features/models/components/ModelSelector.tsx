@@ -155,6 +155,108 @@ export function ModelSelector({
         void checkLimits();
     }, [settings?.modelUsageLimits, groupedModels]);
 
+    const isCodexModel = useCallback((lowerModelId: string) => {
+        return lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1');
+    }, []);
+
+    const checkCodexWeeklyLimit = useCallback((usage: { weeklyUsedPercent?: number; weeklyLimit?: number }, codexLimits: { weekly?: { enabled: boolean; percentage: number } } | undefined, lowerModelId: string) => {
+        if (!codexLimits?.weekly?.enabled || usage.weeklyLimit === undefined || usage.weeklyLimit <= 0) {
+            return false;
+        }
+        const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0);
+        const maxAllowedPercent = codexLimits.weekly.percentage;
+        if (weeklyRemainingPercent < maxAllowedPercent) {
+            return isCodexModel(lowerModelId);
+        }
+        return false;
+    }, [isCodexModel]);
+
+    const checkCodexDailyLimit = useCallback((usage: { dailyUsedPercent?: number; dailyLimit?: number }, codexLimits: { daily?: { enabled: boolean; percentage: number } } | undefined, lowerModelId: string) => {
+        const usageExt = usage as { dailyLimit?: number };
+        if (!codexLimits?.daily?.enabled || usageExt.dailyLimit === undefined || usageExt.dailyLimit <= 0) {
+            return false;
+        }
+        const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0);
+        const maxAllowedPercent = codexLimits.daily.percentage;
+        if (dailyRemainingPercent < maxAllowedPercent) {
+            return isCodexModel(lowerModelId);
+        }
+        return false;
+    }, [isCodexModel]);
+
+    const checkAntigravityUserDefinedLimit = useCallback((modelId: string, lowerModelId: string) => {
+        const antigravityLimits = settings?.modelUsageLimits?.antigravity;
+        const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId];
+
+        if (!modelLimit?.enabled) {
+            return false;
+        }
+
+        const foundQuota = quotas?.accounts?.find(a => a.models?.some((m) => m.id.toLowerCase() === lowerModelId));
+        if (!foundQuota?.models) {
+            return false;
+        }
+
+        const modelQuotaItem = foundQuota.models.find((m) =>
+            m.id.toLowerCase() === lowerModelId ||
+            m.id.toLowerCase() === modelId.toLowerCase()
+        );
+
+        if (!modelQuotaItem) {
+            return false;
+        }
+
+        const modelRemainingPercent = (modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100);
+        return modelRemainingPercent < modelLimit.percentage;
+    }, [quotas, settings]);
+
+    const checkAntigravityGeneralQuota = useCallback((modelId: string, lowerModelId: string) => {
+        if (!quotas?.accounts) {
+            return false;
+        }
+        const generalQuota = quotas.accounts.find(a => a.models?.some((m) => m.id.toLowerCase() === lowerModelId));
+        if (!generalQuota?.models) {
+            return false;
+        }
+
+        const modelQuotaItem = generalQuota.models.find((m) =>
+            m.id.toLowerCase() === lowerModelId ||
+            m.id.toLowerCase() === modelId.toLowerCase()
+        );
+
+        if (!modelQuotaItem) {
+            return false;
+        }
+
+        const percentage = modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100;
+        return percentage <= 5;
+    }, [quotas]);
+
+    const checkAntigravityGroupQuota = useCallback((lowerModelId: string, agQuota: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }>) => {
+        for (const [, groupModels] of Object.entries(ANTIGRAVITY_QUOTA_GROUPS)) {
+            if (!groupModels.some(m => m.toLowerCase() === lowerModelId)) {
+                continue;
+            }
+
+            for (const groupModel of groupModels) {
+                const gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
+                if (!gQuota) {
+                    continue;
+                }
+
+                const quotaData = gQuota as unknown as Record<string, unknown>;
+                if (quotaData.percentage !== undefined && typeof quotaData.percentage === 'number' && quotaData.percentage <= 5) {
+                    return true;
+                }
+                if (gQuota.exhausted || gQuota.remaining <= 0) {
+                    return true;
+                }
+            }
+            break;
+        }
+        return false;
+    }, [ANTIGRAVITY_QUOTA_GROUPS]);
+
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
         if (!quotas && !codexUsage && !settings?.modelUsageLimits) { return false; }
         const lowerModelId = modelId.toLowerCase();
@@ -175,37 +277,24 @@ export function ModelSelector({
                 const codexLimits = settings?.modelUsageLimits?.codex;
 
                 // Check weekly limit from settings
-                if (codexLimits?.weekly?.enabled && usage.weeklyLimit !== undefined && usage.weeklyLimit > 0) {
-                    const weeklyRemainingPercent = 100 - (usage.weeklyUsedPercent ?? 0);
-                    const maxAllowedPercent = codexLimits.weekly.percentage;
-                    if (weeklyRemainingPercent < maxAllowedPercent) {
-                        if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
-                            return true;
-                        }
-                    }
+                if (checkCodexWeeklyLimit(usage, codexLimits, lowerModelId)) {
+                    return true;
                 }
 
                 // Check daily limit from settings
-                const usageExt = usage as { dailyLimit?: number };
-                if (codexLimits?.daily?.enabled && usageExt.dailyLimit !== undefined && usageExt.dailyLimit > 0) {
-                    const dailyRemainingPercent = 100 - (usage.dailyUsedPercent ?? 0);
-                    const maxAllowedPercent = codexLimits.daily.percentage;
-                    if (dailyRemainingPercent < maxAllowedPercent) {
-                        if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
-                            return true;
-                        }
-                    }
+                if (checkCodexDailyLimit(usage, codexLimits, lowerModelId)) {
+                    return true;
                 }
 
                 // If weekly limit is 0, disable all Codex models
                 if (usage.weeklyLimit === 0) {
-                    if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
+                    if (isCodexModel(lowerModelId)) {
                         return true;
                     }
                 }
                 // Otherwise check daily remaining percentage
                 else if ((usage.dailyUsedPercent ?? 0) >= 100) {
-                    if (lowerModelId.includes('codex') || lowerModelId.includes('gpt-5') || lowerModelId.includes('o1')) {
+                    if (isCodexModel(lowerModelId)) {
                         return true;
                     }
                 }
@@ -214,7 +303,7 @@ export function ModelSelector({
 
         // 2. Check Copilot Credits - check remaining number (0-5 means disabled)
         if (provider === 'copilot') {
-            const copilotQuota = quotas?.accounts?.find(a => a.copilot)?.copilot || (quotas as Record<string, unknown>)?.copilot;
+            const copilotQuota = quotas?.accounts?.find(a => a.copilot)?.copilot || (quotas as Record<string, unknown>).copilot;
             if (copilotQuota) {
                 // Disable if remaining is 0-5
                 const q = copilotQuota as { remaining: number; limit: number };
@@ -226,7 +315,7 @@ export function ModelSelector({
 
         // 2.1 Check Anthropic (Claude) Quotas - disable if utilization is 100%
         if (provider === 'claude' || provider === 'anthropic') {
-            const claudeQuota = quotas?.accounts?.find(a => a.claudeQuota)?.claudeQuota || (quotas as Record<string, unknown>)?.claudeQuota;
+            const claudeQuota = quotas?.accounts?.find(a => a.claudeQuota)?.claudeQuota || (quotas as Record<string, unknown>).claudeQuota;
             if (claudeQuota) {
                 const q = claudeQuota as { fiveHour?: { utilization: number }; sevenDay?: { utilization: number } };
                 // 100% utilization (1.0) means no quota remaining
@@ -239,47 +328,18 @@ export function ModelSelector({
         // 3. Antigravity Quota Handling - disable if percentage is 0-5% or below user-defined limit
         if (provider === 'antigravity') {
             // Check user-defined usage limits from settings
-            const antigravityLimits = settings?.modelUsageLimits?.antigravity;
-            const modelLimit = antigravityLimits?.[modelId] || antigravityLimits?.[lowerModelId];
-
-            if (modelLimit?.enabled) {
-                // Check models array in quotas for percentage
-                const foundQuota = quotas?.accounts?.find(a => a.models?.some((m) => m.id?.toLowerCase() === lowerModelId));
-                if (foundQuota?.models) {
-                    const modelQuotaItem = foundQuota.models.find((m) =>
-                        m.id?.toLowerCase() === lowerModelId ||
-                        m.id?.toLowerCase() === modelId.toLowerCase()
-                    );
-                    if (modelQuotaItem) {
-                        // Get model's remaining quota percentage
-                        const modelRemainingPercent = (modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100);
-                        // Check if model's remaining quota is below the user-defined limit
-                        if (modelRemainingPercent < modelLimit.percentage) {
-                            return true;
-                        }
-                    }
-                }
+            if (checkAntigravityUserDefinedLimit(modelId, lowerModelId)) {
+                return true;
             }
 
             // Check models array in quotas for percentage
-            const generalQuota = quotas?.accounts?.find(a => a.models?.some((m) => m.id?.toLowerCase() === lowerModelId));
-            if (generalQuota?.models) {
-                const modelQuotaItem = generalQuota.models.find((m) =>
-                    m.id?.toLowerCase() === lowerModelId ||
-                    m.id?.toLowerCase() === modelId.toLowerCase()
-                );
-                if (modelQuotaItem) {
-                    // Check percentage - disable if 0-5%
-                    const percentage = modelQuotaItem.percentage ?? (modelQuotaItem.quotaInfo?.remainingFraction ?? 1) * 100;
-                    if (percentage <= 5) {
-                        return true;
-                    }
-                }
+            if (checkAntigravityGeneralQuota(modelId, lowerModelId)) {
+                return true;
             }
 
             // Fallback to old structure
-            const agQuota = (quotas as { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> })?.antigravity ||
-                (quotas as { data?: { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> } })?.data?.antigravity;
+            const agQuota = (quotas as { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> }).antigravity ||
+                (quotas as { data?: { antigravity?: Record<string, { exhausted?: boolean; remaining: number; percentage?: number }> } }).data?.antigravity;
             if (agQuota) {
                 const modelQuota = agQuota[modelId] || agQuota[lowerModelId];
                 if (modelQuota) {
@@ -292,28 +352,14 @@ export function ModelSelector({
                     }
                 }
 
-                for (const [, groupModels] of Object.entries(ANTIGRAVITY_QUOTA_GROUPS)) {
-                    if (groupModels.some(m => m.toLowerCase() === lowerModelId)) {
-                        for (const groupModel of groupModels) {
-                            const gQuota = agQuota[groupModel] || agQuota[groupModel.toLowerCase()];
-                            if (gQuota) {
-                                const quotaData = gQuota as unknown as Record<string, unknown>;
-                                if (quotaData.percentage !== undefined && typeof quotaData.percentage === 'number' && quotaData.percentage <= 5) {
-                                    return true;
-                                }
-                                if (gQuota.exhausted || gQuota.remaining <= 0) {
-                                    return true;
-                                }
-                            }
-                        }
-                        break;
-                    }
+                if (checkAntigravityGroupQuota(lowerModelId, agQuota)) {
+                    return true;
                 }
             }
         }
 
         return false;
-    }, [quotas, codexUsage, ANTIGRAVITY_QUOTA_GROUPS, settings, usageLimitChecks]);
+    }, [quotas, codexUsage, settings, usageLimitChecks, isCodexModel, checkCodexWeeklyLimit, checkCodexDailyLimit, checkAntigravityUserDefinedLimit, checkAntigravityGeneralQuota, checkAntigravityGroupQuota]);
 
     const categories = useMemo(() => {
         if (!groupedModels) { return []; }
@@ -359,13 +405,13 @@ export function ModelSelector({
             { key: 'custom', catId: 'custom' }
         ];
 
-        const hidden = new Set<string>(settings?.general?.hiddenModels ?? []);
+        const hidden = new Set<string>(settings?.general.hiddenModels ?? []);
         const searchLower = debouncedSearchQuery.toLowerCase();
-        const favorites = new Set(settings?.general?.favoriteModels ?? []);
+        const favorites = new Set(settings?.general.favoriteModels ?? []);
 
         for (const mapping of brandsMapping) {
             const group = groupedModels[mapping.key];
-            const models = group?.models ?? [];
+            const models = group.models ?? [];
             const cat = cats.find(c => c.id === mapping.catId);
             if (!cat) { continue; }
             const favCat = cats.find(c => c.id === 'favorites');
@@ -474,7 +520,7 @@ export function ModelSelector({
             >
                 <div className="flex items-center gap-2.5 overflow-hidden flex-1">
                     <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-inner", currentCategory?.bg || 'bg-muted/50')}>
-                        {currentCategory?.icon && <currentCategory.icon className={cn("w-3.5 h-3.5", currentCategory?.color || 'text-muted-foreground')} />}
+                        {currentCategory?.icon && <currentCategory.icon className={cn("w-3.5 h-3.5", currentCategory.color || 'text-muted-foreground')} />}
                     </div>
                     <div className="flex flex-col items-start leading-none overflow-hidden flex-1">
                         <div className="flex items-center justify-between w-full pr-1">

@@ -8,7 +8,7 @@ const ModelContext = createContext<ModelContextType | null>(null);
 
 export function ModelProvider({ children }: { children: ReactNode }) {
     const { appSettings, setAppSettings } = useAuth();
-    const modelManager = useModelManager(appSettings, setAppSettings);
+    const modelManager = useModelManager(appSettings, (settings) => void setAppSettings(settings));
 
     // Memoize the context value to prevent unnecessary re-renders
     const value = useMemo(() => modelManager, [modelManager]);

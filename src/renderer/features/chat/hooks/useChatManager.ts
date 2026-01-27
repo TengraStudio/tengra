@@ -125,7 +125,6 @@ export function useChatManager(options: UseChatManagerOptions) {
             setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c));
         });
         return () => { removeStatusListener(); };
-        return () => { removeStatusListener(); };
     }, [loadFolders]);
 
     // Lazy load messages for current active chat

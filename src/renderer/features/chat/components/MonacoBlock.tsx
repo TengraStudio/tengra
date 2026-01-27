@@ -139,3 +139,5 @@ const ExecutionOverlay: React.FC<{
         )}
     </AnimatePresence>
 );
+
+MonacoBlock.displayName = 'MonacoBlock';

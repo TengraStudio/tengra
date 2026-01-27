@@ -31,7 +31,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
         const load = async () => {
             try {
                 const data = await window.electron.ssh.getSystemStats(connectionId) as SystemStats;
-                if (isMounted && data) {
+                if (isMounted) {
                     setStats(data);
                 }
             } catch (e) {

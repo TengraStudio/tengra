@@ -283,7 +283,7 @@ export class BackupService {
                 folderId: chatObj.folderId ? String(chatObj.folderId) : undefined,
                 projectId: chatObj.projectId ? String(chatObj.projectId) : undefined,
                 isGenerating: Boolean(chatObj.isGenerating),
-                metadata: chatObj.metadata as JsonObject ?? {}
+                metadata: (chatObj.metadata as JsonObject | null | undefined) || {}
             }));
             for (const chat of chats) {
                 await this.restoreSingleChat(chat, opts.mergeChats);
@@ -533,7 +533,7 @@ export class BackupService {
             this.startAutoBackup();
         } else if (!config.enabled && wasEnabled) {
             this.stopAutoBackup();
-        } else if (config.enabled && wasEnabled && config.intervalHours !== undefined) {
+        } else if (config.enabled && config.intervalHours !== undefined) {
             // Restart with new interval
             this.stopAutoBackup();
             this.startAutoBackup();

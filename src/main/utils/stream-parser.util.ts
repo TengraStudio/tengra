@@ -113,7 +113,7 @@ export class StreamParser {
 
     private static extractDataPayload(line: string): string | null {
         const trimmed = line.trim();
-        if (!trimmed?.startsWith('data:')) { return null; }
+        if (!trimmed.startsWith('data:')) { return null; }
 
         let jsonData = trimmed.slice(5).trim();
         while (jsonData.startsWith('data:')) {

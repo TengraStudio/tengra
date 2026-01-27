@@ -19,9 +19,7 @@ export function useSettingsPersonas(
             const idx = personas.findIndex(p => p.id === editingPersonaId);
             if (idx >= 0) {
                 const existingPersona = personas[idx];
-                if (existingPersona) {
-                    personas[idx] = { ...existingPersona, ...personaDraft };
-                }
+                personas[idx] = { ...existingPersona, ...personaDraft };
             }
         } else {
             personas.push({ id: `${Date.now()}`, ...personaDraft });

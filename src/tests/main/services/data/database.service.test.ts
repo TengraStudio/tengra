@@ -38,6 +38,8 @@ vi.mock('@electric-sql/pglite', () => {
     };
 });
 
+import { DatabaseClientService } from '@main/services/data/database-client.service';
+
 describe('DatabaseService', () => {
     let service: DatabaseService;
     let mockDataService: DataService;
@@ -53,8 +55,21 @@ describe('DatabaseService', () => {
             on: vi.fn(),
             off: vi.fn()
         } as unknown as EventBusService;
-        service = new DatabaseService(mockDataService, mockEventBus);
-        // Initialize calls runMigrations which uses query a lot
+
+        const mockDatabaseClient = {
+            initialize: vi.fn().mockResolvedValue(undefined),
+            isConnected: vi.fn().mockReturnValue(true),
+            executeQuery: vi.fn().mockImplementation(async (req) => {
+                const res = await mockQuery(req.sql, req.params);
+                return {
+                    rows: res.rows,
+                    affected_rows: res.affectedRows ?? 0
+                };
+            })
+        } as unknown as DatabaseClientService;
+
+        service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient);
+        // Initialize calls initDatabase
         await service.initialize();
         // Reset query calls from init so we can assert on test logic
         mockQuery.mockClear();

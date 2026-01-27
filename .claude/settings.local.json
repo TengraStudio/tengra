@@ -24,7 +24,8 @@
       "Bash(sqlite3:*)",
       "Bash(dir:*)",
       "Bash(powershell:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cargo check:*)"
     ]
   },
   "mcpServers": {

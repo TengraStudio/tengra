@@ -262,7 +262,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl mx-auto px-2">
                                 <button
-                                    onClick={handleImportLocal}
+                                    onClick={() => void handleImportLocal()}
                                     className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-primary/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-primary/10 overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -289,7 +289,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                 </button>
 
                                 <button
-                                    onClick={handleCreate}
+                                    onClick={() => void handleCreate()}
                                     className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-blue-500/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -431,7 +431,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     className="flex-1 bg-transparent text-sm text-foreground focus:outline-none font-mono"
                                 />
                                 <button
-                                    onClick={() => sshConnectionId && loadRemoteDirectory(sshConnectionId, sshPath)}
+                                    onClick={() => sshConnectionId && void loadRemoteDirectory(sshConnectionId, sshPath)}
                                     className="p-1 hover:bg-muted/40 rounded-md transition-colors"
                                 >
                                     <ArrowRight className="w-4 h-4 text-foreground/50" />
@@ -530,7 +530,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
 
                             {step === 'ssh-connection' && (
                                 <button
-                                    onClick={handleSSHConnect}
+                                    onClick={() => void handleSSHConnect()}
                                     disabled={!sshForm.host || !sshForm.username || isLoading}
                                     className="px-6 py-2.5 bg-purple-500 text-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-purple-500/20"
                                 >

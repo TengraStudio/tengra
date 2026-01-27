@@ -36,7 +36,7 @@
 ### 3.2 MCP System
 - [x] Reorganize src/main/mcp into proper module structure
 - [x] Create mcp/index.ts aggregator
-- [ ] Extract tools into mcp/servers/ (FileSystem, Git, etc.) [SKIPPED - too risky to refactor]
+- [x] Extract tools into mcp/servers/ (FileSystem, Git, etc.)
 
 ## MEDIUM - Infrastructure (Upgraded from LOW)
 
@@ -49,15 +49,25 @@
 - [ ] **Test native modules on Linux** *(MEDIUM - Cross-platform compatibility)*
 
 ### 4.3 Database Service
-- [ ] **Refactor database system to a standalone Windows service** *(MEDIUM - Architecture upgrade, large effort)*
-- [ ] Implement Rust-based Host for PGlite/Postgres
-- [ ] Update DatabaseService.ts to act as a remote client
+- [x] **Refactor database system to a standalone Windows service** *(MEDIUM - Architecture upgrade, large effort)*
+    - Created `orbit-db-service` Rust service in `src/services/db-service/`
+    - Implements SQLite with vector search (bincode-serialized embeddings)
+    - Windows Service support via `windows-service` crate
+    - HTTP API on dynamic port with discovery via port file
+- [x] Implement Rust-based Host for PGlite/Postgres
+    - Using SQLite as the Rust-native alternative (compatible schema)
+    - Full CRUD for chats, messages, projects, folders, prompts
+    - Vector search for code symbols and semantic fragments
+- [x] Update DatabaseService.ts to act as a remote client
+    - Created `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
+    - HTTP client using axios with retry logic
+    - Automatic service discovery and startup via ProcessManagerService
 - [ ] Migration and regression testing for all data domains
-- [ ] Automated daily backup and cloud sync integration
+- [ ] Automated daily backup and cloud sync integration (deferred)
 
 ---
 
-## Summary (Updated 2026-01-25)
+## Summary (Updated 2026-01-27)
 
 **Completed:**
 - BaseService adoption: 42/86 services (49%)
@@ -65,11 +75,16 @@
 - LLM Plugin interface and registry implemented
 - EventBusService with 56 usages across codebase
 - MCP module reorganization
+- Database service refactoring to standalone Windows Service (Task 4.3)
+  - Rust-based `orbit-db-service` with SQLite + vector search
+  - `DatabaseClientService` HTTP client for Electron integration
+  - Windows Service installer script
 
 **In Progress:**
 - IPC to EventBus migration (~300 handlers)
 - OpenAI/Anthropic plugin extraction
+- Database service migration testing
 
 **Planned:**
 - Linux packaging support
-- Database service refactoring
+- Cloud sync integration for backups

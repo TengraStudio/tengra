@@ -63,16 +63,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         ];
 
         const chatCmds: CommandItem[] = chats.slice(0, 5).map(c => ({
-            id: `chat-${c.id}`, label: c.title ?? t('commandPalette.untitledChat'), description: t('commandPalette.goToChat'), icon: <MessageSquare className="w-4 h-4" />, action: () => { onSelectChat(c.id); onClose(); }, category: 'chat'
+            id: `chat-${c.id}`, label: c.title, description: t('commandPalette.goToChat'), icon: <MessageSquare className="w-4 h-4" />, action: () => { onSelectChat(c.id); onClose(); }, category: 'chat' as const
         }));
 
         const projCmds: CommandItem[] = projects.slice(0, 5).map(p => ({
-            id: `project-${p.id}`, label: p.title ?? t('commandPalette.untitledProject'), description: t('commandPalette.goToProject'), icon: <Folder className="w-4 h-4" />, action: () => { onSelectProject(p.id); onClose(); }, category: 'projects',
-            preview: { title: p.title ?? 'Untitled Project', content: p.path ?? 'No path', metadata: { 'Type': p.type ?? 'Unknown', 'Created': p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Unknown' } }
+            id: `project-${p.id}`, label: p.title, description: t('commandPalette.goToProject'), icon: <Folder className="w-4 h-4" />, action: () => { onSelectProject(p.id); onClose(); }, category: 'projects' as const,
+            preview: { title: p.title, content: p.path, metadata: { 'Type': p.type ?? 'Unknown', 'Created': new Date(p.createdAt).toLocaleDateString() } }
         }));
 
         const modelCmds: CommandItem[] = [
-            { id: 'refresh-models', label: t('commandPalette.refreshModels'), description: t('commandPalette.refreshModelsDesc'), icon: <RefreshCw className="w-4 h-4" />, action: () => { onRefreshModels(); onClose(); }, category: 'model' },
+            { id: 'refresh-models', label: t('commandPalette.refreshModels'), description: t('commandPalette.refreshModelsDesc'), icon: <RefreshCw className="w-4 h-4" />, action: () => { onRefreshModels(); onClose(); }, category: 'model' as const },
             ...models.map(m => {
                 const name = m.name ?? m.id ?? 'Unknown';
                 return {
@@ -87,7 +87,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const filtered = useMemo(() => {
         const q = debouncedSearch.toLowerCase();
-        return commands.filter(c => c.label.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q) || c.category.includes(q));
+        return commands.filter(c => c.label.toLowerCase().includes(q) || (c.description?.toLowerCase().includes(q)) || c.category.includes(q));
     }, [commands, debouncedSearch]);
 
     useEffect(() => {
@@ -104,10 +104,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const grouped = useMemo(() => {
         const groups: Record<string, CommandItem[]> = {};
         filtered.forEach(c => {
-            if (!groups[c.category]) {
-                groups[c.category] = [];
+            const cat = c.category;
+            if (!groups[cat]) {
+                groups[cat] = [];
             }
-            groups[c.category]?.push(c);
+            groups[cat].push(c);
         });
         return groups;
     }, [filtered]);

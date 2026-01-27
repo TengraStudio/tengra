@@ -4,6 +4,7 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService, TokenData } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain } from 'electron';
 
@@ -129,9 +130,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         const provider = args[0] as string | undefined;
         try {
             if (provider) {
-                return (await authService.getAccountsByProvider(provider)) as unknown as import('@shared/types/common').JsonValue;
+                return (await authService.getAccountsByProvider(provider)) as unknown as JsonValue;
             }
-            return (await authService.getAllAccounts()) as unknown as import('@shared/types/common').JsonValue;
+            return (await authService.getAllAccounts()) as unknown as JsonValue;
         } catch (error) {
             console.error('Failed to get linked accounts:', error);
             return [];
@@ -141,7 +142,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     registerBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
         const provider = args[0] as string;
         try {
-            return (await authService.getActiveAccount(provider)) as unknown as import('@shared/types/common').JsonValue;
+            return (await authService.getActiveAccount(provider)) as unknown as JsonValue;
         } catch (error) {
             console.error('Failed to get active linked account:', error);
             return null;

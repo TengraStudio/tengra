@@ -35,7 +35,7 @@ function registerGitBatchHandlers(gitService: GitService) {
                 success: true,
                 isClean,
                 changes: result.length,
-                files: result.map(file => ({ path: file.path, status: file.status || 'unknown' }))
+                files: result.map(file => ({ path: file.path, status: file.status }))
             };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -202,8 +202,8 @@ function registerStatusHandlers(gitService: GitService) {
 function parseTrackingCounts(result: { success: boolean; stdout?: string }, tracking: string) {
     if (result.success && result.stdout) {
         const parts = result.stdout.trim().split('\t');
-        const ahead = parseInt(parts[0] || '0');
-        const behind = parseInt(parts[1] || '0');
+        const ahead = parseInt(parts[0] ?? '0');
+        const behind = parseInt(parts[1] ?? '0');
         return { success: true, tracking, ahead: isNaN(ahead) ? 0 : ahead, behind: isNaN(behind) ? 0 : behind };
     }
     return { success: true, tracking, ahead: 0, behind: 0 };

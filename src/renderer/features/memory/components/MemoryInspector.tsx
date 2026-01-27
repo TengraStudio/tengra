@@ -65,7 +65,7 @@ export const MemoryInspector: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" onClick={refresh} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={() => void refresh()} className="gap-2">
                         <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
                         Refresh
                     </Button>
@@ -155,7 +155,7 @@ export const MemoryInspector: React.FC = () => {
                                         <EmptyState icon={Brain} title={t('memory.noFactsFound')} description={t('memory.factsDescription')} />
                                     ) : (
                                         facts.map(fact => (
-                                            <FactCard key={fact.id} fact={fact} onDelete={() => deleteFact(fact.id)} />
+                                            <FactCard key={fact.id} fact={fact} onDelete={() => void deleteFact(fact.id)} />
                                         ))
                                     )}
                                 </>
@@ -179,7 +179,7 @@ export const MemoryInspector: React.FC = () => {
                                         <EmptyState icon={User} title={t('memory.noEntitiesDetected')} description={t('memory.entitiesDescription')} />
                                     ) : (
                                         entities.map(entity => (
-                                            <EntityCard key={entity.id} entity={entity} onDelete={() => deleteEntity(entity.id)} />
+                                            <EntityCard key={entity.id} entity={entity} onDelete={() => void deleteEntity(entity.id)} />
                                         ))
                                     )}
                                 </>
@@ -205,7 +205,7 @@ export const MemoryInspector: React.FC = () => {
                         />
                         <div className="flex justify-end gap-2">
                             <Button variant="ghost" onClick={() => setShowAddFact(false)}>{t('common.cancel')}</Button>
-                            <Button onClick={handleAddFact} disabled={!newFactContent.trim()}>{t('memory.addMemory')}</Button>
+                            <Button onClick={() => void handleAddFact()} disabled={!newFactContent.trim()}>{t('memory.addMemory')}</Button>
                         </div>
                     </Card>
                 </div>

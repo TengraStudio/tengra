@@ -61,11 +61,11 @@ export class OllamaService {
     constructor(settingsService: SettingsService) {
         this.settingsService = settingsService;
         const settings = this.settingsService.getSettings();
-        if (settings.ollama?.url) {
+        if (settings.ollama.url) {
             try {
                 const url = new URL(settings.ollama.url);
                 this.host = url.hostname;
-                this.port = parseInt(url.port) || 11434;
+                this.port = parseInt(url.port || '11434', 10);
             } catch (e) {
                 console.error('Invalid Ollama URL provided, using default', getErrorMessage(e as Error));
             }
@@ -194,9 +194,8 @@ export class OllamaService {
                     messages,
                     stream: false,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama?.numCtx ?? 16384,
+                        num_ctx: this.settingsService.getSettings().ollama.numCtx ?? 16384,
                     },
-                    keep_alive: '24h'  // Keep model loaded
                 })
             });
             const data = safeJsonParse<OllamaResponse>(response.data, {
@@ -238,20 +237,19 @@ export class OllamaService {
                     stream: true,
                     tools: tools && tools.length > 0 ? tools : undefined,
                     options: {
-                        num_ctx: this.settingsService.getSettings().ollama?.numCtx ?? 16384,
+                        num_ctx: this.settingsService.getSettings().ollama.numCtx ?? 16384,
                     },
-                    keep_alive: '24h'
                 }),
                 onData: (chunk) => {
                     const lines = chunk.toString().split('\n').filter(Boolean);
                     for (const line of lines) {
                         try {
                             const data = safeJsonParse<OllamaResponse>(line, {} as OllamaResponse);
-                            if (data.message?.content) {
+                            if (data.message.content) {
                                 fullResponse += data.message.content;
                                 onChunk?.(data.message.content);
                             }
-                            if (data.message?.tool_calls) {
+                            if (data.message.tool_calls) {
                                 toolCalls = data.message.tool_calls;
                             }
                             if (data.done) {
@@ -313,7 +311,7 @@ export class OllamaService {
                         try {
                             const data = safeJsonParse<Record<string, unknown>>(line, {});
                             onProgress?.({
-                                status: (data.status as string) ?? 'downloading',
+                                status: (data.status as string) || 'downloading',
                                 completed: data.completed as number | undefined,
                                 total: data.total as number | undefined
                             });

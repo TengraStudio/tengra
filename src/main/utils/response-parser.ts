@@ -88,7 +88,9 @@ export function parseAIResponseContent(response: JsonValue | undefined): string 
     if (typeof res.content === 'string') {
         // Check if content is nested JSON
         const c = res.content.trim();
-        if (c.startsWith('{') && c.includes('"content"')) {
+        const startsWithBrace = c.startsWith('{');
+        const hasContent = c.includes('"content"');
+        if (startsWithBrace && hasContent) {
             const parsed = safeJsonParse(c, null);
             if (parsed) {
                 return parseAIResponseContent(parsed);
