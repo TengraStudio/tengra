@@ -58,7 +58,6 @@ This document serves as the central index for project tasks. Tasks are categoriz
 
 ### Short-Term Goals
 - [x] Authentication database migration
-- [x] Gallery prompt storage implementation
 - [x] Service layer standardization
 - [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
 - [x] Exportable Research Briefs (PDF/Markdown)
@@ -98,11 +97,14 @@ Implement the "Project System" for long-running autonomous tasks (replacing `bui
 - [ ] Implementation of the "Thinking" mode for agents
 - [ ] Design and development of a plugin system
 - [x] Refactor high complexity methods (>10) in `SettingsService`
-- [ ] Refactor database system to a Windows service (Rust-based standalone PGlite host)
+- [x] Refactor database system to a Windows service (Rust-based standalone project)
 - [ ] Local AI Hardware Optimization & Management UI
 - [ ] Local Hugging Face Model Support (Inference API & Local GGUF/Transformers.js)
 
 - [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
 - [x] Turkish localizations completed for migrated modules
-- [x] Build and lint verification passed (Reduced warnings from 804 to 655)
-*Last Updated: January 26, 2026 (Batch 7 Complete)*
+- [x] Project path migration from `project_id` to `project_path` (Backend & Frontend)
+- [x] Build and lint verification passed (Reduced warnings from 804 to 548)
+- [x] Refactor MCP tools into separate server modules
+- [x] Implement modular MCP Plugin Architecture (internal & external plugin support)
+*Last Updated: January 27, 2026 (Batch 11 Complete)*

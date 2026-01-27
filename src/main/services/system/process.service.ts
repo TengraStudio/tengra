@@ -169,7 +169,7 @@ export class ProcessService extends EventEmitter {
     async execute(command: string, cwd?: string): Promise<string> {
         try {
             const { stdout, stderr } = await execAsync(command, { cwd });
-            return (stdout || stderr) ?? 'Command executed successfully';
+            return (stdout || stderr) || 'Command executed successfully';
         } catch (e) {
             const msg = getErrorMessage(e as Error);
             const stderr = (e as { stderr?: string }).stderr ?? '';

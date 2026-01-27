@@ -163,7 +163,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                         void loadIdeas(currentSession.id);
                     }
                 }
-            } catch (err) {
+            } catch {
                 // Rollback on error
                 setSelectedIdea(selectedIdea);
                 void loadIdeas(currentSession.id);
@@ -188,7 +188,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                 setSelectedIdea(null);
                 void loadIdeas(currentSession.id);
             }
-        } catch (err) {
+        } catch {
             setSelectedIdea(selectedIdea);
             void loadIdeas(currentSession.id);
         }
@@ -210,7 +210,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                 setSelectedIdea(null);
                 void loadIdeas(currentSession.id);
             }
-        } catch (err) {
+        } catch {
             setSelectedIdea(selectedIdea);
             void loadIdeas(currentSession.id);
         }
@@ -370,7 +370,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                     handleShowHistory={handleShowHistory}
                     loadSessions={loadSessions}
                     hasIdeas={ideas.length > 0}
-                    onExport={handleExportIdeas}
+                    onExport={(format) => void handleExportIdeas(format)}
                     t={t}
                 />
 
@@ -423,7 +423,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                 <ConfirmationModal
                     isOpen={deleteConfirm.isOpen}
                     onClose={() => setDeleteConfirm({ ...deleteConfirm, isOpen: false })}
-                    onConfirm={confirmDelete}
+                    onConfirm={() => void confirmDelete()}
                     title={deleteConfirm.type === 'idea' ? 'Delete Idea' : 'Delete Multiple Ideas'}
                     message={
                         deleteConfirm.type === 'idea'

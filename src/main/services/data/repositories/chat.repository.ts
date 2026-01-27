@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter,SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -174,7 +174,7 @@ export class ChatRepository extends BaseRepository {
         const params: SqlValue[] = [];
 
         if (options.query) {
-            conditions.push('(c.title ILIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content ILIKE ?))');
+            conditions.push('(c.title LIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content LIKE ?))');
             params.push(`%${options.query}%`, `%${options.query}%`);
         }
         if (options.folderId) { conditions.push('c.folder_id = ?'); params.push(options.folderId); }
@@ -245,7 +245,7 @@ export class ChatRepository extends BaseRepository {
             SELECT m.id, m.chat_id, m.content, m.timestamp, m.metadata, c.title as chat_title
             FROM messages m
             LEFT JOIN chats c ON m.chat_id = c.id
-            WHERE (m.metadata::json->>'isBookmarked') = 'true'
+            WHERE json_extract(m.metadata, '$.isBookmarked') = 'true'
             ORDER BY m.timestamp DESC
         `).all<JsonObject>();
 

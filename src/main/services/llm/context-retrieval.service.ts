@@ -13,14 +13,22 @@ export class ContextRetrievalService {
         private embedding: EmbeddingService
     ) { }
 
-    async retrieveContext(query: string, _projectId?: string, limit: number = 5): Promise<RetrievalResult> {
+    async retrieveContext(query: string, projectId?: string, limit: number = 5): Promise<RetrievalResult> {
         try {
+            let projectPath: string | undefined;
+            if (projectId) {
+                // Try to find project by ID to get its path
+                const projects = await this.db.getProjects();
+                const project = projects.find(p => p.id === projectId || p.path === projectId);
+                projectPath = project?.path ?? projectId; // Fallback to projectId if it's already a path
+            }
+
             const vector = await this.embedding.generateEmbedding(query);
 
             // Parallel search
             const [symbols, fragments] = await Promise.all([
-                this.db.searchCodeSymbols(vector),
-                this.db.searchSemanticFragments(vector, limit)
+                this.db.searchCodeSymbols(vector, projectPath),
+                this.db.searchSemanticFragments(vector, limit, projectPath)
             ]);
 
             const contextParts: string[] = [];

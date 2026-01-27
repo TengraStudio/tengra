@@ -47,7 +47,22 @@ describe('Repository-DB Integration', () => {
 
         dataService = new DataService();
         const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as any;
-        dbService = new DatabaseService(dataService, mockEventBus);
+
+        const mockDatabaseClient = {
+            initialize: vi.fn().mockResolvedValue(undefined),
+            isConnected: vi.fn().mockReturnValue(true),
+            executeQuery: vi.fn().mockImplementation(async (req) => {
+                if (req.sql.includes('SELECT') && req.sql.includes('folders')) {
+                    if (req.sql.includes('id =')) {
+                        return { rows: [{ id: 'mock-id', name: 'Test Folder', color: '#ff0000', created_at: Date.now(), updated_at: Date.now() }], affected_rows: 1 };
+                    }
+                    return { rows: [], affected_rows: 0 };
+                }
+                return { rows: [], affected_rows: 1 };
+            })
+        } as any;
+
+        dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient);
         await dbService.initialize();
 
         folderRepo = new FolderRepository(dbService);

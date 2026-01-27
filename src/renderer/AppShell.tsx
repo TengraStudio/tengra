@@ -41,7 +41,7 @@ export function AppShell() {
     } = useModel();
     const { projects, setSelectedProject, loadProjects } = useProject();
 
-    const { t } = useTranslation(language ?? 'en');
+    const { t } = useTranslation(language);
     const { isListening, stopListening, startListening } = useVoiceInput(() => { });
     const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
 
@@ -138,7 +138,7 @@ export function AppShell() {
                 stopListening={stopListening}
                 isSpeaking={isSpeaking}
                 onStopSpeaking={handleStopSpeak}
-                language={language ?? 'en'}
+                language={language}
                 showCommandPalette={showCommandPalette}
                 setShowCommandPalette={setShowCommandPalette}
                 chats={chats}
@@ -163,7 +163,7 @@ export function AppShell() {
                 onRefreshModels={() => { void loadModels(); }}
                 models={models}
                 onSelectModel={(model: string) => setSelectedModel(model)}
-                selectedModel={selectedModel ?? ''}
+                selectedModel={selectedModel}
                 onClearChat={() => { if (currentChatId) { void clearMessages(); } }}
                 t={t}
                 isAuthModalOpen={isAuthModalOpen}

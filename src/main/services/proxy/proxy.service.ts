@@ -868,7 +868,7 @@ export class ProxyService extends BaseService {
           const emails = safeJsonParse<Array<{ email: string; primary: boolean; verified: boolean }>>(data, []);
           appLogger.debug('ProxyService', `GitHub emails count: ${emails.length}`);
           const primary = emails.find(e => e.primary && e.verified) ?? emails.find(e => e.primary) ?? emails[0];
-          resolve(primary?.email);
+          resolve(primary.email);
         });
       });
 

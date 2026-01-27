@@ -16,15 +16,13 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
         setLogFiles(files);
         if (files.length > 0 && !selectedLog) {
             const firstFile = files[0];
-            if (firstFile !== undefined) {
-                setSelectedLog(firstFile);
-                setLoading(true);
-                try {
-                    const data = await window.electron.ssh.readLogFile(connectionId, firstFile, 100);
-                    setContent(data);
-                } finally {
-                    setLoading(false);
-                }
+            setSelectedLog(firstFile);
+            setLoading(true);
+            try {
+                const data = await window.electron.ssh.readLogFile(connectionId, firstFile, 100);
+                setContent(data);
+            } finally {
+                setLoading(false);
             }
         }
     }, [connectionId, selectedLog]);
@@ -56,13 +54,13 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             <div className="w-1/3 border-r border-border bg-muted/20 flex flex-col">
                 <div className="p-3 border-b border-border font-medium text-sm flex justify-between items-center">
                     <span>Log Files</span>
-                    <button onClick={loadFiles} className="text-xs opacity-70 hover:opacity-100">Refresh</button>
+                    <button onClick={() => void loadFiles()} className="text-xs opacity-70 hover:opacity-100">Refresh</button>
                 </div>
                 <div className="overflow-y-auto flex-1">
                     {logFiles.map(file => (
                         <button
                             key={file}
-                            onClick={() => selectLog(file)}
+                            onClick={() => void selectLog(file)}
                             className={`w-full text-left px-4 py-2 text-sm truncate hover:bg-muted/20 ${selectedLog === file ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'text-muted-foreground'}`}
                         >
                             {file}

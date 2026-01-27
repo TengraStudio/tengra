@@ -118,7 +118,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                             <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{t('projects.prompt')}</label>
                             <div className="flex items-center gap-3">
                                 <button
-                                    onClick={handleImprovePrompt}
+                                    onClick={() => void handleImprovePrompt()}
                                     disabled={isAnalyzing || !prompt}
                                     className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
                                     title={t('workspace.improvePromptWithAI')}
@@ -127,7 +127,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     {t('projects.improvePrompt') || 'Improve'}
                                 </button>
                                 <button
-                                    onClick={handleAnalyze}
+                                    onClick={() => void handleAnalyze()}
                                     disabled={isAnalyzing}
                                     className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
                                 >
@@ -217,7 +217,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 <ImageIcon className="w-16 h-16 mx-auto mb-4 text-primary/40" />
                                 <p className="text-xs uppercase font-bold tracking-widest mb-4">{t('projects.preview') || 'Preview Area'}</p>
                                 <button
-                                    onClick={handleManualUpload}
+                                    onClick={() => void handleManualUpload()}
                                     className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                                 >
                                     {t('projects.uploadOriginal') || 'Upload Manual Image'}
@@ -228,7 +228,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                     <div className="flex gap-2">
                         <button
-                            onClick={handleGenerate}
+                            onClick={() => void handleGenerate()}
                             disabled={isGenerating || !prompt}
                             className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
                         >
@@ -238,7 +238,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                         {generatedLogo ? (
                             <button
-                                onClick={handleApply}
+                                onClick={() => void handleApply()}
                                 disabled={isGenerating}
                                 className="flex items-center justify-center px-6 bg-emerald-600 text-foreground rounded-xl hover:bg-emerald-700 transition-all active:scale-95 shadow-md shadow-emerald-500/20 disabled:opacity-50"
                                 title={t('workspace.applyLogo')}
@@ -247,7 +247,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                             </button>
                         ) : (
                             <button
-                                onClick={handleManualUpload}
+                                onClick={() => void handleManualUpload()}
                                 className="flex items-center justify-center px-6 bg-muted/20 text-muted-foreground hover:text-foreground border border-border/50 rounded-xl hover:bg-muted/30 transition-all active:scale-95"
                                 title={t('workspace.uploadImage')}
                             >

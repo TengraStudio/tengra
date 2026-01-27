@@ -20,7 +20,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
             : undefined;
         const reqOptions: http.RequestOptions = {
             hostname: urlObj.hostname,
-            port: urlObj.port ?? 80,
+            port: urlObj.port ? parseInt(urlObj.port) : 80,
             path: urlObj.pathname + urlObj.search,
             method: options?.method ?? 'GET',
             headers,
@@ -31,7 +31,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                const statusCode = res.statusCode ?? 0;
+                const statusCode = res.statusCode || 0;
                 resolve({
                     ok: statusCode >= 200 && statusCode < 300,
                     status: statusCode,

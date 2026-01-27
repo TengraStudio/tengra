@@ -37,7 +37,7 @@ const STEPS = [
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const { language } = useAuth();
-    const { t } = useTranslation(language || 'en');
+    const { t } = useTranslation(language);
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {
@@ -55,8 +55,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
     };
 
     const step = STEPS[currentStep];
-    if (!step) { return null; }
-
     return (
         <Modal
             isOpen={isOpen}

@@ -256,6 +256,8 @@ const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     ] as const;
 
     const current = modes.find(m => m.id === ctrl.systemMode) ?? modes[1];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _current = current; // Variable kept for future use
 
     return (
         <div className="flex items-center gap-1 mr-2">

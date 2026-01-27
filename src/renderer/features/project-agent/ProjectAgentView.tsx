@@ -97,10 +97,10 @@ export const ProjectAgentView: React.FC = () => {
                             onChange={(e) => setTaskInput(e.target.value)}
                             placeholder="Describe a coding task (e.g., 'Refactor the auth service to use JWT')..."
                             className="flex-1 bg-background border rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary outline-none"
-                            onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+                            onKeyDown={(e) => e.key === 'Enter' && void handleStart()}
                         />
                         <Button
-                            onClick={handleStart}
+                            onClick={() => void handleStart()}
                             disabled={!taskInput.trim() || isLoading}
                             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
                         >
@@ -119,7 +119,7 @@ export const ProjectAgentView: React.FC = () => {
                         </div>
                     </div>
                     <Button
-                        onClick={handleStop}
+                        onClick={() => void handleStop()}
                         variant="destructive"
                         className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
                     >

@@ -63,7 +63,7 @@ export class TelemetryService extends BaseService {
     }
 
     private startFlushing() {
-        this.flushInterval = setInterval(() => this.flush(), 60000); // Flush every minute
+        this.flushInterval = setInterval(() => { void this.flush(); }, 60000); // Flush every minute
     }
 
     private async flush() {

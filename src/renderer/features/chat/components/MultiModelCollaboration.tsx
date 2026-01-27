@@ -148,7 +148,7 @@ export function MultiModelCollaboration({
 
                 {/* Run Button */}
                 <Button
-                    onClick={handleRun}
+                    onClick={() => { void (async () => { await handleRun(); })(); }}
                     disabled={isRunning || selectedModels.length === 0}
                     className="w-full"
                 >

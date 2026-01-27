@@ -168,7 +168,7 @@ const QuotaErrorCard = memo(({ details, t }: { details: { message: string; reset
             </div>
         )}
         <div className="mt-3 flex gap-2">
-            <button className="px-3 py-1.5 text-xs rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors" onClick={() => { if (window.electron?.openExternal) { window.electron.openExternal('https://ai.google.dev/pricing'); } }}>
+            <button className="px-3 py-1.5 text-xs rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors" onClick={() => { window.electron.openExternal('https://ai.google.dev/pricing'); }}>
                 {t('messageBubble.checkQuotas')}
             </button>
         </div>
@@ -221,7 +221,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         const render = async () => {
             try {
                 const m = await import('mermaid');
-                const mermaid = m.default || m;
+                const mermaid = m.default;
                 mermaid.initialize({
                     startOnLoad: false,
                     theme: 'dark',
@@ -284,7 +284,7 @@ CodeBlock.displayName = 'CodeBlock';
 
 const MarkdownImage = memo(({ src, alt, onCodeConvert, t }: { src?: string; alt?: string; onCodeConvert?: (url: string) => void; t: (key: string) => string }) => (
     <span className="block my-2 relative group/image">
-        <img src={src} alt={alt ?? 'Image'} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src && window.electron?.openExternal) { window.electron.openExternal(src); } }} />
+        <img src={src} alt={alt ?? 'Image'} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
         {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
         {src && onCodeConvert && (
             <button
@@ -308,9 +308,9 @@ const MarkdownContent = memo(({ content, onSpeak, onStop, isSpeaking, onCodeConv
             components={{
                 code: (props) => <CodeBlock {...props} isSpeaking={isSpeaking} onStop={onStop} onSpeak={onSpeak} t={t} />,
                 img: (props) => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
-                a: ({ href, children }) => (<a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href && window.electron?.openExternal) { window.electron.openExternal(href); } }}>{children}</a>),
+                a: ({ href, children }) => (<a href={href} className="text-primary hover:underline underline-offset-4 font-medium" onClick={(e) => { e.preventDefault(); if (href) { window.electron.openExternal(href); } }}>{children}</a>),
                 li: ({ children }) => {
-                    const isCheckbox = Array.isArray(children) && children.some(c => isValidElement(c) && (c as React.ReactElement<{ type?: string }>).props?.type === 'checkbox');
+                    const isCheckbox = Array.isArray(children) && children.some(c => isValidElement(c) && (c as React.ReactElement<{ type?: string }>).props.type === 'checkbox');
                     return <li className={cn(isCheckbox ? "list-none -ms-4" : "list-disc", "my-1")}>{children}</li>;
                 },
                 input: ({ type, checked, ...props }) => {
@@ -426,7 +426,7 @@ const MessageImages = memo(({ images, t }: { images: string[]; t: (key: string) 
             {images.map((img, i) => (
                 img === '__LOADING_IMAGE__' ? <ImageSkeleton key={i} t={t} /> : (
                     <div key={i} className="relative group/img-container">
-                        <img src={img} alt={`Attached ${i + 1}`} className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl" onClick={() => { if (img && window.electron?.openExternal) { window.electron.openExternal(img); } }} />
+                        <img src={img} alt={`Attached ${i + 1}`} className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl" onClick={() => { window.electron.openExternal(img); }} />
                         <div className="absolute inset-0 bg-background/40 opacity-0 group-hover/img-container:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none"><Eye className="w-6 h-6 text-foreground" /></div>
                     </div>
                 )
@@ -535,11 +535,11 @@ const useMessageContent = (raw: Message['content'], reasoning: string | undefine
     let r = reasoning ?? null;
     if (!r) {
         const m = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content);
-        if (m) { r = m[1] ?? null; content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, ''); }
+        if (m) { r = m[1]; content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, ''); }
     }
     const pm = /<plan>([\s\S]*?)(?:<\/plan>|$)/.exec(content);
     let p = null;
-    if (pm) { p = pm[1] ?? null; content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, ''); }
+    if (pm) { p = pm[1]; content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, ''); }
     return { thought: streaming ?? r, plan: p, displayContent: content.trim() };
 }, [raw, reasoning, streaming]);
 
@@ -556,9 +556,8 @@ const useQuotaDetails = (is429: boolean, content: string, t: (key: string) => st
     return { message: t('messageBubble.quotaMessage'), resets_at: null, model: null };
 }, [is429, content, t]);
 
-const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: (key: string) => string; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean }) => {
-    const { thought, plan, displayContent } = useMessageContent(variant.content, undefined, undefined);
-    const [showRawMarkdown, setShowRawMarkdown] = useState(false);
+const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: (key: string) => string; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => {
+    const { thought, displayContent } = useMessageContent(variant.content, undefined, undefined);
     const [isContentExpanded, setIsContentExpanded] = useState(false);
     const lineCount = displayContent.split('\n').length;
     const visibleContent = (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded) ? displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...' : displayContent;
@@ -679,6 +678,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                             onSpeak={onSpeak}
                             onStop={onStop}
                             isSpeaking={isSpeaking}
+                            showRawMarkdown={showRawMarkdown}
                         />
                     ))}
                 </div>

@@ -68,53 +68,51 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
 
     return (
         <AnimatePresence>
-            {isVisible && (
-                <motion.div
-                    ref={barRef}
-                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                    style={{
-                        position: 'fixed',
-                        left: position.x,
-                        top: position.y,
-                        transform: 'translate(-50%, -100%)',
-                        zIndex: 1000
-                    }}
-                    className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
-                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+            <motion.div
+                ref={barRef}
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                style={{
+                    position: 'fixed',
+                    left: position.x,
+                    top: position.y,
+                    transform: 'translate(-50%, -100%)',
+                    zIndex: 1000
+                }}
+                className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
+                onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+            >
+                <button
+                    onClick={() => { onExplain(selectedText); setIsVisible(false); }}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
                 >
-                    <button
-                        onClick={() => { onExplain(selectedText); setIsVisible(false); }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        <span>{t('quickAction.explain')}</span>
-                    </button>
-                    <div className="w-px h-4 bg-border/50 mx-0.5" />
-                    <button
-                        onClick={() => { onTranslate(selectedText); setIsVisible(false); }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
-                    >
-                        <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{t('quickAction.translate')}</span>
-                    </button>
-                    <div className="w-px h-4 bg-border/50 mx-0.5" />
-                    <button
-                        onClick={handleCopy}
-                        className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-                        title={t('common.copy')}
-                    >
-                        <Copy className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        onClick={() => setIsVisible(false)}
-                        className="p-1.5 hover:bg-red-500/10 text-muted-foreground hover:text-red-400 rounded-lg transition-colors"
-                    >
-                        <X className="w-3.5 h-3.5" />
-                    </button>
-                </motion.div>
-            )}
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>{t('quickAction.explain')}</span>
+                </button>
+                <div className="w-px h-4 bg-border/50 mx-0.5" />
+                <button
+                    onClick={() => { onTranslate(selectedText); setIsVisible(false); }}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
+                >
+                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{t('quickAction.translate')}</span>
+                </button>
+                <div className="w-px h-4 bg-border/50 mx-0.5" />
+                <button
+                    onClick={handleCopy}
+                    className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                    title={t('common.copy')}
+                >
+                    <Copy className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    onClick={() => setIsVisible(false)}
+                    className="p-1.5 hover:bg-red-500/10 text-muted-foreground hover:text-red-400 rounded-lg transition-colors"
+                >
+                    <X className="w-3.5 h-3.5" />
+                </button>
+            </motion.div>
         </AnimatePresence>
     );
 }

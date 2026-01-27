@@ -159,9 +159,9 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                         connections={connections}
                         selectedId={selectedConnectionId}
                         onSelect={setSelectedConnectionId}
-                        onConnect={handleConnectProfile}
-                        onDisconnect={handleDisconnect}
-                        onDelete={handleDeleteProfile}
+                        onConnect={(conn) => { void handleConnectProfile(conn); }}
+                        onDisconnect={(id) => { void handleDisconnect(id); }}
+                        onDelete={(id, e) => { void handleDeleteProfile(id, e); }}
                         onAdd={() => setShowAddModal(true)}
                         t={t}
                     />
@@ -236,7 +236,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     shouldSaveProfile={shouldSaveProfile}
                     setShouldSaveProfile={setShouldSaveProfile}
                     isConnecting={isConnecting}
-                    onConnect={() => handleAddConnection().catch(console.error)}
+                    onConnect={() => { void handleAddConnection().catch(console.error); }}
                 />
             </div>
         </div>

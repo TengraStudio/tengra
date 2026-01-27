@@ -51,7 +51,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
             } else if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
                 const cmd = filteredCommands[selectedIndex];
-                if (cmd) { onSelect(cmd); }
+                onSelect(cmd);
             } else if (e.key === 'Escape') {
                 onClose();
             }

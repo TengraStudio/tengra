@@ -33,7 +33,7 @@ const levelBadgeColors = {
 
 export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ isOpen, onClose }) => {
     const { language } = useAuth();
-    const { t } = useTranslation(language || 'en');
+    const { t } = useTranslation(language);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [filter, setFilter] = useState<string>('');
     const [levelFilter, setLevelFilter] = useState<string>('all');

@@ -145,7 +145,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         term.open(terminalRef.current);
 
         try {
-            if (terminalRef.current && (terminalRef.current as HTMLElement).offsetParent) {
+            if ((terminalRef.current as HTMLElement).offsetParent) {
                 fitAddon.fit();
             }
         } catch {

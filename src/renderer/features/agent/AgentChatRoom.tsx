@@ -58,7 +58,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
         socket.onmessage = (event) => {
             try {
                 const msg = safeJsonParse<AgentMessage>(event.data, {} as AgentMessage);
-                if (!msg?.id) { return; }
+                if (!msg.id) { return; }
                 // Deduping based on ID in case of overlapping log polls/WS
                 setMessages(prev => {
                     if (prev.some(p => p.id === msg.id)) { return prev; }

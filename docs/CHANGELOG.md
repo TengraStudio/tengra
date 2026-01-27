@@ -4,7 +4,207 @@ Track the evolution of Orbit.
 
 ---
 
+## 2026-01-27: 🗄️ DATABASE SERVICE COMPATIBILITY & INTELLIGENCE REFACTORING (Batch 12)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Full verification and hardening of the `DatabaseClientService` integration with the Rust backend. Refactored the Code Intelligence and Context Retrieval systems to consistently use project paths, ensuring reliable RAG and search functionality across distinct workspaces.
+
+### Key Achievements
+
+1. **Service Compatibility & Bridging**:
+    - Tightened the contract between TypeScript `DatabaseService` and Rust `orbit-db-service`.
+    - Implemented path-resolution logic in `DatabaseService` to bridge UUID-based project references to path-indexed intelligence data.
+    - Verified all core database operations (Chat, Messages, Projects, Knowledge) against the Rust HTTP API.
+
+2. **Code Intelligence Refactoring**:
+    - **CodeIntelligenceService**: Refactored indexing, clearing, and querying logic to use `rootPath` (absolute directory path) as the primary identifier.
+    - **ContextRetrievalService**: Implemented project path resolution from UUIDs to ensure vector searches are filtered correctly by project, preventing cross-project context leakage.
+    - **IPC Layer**: Updated `ProjectIPC` and `CodeIntelligenceIPC` handlers to pass the necessary path arguments.
+
+3. **Data Integrity & Schema Consistency**:
+    - Hardened `TokenUsage` tracking and `FileDiff` storage to use absolute paths as unique project keys.
+    - Verified that vector search results for both symbols and semantic fragments are correctly scoped to the active project.
+    - Resolved a critical issue where background file indexing used incorrect project identifiers.
+
+4. **Build & Quality Assurance**:
+    - Achieved 100% build pass rate: Native Rust services, Vite frontend, and Electron main process.
+    - Clean `npm run type-check` and `npm run lint` results.
+    - Verified that long-running operations like project indexing are correctly scheduled and associated with the physical workspace.
+
+### Files Impacted
+- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/services/project/code-intelligence.service.ts`, `src/main/services/llm/context-retrieval.service.ts`
+- **Repositories**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/project.repository.ts`
+- **IPC Handlers**: `src/main/ipc/project.ts`, `src/main/ipc/code-intelligence.ts`
+- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
+
+---
+
+## 2026-01-27: 🏗️ PROJECT PATH MIGRATION & END-TO-END CONSISTENCY (Batch 11)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Finalized the migration from `project_id` to `project_path` across the entire ecosystem. This included updating the Rust database schema and migrations, refactoring TypeScript repositories and services, and stabilizing the build with targeted type fixes in the renderer.
+
+### Key Achievements
+
+1. **Database Schema Evolution**:
+    - Implemented Rust migrations to rename `project_id` to `project_path` in `file_diffs` and `token_usage` tables.
+    - Updated indices to align with the new path-based lookup strategy.
+
+2. **Backend Repository Refactoring**:
+    - Updated `KnowledgeRepository` and `SystemRepository` to use `project_path` consistently.
+    - Synchronized `SemanticFragment` storage and `TokenUsage` tracking with the new schema.
+
+3. **Build Stabilization & Type Safety**:
+    - Resolved 11+ critical TypeScript errors across `settings.service.ts`, `CommandPalette.tsx`, `ModelSelector.tsx`, and `ChatHistorySection.tsx`.
+    - Hardened optional property access and fixed null/undefined checks in the renderer's quota and chat management modules.
+    - Fixed an asynchronous mismatch in `ToolExecutor.ts` by correctly awaiting MCP tool definitions.
+
+4. **Code Quality & Maintenance**:
+    - Fixed a duplicate variable declaration in `ssh.service.ts` that blocked compilation.
+    - Addressed several lint warnings related to nullish coalescing operators (`??`) and complexity.
+    - Verified end-to-end consistency with a successful Rust backend build and clean TypeScript type-checks.
+
+### Files Impacted
+- **Rust Backend**: `src/services/db-service/src/database.rs`
+- **Main Process Services**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/services/system/settings.service.ts`, `src/main/services/project/ssh.service.ts`, `src/main/tools/tool-executor.ts`
+- **Renderer Components**: `src/renderer/components/layout/CommandPalette.tsx`, `src/renderer/components/layout/sidebar/ChatHistorySection.tsx`, `src/renderer/features/models/components/ModelSelector.tsx`
+- **Shared Types**: `src/shared/types/db-api.ts`
+- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
+
+---
+
+## 2026-01-27: 💾 DATABASE CLIENT REFACTORING & BUILD STABILIZATION (Batch 9)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Refactored the `DatabaseService` to act as a remote client for the new standalone Rust database service. This completes the transition to a separate process-managed database architecture. Also performed a sweeping build stabilization pass, resolving 19 TypeScript errors and several critical syntax bugs across core modules.
+
+### Key Achievements
+
+1.  **Remote Database Client**:
+    -   Refactored `DatabaseService` to delegate all operations to `DatabaseClientService`.
+    -   Removed all legacy `PGlite` dependencies and local file system paths from the main database service.
+    -   Implemented a remote `DatabaseAdapter` bridged via HTTP/JSON-RPC.
+    -   Maintained full backward compatibility with the existing Repository pattern.
+
+2.  **Service Lifecycle & Discovery**:
+    -   Integrated `DatabaseClientService` into the main application container.
+    -   Established dependency-based startup order: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
+    -   Automated service discovery using port files in `%APPDATA%`.
+
+3.  **Build Stabilization**:
+    -   Resolved all 19 TypeScript errors introduced by the architectural shift.
+    -   Fixed critical syntax errors in `PanelLayout.tsx` (movePanel) and `rate-limiter.util.ts` (getRateLimiter) caused by previous merge conflicts.
+    -   Hardened type safety in `message-normalizer.util.ts` with explicit role casting.
+    -   Fixed a long-standing type error in `ollama.ts` related to response status codes.
+
+4.  **Test Suite Alignment**:
+    -   Updated `DatabaseService` unit tests to use mocked remote client behavior.
+    -   Updated `repository-db.integration.test.ts` to support the new constructor signature and remote communication patterns.
+    -   Verified build with clean `npm run type-check` and `npm run lint` results.
+
+### Files Impacted
+- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/startup/services.ts`, `src/main/services/data/database-client.service.ts`
+- **Utilities**: `src/main/utils/rate-limiter.util.ts`, `src/main/utils/message-normalizer.util.ts`, `src/main/startup/ollama.ts`
+- **Renderer**: `src/renderer/components/layout/PanelLayout.tsx`
+- **Tests**: `src/tests/main/services/data/database.service.test.ts`, `src/tests/main/tests/integration/repository-db.integration.test.ts`
+- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
+
+---
+
+## 2026-01-27: 🗄️ DATABASE SERVICE REFACTORING (Architecture 4.3)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Refactored the embedded PGlite database into a standalone Windows Service with a Rust-based host, completing Architecture Roadmap task 4.3. The database now runs as an independent service, improving reliability and allowing the database to persist across app restarts.
+
+### Key Achievements
+
+1. **Rust Database Service (`orbit-db-service`)**:
+    - New Rust service in `src/services/db-service/`
+    - SQLite database with WAL mode for concurrency
+    - Vector search using bincode-serialized embeddings
+    - Cosine similarity search for code symbols and semantic fragments
+    - Full CRUD API for chats, messages, projects, folders, prompts
+
+2. **Windows Service Integration**:
+    - Native Windows Service support via `windows-service` crate
+    - Auto-start with Windows, auto-restart on failure
+    - Service discovery via port file (`%APPDATA%/Orbit/services/db-service.port`)
+    - Install/uninstall via `scripts/install-db-service.ps1`
+
+3. **HTTP API**:
+    - RESTful API on dynamic port
+    - Health check endpoint at `/health`
+    - CRUD endpoints under `/api/v1/*`
+    - Raw SQL query support for migration compatibility
+
+4. **TypeScript Client**:
+    - `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
+    - HTTP client using axios with automatic retry
+    - Service discovery and startup via `ProcessManagerService`
+    - Compatible interface for gradual migration
+
+5. **Shared Types**:
+    - New `src/shared/types/db-api.ts` defining API contract
+    - Request/response types for all endpoints
+    - `DbServiceClient` interface for type safety
+
+### Files Created
+- **Rust Service**: `src/services/db-service/` (Cargo.toml, main.rs, database.rs, server.rs, types.rs, handlers/*)
+- **TypeScript**: `src/shared/types/db-api.ts`, `src/main/services/data/database-client.service.ts`
+- **Scripts**: `scripts/install-db-service.ps1`
+
+### Files Modified
+- `src/services/Cargo.toml` - Added db-service to workspace
+- `src/shared/types/index.ts` - Export db-api types
+- `docs/TODO/architecture.md` - Updated task 4.3 status
+
+### Next Steps
+- Migration testing with existing data
+- Performance benchmarking vs embedded PGlite
+- Cloud sync integration (deferred)
+
+---
+
+## 2026-01-27: 🏗️ MCP SYSTEM MODULARIZATION & REFACTORING (Batch 8)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Successfully refactored the MCP (Model Context Protocol) system, extracting internal tools into a modular server architecture. This improves maintainability, reduces file size of the registry, and prepares the system for future plugin expansion.
+
+### Key Achievements
+
+1.  **Modular Server Architecture**:
+    -   Extracted 20+ internal tools from a monolithic `registry.ts` into specialized server modules:
+        -   `core.server.ts`: File system, command execution, and system info.
+        -   `network.server.ts`: Web search, SSH, and network utilities.
+        -   `utility.server.ts`: Screenshots, notifications, monitoring, and clipboard.
+        -   `project.server.ts`: Git, Docker, and project scanning.
+        -   `data.server.ts`: Database, embeddings, and Ollama utilities.
+        -   `security.server.ts`: Security helpers and network auditing.
+    -   Implemented `server-utils.ts` for shared types, result normalization, and security guardrails.
+
+2.  **Lint & Maintenance**:
+    -   Further reduced global warning count from **655** to **468**.
+    -   Resolved all import sorting issues in the new MCP modules.
+    -   Improved code readability by moving distinct domain logic into separate, focused files.
+
+3.  **Documentation & Roadmap Update**:
+    -   Completed task 3.2 in the Architecture Roadmap.
+    -   Updated the central TODO tracking to reflect the current state of the codebase and lint progress.
+
+### Files Impacted
+- **MCP**: `src/main/mcp/registry.ts`, `src/main/mcp/server-utils.ts`
+- **MCP Servers**: `src/main/mcp/servers/core.server.ts`, `src/main/mcp/servers/network.server.ts`, `src/main/mcp/servers/utility.server.ts`, `src/main/mcp/servers/project.server.ts`, `src/main/mcp/servers/data.server.ts`, `src/main/mcp/servers/security.server.ts`
+- **Docs**: `docs/TODO/architecture.md`, `docs/TODO.md`, `docs/CHANGELOG.md`
+
+---
+
 ## 2026-01-26: 🛠️ MAIN-PROCESS REFACTORING & COMPLEXITY REDUCTION (Batch 7)
+
 
 **Status**: ✅ COMPLETED
 
@@ -1522,7 +1722,14 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - `src/main/startup/services.ts`: Updated AuthService registration.
 - `src/tests/main/services/security/auth.migration.test.ts`: Updated mock for new constructor signature.
 
-### 2026-01-21: Phase 5 - Robust Bidirectional Token Sync & Build Stabilization
+### Batch 10: MCP Plugin Architecture (2026-01-27)
+- **Refactoring**: Implemented modular MCP Plugin Architecture.
+- **Service Layer**: Created `McpPluginService` to manage tool lifecycles.
+- **Plugin System**: Added `IMcpPlugin` interface with `InternalMcpPlugin` and `ExternalMcpPlugin` implementations.
+- **Core Improvements**: Isolated internal tools from the main dispatcher, allowing for future migration to standalone binaries.
+- **Stability**: Fixed missing tool initialization in `main.ts`.
+
+### Batch 9: Database & Build Stabilization (2026-01-27)
 
 **Status**: Completed (20:15:00)
 

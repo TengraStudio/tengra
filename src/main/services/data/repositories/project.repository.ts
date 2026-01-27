@@ -2,7 +2,7 @@ import * as fs from 'fs';
 
 import { appLogger } from '@main/logging/logger';
 import { JsonObject } from '@shared/types/common';
-import { DatabaseAdapter,SqlValue } from '@shared/types/database';
+import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { Project } from '@shared/types/project';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -23,8 +23,8 @@ export class ProjectRepository extends BaseRepository {
         return row ? this.mapRowToProject(row) : undefined;
     }
 
-    async hasIndexedSymbols(projectId: string): Promise<boolean> {
-        const row = await this.adapter.prepare('SELECT count(*) as count FROM code_symbols WHERE project_path = ?').get<{ count: number }>(projectId);
+    async hasIndexedSymbols(projectPath: string): Promise<boolean> {
+        const row = await this.adapter.prepare('SELECT count(*) as count FROM code_symbols WHERE project_path = ?').get<{ count: number }>(projectPath);
         return (row?.count ?? 0) > 0;
     }
 
@@ -100,13 +100,13 @@ export class ProjectRepository extends BaseRepository {
             path: String(row.path),
             mounts: (this.parseJsonField(row.mounts as string, []) as Array<{ id?: string; name: string; type: 'local' | 'ssh'; path?: string; rootPath?: string }>).map(m => ({
                 id: m.id ?? uuidv4(),
-                name: m.name ?? 'Untitled Mount',
-                type: (m.type as 'local' | 'ssh') ?? 'local',
+                name: m.name,
+                type: m.type as 'local' | 'ssh',
                 rootPath: m.rootPath ?? m.path ?? ''
             })),
             chatIds: this.parseJsonField(row.chat_ids as string, []),
             councilConfig: this.parseJsonField(row.council_config as string, { enabled: false, members: [], consensusThreshold: 0.7 }),
-            status: (String(row.status) as 'active' | 'archived' | 'draft') || 'active',
+            status: row.status as 'active' | 'archived' | 'draft',
             logo: row.logo as string | undefined,
             metadata: this.parseJsonField(row.metadata as string, {}),
             createdAt: Number(row.created_at ?? row.createdAt ?? Date.now()),

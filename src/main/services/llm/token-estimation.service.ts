@@ -179,9 +179,6 @@ export class TokenEstimationService {
             // Add messages from the end until we hit the limit
             for (let i = nonSystemMessages.length - 1; i >= 0; i--) {
                 const message = nonSystemMessages[i];
-                if (message === undefined) {
-                    continue;
-                }
                 const messageTokens = this.estimateMessageTokens(message);
 
                 if (currentTokens + messageTokens <= maxTokens) {
@@ -202,9 +199,6 @@ export class TokenEstimationService {
 
         for (let i = messages.length - 1; i >= 0; i--) {
             const message = messages[i];
-            if (message === undefined) {
-                continue;
-            }
             const messageTokens = this.estimateMessageTokens(message);
 
             if (currentTokens + messageTokens <= maxTokens) {

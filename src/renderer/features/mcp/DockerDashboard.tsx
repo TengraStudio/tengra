@@ -44,7 +44,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                 return;
             }
 
-            const lines = (result.stdout ?? '').trim().split('\n').filter(Boolean);
+            const lines = result.stdout.trim().split('\n').filter(Boolean);
             const parsed = lines.map((line: string) => {
                 try {
                     const data = safeJsonParse<Record<string, unknown> | null>(line, null);
@@ -131,7 +131,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                     </div>
                 </div>
                 <button
-                    onClick={loadContainers}
+                    onClick={() => void loadContainers()}
                     disabled={isLoading}
                     className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 >

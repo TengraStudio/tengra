@@ -192,7 +192,6 @@ export class SSHService extends EventEmitter {
         try {
             await this.ensureInitialization();
             const profiles = await this.getSavedProfiles();
-            const index = profiles.findIndex(p => p.id === profile.id);
 
             // Encrypt sensitive credentials
             const safeProfile = { ...profile };
@@ -203,11 +202,9 @@ export class SSHService extends EventEmitter {
                 safeProfile.passphrase = this.encryptCredential(safeProfile.passphrase);
             }
 
-            if (index >= 0) {
-                const existingProfile = profiles[index];
-                if (existingProfile !== undefined) {
-                    profiles[index] = safeProfile;
-                }
+            const profileIndex = profiles.findIndex(p => p.id === safeProfile.id);
+            if (profileIndex >= 0) {
+                profiles[profileIndex] = safeProfile;
             } else {
                 profiles.push(safeProfile);
             }
@@ -247,10 +244,7 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id);
         if (index === -1) { return false; }
 
-        const p = profiles[index];
-        if (p) {
-            p.isFavorite = !p.isFavorite;
-        }
+        profiles[index].isFavorite = !profiles[index].isFavorite;
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
         return true;
     }
@@ -282,10 +276,7 @@ export class SSHService extends EventEmitter {
         const index = profiles.findIndex(p => p.id === id);
         if (index === -1) { return false; }
 
-        const p = profiles[index];
-        if (p) {
-            p.tags = tags;
-        }
+        profiles[index].tags = tags;
         await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
         return true;
     }
@@ -359,13 +350,10 @@ export class SSHService extends EventEmitter {
                     try {
                         const profiles = await this.getSavedProfiles();
                         const profileIndex = profiles.findIndex(p => p.id === config.id);
-                        if (profileIndex >= 0) {
-                            const profile = profiles[profileIndex];
-                            if (profile) {
-                                profile.lastConnected = Date.now();
-                                profile.connectionCount = (profile.connectionCount ?? 0) + 1;
-                                await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-                            }
+                        if (profileIndex !== -1) {
+                            profiles[profileIndex].lastConnected = Date.now();
+                            profiles[profileIndex].connectionCount = (profiles[profileIndex].connectionCount ?? 0) + 1;
+                            await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
                         }
                     } catch {
                         // Ignore error updating history

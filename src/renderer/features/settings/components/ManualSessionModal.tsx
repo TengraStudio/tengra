@@ -1,5 +1,5 @@
 import { useTranslation } from '@renderer/i18n';
-import { AlertCircle, Check, ExternalLink, Key, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Check, Key, Loader2, ShieldCheck } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
@@ -65,11 +65,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         } finally {
             setIsSaving(false);
         }
-    }, [sessionKey, onSave, onClose, accountId]);
-
-    const handleOpenClaude = useCallback(() => {
-        window.electron.openExternal('https://claude.ai');
-    }, []);
+    }, [sessionKey, onSave, onClose, accountId, t]);
 
     return (
         <Modal

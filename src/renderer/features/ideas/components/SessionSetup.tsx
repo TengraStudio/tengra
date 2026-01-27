@@ -82,7 +82,7 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
     const isValid = selectedModel && categories.length > 0;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 text-left">
+        <form onSubmit={(e) => { void (async () => { await handleSubmit(e); })(); }} className="space-y-6 text-left">
             {/* Model selection */}
             <div className="bg-muted/20 backdrop-blur-sm rounded-xl border border-border p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-3">

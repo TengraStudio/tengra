@@ -78,7 +78,7 @@ export function useWorkspaceManager({
 
     const ensureMountReady = useCallback(async (mount: WorkspaceMount) => {
         if (mount.type === 'local') { return true; }
-        if (!mount.ssh || !mount.ssh.host || !mount.ssh.username) {
+        if (!mount.ssh?.host || !mount.ssh?.username) {
             notify('error', 'SSH config is missing.');
             return false;
         }

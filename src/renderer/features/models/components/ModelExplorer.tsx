@@ -195,7 +195,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 const bVal = b.provider === 'huggingface' ? (b as HFModel).downloads : parsePulls((b as OllamaLibraryModel).pulls);
                 return bVal - aVal;
             }
-            if (sortBy === 'updated' && a.provider === 'huggingface' && b.provider === 'huggingface') {
+            if (a.provider === 'huggingface' && b.provider === 'huggingface') {
                 return new Date((b as HFModel).lastModified).getTime() - new Date((a as HFModel).lastModified).getTime();
             }
             return 0;
@@ -380,7 +380,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                             return (
                                 <motion.div
                                     key={key}
-                                    onClick={() => handleModelSelect(m)}
+                                    onClick={() => void handleModelSelect(m)}
                                     className={cn(
                                         "group relative flex flex-col bg-card border rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer",
                                         isSelected ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]" : "border-border/40 hover:border-primary/30 hover:bg-accent/5"
@@ -582,7 +582,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                                 </div>
                                                             ) : (
                                                                 <button
-                                                                    onClick={() => handleDownloadHF(f)}
+                                                                    onClick={() => void handleDownloadHF(f)}
                                                                     className="w-full py-3 bg-foreground text-background text-[11px] font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg group-hover:shadow-primary/20"
                                                                 >
                                                                     <Download className="w-4 h-4" /> {t('modelExplorer.downloadPackage')}
@@ -612,7 +612,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                         </div>
 
                                                         <button
-                                                            onClick={() => handlePullOllama((selectedModel as OllamaLibraryModel).name, tag)}
+                                                            onClick={() => void handlePullOllama((selectedModel as OllamaLibraryModel).name, tag)}
                                                             disabled={!!pullingOllama}
                                                             className={cn(
                                                                 "w-full py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50",

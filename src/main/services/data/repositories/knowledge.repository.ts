@@ -1,6 +1,5 @@
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
-import { v4 as uuidv4 } from 'uuid';
 
 import { CodeSymbolRecord, CodeSymbolSearchResult, EntityKnowledge, EpisodicMemory, SemanticFragment } from '../database.service';
 
@@ -12,8 +11,8 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     // --- Code Symbols ---
-    async findCodeSymbolsByName(projectId: string, name: string): Promise<CodeSymbolSearchResult[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name ILIKE ? LIMIT 50").all<JsonObject>(projectId, `%${name}%`);
+    async findCodeSymbolsByName(projectPath: string, name: string): Promise<CodeSymbolSearchResult[]> {
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name LIKE ? COLLATE NOCASE LIMIT 50").all<JsonObject>(projectPath, `%${name}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -56,16 +55,16 @@ export class KnowledgeRepository extends BaseRepository {
         `).run(symbol.id, symbol.name, symbol.project_path, symbol.file_path, symbol.line, symbol.kind, symbol.signature, symbol.docstring, vec);
     }
 
-    async clearCodeSymbols(projectId: string) {
-        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ?').run(projectId);
+    async clearCodeSymbols(projectPath: string) {
+        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ?').run(projectPath);
     }
 
-    async deleteCodeSymbolsForFile(projectId: string, filePath: string) {
-        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ? AND file_path = ?').run(projectId, filePath);
+    async deleteCodeSymbolsForFile(projectPath: string, filePath: string) {
+        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ? AND file_path = ?').run(projectPath, filePath);
     }
 
-    async searchCodeContentByText(projectId: string, query: string): Promise<CodeSymbolSearchResult[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND (docstring ILIKE ? OR name ILIKE ?) LIMIT 100").all<JsonObject>(projectId, `%${query}%`, `%${query}%`);
+    async searchCodeContentByText(projectPath: string, query: string): Promise<CodeSymbolSearchResult[]> {
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND (docstring LIKE ? COLLATE NOCASE OR name LIKE ? COLLATE NOCASE) LIMIT 100").all<JsonObject>(projectPath, `%${query}%`, `%${query}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -80,11 +79,11 @@ export class KnowledgeRepository extends BaseRepository {
 
     // --- Semantic Fragments ---
     async storeSemanticFragment(fragment: SemanticFragment) {
-        const vec = fragment.embedding && fragment.embedding.length > 0 ? `[${fragment.embedding.join(',')}]` : null;
+        const vec = fragment.embedding.length > 0 ? `[${fragment.embedding.join(',')}]` : null;
         await this.adapter.prepare(`
-            INSERT INTO semantic_fragments(id, content, embedding, source, source_id, tags, importance, project_id, created_at, updated_at)
+            INSERT INTO semantic_fragments(id, content, embedding, source, source_id, tags, importance, project_path, created_at, updated_at)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(fragment.id, fragment.content, vec, fragment.source, fragment.sourceId, JSON.stringify(fragment.tags), fragment.importance, fragment.projectId, fragment.createdAt, fragment.updatedAt);
+        `).run(fragment.id, fragment.content, vec, fragment.source, fragment.sourceId, JSON.stringify(fragment.tags), fragment.importance, fragment.projectPath, fragment.createdAt, fragment.updatedAt);
     }
 
     async searchSemanticFragments(vector: number[], limit: number): Promise<SemanticFragment[]> {
@@ -99,8 +98,8 @@ export class KnowledgeRepository extends BaseRepository {
         return rows.map(r => this.mapRowToFragment(r, 1 - (r.distance ?? 0)));
     }
 
-    async searchSemanticFragmentsByText(projectId: string, query: string): Promise<SemanticFragment[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE project_id = ? AND content ILIKE ? LIMIT 100").all<JsonObject>(projectId, `%${query}%`);
+    async searchSemanticFragmentsByText(projectPath: string, query: string): Promise<SemanticFragment[]> {
+        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE project_path = ? AND content LIKE ? COLLATE NOCASE LIMIT 100").all<JsonObject>(projectPath, `%${query}%`);
         return rows.map(r => this.mapRowToFragment(r));
     }
 
@@ -116,12 +115,12 @@ export class KnowledgeRepository extends BaseRepository {
         return rows.map(r => this.mapRowToFragment(r));
     }
 
-    async clearSemanticFragments(projectId: string) {
-        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_id = ?').run(projectId);
+    async clearSemanticFragments(projectPath: string) {
+        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_path = ?').run(projectPath);
     }
 
-    async deleteSemanticFragmentsForFile(projectId: string, filePath: string) {
-        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_id = ? AND source = ?').run(projectId, filePath);
+    async deleteSemanticFragmentsForFile(projectPath: string, filePath: string) {
+        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_path = ? AND source = ?').run(projectPath, filePath);
     }
 
     async deleteSemanticFragment(id: string) {
@@ -137,7 +136,7 @@ export class KnowledgeRepository extends BaseRepository {
             sourceId: String(r.source_id),
             tags: this.parseJsonField(r.tags as string | null, []),
             importance: Number(r.importance ?? 0),
-            projectId: r.project_id as string | undefined,
+            projectPath: r.project_path as string | undefined,
             createdAt: Number(r.created_at ?? r.createdAt),
             updatedAt: Number(r.updated_at ?? r.updatedAt),
             ...(score !== undefined ? { score } : {})
@@ -146,7 +145,7 @@ export class KnowledgeRepository extends BaseRepository {
 
     // --- Episodic Memory ---
     async storeEpisodicMemory(memory: EpisodicMemory) {
-        const vec = memory.embedding && memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+        const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
         await this.adapter.prepare(`
             INSERT INTO episodic_memories(id, title, summary, embedding, start_date, end_date, chat_id, participants, created_at, metadata)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -170,7 +169,7 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async searchEpisodicMemoriesByText(query: string): Promise<EpisodicMemory[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM episodic_memories WHERE title ILIKE ? OR summary ILIKE ? LIMIT 100").all<JsonObject>(`%${query}%`, `%${query}%`);
+        const rows = await this.adapter.prepare("SELECT * FROM episodic_memories WHERE title LIKE ? COLLATE NOCASE OR summary LIKE ? COLLATE NOCASE LIMIT 100").all<JsonObject>(`%${query}%`, `%${query}%`);
         return rows.map(r => this.mapRowToMemory(r));
     }
 
@@ -246,7 +245,7 @@ export class KnowledgeRepository extends BaseRepository {
 
     async storeFileDiff(diff: { id: string; projectId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }) {
         await this.adapter.prepare(`
-            INSERT INTO file_diffs(id, project_id, file_path, diff, created_at)
+            INSERT INTO file_diffs(id, project_path, file_path, diff, created_at)
             VALUES(?, ?, ?, ?, ?)
         `).run(diff.id, diff.projectId, diff.filePath, JSON.stringify(diff), Date.now());
     }
@@ -275,7 +274,7 @@ export class KnowledgeRepository extends BaseRepository {
         await this.adapter.exec(`
             CREATE TABLE IF NOT EXISTS file_diffs (
                 id TEXT PRIMARY KEY,
-                project_id TEXT,
+                project_path TEXT,
                 file_path TEXT NOT NULL,
                 diff TEXT NOT NULL,
                 created_at BIGINT NOT NULL,

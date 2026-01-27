@@ -24,19 +24,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
     const { chats, currentChatId, clearMessages } = useChat();
     const { language } = useAuth();
-    const { t } = useTranslation(language || 'en');
+    const { t } = useTranslation(language);
 
     const currentChat = chats.find(c => c.id === currentChatId);
 
-    const viewIcons = {
+    const viewIcons: Record<string, React.ElementType> = {
         chat: MessageSquare,
         projects: LayoutGrid,
         settings: SettingsIcon,
         council: Users,
         mcp: Container
-    } as Record<string, React.ElementType>;
+    };
 
-    const Icon = viewIcons[currentView] || MessageSquare;
+    const Icon = viewIcons[currentView] ?? MessageSquare;
 
     const handleMinimize = () => { void window.electron.minimize(); };
     const handleMaximize = () => { void window.electron.maximize(); };
@@ -58,7 +58,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <div className="flex items-center gap-2 no-drag">
                 {currentView === 'chat' && currentChatId && (
                     <button
-                        onClick={clearMessages}
+                        onClick={() => void clearMessages()}
                         className="p-2 hover:bg-accent/50 rounded-xl transition-all text-muted-foreground hover:text-foreground group"
                         title={t('chat.clear')}
                     >

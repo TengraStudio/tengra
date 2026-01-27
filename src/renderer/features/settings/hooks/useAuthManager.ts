@@ -9,7 +9,7 @@ export function useAuthManager() {
 
     return useMemo(() => ({
         ...logic,
-        language: logic.settings?.general?.language ?? 'en',
+        language: logic.settings?.general.language ?? 'en',
         settingsCategory,
         setSettingsCategory,
         isAuthModalOpen,

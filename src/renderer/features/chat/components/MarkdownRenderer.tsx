@@ -139,7 +139,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                         const isCheckbox = Array.isArray(children) && children.some(c => {
                             if (!isValidElement(c)) { return false; }
                             const element = c as React.ReactElement<{ type?: string }>;
-                            return element.props?.type === 'checkbox';
+                            return element.props.type === 'checkbox';
                         });
                         return <li className={cn(isCheckbox ? "list-none -ml-4" : "")}>{children}</li>;
                     },

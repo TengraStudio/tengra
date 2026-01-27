@@ -73,11 +73,14 @@ class EventBus {
         event: K,
         handler: EventHandler<AppEvents[K]>
     ): EventSubscription {
-        this.emitter.on(event as string, handler);
+        const wrappedHandler = (data: AppEvents[K]) => {
+            void Promise.resolve(handler(data));
+        };
+        this.emitter.on(event as string, wrappedHandler);
 
         return {
             unsubscribe: () => {
-                this.emitter.off(event as string, handler);
+                this.emitter.off(event as string, wrappedHandler);
             }
         };
     }
@@ -89,11 +92,14 @@ class EventBus {
         event: K,
         handler: EventHandler<AppEvents[K]>
     ): EventSubscription {
-        this.emitter.once(event as string, handler);
+        const wrappedHandler = (data: AppEvents[K]) => {
+            void Promise.resolve(handler(data));
+        };
+        this.emitter.once(event as string, wrappedHandler);
 
         return {
             unsubscribe: () => {
-                this.emitter.off(event as string, handler);
+                this.emitter.off(event as string, wrappedHandler);
             }
         };
     }

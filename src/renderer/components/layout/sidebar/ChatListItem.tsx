@@ -65,3 +65,5 @@ export const ChatListItem = memo<ChatListItemProps>(({
         </div>
     );
 });
+
+ChatListItem.displayName = 'ChatListItem';

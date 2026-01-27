@@ -131,13 +131,13 @@ const groupChatsByDate = (chatsToGroup: Chat[], t: (key: string) => string) => {
     chatsToGroup.forEach(chat => {
         const date = new Date(chat.createdAt).getTime();
         if (date >= today) {
-            groups[t('dateGroups.today')]?.push(chat);
+            groups[t('dateGroups.today')].push(chat);
         } else if (date >= yesterday) {
-            groups[t('dateGroups.yesterday')]?.push(chat);
+            groups[t('dateGroups.yesterday')].push(chat);
         } else if (date >= today - 7 * 86400000) {
-            groups[t('dateGroups.lastWeek')]?.push(chat);
+            groups[t('dateGroups.lastWeek')].push(chat);
         } else {
-            groups[t('dateGroups.older')]?.push(chat);
+            groups[t('dateGroups.older')].push(chat);
         }
     });
 
@@ -157,7 +157,7 @@ const ChatListContent: React.FC<{
     updateFolder, deleteFolder, moveChatToFolder, onChangeView, setCurrentChatId,
     deleteChat, togglePin, localGeneratingMap, t
 }) => {
-        const isChatGenerating = (chat: Chat) => localGeneratingMap[chat.id] ?? chat.isGenerating ?? false;
+        const isChatGenerating = (chat: Chat) => !!(localGeneratingMap[chat.id] || chat.isGenerating);
         const pinnedChats = chats.filter(c => c.isPinned);
         const unfolderedChats = chats.filter(c => !c.folderId && !c.isPinned);
         const dateGroups = groupChatsByDate(unfolderedChats, t);
@@ -183,7 +183,7 @@ const ChatListContent: React.FC<{
                                         key={chat.id}
                                         chat={chat}
                                         currentChatId={currentChatId}
-                                        isGenerating={isChatGenerating(chat)}
+                                        isGenerating={!!isChatGenerating(chat)}
                                         onSelect={(id) => { onChangeView('chat'); setCurrentChatId(id); }}
                                         onDelete={deleteChat}
                                         onTogglePin={togglePin}
@@ -225,7 +225,7 @@ const ChatListContent: React.FC<{
                                             key={chat.id}
                                             chat={chat}
                                             currentChatId={currentChatId}
-                                            isGenerating={isChatGenerating(chat)}
+                                            isGenerating={!!isChatGenerating(chat)}
                                             onSelect={(id) => { onChangeView('chat'); setCurrentChatId(id); }}
                                             onDelete={deleteChat}
                                             onTogglePin={togglePin}

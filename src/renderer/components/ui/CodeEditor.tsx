@@ -109,7 +109,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         decorationRef.current = editor.deltaDecorations(decorationRef.current, newDecorations);
     };
 
-    const handleEditorDidMount: OnMount = async (editor, monaco) => {
+    const handleEditorDidMount = async (editor: Parameters<OnMount>[0], monaco: Parameters<OnMount>[1]) => {
         editorRef.current = editor;
         monacoRef.current = monaco;
 
@@ -231,7 +231,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 value={value ?? ''}
                 onChange={onChange}
                 theme={monacoTheme}
-                onMount={handleEditorDidMount}
+                onMount={(editor, monaco) => { void (async () => { await handleEditorDidMount(editor, monaco); })(); }}
                 loading={
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="w-5 h-5 animate-spin mr-2" />

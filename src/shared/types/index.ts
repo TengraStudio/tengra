@@ -16,6 +16,8 @@ export * from '@/types/terminal';
 export * from '@/types/workspace';
 // Export common types
 export * from '@/types/common';
+// Export database API types
+export * from '@/types/db-api';
 
 
 

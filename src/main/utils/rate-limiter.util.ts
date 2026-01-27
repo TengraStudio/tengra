@@ -101,7 +101,7 @@ export class RateLimiter {
      * Calculates the time in milliseconds until the next token refill.
      */
     getTimeUntilNextToken(): number {
-        if (this.tokens >= 1) {return 0;}
+        if (this.tokens >= 1) { return 0; }
         const elapsed = Date.now() - this.lastRefill;
         return Math.max(0, this.refillIntervalMs - elapsed);
     }
@@ -132,15 +132,13 @@ const DEFAULT_LIMITS: Record<string, RateLimiterOptions> = {
 export function getRateLimiter(provider: string): RateLimiter {
     const key = provider.toLowerCase();
 
-    if (!limiters.has(key)) {
+    let limiter = limiters.get(key);
+    if (!limiter) {
         const options = DEFAULT_LIMITS[key] || DEFAULT_LIMITS.default;
-        limiters.set(key, new RateLimiter(options));
+        limiter = new RateLimiter(options);
+        limiters.set(key, limiter);
     }
 
-    const limiter = limiters.get(key);
-    if (!limiter) {
-        throw new Error(`Failed to get rate limiter for provider: ${key}`);
-    }
     return limiter;
 }
 

@@ -25,12 +25,8 @@ export class MessageNormalizer {
         const openAIMessages: OpenAIMessage[] = [];
 
         for (const message of messages) {
-            if (!message || typeof message !== 'object') {
-                openAIMessages.push({ role: 'user', content: '' });
-                continue;
-            }
-
-            if (Array.isArray(message.content)) {
+            const isArrayContent = Array.isArray(message.content);
+            if (isArrayContent) {
                 openAIMessages.push(this.normalizeArrayContent(message, shouldStripImages));
             } else {
                 openAIMessages.push(this.normalizeSimpleContent(message, shouldStripImages));
@@ -64,7 +60,7 @@ export class MessageNormalizer {
                     return { type: 'image_url' as const, image_url: { url: part.image_url.url } };
                 }
                 if (part.type === 'image' && part.source?.data) {
-                    const mediaType = part.source.media_type ?? 'image/png';
+                    const mediaType = part.source.media_type || 'image/png';
                     return { type: 'image_url' as const, image_url: { url: `data:${mediaType};base64,${part.source.data}` } };
                 }
                 return null;
@@ -72,7 +68,7 @@ export class MessageNormalizer {
             .filter((part): part is OpenAIContentPart => part !== null);
 
         if (shouldStripImages) {
-            const text = contentParts.filter((p) => p.type === 'text').map((p) => p.type === 'text' ? p.text : '').join('');
+            const text = contentParts.filter((p) => p.type === 'text').map((p) => (p as { text: string }).text).join('');
             return {
                 role: message.role as OpenAIMessage['role'],
                 content: text
@@ -99,9 +95,10 @@ export class MessageNormalizer {
         }
 
         const parts: OpenAIContentPart[] = [];
-        const text = typeof message.content === 'string' ? message.content : (message.content == null ? '' : String(message.content));
+        const text = typeof message.content === 'string' ? message.content : String(message.content);
+        const trimmedText = text.trim();
 
-        if (text.trim()) {
+        if (trimmedText) {
             parts.push({ type: 'text' as const, text });
         }
 
@@ -123,8 +120,7 @@ export class MessageNormalizer {
     }
 
     private static isValidOpenAIMessage(m: OpenAIMessage): boolean {
-        if (!m) { return false; }
-        if (m.role === 'tool' && m.tool_call_id) { return true; }
+        if (m.role === 'tool') { return true; }
         if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) { return true; }
         if (typeof m.content === 'string' && m.content.trim() !== '') { return true; }
         if (Array.isArray(m.content) && m.content.length > 0) { return true; }
@@ -137,13 +133,13 @@ export class MessageNormalizer {
     static normalizeAnthropicMessages(messages: Array<Message | ChatMessage>): AnthropicMessage[] {
         if (!Array.isArray(messages)) { return []; }
         return messages.filter(m => m.role !== 'system').map((message) => {
-            if (!message || typeof message !== 'object') { return { role: 'user', content: '' }; }
             return this.normalizeAnthropicMessage(message);
         }) as AnthropicMessage[];
     }
 
     private static normalizeAnthropicMessage(message: Message | ChatMessage): AnthropicMessage {
-        const images = Array.isArray(message.images) ? message.images.filter((img): img is string => !!img) : [];
+        const imageArray = Array.isArray(message.images) ? message.images : [];
+        const images = imageArray.filter((img): img is string => !!img);
         if (images.length === 0) {
             const textContent = typeof message.content === 'string' ? message.content : '';
             return { role: message.role as 'user' | 'assistant', content: textContent };
@@ -182,10 +178,10 @@ export class MessageNormalizer {
             this.addContentToOpenCodeParts(contentParts, msg.content);
 
             return {
-                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
                 content: contentParts
             };
-        });
+        }).filter(m => m.content.length > 0);
     }
 
     private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content']): void {

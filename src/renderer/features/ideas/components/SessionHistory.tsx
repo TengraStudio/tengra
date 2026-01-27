@@ -348,17 +348,6 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
         });
     }, []);
 
-    const selectAllInSession = useCallback((sessionId: string) => {
-        const session = sessionsWithIdeas.get(sessionId);
-        if (!session?.ideas.length) { return; }
-        
-        setSelectedIdeaIds(prev => {
-            const newSet = new Set(prev);
-            session.ideas.forEach(idea => newSet.add(idea.id));
-            return newSet;
-        });
-    }, [sessionsWithIdeas]);
-
     const clearSelection = useCallback(() => {
         setSelectedIdeaIds(new Set());
     }, []);

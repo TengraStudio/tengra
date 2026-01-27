@@ -103,8 +103,8 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                 <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9em' }}>
                     {currentPath}
                 </div>
-                <button onClick={handleMkdir} style={{ padding: '4px 8px' }}>+ {t('ssh.newFolder')}</button>
-                <button onClick={() => loadFiles(currentPath)} style={{ padding: '4px 8px' }}>↻ {t('ssh.refresh')}</button>
+                <button onClick={() => void handleMkdir()} style={{ padding: '4px 8px' }}>+ {t('ssh.newFolder')}</button>
+                <button onClick={() => void loadFiles(currentPath)} style={{ padding: '4px 8px' }}>↻ {t('ssh.refresh')}</button>
             </div>
 
             {loading ? (
@@ -134,9 +134,9 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                                     <td style={{ padding: '8px' }}>{!file.isDirectory && file.size ? (file.size / 1024).toFixed(1) + ' KB' : '-'}</td>
                                     <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{file.mtime ? new Date(file.mtime).toLocaleDateString() : '-'}</td>
                                     <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
-                                        <button onClick={() => handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
-                                        <button onClick={() => handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-red-500 hover:text-red-400">🗑</button>
-                                        {!file.isDirectory && <button onClick={() => handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
+                                        <button onClick={() => void handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
+                                        <button onClick={() => void handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-red-500 hover:text-red-400">🗑</button>
+                                        {!file.isDirectory && <button onClick={() => void handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
                                     </td>
                                 </tr>
                             ))}

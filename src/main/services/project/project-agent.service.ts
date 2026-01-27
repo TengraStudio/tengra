@@ -85,12 +85,9 @@ export class ProjectAgentService extends BaseService {
 
         while (!this.shouldStop) {
             try {
-                if (this.shouldStop) { break; }
-
                 if (!this.toolExecutor) {
                     throw new Error('ToolExecutor not initialized');
                 }
-
                 const toolDefs = await this.toolExecutor.getToolDefinitions();
 
                 // 2. LLM Call

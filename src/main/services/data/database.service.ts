@@ -1,42 +1,29 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
-import { PGlite } from '@electric-sql/pglite';
-import { vector } from '@electric-sql/pglite/vector';
 import { appLogger } from '@main/logging/logger';
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
 import { BaseService } from '@main/services/base.service';
-import { DataService } from '@main/services/data/data.service';
-import { MigrationManager } from '@main/services/data/db-migration.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { CouncilSessionStatus } from '@shared/types/agent';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { v4 as uuidv4 } from 'uuid';
-
-export type { AuditLogEntry, JobState, PromptTemplate };
 import { FileDiff } from '@shared/types/file-diff';
+import { Project } from '@shared/types/project';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 import { ChatRepository } from './repositories/chat.repository';
+import { DatabaseClientService } from './database-client.service';
+import { DataService } from './data.service';
 import { KnowledgeRepository } from './repositories/knowledge.repository';
 import { ProjectRepository } from './repositories/project.repository';
 import { SystemRepository } from './repositories/system.repository';
-import { getMigrationDefinitions } from './migrations';
 
-interface TransactionLike {
-    query: (sql: string, params?: SqlValue[], options?: Record<string, SqlValue>) => Promise<{ rows: JsonObject[]; fields: { name: string; dataTypeID: number }[]; affectedRows?: number }>;
-    exec: (sql: string) => Promise<void>;
-}
-
-
-
+export type { AuditLogEntry, CouncilSessionStatus, FileDiff, JobState, PromptTemplate };
 
 /**
  * LinkedAccount represents a single authenticated account for a provider.
- * This is the new simplified schema that replaces the auth_accounts + auth_tokens dual-table structure.
  */
 export interface LinkedAccount {
     id: string
@@ -67,11 +54,10 @@ export interface TokenUsageRecord {
     timestamp?: number;
 }
 
-// Re-export interfaces from previous implementation (copy-pasted for clarity/continuity)
 export interface Folder { id: string; name: string; color?: string | undefined; createdAt: number; updatedAt: number; }
 export interface Prompt { id: string; title: string; content: string; tags: string[]; createdAt: number; updatedAt: number; }
 export interface ChatMessage { role: string; content: string; timestamp?: number; vector?: number[];[key: string]: JsonValue | undefined }
-export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectId?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
+export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectPath?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
 export interface EpisodicMemory {
     id: string;
     title: string;
@@ -90,16 +76,11 @@ export interface EntityKnowledge { id: string; entityType: string; entityName: s
 export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' | 'thought' | 'result' }
 export interface AgentProfile { id: string; name: string; role: string; bio?: string; avatar?: string; description?: string }
 export interface CouncilSession { id: string; goal: string; status: CouncilSessionStatus; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string | undefined; solution?: string | undefined; createdAt: number; updatedAt: number; model?: string; provider?: string; }
-import { Project } from '@shared/types/project';
 
 export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
-// Need to import WorkspaceMount properly or redefine it matching shared/types/workspace
-// Assuming local redefinition or import if accessible. Importing 'WorkspaceMount' was in original.
 
 export interface CodeSymbolSearchResult { id: string; name: string; path: string; line: number; kind: string; signature: string; docstring: string; score?: number; }
 export interface CodeSymbolRecord { id: string; project_path?: string; projectId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
-
-
 
 export interface SearchChatsOptions {
     query?: string;
@@ -113,17 +94,8 @@ export interface SearchChatsOptions {
 }
 
 export class DatabaseService extends BaseService {
-    private db: PGlite | null = null;
-    private dbPath: string;
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
-    private isTest: boolean = false;
-    private foldersPath: string;
-    private promptsPath: string;
-    private councilPath: string;
-    private projectsPath: string;
-    private chatsPath: string;
-    private messagesPath: string;
 
     private _chats!: ChatRepository;
     private _projects!: ProjectRepository;
@@ -137,20 +109,10 @@ export class DatabaseService extends BaseService {
 
     constructor(
         private dataService: DataService,
-        private eventBus: EventBusService
+        private eventBus: EventBusService,
+        private dbClient: DatabaseClientService
     ) {
         super('DatabaseService');
-        this.isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-        // Use a subdirectory 'pg_data' to keep Postgres files separate
-        this.dbPath = path.join(this.dataService.getPath('db'), 'pg_data');
-
-        // Legacy paths for migration
-        this.foldersPath = path.join(this.dataService.getPath('db'), 'folders.json');
-        this.promptsPath = path.join(this.dataService.getPath('db'), 'prompts.json');
-        this.councilPath = path.join(this.dataService.getPath('db'), 'council.json');
-        this.projectsPath = path.join(this.dataService.getPath('db'), 'projects.json');
-        this.chatsPath = path.join(this.dataService.getPath('db'), 'chats.json');
-        this.messagesPath = path.join(this.dataService.getPath('db'), 'messages.json');
     }
 
     override async initialize(): Promise<void> {
@@ -163,23 +125,10 @@ export class DatabaseService extends BaseService {
 
     private async initDatabase() {
         try {
-            const effectivePath = this.isTest ? undefined : this.dbPath;
+            appLogger.info('DatabaseService', 'Initializing remote database client...');
 
-            appLogger.info('DatabaseService', `Initializing at ${effectivePath ?? 'memory'}`);
-
-            // Ensure directory exists only if not in-memory
-            if (effectivePath) {
-                try {
-                    await fs.promises.access(effectivePath);
-                } catch {
-                    await fs.promises.mkdir(effectivePath, { recursive: true });
-                }
-            }
-
-            this.db = new PGlite(effectivePath, {
-                ...(this.isTest ? {} : { extensions: { vector } })
-            });
-            await this.db.waitReady;
+            // Initialize the database client
+            await this.dbClient.initialize();
 
             const adapter = this.createAdapter();
             this._chats = new ChatRepository(adapter);
@@ -187,23 +136,12 @@ export class DatabaseService extends BaseService {
             this._knowledge = new KnowledgeRepository(adapter);
             this._system = new SystemRepository(adapter);
 
-            // Enable vector extension if not in test
-            if (!this.isTest) {
-                await this.db.query('CREATE EXTENSION IF NOT EXISTS vector');
-            }
-
-            await this.runMigrations();
-
-            // Migrate legacy JSON data to Postgres tables
-            await this.migrateLegacyJsonData();
-
-            appLogger.info('DatabaseService', 'Initialization complete!');
+            appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
         } catch (error) {
-            appLogger.error('DatabaseService', 'Failed to initialize PGlite:', error as Error);
+            appLogger.error('DatabaseService', 'Failed to initialize database client:', error as Error);
             this.initError = error instanceof Error ? error : new Error(String(error));
             this.eventBus.emit('db:error', { error: this.initError.message });
-            this.db = null;
             throw this.initError;
         }
     }
@@ -212,9 +150,8 @@ export class DatabaseService extends BaseService {
         if (this.initPromise) {
             await this.initPromise;
         }
-        if (!this.db) {
-            appLogger.error('DatabaseService', `Database not initialized. Reason: ${this.initError?.message ?? 'unknown'}`);
-            throw new Error(`Database not initialized. Reason: ${this.initError?.message ?? 'unknown'}`);
+        if (!this.dbClient.isConnected()) {
+            throw new Error(`Database client not connected. Reason: ${this.initError?.message ?? 'unknown'}`);
         }
         return this.createAdapter();
     }
@@ -234,315 +171,41 @@ export class DatabaseService extends BaseService {
         return adapter.prepare(sql);
     }
 
-    // Create a compatible adapter for MigrationManager and internal usage
-    private createAdapter(): DatabaseAdapter {
-        if (!this.db) { throw new Error('DB not ready'); }
-        const db = this.db;
-
-        return {
-            query: async <T = JsonObject>(sql: string, params?: SqlParams) => {
-                const safeParams = params?.map(p => p === undefined ? null : p);
-                const res = await db.query<T>(sql, safeParams);
-                return { rows: res.rows as unknown as T[], fields: res.fields };
-            },
-            exec: async (sql) => { await db.exec(sql); },
-            transaction: <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
-                return db.transaction(async (tx) => {
-                    const txAdapter = this.createAdapterFromTx(tx as unknown as TransactionLike);
-                    return await fn(txAdapter);
-                });
-            },
-            prepare: (sql: string) => {
-                const normalized = this.normalizeSql(sql);
-                return {
-                    run: async (...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await db.query(normalized, safeParams);
-                        return { rowsAffected: res.affectedRows, insertId: undefined };
-                    },
-                    all: async <T = unknown>(...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await db.query<T>(normalized, safeParams);
-                        return res.rows;
-                    },
-                    get: async <T = unknown>(...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await db.query<T>(normalized, safeParams);
-                        return res.rows[0];
-                    }
-                };
-            }
-        };
-    }
-
-    private createAdapterFromTx(tx: TransactionLike): DatabaseAdapter {
-        // Reuse the tx object directly as it matches the shape we need mostly,
-        // but we need to wrap it to match DatabaseAdapter exactly.
-        const txObj = tx;
-        return {
-            query: async <T = unknown>(sql: string, params?: SqlParams) => {
-                const safeParams = params?.map(p => p === undefined ? null : p);
-                const res = await txObj.query(sql, safeParams) as unknown as { rows: T[]; fields: { name: string; dataTypeID: number }[]; affectedRows?: number };
-                return { rows: res.rows, fields: res.fields };
-            },
-            exec: async (sql) => { await txObj.exec(sql); },
-            transaction: <T>(fn: (nestedTx: DatabaseAdapter) => Promise<T>) => {
-                return fn(this.createAdapterFromTx(tx));
-            },
-            prepare: (sql: string) => {
-                const normalized = this.normalizeSql(sql);
-                return {
-                    run: async (...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await txObj.query(normalized, safeParams) as { affectedRows: number };
-                        return { rowsAffected: res.affectedRows, insertId: undefined };
-                    },
-                    all: async <T = unknown>(...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await txObj.query(normalized, safeParams) as unknown as { rows: T[] };
-                        return res.rows;
-                    },
-                    get: async <T = unknown>(...params: SqlValue[]) => {
-                        const safeParams = params.map(p => p === undefined ? null : p);
-                        const res = await txObj.query(normalized, safeParams) as unknown as { rows: T[] };
-                        return res.rows[0];
-                    }
-                };
-            }
-        };
-    }
-
-    private normalizeSql(sql: string): string {
-        // If it looks like it has $1, $2, return as is
-        if (/\$\d+/.test(sql)) { return sql; }
-        let i = 1;
-        return sql.replace(/\?/g, () => `$${i++}`);
-    }
-
-    getDatabase(): DatabaseAdapter {
-        // Return the adapter, not raw PGlite, to maintain API compatibility
-        if (!this.db) { throw new Error('DB not initialized'); }
+    public getDatabase(): DatabaseAdapter {
         return this.createAdapter();
     }
 
-    private async runMigrations() {
-        // IMPORTANT: Don't use ensureDb here - it waits for initPromise which would deadlock
-        // since we're called FROM initDatabase which IS initPromise
-        if (!this.db) {
-            throw new Error('Cannot run migrations: db not ready');
-        }
-        const adapter = this.createAdapter();
-        const manager = new MigrationManager(adapter);
-
-        manager.registerAll(getMigrationDefinitions(this.isTest));
-
-        await manager.migrate();
-    }
-
-
-
-    private async migrateLegacyJsonData() {
-        if (!this.db) {
-            appLogger.warn('DatabaseService', 'Cannot migrate legacy data: db not ready');
-            return;
-        }
-        const db = this.createAdapter();
-
-        await this.handleFolderMigration(db);
-        await this.handlePromptMigration(db);
-        await this.handleCouncilMigration(db);
-        await this.handleProjectMigration(db);
-        await this.handleChatMigration(db);
-        await this.handleMessageMigration(db);
-    }
-
-    private async handleFolderMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.foldersPath)) { return; }
-        try {
-            const content = await fs.promises.readFile(this.foldersPath, 'utf-8');
-            const folders = safeJsonParse<Folder[]>(content, []);
-            if (!Array.isArray(folders) || folders.length === 0) { return; }
-
-            const count = await db.prepare('SELECT COUNT(*) as c FROM folders').get() as { c: number };
-            if (Number(count.c) !== 0) { return; }
-
-            for (const f of folders) {
-                await db.prepare('INSERT INTO folders (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)').run(
-                    f.id, f.name, f.color ?? null, f.createdAt, f.updatedAt
-                );
+    private createAdapter(): DatabaseAdapter {
+        return {
+            query: async <T = JsonObject>(sql: string, params?: SqlParams) => {
+                const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                return { rows: res.rows as unknown as T[], fields: [] };
+            },
+            exec: async (sql) => {
+                await this.dbClient.executeQuery({ sql });
+            },
+            transaction: async <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
+                // Remote transactions are not supported yet, fallback to individual queries
+                return await fn(this.createAdapter());
+            },
+            prepare: (sql: string) => {
+                return {
+                    run: async (...params: SqlValue[]) => {
+                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                        return { rowsAffected: res.affected_rows, insertId: undefined };
+                    },
+                    all: async <T = unknown>(...params: SqlValue[]) => {
+                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                        return res.rows as unknown as T[];
+                    },
+                    get: async <T = unknown>(...params: SqlValue[]) => {
+                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                        return res.rows[0] as unknown as T;
+                    }
+                };
             }
-            await fs.promises.rename(this.foldersPath, `${this.foldersPath}.migrated`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration folders', error as Error);
-        }
+        };
     }
-
-    private async handlePromptMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.promptsPath)) { return; }
-        try {
-            const content = await fs.promises.readFile(this.promptsPath, 'utf-8');
-            const prompts = safeJsonParse<Prompt[]>(content, []);
-            if (!Array.isArray(prompts) || prompts.length === 0) { return; }
-
-            const count = await db.prepare('SELECT COUNT(*) as c FROM prompts').get() as { c: number };
-            if (Number(count.c) !== 0) { return; }
-
-            for (const p of prompts) {
-                await db.prepare('INSERT INTO prompts (id, title, content, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-                    p.id, p.title, p.content, JSON.stringify(p.tags), p.createdAt, p.updatedAt
-                );
-            }
-            await fs.promises.rename(this.promptsPath, `${this.promptsPath}.migrated`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration prompts', error as Error);
-        }
-    }
-
-    private async handleCouncilMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.councilPath)) { return; }
-        try {
-            const content = await fs.promises.readFile(this.councilPath, 'utf-8');
-            const sessions = safeJsonParse<CouncilSession[]>(content, []);
-            if (!Array.isArray(sessions) || sessions.length === 0) { return; }
-
-            const count = await db.prepare('SELECT COUNT(*) as c FROM council_sessions').get() as { c: number };
-            if (Number(count.c) !== 0) { return; }
-
-            for (const s of sessions) {
-                await db.prepare('INSERT INTO council_sessions (id, goal, status, logs, agents, plan, solution, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-                    s.id, s.goal, s.status, JSON.stringify(s.logs), JSON.stringify(s.agents), s.plan ?? null, s.solution ?? null, s.createdAt, s.updatedAt
-                );
-            }
-            await fs.promises.rename(this.councilPath, `${this.councilPath}.migrated`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration council', error as Error);
-        }
-    }
-
-    private async handleProjectMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.projectsPath)) { return; }
-        try {
-            const countP = await db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number };
-            if (Number(countP.c) !== 0) { return; }
-
-            const content = await fs.promises.readFile(this.projectsPath, 'utf-8');
-            const projects = safeJsonParse<Project[]>(content, []);
-            if (!Array.isArray(projects) || projects.length === 0) { return; }
-
-            for (const p of projects) {
-                await db.prepare(`
-                    INSERT INTO projects(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).run(
-                    p.id, p.title, p.description, p.path,
-                    JSON.stringify(p.mounts), JSON.stringify(p.chatIds), JSON.stringify(p.councilConfig),
-                    p.status, JSON.stringify(p.metadata), p.createdAt, p.updatedAt
-                );
-            }
-            await fs.promises.rename(this.projectsPath, `${this.projectsPath}.migrated`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration projects', error as Error);
-        }
-    }
-
-    private async handleChatMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.chatsPath)) { return; }
-        try {
-            const count = await db.prepare('SELECT COUNT(*) as c FROM chats').get() as { c: number };
-            if (Number(count.c) !== 0) { return; }
-
-            appLogger.info('DatabaseService', 'Migrating legacy chats...');
-            const content = await fs.promises.readFile(this.chatsPath, 'utf-8');
-            const chats = safeJsonParse<JsonObject[]>(content, []);
-            if (!Array.isArray(chats) || chats.length === 0) { return; }
-
-            for (const c of chats) {
-                await this.migrateSingleChat(db, c);
-            }
-            await fs.promises.rename(this.chatsPath, `${this.chatsPath}.migrated`);
-            appLogger.info('DatabaseService', `Migrated ${chats.length} chats.`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration chats', error as Error);
-        }
-    }
-
-    private async migrateSingleChat(db: DatabaseAdapter, c: JsonObject) {
-        const id = String(c.id ?? '');
-        if (!id) { return; }
-        const values = this.getChatMigrationValues(c, id);
-        await db.prepare(`
-            INSERT INTO chats (id, title, model, backend, folder_id, project_id, is_pinned, is_favorite, is_archived, metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(...values);
-    }
-
-    // eslint-disable-next-line complexity
-    private getChatMigrationValues(c: JsonObject, id: string): SqlValue[] {
-        return [
-            id,
-            String(c.title ?? 'Imported Chat'),
-            String(c.model ?? ''),
-            String(c.backend ?? 'unknown'),
-            (c.folderId as string | null) ?? null,
-            (c.projectId as string | null) ?? null,
-            Number(c.isPinned ?? c.is_pinned ?? 0),
-            Number(c.isFavorite ?? c.is_favorite ?? 0),
-            Number(c.isArchived ?? c.is_archived ?? 0),
-            JSON.stringify(c.metadata ?? {}),
-            Number(c.createdAt ?? c.created_at ?? Date.now()),
-            Number(c.updatedAt ?? c.updated_at ?? Date.now())
-        ];
-    }
-
-    private async handleMessageMigration(db: DatabaseAdapter) {
-        if (!fs.existsSync(this.messagesPath)) { return; }
-        try {
-            const count = await db.prepare('SELECT COUNT(*) as c FROM messages').get() as { c: number };
-            if (Number(count.c) !== 0) { return; }
-
-            appLogger.info('DatabaseService', 'Migrating legacy messages...');
-            const content = await fs.promises.readFile(this.messagesPath, 'utf-8');
-            const messages = safeJsonParse<JsonObject[]>(content, []);
-            if (!Array.isArray(messages) || messages.length === 0) { return; }
-
-            for (const m of messages) {
-                await this.migrateSingleMessage(db, m);
-            }
-            await fs.promises.rename(this.messagesPath, `${this.messagesPath}.migrated`);
-            appLogger.info('DatabaseService', `Migrated ${messages.length} messages.`);
-        } catch (error) {
-            appLogger.error('DatabaseService', 'Failed migration messages', error as Error);
-        }
-    }
-
-    private async migrateSingleMessage(db: DatabaseAdapter, m: JsonObject) {
-        const id = String(m.id ?? '');
-        const chatId = String(m.chatId ?? m.chat_id ?? '');
-        if (!id || !chatId) { return; }
-        const values = this.getMessageMigrationValues(m, id, chatId);
-        await db.prepare(`
-            INSERT INTO messages (id, chat_id, role, content, timestamp, provider, model, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(...values);
-    }
-
-    private getMessageMigrationValues(m: JsonObject, id: string, chatId: string): SqlValue[] {
-        return [
-            id,
-            chatId,
-            String(m.role ?? 'user'),
-            String(m.content ?? ''),
-            Number(m.timestamp ?? Date.now()),
-            (m.provider as string | null) ?? null,
-            (m.model as string | null) ?? null,
-            JSON.stringify(m.metadata ?? {})
-        ];
-    }
-
-    // --- CRUD Implementations ---
-    // (Examples showing how they adapt)
-
-    // --- CRUD Delegations ---
 
     async hasData(): Promise<boolean> { return true; }
 
@@ -563,7 +226,7 @@ export class DatabaseService extends BaseService {
     // Projects
     async getProjects() { return this._projects.getProjects(); }
     async getProject(id: string) { return this._projects.getProject(id); }
-    async hasIndexedSymbols(projectId: string) { return this._projects.hasIndexedSymbols(projectId); }
+    async hasIndexedSymbols(projectPath: string) { return this._projects.hasIndexedSymbols(projectPath); }
     async createProject(title: string, path: string, desc: string = '', m?: string, c?: string) { return this._projects.createProject(title, path, desc, m, c); }
     async updateProject(id: string, updates: Partial<Project>) { return this._projects.updateProject(id, updates); }
     async deleteProject(id: string, deleteFiles: boolean = false) { return this._projects.deleteProject(id, deleteFiles); }
@@ -585,19 +248,79 @@ export class DatabaseService extends BaseService {
     async deleteChatsByTitle(title: string) { return this._chats.deleteChatsByTitle(title); }
 
     // Knowledge & Memories
-    async findCodeSymbolsByName(projectId: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectId, name); }
-    async searchCodeSymbols(vec: number[]) { return this._knowledge.searchCodeSymbols(vec); }
-    async storeCodeSymbol(symbol: CodeSymbolRecord) { return this._knowledge.storeCodeSymbol(symbol); }
-    async clearCodeSymbols(projectId: string) { return this._knowledge.clearCodeSymbols(projectId); }
-    async deleteCodeSymbolsForFile(projectId: string, filePath: string) { return this._knowledge.deleteCodeSymbolsForFile(projectId, filePath); }
-    async searchCodeContentByText(projectId: string, query: string) { return this._knowledge.searchCodeContentByText(projectId, query); }
-    async storeSemanticFragment(f: SemanticFragment) { return this._knowledge.storeSemanticFragment(f); }
-    async searchSemanticFragments(v: number[], l: number) { return this._knowledge.searchSemanticFragments(v, l); }
+    async findCodeSymbolsByName(projectPath: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectPath, name); }
+    async searchCodeSymbols(vec: number[], projectPath?: string): Promise<CodeSymbolSearchResult[]> {
+        // Use HTTP API for vector search (handled by Rust service with cosine similarity)
+        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: 10, project_path: projectPath });
+        return results.map(r => ({
+            id: r.id,
+            name: r.name,
+            path: r.file_path,
+            line: r.line,
+            kind: r.kind,
+            signature: r.signature ?? '',
+            docstring: r.docstring ?? '',
+            score: 0.9
+        }));
+    }
+    async storeCodeSymbol(symbol: CodeSymbolRecord) {
+        // Use HTTP API for storing code symbols with embeddings
+        await this.dbClient.storeCodeSymbol({
+            id: symbol.id,
+            project_path: symbol.project_path ?? symbol.projectId ?? '',
+            file_path: symbol.file_path ?? symbol.path ?? '',
+            name: symbol.name,
+            line: symbol.line,
+            kind: symbol.kind,
+            signature: symbol.signature,
+            docstring: symbol.docstring,
+            embedding: symbol.embedding ?? symbol.vector
+        });
+    }
+    async clearCodeSymbols(projectPath: string) { return this._knowledge.clearCodeSymbols(projectPath); }
+    async deleteCodeSymbolsForFile(projectPath: string, filePath: string) { return this._knowledge.deleteCodeSymbolsForFile(projectPath, filePath); }
+    async searchCodeContentByText(projectPath: string, query: string) { return this._knowledge.searchCodeContentByText(projectPath, query); }
+    async storeSemanticFragment(f: SemanticFragment) {
+        // Use HTTP API for storing semantic fragments with embeddings
+        await this.dbClient.storeSemanticFragment({
+            id: f.id,
+            content: f.content,
+            embedding: f.embedding,
+            source: f.source,
+            source_id: f.sourceId,
+            tags: f.tags,
+            importance: f.importance,
+            project_path: f.projectPath
+        });
+    }
+    async searchSemanticFragments(v: number[], l: number, projectPath?: string): Promise<SemanticFragment[]> {
+        // Use HTTP API for vector search (handled by Rust service with cosine similarity)
+        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: l, project_path: projectPath });
+        return results.map(r => ({
+            id: r.id,
+            content: r.content,
+            embedding: r.embedding,
+            source: r.source,
+            sourceId: r.source_id,
+            tags: r.tags,
+            importance: r.importance,
+            projectPath: r.project_path,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at
+        }));
+    }
     async getAllSemanticFragments() { return this._knowledge.getAllSemanticFragments(); }
-    async clearSemanticFragments(projectId: string) { return this._knowledge.clearSemanticFragments(projectId); }
-    async deleteSemanticFragmentsForFile(projectId: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(projectId, filePath); }
+    async clearSemanticFragments(projectPath: string) { return this._knowledge.clearSemanticFragments(projectPath); }
+    async deleteSemanticFragmentsForFile(projectPath: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(projectPath, filePath); }
     async storeEpisodicMemory(m: EpisodicMemory) { return this._knowledge.storeEpisodicMemory(m); }
-    async searchEpisodicMemories(e: number[], l: number = 10) { return this._knowledge.searchEpisodicMemories(e, l); }
+    async searchEpisodicMemories(e: number[], l: number = 10) {
+        // For episodic memories, use text search when no embedding, otherwise fallback to knowledge repo
+        if (e.length === 0) {
+            return this._knowledge.searchEpisodicMemories(e, l);
+        }
+        // TODO: Add dedicated episodic memory vector search endpoint to Rust service
+        return this._knowledge.searchEpisodicMemories(e, l);
+    }
     async storeEntityKnowledge(k: EntityKnowledge) { return this._knowledge.storeEntityKnowledge(k); }
     async getEntityKnowledge(name: string) { return this._knowledge.getEntityKnowledge(name); }
     async getAllEntityKnowledge() { return this._knowledge.getAllEntityKnowledge(); }
@@ -614,7 +337,16 @@ export class DatabaseService extends BaseService {
     async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') { return this._system.getDetailedStats(period); }
     async getTimeStats() { return this._system.getTimeStats(); }
     async getMigrationStatus() { return this._system.getMigrationStatus(); }
-    async addTokenUsage(record: TokenUsageRecord) { return this._system.addTokenUsage(record); }
+    async addTokenUsage(record: TokenUsageRecord) {
+        let projectPath = record.projectId;
+        if (projectPath && !projectPath.includes('/') && !projectPath.includes('\\')) {
+            // It looks like a UUID, try to resolve to path
+            const projects = await this.getProjects();
+            const project = projects.find(p => p.id === projectPath);
+            if (project) { projectPath = project.path; }
+        }
+        return this._system.addTokenUsage({ ...record, projectId: projectPath });
+    }
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly') { return this._system.getTokenUsageStats(period); }
     async duplicateChat(id: string) {
         const chat = await this.getChat(id);
@@ -684,9 +416,15 @@ export class DatabaseService extends BaseService {
     // File Diffs
     async getFileDiff(id: string) { return this._knowledge.getFileDiff(id); }
     async storeFileDiff(diff: FileDiff) {
+        // Resolve project by path to get its root path for the project_path column
+        const projects = await this.getProjects();
+        // Sort projects by path length descending to find the closest match (most specific root)
+        const sortedProjects = [...projects].sort((a, b) => b.path.length - a.path.length);
+        const project = sortedProjects.find(p => diff.filePath.startsWith(p.path));
+
         return this._knowledge.storeFileDiff({
             id: diff.id,
-            projectId: '', // projectId not available in FileDiff
+            projectId: project?.path ?? '', // Use path for project_path column
             filePath: diff.filePath,
             diffContent: diff.diffContent,
             createdAt: diff.timestamp,
@@ -722,7 +460,7 @@ export class DatabaseService extends BaseService {
         return memories.find(m => m.metadata?.key === key);
     }
     async deleteEntityKnowledge(name: string) { return this._knowledge.deleteEntityKnowledge(name); }
-    async searchSemanticFragmentsByText(projectId: string, query: string) { return this._knowledge.searchSemanticFragmentsByText(projectId, query); }
+    async searchSemanticFragmentsByText(projectPath: string, query: string) { return this._knowledge.searchSemanticFragmentsByText(projectPath, query); }
     async getSemanticFragmentsByIds(ids: string[]) { return this._knowledge.getSemanticFragmentsByIds(ids); }
     async searchEpisodicMemoriesByText(query: string) { return this._knowledge.searchEpisodicMemoriesByText(query); }
     async getEpisodicMemoriesByIds(ids: string[]) { return this._knowledge.getEpisodicMemoriesByIds(ids); }

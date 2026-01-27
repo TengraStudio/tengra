@@ -44,7 +44,6 @@ const CompetitionBadge: React.FC<{ level: string }> = ({ level }) => {
 };
 
 export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
-    categories,
     onClose,
     onContinue,
     isLoading,
@@ -79,7 +78,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                         </div>
                     ) : preview ? (
                         <div className="space-y-6">
-                            {preview.map((item, idx) => (
+                            {preview.map((item, _idx) => (
                                 <div
                                     key={item.category}
                                     className="bg-muted/20 rounded-xl p-5 border border-border/30 space-y-4"

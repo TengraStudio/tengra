@@ -108,16 +108,7 @@ export class DeepResearchService extends BaseService {
             allSources.push(...sources);
 
             // Fetch full content for top sources
-            const topSources = sources.slice(0, 3);
-            for (const source of topSources) {
-                if (!source.fullContent) {
-                    const fullContent = await this.fetchFullContent(source.url);
-                    if (fullContent) {
-                        source.fullContent = fullContent;
-                    }
-                }
-            }
-
+            await this.enrichTopSources(sources.slice(0, 3));
             await this.delay(1000); // Rate limiting
         }
 
@@ -446,23 +437,85 @@ Respond in JSON:
                 marketSizeEstimate: 'Unable to estimate market size'
             });
 
-            const findings: ResearchFinding[] = (data.findings ?? []).map((f: { insight?: string; confidence?: string; category?: string; sourceRefs?: unknown[] }) => ({
+            const findings: ResearchFinding[] = data.findings.map((f: { insight?: string; confidence?: string; category?: string; sourceRefs?: number[] }) => ({
                 insight: f.insight ?? 'Unknown insight',
                 confidence: (f.confidence ?? 'medium') as 'low' | 'medium' | 'high',
                 category: (f.category ?? 'opportunity') as ResearchFinding['category'],
                 sources: (f.sourceRefs ?? [])
-                    .filter((ref: unknown): ref is number => typeof ref === 'number' && ref > 0 && ref <= sources.length)
+                    .filter((ref: number): ref is number => typeof ref === 'number' && ref > 0 && ref <= sources.length)
                     .map((ref) => sources[ref - 1])
             }));
 
             return {
                 findings,
-                marketSizeEstimate: data.marketSizeEstimate ?? undefined
+                marketSizeEstimate: data.marketSizeEstimate
             };
         } catch (error) {
             this.logWarn(`Failed to parse synthesis response: ${getErrorMessage(error as Error)}`);
             return { findings: [] };
         }
+    }
+
+    /**
+     * Helper to fetch full content for sources
+     */
+    private async enrichTopSources(sources: ResearchSource[]): Promise<void> {
+        for (const source of sources) {
+            if (!source.fullContent) {
+                const fullContent: string | null = await this.fetchFullContent(source.url);
+                if (fullContent) {
+                    source.fullContent = fullContent;
+                }
+            }
+        }
+    }
+
+    /**
+     * Determine trend momentum from findings
+     */
+    private determineTrendMomentum(findings: ResearchFinding[]): 'rising' | 'stable' | 'declining' {
+        const trendFindings: ResearchFinding[] = findings.filter(f => f.category === 'trend');
+        const positiveKeywords: string[] = ['growing', 'rising', 'increasing', 'booming', 'surge', 'expanding'];
+        const negativeKeywords: string[] = ['declining', 'falling', 'decreasing', 'shrinking', 'slowing'];
+
+        let positiveCount: number = 0;
+        let negativeCount: number = 0;
+        for (const finding of trendFindings) {
+            const text: string = finding.insight.toLowerCase();
+            if (positiveKeywords.some((k: string) => text.includes(k))) { positiveCount++; }
+            if (negativeKeywords.some((k: string) => text.includes(k))) { negativeCount++; }
+        }
+
+        if (positiveCount > negativeCount + 1) { return 'rising'; }
+        if (negativeCount > positiveCount + 1) { return 'declining'; }
+        return 'stable';
+    }
+
+    /**
+     * Determine competitor density from findings
+     */
+    private determineCompetitorDensity(findings: ResearchFinding[]): 'low' | 'medium' | 'high' {
+        const competitorFindings: ResearchFinding[] = findings.filter(f => f.category === 'competitor');
+        if (competitorFindings.length >= 5) { return 'high'; }
+        if (competitorFindings.length <= 2) { return 'low'; }
+        return 'medium';
+    }
+
+    /**
+     * Calculate opportunity score based on research signals
+     */
+    private calculateOpportunityScore(findings: ResearchFinding[], trendMomentum: 'rising' | 'stable' | 'declining', competitorDensity: 'low' | 'medium' | 'high'): number {
+        const opportunityFindings: ResearchFinding[] = findings.filter(f => f.category === 'opportunity');
+        const riskFindings: ResearchFinding[] = findings.filter(f => f.category === 'risk');
+        const highConfidenceOps: number = opportunityFindings.filter(f => f.confidence === 'high').length;
+
+        return Math.min(100, Math.round(
+            (opportunityFindings.length * 15) +
+            (highConfidenceOps * 20) +
+            (trendMomentum === 'rising' ? 20 : 0) +
+            (competitorDensity === 'low' ? 15 : 0) -
+            (riskFindings.length * 5)
+        ));
     }
 
     /**
@@ -475,48 +528,15 @@ Respond in JSON:
         opportunityScore: number
         riskFactors: string[]
     } {
-        // Count findings by category
-        const trendFindings = findings.filter(f => f.category === 'trend');
-        const competitorFindings = findings.filter(f => f.category === 'competitor');
-        const opportunityFindings = findings.filter(f => f.category === 'opportunity');
-        const riskFindings = findings.filter(f => f.category === 'risk');
-        const marketFindings = findings.filter(f => f.category === 'market-size');
-
-        // Determine trend momentum
-        let trendMomentum: 'rising' | 'stable' | 'declining' = 'stable';
-        const positiveKeywords = ['growing', 'rising', 'increasing', 'booming', 'surge', 'expanding'];
-        const negativeKeywords = ['declining', 'falling', 'decreasing', 'shrinking', 'slowing'];
-
-        let positiveCount = 0;
-        let negativeCount = 0;
-        for (const finding of trendFindings) {
-            const text = finding.insight.toLowerCase();
-            if (positiveKeywords.some(k => text.includes(k))) {positiveCount++;}
-            if (negativeKeywords.some(k => text.includes(k))) {negativeCount++;}
-        }
-
-        if (positiveCount > negativeCount + 1) {trendMomentum = 'rising';}
-        else if (negativeCount > positiveCount + 1) {trendMomentum = 'declining';}
-
-        // Determine competitor density
-        let competitorDensity: 'low' | 'medium' | 'high' = 'medium';
-        if (competitorFindings.length >= 5) {competitorDensity = 'high';}
-        else if (competitorFindings.length <= 2) {competitorDensity = 'low';}
-
-        // Calculate opportunity score
-        const highConfidenceOpportunities = opportunityFindings.filter(f => f.confidence === 'high').length;
-        const opportunityScore = Math.min(100, Math.round(
-            (opportunityFindings.length * 15) +
-            (highConfidenceOpportunities * 20) +
-            (trendMomentum === 'rising' ? 20 : 0) +
-            (competitorDensity === 'low' ? 15 : 0) -
-            (riskFindings.length * 5)
-        ));
+        const trendMomentum: 'rising' | 'stable' | 'declining' = this.determineTrendMomentum(findings);
+        const competitorDensity: 'low' | 'medium' | 'high' = this.determineCompetitorDensity(findings);
+        const opportunityScore: number = this.calculateOpportunityScore(findings, trendMomentum, competitorDensity);
 
         // Extract market size estimate
         let marketSizeEstimate: string | undefined;
+        const marketFindings: ResearchFinding[] = findings.filter(f => f.category === 'market-size');
         for (const finding of marketFindings) {
-            const match = finding.insight.match(/\$[\d.]+\s*(billion|million|trillion)/i);
+            const match: RegExpMatchArray | null = finding.insight.match(/\$[\d.]+\s*(billion|million|trillion)/i);
             if (match) {
                 marketSizeEstimate = match[0];
                 break;
@@ -524,8 +544,8 @@ Respond in JSON:
         }
 
         // Extract risk factors
-        const riskFactors = riskFindings
-            .filter(f => f.confidence !== 'low')
+        const riskFactors: string[] = findings
+            .filter(f => f.category === 'risk' && f.confidence !== 'low')
             .map(f => f.insight)
             .slice(0, 5);
 
@@ -661,7 +681,7 @@ Respond in JSON:
     } {
         try {
             const jsonMatch = content.match(/\{[\s\S]*\}/)?.[0];
-            if (!jsonMatch) {throw new Error('No JSON found');}
+            if (!jsonMatch) { throw new Error('No JSON found'); }
 
             const data = safeJsonParse(jsonMatch, {
                 feasibilityScore: 50,
@@ -672,11 +692,11 @@ Respond in JSON:
             });
 
             return {
-                feasibilityScore: Math.max(0, Math.min(100, data.feasibilityScore ?? 50)),
-                marketFitScore: Math.max(0, Math.min(100, data.marketFitScore ?? 50)),
-                competitionLevel: data.competitionLevel ?? 'medium',
-                recommendations: data.recommendations ?? [],
-                concerns: data.concerns ?? []
+                feasibilityScore: Math.max(0, Math.min(100, data.feasibilityScore)),
+                marketFitScore: Math.max(0, Math.min(100, data.marketFitScore)),
+                competitionLevel: data.competitionLevel,
+                recommendations: data.recommendations,
+                concerns: data.concerns
             };
         } catch {
             return {

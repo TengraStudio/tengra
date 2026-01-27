@@ -28,7 +28,7 @@ type Validator<T = JsonValue | undefined> = (value: T, path: string) => Validati
 // Built-in validators
 export const validators = {
     required: <T extends JsonValue | undefined>(value: T, path: string): ValidationError[] => {
-        if (value === undefined || value === null || value === '') {
+        if (value === undefined) {
             return [{ path, message: 'Value is required' }];
         }
         return [];
@@ -133,7 +133,7 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
 
     for (const [key, field] of Object.entries(schema)) {
         const path = basePath ? `${basePath}.${key}` : key;
-        const value = config?.[key];
+        const value = config[key];
 
         // Check required
         if (field.required && (value === undefined || value === null)) {
@@ -163,16 +163,15 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
     }
 
     // Check for unknown keys
-    if (config && typeof config === 'object') {
-        for (const key of Object.keys(config)) {
-            const path = basePath ? `${basePath}.${key}` : key;
-            if (!schema[key]) {
-                warnings.push({
-                    path,
-                    message: 'Unknown configuration key',
-                    suggestion: 'This key may be deprecated or misspelled'
-                });
-            }
+    for (const key of Object.keys(config)) {
+        const path = basePath ? `${basePath}.${key}` : key;
+        const schemaEntry = schema[key];
+        if (!schemaEntry) {
+            warnings.push({
+                path,
+                message: 'Unknown configuration key',
+                suggestion: 'This key may be deprecated or misspelled'
+            });
         }
     }
 

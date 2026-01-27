@@ -43,13 +43,6 @@ export interface BrainContext {
     context: string[] // "I use...", "I work in..."
 }
 
-const USER_FACT_CATEGORIES = {
-    identity: ['name', 'role', 'company', 'location', 'pronouns'],
-    preference: ['language', 'style', 'format', 'tone', 'tools'],
-    skill: ['programming', 'framework', 'domain', 'expertise'],
-    goal: ['project', 'learning', 'building', 'objective'],
-    context: ['timezone', 'platform', 'environment', 'workflow']
-};
 
 export class BrainService {
     private isInitialized = false;
@@ -228,7 +221,7 @@ export class BrainService {
     /**
      * Auto-extract user facts from conversation
      */
-    async extractUserFactsFromMessage(message: string, userId: string = this.userId): Promise<UserFact[]> {
+    async extractUserFactsFromMessage(message: string, _userId: string = this.userId): Promise<UserFact[]> {
         const prompt = `Extract ONLY user-related facts from this message. Focus on:
 - User identity (name, role, company)
 - User preferences (likes, dislikes, styles)
@@ -291,7 +284,7 @@ If NO user facts found, return: []`;
     async updateFactConfidence(factId: string, confidence: number): Promise<void> {
         const fragments = await this.db.getSemanticFragmentsByIds([factId]);
         const fragment = fragments[0];
-        if (fragment?.source === 'user-brain') {
+        if (fragment.source === 'user-brain') {
             fragment.importance = confidence;
             fragment.tags = fragment.tags.filter((t: string) => !t.startsWith('confidence:'));
             fragment.tags.push(`confidence:${confidence}`);
@@ -331,7 +324,7 @@ If NO user facts found, return: []`;
         const confidenceTag = fragment.tags.find(t => t.startsWith('confidence:'));
         const confidence = confidenceTag ? parseFloat(confidenceTag.split(':')[1]) : fragment.importance;
 
-        const category = fragment.tags.find(t => this.isValidCategory(t)) as UserFact['category'] || 'context';
+        const category = fragment.tags.find(t => this.isValidCategory(t)) as UserFact['category'];
 
         return {
             id: fragment.id,

@@ -68,13 +68,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     // Apply global appearances settings
     useEffect(() => {
-        if (settings?.general?.fontSize) {
+        if (!settings) { return; }
+        if (settings.general.fontSize) {
             document.documentElement.style.setProperty('--font-size-base', `${settings.general.fontSize}px`);
         }
-        if (settings?.general?.theme) {
+        if (settings.general.theme) {
             document.documentElement.setAttribute('data-theme', settings.general.theme);
         }
-    }, [settings?.general?.fontSize, settings?.general?.theme]);
+    }, [settings]);
 
     const value = useMemo(() => ({
         settings,

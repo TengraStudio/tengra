@@ -12,6 +12,7 @@ import { UsageTrackingService } from '@main/services/analysis/usage-tracking.ser
 import { BackupService } from '@main/services/data/backup.service';
 import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { FileManagementService } from '@main/services/data/file.service';
 import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
@@ -78,6 +79,8 @@ import { UpdateService } from '@main/services/system/update.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
+import { McpDeps } from '@main/mcp/server-utils';
+import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { Logger } from '@main/utils/logger';
 import { JsonObject } from '@shared/types/common';
 
@@ -94,6 +97,7 @@ export interface Services {
     llmService: LLMService;
     fileSystemService: FileSystemService;
     commandService: CommandService;
+    databaseClientService: DatabaseClientService;
     databaseService: DatabaseService;
     sshService: SSHService;
     proxyService: ProxyService;
@@ -156,6 +160,7 @@ export interface Services {
     ideaGeneratorService: IdeaGeneratorService;
     projectAgentService: ProjectAgentService;
     exportService: ExportService;
+    mcpPluginService: McpPluginService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -177,6 +182,7 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
     registerLLMServices();
     registerProjectServices();
     registerAnalysisServices();
+    registerMcpServices();
 
     // Register lazy services that are loaded on-demand
     registerLazyServices();
@@ -238,7 +244,8 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 }
 
 function registerDataServices() {
-    container.register('databaseService', (ds, ebs) => new DatabaseService(ds as DataService, ebs as EventBusService), ['dataService', 'eventBusService']);
+    container.register('databaseClientService', (ebs, pm) => new DatabaseClientService(ebs as EventBusService, pm as ProcessManagerService), ['eventBusService', 'processManagerService']);
+    container.register('databaseService', (ds, ebs, dbcs) => new DatabaseService(ds as DataService, ebs as EventBusService, dbcs as DatabaseClientService), ['dataService', 'eventBusService', 'databaseClientService']);
     container.register('fileChangeTracker', (dbs, ebs) => new FileChangeTracker(dbs as DatabaseService, ebs as EventBusService), ['databaseService', 'eventBusService']);
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
     container.register('fileManagementService', () => new FileManagementService());
@@ -440,6 +447,43 @@ function registerAnalysisServices() {
     container.register('exportService', () => new ExportService());
 }
 
+function registerMcpServices() {
+    container.register('mcpDeps', (...args: unknown[]) => {
+        const services = args as unknown[];
+        return {
+            web: services[0] as WebService,
+            utility: services[1] as UtilityService,
+            system: services[2] as SystemService,
+            ssh: services[3] as SSHService,
+            screenshot: services[4] as ScreenshotService,
+            scanner: services[5] as ScannerService,
+            notification: services[6] as NotificationService,
+            network: services[7] as NetworkService,
+            monitoring: services[8] as MonitoringService,
+            git: services[9] as GitService,
+            security: services[10] as SecurityService,
+            settings: services[11] as SettingsService,
+            filesystem: services[12] as FileSystemService,
+            file: services[13] as FileManagementService,
+            embedding: services[14] as EmbeddingService,
+            docker: services[15] as DockerService,
+            database: services[16] as DatabaseService,
+            content: services[17] as ContentService,
+            command: services[18] as CommandService,
+            clipboard: services[19] as ClipboardService,
+            ollama: services[20] as OllamaService
+        };
+    }, [
+        'webService', 'utilityService', 'systemService', 'sshService', 'screenshotService',
+        'scannerService', 'notificationService', 'networkService', 'monitoringService',
+        'gitService', 'securityService', 'settingsService', 'fileSystemService',
+        'fileManagementService', 'embeddingService', 'dockerService', 'databaseService',
+        'contentService', 'commandService', 'clipboardService', 'ollamaService'
+    ]);
+
+    container.register('mcpPluginService', (ss, deps) => new McpPluginService(ss as SettingsService, deps as McpDeps), ['settingsService', 'mcpDeps']);
+}
+
 function initOllamaHealth(settings: Record<string, unknown>) {
     try {
         const ollamaSettings = settings['ollama'] as JsonObject | undefined;
@@ -465,6 +509,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         llmService: container.resolve<LLMService>('llmService'),
         fileSystemService: container.resolve<FileSystemService>('fileSystemService'),
         commandService: container.resolve<CommandService>('commandService'),
+        databaseClientService: container.resolve<DatabaseClientService>('databaseClientService'),
         databaseService: container.resolve<DatabaseService>('databaseService'),
         sshService: createLazyServiceProxy<SSHService>('sshService'),
         proxyService: container.resolve<ProxyService>('proxyService'),
@@ -524,6 +569,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
-        exportService: container.resolve<ExportService>('exportService')
+        exportService: container.resolve<ExportService>('exportService'),
+        mcpPluginService: container.resolve<McpPluginService>('mcpPluginService')
     };
 }

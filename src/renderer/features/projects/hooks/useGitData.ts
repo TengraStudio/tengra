@@ -1,6 +1,6 @@
 import { CommonBatches } from '@renderer/utils/ipc-batch.util';
 import { Project } from '@shared/types/project';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useGitData(project: Project) {
     const [gitData, setGitData] = useState<{

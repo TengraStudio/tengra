@@ -88,7 +88,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                     </div>
 
                     <button
-                        onClick={handleExport}
+                        onClick={() => { void (async () => { await handleExport(); })(); }}
                         disabled={isExporting}
                         className="w-full py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >

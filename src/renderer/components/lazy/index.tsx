@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import React, { lazy,Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
@@ -9,7 +9,7 @@ import { useTranslation } from '@/i18n';
  */
 const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) => {
     const { language } = useAuth();
-    const { t } = useTranslation(language ?? 'en');
+    const { t } = useTranslation(language);
     const loadingMessage = message ?? t('common.loading');
 
     return (

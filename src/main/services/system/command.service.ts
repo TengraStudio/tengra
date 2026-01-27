@@ -87,8 +87,8 @@ export class CommandService {
                     if (error) {
                         resolve({
                             success: false,
-                            stdout: stdout?.trim(),
-                            stderr: stderr?.trim(),
+                            stdout: stdout.trim(),
+                            stderr: stderr.trim(),
                             exitCode: error.code,
                             error: getErrorMessage(error)
                         });
@@ -170,15 +170,15 @@ export class CommandService {
                     stderr,
                     error: 'Command timed out'
                 });
-            }, options?.timeout ?? this.maxTimeout);
+            }, (options?.timeout ?? this.maxTimeout));
 
-            child.stdout?.on('data', (data: Buffer) => {
+            child.stdout.on('data', (data: Buffer) => {
                 const text = data.toString();
                 stdout += text;
                 onStdout(text);
             });
 
-            child.stderr?.on('data', (data: Buffer) => {
+            child.stderr.on('data', (data: Buffer) => {
                 const text = data.toString();
                 stderr += text;
                 onStderr(text);

@@ -126,11 +126,8 @@ export class SettingsService extends BaseService {
     }
 
     async cleanup(): Promise<void> {
-        if (this.saveInProgress) {
-            appLogger.info('SettingsService', 'Waiting for pending save to complete before cleanup...');
-            while (this.saveInProgress) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
+        while (this.saveInProgress) {
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
 
         if (this.pendingSave) {
@@ -255,10 +252,11 @@ export class SettingsService extends BaseService {
         loaded?: Partial<AppSettings[T]>,
         keyField: string = 'token'
     ): AppSettings[T] {
-        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown>) ?? {};
-        const loadedObj = (loaded ?? {}) as Record<string, unknown>;
+        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown> | undefined) || {};
+        const loadedObj = (loaded || {}) as Record<string, unknown>;
         const tokenVal = loadedObj[keyField] as string | undefined;
-        const token = this.findTokenInAuth(authAccounts, String(provider)) || (tokenVal ?? '');
+        const authToken = this.findTokenInAuth(authAccounts, String(provider));
+        const token = authToken || tokenVal || '';
         return {
             ...def,
             ...loadedObj,
@@ -272,11 +270,8 @@ export class SettingsService extends BaseService {
             this.findTokenInAuth(authAccounts, 'github') ||
             (loaded?.token ?? '');
 
-        if (!def) {
-            return { connected: loaded?.connected ?? false, token };
-        }
         return {
-            connected: loaded?.connected ?? def.connected,
+            connected: loaded?.connected ?? !!def?.connected,
             token
         };
     }
@@ -527,13 +522,14 @@ export class SettingsService extends BaseService {
     }
 
     private deepMergeSettings(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
-        if (!source) { return target; }
         const res = { ...target };
         for (const key of Object.keys(source)) {
-            if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                res[key] = { ...((target[key] as Record<string, unknown>) ?? {}), ...source[key] };
+            const sourceValue = source[key];
+            if (sourceValue !== null && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+                const targetValue = (target[key] as Record<string, unknown> | undefined) || {};
+                res[key] = { ...targetValue, ...sourceValue };
             } else {
-                res[key] = source[key];
+                res[key] = sourceValue;
             }
         }
         return res;

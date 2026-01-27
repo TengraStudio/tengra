@@ -69,9 +69,9 @@ export const MessageList = memo(({
                             onStop={onStopSpeak}
                             isSpeaking={speakingMessageId === message.id}
                             onCodeConvert={() => { }}
-                            onReact={(e) => window.electron.db.updateMessage(message.id, { reactions: [e] })}
-                            onBookmark={(b) => window.electron.db.updateMessage(message.id, { isBookmarked: b })}
-                            onRate={(r) => window.electron.db.updateMessage(message.id, { rating: r })}
+                            onReact={(e) => void window.electron.db.updateMessage(message.id, { reactions: [e] })}
+                            onBookmark={(b) => void window.electron.db.updateMessage(message.id, { isBookmarked: b })}
+                            onRate={(r) => void window.electron.db.updateMessage(message.id, { rating: r })}
                             onApprovePlan={() => { }}
                             streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
                             streamingReasoning={isStreamingCurrent ? streamingReasoning : undefined}

@@ -42,14 +42,14 @@ export const useSpeechRecognition = (
         const recognition = new SpeechRecognitionCtor();
         recognition.continuous = true;
         recognition.interimResults = false;
-        recognition.lang = language ?? 'tr-TR';
+        recognition.lang = language;
 
         recognition.onresult = (event: SpeechRecognitionEventLike) => {
             let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 const result = event.results[i];
-                if (result?.isFinal) {
-                    finalTranscript += result[0]?.transcript ?? '';
+                if (result.isFinal) {
+                    finalTranscript += result[0].transcript || '';
                 }
             }
             if (finalTranscript) {

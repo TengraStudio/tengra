@@ -68,7 +68,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                     <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
                 </div>
                 <button
-                    onClick={loadImages}
+                    onClick={() => void loadImages()}
                     className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-foreground transition-colors"
                     title={t('gallery.refresh')}
                 >
@@ -99,21 +99,21 @@ export function GalleryView({ language }: GalleryViewProps) {
                                     <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
                                     <div className="flex gap-2 justify-end">
                                         <button
-                                            onClick={() => handleReveal(img.path)}
+                                            onClick={() => void handleReveal(img.path)}
                                             className="p-1.5 bg-white/10 hover:bg-white/20 text-foreground rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.openLocation')}
                                         >
                                             <FolderOpen className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => handleOpen(img.path)}
+                                            onClick={() => void handleOpen(img.path)}
                                             className="p-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.open')}
                                         >
                                             <ExternalLink className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(img.path)}
+                                            onClick={() => void handleDelete(img.path)}
                                             disabled={!!deleting}
                                             className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.delete')}

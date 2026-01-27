@@ -170,3 +170,5 @@ export const ProjectCard = memo<ProjectCardProps>(({
         </motion.div>
     );
 });
+
+ProjectCard.displayName = 'ProjectCard';

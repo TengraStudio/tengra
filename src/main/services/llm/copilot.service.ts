@@ -795,7 +795,7 @@ export class CopilotService extends BaseService {
     private shouldRequestDiagnostic(response: Response, finalModel: string, errText: string): boolean {
         const errorBody = safeJsonParse(errText, { error: { code: '' } }) as { error?: { code?: string } };
 
-        const isUnsupported = errorBody?.error?.code === 'unsupported_api_for_model';
+        const isUnsupported = errorBody.error?.code === 'unsupported_api_for_model';
         const isCodexError = response.status === 400 && finalModel.toLowerCase().includes('codex');
         return isUnsupported || isCodexError;
     }

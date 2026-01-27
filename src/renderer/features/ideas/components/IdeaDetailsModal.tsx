@@ -3,7 +3,7 @@
  */
 import { ProjectIdea } from '@shared/types/ideas';
 import { Briefcase, Code2, Globe, Map, Sparkles, Target, Trash2, Users, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -65,12 +65,12 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
         }
     };
 
-    const handleApprove = async () => {
+    const handleApprove = useCallback(async () => {
         if (!projectPath || !selectedName) {
             return;
         }
         await onApprove(projectPath, selectedName);
-    };
+    }, [projectPath, selectedName, onApprove]);
 
     const handleRejectClick = () => {
         setShowRejectConfirm(true);
@@ -117,7 +117,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [projectPath, selectedName, isApproving, isRejecting, showRejectConfirm, onClose]);
+    }, [projectPath, selectedName, isApproving, isRejecting, showRejectConfirm, onClose, handleApprove]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

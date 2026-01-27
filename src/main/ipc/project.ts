@@ -46,7 +46,7 @@ export const registerProjectIpc = (getWindow: () => Electron.BrowserWindow | nul
                             // Ideally matches rootPath.
                             const exactProject = projects.find(p => p.path === rootPath);
                             if (exactProject) {
-                                await codeIntelligenceService.updateFileIndex(exactProject.id, filePath);
+                                await codeIntelligenceService.updateFileIndex(exactProject.id, exactProject.path, filePath);
                             }
                         } catch (e) {
                             appLogger.error('ProjectIPC', `[ProjectIPC] Auto-index failed: ${e}`);
