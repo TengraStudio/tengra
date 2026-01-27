@@ -480,6 +480,26 @@ export const webElectronMock: ElectronAPI = {
         setEntityFact: async (_entityType: string, _entityName: string, _key: string, _value: string) => ({ success: true, id: '1' }),
         search: async (_query: string) => ({ facts: [], episodes: [] })
     },
+    advancedMemory: {
+        getPending: async () => ({ success: true, data: [] }),
+        confirm: async (_id: string, _adjustments?) => ({ success: true, data: undefined }),
+        reject: async (_id: string, _reason?: string) => ({ success: true }),
+        confirmAll: async () => ({ success: true, confirmed: 0 }),
+        rejectAll: async () => ({ success: true, rejected: 0 }),
+        remember: async (_content: string, _options?) => ({ success: true, data: undefined }),
+        recall: async (_context) => ({ success: true, data: { memories: [], totalMatches: 0 } }),
+        search: async (_query: string, _limit?: number) => ({ success: true, data: [] }),
+        getStats: async () => ({ success: true, data: undefined }),
+        runDecay: async () => ({ success: true }),
+        extractFromMessage: async (_content: string, _sourceId: string, _projectId?: string) => ({ success: true, data: [] }),
+        delete: async (_id: string) => ({ success: true }),
+        deleteMany: async (_ids: string[]) => ({ success: true, deleted: 0, failed: [] }),
+        edit: async (_id: string, _updates) => ({ success: true, data: undefined }),
+        archive: async (_id: string) => ({ success: true }),
+        archiveMany: async (_ids: string[]) => ({ success: true, archived: 0, failed: [] }),
+        restore: async (_id: string) => ({ success: true }),
+        get: async (_id: string) => ({ success: true, data: undefined })
+    },
     ideas: {
         createSession: async (config) => ({ ...config, id: '1', ideasGenerated: 0, status: 'active', createdAt: Date.now(), updatedAt: Date.now() }),
         getSession: async (_id) => null,

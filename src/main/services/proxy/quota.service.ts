@@ -97,10 +97,13 @@ export class QuotaService {
                             accountId: account.id,
                             email: account.email
                         });
+                    } else {
+                        appLogger.warn('QuotaService', `Failed to fetch quota for account ${account.email || account.id}`);
                     }
                 }
             }
 
+            appLogger.info('QuotaService', `getQuota: Returning ${results.length} account quotas out of ${antigravityAccounts.length} accounts`);
             return { accounts: results };
         } catch (e) {
             appLogger.error('QuotaService', `Failed to get quota: ${e}`);
@@ -124,7 +127,10 @@ export class QuotaService {
 
     // --- Antigravity ---
 
-
+    /**
+     * Public method to fetch Antigravity upstream data for a specific account
+     * Used by LocalImageService to check image model quota
+     */
     async fetchAntigravityUpstreamForToken(account: LinkedAccount): Promise<JsonObject | null> {
         const accessToken = account.accessToken;
         if (!accessToken) { return null; }

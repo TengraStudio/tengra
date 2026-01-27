@@ -112,7 +112,7 @@ export class DatabaseClientService extends BaseService {
         await this.processManager.startService({
             name: SERVICE_NAME,
             executable: 'orbit-db-service',
-            args: [],
+            args: ['--console'], // Run in console mode, not as Windows Service
             persistent: true
         });
 

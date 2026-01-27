@@ -135,6 +135,7 @@ export function ModelSelector({
             // Check limits for all models in groupedModels
             if (groupedModels) {
                 for (const [provider, group] of Object.entries(groupedModels)) {
+                    if (!group?.models) { continue; }
                     for (const model of group.models) {
                         const modelId = model.id || '';
                         if (!modelId) { continue; }
@@ -303,7 +304,7 @@ export function ModelSelector({
 
         // 2. Check Copilot Credits - check remaining number (0-5 means disabled)
         if (provider === 'copilot') {
-            const copilotQuota = quotas?.accounts?.find(a => a.copilot)?.copilot || (quotas as Record<string, unknown>).copilot;
+            const copilotQuota = quotas?.accounts?.find(a => a.copilot)?.copilot || (quotas as Record<string, unknown> | null)?.copilot;
             if (copilotQuota) {
                 // Disable if remaining is 0-5
                 const q = copilotQuota as { remaining: number; limit: number };
@@ -411,6 +412,7 @@ export function ModelSelector({
 
         for (const mapping of brandsMapping) {
             const group = groupedModels[mapping.key];
+            if (!group) { continue; }
             const models = group.models ?? [];
             const cat = cats.find(c => c.id === mapping.catId);
             if (!cat) { continue; }

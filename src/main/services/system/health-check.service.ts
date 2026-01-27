@@ -225,8 +225,8 @@ export class HealthCheckService extends BaseService {
         this.register('database', async () => {
             try {
                 const db = databaseService.getDatabase();
-                const stmt = db.prepare('SELECT 1');
-                stmt.get();
+                const stmt = await db.prepare('SELECT 1');
+                await stmt.get();
                 return true;
             } catch {
                 return false;

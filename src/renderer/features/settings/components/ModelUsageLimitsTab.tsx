@@ -28,6 +28,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     const antigravityModels = useMemo(() => {
         if (!groupedModels) { return []; }
         const agGroup = groupedModels['antigravity'];
+        if (!agGroup?.models) { return []; }
         return agGroup.models;
     }, [groupedModels]);
 

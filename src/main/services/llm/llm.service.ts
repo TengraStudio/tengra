@@ -663,7 +663,22 @@ export class LLMService {
         }
 
         if (tools && tools.length > 0) {
-            body.tools = tools;
+            // Strip 'required' field for compatibility with Go-based proxy services
+            // that don't fully support OpenAI function calling spec
+            const sanitizedTools = tools.map(tool => {
+                const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
+                if (params.required) {
+                    delete params.required;
+                }
+                return {
+                    ...tool,
+                    function: {
+                        ...tool.function,
+                        parameters: params
+                    }
+                };
+            });
+            body.tools = sanitizedTools;
             body.tool_choice = 'auto';
         }
         return body;

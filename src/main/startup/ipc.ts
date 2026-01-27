@@ -15,6 +15,7 @@ import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMcpIpc } from '@main/ipc/mcp';
+import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { registerOllamaIpc } from '@main/ipc/ollama';
@@ -91,6 +92,7 @@ export function registerIpcHandlers(
     registerDbIpc(getMainWindow, services.databaseService, services.embeddingService);
     registerLlamaIpc(services.llamaService);
     registerMemoryIpc(services.memoryService);
+    registerAdvancedMemoryIpc(services.advancedMemoryService);
     registerGitIpc(services.gitService);
 
     registerSettingsIpc({

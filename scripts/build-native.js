@@ -21,6 +21,7 @@ function buildNative() {
         // Kill existing services to prevent EBUSY errors
         console.log('Stopping running services...');
         const binaries = [
+            'orbit-db-service.exe',
             'orbit-token-service.exe',
             'orbit-model-service.exe',
             'orbit-quota-service.exe',

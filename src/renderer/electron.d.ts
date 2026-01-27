@@ -8,6 +8,13 @@ import {
     SSHConfig, SSHConnection, SSHFile,
     SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
 } from '@/shared/types';
+import {
+    AdvancedSemanticFragment,
+    MemoryCategory,
+    MemoryStatistics,
+    PendingMemory,
+    RecallContext
+} from '@/shared/types/advanced-memory';
 
 export interface TodoItem {
     file: string
@@ -604,6 +611,41 @@ export interface ElectronAPI {
         deleteEntity: (id: string) => Promise<{ success: boolean; error?: string }>
         setEntityFact: (entityType: string, entityName: string, key: string, value: string) => Promise<{ success: boolean; id?: string; error?: string }>
         search: (query: string) => Promise<{ facts: SemanticFragment[]; episodes: EpisodicMemory[] }>
+    }
+
+    /**
+     * Advanced Memory System - Staging buffer, validation, context-aware recall
+     */
+    advancedMemory: {
+        // Pending memories (staging buffer)
+        getPending: () => Promise<{ success: boolean; data: PendingMemory[]; error?: string }>
+        confirm: (id: string, adjustments?: { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number }) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>
+        reject: (id: string, reason?: string) => Promise<{ success: boolean; error?: string }>
+        confirmAll: () => Promise<{ success: boolean; confirmed: number; error?: string }>
+        rejectAll: () => Promise<{ success: boolean; rejected: number; error?: string }>
+
+        // Explicit memory
+        remember: (content: string, options?: { category?: MemoryCategory; tags?: string[]; projectId?: string }) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>
+
+        // Recall
+        recall: (context: RecallContext) => Promise<{ success: boolean; data: { memories: AdvancedSemanticFragment[]; totalMatches: number }; error?: string }>
+        search: (query: string, limit?: number) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>
+
+        // Stats & Maintenance
+        getStats: () => Promise<{ success: boolean; data?: MemoryStatistics; error?: string }>
+        runDecay: () => Promise<{ success: boolean; error?: string }>
+
+        // Extraction
+        extractFromMessage: (content: string, sourceId: string, projectId?: string) => Promise<{ success: boolean; data: PendingMemory[]; error?: string }>
+
+        // Delete & Edit
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>
+        deleteMany: (ids: string[]) => Promise<{ success: boolean; deleted: number; failed: string[]; error?: string }>
+        edit: (id: string, updates: { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number; projectId?: string | null }) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>
+        archive: (id: string) => Promise<{ success: boolean; error?: string }>
+        archiveMany: (ids: string[]) => Promise<{ success: boolean; archived: number; failed: string[]; error?: string }>
+        restore: (id: string) => Promise<{ success: boolean; error?: string }>
+        get: (id: string) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>
     }
 
     // IPC Batching API

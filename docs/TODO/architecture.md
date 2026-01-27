@@ -62,8 +62,11 @@
     - Created `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
     - HTTP client using axios with retry logic
     - Automatic service discovery and startup via ProcessManagerService
-- [ ] Migration and regression testing for all data domains
-- [ ] Automated daily backup and cloud sync integration (deferred)
+- [ ] **Migration and regression testing** for all data domains (Verify PGlite -> Rust SQLite migration)
+- [ ] **Dependency Cleanup**: Remove `@electric-sql/pglite` and `better-sqlite3` from `package.json` after stability verification
+- [ ] **Installer Automation**: Integrate `install-db-service.ps1` into the NSIS/MSI installer for automatic Windows service registration
+- [ ] **Code Cleanup**: Remove legacy `db-migration.service.ts` and PGlite-specific comments from repositories
+- [ ] **Automated daily backup** and cloud sync integration (deferred)
 
 ---
 
@@ -83,8 +86,12 @@
 **In Progress:**
 - IPC to EventBus migration (~300 handlers)
 - OpenAI/Anthropic plugin extraction
-- Database service migration testing
+- **Database service finalization**:
+    - Migration testing (PGlite -> Rust SQLite)
+    - Dependency cleanup (`package.json`)
+    - Installer integration (`scripts/install-db-service.ps1`)
+    - Repository code cleanup
 
 **Planned:**
 - Linux packaging support
-- Cloud sync integration for backups
+- Automated daily backups and Cloud sync integration

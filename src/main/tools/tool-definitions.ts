@@ -315,13 +315,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'generate_image',
-            description: 'Antigravity gorsel modelini kullanarak resim uretir. "Bana 2 kedi resmi ciz" gibi istekler icin kullanin.',
+            description: 'YALNIZCA kullanıcı AÇIKÇA görsel/resim/image oluşturulmasını/çizilmesini istediğinde kullan. Örnek: "bana bir kedi resmi çiz", "gökyüzü görseli oluştur", "generate an image of a sunset". Normal sohbet, sorular veya kodlama için ASLA kullanma.',
             parameters: {
                 type: 'object',
                 properties: {
                     prompt: {
                         type: 'string',
-                        description: 'Gorsel icin detayli prompt (Ingilizce veya Turkce)'
+                        description: 'Görsel için detaylı prompt (İngilizce veya Türkçe)'
                     },
                     count: {
                         type: 'number',

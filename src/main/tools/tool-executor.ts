@@ -53,7 +53,8 @@ interface ToolExecutorOptions {
     mcp: McpDispatcher,
     llm: LLMService,
     memory: MemoryService,
-    pageSpeed: PageSpeedService
+    pageSpeed: PageSpeedService,
+    localImage: { generateImage: (options: { prompt: string; count?: number }) => Promise<string> }
 }
 
 export class ToolExecutor {
@@ -120,6 +121,10 @@ export class ToolExecutor {
 
             if (['remember', 'recall', 'forget'].includes(normalizedName)) {
                 return this.handleMemoryTool(normalizedName, args);
+            }
+
+            if (normalizedName === 'generate_image') {
+                return this.handleImageTool(args);
             }
 
             return this.handleMiscTool(normalizedName, args);
@@ -195,6 +200,34 @@ export class ToolExecutor {
                 return { success };
             }
             default: return { success: false, error: `Unknown memory tool: ${name}` };
+        }
+    }
+
+    private async handleImageTool(args: JsonObject): Promise<ToolResult> {
+        try {
+            const prompt = this.asString(args.prompt);
+            const count = typeof args.count === 'number' ? args.count : 1;
+            
+            if (!prompt) {
+                return { success: false, error: 'Prompt is required for image generation' };
+            }
+
+            // Generate images based on count
+            const images: string[] = [];
+            for (let i = 0; i < Math.min(count, 5); i++) {
+                const imagePath = await this.options.localImage.generateImage({ prompt, count: 1 });
+                images.push(imagePath);
+            }
+
+            return { 
+                success: true, 
+                result: images.length === 1 ? images[0] : images as JsonValue
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+            };
         }
     }
 

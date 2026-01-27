@@ -41,6 +41,7 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/llm/model-registry.service';
@@ -127,8 +128,10 @@ export interface Services {
     jobSchedulerService: JobSchedulerService;
     webService: WebService;
     memoryService: MemoryService;
+    advancedMemoryService: AdvancedMemoryService;
     brainService: BrainService;
     pageSpeedService: PageSpeedService;
+    localImageService: LocalImageService;
     ruleService: RuleService;
     agentService: AgentService;
     dataService: DataService;
@@ -286,6 +289,7 @@ function registerLLMServices() {
     container.register('llmService', (hs, cs, krs, rls, ts) => new LLMService(hs as HttpService, cs as ConfigService, krs as KeyRotationService, rls as RateLimitService, ts as TokenService), ['httpService', 'configService', 'keyRotationService', 'rateLimitService', 'tokenService']);
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(os as OllamaService, ls as LLMService, lms as LlamaService, ss as SettingsService), ['ollamaService', 'llmService', 'llamaService', 'settingsService']);
     container.register('memoryService', (dbs, es, ls, pm) => new MemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
+    container.register('advancedMemoryService', (dbs, es, ls) => new AdvancedMemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService), ['databaseService', 'embeddingService', 'llmService']);
     container.register('brainService', (dbs, es, ls, pm) => new BrainService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
     container.register('agentService', (dbs) => new AgentService(dbs as DatabaseService), ['databaseService']);
     container.register('modelCollaborationService', (ls) => new ModelCollaborationService(ls as LLMService), ['llmService']);
@@ -294,6 +298,7 @@ function registerLLMServices() {
     container.register('promptTemplatesService', (ds, dbs) => new PromptTemplatesService(ds as DataService, dbs as DatabaseService), ['dataService', 'databaseService']);
     container.register('huggingFaceService', () => new HuggingFaceService());
     container.register('contextRetrievalService', (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
+    container.register('localImageService', (ss, as, ls, qs) => new LocalImageService(ss as SettingsService, as as AuthService, ls as LLMService, qs as QuotaService), ['settingsService', 'authService', 'llmService', 'quotaService']);
 
     // Model Registry Bundle
     container.register('modelRegistryDeps', (pm, js, ss, ps, ebs) => ({
@@ -539,6 +544,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
         webService: container.resolve<WebService>('webService'),
         memoryService: container.resolve<MemoryService>('memoryService'),
+        advancedMemoryService: container.resolve<AdvancedMemoryService>('advancedMemoryService'),
         brainService: container.resolve<BrainService>('brainService'),
         pageSpeedService: createLazyServiceProxy<PageSpeedService>('pageSpeedService'),
         ruleService: container.resolve<RuleService>('ruleService'),
@@ -570,6 +576,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
         exportService: container.resolve<ExportService>('exportService'),
-        mcpPluginService: container.resolve<McpPluginService>('mcpPluginService')
+        mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
+        localImageService: container.resolve<LocalImageService>('localImageService')
     };
 }

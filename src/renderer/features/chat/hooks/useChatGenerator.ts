@@ -124,6 +124,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             } else {
                 // Single model: use existing stream logic
                 const tools = allTools.filter((tDefinition) => {
+                    if (!tDefinition?.function?.name) { return false; }
                     if (selectedProvider === 'opencode') { return true; }
                     if (selectedProvider === 'antigravity') { return true; }
                     return tDefinition.function.name === 'generate_image';
@@ -198,8 +199,20 @@ const executeToolTurnLoop = async (params: {
     const MAX_TOOL_ITERATIONS = 5;
 
     while (toolIterations < MAX_TOOL_ITERATIONS) {
-        // Re-fetch messages from latest state for each iteration
-        const currentMessages = chats.find(c => c.id === chatId)?.messages ?? [];
+        // Re-fetch messages from latest state for each iteration  
+        // Use a Promise to synchronously read the latest state via setChats callback
+        const currentMessages = await new Promise<Message[]>(resolve => {
+            setChats(prev => {
+                const msgs = prev.find(c => c.id === chatId)?.messages ?? [];
+                resolve(msgs);
+                return prev; // Don't modify state
+            });
+        });
+
+        if (currentMessages.length === 0) {
+            window.electron.log.error('[executeToolTurnLoop] No messages found, stopping tool iteration', new Error(`Chat ${chatId} not found`));
+            break;
+        }
 
         const stream = chatStream({
             messages: currentMessages,
@@ -365,6 +378,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
         const streamId = `${chatId}-model-${index}-${Date.now()}`;
         try {
             const tools = allTools.filter((tDefinition: ToolDefinition) => {
+                if (!tDefinition?.function?.name) { return false; }
                 if (modelInfo.provider === 'opencode') { return true; }
                 return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity';
             });

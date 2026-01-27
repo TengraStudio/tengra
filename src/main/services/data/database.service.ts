@@ -7,6 +7,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { CouncilSessionStatus } from '@shared/types/agent';
+import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { FileDiff } from '@shared/types/file-diff';
@@ -374,9 +375,24 @@ export class DatabaseService extends BaseService {
 
     // --- Usage Tracking Methods ---
 
-    async addUsageRecord(record: { provider: string; model: string; timestamp: number }) { return this._system.addUsageRecord(record); }
-    async getUsageCount(since: number, provider?: string, model?: string) { return this._system.getUsageCount(since, provider, model); }
-    async cleanupUsageRecords(before: number) { return this._system.cleanupUsageRecords(before); }
+    async addUsageRecord(record: { provider: string; model: string; timestamp: number }) {
+        if (!this._system) {
+            await this.initialize();
+        }
+        return this._system.addUsageRecord(record);
+    }
+    async getUsageCount(since: number, provider?: string, model?: string) {
+        if (!this._system) {
+            await this.initialize();
+        }
+        return this._system.getUsageCount(since, provider, model);
+    }
+    async cleanupUsageRecords(before: number) {
+        if (!this._system) {
+            await this.initialize();
+        }
+        return this._system.cleanupUsageRecords(before);
+    }
 
     // --- Prompt Templates Methods ---
 
@@ -466,6 +482,44 @@ export class DatabaseService extends BaseService {
     async getEpisodicMemoriesByIds(ids: string[]) { return this._knowledge.getEpisodicMemoriesByIds(ids); }
     async getAllEpisodicMemories() { return this._knowledge.getAllEpisodicMemories(); }
     async deleteSemanticFragment(id: string) { return this._knowledge.deleteSemanticFragment(id); }
+
+    // --- Advanced Memory System ---
+
+    async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        return this._knowledge.storeAdvancedMemory(memory);
+    }
+
+    async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        return this._knowledge.updateAdvancedMemory(memory);
+    }
+
+    async getAdvancedMemoryById(id: string): Promise<AdvancedSemanticFragment | null> {
+        return this._knowledge.getAdvancedMemoryById(id);
+    }
+
+    async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
+        return this._knowledge.getAllAdvancedMemories();
+    }
+
+    async searchAdvancedMemories(embedding: number[], limit: number): Promise<AdvancedSemanticFragment[]> {
+        return this._knowledge.searchAdvancedMemories(embedding, limit);
+    }
+
+    async savePendingMemory(pending: PendingMemory): Promise<void> {
+        return this._knowledge.savePendingMemory(pending);
+    }
+
+    async deletePendingMemory(id: string): Promise<void> {
+        return this._knowledge.deletePendingMemory(id);
+    }
+
+    async getAllPendingMemories(): Promise<PendingMemory[]> {
+        return this._knowledge.getAllPendingMemories();
+    }
+
+    async deleteAdvancedMemory(id: string): Promise<void> {
+        return this._knowledge.deleteAdvancedMemory(id);
+    }
 
     // Helper
     private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
