@@ -335,7 +335,8 @@ app.whenReady().then(async () => {
         mcp: mcpDispatcher,
         llm: services.llmService,
         memory: services.memoryService,
-        pageSpeed: services.pageSpeedService
+        pageSpeed: services.pageSpeedService,
+        localImage: services.localImageService
     });
     appLogger.info('Main', 'ToolExecutor initialized');
 

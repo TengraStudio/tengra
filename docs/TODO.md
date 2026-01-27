@@ -98,6 +98,11 @@ Implement the "Project System" for long-running autonomous tasks (replacing `bui
 - [ ] Design and development of a plugin system
 - [x] Refactor high complexity methods (>10) in `SettingsService`
 - [x] Refactor database system to a Windows service (Rust-based standalone project)
+- [ ] **Database Service Finalization**:
+    - [ ] Perform end-to-end migration testing (PGlite -> Rust SQLite)
+    - [ ] Remove legacy dependencies (`@electric-sql/pglite`, `better-sqlite3`)
+    - [ ] Integrate service installer into the production build pipeline
+    - [ ] Clean up legacy migration and PGlite code
 - [ ] Local AI Hardware Optimization & Management UI
 - [ ] Local Hugging Face Model Support (Inference API & Local GGUF/Transformers.js)
 

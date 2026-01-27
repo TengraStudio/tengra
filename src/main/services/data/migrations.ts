@@ -10,7 +10,8 @@ export function getMigrationDefinitions(isTest: boolean): Migration[] {
         ...getUtilitySchemaMigrations(),
         getCouncilConfigMigration(),
         getCustomPromptMigration(),
-        ...getGalleryMigrations()
+        ...getGalleryMigrations(),
+        ...getAdvancedMemoryMigrations(isTest)
     ];
 }
 
@@ -760,6 +761,139 @@ function getGalleryMigrations(): Migration[] {
                         created_at BIGINT NOT NULL
                     );
                     CREATE INDEX IF NOT EXISTS idx_gallery_items_created_at ON gallery_items(created_at DESC);
+                `);
+            }
+        }
+    ];
+}
+
+/** Advanced Memory System migrations */
+export function getAdvancedMemoryMigrations(isTest: boolean): Migration[] {
+    return [
+        {
+            id: 23,
+            name: 'Advanced Memory System - Core Tables',
+            up: async (db: DatabaseAdapter) => {
+                // Advanced memories table with full tracking
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS advanced_memories (
+                        id TEXT PRIMARY KEY,
+                        content TEXT NOT NULL,
+                        embedding ${isTest ? 'FLOAT8[]' : 'vector(1536)'},
+
+                        -- Source tracking
+                        source TEXT NOT NULL,
+                        source_id TEXT,
+                        source_context TEXT,
+
+                        -- Classification
+                        category TEXT NOT NULL,
+                        tags TEXT DEFAULT '[]',
+
+                        -- Confidence & Importance
+                        confidence FLOAT DEFAULT 1.0,
+                        importance FLOAT DEFAULT 0.5,
+                        initial_importance FLOAT DEFAULT 0.5,
+
+                        -- Status & Lifecycle
+                        status TEXT DEFAULT 'confirmed',
+                        validated_at BIGINT,
+                        validated_by TEXT,
+
+                        -- Access tracking
+                        access_count INTEGER DEFAULT 0,
+                        last_accessed_at BIGINT,
+
+                        -- Relationships
+                        related_memory_ids TEXT DEFAULT '[]',
+                        contradicts_ids TEXT DEFAULT '[]',
+                        merged_into_id TEXT,
+
+                        -- Scope
+                        project_id TEXT,
+                        context_tags TEXT DEFAULT '[]',
+
+                        -- Timestamps
+                        created_at BIGINT NOT NULL,
+                        updated_at BIGINT NOT NULL,
+                        expires_at BIGINT,
+
+                        -- Extensibility
+                        metadata TEXT DEFAULT '{}'
+                    );
+                `);
+
+                // Indexes for advanced memories
+                await db.exec(`
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_status ON advanced_memories(status);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_category ON advanced_memories(category);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_source ON advanced_memories(source);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_project ON advanced_memories(project_id);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_importance ON advanced_memories(importance DESC);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_created ON advanced_memories(created_at DESC);
+                    CREATE INDEX IF NOT EXISTS idx_advanced_memories_accessed ON advanced_memories(last_accessed_at DESC);
+                `);
+
+                // Pending memories (staging buffer)
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS pending_memories (
+                        id TEXT PRIMARY KEY,
+                        content TEXT NOT NULL,
+                        embedding ${isTest ? 'FLOAT8[]' : 'vector(1536)'},
+
+                        -- Source
+                        source TEXT NOT NULL,
+                        source_id TEXT,
+                        source_context TEXT NOT NULL,
+                        extracted_at BIGINT NOT NULL,
+
+                        -- Classification
+                        suggested_category TEXT NOT NULL,
+                        suggested_tags TEXT DEFAULT '[]',
+
+                        -- Scores
+                        extraction_confidence FLOAT DEFAULT 0.5,
+                        relevance_score FLOAT DEFAULT 0.5,
+                        novelty_score FLOAT DEFAULT 1.0,
+
+                        -- Validation
+                        requires_user_validation INTEGER DEFAULT 1,
+                        auto_confirm_reason TEXT,
+
+                        -- Analysis results
+                        potential_contradictions TEXT DEFAULT '[]',
+                        similar_memories TEXT DEFAULT '[]',
+
+                        -- Scope
+                        project_id TEXT
+                    );
+                `);
+
+                await db.exec(`
+                    CREATE INDEX IF NOT EXISTS idx_pending_memories_extracted ON pending_memories(extracted_at DESC);
+                    CREATE INDEX IF NOT EXISTS idx_pending_memories_validation ON pending_memories(requires_user_validation);
+                `);
+
+                // Memory relationships (knowledge graph)
+                await db.exec(`
+                    CREATE TABLE IF NOT EXISTS memory_relationships (
+                        id TEXT PRIMARY KEY,
+                        source_memory_id TEXT NOT NULL,
+                        target_memory_id TEXT NOT NULL,
+                        relationship_type TEXT NOT NULL,
+                        strength FLOAT DEFAULT 1.0,
+                        bidirectional INTEGER DEFAULT 0,
+                        created_at BIGINT NOT NULL,
+                        metadata TEXT DEFAULT '{}',
+                        FOREIGN KEY(source_memory_id) REFERENCES advanced_memories(id) ON DELETE CASCADE,
+                        FOREIGN KEY(target_memory_id) REFERENCES advanced_memories(id) ON DELETE CASCADE
+                    );
+                `);
+
+                await db.exec(`
+                    CREATE INDEX IF NOT EXISTS idx_memory_rel_source ON memory_relationships(source_memory_id);
+                    CREATE INDEX IF NOT EXISTS idx_memory_rel_target ON memory_relationships(target_memory_id);
+                    CREATE INDEX IF NOT EXISTS idx_memory_rel_type ON memory_relationships(relationship_type);
                 `);
             }
         }

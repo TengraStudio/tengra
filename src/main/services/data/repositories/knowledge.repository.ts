@@ -1,3 +1,12 @@
+import {
+    AdvancedSemanticFragment,
+    ContradictionCandidate,
+    MemoryCategory,
+    MemorySource,
+    MemoryStatus,
+    PendingMemory,
+    SimilarMemoryCandidate
+} from '@shared/types/advanced-memory';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
 
@@ -285,5 +294,217 @@ export class KnowledgeRepository extends BaseRepository {
             CREATE INDEX IF NOT EXISTS idx_file_diffs_created_at ON file_diffs(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_file_diffs_session ON file_diffs(session_id);
         `);
+    }
+
+    // =========================================================================
+    // ADVANCED MEMORY SYSTEM
+    // =========================================================================
+
+    async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+        await this.adapter.prepare(`
+            INSERT INTO advanced_memories (
+                id, content, embedding, source, source_id, source_context,
+                category, tags, confidence, importance, initial_importance,
+                status, validated_at, validated_by, access_count, last_accessed_at,
+                related_memory_ids, contradicts_ids, merged_into_id,
+                project_id, context_tags, created_at, updated_at, expires_at, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            memory.id,
+            memory.content,
+            vec,
+            memory.source,
+            memory.sourceId,
+            memory.sourceContext ?? null,
+            memory.category,
+            JSON.stringify(memory.tags),
+            memory.confidence,
+            memory.importance,
+            memory.initialImportance,
+            memory.status,
+            memory.validatedAt ?? null,
+            memory.validatedBy ?? null,
+            memory.accessCount,
+            memory.lastAccessedAt,
+            JSON.stringify(memory.relatedMemoryIds),
+            JSON.stringify(memory.contradictsIds),
+            memory.mergedIntoId ?? null,
+            memory.projectId ?? null,
+            JSON.stringify(memory.contextTags ?? []),
+            memory.createdAt,
+            memory.updatedAt,
+            memory.expiresAt ?? null,
+            JSON.stringify(memory.metadata ?? {})
+        );
+    }
+
+    async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
+        const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+        await this.adapter.prepare(`
+            UPDATE advanced_memories SET
+                content = ?, embedding = ?, source = ?, source_id = ?, source_context = ?,
+                category = ?, tags = ?, confidence = ?, importance = ?, initial_importance = ?,
+                status = ?, validated_at = ?, validated_by = ?, access_count = ?, last_accessed_at = ?,
+                related_memory_ids = ?, contradicts_ids = ?, merged_into_id = ?,
+                project_id = ?, context_tags = ?, updated_at = ?, expires_at = ?, metadata = ?
+            WHERE id = ?
+        `).run(
+            memory.content,
+            vec,
+            memory.source,
+            memory.sourceId,
+            memory.sourceContext ?? null,
+            memory.category,
+            JSON.stringify(memory.tags),
+            memory.confidence,
+            memory.importance,
+            memory.initialImportance,
+            memory.status,
+            memory.validatedAt ?? null,
+            memory.validatedBy ?? null,
+            memory.accessCount,
+            memory.lastAccessedAt,
+            JSON.stringify(memory.relatedMemoryIds),
+            JSON.stringify(memory.contradictsIds),
+            memory.mergedIntoId ?? null,
+            memory.projectId ?? null,
+            JSON.stringify(memory.contextTags ?? []),
+            memory.updatedAt,
+            memory.expiresAt ?? null,
+            JSON.stringify(memory.metadata ?? {}),
+            memory.id
+        );
+    }
+
+    async getAdvancedMemoryById(id: string): Promise<AdvancedSemanticFragment | null> {
+        const row = await this.adapter.prepare('SELECT * FROM advanced_memories WHERE id = ?').get<JsonObject>(id);
+        return row ? this.mapRowToAdvancedMemory(row) : null;
+    }
+
+    async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
+        const rows = await this.adapter.prepare('SELECT * FROM advanced_memories ORDER BY created_at DESC').all<JsonObject>();
+        return rows.map(r => this.mapRowToAdvancedMemory(r));
+    }
+
+    async deleteAdvancedMemory(id: string): Promise<void> {
+        await this.adapter.prepare('DELETE FROM advanced_memories WHERE id = ?').run(id);
+    }
+
+    async searchAdvancedMemories(embedding: number[], limit: number): Promise<AdvancedSemanticFragment[]> {
+        const vecStr = `[${embedding.join(',')}]`;
+        const rows = await this.adapter.prepare(`
+            SELECT *, embedding <-> $1 as distance
+            FROM advanced_memories
+            WHERE status IN ('confirmed', 'pending')
+            ORDER BY embedding <-> $1
+            LIMIT ${limit}
+        `).all<JsonObject & { distance?: number }>(vecStr);
+
+        return rows.map(r => this.mapRowToAdvancedMemory(r, 1 - (r.distance ?? 0)));
+    }
+
+    private mapRowToAdvancedMemory(r: JsonObject, score?: number): AdvancedSemanticFragment {
+        return {
+            id: String(r.id),
+            content: String(r.content),
+            embedding: [],  // Don't return large embeddings by default
+            source: String(r.source) as MemorySource,
+            sourceId: String(r.source_id),
+            sourceContext: r.source_context as string | undefined,
+            category: String(r.category) as MemoryCategory,
+            tags: this.parseJsonField(r.tags as string | null, []),
+            confidence: Number(r.confidence ?? 0),
+            importance: Number(r.importance ?? 0),
+            initialImportance: Number(r.initial_importance ?? r.importance ?? 0),
+            status: String(r.status) as MemoryStatus,
+            validatedAt: r.validated_at ? Number(r.validated_at) : undefined,
+            validatedBy: r.validated_by as 'user' | 'auto' | 'system' | undefined,
+            accessCount: Number(r.access_count ?? 0),
+            lastAccessedAt: Number(r.last_accessed_at ?? r.created_at),
+            relatedMemoryIds: this.parseJsonField(r.related_memory_ids as string | null, []),
+            contradictsIds: this.parseJsonField(r.contradicts_ids as string | null, []),
+            mergedIntoId: r.merged_into_id as string | undefined,
+            projectId: r.project_id as string | undefined,
+            contextTags: this.parseJsonField(r.context_tags as string | null, []),
+            createdAt: Number(r.created_at),
+            updatedAt: Number(r.updated_at),
+            expiresAt: r.expires_at ? Number(r.expires_at) : undefined,
+            metadata: this.parseJsonField(r.metadata as string | null, {}),
+            ...(score !== undefined ? { score } : {})
+        };
+    }
+
+    // --- Pending Memories ---
+
+    async savePendingMemory(pending: PendingMemory): Promise<void> {
+        const vec = pending.embedding.length > 0 ? `[${pending.embedding.join(',')}]` : null;
+        await this.adapter.prepare(`
+            INSERT INTO pending_memories (
+                id, content, embedding, source, source_id, source_context, extracted_at,
+                suggested_category, suggested_tags, extraction_confidence, relevance_score,
+                novelty_score, requires_user_validation, auto_confirm_reason,
+                potential_contradictions, similar_memories, project_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                content = excluded.content,
+                suggested_category = excluded.suggested_category,
+                suggested_tags = excluded.suggested_tags,
+                extraction_confidence = excluded.extraction_confidence,
+                relevance_score = excluded.relevance_score,
+                novelty_score = excluded.novelty_score,
+                requires_user_validation = excluded.requires_user_validation,
+                potential_contradictions = excluded.potential_contradictions,
+                similar_memories = excluded.similar_memories
+        `).run(
+            pending.id,
+            pending.content,
+            vec,
+            pending.source,
+            pending.sourceId,
+            pending.sourceContext,
+            pending.extractedAt,
+            pending.suggestedCategory,
+            JSON.stringify(pending.suggestedTags),
+            pending.extractionConfidence,
+            pending.relevanceScore,
+            pending.noveltyScore,
+            pending.requiresUserValidation ? 1 : 0,
+            pending.autoConfirmReason ?? null,
+            JSON.stringify(pending.potentialContradictions),
+            JSON.stringify(pending.similarMemories),
+            pending.projectId ?? null
+        );
+    }
+
+    async deletePendingMemory(id: string): Promise<void> {
+        await this.adapter.prepare('DELETE FROM pending_memories WHERE id = ?').run(id);
+    }
+
+    async getAllPendingMemories(): Promise<PendingMemory[]> {
+        const rows = await this.adapter.prepare('SELECT * FROM pending_memories ORDER BY extracted_at DESC').all<JsonObject>();
+        return rows.map(r => this.mapRowToPendingMemory(r));
+    }
+
+    private mapRowToPendingMemory(r: JsonObject): PendingMemory {
+        return {
+            id: String(r.id),
+            content: String(r.content),
+            embedding: [],  // Don't return large embeddings
+            source: String(r.source) as MemorySource,
+            sourceId: String(r.source_id),
+            sourceContext: String(r.source_context),
+            extractedAt: Number(r.extracted_at),
+            suggestedCategory: String(r.suggested_category) as MemoryCategory,
+            suggestedTags: this.parseJsonField(r.suggested_tags as string | null, []),
+            extractionConfidence: Number(r.extraction_confidence ?? 0),
+            relevanceScore: Number(r.relevance_score ?? 0),
+            noveltyScore: Number(r.novelty_score ?? 0),
+            requiresUserValidation: Boolean(r.requires_user_validation),
+            autoConfirmReason: r.auto_confirm_reason as string | undefined,
+            potentialContradictions: this.parseJsonField<ContradictionCandidate[]>(r.potential_contradictions as string | null, []),
+            similarMemories: this.parseJsonField<SimilarMemoryCandidate[]>(r.similar_memories as string | null, []),
+            projectId: r.project_id as string | undefined
+        };
     }
 }

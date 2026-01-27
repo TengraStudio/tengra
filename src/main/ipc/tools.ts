@@ -18,7 +18,8 @@ export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: Com
         try {
             const defs = await toolExecutor.getToolDefinitions();
             appLogger.info('tools', '[Main] tool definitions returned:', defs.length);
-            return defs;
+            // Ensure the definitions are serializable by converting to plain JSON
+            return JSON.parse(JSON.stringify(defs));
         } catch (e) {
             console.error('[Main] tools:getDefinitions error:', e);
             return [];

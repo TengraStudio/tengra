@@ -30,8 +30,12 @@ export class UsageTrackingService {
     }
 
     private async initialize() {
-        await this.migrateLegacyData();
-        await this.cleanupOldRecords();
+        try {
+            await this.migrateLegacyData();
+            await this.cleanupOldRecords();
+        } catch (error) {
+            appLogger.error('UsageTrackingService', `Initialization failed: ${getErrorMessage(error)}`);
+        }
     }
 
     private async migrateLegacyData() {

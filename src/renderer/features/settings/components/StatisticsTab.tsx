@@ -86,7 +86,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                 <CodexCard codexUsage={codexUsage} locale={locale} />
             </div>
 
-            {timeStats && Object.keys(timeStats.projectCodingTime).length > 0 && (
+            {timeStats?.projectCodingTime && Object.keys(timeStats.projectCodingTime).length > 0 && (
                 <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
@@ -117,7 +117,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                             </div>
                         ) : (
                             <ProjectBarChart
-                                projects={Object.entries(timeStats.projectCodingTime)
+                                projects={Object.entries(timeStats?.projectCodingTime ?? {})
                                     .sort(([, a], [, b]) => b - a)
                                     .map(([projectId, time]) => {
                                         const project = projects.find(p => p.id === projectId);
@@ -127,7 +127,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                                             time
                                         };
                                     })}
-                                maxTime={Math.max(...Object.values(timeStats.projectCodingTime), 0)}
+                                maxTime={Math.max(...Object.values(timeStats?.projectCodingTime ?? {}), 0)}
                             />
                         )}
                     </CardContent>

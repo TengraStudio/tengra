@@ -457,14 +457,23 @@ export class CopilotService extends BaseService {
         if (!tools || tools.length === 0) {
             return undefined;
         }
-        return tools.map(tool => ({
-            type: 'function',
-            function: {
-                name: tool.function.name,
-                description: tool.function.description ?? '',
-                parameters: tool.function.parameters ?? {}
+        return tools.map(tool => {
+            // GitHub Copilot may not support full OpenAI function calling spec
+            // Remove 'required' field if it causes issues
+            const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
+            if (params.required) {
+                delete params.required;
             }
-        }));
+            
+            return {
+                type: 'function',
+                function: {
+                    name: tool.function.name,
+                    description: tool.function.description ?? '',
+                    parameters: params
+                }
+            };
+        });
     }
 
     private parseDiagnosticResponse(data: DiagnosticResponse): Message {

@@ -58,25 +58,10 @@ export class BrainService {
     async initialize(): Promise<void> {
         if (this.isInitialized) { return; }
 
-        const dbPath = path.join(app.getPath('userData'), 'brain.db');
-
-        void this.processManager.startService({
-            name: 'brain-service',
-            executable: 'orbit-memory-service', // Reuse memory service for vectors
-            persistent: true
-        });
-
-        try {
-            await this.processManager.sendRequest('brain-service', {
-                type: 'Init',
-                path: dbPath
-            });
-            this.isInitialized = true;
-            appLogger.info('BrainService', `Initialized user brain at: ${dbPath}`);
-        } catch (error) {
-            appLogger.warn('BrainService', `Native service unavailable, using DB fallback: ${error}`);
-        }
-
+        // Brain service uses DB fallback only (doesn't need native service)
+        // This avoids conflicts with memory-service which uses the same executable
+        appLogger.info('BrainService', 'Initializing brain service with DB fallback');
+        
         this.isInitialized = true;
     }
 
@@ -122,17 +107,6 @@ export class BrainService {
         };
 
         await this.db.storeSemanticFragment(fragment);
-
-        // Store in native vector store
-        if (this.isInitialized) {
-            await this.processManager.sendRequest('brain-service', {
-                type: 'InsertVector',
-                id: fact.id,
-                content: fact.content,
-                embedding: fact.embedding,
-                metadata: JSON.stringify({ category, userId: this.userId, confidence })
-            }).catch(e => appLogger.error('BrainService', `Native insert failed: ${e}`));
-        }
 
         appLogger.info('BrainService', `Learned: [${category}] ${content.substring(0, 50)}...`);
         return fact;

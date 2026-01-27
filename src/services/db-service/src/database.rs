@@ -1008,12 +1008,16 @@ impl Database {
         let mut sql = "SELECT id, project_path, file_path, name, line, kind, signature, docstring, embedding, created_at
                        FROM code_symbols".to_string();
 
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
         if let Some(ref project_path) = req.project_path {
-            sql.push_str(&format!(" WHERE project_path = '{}'", project_path));
+            sql.push_str(" WHERE project_path = ?");
+            params.push(Box::new(project_path.clone()));
         }
 
         let mut stmt = conn.prepare(&sql)?;
-        let rows = stmt.query_map([], |row| {
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(param_refs.as_slice(), |row| {
             let embedding_blob: Option<Vec<u8>> = row.get(8)?;
             let embedding: Option<Vec<f32>> = embedding_blob
                 .and_then(|b| bincode::deserialize(&b).ok());
@@ -1081,12 +1085,16 @@ impl Database {
         let mut sql = "SELECT id, content, embedding, source, source_id, tags, importance, project_path, created_at, updated_at
                        FROM semantic_fragments".to_string();
 
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
         if let Some(ref project_path) = req.project_path {
-            sql.push_str(&format!(" WHERE project_path = '{}'", project_path));
+            sql.push_str(" WHERE project_path = ?");
+            params.push(Box::new(project_path.clone()));
         }
 
         let mut stmt = conn.prepare(&sql)?;
-        let rows = stmt.query_map([], |row| {
+        let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(param_refs.as_slice(), |row| {
             let embedding_blob: Vec<u8> = row.get(2)?;
             let embedding: Vec<f32> = bincode::deserialize(&embedding_blob).unwrap_or_default();
 
