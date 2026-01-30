@@ -31,15 +31,14 @@ function registerConnectionHandlers(sshService: SSHService) {
     ipcMain.handle('ssh:connect', async (_event, connection: unknown) => {
         const validated = validateIpc(sshConnectionSchema, connection, 'ssh:connect');
 
-        const id = validated.id || randomUUID();
-        const port = validated.port || 22;
-        const authType = validated.authType || (validated.privateKey ? 'key' : 'password');
+        const id = validated.id ?? randomUUID();
+        const authType = validated.authType ?? (validated.privateKey ? 'key' : 'password');
 
         const payload: SSHConnection = {
             id,
             name: validated.name ?? `${validated.username}@${validated.host}`,
             host: validated.host,
-            port,
+            port: validated.port,
             username: validated.username,
             authType,
             password: validated.password,

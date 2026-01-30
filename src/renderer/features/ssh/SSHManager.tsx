@@ -99,14 +99,14 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             if (shouldSaveProfile) {
                 void window.electron.ssh.saveProfile({
                     ...newConnection,
-                    id: result.id || '',
-                    name: newConnection.name || newConnection.host
+                    id: result.id ?? '',
+                    name: newConnection.name ?? newConnection.host
                 }).catch(e => console.error('Save profile err', e));
             }
 
             void loadConnections().catch(e => console.error('Load conns err', e));
         } else {
-            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error || 'Unknown error' })}\n`);
+            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error ?? 'Unknown error' })}\n`);
         }
     };
 
@@ -117,7 +117,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         // because "Unexpected confirm" is a warning.
         // Replacing with a simpler check or ignoring lint.
         // eslint-disable-next-line
-        if (confirm(t('ssh.confirmDelete') || 'Are you sure?')) {
+        if (confirm(t('ssh.confirmDelete') ?? 'Are you sure?')) {
             await window.electron.ssh.deleteProfile(id);
             void loadConnections();
         }

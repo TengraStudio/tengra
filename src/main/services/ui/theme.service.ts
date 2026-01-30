@@ -271,7 +271,7 @@ export class ThemeService extends BaseService {
             }
 
             const themeObject = data.theme as JsonObject;
-            if (!themeObject || typeof themeObject !== 'object' || Array.isArray(themeObject)) {
+            if (typeof themeObject !== 'object' || Array.isArray(themeObject)) {
                 throw new Error('Invalid theme format');
             }
 

@@ -180,7 +180,7 @@ const TerminalSession = memo(({
                 });
 
                 if (!result.success) {
-                    const errorMsg = result.error || 'Failed to create terminal session';
+                    const errorMsg = result.error ?? 'Failed to create terminal session';
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMsg}\x1b[0m\r\n`);
                     console.error('[TerminalSession] Failed to create session:', errorMsg);
                     setHasError(true);
@@ -237,7 +237,7 @@ const TerminalSession = memo(({
         // Cleanup
         return () => {
             isInitializedRef.current = false;
-            const sessionId = sessionIdRef.current || tab.id;
+            const sessionId = sessionIdRef.current ?? tab.id;
             if (sessionCreated && sessionId) {
                 // Remove from registry and kill the backend session on cleanup
                 initializedTerminals.delete(tab.id);
@@ -370,7 +370,7 @@ export function TerminalPanel({
     const createTerminal = useCallback((type: string) => {
         const id = Math.random().toString(36).substring(2, 9);
         const shellInfo = availableShells.find(s => s.id === type);
-        const typeLabel = shellInfo?.name || type;
+        const typeLabel = shellInfo?.name ?? type;
 
         setTabs(prev => {
             const count = prev.filter(t => t.type === type).length + 1;
@@ -378,7 +378,7 @@ export function TerminalPanel({
                 id,
                 name: `${typeLabel} ${count}`,
                 type,
-                cwd: projectPath || '',
+                cwd: projectPath ?? '',
                 isRunning: true,
                 status: 'idle',
                 history: [],

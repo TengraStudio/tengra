@@ -111,7 +111,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
         return sessions.map(session => ({
             ...session,
             // Cache session metadata
-            ideaCount: session.maxIdeas || 0,
+            ideaCount: session.maxIdeas ?? 0,
             formattedDate: new Date(session.createdAt).toLocaleDateString()
         }));
     }, [sessions]);
@@ -293,8 +293,8 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                     if (idea.techStack) {
                         content += `### Tech Stack\n`;
                         const stack = idea.techStack;
-                        if (stack.frontend?.length) { content += `- Frontend: ${stack.frontend.map(t => t.name).join(', ')}\n`; }
-                        if (stack.backend?.length) { content += `- Backend: ${stack.backend.map(t => t.name).join(', ')}\n`; }
+                        if (stack.frontend.length) { content += `- Frontend: ${stack.frontend.map(t => t.name).join(', ')}\n`; }
+                        if (stack.backend.length) { content += `- Backend: ${stack.backend.map(t => t.name).join(', ')}\n`; }
                         content += '\n';
                     }
 
@@ -428,7 +428,7 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
                     message={
                         deleteConfirm.type === 'idea'
                             ? 'Are you sure you want to delete this idea? This action cannot be undone.'
-                            : `Are you sure you want to delete ${deleteConfirm.ids?.length || 0} ideas? This action cannot be undone.`
+                            : `Are you sure you want to delete ${deleteConfirm.ids?.length ?? 0} ideas? This action cannot be undone.`
                     }
                     confirmLabel="Delete"
                     variant="danger"

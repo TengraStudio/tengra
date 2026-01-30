@@ -19,7 +19,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
     settings, editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona, t
 }) => {
     if (!settings) { return null; }
-    const personas = settings.personas || [];
+    const personas = settings.personas ?? [];
 
     return (
         <div className="space-y-6">

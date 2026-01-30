@@ -21,9 +21,9 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         try {
             const result = await window.electron.ssh.listDir(connectionId, path) as ServiceResponse<SSHFile[]>;
             if (result.success) {
-                setFiles(result.data || []);
+                setFiles(result.data ?? []);
             } else {
-                setError(result.error || t('ssh.unknownError'));
+                setError(result.error ?? t('ssh.unknownError'));
             }
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
@@ -59,7 +59,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
+            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 
@@ -72,7 +72,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
+            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 
@@ -87,7 +87,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error || 'Unknown error' }));
+            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 

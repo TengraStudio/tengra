@@ -105,7 +105,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         const groups: Record<string, CommandItem[]> = {};
         filtered.forEach(c => {
             const cat = c.category;
-            if (!groups[cat]) {
+            if (!(cat in groups)) {
                 groups[cat] = [];
             }
             groups[cat].push(c);

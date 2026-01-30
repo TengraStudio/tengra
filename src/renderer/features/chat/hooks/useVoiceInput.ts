@@ -44,7 +44,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
 
     useEffect(() => {
         if (isSupported) {
-            const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
             if (!SpeechRecognitionCtor) { return; }
             const recognitionInstance = new SpeechRecognitionCtor();
             recognitionInstance.lang = language;

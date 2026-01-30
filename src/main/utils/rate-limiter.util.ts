@@ -134,7 +134,7 @@ export function getRateLimiter(provider: string): RateLimiter {
 
     let limiter = limiters.get(key);
     if (!limiter) {
-        const options = DEFAULT_LIMITS[key] || DEFAULT_LIMITS.default;
+        const options = DEFAULT_LIMITS[key] ?? DEFAULT_LIMITS.default;
         limiter = new RateLimiter(options);
         limiters.set(key, limiter);
     }

@@ -18,7 +18,7 @@ interface AssistantIdentityProps {
  * Renders the appropriate branding icon based on the model or provider.
  */
 export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, provider, backend }) => {
-    const modelName = (model || '').toString().toLowerCase();
+    const modelName = (model ?? '').toString().toLowerCase();
     const inferredProvider = modelName.startsWith('gpt-') || modelName.startsWith('o1-')
         ? 'openai'
         : modelName.startsWith('claude-')
@@ -30,7 +30,7 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
                     ? 'antigravity'
                     : '';
 
-    const p = (provider || backend || inferredProvider || 'ollama').toLowerCase();
+    const p = (provider ?? backend ?? inferredProvider ?? 'ollama').toLowerCase();
 
     // OpenAI / ChatGPT / Codex
     if (p.includes('openai') || p.includes('codex') || p.includes('gpt')) {

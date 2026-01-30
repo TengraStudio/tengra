@@ -1,3 +1,4 @@
+import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerAgentIpc } from '@main/ipc/agent';
 import { registerAuthIpc } from '@main/ipc/auth';
 import { registerChatIpc } from '@main/ipc/chat';
@@ -15,7 +16,6 @@ import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMcpIpc } from '@main/ipc/mcp';
-import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { registerOllamaIpc } from '@main/ipc/ollama';

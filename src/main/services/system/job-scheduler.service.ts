@@ -95,7 +95,7 @@ export class JobSchedulerService extends BaseService {
 
         for (const [id, job] of this.recurringJobs) {
             const jobState = states[id];
-            const lastRun = jobState?.lastRun || 0;
+            const lastRun = jobState ? jobState.lastRun : 0;
             job.lastRun = lastRun;
             this.scheduleNextRun(job);
         }

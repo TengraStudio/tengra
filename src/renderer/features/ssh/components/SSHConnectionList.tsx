@@ -45,7 +45,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                     )}
                         onClick={() => conn.status === 'connected' && onSelect(conn.id)}
                     >
-                        <div className="font-bold text-foreground">{conn.name || conn.host}</div>
+                        <div className="font-bold text-foreground">{conn.name ?? conn.host}</div>
                         <div style={{ fontSize: '0.8em', opacity: 0.7 }}>{conn.username}@{conn.host}</div>
                         <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span className={cn(

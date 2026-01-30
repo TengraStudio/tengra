@@ -188,7 +188,7 @@ const updateChatsState = (options: UpdateChatsStateOptions) => {
             return {
                 ...m,
                 content,
-                reasoning: reasoning ?? undefined,
+                reasoning: reasoning || undefined,
                 variants: currentVariants.length > 1 ? currentVariants : undefined
             };
         })
@@ -212,7 +212,7 @@ const saveMessageToDb = async (options: SaveToDbOptions): Promise<void> => {
     const currentVariants = createVariantsArray(assistantId, model, variants);
     const updates: Partial<Message> = {
         content,
-        reasoning: reasoning ?? undefined
+        reasoning: reasoning || undefined
     };
     if (responseTime !== undefined) { updates.responseTime = responseTime; }
     if (sources && sources.length > 0) { updates.sources = sources; }
@@ -239,7 +239,7 @@ const createCompletedMessage = (options: CreateCompletedMessageOptions): Message
     const { assistantId, provider, model, content, reasoning, sources, images, variants, responseTime, toolCalls } = options;
     const completedVariants = createVariantsArray(assistantId, model, variants);
     return {
-        id: assistantId, role: 'assistant', content, reasoning: reasoning ?? undefined,
+        id: assistantId, role: 'assistant', content, reasoning: reasoning || undefined,
         timestamp: new Date(), provider, model, responseTime, sources,
         images: images.length > 0 ? images : undefined,
         variants: completedVariants.length > 1 ? completedVariants : undefined,

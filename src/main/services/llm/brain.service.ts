@@ -14,15 +14,12 @@
  * - YES user identity, preferences, skills, goals
  */
 
-import path from 'path';
-
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 export interface UserFact {
     id: string
@@ -61,7 +58,7 @@ export class BrainService {
         // Brain service uses DB fallback only (doesn't need native service)
         // This avoids conflicts with memory-service which uses the same executable
         appLogger.info('BrainService', 'Initializing brain service with DB fallback');
-        
+
         this.isInitialized = true;
     }
 

@@ -17,7 +17,7 @@ export const SSHTerminal: React.FC<SSHTerminalProps> = ({
     return (
         <div className="flex h-full p-4 flex-col bg-background">
             <div className="flex-1 bg-background rounded-lg p-3 font-mono text-[11px] overflow-y-auto whitespace-pre-wrap mb-3 border border-border/30 text-[#0f0]">
-                {terminalOutput || t('ssh.terminalOutput')}
+                {terminalOutput !== '' ? terminalOutput : t('ssh.terminalOutput')}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
                 <input

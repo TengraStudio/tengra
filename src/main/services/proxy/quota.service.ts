@@ -98,7 +98,7 @@ export class QuotaService {
                             email: account.email
                         });
                     } else {
-                        appLogger.warn('QuotaService', `Failed to fetch quota for account ${account.email || account.id}`);
+                        appLogger.warn('QuotaService', `Failed to fetch quota for account ${account.email ?? account.id}`);
                     }
                 }
             }

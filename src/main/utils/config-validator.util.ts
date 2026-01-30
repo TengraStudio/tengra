@@ -165,8 +165,7 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
     // Check for unknown keys
     for (const key of Object.keys(config)) {
         const path = basePath ? `${basePath}.${key}` : key;
-        const schemaEntry = schema[key];
-        if (!schemaEntry) {
+        if (!(key in schema)) {
             warnings.push({
                 path,
                 message: 'Unknown configuration key',

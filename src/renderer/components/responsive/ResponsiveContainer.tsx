@@ -75,16 +75,16 @@ export function ResponsiveGrid({
     const isTablet = breakpoint === 'md';
 
     const gridCols = isMobile
-        ? `grid-cols-${cols.mobile || 1}`
+        ? `grid-cols-${cols.mobile ?? 1}`
         : isTablet
-          ? `grid-cols-${cols.tablet || 2}`
-          : `grid-cols-${cols.desktop || 3}`;
+          ? `grid-cols-${cols.tablet ?? 2}`
+          : `grid-cols-${cols.desktop ?? 3}`;
 
     const gridGap = isMobile
-        ? gap.mobile || 'gap-2'
+        ? gap.mobile ?? 'gap-2'
         : isTablet
-          ? gap.tablet || 'gap-4'
-          : gap.desktop || 'gap-6';
+          ? gap.tablet ?? 'gap-4'
+          : gap.desktop ?? 'gap-6';
 
     return (
         <div className={cn('grid', gridCols, gridGap, className)}>

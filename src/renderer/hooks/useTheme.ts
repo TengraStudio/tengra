@@ -3,7 +3,7 @@ import { useEffect,useState } from 'react';
 export const useTheme = () => {
     // Initialize with current attribute or default
     const [theme, setTheme] = useState<string>(() => {
-        return document.documentElement.getAttribute('data-theme') || 'graphite';
+        return document.documentElement.getAttribute('data-theme') ?? 'graphite';
     });
 
     useEffect(() => {

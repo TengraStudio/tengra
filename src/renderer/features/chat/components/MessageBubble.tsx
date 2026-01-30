@@ -576,7 +576,7 @@ const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isSt
                 <div className="flex items-center gap-2">
                     <AssistantLogo displayModel={variant.model} provider={variant.provider} />
                     <div className="flex flex-col">
-                        <span className="text-xs font-bold text-foreground/90">{variant.model || 'Unknown Model'}</span>
+                        <span className="text-xs font-bold text-foreground/90">{variant.model ?? 'Unknown Model'}</span>
                         <span className="text-[10px] text-muted-foreground">{variant.provider}</span>
                     </div>
                 </div>
@@ -633,7 +633,7 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
 
     // We only use this for Single View fallback
     const activeVariant = selectedVariantId ? variants.find(v => v.id === selectedVariantId) : (variants.find(v => v.isSelected) || variants[0]);
-    const rawContent = hasVariants ? (activeVariant?.content || '') : message.content;
+    const rawContent = hasVariants ? (activeVariant?.content ?? '') : message.content;
     const rawReasoning = hasVariants ? undefined : message.reasoning; // Variants don't have reasoning in current UI logic separate from content usually, but hook splits it.
 
     const { thought, plan, displayContent } = useMessageContent(rawContent, rawReasoning, streamingReasoning);

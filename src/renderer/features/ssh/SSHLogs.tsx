@@ -72,7 +72,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             {/* Viewer */}
             <div className="flex-1 flex flex-col bg-background text-foreground">
                 <div className="p-2 bg-muted/30 border-b border-border text-xs font-mono text-muted-foreground flex justify-between">
-                    <span>{selectedLog || 'Select a log file'}</span>
+                    <span>{selectedLog ?? 'Select a log file'}</span>
                     <span>{loading ? 'Reading...' : 'Last 100 lines'}</span>
                 </div>
                 <pre className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">

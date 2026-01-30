@@ -143,7 +143,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         // But DB return might not have it.
 
         const targetChat = chats.find(c => c.id === currentChatId);
-        if (targetChat && (!targetChat.messages || targetChat.messages.length === 0)) {
+        if (targetChat?.messages.length === 0) {
             // We generally assume that if it's in the list and empty, we might need to check DB.
             // To avoid infinite loops for empty chats, we can trust the 'addMessage' flow updates them.
             // But here we want to fetch if we haven't fetched yet.

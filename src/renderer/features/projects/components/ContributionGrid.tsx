@@ -106,7 +106,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                             <div key={weekIndex} className="flex flex-col gap-1">
                                 {/* Month label */}
                                 <div className="h-2.5 text-xs text-muted-foreground">
-                                    {monthLabels.find(m => m.index === weekIndex)?.month || ''}
+                                    {monthLabels.find(m => m.index === weekIndex)?.month ?? ''}
                                 </div>
                                 {/* Week days */}
                                 {week.map((day, dayIndex) => (

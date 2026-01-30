@@ -21,7 +21,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
             const result = await handler(...args);
             return { success: true, data: result };
         } catch (error: any) {
-            return { success: false, error: error.message || 'Unknown Error' };
+            return { success: false, error: error.message ?? 'Unknown Error' };
         }
     }
 }));
