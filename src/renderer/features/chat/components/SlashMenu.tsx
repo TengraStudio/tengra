@@ -94,7 +94,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
                             <div className="text-sm font-bold truncate leading-tight">{cmd.label}</div>
                             <div className={cn(
                                 "text-[11px] truncate mt-0.5",
-                                idx === selectedIndex ? "text-foreground/70" : "text-zinc-500"
+                                idx === selectedIndex ? "text-foreground/70" : "text-muted-foreground"
                             )}>{cmd.description}</div>
                         </div>
                     </button>

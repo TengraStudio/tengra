@@ -105,7 +105,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
                 className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all w-full text-left",
                     hasError
-                        ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                        ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
                         : "bg-muted/20 text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                 )}
             >

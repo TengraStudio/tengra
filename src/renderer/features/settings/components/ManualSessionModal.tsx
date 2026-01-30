@@ -86,7 +86,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                             Complete Connection for {email ?? 'your account'}
                         </p>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                            To enable quota tracking and direct interaction, Orbit needs your Claude session key.
+                            To enable quota tracking and direct interaction, Tandem needs your Claude session key.
                             We encrypt and store this key locally on your device.
                         </p>
                     </div>
@@ -152,7 +152,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         className={cn(
                             "flex-[2] px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/10",
                             success
-                                ? "bg-emerald-500 text-foreground shadow-emerald-500/20"
+                                ? "bg-success text-foreground shadow-emerald-500/20"
                                 : "bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:grayscale"
                         )}
                     >
@@ -172,3 +172,4 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         </Modal>
     );
 };
+

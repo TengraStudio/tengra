@@ -36,7 +36,7 @@ export class McpModule {
     static getInfo() {
         return {
             version: '1.0.0',
-            description: 'Model Context Protocol integration for Orbit',
+            description: 'Model Context Protocol integration for Tandem',
             availableServers: Object.values(McpServerType),
             status: 'active'
         };

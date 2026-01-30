@@ -32,7 +32,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({
             {isCustom && onDelete && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(preset.id); }}
-                    className="absolute top-1 right-1 p-1 rounded bg-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 right-1 p-1 rounded bg-destructive/20 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                     <Trash2 size={10} />
                 </button>

@@ -87,7 +87,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const filtered = useMemo(() => {
         const q = debouncedSearch.toLowerCase();
-        return commands.filter(c => c.label.toLowerCase().includes(q) || (c.description?.toLowerCase().includes(q)) ?? false || c.category.includes(q));
+        return commands.filter(c => c.label.toLowerCase().includes(q) || ((c.description?.toLowerCase().includes(q)) ?? false) || c.category.includes(q));
     }, [commands, debouncedSearch]);
 
     useEffect(() => {

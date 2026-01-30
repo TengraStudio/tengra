@@ -28,11 +28,11 @@ interface AgentStatusFlags {
 
 const getStatusColor = (flags: AgentStatusFlags) => {
     if (flags.isRunning) { return "bg-primary text-primary-foreground animate-pulse shadow-primary/20"; }
-    if (flags.isCompleted) { return "bg-emerald-500 text-white shadow-emerald-500/20"; }
+    if (flags.isCompleted) { return "bg-success text-white shadow-emerald-500/20"; }
     if (flags.isFailed) { return "bg-destructive text-white shadow-destructive/20"; }
-    if (flags.isStuck) { return "bg-orange-500 text-white animate-pulse shadow-orange-500/20"; }
-    if (flags.isInterrupted) { return "bg-amber-500 text-white animate-bounce shadow-amber-500/20"; }
-    if (flags.isPaused) { return "bg-yellow-500 text-white shadow-yellow-500/20"; }
+    if (flags.isStuck) { return "bg-orange text-white animate-pulse shadow-orange-500/20"; }
+    if (flags.isInterrupted) { return "bg-warning text-white animate-bounce shadow-amber-500/20"; }
+    if (flags.isPaused) { return "bg-yellow text-white shadow-yellow-500/20"; }
     return "bg-muted text-muted-foreground";
 };
 
@@ -66,7 +66,7 @@ const ProgressBar = ({ progress, isCompleted, isFailed, isRunning }: { progress:
         <div
             className={cn(
                 "absolute inset-y-0 left-0 transition-all duration-1000 ease-out rounded-full",
-                isCompleted ? "bg-emerald-500" : isFailed ? "bg-destructive" : "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                isCompleted ? "bg-success" : isFailed ? "bg-destructive" : "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
             )}
             style={{ width: `${progress}%` }}
         />
@@ -94,7 +94,7 @@ const MetricsSection = ({ metrics, t }: { metrics: StatusIndicatorsProps['metric
             icon={Coins}
             label={t('agent.cost')}
             value={`$${metrics ? (metrics.estimatedCost ?? 0).toFixed(4) : '0.0000'}`}
-            valueClassName="text-emerald-500"
+            valueClassName="text-success"
         />
     </div>
 );

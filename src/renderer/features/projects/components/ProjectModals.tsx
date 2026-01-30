@@ -123,10 +123,10 @@ const ArchiveProjectModal: React.FC<{
         {project && (
             <Modal isOpen={!!project} onClose={onClose} title={t('projects.archiveProject')}>
                 <div className="space-y-4 pt-2">
-                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-sm text-emerald-500/90 leading-relaxed font-light">
+                    <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                        <p className="text-sm text-success/90 leading-relaxed font-light">
                             {t('projects.archiveConfirmation')} <span className="font-semibold text-foreground">{project.title}</span>?
-                            <span className="block mt-1 text-xs text-emerald-500 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
@@ -157,10 +157,10 @@ const BulkArchiveModal: React.FC<{
         {isOpen && (
             <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
                 <div className="space-y-4 pt-2">
-                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-sm text-emerald-500/90 leading-relaxed font-light">
+                    <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                        <p className="text-sm text-success/90 leading-relaxed font-light">
                             {t('projects.archiveConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
-                            <span className="block mt-1 text-xs text-emerald-500 font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
@@ -243,11 +243,11 @@ const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) =
             </svg>
         </div>
         <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground group-hover:text-red-400 transition-colors">
+            <span className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors">
                 {t('projects.deleteProjectFiles')}
             </span>
             {checked && (
-                <span className="text-[10px] text-red-500 font-bold uppercase animate-pulse">
+                <span className="text-[10px] text-destructive font-bold uppercase animate-pulse">
                     ⚠️ Permanent Deletion
                 </span>
             )}

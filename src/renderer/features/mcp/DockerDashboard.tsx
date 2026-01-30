@@ -108,10 +108,10 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
     const getStateColor = (state: string) => {
         switch (state) {
-            case 'running': return 'text-green-400 bg-green-500/20';
-            case 'exited': return 'text-red-400 bg-red-500/20';
-            case 'paused': return 'text-yellow-400 bg-yellow-500/20';
-            default: return 'text-zinc-400 bg-zinc-500/20';
+            case 'running': return 'text-success bg-success/20';
+            case 'exited': return 'text-destructive bg-destructive/20';
+            case 'paused': return 'text-yellow bg-yellow/20';
+            default: return 'text-muted-foreground bg-muted/20';
         }
     };
 
@@ -122,12 +122,12 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30">
-                        <Box size={20} className="text-blue-400" />
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-primary/30">
+                        <Box size={20} className="text-primary" />
                     </div>
                     <div>
                         <h2 className="font-semibold text-foreground">{t('docker.title')}</h2>
-                        <p className="text-xs text-zinc-500">{containers.length} {t('docker.containers')}</p>
+                        <p className="text-xs text-muted-foreground">{containers.length} {t('docker.containers')}</p>
                     </div>
                 </div>
                 <button
@@ -141,7 +141,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
 
             {/* Error */}
             {error && (
-                <div className="mx-4 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <div className="mx-4 mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                     {error}
                 </div>
             )}
@@ -150,7 +150,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
             <div className="flex-1 flex overflow-hidden">
                 <div className="w-1/2 border-r border-border/50 overflow-y-auto p-4 space-y-2">
                     {containers.length === 0 && !isLoading && (
-                        <div className="text-center text-zinc-500 text-sm py-8">
+                        <div className="text-center text-muted-foreground text-sm py-8">
                             {t('docker.noContainers')}
                         </div>
                     )}
@@ -161,7 +161,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                             className={cn(
                                 "p-3 rounded-xl border cursor-pointer transition-all",
                                 selectedContainer === container.id
-                                    ? "bg-blue-500/10 border-blue-500/30"
+                                    ? "bg-primary/10 border-primary/30"
                                     : "bg-muted/30 border-border/50 hover:bg-muted/50"
                             )}
                         >
@@ -176,7 +176,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                     {container.state}
                                 </span>
                             </div>
-                            <div className="text-xs text-zinc-500 truncate">{container.image}</div>
+                            <div className="text-xs text-muted-foreground truncate">{container.image}</div>
                             {container.ports && (
                                 <div className="text-xs text-zinc-600 mt-1 truncate">{container.ports}</div>
                             )}
@@ -186,7 +186,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                 {container.state === 'running' ? (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); void containerAction('stop', container.id); }}
-                                        className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
+                                        className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                                         title={t('docker.stop')}
                                     >
                                         <Square size={14} />
@@ -194,7 +194,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                 ) : (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); void containerAction('start', container.id); }}
-                                        className="p-1.5 rounded hover:bg-green-500/20 text-zinc-400 hover:text-green-400"
+                                        className="p-1.5 rounded hover:bg-success/20 text-muted-foreground hover:text-success"
                                         title={t('docker.start')}
                                     >
                                         <Play size={14} />
@@ -202,7 +202,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                 )}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); void containerAction('rm', container.id); }}
-                                    className="p-1.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-400"
+                                    className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                                     title={t('docker.remove')}
                                 >
                                     <Trash2 size={14} />
@@ -212,7 +212,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                                         e.stopPropagation();
                                         onOpenTerminal?.(`Docker: ${container.name}`, `docker exec -it ${container.id} /bin/sh`);
                                     }}
-                                    className="p-1.5 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400"
+                                    className="p-1.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary"
                                     title={t('docker.shell')}
                                 >
                                     <Terminal size={14} />
@@ -225,10 +225,10 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                 {/* Logs Panel */}
                 <div className="w-1/2 flex flex-col overflow-hidden">
                     <div className="p-3 border-b border-border/50 flex items-center gap-2">
-                        <Terminal size={14} className="text-zinc-400" />
-                        <span className="text-sm text-zinc-400">{t('docker.logs')}</span>
+                        <Terminal size={14} className="text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{t('docker.logs')}</span>
                     </div>
-                    <pre className="flex-1 p-4 text-xs font-mono text-zinc-400 overflow-y-auto whitespace-pre-wrap">
+                    <pre className="flex-1 p-4 text-xs font-mono text-muted-foreground overflow-y-auto whitespace-pre-wrap">
                         {selectedContainer ? (logs !== '' ? logs : t('docker.loading')) : t('docker.selectContainer')}
                     </pre>
                 </div>

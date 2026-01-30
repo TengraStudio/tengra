@@ -65,11 +65,11 @@ export function GalleryView({ language }: GalleryViewProps) {
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                 <div className="flex items-center gap-3">
                     <h3 className="text-foreground font-medium">{t('gallery.title')}</h3>
-                    <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
+                    <span className="text-xs text-muted-foreground bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
                 </div>
                 <button
                     onClick={() => void loadImages()}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-foreground transition-colors"
+                    className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                     title={t('gallery.refresh')}
                 >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -78,7 +78,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
             <div className="flex-1 overflow-y-auto p-6">
                 {images.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
+                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                         <Image className="w-12 h-12 mb-3 opacity-20" />
                         <p>{t('gallery.noImages')}</p>
                         <p className="text-xs mt-1">{t('gallery.emptyState')}</p>
@@ -86,7 +86,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {images.map((img) => (
-                            <div key={img.path} className="group relative aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 hover:border-purple-500/50 transition-all">
+                            <div key={img.path} className="group relative aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 hover:border-purple/50 transition-all">
                                 <img
                                     src={img.url}
                                     alt={img.name}
@@ -107,7 +107,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                         </button>
                                         <button
                                             onClick={() => void handleOpen(img.path)}
-                                            className="p-1.5 bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 rounded-lg backdrop-blur-sm transition-colors"
+                                            className="p-1.5 bg-primary/20 hover:bg-primary/40 text-blue-300 rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.open')}
                                         >
                                             <ExternalLink className="w-4 h-4" />
@@ -115,7 +115,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                                         <button
                                             onClick={() => void handleDelete(img.path)}
                                             disabled={!!deleting}
-                                            className="p-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg backdrop-blur-sm transition-colors"
+                                            className="p-1.5 bg-destructive/20 hover:bg-destructive/40 text-red-300 rounded-lg backdrop-blur-sm transition-colors"
                                             title={t('gallery.delete')}
                                         >
                                             {deleting === img.path ? (

@@ -25,7 +25,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
     return (
         <div className="space-y-4 flex-1 pt-4 flex flex-col min-h-0">
             <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
-                <Terminal className="w-4 h-4 text-purple-400 shrink-0" />
+                <Terminal className="w-4 h-4 text-purple shrink-0" />
                 <input
                     value={sshPath}
                     onChange={e => setSshPath(e.target.value)}
@@ -53,7 +53,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                         }}
                         className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
                     >
-                        <FolderOpen className="w-4 h-4 text-yellow-500/70 group-hover:text-yellow-400" />
+                        <FolderOpen className="w-4 h-4 text-yellow/70 group-hover:text-yellow" />
                         <span className="text-sm text-foreground/70 group-hover:text-foreground">..</span>
                     </button>
                 )}
@@ -72,7 +72,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                         )}
                     >
                         {file.isDirectory ? (
-                            <FolderOpen className="w-4 h-4 text-blue-400/70 group-hover:text-blue-400" />
+                            <FolderOpen className="w-4 h-4 text-primary/70 group-hover:text-primary" />
                         ) : (
                             <Code className="w-4 h-4 text-foreground/30" />
                         )}

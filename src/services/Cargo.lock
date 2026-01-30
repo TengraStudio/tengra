@@ -960,88 +960,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
-name = "orbit-db-service"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64",
- "bincode",
- "chrono",
- "directories",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "windows-service",
-]
-
-[[package]]
-name = "orbit-memory-service"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "bincode",
- "chrono",
- "directories",
- "rusqlite",
- "serde",
- "serde_json",
- "tokio",
- "tower-http",
-]
-
-[[package]]
-name = "orbit-model-service"
-version = "0.1.0"
-dependencies = [
- "axum",
- "directories",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tower-http",
-]
-
-[[package]]
-name = "orbit-quota-service"
-version = "0.1.0"
-dependencies = [
- "axum",
- "directories",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tower-http",
-]
-
-[[package]]
-name = "orbit-token-service"
-version = "0.1.0"
-dependencies = [
- "axum",
- "base64",
- "chrono",
- "directories",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tower-http",
-]
-
-[[package]]
 name = "parking_lot"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1490,6 +1408,88 @@ checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "tandem-db-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64",
+ "bincode",
+ "chrono",
+ "directories",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+ "windows-service",
+]
+
+[[package]]
+name = "tandem-memory-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bincode",
+ "chrono",
+ "directories",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
+name = "tandem-model-service"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "directories",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
+name = "tandem-quota-service"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "directories",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
+name = "tandem-token-service"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "base64",
+ "chrono",
+ "directories",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
 ]
 
 [[package]]

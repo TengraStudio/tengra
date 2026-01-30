@@ -694,6 +694,7 @@ export interface ElectronAPI {
 declare global {
     interface Window {
         electron: ElectronAPI
-        orbitSpeak: (text: string) => void
+        TandemSpeak: (text: string) => void
     }
 }
+

@@ -95,7 +95,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                     onClick={() => { onTranslate(selectedText); setIsVisible(false); }}
                     className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
                 >
-                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                    <Globe className="w-3.5 h-3.5 text-success" />
                     <span>{t('quickAction.translate')}</span>
                 </button>
                 <div className="w-px h-4 bg-border/50 mx-0.5" />
@@ -108,7 +108,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 </button>
                 <button
                     onClick={() => setIsVisible(false)}
-                    className="p-1.5 hover:bg-red-500/10 text-muted-foreground hover:text-red-400 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
                 >
                     <X className="w-3.5 h-3.5" />
                 </button>

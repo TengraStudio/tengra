@@ -125,7 +125,7 @@ const ImageSkeleton = ({ t }: { t: (key: string) => string }) => (
             <Sparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.orbitDrawing')}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
             <div className="flex gap-1 justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />
@@ -152,9 +152,9 @@ const AssistantLogo = memo(({ displayModel, provider, backend }: { displayModel?
 AssistantLogo.displayName = 'AssistantLogo';
 
 const QuotaErrorCard = memo(({ details, t }: { details: { message: string; resets_at: number | null; model: string | null }; t: (key: string) => string }) => (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 max-w-md animate-in fade-in zoom-in duration-300">
+    <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-destructive/20 text-destructive max-w-md animate-in fade-in zoom-in duration-300">
         <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-full bg-red-500/20"><AlertCircle className="w-5 h-5" /></div>
+            <div className="p-2 rounded-full bg-destructive/20"><AlertCircle className="w-5 h-5" /></div>
             <div>
                 <div className="font-bold text-sm uppercase tracking-tight">{t('messageBubble.quotaExceeded')}</div>
                 {details.model && <div className="text-xs opacity-70 mt-0.5">{details.model}</div>}
@@ -162,7 +162,7 @@ const QuotaErrorCard = memo(({ details, t }: { details: { message: string; reset
         </div>
         <p className="text-sm opacity-90 leading-relaxed mb-3">{details.message}</p>
         {details.resets_at && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-xs font-medium">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/10 text-xs font-medium">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{t('messageBubble.resetsAt')} {new Date(details.resets_at * 1000).toLocaleString()}</span>
             </div>
@@ -185,14 +185,14 @@ const CopyButton = memo(({ text, t }: { text: string; t: (key: string) => string
     };
     return (
         <button onClick={() => { void handleCopy(); }} className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground" title={t('messageBubble.copy')}>
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     );
 });
 CopyButton.displayName = 'CopyButton';
 
 const BookmarkButton = memo(({ active, onClick, t }: { active: boolean; onClick: () => void; t: (key: string) => string }) => (
-    <button onClick={onClick} className={cn("p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300", active ? "text-amber-400 bg-amber-400/10 shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "text-muted-foreground hover:text-foreground")} title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}>
+    <button onClick={onClick} className={cn("p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300", active ? "text-warning bg-warning/10 shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "text-muted-foreground hover:text-foreground")} title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}>
         <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} />
     </button>
 ));
@@ -200,10 +200,10 @@ BookmarkButton.displayName = 'BookmarkButton';
 
 const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void; t: (key: string) => string }) => (
     <div className="flex items-center gap-1 border-s border-border/50 ps-2 ms-1">
-        <button onClick={() => onRate(rating === 1 ? 0 : 1)} className={cn("p-1.5 rounded-md transition-all duration-200", rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-400/5")} title={t('messageBubble.goodAnswer')}>
+        <button onClick={() => onRate(rating === 1 ? 0 : 1)} className={cn("p-1.5 rounded-md transition-all duration-200", rating === 1 ? "text-success bg-success/10" : "text-muted-foreground hover:text-success hover:bg-success/5")} title={t('messageBubble.goodAnswer')}>
             <ThumbsUp className={cn("w-3.5 h-3.5", rating === 1 && "fill-current")} />
         </button>
-        <button onClick={() => onRate(rating === -1 ? 0 : -1)} className={cn("p-1.5 rounded-md transition-all duration-200", rating === -1 ? "text-red-400 bg-red-400/10" : "text-muted-foreground hover:text-red-400 hover:bg-red-400/5")} title={t('messageBubble.badAnswer')}>
+        <button onClick={() => onRate(rating === -1 ? 0 : -1)} className={cn("p-1.5 rounded-md transition-all duration-200", rating === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive hover:bg-destructive/5")} title={t('messageBubble.badAnswer')}>
             <ThumbsDown className={cn("w-3.5 h-3.5", rating === -1 && "fill-current")} />
         </button>
     </div>
@@ -238,7 +238,7 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         void render();
         return () => { mounted = false; };
     }, [code, id]);
-    if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>; }
+    if (error) { return <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
     if (!svg) { return <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-white/5 animate-pulse"><div className="text-xs text-muted-foreground">Rendering Diagram...</div></div>; }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />;
 });
@@ -334,7 +334,7 @@ const ThoughtSection = memo(({ thought, isThoughtExpanded, setIsThoughtExpanded,
             <button onClick={() => setIsThoughtExpanded(!isThoughtExpanded)} className={cn("flex items-center gap-2 group/thought transition-all duration-300", isThoughtExpanded ? "mb-2" : "mb-0")}>
                 <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 select-none", isThoughtExpanded ? "bg-primary/10 border-primary/20 text-primary shadow-sm shadow-primary/10" : "bg-accent/30 border-border/50 text-muted-foreground/60 hover:bg-accent/50 hover:border-border hover:text-primary/70")}>
                     <div className={cn("p-1 rounded-full", isThoughtExpanded ? "bg-primary/20" : "bg-accent/30")}><Brain className={cn("w-3.5 h-3.5", isThoughtExpanded ? "animate-pulse" : "")} /></div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? t('messageBubble.orbitThinking') : t('messageBubble.showThought')}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? t('messageBubble.TandemThinking') : t('messageBubble.showThought')}</span>
                     <Sparkles className={cn("w-3 h-3 transition-opacity duration-300", isThoughtExpanded ? "opacity-100" : "opacity-0")} />
                     <span className={cn("text-[8px] transition-transform duration-300 ms-1", isThoughtExpanded ? "rotate-180" : "rotate-0")}>▼</span>
                 </div>
@@ -694,10 +694,11 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
                     <PlanAndThought plan={plan} thought={thought} isLast={isLast} isStreaming={isStreaming} onApprovePlan={onApprovePlan} isThoughtExpanded={isThoughtExpanded} setIsThoughtExpanded={setIsThoughtExpanded} t={t} />
                     <MessageBubbleInner isUser={isUser} isStreaming={isStreaming} displayContent={displayContent} quotaDetails={quota} images={images} showRawMarkdown={showRawMarkdown} visibleContent={visibleContent} thought={thought} onSpeak={onSpeak} onStop={onStop} isSpeaking={isSpeaking} onCodeConvert={onCodeConvert} message={message} onBookmark={onBookmark} onReact={onReact} onRate={onRate} onSourceClick={onSourceClick} setIsContentExpanded={setIsContentExpanded} isContentExpanded={isContentExpanded} lineCount={lineCount} setShowRawMarkdown={setShowRawMarkdown} t={t} />
                     {message.reactions && message.reactions.length > 0 && (<div className="flex flex-wrap gap-1 mt-1 mb-1 px-1">{message.reactions.map((e, idx) => (<button key={idx} onClick={() => onReact?.(e)} className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] hover:bg-primary/20 transition-colors">{e}</button>))}</div>)}
-                    {!isUser && displayContent && !quota && (<div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/40 font-medium"><span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span>~{Math.ceil(displayContent.length / 4)} token</span>{message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}{message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-emerald-400/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}{message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-amber-400/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /> {t('messageBubble.favorite')}</span></>)}{isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}</div>)}
+                    {!isUser && displayContent && !quota && (<div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/40 font-medium"><span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span>~{Math.ceil(displayContent.length / 4)} token</span>{message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}{message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-success/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}{message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-warning/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /> {t('messageBubble.favorite')}</span></>)}{isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}</div>)}
                 </div>
             </div>
         </div>
     );
 });
 MessageBubble.displayName = 'MessageBubble';
+

@@ -77,19 +77,19 @@ const ProjectCardMenu: React.FC<{
                         onClick={(e) => onEdit(project, e)}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
-                        <Pencil className="w-3.5 h-3.5 text-blue-400" />
+                        <Pencil className="w-3.5 h-3.5 text-primary" />
                         {t('common.edit')}
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
-                        <Archive className="w-3.5 h-3.5 text-emerald-400" />
+                        <Archive className="w-3.5 h-3.5 text-success" />
                         {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
                     </button>
                     <button
                         onClick={(e) => onDelete(project, e)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-red-500/10 text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-destructive/10 text-destructive hover:bg-destructive/10 transition-colors text-left"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         {t('common.delete')}
@@ -117,7 +117,7 @@ const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string
             <Calendar className="w-3.5 h-3.5" />
             {new Date(project.createdAt).toLocaleDateString()}
         </span>
-        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-[10px] font-bold tracking-wider", project.status === 'active' ? "text-emerald-500" : "")}>
+        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-[10px] font-bold tracking-wider", project.status === 'active' ? "text-success" : "")}>
             {project.status === 'active' ? t('common.active') : project.status}
         </span>
     </div>

@@ -58,7 +58,7 @@ export class MemoryService {
 
         void this.processManager.startService({
             name: 'memory-service',
-            executable: 'orbit-memory-service',
+            executable: 'Tandem-memory-service',
             persistent: true
         });
 
@@ -364,7 +364,7 @@ If no relevant facts are found, return an empty array.
 Message: "${content}"
 
 Example Output:
-["User prefers dark mode", "Working on Orbit project", "Wants to use LanceDB"]`;
+["User prefers dark mode", "Working on Tandem project", "Wants to use LanceDB"]`;
 
         try {
             const res = await this.callLLM(
@@ -526,3 +526,4 @@ User Message: "${content}"`;
         return `hash_${Math.abs(hash)}`;
     }
 }
+

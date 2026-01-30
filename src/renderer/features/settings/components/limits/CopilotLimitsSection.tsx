@@ -21,7 +21,7 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
     return (
         <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
+                <TrendingUp className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-bold uppercase text-muted-foreground">Copilot</h3>
             </div>
             <div className="text-xs text-muted-foreground mb-4">

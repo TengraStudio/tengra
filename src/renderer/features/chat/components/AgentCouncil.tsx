@@ -34,19 +34,19 @@ interface LocalCouncilSession {
 }
 
 const statusConfig = {
-    planning: { label: 'planning', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-    working: { label: 'working', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-    reviewing: { label: 'reviewing', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-    waiting_for_approval: { label: 'waiting_for_approval', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-    completed: { label: 'completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-    failed: { label: 'failed', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' }
+    planning: { label: 'planning', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+    working: { label: 'working', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
+    reviewing: { label: 'reviewing', color: 'text-purple', bg: 'bg-purple/10', border: 'border-purple/20' },
+    waiting_for_approval: { label: 'waiting_for_approval', color: 'text-yellow', bg: 'bg-yellow/10', border: 'border-yellow/20' },
+    completed: { label: 'completed', color: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
+    failed: { label: 'failed', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/20' }
 };
 
 const AgentStatusBadge = ({ status }: { status: 'thinking' | 'working' | 'waiting' }) => {
     const statusColors = {
-        thinking: 'bg-blue-500',
-        working: 'bg-amber-500',
-        waiting: 'bg-zinc-500'
+        thinking: 'bg-primary',
+        working: 'bg-warning',
+        waiting: 'bg-muted'
     };
 
     return (
@@ -234,10 +234,10 @@ const AgentCouncilHeader = ({
 const LogItem = ({ log }: { log: LogEntry }) => {
     const logType = log.type ?? 'chat';
     const typeConfig = {
-        thought: { icon: Brain, color: 'text-blue-400', bg: 'bg-blue-500/5' },
-        tool: { icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/5' },
+        thought: { icon: Brain, color: 'text-primary', bg: 'bg-primary/5' },
+        tool: { icon: Terminal, color: 'text-warning', bg: 'bg-warning/5' },
         chat: { icon: User, color: 'text-primary', bg: 'bg-primary/5' },
-        system: { icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-500/5' }
+        system: { icon: AlertCircle, color: 'text-yellow', bg: 'bg-yellow/5' }
     };
 
     const config = (typeConfig as Record<string, typeof typeConfig.chat>)[logType] ?? typeConfig.chat;

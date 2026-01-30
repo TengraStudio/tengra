@@ -1,10 +1,10 @@
 # System Architecture
 
-Orbit is built with a multi-process, polyglot architecture designed to maximize security, performance, and developer flexibility. This document provides a detailed look at how the different components of Orbit interact to provide a seamless AI coding experience.
+Tandem is built with a multi-process, polyglot architecture designed to maximize security, performance, and developer flexibility. This document provides a detailed look at how the different components of Tandem interact to provide a seamless AI coding experience.
 
 ## Process Model and Communication
 
-Orbit utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
+Tandem utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
 
 ### Renderer Process (UI)
 The frontend is a React application that runs in a context-isolated environment. It has no direct access to the operating system or the Node.js runtime. This isolation is a critical security measure against remote code execution via malicious AI outputs.
@@ -27,7 +27,7 @@ The Main process is organized into self-contained services, each responsible for
 
 ## Native Microservices
 
-To handle tasks that require high performance or low-level networking capabilities, Orbit delegates work to specialized microservices.
+To handle tasks that require high performance or low-level networking capabilities, Tandem delegates work to specialized microservices.
 
 ### Go Proxy (CLIProxy-Embed)
 The Go proxy is the gateway for all external LLM communication. It manages:
@@ -40,7 +40,7 @@ This service is dedicated to the background maintenance of authentication tokens
 
 ## Secure Proxy Routing
 
-Orbit implements a "stateless" approach to credential handling. Tokens are stored in an encrypted database and only decrypted in memory when an outgoing request is initiated. The decrypted tokens are sent to the Go proxy over a localized HTTP interface, which is secured by a system-generated secret key. This design ensures that raw credentials never touch the disk in an unencrypted state.
+Tandem implements a "stateless" approach to credential handling. Tokens are stored in an encrypted database and only decrypted in memory when an outgoing request is initiated. The decrypted tokens are sent to the Go proxy over a localized HTTP interface, which is secured by a system-generated secret key. This design ensures that raw credentials never touch the disk in an unencrypted state.
 
 ## Data Persistence and Memory
 

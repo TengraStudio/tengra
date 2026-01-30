@@ -180,7 +180,7 @@ export class AuthAPIService extends BaseService {
 
             const metadata = data.metadata as JsonObject | undefined;
 
-            // Map from Go proxy fields back to Orbit internal fields if needed
+            // Map from Go proxy fields back to Tandem internal fields if needed
             // Currently updateToken accepts Partial<TokenData>
             await this.authService.updateToken(accountId, {
                 accessToken: (data.access_token ?? data.accessToken) as string | undefined,
@@ -226,3 +226,4 @@ export class AuthAPIService extends BaseService {
         return mappings[p] ?? p;
     }
 }
+

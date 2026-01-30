@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { cn } from '@/lib/utils';
 import { SSHFile, WorkspaceMount } from '@/types';
 
 import { WizardCreatingStep } from './WizardCreatingStep';
@@ -22,11 +23,11 @@ interface ProjectWizardModalProps {
 type Step = 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating';
 
 const CATEGORIES = [
-    { id: 'web', nameKey: 'projectWizard.categories.web', icon: Globe, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { id: 'backend', nameKey: 'projectWizard.categories.backend', icon: Database, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { id: 'cli', nameKey: 'projectWizard.categories.cli', icon: Terminal, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { id: 'mobile', nameKey: 'projectWizard.categories.mobile', icon: Smartphone, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-    { id: 'other', nameKey: 'projectWizard.categories.other', icon: Code, color: 'text-gray-400', bg: 'bg-gray-500/10' },
+    { id: 'web', nameKey: 'projectWizard.categories.web', icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
+    { id: 'backend', nameKey: 'projectWizard.categories.backend', icon: Database, color: 'text-success', bg: 'bg-success/10' },
+    { id: 'cli', nameKey: 'projectWizard.categories.cli', icon: Terminal, color: 'text-warning', bg: 'bg-warning/10' },
+    { id: 'mobile', nameKey: 'projectWizard.categories.mobile', icon: Smartphone, color: 'text-purple', bg: 'bg-purple/10' },
+    { id: 'other', nameKey: 'projectWizard.categories.other', icon: Code, color: 'text-muted-foreground', bg: 'bg-muted/10' },
 ];
 
 export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
@@ -244,7 +245,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                                     disabled={isLoading || (step === 'details' && !formData.name) || (step === 'ssh-connection' && (!sshForm.host || !sshForm.username))}
                                     className={cn(
                                         "px-6 py-2.5 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg",
-                                        step === 'ssh-connection' ? "bg-purple-500 text-foreground shadow-purple-500/20" : "bg-primary text-primary-foreground shadow-primary/20"
+                                        step === 'ssh-connection' ? "bg-purple text-foreground shadow-purple-500/20" : "bg-primary text-primary-foreground shadow-primary/20"
                                     )}
                                 >
                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (step === 'ssh-browser' ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />)}

@@ -56,7 +56,7 @@ export function AppShell() {
     } = useAppState();
 
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
-        return !localStorage.getItem('orbit-onboarding-complete');
+        return !localStorage.getItem('Tandem-onboarding-complete');
     });
 
     // Handle navigation to a newly created project from Ideas page
@@ -295,3 +295,4 @@ function AppOverlays({
         </>
     );
 }
+

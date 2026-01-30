@@ -35,7 +35,7 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
     // OpenAI / ChatGPT / Codex
     if (p.includes('openai') || p.includes('codex') || p.includes('gpt')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="OpenAI">
+            <div className="w-6 h-6 rounded-md bg-success/10 border border-success/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="OpenAI">
                 <img src={LogoOpenAI} className="w-full h-full opacity-70" alt="OpenAI" />
             </div>
         );
@@ -44,7 +44,7 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
     // Anthropic / Claude
     if (p.includes('anthropic') || p.includes('claude')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-orange-500/10 border border-orange-500/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Claude">
+            <div className="w-6 h-6 rounded-md bg-orange/10 border border-orange/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Claude">
                 <img src={LogoClaude} className="w-full h-full opacity-70" alt="Claude" />
             </div>
         );
@@ -55,36 +55,36 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
     // Local Model Families
     if (modelName.includes('llama')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-blue-500/10 border border-blue-500/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Llama Family">
-                <span className="font-black text-blue-400 text-[10px]">LL</span>
+            <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Llama Family">
+                <span className="font-black text-primary text-[10px]">LL</span>
             </div>
         );
     }
     if (modelName.includes('mistral') || modelName.includes('mixtral')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-orange-500/20 border border-orange-500/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Mistral Family">
-                <span className="font-black text-orange-400 text-[10px]">M</span>
+            <div className="w-6 h-6 rounded-md bg-orange/20 border border-orange/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Mistral Family">
+                <span className="font-black text-orange text-[10px]">M</span>
             </div>
         );
     }
     if (modelName.includes('deepseek')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="DeepSeek">
-                <span className="font-black text-indigo-400 text-[10px]">DS</span>
+            <div className="w-6 h-6 rounded-md bg-indigo/20 border border-indigo/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="DeepSeek">
+                <span className="font-black text-indigo text-[10px]">DS</span>
             </div>
         );
     }
     if (modelName.includes('qwen')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-purple-500/20 border border-purple-500/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Qwen">
-                <span className="font-black text-purple-400 text-[10px]">Q</span>
+            <div className="w-6 h-6 rounded-md bg-purple/20 border border-purple/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Qwen">
+                <span className="font-black text-purple text-[10px]">Q</span>
             </div>
         );
     }
     if (modelName.includes('phi')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-cyan-500/20 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Phi">
-                <span className="font-black text-cyan-400 text-[10px]">Î¦</span>
+            <div className="w-6 h-6 rounded-md bg-cyan/20 border border-cyan/20 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Phi">
+                <span className="font-black text-cyan text-[10px]">Î¦</span>
             </div>
         );
     }
@@ -92,7 +92,7 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
     // Specialized Providers
     if (p.includes('antigravity')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-yellow-500/10 border border-yellow-500/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Antigravity">
+            <div className="w-6 h-6 rounded-md bg-yellow/10 border border-yellow/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1" title="Antigravity">
                 <img src={LogoAntigravity} className="w-full h-full opacity-70" alt="Antigravity" />
             </div>
         );
@@ -106,8 +106,8 @@ export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, pro
     }
     if (p.includes('groq')) {
         return (
-            <div className="w-6 h-6 rounded-md bg-[#f55036]/10 border border-[#f55036]/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1">
-                <span className="font-bold text-[#f55036] text-[10px]">G</span>
+            <div className="w-6 h-6 rounded-md bg-orange/10 border border-orange/10 flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1">
+                <span className="font-bold text-orange text-[10px]">G</span>
             </div>
         );
     }

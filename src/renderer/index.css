@@ -612,6 +612,224 @@
     --accent-foreground: 0 0% 100%;
   }
 
+  /* File Icon Colors - CSS Variables for theming */
+  :root {
+    /* Source code */
+    --icon-source: 217 91% 60%;
+    /* #3B82F6 - Blue */
+    --icon-lib: 239 84% 67%;
+    /* #6366F1 - Indigo */
+
+    /* Version control */
+    --icon-git: 24 95% 53%;
+    /* #F97316 - Orange */
+    --icon-github: 239 84% 67%;
+    /* #6366F1 - Indigo */
+
+    /* Config */
+    --icon-config: 263 70% 66%;
+    /* #8B5CF6 - Purple */
+    --icon-settings: 263 70% 66%;
+    /* #8B5CF6 - Purple */
+
+    /* Components */
+    --icon-components: 142 71% 45%;
+    /* #22C55E - Green */
+    --icon-ui: 142 71% 45%;
+    /* #22C55E - Green */
+
+    /* Pages / Views */
+    --icon-pages: 217 91% 60%;
+    /* #3B82F6 - Blue */
+    --icon-routes: 217 91% 60%;
+    /* #3B82F6 - Blue */
+
+    /* API / Services */
+    --icon-api: 330 81% 60%;
+    /* #EC4899 - Pink */
+    --icon-graphql: 320 100% 44%;
+    /* #E10098 - GraphQL Pink */
+
+    /* Tests */
+    --icon-test: 38 92% 50%;
+    /* #F59E0B - Amber */
+    --icon-cypress: 210 29% 13%;
+    /* #17202C - Cypress Dark */
+    --icon-playwright: 122 57% 43%;
+    /* #2EAD33 - Playwright Green */
+
+    /* Build output */
+    --icon-build: 220 9% 46%;
+    /* #6B7280 - Gray */
+    --icon-next: 0 0% 0%;
+    /* #000000 - Black */
+    --icon-nuxt: 152 100% 43%;
+    /* #00DC82 - Nuxt Green */
+
+    /* Dependencies */
+    --icon-dependencies: 220 9% 46%;
+    /* #6B7280 - Gray */
+
+    /* Assets */
+    --icon-assets: 0 84% 60%;
+    /* #EF4444 - Red */
+    --icon-fonts: 263 70% 66%;
+    /* #8B5CF6 - Purple */
+
+    /* Styles */
+    --icon-styles: 330 81% 60%;
+    /* #EC4899 - Pink */
+    --icon-css: 199 89% 48%;
+    /* #38BDF8 - Light Blue */
+    --icon-scss: 330 50% 60%;
+    /* #CF649A - SCSS Pink */
+    --icon-less: 212 59% 24%;
+    /* #1D365D - Less Blue */
+
+    /* Public */
+    --icon-public: 160 84% 39%;
+    /* #10B981 - Emerald */
+
+    /* Types */
+    --icon-types: 211 60% 48%;
+    /* #3178C6 - TypeScript Blue */
+
+    /* Hooks / Utils */
+    --icon-hooks: 193 95% 68%;
+    /* #61DAFB - React Blue */
+    --icon-composables: 153 47% 49%;
+    /* #42B883 - Vue Green */
+    --icon-utils: 239 84% 67%;
+    /* #6366F1 - Indigo */
+
+    /* Data */
+    --icon-data: 199 89% 48%;
+    /* #0EA5E9 - Sky Blue */
+    --icon-prisma: 220 14% 22%;
+    /* #2D3748 - Prisma Dark */
+
+    /* Features */
+    --icon-features: 263 70% 66%;
+    /* #8B5CF6 - Purple */
+
+    /* Docs */
+    --icon-docs: 160 84% 39%;
+    /* #10B981 - Emerald */
+
+    /* Security */
+    --icon-security: 0 84% 60%;
+    /* #EF4444 - Red */
+
+    /* Scripts */
+    --icon-scripts: 142 71% 45%;
+    /* #22C55E - Green */
+    --icon-tools: 220 9% 46%;
+    /* #6B7280 - Gray */
+
+    /* Hidden */
+    --icon-vscode: 205 100% 42%;
+    /* #0078D4 - VS Code Blue */
+    --icon-idea: 0 0% 0%;
+    /* #000000 - Black */
+    --icon-husky: 153 47% 49%;
+    /* #42B883 - Vue Green */
+
+    /* CI/CD */
+    --icon-circleci: 0 0% 20%;
+    /* #343434 - CircleCI Gray */
+    --icon-jenkins: 8 68% 52%;
+    /* #D24939 - Jenkins Red */
+    --icon-workflows: 212 100% 56%;
+    /* #2088FF - GitHub Actions Blue */
+
+    /* Default */
+    --icon-default: 213 94% 68%;
+    /* #60A5FA - Light Blue */
+
+    /* File extensions */
+    --icon-ts: 211 60% 48%;
+    /* #3178C6 - TypeScript */
+    --icon-js: 52 100% 50%;
+    /* #F7DF1E - JavaScript */
+    --icon-jsx: 193 95% 68%;
+    /* #61DAFB - React */
+    --icon-py: 210 50% 45%;
+    /* #3776AB - Python */
+    --icon-ipynb: 22 89% 55%;
+    /* #F37626 - Jupyter */
+    --icon-rs: 28 56% 68%;
+    /* #DEA584 - Rust */
+    --icon-go: 193 100% 43%;
+    /* #00ADD8 - Go */
+    --icon-rb: 0 66% 50%;
+    /* #CC342D - Ruby */
+    --icon-php: 245 32% 60%;
+    /* #777BB4 - PHP */
+    --icon-java: 32 100% 46%;
+    /* #ED8B00 - Java */
+    --icon-kt: 257 82% 65%;
+    /* #7F52FF - Kotlin */
+    --icon-c: 210 20% 73%;
+    /* #A8B9CC - C/C++ */
+    --icon-cpp: 207 100% 35%;
+    /* #00599C - C++ */
+    --icon-cs: 263 55% 58%;
+    /* #512BD4 - C# */
+    --icon-swift: 356 78% 56%;
+    /* #F05138 - Swift */
+    --icon-dart: 207 100% 43%;
+    /* #0175C2 - Dart */
+    --icon-html: 13 77% 52%;
+    /* #E34F26 - HTML */
+    --icon-css-file: 207 85% 42%;
+    /* #1572B6 - CSS */
+    --icon-vue: 153 47% 49%;
+    /* #42B883 - Vue */
+    --icon-svelte: 14 100% 50%;
+    /* #FF3E00 - Svelte */
+    --icon-json: 0 0% 0%;
+    /* #000000 - JSON */
+    --icon-yaml: 356 78% 43%;
+    /* #CB171E - YAML */
+    --icon-xml: 207 100% 34%;
+    /* #0060AC - XML */
+    --icon-md: 220 90% 28%;
+    /* #083FA1 - Markdown */
+    --icon-sql: 352 74% 47%;
+    /* #CC2927 - SQL Server */
+    --icon-sh: 100 60% 35%;
+    /* #4EAA25 - Shell */
+  }
+
+  /* BLACK THEME (Dark) - Same HSL values, can be overridden if needed */
+  [data-theme="black"] {
+    /* Icons remain the same in dark mode - brand colors */
+  }
+
+  /* WHITE THEME (Light) - Same HSL values */
+  [data-theme="white"] {
+    /* Icons remain the same in light mode - brand colors */
+  }
+
+  /* High Contrast Mode */
+  .high-contrast {
+    --icon-source: 217 100% 50%;
+    --icon-lib: 239 100% 60%;
+    --icon-git: 24 100% 50%;
+    --icon-config: 263 100% 60%;
+    --icon-components: 142 100% 40%;
+    --icon-api: 330 100% 50%;
+    --icon-test: 38 100% 50%;
+    --icon-build: 220 20% 40%;
+    --icon-assets: 0 100% 50%;
+    --icon-public: 160 100% 35%;
+    --icon-types: 211 100% 45%;
+    --icon-data: 199 100% 45%;
+    --icon-docs: 160 100% 35%;
+    --icon-security: 0 100% 50%;
+    --icon-default: 213 100% 60%;
+  }
+
   /* Reduce Motion */
   .reduce-motion *,
   .reduce-motion *::before,

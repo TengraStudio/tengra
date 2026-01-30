@@ -107,7 +107,7 @@ const ProviderCard = React.memo<ProviderCardProps>(({
                 <div className="flex items-center gap-3">
                     {hasAccounts ? (
                         <>
-                            <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-xs font-bold">
+                            <span className="px-2.5 py-1 rounded-md bg-success/10 text-success text-xs font-bold">
                                 {accountCount} {t('accounts.accountCount').replace('{{count}}', '').trim()}
                             </span>
                             <ChevronDown className={cn(
@@ -260,7 +260,7 @@ const OllamaSection = React.memo(({
                     <span className={cn(
                         "px-2.5 py-1 rounded-md text-xs font-bold",
                         isRunning
-                            ? "bg-emerald-500/10 text-emerald-500"
+                            ? "bg-success/10 text-success"
                             : "bg-muted text-muted-foreground"
                     )}>
                         {isRunning ? t('accounts.running') : t('accounts.notRunning')}

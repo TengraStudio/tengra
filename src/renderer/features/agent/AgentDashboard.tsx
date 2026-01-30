@@ -71,13 +71,13 @@ const SessionStatus = memo(({ session, isRunning, toggleAutoRun, onRunStep, t }:
             <div>
                 <div className="text-xs text-muted-foreground uppercase">{t('agentDashboard.status')}</div>
                 <div className={cn("text-lg font-bold capitalize",
-                    session.status === 'completed' ? "text-green-400" :
-                        session.status === 'failed' ? "text-red-400" :
-                            "text-blue-400"
+                    session.status === 'completed' ? "text-success" :
+                        session.status === 'failed' ? "text-destructive" :
+                            "text-primary"
                 )}>{session.status}</div>
             </div>
-            {(session.status === 'executing' || isRunning) && <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />}
-            {session.status === 'completed' && <CheckCircle2 className="w-5 h-5 text-green-400" />}
+            {(session.status === 'executing' || isRunning) && <RefreshCw className="w-5 h-5 animate-spin text-primary" />}
+            {session.status === 'completed' && <CheckCircle2 className="w-5 h-5 text-success" />}
         </div>
 
         <div className="bg-card/50 border border-border/40 rounded-xl p-4">
@@ -180,7 +180,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({ language }) => {
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg"><Bot className="w-5 h-5 text-primary" /></div>
                     <div>
-                        <h2 className="text-sm font-bold flex items-center gap-2">{t('agentDashboard.title')}<span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">ALPHA</span></h2>
+                        <h2 className="text-sm font-bold flex items-center gap-2">{t('agentDashboard.title')}<span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">ALPHA</span></h2>
                         <p className="text-[10px] text-muted-foreground">{t('agentDashboard.subtitle')}</p>
                     </div>
                 </div>
@@ -195,7 +195,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({ language }) => {
                             <SessionStatus session={activeSession} isRunning={isRunning} toggleAutoRun={toggleAutoRun} onRunStep={() => { if (activeSessionId) { window.electron.council.runStep(activeSessionId); } }} t={t} />
                             {activeSession.plan && (
                                 <div className="bg-zinc-950/50 border border-border/40 rounded-xl p-4 shrink-0 max-h-[150px] overflow-y-auto">
-                                    <div className="text-xs font-bold text-muted-foreground uppercase mb-2 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-400" />{t('agentDashboard.currentPlan')}</div>
+                                    <div className="text-xs font-bold text-muted-foreground uppercase mb-2 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple" />{t('agentDashboard.currentPlan')}</div>
                                     <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-sans">{activeSession.plan}</pre>
                                 </div>
                             )}

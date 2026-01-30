@@ -120,7 +120,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                 <button
                                     onClick={() => void handleImprovePrompt()}
                                     disabled={isAnalyzing || !prompt}
-                                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                    className="text-[10px] font-bold text-success hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
                                     title={t('workspace.improvePromptWithAI')}
                                 >
                                     <Sparkles className="w-3 h-3" />

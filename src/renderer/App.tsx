@@ -34,9 +34,9 @@ const SSHManager = lazy(() => import('@renderer/features/ssh/SSHManager').then(m
 const AudioChatOverlay = lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
-    { id: 'code', icon: 'Code', iconColor: 'text-blue-400', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
-    { id: 'analyze', icon: 'FileSearch', iconColor: 'text-emerald-400', title: t('templates.analyze.title'), description: t('templates.analyze.description'), prompt: t('templates.analyze.prompt') },
-    { id: 'creative', icon: 'Sparkles', iconColor: 'text-purple-400', title: t('templates.creative.title'), description: t('templates.creative.description'), prompt: t('templates.creative.prompt') },
+    { id: 'code', icon: 'Code', iconColor: 'text-primary', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
+    { id: 'analyze', icon: 'FileSearch', iconColor: 'text-success', title: t('templates.analyze.title'), description: t('templates.analyze.description'), prompt: t('templates.analyze.prompt') },
+    { id: 'creative', icon: 'Sparkles', iconColor: 'text-purple', title: t('templates.creative.title'), description: t('templates.creative.description'), prompt: t('templates.creative.prompt') },
     { id: 'debug', icon: 'Bug', iconColor: 'text-rose-400', title: t('templates.debug.title'), description: t('templates.debug.description'), prompt: t('templates.debug.prompt') }
 ];
 
@@ -76,7 +76,7 @@ export default function App() {
     const { projects, setSelectedProject } = useProject();
     const appState = useAppState();
 
-    useEffect(() => { window.orbitSpeak = handleSpeak; }, [handleSpeak]);
+    useEffect(() => { window.TandemSpeak = handleSpeak; }, [handleSpeak]);
 
     useEffect(() => {
         // Apply text direction globally
@@ -212,8 +212,8 @@ function ToastsContainer({ toasts, removeToast }: { toasts: Toast[], removeToast
             {toasts.map(toast => (
                 <div key={toast.id} className={cn(
                     'px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center justify-center gap-3 min-w-[240px]',
-                    toast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' :
-                        toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' : 'bg-zinc-800/80 border-white/10 text-foreground'
+                    toast.type === 'success' ? 'bg-success/20 border-success/30 text-success' :
+                        toast.type === 'error' ? 'bg-destructive/20 border-destructive/30 text-destructive' : 'bg-zinc-800/80 border-white/10 text-foreground'
                 )}>
                     <span className="text-lg">{toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}</span>
                     <div className="text-sm font-medium">{toast.message}</div>
@@ -260,3 +260,4 @@ function AppModals({
         )}</AnimatePresence>
     </>);
 }
+

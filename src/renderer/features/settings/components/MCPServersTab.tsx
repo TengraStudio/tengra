@@ -43,9 +43,9 @@ export const MCPServersTab = () => {
                         <div className="flex items-center gap-4">
                             <div className={cn(
                                 "p-2.5 rounded-lg",
-                                server.status === 'connected' ? "bg-green-500/10 text-green-500" :
-                                    server.status === 'error' ? "bg-red-500/10 text-red-500" :
-                                        "bg-zinc-500/10 text-zinc-500"
+                                server.status === 'connected' ? "bg-success/10 text-success" :
+                                    server.status === 'error' ? "bg-destructive/10 text-destructive" :
+                                        "bg-muted/10 text-muted-foreground"
                             )}>
                                 <Server className="w-5 h-5" />
                             </div>
@@ -62,9 +62,9 @@ export const MCPServersTab = () => {
 
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2 px-3 py-1 bg-background rounded-full border border-border/50">
-                                {server.status === 'connected' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
-                                {server.status === 'disconnected' && <div className="w-2 h-2 rounded-full bg-zinc-400" />}
-                                {server.status === 'error' && <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                                {server.status === 'connected' && <CheckCircle2 className="w-3.5 h-3.5 text-success" />}
+                                {server.status === 'disconnected' && <div className="w-2 h-2 rounded-full bg-muted" />}
+                                {server.status === 'error' && <XCircle className="w-3.5 h-3.5 text-destructive" />}
                                 <span className="text-xs capitalize">{server.status}</span>
                             </div>
 

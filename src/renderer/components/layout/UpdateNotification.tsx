@@ -71,12 +71,12 @@ export const UpdateNotification: React.FC = () => {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                        {status.state === 'checking' && <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />}
-                        {status.state === 'available' && <Download className="w-4 h-4 text-blue-400" />}
-                        {status.state === 'downloading' && <Download className="w-4 h-4 text-blue-400 animate-pulse" />}
-                        {status.state === 'downloaded' && <CheckCircle className="w-4 h-4 text-green-400" />}
-                        {status.state === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
-                        {status.state === 'not-available' && <CheckCircle className="w-4 h-4 text-gray-400" />}
+                        {status.state === 'checking' && <RefreshCw className="w-4 h-4 text-primary animate-spin" />}
+                        {status.state === 'available' && <Download className="w-4 h-4 text-primary" />}
+                        {status.state === 'downloading' && <Download className="w-4 h-4 text-primary animate-pulse" />}
+                        {status.state === 'downloaded' && <CheckCircle className="w-4 h-4 text-success" />}
+                        {status.state === 'error' && <AlertCircle className="w-4 h-4 text-destructive" />}
+                        {status.state === 'not-available' && <CheckCircle className="w-4 h-4 text-muted-foreground" />}
 
                         <h3 className="font-medium text-foreground text-sm">
                             {status.state === 'checking' && 'Checking for updates...'}
@@ -87,14 +87,14 @@ export const UpdateNotification: React.FC = () => {
                             {status.state === 'error' && 'Update Failed'}
                         </h3>
                     </div>
-                    <button onClick={handleDismiss} className="text-gray-500 hover:text-foreground">
+                    <button onClick={handleDismiss} className="text-muted-foreground hover:text-foreground">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="text-xs text-gray-400 mb-3">
-                    {status.state === 'available' && 'A new version of Orbit is available.'}
+                <div className="text-xs text-muted-foreground mb-3">
+                    {status.state === 'available' && 'A new version of Tandem is available.'}
                     {status.state === 'downloading' && (
                         <div className="space-y-1">
                             <div className="flex justify-between">
@@ -103,13 +103,13 @@ export const UpdateNotification: React.FC = () => {
                             </div>
                             <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-blue-500 transition-all duration-300"
+                                    className="h-full bg-primary transition-all duration-300"
                                     style={{ width: `${status.progress}%` }}
                                 />
                             </div>
                         </div>
                     )}
-                    {status.state === 'downloaded' && 'Restart Orbit to apply the latest update.'}
+                    {status.state === 'downloaded' && 'Restart Tandem to apply the latest update.'}
                     {status.state === 'error' && status.error}
                 </div>
 
@@ -145,3 +145,4 @@ function formatBytes(bytes: number, decimals = 2) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
+

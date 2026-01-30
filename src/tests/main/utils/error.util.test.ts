@@ -1,14 +1,14 @@
 
-import { ApiError, AppErrorCode,isOrbitError, OrbitError } from '@main/utils/error.util';
+import { ApiError, AppErrorCode,isTandemError, TandemError } from '@main/utils/error.util';
 import { describe, expect,it } from 'vitest';
 
 describe('Error Hierarchy', () => {
-    it('should correctly construct OrbitError', () => {
-        class TestError extends OrbitError { }
+    it('should correctly construct TandemError', () => {
+        class TestError extends TandemError { }
         const err = new TestError('test', AppErrorCode.UNKNOWN, { foo: 'bar' });
 
         expect(err).toBeInstanceOf(Error);
-        expect(err).toBeInstanceOf(OrbitError);
+        expect(err).toBeInstanceOf(TandemError);
         expect(err.message).toBe('test');
         expect(err.code).toBe(AppErrorCode.UNKNOWN);
         expect(err.context).toEqual({ foo: 'bar' });
@@ -24,12 +24,12 @@ describe('Error Hierarchy', () => {
         expect(err.retryable).toBe(true);
     });
 
-    it('should identify OrbitErrors', () => {
+    it('should identify TandemErrors', () => {
         const err = new ApiError('fail', 'test');
         const regularErr = new Error('fail');
 
-        expect(isOrbitError(err)).toBe(true);
-        expect(isOrbitError(regularErr)).toBe(false);
+        expect(isTandemError(err)).toBe(true);
+        expect(isTandemError(regularErr)).toBe(false);
     });
 
     it('should serialize to JSON', () => {

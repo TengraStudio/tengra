@@ -52,7 +52,7 @@ const ValueProposition: React.FC<{ value?: string }> = ({ value }) => {
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
-                <Sparkles className="w-4 h-4 text-amber-500" />
+                <Sparkles className="w-4 h-4 text-warning" />
                 {t('ideas.idea.valueProposition')}
             </h3>
             <p className="text-foreground/70 bg-muted/20 rounded-lg p-4 leading-relaxed border border-border/10 italic">{value}</p>
@@ -100,7 +100,7 @@ const CompetitiveAdvantages: React.FC<{ advantages: string[] }> = ({ advantages 
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-success" />
                 {t('ideas.idea.competitiveAdvantages')}
             </h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -121,7 +121,7 @@ const MarketTrends: React.FC<{ trends: MarketTrend[] }> = ({ trends }) => {
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
-                <TrendingUp className="w-4 h-4 text-blue-500" />
+                <TrendingUp className="w-4 h-4 text-primary" />
                 {t('ideas.idea.marketTrends')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -155,7 +155,7 @@ const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => 
     return (
         <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-3">
-                <Map className="w-4 h-4 text-indigo-400" />
+                <Map className="w-4 h-4 text-indigo" />
                 {t('ideas.idea.roadmap')}
                 <span className="text-xs text-muted-foreground/40 ml-auto">{roadmap.totalDuration}</span>
             </h3>
@@ -217,11 +217,11 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
     if (!techStack) { return null; }
 
     const categories = [
-        { key: 'frontend', label: t('ideas.techStack.frontend'), icon: Globe, color: 'text-blue-400', items: techStack.frontend },
-        { key: 'backend', label: t('ideas.techStack.backend'), icon: Server, color: 'text-green-400', items: techStack.backend },
-        { key: 'database', label: t('ideas.techStack.database'), icon: Database, color: 'text-yellow-400', items: techStack.database },
-        { key: 'infrastructure', label: t('ideas.techStack.infrastructure'), icon: Cpu, color: 'text-purple-400', items: techStack.infrastructure },
-        { key: 'other', label: t('ideas.techStack.other'), icon: Wrench, color: 'text-orange-400', items: techStack.other }
+        { key: 'frontend', label: t('ideas.techStack.frontend'), icon: Globe, color: 'text-primary', items: techStack.frontend },
+        { key: 'backend', label: t('ideas.techStack.backend'), icon: Server, color: 'text-success', items: techStack.backend },
+        { key: 'database', label: t('ideas.techStack.database'), icon: Database, color: 'text-yellow', items: techStack.database },
+        { key: 'infrastructure', label: t('ideas.techStack.infrastructure'), icon: Cpu, color: 'text-purple', items: techStack.infrastructure },
+        { key: 'other', label: t('ideas.techStack.other'), icon: Wrench, color: 'text-orange', items: techStack.other }
     ].filter(c => c.items.length > 0);
 
     if (categories.length === 0) { return null; }
@@ -302,11 +302,11 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Strengths */}
                                 {comp.strengths.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-green-500">{t('ideas.competitor.strengths')}</span>
+                                        <span className="text-xs font-semibold text-success">{t('ideas.competitor.strengths')}</span>
                                         <ul className="mt-1 space-y-1">
                                             {comp.strengths.map((s, i) => (
                                                 <li key={i} className="text-xs text-foreground/60 flex items-start gap-1.5">
-                                                    <CheckCircle className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                                                    <CheckCircle className="w-3 h-3 text-success shrink-0 mt-0.5" />
                                                     {s}
                                                 </li>
                                             ))}
@@ -316,11 +316,11 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Weaknesses */}
                                 {comp.weaknesses.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-red-500">{t('ideas.competitor.weaknesses')}</span>
+                                        <span className="text-xs font-semibold text-destructive">{t('ideas.competitor.weaknesses')}</span>
                                         <ul className="mt-1 space-y-1">
                                             {comp.weaknesses.map((w, i) => (
                                                 <li key={i} className="text-xs text-foreground/60 flex items-start gap-1.5">
-                                                    <span className="w-3 h-3 flex items-center justify-center shrink-0 text-red-500">−</span>
+                                                    <span className="w-3 h-3 flex items-center justify-center shrink-0 text-destructive">−</span>
                                                     {w}
                                                 </li>
                                             ))}
@@ -330,10 +330,10 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Missing Features */}
                                 {comp.missingFeatures.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-yellow-500">{t('ideas.competitor.missingFeatures')}</span>
+                                        <span className="text-xs font-semibold text-yellow">{t('ideas.competitor.missingFeatures')}</span>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {comp.missingFeatures.map((f, i) => (
-                                                <span key={i} className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded">
+                                                <span key={i} className="text-xs bg-yellow/20 text-yellow-300 px-2 py-0.5 rounded">
                                                     {f}
                                                 </span>
                                             ))}
@@ -398,7 +398,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
             {journey && journey.length > 0 && (
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
-                        <Map className="w-4 h-4 text-blue-400" />
+                        <Map className="w-4 h-4 text-primary" />
                         User Journey Map
                     </h3>
                     <div className="relative flex flex-col space-y-4">
@@ -407,9 +407,9 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                             <div key={i} className="relative pl-10">
                                 <div className={cn(
                                     "absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-background z-10",
-                                    step.emotion === 'excited' ? 'bg-green-500' :
-                                        step.emotion === 'happy' ? 'bg-blue-500' :
-                                            step.emotion === 'neutral' ? 'bg-muted-foreground/40' : 'bg-red-500'
+                                    step.emotion === 'excited' ? 'bg-success' :
+                                        step.emotion === 'happy' ? 'bg-primary' :
+                                            step.emotion === 'neutral' ? 'bg-muted-foreground/40' : 'bg-destructive'
                                 )} />
                                 <div className="bg-muted/30 rounded-lg p-3 border border-border/20">
                                     <div className="flex items-center justify-between mb-1">
@@ -417,7 +417,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                                         <span className="text-[10px] text-muted-foreground/30">{step.emotion}</span>
                                     </div>
                                     <p className="text-sm text-foreground/80 mb-1">{step.action}</p>
-                                    <p className="text-[11px] text-blue-400/80 font-medium italic">Benefit: {step.benefit}</p>
+                                    <p className="text-[11px] text-primary/80 font-medium italic">Benefit: {step.benefit}</p>
                                 </div>
                             </div>
                         ))}
@@ -436,7 +436,7 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
             {swot && (
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
-                        <Target className="w-4 h-4 text-orange-400" />
+                        <Target className="w-4 h-4 text-orange" />
                         SWOT Analysis
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -444,7 +444,7 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                             { label: 'Strengths', items: swot.strengths, color: 'text-primary', bg: 'bg-primary/5', border: 'border-primary/20' },
                             { label: 'Weaknesses', items: swot.weaknesses, color: 'text-destructive', bg: 'bg-destructive/5', border: 'border-destructive/20' },
                             { label: 'Opportunities', items: swot.opportunities, color: 'text-accent', bg: 'bg-accent/5', border: 'border-accent/20' },
-                            { label: 'Threats', items: swot.threats, color: 'text-amber-500', bg: 'bg-amber-500/5', border: 'border-amber-500/20' }
+                            { label: 'Threats', items: swot.threats, color: 'text-warning', bg: 'bg-warning/5', border: 'border-warning/20' }
                         ].map((cell, i) => (
                             <div key={i} className={cn("p-4 rounded-xl border", cell.bg, cell.border)}>
                                 <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-3", cell.color)}>{cell.label}</p>
@@ -507,7 +507,7 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
             {marketingPlan && (
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
-                        <Globe className="w-4 h-4 text-emerald-400" />
+                        <Globe className="w-4 h-4 text-success" />
                         Go-To-Market Plan
                     </h3>
                     <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
@@ -554,7 +554,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
     return (
         <div className="bg-muted/30 border border-border/50 rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
             <div className="p-4 border-b border-border/50 bg-muted/30 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+                <Sparkles className="w-4 h-4 text-purple" />
                 <span className="text-xs font-bold text-foreground/80 uppercase tracking-widest">Research Assistant</span>
             </div>
 
@@ -706,7 +706,7 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
                         <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
-                            <h3 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
+                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
                             <p className="text-sm text-foreground/70 leading-relaxed font-sans">
                                 {idea.marketResearch?.categoryAnalysis ?? 'Analysis pending deep dive...'}
                             </p>

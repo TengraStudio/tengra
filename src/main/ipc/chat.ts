@@ -38,7 +38,7 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
 }
 
 const PROVIDER_INSTRUCTIONS: Record<string, string> = {
-    'antigravity': "Ben, **Antigravity** tarafından **Orbit** platformu üzerinden sağlanan gelişmiş bir yapay zeka asistanıyım. Size en iyi şekilde yardımcı olmak için buradayım.",
+    'antigravity': "Ben, **Antigravity** tarafından **Tandem** platformu üzerinden sağlanan gelişmiş bir yapay zeka asistanıyım. Size en iyi şekilde yardımcı olmak için buradayım.",
     'copilot': "Ben GitHub Copilot tarafından sağlanan bir yapay zeka programlama asistanıyım.",
     'ollama': "Ben yerel olarak çalışan bir Ollama modeliyim."
 };

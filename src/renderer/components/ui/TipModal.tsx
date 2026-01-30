@@ -41,7 +41,7 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
                 <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center relative group">
                     <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-xl transition-all group-hover:blur-2xl" />
                     <Lightbulb className="w-8 h-8 text-primary relative z-10 animate-pulse" />
-                    <div className="absolute -top-2 -right-2 bg-amber-400 rounded-full p-1 shadow-lg">
+                    <div className="absolute -top-2 -right-2 bg-warning rounded-full p-1 shadow-lg">
                         <Sparkles className="w-3 h-3 text-foreground" />
                     </div>
                 </div>

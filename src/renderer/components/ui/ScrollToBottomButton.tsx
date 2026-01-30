@@ -49,7 +49,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
             <div className="relative">
                 <ChevronDown className="w-5 h-5" />
                 {newMessageCount && newMessageCount > 0 && (
-                    <span className="absolute -top-3 -right-3 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-bold bg-red-500 text-foreground rounded-full animate-bounce-in">
+                    <span className="absolute -top-3 -right-3 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-bold bg-destructive text-foreground rounded-full animate-bounce-in">
                         {newMessageCount > 99 ? '99+' : newMessageCount}
                     </span>
                 )}

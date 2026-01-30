@@ -155,7 +155,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
 
     if (error) {
         return (
-            <div className="h-full w-full flex items-center justify-center text-red-500 text-sm">
+            <div className="h-full w-full flex items-center justify-center text-destructive text-sm">
                 <span>Editor error: {error}</span>
             </div>
         );

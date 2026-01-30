@@ -415,7 +415,7 @@ fn save_state(path: &Path, tokens: &HashMap<String, MonitoredToken>) -> Result<(
 
 fn get_app_data_dir() -> Result<PathBuf, Box<dyn Error>> {
     if let Ok(appdata) = std::env::var("APPDATA") {
-        Ok(Path::new(&appdata).join("Orbit"))
+        Ok(Path::new(&appdata).join("Tandem"))
     } else {
         Err("APPDATA not found".into())
     }

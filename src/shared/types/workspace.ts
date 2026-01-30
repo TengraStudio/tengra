@@ -1,4 +1,4 @@
-export type ProjectDashboardTab = 'overview' | 'terminal' | 'files' | 'explorer' | 'tasks' | 'search' | 'council' | 'git' | 'issues' | 'env' | 'environment' | 'logs' | 'settings' | 'chat'
+export type ProjectDashboardTab = 'overview' | 'terminal' | 'files' | 'explorer' | 'tasks' | 'search' | 'council' | 'git' | 'issues' | 'env' | 'environment' | 'logs' | 'settings' | 'chat' | 'agent'
 export type WorkspaceDashboardTab = ProjectDashboardTab | 'editor'
 
 export type WorkspaceMountType = 'local' | 'ssh'

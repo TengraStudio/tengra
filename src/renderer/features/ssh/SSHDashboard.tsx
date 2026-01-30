@@ -56,7 +56,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
                     </div>
                     <div className="w-full bg-muted/30 h-2 rounded-full mt-3 overflow-hidden">
                         <div
-                            className={`h-full rounded-full transition-all duration-500 ${stats.cpu > 80 ? 'bg-destructive' : stats.cpu > 50 ? 'bg-amber-500' : 'bg-primary'}`}
+                            className={`h-full rounded-full transition-all duration-500 ${stats.cpu > 80 ? 'bg-destructive' : stats.cpu > 50 ? 'bg-warning' : 'bg-primary'}`}
                             style={{ width: `${stats.cpu}%` }}
                         />
                     </div>

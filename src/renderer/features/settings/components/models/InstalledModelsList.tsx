@@ -49,7 +49,7 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                             {defaultModel === model.id ? (
-                                <span className="text-xs font-bold uppercase text-emerald-400">{t('projects.default')}</span>
+                                <span className="text-xs font-bold uppercase text-success">{t('projects.default')}</span>
                             ) : (
                                 <button
                                     onClick={() => setDefault(model.id)}

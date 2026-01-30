@@ -4,6 +4,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
 import { useTranslation } from '@/i18n';
+import { getTerminalTheme } from '@/lib/terminal-theme';
 
 import 'xterm/css/xterm.css';
 
@@ -13,7 +14,7 @@ interface TerminalComponentProps {
 }
 
 // Terminal history persistence keys
-const HISTORY_KEY_PREFIX = 'orbit_terminal_history_';
+const HISTORY_KEY_PREFIX = 'Tandem_terminal_history_';
 const MAX_HISTORY_SIZE = 500;
 
 // Get history storage key for a project
@@ -102,30 +103,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         }
 
         const term = new Terminal({
-            theme: {
-                background: '#0a0a0f',
-                foreground: '#e4e4e7',
-                cursor: '#60a5fa',
-                cursorAccent: '#0a0a0f',
-                selectionBackground: 'rgba(96, 165, 250, 0.2)',
-                selectionForeground: '#ffffff',
-                black: '#1a1a1f',
-                red: '#f87171',
-                green: '#34d399',
-                yellow: '#fbbf24',
-                blue: '#60a5fa',
-                magenta: '#f472b6',
-                cyan: '#22d3ee',
-                white: '#fafafa',
-                brightBlack: '#3f3f46',
-                brightRed: '#fca5a5',
-                brightGreen: '#6ee7b7',
-                brightYellow: '#fcd34d',
-                brightBlue: '#93c5fd',
-                brightMagenta: '#f9a8d4',
-                brightCyan: '#67e8f9',
-                brightWhite: '#ffffff'
-            },
+            theme: getTerminalTheme(),
             fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
             fontSize: 13,
             lineHeight: 1.4,
@@ -358,4 +336,5 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         </div>
     );
 };
+
 

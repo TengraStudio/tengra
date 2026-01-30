@@ -54,7 +54,7 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
                                 <div className="col-span-1">
                                     <div className={cn(
                                         "w-8 h-8 rounded-xl flex items-center justify-center border",
-                                        issue.type === 'error' ? "bg-destructive/10 border-destructive/20 text-destructive" : "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                                        issue.type === 'error' ? "bg-destructive/10 border-destructive/20 text-destructive" : "bg-warning/10 border-warning/20 text-warning"
                                     )}>
                                         <AlertCircle className="w-4 h-4" />
                                     </div>
@@ -73,8 +73,8 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
                         ))
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full py-20 text-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                                <Check className="w-8 h-8 text-emerald-400" />
+                            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center border border-success/20">
+                                <Check className="w-8 h-8 text-success" />
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-foreground">{t('projectDashboard.noIssues')}</h3>

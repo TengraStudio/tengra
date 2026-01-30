@@ -187,7 +187,7 @@ export const NotificationBell: React.FC<{
     >
         <Bell className="w-3.5 h-3.5" />
         {count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 flex items-center justify-center text-[9px] font-bold bg-red-500 rounded-full px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 flex items-center justify-center text-[9px] font-bold bg-destructive rounded-full px-1">
                 {count > 99 ? '99+' : count}
             </span>
         )}

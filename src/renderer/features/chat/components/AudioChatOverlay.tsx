@@ -67,7 +67,7 @@ export function AudioChatOverlay({
                                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                                     className={cn(
                                         "absolute w-80 h-80 rounded-full blur-[80px]",
-                                        isListening ? "bg-primary/30" : "bg-emerald-500/30"
+                                        isListening ? "bg-primary/30" : "bg-success/30"
                                     )}
                                 />
                                 <motion.div
@@ -78,7 +78,7 @@ export function AudioChatOverlay({
                                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                                     className={cn(
                                         "absolute w-64 h-64 rounded-full blur-[60px]",
-                                        isListening ? "bg-primary/20" : "bg-emerald-500/20"
+                                        isListening ? "bg-primary/20" : "bg-success/20"
                                     )}
                                 />
                             </>
@@ -96,8 +96,8 @@ export function AudioChatOverlay({
                             className={cn(
                                 "w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-white/10",
                                 isListening ? "bg-primary text-primary-foreground" :
-                                    isSpeaking ? "bg-emerald-500 text-foreground" :
-                                        "bg-zinc-800 text-zinc-400"
+                                    isSpeaking ? "bg-success text-foreground" :
+                                        "bg-zinc-800 text-muted-foreground"
                             )}
                         >
                             {isListening ? (
@@ -130,7 +130,7 @@ export function AudioChatOverlay({
                         {isSpeaking && (
                             <button
                                 onClick={onStopSpeaking}
-                                className="px-10 py-4 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95"
+                                className="px-10 py-4 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95"
                             >
                                 <StopCircle className="w-6 h-6" />
                                 {t('audioChat.stopSpeaking')}

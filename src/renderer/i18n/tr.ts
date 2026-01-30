@@ -299,7 +299,7 @@ export const tr = {
             pushing: 'İtiliyor...'
         },
         noIssues: 'Projede önemli bir sorun bulunamadı. Tebrikler!',
-        issuesDescription: 'Orbit, projenizi potansiyel hatalar, uyarılar ve kod kokuları için tarar.',
+        issuesDescription: 'Tandem, projenizi potansiyel hatalar, uyarılar ve kod kokuları için tarar.',
         issueType: 'TÜR',
         issueMessage: 'MESAJ',
         issueLocation: 'KONUM',
@@ -563,13 +563,13 @@ export const tr = {
         systemDefault: 'Sistem Varsayılanı',
         test: 'Sesi Test Et',
         speed: 'Konuşma Hızı',
-        previewText: 'Orbit ile geleceğe hoş geldiniz. Ben sizin yapay zeka asistanınızım.',
+        previewText: 'Tandem ile geleceğe hoş geldiniz. Ben sizin yapay zeka asistanınızım.',
         microphone: 'Mikrofon',
         speaker: 'Hoparlör / Kulaklık',
         microphoneSelection: 'Mikrofon Girişi',
         speakerSelection: 'Ses Çıkışı',
         voiceCloning: 'Ses Klonlama',
-        voiceCloningDesc: 'Kendi sesinizi orbit ekosistemine entegre edin.',
+        voiceCloningDesc: 'Kendi sesinizi Tandem ekosistemine entegre edin.',
         voiceCloningTitle: 'Kendi Sesinizi Kullanın!',
         voiceCloningTeaser: '1 dakika boyunca konuşun ve yapay zeka sizin sesinizi taklit etsin Bu özellik artık aktif!',
         record: 'Kaydı Başlat',
@@ -733,7 +733,7 @@ export const tr = {
         moreLines: 'satır daha',
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: 'Zeka ve zarafetin buluştuğu nokta.',
     },
     input: {
@@ -777,7 +777,7 @@ export const tr = {
         creative: {
             title: 'Yaratıcı Yazım',
             description: 'Metin ve içerik üret.',
-            prompt: 'Orbit isimli bir AI asistanı için etkileyici bir tanıtım metni yazar mısın?'
+            prompt: 'Tandem isimli bir AI asistanı için etkileyici bir tanıtım metni yazar mısın?'
         },
         debug: {
             title: 'Hata Ayıkla',
@@ -799,7 +799,7 @@ export const tr = {
         user: 'Kullanıcı',
         assistant: 'Asistan',
         copyAsHtml: 'HTML Olarak Kopyala',
-        orbitDrawing: 'Orbit Çiziyor...',
+        TandemDrawing: 'Tandem Çiziyor...',
         quotaExceeded: 'Kota Aşıldı',
         quotaMessage: 'Model kullanım kotasını aştınız. Lütfen daha sonra tekrar deneyin veya planınızı yükseltin.',
         resetsAt: 'Sıfırlanma:',
@@ -808,7 +808,7 @@ export const tr = {
         speakAloud: 'Sesli Oku',
         convertToCode: 'Koda Dönüştür',
         approvePlan: 'Planı Onayla',
-        orbitThinking: 'Orbit Düşünüyor',
+        TandemThinking: 'Tandem Düşünüyor',
         showThought: 'Düşünceyi Göster',
         react: 'Tepki Ver',
         favorite: 'Favori',
@@ -844,7 +844,7 @@ export const tr = {
         fontDesc: 'Uygulamanın yazı tipini ve boyutunu özelleştirin.',
         fontFamily: 'YAZI TİPİ AİLESİ',
         fontSize: 'YAZI BOYUTU',
-        previewText: 'Orbit AI ile geleceği şekillendirin.',
+        previewText: 'Tandem AI ile geleceği şekillendirin.',
         accessibility: 'Erişilebilirlik',
         accessibilityDesc: 'Görüntü ve görünürlük ayarları',
         highContrast: 'Yüksek Kontrast Modu',
@@ -918,11 +918,11 @@ export const tr = {
         unknownProject: 'Bilinmeyen Proje'
     },
     about: {
-        description: 'Orbit, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.',
+        description: 'Tandem, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.',
         checkUpdates: 'Güncellemeleri Kontrol Et',
         privacyPolicy: 'Gizlilik Politikası',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: 'Fabrika Ayarlarına Dön',
         factoryResetDesc: 'Tüm ayarları ve verileri silerek uygulamayı sıfırlar.',
         updateCheckAlert: 'Güncelleme kontrolü prodüksiyon sürümünde aktiftir.'
@@ -978,7 +978,7 @@ export const tr = {
     tips: {
         title: 'Biliyor muydunuz?',
         tip1: 'CTRL+N kısayolunu kullanarak yeni bir sohbet oluşturabilirsiniz.',
-        tip2: 'Orbit, geliştirme için uzak SSH sunucularına bağlanmayı destekler.',
+        tip2: 'Tandem, geliştirme için uzak SSH sunucularına bağlanmayı destekler.',
         tip3: 'Dosyaları doğrudan sohbet penceresine sürükleyip bırakabilirsiniz.',
         tip4: 'Kodunuz hakkında çoklu ajan perspektifi almak için "Konsey" sekmesini kullanın.',
         tip5: 'Deneyiminizi Ayarlar > Görünüm menüsünden özelleştirebilirsiniz.'
@@ -1129,7 +1129,7 @@ export const tr = {
         // Manual Session Modal
         sessionKeyRequired: 'Claude Oturum Anahtarı Gerekli',
         completeConnection: '{{email}} için Bağlantıyı Tamamla',
-        sessionKeyDescription: 'Kota takibi ve doğrudan etkileşim için Orbit, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.',
+        sessionKeyDescription: 'Kota takibi ve doğrudan etkileşim için Tandem, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.',
         howToFindKey: 'Oturum anahtarınızı nasıl bulursunuz',
         sessionKeyInstructions: {
             step1: 'claude.ai adresini açın ve giriş yapın',
@@ -1155,7 +1155,7 @@ export const tr = {
     },
     memory: {
         title: 'Bellek Denetçisi',
-        subtitle: 'Orbit\'in bildiklerini ve hatırladıklarını görselleştirin ve yönetin.',
+        subtitle: 'Tandem\'in bildiklerini ve hatırladıklarını görselleştirin ve yönetin.',
         searchPlaceholder: 'Bellekte ara...',
         totalFacts: 'Toplam Gerçek',
         episodes: 'Bölümler',
@@ -1246,7 +1246,7 @@ export const tr = {
         stats: 'İstatistikler'
     },
     onboarding: {
-        welcome: 'Orbit\'e Hoş Geldiniz',
+        welcome: 'Tandem\'e Hoş Geldiniz',
         step1: 'AI Sağlayıcılarını Bağlayın',
         step2: 'Çalışma Alanını Hazırlayın',
         step3: 'Kodlamaya Başlayın',
@@ -1454,3 +1454,4 @@ export const tr = {
         path: 'Yol:'
     }
 };
+

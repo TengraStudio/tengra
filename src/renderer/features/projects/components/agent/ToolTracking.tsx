@@ -36,7 +36,7 @@ export const ToolTracking: React.FC<ToolTrackingProps> = ({ executions, t }) => 
                                 {tool.status === 'running' ? (
                                     <Loader2 className="w-3 h-3 text-primary animate-spin" />
                                 ) : tool.status === 'completed' ? (
-                                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                                    <CheckCircle className="w-3 h-3 text-success" />
                                 ) : (
                                     <XCircle className="w-3 h-3 text-destructive" />
                                 )}

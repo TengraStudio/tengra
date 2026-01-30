@@ -16,7 +16,7 @@ if (!app.isPackaged) {
 }
 
 // Set the application name early - this affects Task Manager display on Windows
-app.setName('Orbit');
+app.setName('Tandem');
 
 // Increase memory limits for the Renderer process (Chromium/V8) to prevent "Oilpan: Normal allocation failed"
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
@@ -25,7 +25,7 @@ app.commandLine.appendSwitch('disable-site-isolation-trials'); // Can save memor
 
 // On Windows, set the AppUserModelId for taskbar grouping and display name
 if (process.platform === 'win32') {
-    app.setAppUserModelId('com.orbit.app');
+    app.setAppUserModelId('com.tandem.app');
 }
 
 import { appLogger, LogLevel } from '@main/logging/logger';
@@ -49,6 +49,8 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     const defaultWidth = 1280;
     const defaultHeight = 800;
 
+    const iconPath = path.join(__dirname, '../../src/renderer/assets/logo.png');
+
     const win = new BrowserWindow({
         width: windowSettings?.width ?? defaultWidth,
         height: windowSettings?.height ?? defaultHeight,
@@ -58,6 +60,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         frame: false,
         backgroundColor: '#000000',
         autoHideMenuBar: true,
+        icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path.join(__dirname, '../preload/preload.js'),
             sandbox: false, // Required for some Node APIs if contextIsolation is false, but here it is true. keeping as is.
@@ -91,7 +94,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         if (!isHidden) {
             win.show();
         }
-        win.setTitle('ORBIT');
+        win.setTitle('TANDEM');
     });
 
     // Save window position and size on move/resize
@@ -185,11 +188,11 @@ if (typeof protocol.registerSchemesAsPrivileged === 'function') {
 
 // eslint-disable-next-line max-lines-per-function, complexity
 app.whenReady().then(async () => {
-    app.setAppUserModelId('Orbit');
-    app.name = 'Orbit';
+    app.setAppUserModelId('Tandem');
+    app.name = 'Tandem';
 
     // Isolate Electron runtime folders to a subfolder
-    const runtimePath = path.join(app.getPath('appData'), 'Orbit', 'runtime');
+    const runtimePath = path.join(app.getPath('appData'), 'Tandem', 'runtime');
     app.setPath('userData', runtimePath);
 
     // Initialize Logger
@@ -205,9 +208,8 @@ app.whenReady().then(async () => {
     appLogger.info('Startup', `Build Time: ${typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : 'N/A'} `);
     appLogger.info('Startup', `Loading from: ${(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) ? 'DEV SERVER (HMR Active)' : 'STATIC FILES (No HMR)'} `);
 
-    // Migration from orbit-ai to Orbit
-    const oldPath = path.join(app.getPath('appData'), 'orbit-ai');
-    const newPath = app.getPath('userData'); // This should now point to Orbit due to app.name change
+    const oldPath = path.join(app.getPath('appData'), 'tandem');
+    const newPath = app.getPath('userData'); // This should now point to Tandem due to app.name change
 
     if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) {
         try {
@@ -218,11 +220,11 @@ app.whenReady().then(async () => {
         }
     }
 
-    // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
-    // Add Gallery path to allowed roots (Gallery is at Roaming/Orbit/Gallery, outside runtime)
+    // Add Gallery path to allowed roots (Gallery is at Roaming/Tandem/Gallery, outside runtime)
+    // Add Gallery path to allowed roots (Gallery is at Roaming/Tandem/Gallery, outside runtime)
     const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery');
-    const orbitRoaming = path.join(app.getPath('appData'), 'Orbit');
-    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, orbitRoaming]);
+    const tandemRoaming = path.join(app.getPath('appData'), 'Tandem');
+    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, tandemRoaming]);
 
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '');
@@ -435,17 +437,14 @@ function setupTray() {
     if (tray) { return; } // Already set up
 
     try {
-        // Create a simple icon (you can replace this with an actual icon file)
-        const icon = nativeImage.createEmpty();
-        // For now, use a simple approach - you may want to load an actual icon file
-        // const iconPath = path.join(process.cwd(), 'src/renderer/assets/logo.png')
-        // const icon = nativeImage.createFromPath(iconPath)
+        const iconPath = path.join(__dirname, '../../src/renderer/assets/logo.png');
+        const icon = nativeImage.createFromPath(iconPath);
 
         tray = new Tray(icon);
 
         const contextMenu = Menu.buildFromTemplate([
             {
-                label: 'Show Orbit',
+                label: 'Show Tandem',
                 click: () => {
                     if (mainWindow) {
                         mainWindow.show();
@@ -463,7 +462,7 @@ function setupTray() {
             }
         ]);
 
-        tray.setToolTip('Orbit');
+        tray.setToolTip('Tandem');
         tray.setContextMenu(contextMenu);
 
         tray.on('click', () => {

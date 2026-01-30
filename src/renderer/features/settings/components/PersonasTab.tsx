@@ -41,7 +41,7 @@ export const PersonasTab: React.FC<PersonasTabProps> = ({
                         <div><div className="text-sm font-bold text-foreground">{p.name}</div><div className="text-xs text-muted-foreground">{p.description}</div></div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => { setEditingPersonaId(p.id); setPersonaDraft(p); }} className="px-3 py-1.5 rounded-md text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50">{t('common.edit')}</button>
-                            <button onClick={() => handleDeletePersona(p.id)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">{t('common.delete')}</button>
+                            <button onClick={() => handleDeletePersona(p.id)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-destructive/10 text-destructive border border-destructive/20">{t('common.delete')}</button>
                         </div>
                     </div>
                 ))}

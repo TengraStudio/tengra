@@ -40,7 +40,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                         {idx === 3 && (
                             <button
                                 onClick={handleRunProject}
-                                className="p-1.5 rounded-md hover:bg-white/10 text-emerald-400 transition-colors"
+                                className="p-1.5 rounded-md hover:bg-white/10 text-success transition-colors"
                                 title={t('workspace.run')}
                             >
                                 <Play className="w-3.5 h-3.5 fill-current" />

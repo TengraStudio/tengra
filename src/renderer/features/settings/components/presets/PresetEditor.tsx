@@ -24,7 +24,7 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
             />
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">{t('ssh.presets.labels.temperature')}</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">{t('ssh.presets.labels.temperature')}</label>
                     <input
                         type="range"
                         min="0"
@@ -37,7 +37,7 @@ export const PresetEditor: React.FC<PresetEditorProps> = ({
                     <div className="text-xs text-center">{preset.temperature}</div>
                 </div>
                 <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">{t('ssh.presets.labels.topP')}</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">{t('ssh.presets.labels.topP')}</label>
                     <input
                         type="range"
                         min="0"

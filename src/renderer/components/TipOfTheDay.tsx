@@ -43,7 +43,7 @@ export const TipOfTheDay: React.FC<TipOfTheDayProps> = ({ language = 'en' }) => 
                 className="fixed bottom-4 right-4 z-50 max-w-sm"
             >
                 <div className="bg-card border border-border shadow-xl rounded-xl p-4 flex items-start gap-3">
-                    <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500 shrink-0">
+                    <div className="p-2 bg-yellow/10 rounded-lg text-yellow shrink-0">
                         <Lightbulb className="w-5 h-5" />
                     </div>
                     <div className="flex-1">

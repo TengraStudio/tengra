@@ -66,6 +66,7 @@ export const TerminalSession = memo(({ tab, isActive, onClose, projectPath }: Te
     const [hasError, setHasError] = useState(false);
     const sessionIdRef = useRef<string | null>(null);
     const isInitializedRef = useRef(false);
+    const isActiveRef = useRef(false);
 
     useEffect(() => { if (xtermRef.current) { xtermRef.current.options.theme = getTerminalTheme(); } }, [theme]);
     useTerminalMultiplexer(tab.id, isReady, xtermRef, onClose);
@@ -118,11 +119,11 @@ export const TerminalSession = memo(({ tab, isActive, onClose, projectPath }: Te
         term.open(containerRef.current);
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
-        let active = false;
-        void setupSession(term, fitAddon).then(s => { active = s; });
+        isActiveRef.current = false;
+        void setupSession(term, fitAddon).then(s => { isActiveRef.current = s; });
         return () => {
             isInitializedRef.current = false;
-            if (active && sessionIdRef.current) { initializedTerminals.delete(tab.id); window.electron.terminal.kill(sessionIdRef.current).catch(() => { }); }
+            if (isActiveRef.current && sessionIdRef.current) { initializedTerminals.delete(tab.id); window.electron.terminal.kill(sessionIdRef.current).catch(() => { }); }
             initializingTerminals.delete(tab.id);
             term.dispose();
         };
@@ -133,6 +134,7 @@ export const TerminalSession = memo(({ tab, isActive, onClose, projectPath }: Te
             const timer = setTimeout(safeFit, 100);
             return () => clearTimeout(timer);
         }
+        return undefined;
     }, [isActive, safeFit]);
 
     useEffect(() => {

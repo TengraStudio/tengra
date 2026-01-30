@@ -604,8 +604,8 @@ export class AgentCouncilService {
     private async toolRunScript(args: ToolCallArgs): Promise<string> {
         if (!args.code || !args.language) { throw new Error('Missing code or language (node/python)'); }
         const ext = args.language === 'python' ? 'py' : 'js';
-        const scriptPath = `.orbit/temp/agent_script_${Date.now()}.${ext}`;
-        await this.deps.fs.createDirectory('.orbit/temp');
+        const scriptPath = `.tandem/temp/agent_script_${Date.now()}.${ext}`;
+        await this.deps.fs.createDirectory('.tandem/temp');
         const writeScript = await this.deps.fs.writeFile(scriptPath, args.code);
         if (!writeScript.success) { throw new Error(`Failed to write script: ${writeScript.error}`); }
         const cmd = args.language === 'python' ? `python "${scriptPath}"` : `node "${scriptPath}"`;

@@ -21,14 +21,14 @@ function buildNative() {
         // Kill existing services to prevent EBUSY errors
         console.log('Stopping running services...');
         const binaries = [
-            'orbit-db-service.exe',
-            'orbit-token-service.exe',
-            'orbit-model-service.exe',
-            'orbit-quota-service.exe',
-            'orbit-memory-service.exe'
+            'tandem-db-service.exe',
+            'tandem-token-service.exe',
+            'tandem-model-service.exe',
+            'tandem-quota-service.exe',
+            'tandem-memory-service.exe'
         ];
 
-        for (const bin of binaries) {
+        for (const bin of [...binaries]) {
             try {
                 // /F = force, /IM = image name, 2>NUL to hide stderr
                 execSync(`taskkill /F /IM ${bin} 2>NUL`, { stdio: 'ignore' });

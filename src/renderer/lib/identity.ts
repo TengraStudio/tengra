@@ -7,9 +7,9 @@ export interface BrandConfig {
     description: string
 }
 
-export const ORBIT_BRAND: BrandConfig = {
-    name: 'ORBIT',
-    fullName: 'ORBIT AI Assistant',
+export const TANDEM_BRAND: BrandConfig = {
+    name: 'TANDEM',
+    fullName: 'TANDEM AI Assistant',
     tagline: 'Intelligence in Motion',
     description: 'A high-performance, intelligent OS Assistant with deep local system integration.'
 };
@@ -21,3 +21,4 @@ export function getSystemPrompt(language: 'tr' | 'en' = 'tr', _personaPrompt?: s
         model
     });
 }
+

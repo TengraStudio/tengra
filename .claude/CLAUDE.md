@@ -1,4 +1,4 @@
-# Orbit AI Assistant - Project Memory
+# Tandem AI Assistant - Project Memory
 
 ## MANDATORY: Read Documentation First
 

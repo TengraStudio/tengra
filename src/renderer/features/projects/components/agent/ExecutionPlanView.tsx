@@ -32,7 +32,7 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({ plan, onAp
             <div className="p-3 border-b border-border shrink-0 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-foreground">{t('agent.executionPlan')}</h3>
                 {awaitingApproval && (
-                    <span className="text-xs text-amber-500 font-medium animate-pulse">{t('agent.awaitingApproval')}</span>
+                    <span className="text-xs text-warning font-medium animate-pulse">{t('agent.awaitingApproval')}</span>
                 )}
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 scrollbar-thin">
@@ -41,7 +41,7 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({ plan, onAp
                         <div className="flex flex-col items-center pt-1">
                             <div className={cn(
                                 "w-4 h-4 rounded-full border-2 flex items-center justify-center text-[8px] font-bold",
-                                step.status === 'completed' && "bg-emerald-500 border-emerald-500 text-white",
+                                step.status === 'completed' && "bg-success border-success text-white",
                                 step.status === 'executing' && "border-primary text-primary animate-pulse",
                                 step.status === 'pending' && "border-muted text-muted-foreground"
                             )}>
@@ -77,7 +77,7 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({ plan, onAp
                     </button>
                     <button
                         onClick={onApprove}
-                        className="flex-1 py-2 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-2 px-4 bg-success hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2"
                     >
                         <CheckCircle className="w-4 h-4" />
                         {t('agent.approveExecute')}

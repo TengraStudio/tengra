@@ -65,18 +65,18 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
 
     const getLevelColor = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'text-red-400';
-            case 'warn': return 'text-amber-400';
-            case 'debug': return 'text-zinc-500';
+            case 'error': return 'text-destructive';
+            case 'warn': return 'text-warning';
+            case 'debug': return 'text-muted-foreground';
             default: return 'text-zinc-300';
         }
     };
 
     const getLevelBg = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'bg-red-500/10 border-red-500/20';
-            case 'warn': return 'bg-amber-500/10 border-amber-500/20';
-            case 'debug': return 'bg-zinc-500/10 border-zinc-500/20';
+            case 'error': return 'bg-destructive/10 border-destructive/20';
+            case 'warn': return 'bg-warning/10 border-warning/20';
+            case 'debug': return 'bg-muted/10 border-border/20';
             default: return 'bg-muted/10 border-border/10';
         }
     };

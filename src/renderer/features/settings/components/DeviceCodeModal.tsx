@@ -81,7 +81,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                         className={cn(
                             "absolute -right-2 -top-2 p-2.5 rounded-lg border transition-all duration-200",
                             copied
-                                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-500"
+                                ? "bg-success/20 border-success/50 text-success"
                                 : "bg-muted/30 border-border/50 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50"
                         )}
                         title={t('auth.copyCode')}
@@ -113,8 +113,8 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                     )}
                     {isSuccess && (
                         <>
-                            <Check className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-emerald-500 font-semibold">{t('auth.connectedSuccessfully')}</span>
+                            <Check className="w-4 h-4 text-success" />
+                            <span className="text-sm text-success font-semibold">{t('auth.connectedSuccessfully')}</span>
                         </>
                     )}
                     {isError && (

@@ -1,6 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { JsonValue } from '@shared/types/common';
-import { AppErrorCode, getErrorMessage, OrbitError } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
 
 export interface IpcResponse<T = JsonValue> {
@@ -65,7 +65,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
                 const message = getErrorMessage(errorObj);
                 let context: Record<string, JsonValue | Error> | undefined;
 
-                if (errorObj instanceof OrbitError) {
+                if (errorObj instanceof TandemError) {
                     code = errorObj.code as AppErrorCode;
                     context = errorObj.context as unknown as Record<string, JsonValue | Error>;
                 }
@@ -117,3 +117,4 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unk
         }
     };
 };
+

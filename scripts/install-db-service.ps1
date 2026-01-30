@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Install or manage the Orbit Database Service
+    Install or manage the Tandem Database Service
 
 .DESCRIPTION
-    This script installs, uninstalls, or manages the Orbit Database Windows Service.
-    The service hosts the SQLite database with vector search support for the Orbit AI assistant.
+    This script installs, uninstalls, or manages the Tandem Database Windows Service.
+    The service hosts the SQLite database with vector search support for the Tandem AI assistant.
 
 .PARAMETER Action
     The action to perform: install, uninstall, start, stop, status
@@ -21,21 +21,21 @@ param(
     [string]$Action
 )
 
-$ServiceName = "OrbitDatabaseService"
-$DisplayName = "Orbit Database Service"
-$Description = "Manages the Orbit application database for AI assistant features"
+$ServiceName = "TandemDatabaseService"
+$DisplayName = "Tandem Database Service"
+$Description = "Manages the Tandem application database for AI assistant features"
 
 # Determine binary path
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 
 # Check if we're in dev or production
-if (Test-Path "$ProjectRoot\resources\bin\orbit-db-service.exe") {
-    $BinaryPath = "$ProjectRoot\resources\bin\orbit-db-service.exe"
-} elseif (Test-Path "$ProjectRoot\src\services\target\release\orbit-db-service.exe") {
-    $BinaryPath = "$ProjectRoot\src\services\target\release\orbit-db-service.exe"
+if (Test-Path "$ProjectRoot\resources\bin\tandem-db-service.exe") {
+    $BinaryPath = "$ProjectRoot\resources\bin\tandem-db-service.exe"
+} elseif (Test-Path "$ProjectRoot\src\services\target\release\tandem-db-service.exe") {
+    $BinaryPath = "$ProjectRoot\src\services\target\release\tandem-db-service.exe"
 } else {
-    Write-Error "orbit-db-service.exe not found. Build it first with: cargo build --release -p orbit-db-service"
+    Write-Error "tandem-db-service.exe not found. Build it first with: cargo build --release -p tandem-db-service"
     exit 1
 }
 
@@ -117,7 +117,7 @@ function Uninstall-Service {
     }
 
     # Clean up port file
-    $portFile = "$env:APPDATA\Orbit\services\db-service.port"
+    $portFile = "$env:APPDATA\Tandem\services\db-service.port"
     if (Test-Path $portFile) {
         Remove-Item $portFile -Force
         Write-Host "Removed port file" -ForegroundColor Gray
@@ -157,6 +157,7 @@ function Stop-DbService {
 
     Write-Host "Stopping service..." -ForegroundColor Cyan
     Stop-Service -Name $ServiceName -Force
+    sc.exe stop $ServiceName | Out-Null
 
     $service = Get-Service -Name $ServiceName
     Write-Host "Service status: $($service.Status)" -ForegroundColor $(if ($service.Status -eq "Stopped") { "Green" } else { "Yellow" })
@@ -174,7 +175,7 @@ function Get-ServiceStatus {
     Write-Host "Start Type: $($existing.StartType)" -ForegroundColor Gray
 
     # Check port file
-    $portFile = "$env:APPDATA\Orbit\services\db-service.port"
+    $portFile = "$env:APPDATA\Tandem\services\db-service.port"
     if (Test-Path $portFile) {
         $port = Get-Content $portFile
         Write-Host "Port: $port" -ForegroundColor Gray

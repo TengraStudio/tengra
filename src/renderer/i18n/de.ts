@@ -284,7 +284,7 @@ export const de = {
             pushing: 'Pushing...'
         },
         noIssues: 'Keine signifikanten Probleme im Projekt gefunden. Gute Arbeit!',
-        issuesDescription: 'Orbit scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.',
+        issuesDescription: 'Tandem scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.',
         issueType: 'TYP',
         issueMessage: 'NACHRICHT',
         issueLocation: 'ORT',
@@ -539,7 +539,7 @@ export const de = {
     },
     memory: {
         title: 'Speicherinspektor',
-        subtitle: 'Visualisieren und verwalten Sie, was Orbit weiß und erinnert.',
+        subtitle: 'Visualisieren und verwalten Sie, was Tandem weiß und erinnert.',
         searchPlaceholder: 'Speicher durchsuchen...',
         totalFacts: 'Gesamte Fakten',
         episodes: 'Episoden',
@@ -621,7 +621,7 @@ export const de = {
         moreLines: 'weitere Zeilen'
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: 'Intelligenz trifft Eleganz.'
     },
     auth: {
@@ -630,7 +630,7 @@ export const de = {
         connectionFailed: 'Verbindung zum Antigravity-Server fehlgeschlagen. Bitte melden Sie sich an oder überprüfen Sie Ihren API-Schlüssel.',
         sessionKeyRequired: 'Claude-Sitzungsschlüssel erforderlich',
         completeConnection: 'Verbindung für {{email}} abschließen',
-        sessionKeyDescription: 'Für Kontingent-Tracking und direkte Interaktion benötigt Orbit Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.',
+        sessionKeyDescription: 'Für Kontingent-Tracking und direkte Interaktion benötigt Tandem Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.',
         howToFindKey: 'So finden Sie Ihren Sitzungsschlüssel',
         sessionKeyInstructions: {
             step1: 'Öffnen Sie claude.ai und melden Sie sich an',
@@ -891,7 +891,7 @@ export const de = {
         creative: {
             title: 'Kreatives Schreiben',
             description: 'Texte und Inhalte generieren.',
-            prompt: 'Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Orbit schreiben?'
+            prompt: 'Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Tandem schreiben?'
         },
         debug: {
             title: 'Debuggen',
@@ -913,7 +913,7 @@ export const de = {
         user: 'Benutzer',
         assistant: 'Assistent',
         copyAsHtml: 'Als HTML kopieren',
-        orbitDrawing: 'Orbit Zeichnung...',
+        TandemDrawing: 'Tandem Zeichnung...',
         quotaExceeded: 'Kontingent überschritten',
         quotaMessage: 'Sie haben das Nutzungskontingent für das Modell überschritten. Bitte versuchen Sie es später erneut oder erweitern Sie Ihren Plan.',
         resetsAt: 'Wird zurückgesetzt am:',
@@ -922,7 +922,7 @@ export const de = {
         speakAloud: 'Vorlesen',
         convertToCode: 'In Code umwandeln',
         approvePlan: 'Plan genehmigen',
-        orbitThinking: 'Orbit denkt nach',
+        TandemThinking: 'Tandem denkt nach',
         showThought: 'Gedankengänge anzeigen',
         react: 'Reagieren',
         runBenchmark: 'Benchmark ausführen',
@@ -958,7 +958,7 @@ export const de = {
         fontDesc: 'Anpassung der Schriftart und -größe.',
         fontFamily: 'SCHRIFTFAMILIE',
         fontSize: 'SCHRIFTGRÖSSE',
-        previewText: 'Gestalten Sie die Zukunft mit Orbit KI.',
+        previewText: 'Gestalten Sie die Zukunft mit Tandem KI.',
         accessibility: 'Barrierefreiheit',
         accessibilityDesc: 'Anzeige- und Sichtbarkeitseinstellungen',
         highContrast: 'Hochkontrastmodus',
@@ -1031,11 +1031,11 @@ export const de = {
         unknownProject: 'Unbekanntes Projekt'
     },
     about: {
-        description: 'Orbit ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.',
+        description: 'Tandem ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.',
         checkUpdates: 'Auf Updates prüfen',
         privacyPolicy: 'Datenschutzerklärung',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: 'Werksreset',
         factoryResetDesc: 'Setzt die Anwendung zurück, indem alle Einstellungen und Daten gelöscht werden.',
         updateCheckAlert: 'Update-Prüfung in Produktions-Builds aktiviert.'
@@ -1080,7 +1080,7 @@ export const de = {
     tips: {
         title: 'Wussten Sie schon?',
         tip1: 'Sie können einen neuen Chat mit der Tastenkombination CTRL+N erstellen.',
-        tip2: 'Orbit unterstützt die Verbindung zu Remote-SSH-Servern für die Entwicklung.',
+        tip2: 'Tandem unterstützt die Verbindung zu Remote-SSH-Servern für die Entwicklung.',
         tip3: 'Sie können Dateien direkt per Drag & Drop in den Chat ziehen.',
         tip4: 'Nutzen Sie den Tab "Rat", um Multi-Agenten-Perspektiven auf Ihren Code zu erhalten.',
         tip5: 'Passen Sie Ihr Erlebnis unter Einstellungen > Erscheinungsbild an.'
@@ -1286,7 +1286,7 @@ export const de = {
         stats: 'Statistiken'
     },
     onboarding: {
-        welcome: 'Willkommen bei Orbit',
+        welcome: 'Willkommen bei Tandem',
         step1: 'KI-Anbieter verbinden',
         step2: 'Arbeitsbereich einrichten',
         step3: 'Programmierung starten',
@@ -1308,3 +1308,4 @@ export const de = {
         selectSession: 'Wählen Sie eine Sitzung oder erstellen Sie eine neue, um zu beginnen.'
     }
 };
+

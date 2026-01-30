@@ -18,7 +18,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggl
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                     <span className="text-foreground font-black text-xs">O</span>
                 </div>
-                <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">ORBIT</span>
+                <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">TANDEM</span>
             </div>
         )}
         <Button
@@ -73,9 +73,10 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSea
                 <span>V 1.2.0</span>
                 <div className="flex items-center gap-2">
                     <Search className="w-3 h-3 hover:text-primary cursor-pointer transition-colors" onClick={onSearch} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 </div>
             </div>
         </div>
     );
 };
+

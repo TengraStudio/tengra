@@ -25,8 +25,8 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
         >
             <div className="flex items-center gap-4" style={noDragStyle}>
                 <div className="flex items-center gap-2">
-                    <img src="@renderer/assets/logo.png" alt="Orbit" className="w-5 h-5 object-contain" />
-                    <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Orbit</span>
+                    <img src="@renderer/assets/logo.png" alt="Tandem" className="w-5 h-5 object-contain" />
+                    <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Tandem</span>
                 </div>
                 {leftContent}
             </div>
@@ -52,7 +52,7 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
                     </button>
                     <button
                         onClick={() => window.electron.close()}
-                        className="p-1.5 hover:bg-red-500 hover:text-white rounded-md transition-all duration-200 text-muted-foreground"
+                        className="p-1.5 hover:bg-destructive hover:text-white rounded-md transition-all duration-200 text-muted-foreground"
                         title={t('titleBar.close')}
                     >
                         <X className="w-4 h-4" />
@@ -62,5 +62,6 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
         </header>
     );
 }
+
 
 

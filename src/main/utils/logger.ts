@@ -12,7 +12,7 @@ export class Logger {
     static init(logDir?: string) {
         const userData = app.getPath('userData');
         const targetDir = logDir ?? userData;
-        this.logFile = path.join(targetDir, 'orbit.log');
+        this.logFile = path.join(targetDir, 'Tandem.log');
     }
 
     private static format(level: LogLevel, message: string, meta?: JsonValue): string {
@@ -49,3 +49,4 @@ export class Logger {
         }
     }
 }
+

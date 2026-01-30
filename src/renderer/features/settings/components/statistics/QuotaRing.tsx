@@ -42,8 +42,9 @@ export const QuotaRing = ({ value, color, size = 'md' }: { value: number; color:
 };
 
 export const getQuotaColor = (p: number) => {
-    if (p <= 10) { return '#ef4444'; } // Red-500
-    if (p <= 30) { return '#f97316'; } // Orange-500
-    if (p <= 60) { return '#eab308'; } // Yellow-500
-    return '#22c55e'; // Green-500
+    // Using CSS variables for theme-aware quota colors
+    if (p <= 10) { return 'hsl(var(--destructive))'; } // Red/destructive
+    if (p <= 30) { return 'hsl(var(--warning))'; } // Orange/warning
+    if (p <= 60) { return 'hsl(var(--yellow))'; } // Yellow
+    return 'hsl(var(--success))'; // Green/success
 };

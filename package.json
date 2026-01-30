@@ -1,7 +1,7 @@
 {
-  "name": "orbit",
+  "name": "tandem",
   "version": "1.0.0",
-  "description": "Orbit - Your Personal AI Assistant",
+  "description": "Tandem - Your Personal AI Assistant",
   "main": "dist/main/main.js",
   "type": "commonjs",
   "scripts": {
@@ -47,7 +47,7 @@
     "ollama",
     "electron",
     "copilot",
-    "orbit"
+    "tandem"
   ],
   "author": "",
   "license": "GPL-3.0",
@@ -154,8 +154,8 @@
     "zod": "^4.3.6"
   },
   "build": {
-    "appId": "com.orbit.app",
-    "productName": "Orbit",
+    "appId": "com.tandem.app",
+    "productName": "Tandem",
     "directories": {
       "output": "release"
     },
@@ -172,7 +172,7 @@
         "zip"
       ],
       "icon": "src/renderer/assets/logo.png",
-      "publisherName": "Orbit Team"
+      "publisherName": "Tandem Team"
     },
     "linux": {
       "target": [
@@ -184,7 +184,7 @@
     "publish": {
       "provider": "github",
       "owner": "TengraStudio",
-      "repo": "orbit"
+      "repo": "tandem"
     }
   },
   "optionalDependencies": {

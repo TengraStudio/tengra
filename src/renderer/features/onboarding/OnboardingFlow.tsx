@@ -43,7 +43,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
         if (currentStep < STEPS.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            localStorage.setItem('orbit-onboarding-complete', 'true');
+            localStorage.setItem('Tandem-onboarding-complete', 'true');
             onClose();
         }
     };
@@ -125,3 +125,4 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
         </Modal>
     );
 };
+

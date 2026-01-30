@@ -76,9 +76,9 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
     // Badge styling
     const badgeClasses = {
         default: 'bg-muted text-muted-foreground',
-        warning: 'bg-amber-500/20 text-amber-500',
-        error: 'bg-red-500/20 text-red-500',
-        success: 'bg-emerald-500/20 text-emerald-500'
+        warning: 'bg-warning/20 text-warning',
+        error: 'bg-destructive/20 text-destructive',
+        success: 'bg-success/20 text-success'
     };
 
     // Collapsed mode - render as icon button with flyout

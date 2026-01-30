@@ -226,7 +226,7 @@ export const fr = {
         clean: 'Propre',
         dirty: 'Modifié',
         notAGitRepo: 'Pas un dépôt Git',
-        issuesDescription: 'Orbit analyse votre projet pour détecter d\'éventuelles erreurs, avertissements et odeurs de code.',
+        issuesDescription: 'Tandem analyse votre projet pour détecter d\'éventuelles erreurs, avertissements et odeurs de code.',
         issueType: 'TYPE',
         issueMessage: 'MESSAGE',
         issueLocation: 'EMPLACEMENT',
@@ -353,7 +353,7 @@ export const fr = {
     },
     memory: {
         title: 'Inspecteur de mémoire',
-        subtitle: 'Visualisez et gérez ce qu\'Orbit sait et se souvient.',
+        subtitle: 'Visualisez et gérez ce qu\'Tandem sait et se souvient.',
         searchPlaceholder: 'Rechercher dans la mémoire...',
         totalFacts: 'Total des faits',
         episodes: 'Épisodes',
@@ -435,7 +435,7 @@ export const fr = {
         moreLines: 'lignes supplémentaires'
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: 'L\'intelligence rencontre l\'élégance.'
     },
     auth: {
@@ -444,7 +444,7 @@ export const fr = {
         connectionFailed: 'La connexion au serveur Antigravity a échoué. Veuillez vous connecter ou vérifier votre clé API.',
         sessionKeyRequired: 'Clé de session Claude requise',
         completeConnection: 'Compléter la connexion pour {{email}}',
-        sessionKeyDescription: 'Pour le suivi des quotas et l\'interaction directe, Orbit a besoin de votre clé de session Claude. Elle est stockée cryptée localement.',
+        sessionKeyDescription: 'Pour le suivi des quotas et l\'interaction directe, Tandem a besoin de votre clé de session Claude. Elle est stockée cryptée localement.',
         howToFindKey: 'Comment trouver votre clé de session',
         sessionKeyInstructions: {
             step1: 'Ouvrez claude.ai et connectez-vous',
@@ -507,7 +507,7 @@ export const fr = {
         creative: {
             title: 'Écriture créative',
             description: 'Générer du texte et du contenu.',
-            prompt: 'Pouvez-vous écrire un texte d\'introduction impressionnant pour un assistant IA nommé Orbit ?'
+            prompt: 'Pouvez-vous écrire un texte d\'introduction impressionnant pour un assistant IA nommé Tandem ?'
         },
         debug: {
             title: 'Débogage',
@@ -529,7 +529,7 @@ export const fr = {
         user: 'Utilisateur',
         assistant: 'Assistant',
         copyAsHtml: 'Copier en HTML',
-        orbitDrawing: 'Dessin Orbit...',
+        TandemDrawing: 'Dessin Tandem...',
         quotaExceeded: 'Quota dépassé',
         quotaMessage: 'Vous avez dépassé le quota d\'utilisation du modèle. Veuillez réessayer plus tard ou mettre à niveau votre forfait.',
         resetsAt: 'Se réinitialise à :',
@@ -538,7 +538,7 @@ export const fr = {
         speakAloud: 'Lire à haute voix',
         convertToCode: 'Convertir en code',
         approvePlan: 'Approuver le plan',
-        orbitThinking: 'Orbit réfléchit',
+        TandemThinking: 'Tandem réfléchit',
         showThought: 'Afficher la pensée',
         react: 'Réagir',
         runBenchmark: 'Exécuter le benchmark',
@@ -574,7 +574,7 @@ export const fr = {
         fontDesc: 'Personnaliser la police et la taille de l\'application.',
         fontFamily: 'FAMILLE DE POLICE',
         fontSize: 'TAILLE DE POLICE',
-        previewText: 'Façonner le futur avec Orbit IA.',
+        previewText: 'Façonner le futur avec Tandem IA.',
         accessibility: 'Accessibilité',
         accessibilityDesc: 'Paramètres d\'affichage et de visibilité',
         highContrast: 'Mode contraste élevé',
@@ -648,11 +648,11 @@ export const fr = {
         unknownProject: 'Projet inconnu'
     },
     about: {
-        description: 'Orbit est un assistant IDE IA de nouvelle génération conçu pour les développeurs, unifiant les modèles IA locaux et basés sur le cloud dans une seule interface.',
+        description: 'Tandem est un assistant IDE IA de nouvelle génération conçu pour les développeurs, unifiant les modèles IA locaux et basés sur le cloud dans une seule interface.',
         checkUpdates: 'Vérifier les mises à jour',
         privacyPolicy: 'Politique de confidentialité',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: 'Réinitialisation d\'usine',
         factoryResetDesc: 'Réinitialise l\'application en supprimant tous les paramètres et données.',
         updateCheckAlert: 'Vérification des mises à jour activée dans les builds de production.'
@@ -697,7 +697,7 @@ export const fr = {
     tips: {
         title: 'Le saviez-vous ?',
         tip1: 'Vous pouvez créer une nouvelle discussion avec le raccourci CTRL+N.',
-        tip2: 'Orbit prend en charge la connexion aux serveurs SSH distants pour le développement.',
+        tip2: 'Tandem prend en charge la connexion aux serveurs SSH distants pour le développement.',
         tip3: 'Vous pouvez glisser-déposer des fichiers directement dans la discussion.',
         tip4: 'Utilisez l\'onglet "Conseil" pour obtenir des perspectives multi-agents sur votre code.',
         tip5: 'Personnalisez votre expérience dans Paramètres > Apparence.'
@@ -903,7 +903,7 @@ export const fr = {
         stats: 'Stats'
     },
     onboarding: {
-        welcome: 'Bienvenue sur Orbit',
+        welcome: 'Bienvenue sur Tandem',
         step1: 'Connecter les fournisseurs IA',
         step2: 'Configurer l\'espace de travail',
         step3: 'Commencer à coder',
@@ -1123,3 +1123,4 @@ export const fr = {
         path: 'Chemin :'
     }
 };
+

@@ -33,6 +33,8 @@ interface ModelSelectorContentProps {
     selectedModel: string;
     selectedProvider: string;
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
+    onRemoveModel?: (provider: string, model: string) => void;
+    isFavorite?: (modelId: string) => boolean;
     toggleFavorite?: (modelId: string) => void;
     t: (key: string) => string;
 }

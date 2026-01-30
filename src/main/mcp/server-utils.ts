@@ -23,6 +23,9 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { ServiceResponse } from '@shared/types';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
+import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
+import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 
 export interface McpDeps {
     web: WebService
@@ -46,6 +49,9 @@ export interface McpDeps {
     command: CommandService
     clipboard: ClipboardService
     ollama: OllamaService
+    advancedMemory: AdvancedMemoryService
+    ideaGenerator: IdeaGeneratorService
+    modelCollaboration: ModelCollaborationService
 }
 
 export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | unknown

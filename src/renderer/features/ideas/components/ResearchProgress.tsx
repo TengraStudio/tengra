@@ -67,8 +67,8 @@ export const ResearchProgress: React.FC<ResearchProgressProps> = ({
                         >
                             <div className={cn(
                                 'w-10 h-10 rounded-full flex items-center justify-center',
-                                isActive && 'bg-purple-500/20 text-purple-400 animate-pulse',
-                                isComplete && 'bg-green-500/20 text-green-400',
+                                isActive && 'bg-purple/20 text-purple animate-pulse',
+                                isComplete && 'bg-success/20 text-success',
                                 isPending && 'bg-white/5 text-foreground/30'
                             )}>
                                 {isComplete ? (
@@ -96,7 +96,7 @@ export const ResearchProgress: React.FC<ResearchProgressProps> = ({
                                 <div className="w-20">
                                     <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-purple-500 transition-all duration-300"
+                                            className="h-full bg-purple transition-all duration-300"
                                             style={{ width: `${progress}%` }}
                                         />
                                     </div>
@@ -108,11 +108,11 @@ export const ResearchProgress: React.FC<ResearchProgressProps> = ({
 
                 {/* Complete state */}
                 {stage === 'complete' && (
-                    <div className="flex items-center gap-4 p-3 rounded-lg bg-green-500/10">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-500/20 text-green-400">
+                    <div className="flex items-center gap-4 p-3 rounded-lg bg-success/10">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-success/20 text-success">
                             <CheckCircle className="w-5 h-5" />
                         </div>
-                        <p className="font-medium text-green-400">
+                        <p className="font-medium text-success">
                             {t('ideas.research.complete')}
                         </p>
                     </div>

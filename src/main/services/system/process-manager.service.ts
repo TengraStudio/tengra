@@ -29,7 +29,7 @@ export class ProcessManagerService extends EventEmitter {
 
     private getPortFilePath(name: string): string {
         const appData = process.env.APPDATA ?? path.join(process.env.HOME ?? '', 'Library', 'Application Support');
-        return path.join(appData, 'Orbit', 'services', `${name}.port`);
+        return path.join(appData, 'Tandem', 'services', `${name}.port`);
     }
 
     private async isPortOpen(port: number): Promise<boolean> {
@@ -100,7 +100,7 @@ export class ProcessManagerService extends EventEmitter {
             const child = spawn(binPath, options.args ?? [], {
                 stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin to prevent hanging
                 windowsHide: true, // Clean taskbar
-                detached: true // Allow it to live beyond Orbit
+                detached: true // Allow it to live beyond Tandem
             });
 
             child.unref(); // Electron won't wait for it to exit
@@ -285,3 +285,4 @@ export class ProcessManagerService extends EventEmitter {
         }
     }
 }
+

@@ -96,7 +96,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             <Card className="bg-card/40 border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.diskUsage')}</CardTitle>
-                    <HardDrive size={16} className="text-emerald-500" />
+                    <HardDrive size={16} className="text-success" />
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-end gap-2">
@@ -105,7 +105,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                     </div>
                     <div className="mt-3 h-2 w-full bg-muted/30 rounded-full overflow-hidden">
                         <motion.div
-                            className="h-full bg-emerald-500/80"
+                            className="h-full bg-success/80"
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min(stats.disk, 100)}%` }}
                         />

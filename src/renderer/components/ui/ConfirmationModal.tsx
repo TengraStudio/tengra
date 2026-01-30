@@ -30,7 +30,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
     const variantStyles = {
         danger: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20',
-        warning: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20',
+        warning: 'bg-yellow/10 text-yellow border-yellow/20 hover:bg-yellow/20',
         info: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
     };
 

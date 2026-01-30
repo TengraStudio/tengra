@@ -10,6 +10,7 @@ import { FitAddon } from 'xterm-addon-fit';
 
 import { useTheme } from '@/hooks/useTheme';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { getTerminalTheme } from '@/lib/terminal-theme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 
@@ -53,36 +54,12 @@ const TerminalSession = memo(({
     const sessionIdRef = useRef<string | null>(null);
     const isInitializedRef = useRef(false); // Prevent multiple initializations
 
-    // Theme definitions
-    const getTheme = useCallback((isDark: boolean) => ({
-        background: isDark ? '#000000' : '#ffffff',
-        foreground: isDark ? '#e4e4e7' : '#18181b',
-        cursor: isDark ? '#ffffff' : '#000000',
-        selectionBackground: isDark ? 'hsla(0, 0%, 100%, 0.15)' : 'hsla(0, 0%, 0%, 0.1)',
-        black: isDark ? '#000000' : '#000000',
-        red: '#ef4444',
-        green: '#22c55e',
-        yellow: '#f59e0b',
-        blue: '#3b82f6',
-        magenta: '#d946ef',
-        cyan: '#06b6d4',
-        white: isDark ? '#ffffff' : '#e4e4e7',
-        brightBlack: '#71717a',
-        brightRed: '#f87171',
-        brightGreen: '#4ade80',
-        brightYellow: '#fbbf24',
-        brightBlue: '#60a5fa',
-        brightMagenta: '#e879f9',
-        brightCyan: '#22d3ee',
-        brightWhite: '#ffffff'
-    }), []);
-
-    // Update theme on change
+    // Update theme on change - uses centralized getTerminalTheme
     useEffect(() => {
         if (xtermRef.current) {
-            xtermRef.current.options.theme = getTheme(theme === 'dark');
+            xtermRef.current.options.theme = getTerminalTheme();
         }
-    }, [theme, getTheme]);
+    }, [theme]);
 
     // Initialize xterm - only once per tab.id using global registry
     useEffect(() => {
@@ -116,7 +93,7 @@ const TerminalSession = memo(({
             cursorBlink: true,
             fontSize: 13,
             fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
-            theme: getTheme(theme === 'dark'),
+            theme: getTerminalTheme(),
             allowProposedApi: true,
             scrollback: 10000,
             cols: 80,

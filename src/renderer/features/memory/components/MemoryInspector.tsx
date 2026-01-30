@@ -61,7 +61,7 @@ export const MemoryInspector: React.FC = () => {
                         Memory Inspector
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Visualize and manage what Orbit knows and remembers.
+                        Visualize and manage what Tandem knows and remembers.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -97,14 +97,14 @@ export const MemoryInspector: React.FC = () => {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.episodes')}</p>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-black">{episodes.length}</span>
-                        <History className="w-4 h-4 mb-1 text-emerald-500/50" />
+                        <History className="w-4 h-4 mb-1 text-success/50" />
                     </div>
                 </Card>
                 <Card className="p-4 bg-muted/30 border-white/5 flex flex-col gap-1">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.entities')}</p>
                     <div className="flex items-end gap-2">
                         <span className="text-2xl font-black">{entities.length}</span>
-                        <User className="w-4 h-4 mb-1 text-purple-500/50" />
+                        <User className="w-4 h-4 mb-1 text-purple/50" />
                     </div>
                 </Card>
 
@@ -247,11 +247,11 @@ const FactCard = ({ fact, onDelete }: { fact: SemanticFragment, onDelete: () => 
 );
 
 const EpisodeCard = ({ episode }: { episode: EpisodicMemory }) => (
-    <Card className="p-4 bg-muted/20 border-white/5 hover:border-emerald-500/30 transition-all">
+    <Card className="p-4 bg-muted/20 border-white/5 hover:border-success/30 transition-all">
         <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[10px] uppercase font-bold">Episode</Badge>
+                    <Badge className="bg-success/10 text-success border-none text-[10px] uppercase font-bold">Episode</Badge>
                     <span className="text-sm font-bold">{episode.title}</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
@@ -259,7 +259,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodicMemory }) => (
                     {new Date(episode.createdAt).toLocaleDateString()}
                 </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-emerald-500/20 pl-3">
+            <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-success/20 pl-3">
                 {episode.summary}
             </p>
             <div className="flex items-center gap-3 mt-1">
@@ -273,7 +273,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodicMemory }) => (
 );
 
 const EntityCard = ({ entity, onDelete }: { entity: EntityKnowledge, onDelete: () => void }) => (
-    <Card className="group p-4 bg-muted/20 border-white/5 hover:border-purple-500/30 transition-all relative">
+    <Card className="group p-4 bg-muted/20 border-white/5 hover:border-purple/30 transition-all relative">
         <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
                 onClick={onDelete}
@@ -284,7 +284,7 @@ const EntityCard = ({ entity, onDelete }: { entity: EntityKnowledge, onDelete: (
         </div>
         <div className="flex flex-col gap-2 pr-10">
             <div className="flex items-center gap-2">
-                <Badge className="bg-purple-500/10 text-purple-400 border-none text-[10px] uppercase font-bold">{entity.entityType}</Badge>
+                <Badge className="bg-purple/10 text-purple border-none text-[10px] uppercase font-bold">{entity.entityType}</Badge>
                 <span className="text-sm font-bold">{entity.entityName}</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] gap-2 items-start mt-1">
@@ -311,3 +311,4 @@ const EmptyState = ({ icon: Icon, title, description }: { icon: LucideIcon, titl
         </div>
     </div>
 );
+

@@ -1,5 +1,5 @@
 [package]
-name = "orbit-memory-service"
+name = "tandem-memory-service"
 version = "0.1.0"
 edition = "2021"
 

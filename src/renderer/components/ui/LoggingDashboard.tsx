@@ -18,17 +18,17 @@ interface LoggingDashboardProps {
 }
 
 const levelColors = {
-    debug: 'text-gray-400',
-    info: 'text-blue-400',
-    warn: 'text-yellow-400',
-    error: 'text-red-400'
+    debug: 'text-muted-foreground',
+    info: 'text-primary',
+    warn: 'text-yellow',
+    error: 'text-destructive'
 };
 
 const levelBadgeColors = {
-    debug: 'bg-gray-500/20 text-gray-400',
-    info: 'bg-blue-500/20 text-blue-400',
-    warn: 'bg-yellow-500/20 text-yellow-400',
-    error: 'bg-red-500/20 text-red-400'
+    debug: 'bg-muted/20 text-muted-foreground',
+    info: 'bg-primary/20 text-primary',
+    warn: 'bg-yellow/20 text-yellow',
+    error: 'bg-destructive/20 text-destructive'
 };
 
 export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ isOpen, onClose }) => {
@@ -85,7 +85,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `orbit-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+        a.download = `Tandem-logs-${new Date().toISOString().slice(0, 10)}.txt`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -109,13 +109,13 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                             </svg>
                             {t('logging.title')}
                         </h2>
-                        <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
+                        <span className="text-xs text-muted-foreground bg-gray-700 px-2 py-1 rounded">
                             {filteredLogs.length} {t('logging.entries')}
                         </span>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-foreground"
+                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                         aria-label={t('shortcuts.close')}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -131,13 +131,13 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                         placeholder={t('logging.filterPlaceholder')}
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="flex-1 max-w-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                        className="flex-1 max-w-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-primary"
                         aria-label={t('logging.filterPlaceholder')}
                     />
                     <select
                         value={levelFilter}
                         onChange={(e) => setLevelFilter(e.target.value)}
-                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground focus:outline-none focus:border-blue-500"
+                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-foreground focus:outline-none focus:border-primary"
                         aria-label={t('logging.level')}
                     >
                         <option value="all">{t('logging.allLevels')}</option>
@@ -172,7 +172,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                         </button>
                         <button
                             onClick={clearLogs}
-                            className="px-3 py-1.5 bg-red-600/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors"
+                            className="px-3 py-1.5 bg-red-600/20 text-destructive rounded-lg text-sm font-medium hover:bg-red-600/30 transition-colors"
                             aria-label={t('logging.clear')}
                         >
                             {t('logging.clear')}
@@ -183,7 +183,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                 {/* Log Entries */}
                 <div className="flex-1 overflow-y-auto font-mono text-xs">
                     {filteredLogs.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-gray-500">
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
                             <div className="text-center">
                                 <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -194,7 +194,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                         </div>
                     ) : (
                         <table className="w-full">
-                            <thead className="sticky top-0 bg-gray-800 text-gray-400">
+                            <thead className="sticky top-0 bg-gray-800 text-muted-foreground">
                                 <tr>
                                     <th className="text-left px-3 py-2 w-32">{t('logging.time')}</th>
                                     <th className="text-left px-3 py-2 w-20">{t('logging.level')}</th>
@@ -208,7 +208,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                                         key={log.id}
                                         className={`border-b border-gray-800 hover:bg-gray-800/50 ${log.level === 'error' ? 'bg-red-900/10' : ''}`}
                                     >
-                                        <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
                                             {new Date(log.timestamp).toLocaleTimeString()}
                                         </td>
                                         <td className="px-3 py-1.5">
@@ -216,7 +216,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                                                 {log.level.toUpperCase()}
                                             </span>
                                         </td>
-                                        <td className="px-3 py-1.5 text-gray-400 truncate max-w-[120px]" title={log.source}>
+                                        <td className="px-3 py-1.5 text-muted-foreground truncate max-w-[120px]" title={log.source}>
                                             {log.source}
                                         </td>
                                         <td className={`px-3 py-1.5 ${levelColors[log.level]} break-all`}>
@@ -231,7 +231,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
                 </div>
 
                 {/* Footer */}
-                <div className="px-4 py-2 border-t border-gray-700 bg-gray-800/30 text-xs text-gray-500 flex justify-between">
+                <div className="px-4 py-2 border-t border-gray-700 bg-gray-800/30 text-xs text-muted-foreground flex justify-between">
                     <span>{t('logging.lastUpdated')}: {new Date().toLocaleTimeString()}</span>
                     <span>{t('logging.showing')} {filteredLogs.length} {t('logging.of')} {logs.length} {t('logging.logs')}</span>
                 </div>
@@ -243,3 +243,4 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
 LoggingDashboard.displayName = 'LoggingDashboard';
 
 export default LoggingDashboard;
+

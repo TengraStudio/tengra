@@ -46,7 +46,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onA
                     </div>
                     <button
                         onClick={() => void onRemoveMount(mount.id)}
-                        className="p-2 rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                        className="p-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>

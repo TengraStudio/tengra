@@ -32,9 +32,9 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
     const variantClasses = {
         default: 'bg-muted text-muted-foreground',
         primary: 'bg-primary text-primary-foreground',
-        warning: 'bg-amber-500 text-foreground',
-        error: 'bg-red-500 text-foreground',
-        success: 'bg-emerald-500 text-foreground'
+        warning: 'bg-warning text-foreground',
+        error: 'bg-destructive text-foreground',
+        success: 'bg-success text-foreground'
     };
 
     const sizeClasses = {

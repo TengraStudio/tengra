@@ -44,7 +44,7 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     selectedEntry, onOpenFile
 }) => {
     return (
-        <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
+        <div className="flex-1 flex flex-col min-w-0 bg-background relative">
             {openTabs.length > 0 && dashboardTab === 'editor' && (
                 <div className="z-20 relative">
                     <EditorTabs

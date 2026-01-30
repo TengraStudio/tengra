@@ -286,7 +286,7 @@ export const zh = {
             pushing: '正在推送...'
         },
         noIssues: '项目中未发现重大问题。做的不错！',
-        issuesDescription: 'Orbit 会扫描您的项目以查找潜在错误、警告和代码异味。',
+        issuesDescription: 'Tandem 会扫描您的项目以查找潜在错误、警告和代码异味。',
         issueType: '类型',
         issueMessage: '消息',
         issueLocation: '位置',
@@ -541,7 +541,7 @@ export const zh = {
     },
     memory: {
         title: '内存检查器',
-        subtitle: '可视化并管理 Orbit 了解和记住的内容。',
+        subtitle: '可视化并管理 Tandem 了解和记住的内容。',
         searchPlaceholder: '搜索内存...',
         totalFacts: '总事实数',
         episodes: '片段',
@@ -623,7 +623,7 @@ export const zh = {
         moreLines: '更多行'
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: '智慧与优雅并存。'
     },
     auth: {
@@ -632,7 +632,7 @@ export const zh = {
         connectionFailed: '连接到 Antigravity 服务器失败。请登录或检查您的 API 密钥。',
         sessionKeyRequired: '需要 Claude 会话密钥',
         completeConnection: '完成 {{email}} 的连接',
-        sessionKeyDescription: '为了跟踪额度和直接交互，Orbit 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。',
+        sessionKeyDescription: '为了跟踪额度和直接交互，Tandem 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。',
         howToFindKey: '如何查找您的会话密钥',
         sessionKeyInstructions: {
             step1: '打开 claude.ai 并登录',
@@ -755,7 +755,7 @@ export const zh = {
         creative: {
             title: '创意写作',
             description: '生成文本和内容。',
-            prompt: '您能为名为 Orbit 的 AI 助手写一段精彩的介绍文案吗？'
+            prompt: '您能为名为 Tandem 的 AI 助手写一段精彩的介绍文案吗？'
         },
         debug: {
             title: '调试',
@@ -777,7 +777,7 @@ export const zh = {
         user: '用户',
         assistant: '助手',
         copyAsHtml: '复制为 HTML',
-        orbitDrawing: 'Orbit 正在绘制...',
+        TandemDrawing: 'Tandem 正在绘制...',
         quotaExceeded: '额度超限',
         quotaMessage: '您已超出该模型的使用额度。请稍后再试或升级您的计划。',
         resetsAt: '重置时间：',
@@ -786,7 +786,7 @@ export const zh = {
         speakAloud: '朗读',
         convertToCode: '转换为代码',
         approvePlan: '批准计划',
-        orbitThinking: 'Orbit 正在思考',
+        TandemThinking: 'Tandem 正在思考',
         showThought: '显示思路',
         react: '反应',
         runBenchmark: '运行基准测试',
@@ -822,7 +822,7 @@ export const zh = {
         fontDesc: '自定义应用程序字体和大小。',
         fontFamily: '字体族',
         fontSize: '字体大小',
-        previewText: '用 Orbit AI 塑造未来。',
+        previewText: '用 Tandem AI 塑造未来。',
         accessibility: '辅助功能',
         accessibilityDesc: '显示与可见性设置',
         highContrast: '高对比度模式',
@@ -896,11 +896,11 @@ export const zh = {
         unknownProject: '未知项目'
     },
     about: {
-        description: 'Orbit 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。',
+        description: 'Tandem 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。',
         checkUpdates: '检查更新',
         privacyPolicy: '隐私政策',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: '恢复出厂设置',
         factoryResetDesc: '重置应用程序并删除所有设置和数据。',
         updateCheckAlert: '生产版本中已启用更新检查。'
@@ -956,7 +956,7 @@ export const zh = {
     tips: {
         title: '您知道吗？',
         tip1: '您可以使用 CTRL+N 快捷键创建新聊天。',
-        tip2: 'Orbit 支持连接到远程 SSH 服务器进行开发。',
+        tip2: 'Tandem 支持连接到远程 SSH 服务器进行开发。',
         tip3: '您可以直接将文件拖拽到聊天中。',
         tip4: '使用“评议会”选项卡可以获得多代理对您代码的见解。',
         tip5: '在“设置 > 外观”中自定义您的体验。'
@@ -1162,7 +1162,7 @@ export const zh = {
         stats: '统计'
     },
     onboarding: {
-        welcome: '欢迎来到 Orbit',
+        welcome: '欢迎来到 Tandem',
         step1: '连接 AI 提供商',
         step2: '设置工作区',
         step3: '开始编程',
@@ -1341,3 +1341,4 @@ export const zh = {
         path: '路径：'
     }
 };
+

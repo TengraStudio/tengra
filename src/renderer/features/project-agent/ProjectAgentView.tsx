@@ -72,14 +72,14 @@ export const ProjectAgentView: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <div className={cn(
                         "px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2",
-                        state.status === 'running' ? "bg-green-500/10 text-green-500" :
-                            state.status === 'error' ? "bg-red-500/10 text-red-500" :
+                        state.status === 'running' ? "bg-success/10 text-success" :
+                            state.status === 'error' ? "bg-destructive/10 text-destructive" :
                                 "bg-muted text-muted-foreground"
                     )}>
                         <div className={cn(
                             "w-2 h-2 rounded-full",
-                            state.status === 'running' ? "bg-green-500 animate-pulse" :
-                                state.status === 'error' ? "bg-red-500" :
+                            state.status === 'running' ? "bg-success animate-pulse" :
+                                state.status === 'error' ? "bg-destructive" :
                                     "bg-muted-foreground"
                         )} />
                         {state.status.toUpperCase()}
@@ -110,18 +110,18 @@ export const ProjectAgentView: React.FC = () => {
                     </div>
                 </Card>
             ) : (
-                <Card className="p-6 border-green-500/20 bg-green-500/5 backdrop-blur-sm flex items-center justify-between">
+                <Card className="p-6 border-success/20 bg-success/5 backdrop-blur-sm flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <RefreshCw size={24} className="text-green-500 animate-spin" />
+                        <RefreshCw size={24} className="text-success animate-spin" />
                         <div>
-                            <h3 className="font-semibold text-green-500">Agent Running</h3>
+                            <h3 className="font-semibold text-success">Agent Running</h3>
                             <p className="text-sm opacity-80">Current Task: {state.currentTask}</p>
                         </div>
                     </div>
                     <Button
                         onClick={() => void handleStop()}
                         variant="destructive"
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
+                        className="bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/50"
                     >
                         <Square size={18} className="mr-2" />
                         Stop Agent
@@ -174,10 +174,10 @@ export const ProjectAgentView: React.FC = () => {
                                     <div className="flex items-center gap-2 opacity-50">
                                         <span className={cn(
                                             "uppercase font-bold text-[10px]",
-                                            msg.role === 'user' ? "text-blue-400" :
-                                                msg.role === 'assistant' ? "text-green-400" :
-                                                    msg.role === 'system' ? "text-yellow-400" :
-                                                        "text-purple-400"
+                                            msg.role === 'user' ? "text-primary" :
+                                                msg.role === 'assistant' ? "text-success" :
+                                                    msg.role === 'system' ? "text-yellow" :
+                                                        "text-purple"
                                         )}>
                                             {msg.role}
                                         </span>

@@ -112,8 +112,8 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                             {!isSystem && (
                                 <div className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-white/10 shadow-lg",
-                                    isPlanner ? "bg-purple-900/20 text-purple-400" :
-                                        isExecutor ? "bg-blue-900/20 text-blue-400" : "bg-zinc-800 text-zinc-400"
+                                    isPlanner ? "bg-purple-900/20 text-purple" :
+                                        isExecutor ? "bg-blue-900/20 text-primary" : "bg-zinc-800 text-muted-foreground"
                                 )}>
                                     {isPlanner ? <Sparkles className="w-4 h-4" /> :
                                         isExecutor ? <Terminal className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -133,9 +133,9 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
 
                                 <div className={cn(
                                     "rounded-xl px-4 py-2.5 text-sm shadow-sm border border-transparent",
-                                    isPlanner ? "bg-purple-500/10 border-purple-500/20 text-purple-100" :
-                                        isExecutor ? "bg-blue-500/10 border-blue-500/20 text-blue-100" :
-                                            isSystem ? "bg-zinc-500/10 text-zinc-400 italic text-xs py-1" :
+                                    isPlanner ? "bg-purple/10 border-purple/20 text-purple-100" :
+                                        isExecutor ? "bg-primary/10 border-primary/20 text-blue-100" :
+                                            isSystem ? "bg-muted/10 text-muted-foreground italic text-xs py-1" :
                                                 "bg-zinc-800"
                                 )}>
                                     {isSystem && msg.content.includes('loop') ? (
@@ -157,7 +157,7 @@ export const AgentChatRoom: React.FC<AgentChatRoomProps> = ({ sessionId, initial
                         animate={{ opacity: 1 }}
                         className="flex items-center gap-2 text-xs text-muted-foreground ml-12 animate-pulse"
                     >
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="w-2 h-2 rounded-full bg-success" />
                         Agents are collaborating...
                     </motion.div>
                 )}

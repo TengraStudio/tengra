@@ -36,15 +36,15 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-border/40">
                 <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalPrompt')}</span>
-                    <div className="text-2xl font-black tabular-nums text-blue-400">{formatNumber(totalPrompt)}</div>
+                    <div className="text-2xl font-black tabular-nums text-primary">{formatNumber(totalPrompt)}</div>
                 </div>
                 <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalCompletion')}</span>
-                    <div className="text-2xl font-black tabular-nums text-emerald-400">{formatNumber(totalCompletion)}</div>
+                    <div className="text-2xl font-black tabular-nums text-success">{formatNumber(totalCompletion)}</div>
                 </div>
                 <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                        <Coins className="w-3 h-3 text-amber-400" />
+                        <Coins className="w-3 h-3 text-warning" />
                         {t('statistics.cost')}
                     </span>
                     <div className="text-2xl font-black tabular-nums text-foreground">
@@ -53,7 +53,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 </div>
                 <div className="space-y-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                        <Activity className="w-3 h-3 text-purple-400" />
+                        <Activity className="w-3 h-3 text-purple" />
                         Activity
                     </span>
                     <div className="text-2xl font-black tabular-nums text-foreground">
@@ -115,11 +115,11 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Input</span>
+                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Input</span>
                                                     <span className="text-xs font-mono font-bold">{formatNumber(data.promptTokens)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Output</span>
+                                                    <span className="text-[10px] font-bold text-success uppercase tracking-wider">Output</span>
                                                     <span className="text-xs font-mono font-bold">{formatNumber(data.completionTokens)}</span>
                                                 </div>
                                                 {data.modelBreakdown && Object.keys(data.modelBreakdown).length > 0 && (

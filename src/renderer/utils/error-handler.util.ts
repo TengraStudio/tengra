@@ -1,4 +1,4 @@
-import { AppErrorCode, getErrorMessage, OrbitError } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
 
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
@@ -60,7 +60,7 @@ export function handleError(
 
     const message = customMessage || getErrorMessage(error);
     // Error code can be used for analytics or error tracking in the future
-    void (error instanceof OrbitError ? error.code : AppErrorCode.UNKNOWN);
+    void (error instanceof TandemError ? error.code : AppErrorCode.UNKNOWN);
 
     if (logToConsole) {
         console.error(`[${context}] Error:`, error);
@@ -158,3 +158,4 @@ export function createSafeHandler<TArgs extends unknown[], TReturn>(
         }
     };
 }
+

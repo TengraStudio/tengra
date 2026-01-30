@@ -88,7 +88,7 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-2">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Name:</span>
-                                <span className="font-mono text-emerald-400">{String(data.pkg.name)}</span>
+                                <span className="font-mono text-success">{String(data.pkg.name)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-muted-foreground">Version:</span>

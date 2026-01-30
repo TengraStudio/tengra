@@ -121,8 +121,8 @@ export function SettingsPage({
 
                     <div className={cn("settings-section h-full pr-4", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
                         {statusMessage && (
-                            <div className="mb-6 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <div className="mb-6 px-4 py-2 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                                 {statusMessage}
                             </div>
                         )}
