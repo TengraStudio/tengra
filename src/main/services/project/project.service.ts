@@ -530,7 +530,10 @@ export class ProjectService {
     }
 
     private detectNodeFrameworks(pkg: JsonObject, frameworks: string[]) {
-        const deps = { ...(pkg.dependencies as JsonObject ?? {}), ...(pkg.devDependencies as JsonObject ?? {}) };
+        const deps = { 
+            ...(typeof pkg.dependencies === 'object' && pkg.dependencies ? pkg.dependencies as JsonObject : {}), 
+            ...(typeof pkg.devDependencies === 'object' && pkg.devDependencies ? pkg.devDependencies as JsonObject : {}) 
+        };
         const depKeys = Object.keys(deps);
 
         const FRAMEWORK_MAP: Record<string, string> = {

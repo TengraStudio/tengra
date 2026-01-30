@@ -90,7 +90,7 @@ export class LocalImageService {
 
         try {
             const allAccounts = await this.authService.getAllAccountsFull();
-            const antigravityAccounts = allAccounts.filter(a => 
+            const antigravityAccounts = allAccounts.filter(a =>
                 a.provider.startsWith('antigravity') || a.provider.startsWith('google')
             );
 
@@ -111,24 +111,24 @@ export class LocalImageService {
                 try {
                     // Fetch quota data from Antigravity API
                     const quotaData = await this.quotaService.fetchAntigravityUpstreamForToken(account);
-                    
+
                     if (!quotaData?.models) {
                         appLogger.debug('local-image.service', `No quota data for account ${account.email ?? account.id}`);
                         continue;
                     }
 
                     // Look for gemini-3-pro-image model
-                    const models = quotaData.models as Record<string, { 
-                        displayName?: string; 
-                        quotaInfo?: { 
+                    const models = quotaData.models as Record<string, {
+                        displayName?: string;
+                        quotaInfo?: {
                             remainingFraction?: number;
                             remainingQuota?: number;
                             totalQuota?: number;
-                        } 
+                        }
                     }>;
 
-                    const imageModel = models['gemini-3-pro-image'] || models['imagen-3.0-generate-001'];
-                    
+                    const imageModel = models['gemini-3-pro-image'] ?? models['imagen-3.0-generate-001'];
+
                     if (!imageModel) {
                         appLogger.debug('local-image.service', `Account ${account.email ?? account.id} doesn't have image model access`);
                         continue;
@@ -137,7 +137,7 @@ export class LocalImageService {
                     // Calculate quota percentage
                     let quotaPercentage = 100;
                     const quotaInfo = imageModel.quotaInfo;
-                    
+
                     if (quotaInfo) {
                         if (typeof quotaInfo.remainingFraction === 'number') {
                             quotaPercentage = Math.round(quotaInfo.remainingFraction * 100);
@@ -182,9 +182,9 @@ export class LocalImageService {
 
         try {
             const { prompt } = options;
-            
+
             appLogger.info('local-image.service', `Calling Antigravity image generation with account ${account.email ?? account.id}`);
-            
+
             // Call Antigravity image generation via LLMService
             // LLMService.chat() handles image models and saves them automatically
             const response = await this.llmService.chat(
@@ -227,7 +227,8 @@ export class LocalImageService {
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
         const settings = this.settingsService.getSettings();
         const model = settings.images?.ollamaModel ?? 'stable-diffusion-v1-5';
-        const baseUrl = settings.ollama.url ?? 'http://127.0.0.1:11434';
+        // ollama.url is always defined in Settings type
+        const baseUrl = settings.ollama.url;
 
         try {
             // Ollama image generation is usually via a POST to /api/generate or /api/chat if it's a multimodal model

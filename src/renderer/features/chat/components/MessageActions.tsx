@@ -61,7 +61,7 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
 export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefined; onRate: (val: 1 | -1 | 0) => void }) => {
     const { t } = useTranslation();
     return (
-        <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1" role="group" aria-label={t('messageBubble.rating') ?? 'Rate response'}>
+        <div className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1" role="group" aria-label={t('messageBubble.rating')}>
             <button
                 onClick={() => onRate(rating === 1 ? 0 : 1)}
                 className={cn(
@@ -148,7 +148,7 @@ export const MessageActionsGroup = ({
         <div
             className="absolute left-full ml-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200"
             role="toolbar"
-            aria-label={t('messageBubble.actions') ?? 'Message actions'}
+            aria-label={t('messageBubble.actions')}
         >
             <ActionButton
                 label={isSpeaking ? t('messageBubble.stop') : t('messageBubble.speakAloud')}
@@ -185,7 +185,7 @@ export const MessageActionsGroup = ({
             </div>
 
             {role === 'assistant' && (
-                <ActionButton label={t('messageBubble.regenerate') ?? 'Regenerate'} onClick={() => console.warn('Regenerate feature coming soon!')}>
+                <ActionButton label={t('messageBubble.regenerate')} onClick={() => console.warn('Regenerate feature coming soon!')}>
                     <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
             )}

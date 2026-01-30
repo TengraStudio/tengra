@@ -183,6 +183,7 @@ export class ModelRouter {
      */
     private findEquivalent(modelId: string, targetProvider: string): string | null {
         const equivalents = MODEL_EQUIVALENTS[modelId];
+        // Use optional chain with nullish coalescing
         return equivalents?.[targetProvider] ?? null;
     }
 
