@@ -79,7 +79,7 @@ export class ProjectAgentService extends BaseService {
         this.emitUpdate();
     }
 
-     
+
     private async executionLoop() {
         this.logInfo('Starting execution loop');
 
@@ -98,8 +98,8 @@ export class ProjectAgentService extends BaseService {
                     'openai'
                 );
 
-                const content = response.content || '';
-                const toolCalls = response.tool_calls || [];
+                const content = response.content ?? '';
+                const toolCalls = response.tool_calls ?? [];
 
                 // 3. Update History
                 this.state.history.push({

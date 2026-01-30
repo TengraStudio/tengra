@@ -124,7 +124,7 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
             } else {
                 // Single model: use existing stream logic
                 const tools = allTools.filter((tDefinition) => {
-                    if (!tDefinition?.function?.name) { return false; }
+                    if (!tDefinition.function.name) { return false; }
                     if (selectedProvider === 'opencode') { return true; }
                     if (selectedProvider === 'antigravity') { return true; }
                     return tDefinition.function.name === 'generate_image';
@@ -378,7 +378,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
         const streamId = `${chatId}-model-${index}-${Date.now()}`;
         try {
             const tools = allTools.filter((tDefinition: ToolDefinition) => {
-                if (!tDefinition?.function?.name) { return false; }
+                if (!tDefinition.function.name) { return false; }
                 if (modelInfo.provider === 'opencode') { return true; }
                 return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity';
             });

@@ -88,7 +88,7 @@ export class HealthCheckService extends BaseService {
      * Start all health checks
      */
     start() {
-        if (this.running) {return;}
+        if (this.running) { return; }
         this.running = true;
 
         for (const [name, check] of this.checks) {
@@ -125,7 +125,7 @@ export class HealthCheckService extends BaseService {
      */
     private async runCheck(name: string) {
         const check = this.checks.get(name);
-        if (!check) {return;}
+        if (!check) { return; }
 
         const startTime = Date.now();
 
@@ -216,7 +216,7 @@ export class HealthCheckService extends BaseService {
      * @param components Dependencies needed for checks
      */
     registerCriticalChecks(components: {
-        databaseService: { getDatabase: () => { prepare: (sql: string) => { get: () => unknown } } };
+        databaseService: { getDatabase: () => { prepare: (sql: string) => { get: () => Promise<unknown> } } };
         networkService: unknown;
     }) {
         const { databaseService } = components;
@@ -225,7 +225,7 @@ export class HealthCheckService extends BaseService {
         this.register('database', async () => {
             try {
                 const db = databaseService.getDatabase();
-                const stmt = await db.prepare('SELECT 1');
+                const stmt = db.prepare('SELECT 1');
                 await stmt.get();
                 return true;
             } catch {

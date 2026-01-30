@@ -388,9 +388,8 @@ export class DatabaseService extends BaseService {
     }
 
     private async ensureInitialized(): Promise<void> {
-        if (!this._system) {
-            await this.initialize();
-        }
+        // _system is always defined after construction, but may need initialization
+        await this.initialize();
     }
 
     // --- Prompt Templates Methods ---

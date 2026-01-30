@@ -105,7 +105,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                             </code>
                         ) : (
                             <MonacoBlock
-                                language={match[1] ?? 'text'}
+                                language={match[1] || 'text'}
                                 code={codeString}
                                 isSpeaking={isSpeaking}
                                 onSpeak={() => { onSpeak?.(codeString); }}
