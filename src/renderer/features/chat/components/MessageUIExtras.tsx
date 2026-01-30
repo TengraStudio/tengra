@@ -1,4 +1,4 @@
-﻿import { Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 import { useTranslation } from '@/i18n';
 
@@ -33,7 +33,7 @@ export const ImageSkeleton = () => {
                 <Sparkles className="w-6 h-6 text-primary/40" />
             </div>
             <div className="space-y-2 text-center">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.orbitDrawing')}</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
                 <div className="flex gap-1 justify-center">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />
@@ -43,3 +43,4 @@ export const ImageSkeleton = () => {
         </div>
     );
 };
+

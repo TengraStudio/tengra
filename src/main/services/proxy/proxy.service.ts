@@ -811,7 +811,7 @@ export class ProxyService extends BaseService {
 
       request.setHeader('Authorization', `Bearer ${accessToken}`);
       request.setHeader('Accept', 'application/vnd.github+json');
-      request.setHeader('User-Agent', 'Orbit-App/1.0.0');
+      request.setHeader('User-Agent', 'Tandem-App/1.0.0');
 
       request.on('response', (response) => {
         let data = '';
@@ -853,7 +853,7 @@ export class ProxyService extends BaseService {
 
       request.setHeader('Authorization', `Bearer ${accessToken}`);
       request.setHeader('Accept', 'application/vnd.github+json');
-      request.setHeader('User-Agent', 'Orbit-App/1.0.0');
+      request.setHeader('User-Agent', 'Tandem-App/1.0.0');
 
       request.on('response', (response) => {
         let data = '';
@@ -880,3 +880,4 @@ export class ProxyService extends BaseService {
     });
   }
 }
+

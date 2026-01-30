@@ -15,7 +15,7 @@ export enum AppErrorCode {
 /**
  * Base error class for all application-specific errors.
  */
-export abstract class OrbitError extends Error {
+export abstract class TandemError extends Error {
     public readonly timestamp: string;
     public readonly code: AppErrorCode;
     public readonly context?: Record<string, JsonValue | Error>;
@@ -46,7 +46,7 @@ export abstract class OrbitError extends Error {
 /**
  * Thrown when an external API call fails (e.g., OpenAI, GitHub).
  */
-export class ApiError extends OrbitError {
+export class ApiError extends TandemError {
     public readonly statusCode?: number;
     public readonly provider: string;
     public readonly retryable: boolean;
@@ -62,7 +62,7 @@ export class ApiError extends OrbitError {
 /**
  * Thrown when a network request fails due to connectivity issues.
  */
-export class NetworkError extends OrbitError {
+export class NetworkError extends TandemError {
     constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.NETWORK_ERROR, context);
     }
@@ -71,7 +71,7 @@ export class NetworkError extends OrbitError {
 /**
  * Thrown when authentication fails (local or remote).
  */
-export class AuthenticationError extends OrbitError {
+export class AuthenticationError extends TandemError {
     constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.AUTH_ERROR, context);
     }
@@ -80,15 +80,16 @@ export class AuthenticationError extends OrbitError {
 /**
  * Thrown when input validation or configuration check fails.
  */
-export class ValidationError extends OrbitError {
+export class ValidationError extends TandemError {
     constructor(message: string, context?: Record<string, JsonValue | Error>) {
         super(message, AppErrorCode.VALIDATION_ERROR, context);
     }
 }
 
 /**
- * Helper to check if an error is an OrbitError.
+ * Helper to check if an error is an TandemError.
  */
-export function isOrbitError(error: CatchError): error is OrbitError {
-    return error instanceof OrbitError;
+export function isTandemError(error: CatchError): error is TandemError {
+    return error instanceof TandemError;
 }
+

@@ -51,7 +51,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
             {/* Actions */}
             <div className="flex items-center gap-2">
                 {account.isActive ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-xs font-bold">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-success/10 text-success text-xs font-bold">
                         <Check className="h-3 w-3" />
                         {t('accounts.active')}
                     </span>

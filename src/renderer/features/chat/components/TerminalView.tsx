@@ -43,9 +43,9 @@ export function TerminalView({
 
     const statusLabel = isExecuting ? t('tools.running') : (error || stderr ? t('tools.error') : t('tools.completed'));
     const statusClass = error || stderr
-        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+        ? 'bg-destructive/10 text-destructive border-destructive/20'
         : isExecuting
-            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+            ? 'bg-success/10 text-success border-success/20'
             : 'bg-muted/20 text-muted-foreground border-border/50';
 
     return (
@@ -79,11 +79,11 @@ export function TerminalView({
                     {/* Mac-style Header */}
                     <div className="terminal-header bg-muted h-7 flex items-center justify-between px-2">
                         <div className="flex gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                            <div className="terminal-dot bg-[#ff5f56] border-[#e0443e]"></div>
-                            <div className="terminal-dot bg-[#ffbd2e] border-[#dea123]"></div>
-                            <div className="terminal-dot bg-[#27c93f] border-[#1aab29]"></div>
+                            <div className="terminal-dot bg-destructive border-destructive"></div>
+                            <div className="terminal-dot bg-warning border-warning"></div>
+                            <div className="terminal-dot bg-success border-success"></div>
                         </div>
-                        <div className="text-sm text-zinc-400 font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
+                        <div className="text-sm text-muted-foreground font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
                             <span className="opacity-50">admin@macbook</span>
                             <span className="text-zinc-600">~</span>
                             <span>zsh</span>
@@ -110,7 +110,7 @@ export function TerminalView({
                                         if (success) { console.warn("Process killed"); }
                                     })();
                                 }}
-                                className="text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 transition-colors uppercase tracking-wider font-bold"
+                                className="text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 px-2 py-0.5 rounded border border-destructive/20 transition-colors uppercase tracking-wider font-bold"
                                 title={t('tools.forceStop')}
                             >
                                 {t('tools.stop')}
@@ -121,8 +121,8 @@ export function TerminalView({
                     {/* Terminal Body */}
                     <div className="terminal-content p-4 bg-background min-h-[120px] max-h-[400px] overflow-y-auto font-mono text-sm leading-relaxed selection:bg-primary/20">
                         {/* Command Prompt Line */}
-                        <div className="flex items-center gap-2 text-emerald-400 font-bold mb-1">
-                            <span className="text-blue-400">&gt;</span>
+                        <div className="flex items-center gap-2 text-success font-bold mb-1">
+                            <span className="text-primary">&gt;</span>
                             <span className="text-cyan-300">~</span>
                             <span className="text-zinc-200">{command}</span>
                         </div>
@@ -131,8 +131,8 @@ export function TerminalView({
                         <div className="pl-0 mt-2">
                             {/* Loading State */}
                             {isExecuting && (
-                                <div className="flex items-center gap-2 text-zinc-500 italic mb-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"></span>
+                                <div className="flex items-center gap-2 text-muted-foreground italic mb-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse"></span>
                                     {t('tools.executingCommand')}
                                 </div>
                             )}
@@ -153,13 +153,13 @@ export function TerminalView({
                                                 </div>
                                             )}
                                             {stderr && (
-                                                <div className="text-red-400 whitespace-pre-wrap mt-2 leading-6">
+                                                <div className="text-destructive whitespace-pre-wrap mt-2 leading-6">
                                                     <span className="inline-block mr-2">stderr:</span>
                                                     {stderr}
                                                 </div>
                                             )}
                                             {error && (
-                                                <div className="text-red-500 font-bold whitespace-pre-wrap mt-2 leading-6 bg-red-500/10 p-2 rounded">
+                                                <div className="text-destructive font-bold whitespace-pre-wrap mt-2 leading-6 bg-destructive/10 p-2 rounded">
                                                     <span className="inline-block mr-2">error:</span>
                                                     {error}
                                                 </div>
@@ -176,8 +176,8 @@ export function TerminalView({
 
                             {/* Blinking Cursor at the end */}
                             <div className="mt-2">
-                                <span className="text-emerald-400 font-bold mr-2">&gt;</span>
-                                <span className="inline-block w-2.5 h-5 bg-zinc-500/80 align-sub animate-pulse"></span>
+                                <span className="text-success font-bold mr-2">&gt;</span>
+                                <span className="inline-block w-2.5 h-5 bg-muted/80 align-sub animate-pulse"></span>
                             </div>
                         </div>
                     </div>

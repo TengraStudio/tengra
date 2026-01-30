@@ -25,43 +25,43 @@ export const CATEGORY_METADATA: Record<IdeaCategory, CategoryMeta> = {
         id: 'website',
         label: 'Website',
         icon: Globe,
-        color: 'text-blue-400',
-        bgColor: 'bg-blue-500/20'
+        color: 'text-primary',
+        bgColor: 'bg-primary/20'
     },
     'mobile-app': {
         id: 'mobile-app',
         label: 'Mobile App',
         icon: Smartphone,
-        color: 'text-green-400',
-        bgColor: 'bg-green-500/20'
+        color: 'text-success',
+        bgColor: 'bg-success/20'
     },
     'game': {
         id: 'game',
         label: 'Game',
         icon: Gamepad2,
-        color: 'text-purple-400',
-        bgColor: 'bg-purple-500/20'
+        color: 'text-purple',
+        bgColor: 'bg-purple/20'
     },
     'cli-tool': {
         id: 'cli-tool',
         label: 'CLI Tool',
         icon: Code,
-        color: 'text-orange-400',
-        bgColor: 'bg-orange-500/20'
+        color: 'text-orange',
+        bgColor: 'bg-orange/20'
     },
     'desktop': {
         id: 'desktop',
         label: 'Desktop App',
         icon: Monitor,
-        color: 'text-pink-400',
-        bgColor: 'bg-pink-500/20'
+        color: 'text-pink',
+        bgColor: 'bg-pink/20'
     },
     'other': {
         id: 'other',
         label: 'Other',
         icon: Sparkles,
-        color: 'text-yellow-400',
-        bgColor: 'bg-yellow-500/20'
+        color: 'text-yellow',
+        bgColor: 'bg-yellow/20'
     }
 };
 

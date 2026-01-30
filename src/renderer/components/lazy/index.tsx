@@ -23,15 +23,15 @@ LoadingSpinner.displayName = 'LoadingSpinner';
 
 // Code editor loading skeleton
 export const CodeEditorSkeleton: React.FC = React.memo(() => (
-    <div className="h-full w-full bg-[#1e1e1e] rounded-lg overflow-hidden" role="status" aria-label="Loading code editor">
-        <div className="h-8 bg-[#252526] border-b border-[#3c3c3c] flex items-center px-4">
-            <div className="w-24 h-3 bg-[#3c3c3c] rounded animate-pulse" aria-hidden="true" />
+    <div className="h-full w-full bg-card rounded-lg overflow-hidden" role="status" aria-label="Loading code editor">
+        <div className="h-8 bg-muted border-b border-border flex items-center px-4">
+            <div className="w-24 h-3 bg-muted rounded animate-pulse" aria-hidden="true" />
         </div>
         <div className="p-4 space-y-2">
             {Array.from({ length: 15 }).map((_, i) => (
                 <div
                     key={i}
-                    className="h-4 bg-[#2d2d2d] rounded animate-pulse"
+                    className="h-4 bg-muted rounded animate-pulse"
                     style={{ width: `${(i * 17) % 40 + 40}%` }}
                     aria-hidden="true"
                 />

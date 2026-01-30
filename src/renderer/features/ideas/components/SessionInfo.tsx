@@ -19,7 +19,7 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({ session, ideasCount, t
             className={cn(
                 'px-3 py-1 rounded-full text-xs font-medium',
                 session.status === 'completed'
-                    ? 'bg-green-500/20 text-green-400'
+                    ? 'bg-success/20 text-success'
                     : 'bg-white/10 text-foreground/60'
             )}
         >

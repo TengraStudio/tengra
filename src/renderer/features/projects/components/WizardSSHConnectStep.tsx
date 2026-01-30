@@ -8,9 +8,9 @@ interface SshFormData {
     port: string;
     username: string;
     authType: 'password' | 'key';
-    password?: string;
-    privateKey?: string;
-    passphrase?: string;
+    password: string;
+    privateKey: string;
+    passphrase: string;
 }
 
 interface WizardSSHConnectStepProps {

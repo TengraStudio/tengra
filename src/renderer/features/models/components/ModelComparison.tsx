@@ -123,7 +123,7 @@ const ResponseCardHeader = ({
                     aria-label={t('modelComparison.copyResponse')}
                 >
                     {copiedId === slot.id ? (
-                        <Check className="w-4 h-4 text-green-500" aria-hidden="true" />
+                        <Check className="w-4 h-4 text-success" aria-hidden="true" />
                     ) : (
                         <Copy className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                     )}

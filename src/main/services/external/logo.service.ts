@@ -121,7 +121,7 @@ ${context}`;
             });
 
             if (tempPath) {
-                const targetDir = join(projectPath, '.orbit', 'temp');
+                const targetDir = join(projectPath, '.tandem', 'temp');
                 const timestamp = Date.now();
                 const targetPath = join(targetDir, `logo-${timestamp}.png`);
 
@@ -146,7 +146,7 @@ ${context}`;
 
             if (response.images && response.images.length > 0) {
                 const apiTempPath = response.images[0];
-                const targetDir = join(projectPath, '.orbit', 'temp');
+                const targetDir = join(projectPath, '.tandem', 'temp');
                 const timestamp = Date.now();
                 const targetPath = join(targetDir, `logo-${timestamp}.png`);
 
@@ -174,10 +174,10 @@ ${context}`;
 
     async applyLogo(projectPath: string, tempLogoPath: string): Promise<string> {
         try {
-            const orbitDir = join(projectPath, '.orbit');
-            await fs.mkdir(orbitDir, { recursive: true });
+            const tandemDir = join(projectPath, '.tandem');
+            await fs.mkdir(tandemDir, { recursive: true });
 
-            const targetPath = join(orbitDir, 'logo.png');
+            const targetPath = join(tandemDir, 'logo.png');
             await fs.copyFile(tempLogoPath, targetPath);
 
             // Also try to save as icon.png in public if it exists (common for web apps)

@@ -1,7 +1,7 @@
-import { useCallback,useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { ServiceResponse,SSHFile } from '@/types';
+import { ServiceResponse, SSHFile } from '@/types';
 
 interface SFTPBrowserProps {
     connectionId: string
@@ -42,7 +42,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     };
 
     const handleBack = () => {
-        if (currentPath === '/') {return;}
+        if (currentPath === '/') { return; }
         const parts = currentPath.split('/').filter(p => p.length > 0);
         parts.pop();
         setCurrentPath('/' + parts.join('/'));
@@ -110,7 +110,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
             {loading ? (
                 <div style={{ padding: '20px', textAlign: 'center' }}>{t('ssh.loading')}</div>
             ) : error ? (
-                <div style={{ padding: '20px', color: '#f44336' }}>{t('ssh.connectionError', { error })}</div>
+                <div style={{ padding: '20px', color: 'hsl(var(--destructive))' }}>{t('ssh.connectionError', { error })}</div>
             ) : (
                 <div className="file-list" style={{ flex: 1, overflowY: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9em' }}>
@@ -135,7 +135,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                                     <td style={{ padding: '8px', fontSize: '0.8em', opacity: 0.6 }}>{file.mtime ? new Date(file.mtime).toLocaleDateString() : '-'}</td>
                                     <td style={{ padding: '8px', display: 'flex', gap: '4px' }}>
                                         <button onClick={() => void handleRename(file)} style={{ fontSize: '0.9em' }}>✎</button>
-                                        <button onClick={() => void handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-red-500 hover:text-red-400">🗑</button>
+                                        <button onClick={() => void handleDelete(file)} style={{ fontSize: '0.9em' }} className="text-destructive hover:text-destructive">🗑</button>
                                         {!file.isDirectory && <button onClick={() => void handleDownload(file)} style={{ fontSize: '0.9em' }}>↓</button>}
                                     </td>
                                 </tr>

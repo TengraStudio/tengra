@@ -54,14 +54,14 @@ const ModelLabelInfo: React.FC<{
         </div>
         <div className="flex items-center gap-1.5 font-bold text-sm text-foreground truncate w-full mt-1 tracking-tight">
             <span className="truncate">{modelLabel}</span>
-            {modelType === 'image' && <ImageIcon className="w-2.5 h-2.5 text-emerald-400" />}
+            {modelType === 'image' && <ImageIcon className="w-2.5 h-2.5 text-success" />}
         </div>
         {contextTokens > 0 && (
             <div className="w-full h-[2px] bg-border/30 rounded-full mt-1.5 overflow-hidden">
                 <div
                     className={cn(
                         "h-full transition-all duration-500",
-                        contextUsagePercent > 90 ? "bg-red-500" : contextUsagePercent > 70 ? "bg-orange-500" : "bg-emerald-500/50"
+                        contextUsagePercent > 90 ? "bg-destructive" : contextUsagePercent > 70 ? "bg-orange" : "bg-success/50"
                     )}
                     style={{ width: `${contextUsagePercent}%` }}
                 />

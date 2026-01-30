@@ -15,15 +15,11 @@ export class DataService extends BaseService {
     constructor() {
         super('DataService');
 
-        // Use standard AppData/Orbit/data structure
-        // app.getPath('userData') usually points to AppData/Roaming/Orbit (or similar)
+        // Use standard AppData/tandem/data structure
+        // app.getPath('userData') usually points to AppData/Roaming/tandem (or similar)
         // We want to organize things cleanly inside it.
         const userData = app.getPath('userData');
         this.baseDir = path.join(userData, 'data');
-
-
-
-
 
         this.paths = {
             auth: path.join(this.baseDir, 'auth'),
@@ -40,7 +36,7 @@ export class DataService extends BaseService {
 
     async initialize(): Promise<void> {
         this.logInfo('Initializing data service and ensuring directory structure...');
-        
+
         try {
             this.ensureDirectories();
             this.logInfo('Data service initialized successfully');
@@ -55,9 +51,9 @@ export class DataService extends BaseService {
     }
 
     private ensureDirectories() {
-        if (!fs.existsSync(this.baseDir)) {fs.mkdirSync(this.baseDir, { recursive: true });}
+        if (!fs.existsSync(this.baseDir)) { fs.mkdirSync(this.baseDir, { recursive: true }); }
         Object.values(this.paths).forEach(p => {
-            if (!fs.existsSync(p)) {fs.mkdirSync(p, { recursive: true });}
+            if (!fs.existsSync(p)) { fs.mkdirSync(p, { recursive: true }); }
         });
     }
 
@@ -70,8 +66,8 @@ export class DataService extends BaseService {
      * Should be called on app startup.
      */
     async migrate() {
-        const userData = app.getPath('userData'); // Orbit/runtime
-        const rootPath = path.dirname(userData);  // Orbit
+        const userData = app.getPath('userData'); // tandem/runtime
+        const rootPath = path.dirname(userData);  // tandem
 
         const migrations = [
             // Auth: root/auth -> data/auth
@@ -92,15 +88,15 @@ export class DataService extends BaseService {
                 new: this.paths.auth,
                 isDir: true
             },
-            // DB: root/orbit-lancedb -> data/db/vector-store (Renamed from orbit-lancedb)
+            // DB: root/tandem-lancedb -> data/db/vector-store (Renamed from tandem-lancedb)
             {
-                old: path.join(rootPath, 'orbit-lancedb'),
+                old: path.join(rootPath, 'tandem-lancedb'),
                 new: path.join(this.paths.db, 'vector-store'),
                 isDir: true
             },
-            // DB: runtime/data/db/orbit-lancedb -> data/db/vector-store (Rename if already migrated)
+            // DB: runtime/data/db/tandem-lancedb -> data/db/vector-store (Rename if already migrated)
             {
-                old: path.join(this.paths.db, 'orbit-lancedb'),
+                old: path.join(this.paths.db, 'tandem-lancedb'),
                 new: path.join(this.paths.db, 'vector-store'),
                 isDir: true
             },
@@ -136,9 +132,9 @@ export class DataService extends BaseService {
                 new: path.join(userData, 'static'),
                 isDir: true
             },
-            // Gallery: Pictures/Orbit/Gallery -> gallery/images (External path)
+            // Gallery: Pictures/tandem/Gallery -> gallery/images (External path)
             {
-                old: path.join(app.getPath('pictures'), 'Orbit', 'Gallery'),
+                old: path.join(app.getPath('pictures'), 'tandem', 'Gallery'),
                 new: this.paths.galleryImages,
                 isDir: true
             }

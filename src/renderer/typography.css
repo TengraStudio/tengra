@@ -1,4 +1,4 @@
-/* orbit-typography.css */
+/* Tandem-typography.css */
 
 /* 
  * FONT IMPORTS 
@@ -41,3 +41,4 @@
 
 .font-sans { font-family: var(--font-sans); }
 .font-mono { font-family: var(--font-mono); }
+

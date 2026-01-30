@@ -32,6 +32,8 @@ interface ModelSelectorProps {
     onOpenChange?: (isOpen: boolean) => void;
     contextTokens?: number;
     language?: Language;
+    onRemoveModel?: (provider: string, model: string) => void;
+    isFavorite?: (modelId: string) => boolean;
     toggleFavorite?: (modelId: string) => void;
 }
 
@@ -47,6 +49,8 @@ export function ModelSelector({
     onOpenChange,
     contextTokens = 0,
     language = 'en',
+    onRemoveModel,
+    isFavorite,
     toggleFavorite
 }: ModelSelectorProps) {
     const { t } = useTranslation(language);
@@ -148,6 +152,8 @@ export function ModelSelector({
                                 selectedModel={selectedModel}
                                 selectedProvider={selectedProvider}
                                 onSelect={handleModelSelect}
+                                onRemoveModel={onRemoveModel}
+                                isFavorite={isFavorite}
                                 toggleFavorite={toggleFavorite}
                                 t={t}
                             />

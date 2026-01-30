@@ -175,7 +175,7 @@ export class AuthService extends BaseService {
             }
 
             if (migratedCount > 0) {
-                appLogger.info('AuthService', `Proactive migration complete: Upgraded ${migratedCount} accounts to orbit:v1 format.`);
+                appLogger.info('AuthService', `Proactive migration complete: Upgraded ${migratedCount} accounts to Tandem:v1 format.`);
             }
         } catch (error) {
             appLogger.error('AuthService', `Proactive migration failed: ${getErrorMessage(error)}`);
@@ -498,7 +498,7 @@ export class AuthService extends BaseService {
         const props: Array<keyof LinkedAccount> = ['accessToken', 'refreshToken', 'sessionToken'];
         for (const key of props) {
             const val = account[key];
-            if (typeof val === 'string' && val.length > 0 && !val.startsWith('orbit:v1:')) {
+            if (typeof val === 'string' && val.length > 0 && !val.startsWith('Tandem:v1:')) {
                 const decryptedValue = this.decrypt(val);
                 if (decryptedValue) {
                     updated[key as 'accessToken' | 'refreshToken' | 'sessionToken'] = this.encrypt(decryptedValue);
@@ -584,3 +584,4 @@ export class AuthService extends BaseService {
         return mappings[p] ?? p;
     }
 }
+

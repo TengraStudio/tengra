@@ -286,7 +286,7 @@ export const ar = {
             pushing: 'جاري الدفع...'
         },
         noIssues: 'لم يتم العثور على مشكلات كبيرة في المشروع. عمل جيد!',
-        issuesDescription: 'يقوم Orbit بفحص مشروعك بحثاً عن الأخطاء والتحذيرات المحتملة.',
+        issuesDescription: 'يقوم Tandem بفحص مشروعك بحثاً عن الأخطاء والتحذيرات المحتملة.',
         issueType: 'النوع',
         issueMessage: 'الرسالة',
         issueLocation: 'الموقع',
@@ -541,7 +541,7 @@ export const ar = {
     },
     memory: {
         title: 'فاحص الذاكرة',
-        subtitle: 'تصور وإدارة ما يعرفه ويتذكره Orbit.',
+        subtitle: 'تصور وإدارة ما يعرفه ويتذكره Tandem.',
         searchPlaceholder: 'البحث في الذاكرة...',
         totalFacts: 'إجمالي الحقائق',
         episodes: 'حلقات',
@@ -623,7 +623,7 @@ export const ar = {
         moreLines: 'أسطر إضافية'
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: 'الذكاء يلتقي بالأناقة.'
     },
     auth: {
@@ -632,7 +632,7 @@ export const ar = {
         connectionFailed: 'فشل الاتصال بخادم Antigravity. يرجى تسجيل الدخول أو التحقق من مفتاح API الخاص بك.',
         sessionKeyRequired: 'مفتاح جلسة Claude مطلوب',
         completeConnection: 'إكمال الاتصال لـ {{email}}',
-        sessionKeyDescription: 'من أجل تتبع الحصص والتفاعل المباشر، يحتاج Orbit إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.',
+        sessionKeyDescription: 'من أجل تتبع الحصص والتفاعل المباشر، يحتاج Tandem إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.',
         howToFindKey: 'كيف تجد مفتاح الجلسة الخاص بك',
         sessionKeyInstructions: {
             step1: 'افتح claude.ai وقم بتسجيل الدخول',
@@ -755,7 +755,7 @@ export const ar = {
         creative: {
             title: 'كتابة إبداعية',
             description: 'توليد نصوص ومحتوى.',
-            prompt: 'هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Orbit؟'
+            prompt: 'هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Tandem؟'
         },
         debug: {
             title: 'تصحيح الأخطاء',
@@ -777,7 +777,7 @@ export const ar = {
         user: 'مستخدم',
         assistant: 'مساعد',
         copyAsHtml: 'نسخ كـ HTML',
-        orbitDrawing: 'Orbit يرسم...',
+        TandemDrawing: 'Tandem يرسم...',
         quotaExceeded: 'تم تجاوز الحصة',
         quotaMessage: 'لقد تجاوزت حصة الاستخدام للنموذج. يرجى المحاولة مرة أخرى لاحقاً أو ترقية خطتك.',
         resetsAt: 'يتم إعادة التعيين في:',
@@ -786,7 +786,7 @@ export const ar = {
         speakAloud: 'قراءة بصوت عال',
         convertToCode: 'تحويل إلى كود',
         approvePlan: 'الموافقة على الخطة',
-        orbitThinking: 'Orbit يفكر',
+        TandemThinking: 'Tandem يفكر',
         showThought: 'عرض الفكر',
         react: 'تفاعل',
         runBenchmark: 'تشغيل المعيار',
@@ -822,7 +822,7 @@ export const ar = {
         fontDesc: 'تخصيص خط التطبيق وحجمه.',
         fontFamily: 'عائلة الخط',
         fontSize: 'حجم الخط',
-        previewText: 'شكل المستقبل مع Orbit AI.',
+        previewText: 'شكل المستقبل مع Tandem AI.',
         accessibility: 'إمكانية الوصول',
         accessibilityDesc: 'إعدادات العرض والرؤية',
         highContrast: 'وضع التباين العالي',
@@ -896,11 +896,11 @@ export const ar = {
         unknownProject: 'مشروع غير معروف'
     },
     about: {
-        description: 'Orbit هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.',
+        description: 'Tandem هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.',
         checkUpdates: 'التحقق من التحديثات',
         privacyPolicy: 'سياسة الخصوصية',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: 'إعادة ضبط المصنع',
         factoryResetDesc: 'إعادة تعيين التطبيق عن طريق مسح جميع الإعدادات والبيانات.',
         updateCheckAlert: 'تم تفعيل التحقق من التحديثات في إصدارات الإنتاج.'
@@ -956,7 +956,7 @@ export const ar = {
     tips: {
         title: 'هل تعلم؟',
         tip1: 'يمكنك إنشاء محادثة جديدة باستخدام اختصار CTRL+N.',
-        tip2: 'يدعم Orbit الاتصال بخوادم SSH البعيدة للتطوير.',
+        tip2: 'يدعم Tandem الاتصال بخوادم SSH البعيدة للتطوير.',
         tip3: 'يمكنك سحب وإفلات الملفات مباشرة في المحادثة.',
         tip4: 'استخدم علامة التبويب "المجلس" للحصول على رؤى متعددة الوكلاء حول الكود الخاص بك.',
         tip5: 'خصص تجربتك في الإعدادات > المظهر.'
@@ -1162,7 +1162,7 @@ export const ar = {
         stats: 'إحصائيات'
     },
     onboarding: {
-        welcome: 'مرحباً في Orbit',
+        welcome: 'مرحباً في Tandem',
         step1: 'توصيل موفري الذكاء الاصطناعي',
         step2: 'إعداد مساحة العمل',
         step3: 'ابدأ البرمجة',
@@ -1341,3 +1341,4 @@ export const ar = {
         path: 'المسار:'
     }
 };
+

@@ -61,7 +61,7 @@ export class ModelRegistryService extends BaseService {
         // Start the native service process
         await this.deps.processManager.startService({
             name: 'model-service',
-            executable: 'orbit-model-service.exe',
+            executable: 'Tandem-model-service.exe',
             persistent: true
         });
 
@@ -232,3 +232,4 @@ export class ModelRegistryService extends BaseService {
         return this.fetchModelProvider('ollama');
     }
 }
+

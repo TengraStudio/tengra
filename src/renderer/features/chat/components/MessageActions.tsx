@@ -39,7 +39,7 @@ export const CopyButton = ({ text }: { text: string }) => {
     };
     return (
         <ActionButton label={t('messageBubble.copy')} onClick={() => void handleCopy()}>
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-success" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     );
 };
@@ -51,7 +51,7 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
             label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
             onClick={onClick}
             active={active}
-            activeClassName="text-amber-400 bg-amber-400/10 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.1)]"
+            activeClassName="text-warning bg-warning/10 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.1)]"
         >
             <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} aria-hidden="true" />
         </ActionButton>
@@ -67,7 +67,7 @@ export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefi
                 className={cn(
                     "p-1.5 rounded-md transition-all duration-200",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    rating === 1 ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/5"
+                    rating === 1 ? "text-success bg-success/10" : "text-muted-foreground hover:text-success hover:bg-success/5"
                 )}
                 title={t('messageBubble.goodAnswer')}
                 aria-label={t('messageBubble.goodAnswer')}
@@ -80,7 +80,7 @@ export const RatingButtons = ({ rating, onRate }: { rating?: 1 | -1 | 0 | undefi
                 className={cn(
                     "p-1.5 rounded-md transition-all duration-200",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    rating === -1 ? "text-red-400 bg-red-400/10" : "text-zinc-400 hover:text-red-400 hover:bg-red-400/5"
+                    rating === -1 ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive hover:bg-destructive/5"
                 )}
                 title={t('messageBubble.badAnswer')}
                 aria-label={t('messageBubble.badAnswer')}
@@ -104,7 +104,7 @@ export const CopyMarkdownButton = ({ text, role }: { text: string; role: string 
     };
     return (
         <ActionButton label={t('messageBubble.copyAsMarkdown')} onClick={() => void handleCopy()}>
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Code2 className="w-3.5 h-3.5" aria-hidden="true" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-success" aria-hidden="true" /> : <Code2 className="w-3.5 h-3.5" aria-hidden="true" />}
         </ActionButton>
     );
 };
@@ -167,7 +167,7 @@ export const MessageActionsGroup = ({
                     <Smile className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>
                 <div
-                    className="absolute bottom-full mb-2 bg-[#1a1b26] border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom"
+                    className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom"
                     role="group"
                     aria-label="Emoji reactions"
                 >

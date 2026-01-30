@@ -1,6 +1,6 @@
 /**
  * Database Schema for Agent Persistence
- * SQL migrations for SQLite (via Orbit DB Service)
+ * SQL migrations for SQLite (via Tandem DB Service)
  */
 
 CREATE TABLE IF NOT EXISTS agent_tasks (
@@ -43,3 +43,4 @@ CREATE TABLE IF NOT EXISTS agent_tool_executions (
     completed_at TIMESTAMP,
     duration_ms INTEGER
 );
+

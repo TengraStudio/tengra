@@ -1,5 +1,5 @@
 [package]
-name = "orbit-token-service"
+name = "tandem-token-service"
 version = "0.1.0"
 edition = "2021"
 

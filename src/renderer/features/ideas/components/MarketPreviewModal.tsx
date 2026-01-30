@@ -32,9 +32,9 @@ const CompetitionBadge: React.FC<{ level: string }> = ({ level }) => {
         <span
             className={cn(
                 'px-2 py-1 rounded text-xs font-medium',
-                isHigh && 'bg-red-500/10 text-red-500',
-                isMedium && 'bg-yellow-500/10 text-yellow-500',
-                isLow && 'bg-green-500/10 text-green-500',
+                isHigh && 'bg-destructive/10 text-destructive',
+                isMedium && 'bg-yellow/10 text-yellow',
+                isLow && 'bg-success/10 text-success',
                 !isHigh && !isMedium && !isLow && 'bg-muted/50 text-muted-foreground'
             )}
         >

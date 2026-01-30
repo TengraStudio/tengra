@@ -64,7 +64,7 @@ const MermaidDiagram = ({ code }: { code: string }) => {
         );
     }
 
-    if (error) { return <pre className="text-xs text-red-400 bg-red-500/10 p-2 rounded">{error}</pre>; }
+    if (error) { return <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />;
 };
 

@@ -52,7 +52,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
                     {/* Value proposition preview */}
                     {idea.valueProposition && (
                         <div className="mt-3 flex items-start gap-2">
-                            <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                            <Sparkles className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                             <p className="text-sm text-foreground/70 line-clamp-2 italic">
                                 {idea.valueProposition}
                             </p>

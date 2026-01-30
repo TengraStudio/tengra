@@ -1,5 +1,5 @@
 /**
- * Shared constants for the Orbit application.
+ * Shared constants for the Tandem application.
  * These replace magic numbers throughout the codebase for better maintainability.
  */
 

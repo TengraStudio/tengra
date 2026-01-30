@@ -43,143 +43,155 @@ export interface IconProps {
 // Custom folder icon config
 interface FolderIconConfig {
     icon: LucideIcon;
-    color: string;
+    cssVar: string;
 }
 
-// Special folder name to icon mapping
+// Special folder name to icon mapping with CSS variable references
 const SPECIAL_FOLDER_ICONS: Record<string, FolderIconConfig> = {
     // Source code
-    'src': { icon: FolderCode, color: '#3B82F6' },
-    'source': { icon: FolderCode, color: '#3B82F6' },
-    'lib': { icon: FolderCode, color: '#6366F1' },
-    'libs': { icon: FolderCode, color: '#6366F1' },
+    'src': { icon: FolderCode, cssVar: '--icon-source' },
+    'source': { icon: FolderCode, cssVar: '--icon-source' },
+    'lib': { icon: FolderCode, cssVar: '--icon-lib' },
+    'libs': { icon: FolderCode, cssVar: '--icon-lib' },
 
     // Version control
-    '.git': { icon: FolderGit, color: '#F97316' },
-    '.github': { icon: FolderGit, color: '#6366F1' },
-    '.gitlab': { icon: FolderGit, color: '#F97316' },
+    '.git': { icon: FolderGit, cssVar: '--icon-git' },
+    '.github': { icon: FolderGit, cssVar: '--icon-github' },
+    '.gitlab': { icon: FolderGit, cssVar: '--icon-git' },
 
     // Config
-    'config': { icon: FolderCog, color: '#8B5CF6' },
-    'configs': { icon: FolderCog, color: '#8B5CF6' },
-    '.config': { icon: FolderCog, color: '#8B5CF6' },
-    'settings': { icon: Settings, color: '#8B5CF6' },
+    'config': { icon: FolderCog, cssVar: '--icon-config' },
+    'configs': { icon: FolderCog, cssVar: '--icon-config' },
+    '.config': { icon: FolderCog, cssVar: '--icon-config' },
+    'settings': { icon: Settings, cssVar: '--icon-settings' },
 
     // Components
-    'components': { icon: Blocks, color: '#22C55E' },
-    'component': { icon: Blocks, color: '#22C55E' },
-    'ui': { icon: Layout, color: '#22C55E' },
-    'widgets': { icon: Blocks, color: '#22C55E' },
+    'components': { icon: Blocks, cssVar: '--icon-components' },
+    'component': { icon: Blocks, cssVar: '--icon-components' },
+    'ui': { icon: Layout, cssVar: '--icon-ui' },
+    'widgets': { icon: Blocks, cssVar: '--icon-components' },
 
     // Pages / Views
-    'pages': { icon: Layout, color: '#3B82F6' },
-    'views': { icon: Layout, color: '#3B82F6' },
-    'screens': { icon: Layout, color: '#3B82F6' },
-    'routes': { icon: FolderSymlink, color: '#3B82F6' },
+    'pages': { icon: Layout, cssVar: '--icon-pages' },
+    'views': { icon: Layout, cssVar: '--icon-pages' },
+    'screens': { icon: Layout, cssVar: '--icon-pages' },
+    'routes': { icon: FolderSymlink, cssVar: '--icon-routes' },
 
     // API / Services
-    'api': { icon: Globe, color: '#EC4899' },
-    'apis': { icon: Globe, color: '#EC4899' },
-    'services': { icon: Globe, color: '#EC4899' },
-    'graphql': { icon: Globe, color: '#E10098' },
+    'api': { icon: Globe, cssVar: '--icon-api' },
+    'apis': { icon: Globe, cssVar: '--icon-api' },
+    'services': { icon: Globe, cssVar: '--icon-api' },
+    'graphql': { icon: Globe, cssVar: '--icon-graphql' },
 
     // Tests
-    'test': { icon: TestTube2, color: '#F59E0B' },
-    'tests': { icon: TestTube2, color: '#F59E0B' },
-    '__tests__': { icon: TestTube2, color: '#F59E0B' },
-    'spec': { icon: TestTube2, color: '#F59E0B' },
-    'specs': { icon: TestTube2, color: '#F59E0B' },
-    'e2e': { icon: TestTube2, color: '#F59E0B' },
-    'cypress': { icon: TestTube2, color: '#17202C' },
-    'playwright': { icon: TestTube2, color: '#2EAD33' },
+    'test': { icon: TestTube2, cssVar: '--icon-test' },
+    'tests': { icon: TestTube2, cssVar: '--icon-test' },
+    '__tests__': { icon: TestTube2, cssVar: '--icon-test' },
+    'spec': { icon: TestTube2, cssVar: '--icon-test' },
+    'specs': { icon: TestTube2, cssVar: '--icon-test' },
+    'e2e': { icon: TestTube2, cssVar: '--icon-test' },
+    'cypress': { icon: TestTube2, cssVar: '--icon-cypress' },
+    'playwright': { icon: TestTube2, cssVar: '--icon-playwright' },
 
     // Build output
-    'dist': { icon: FolderOutput, color: '#6B7280' },
-    'build': { icon: FolderOutput, color: '#6B7280' },
-    'out': { icon: FolderOutput, color: '#6B7280' },
-    'output': { icon: FolderOutput, color: '#6B7280' },
-    '.next': { icon: FolderOutput, color: '#000000' },
-    '.nuxt': { icon: FolderOutput, color: '#00DC82' },
+    'dist': { icon: FolderOutput, cssVar: '--icon-build' },
+    'build': { icon: FolderOutput, cssVar: '--icon-build' },
+    'out': { icon: FolderOutput, cssVar: '--icon-build' },
+    'output': { icon: FolderOutput, cssVar: '--icon-build' },
+    '.next': { icon: FolderOutput, cssVar: '--icon-next' },
+    '.nuxt': { icon: FolderOutput, cssVar: '--icon-nuxt' },
 
     // Dependencies
-    'node_modules': { icon: FolderArchive, color: '#6B7280' },
-    'vendor': { icon: FolderArchive, color: '#6B7280' },
-    'packages': { icon: FolderArchive, color: '#6B7280' },
+    'node_modules': { icon: FolderArchive, cssVar: '--icon-dependencies' },
+    'vendor': { icon: FolderArchive, cssVar: '--icon-dependencies' },
+    'packages': { icon: FolderArchive, cssVar: '--icon-dependencies' },
 
     // Assets
-    'assets': { icon: FolderHeart, color: '#EF4444' },
-    'images': { icon: FolderHeart, color: '#EF4444' },
-    'img': { icon: FolderHeart, color: '#EF4444' },
-    'icons': { icon: FolderHeart, color: '#EF4444' },
-    'fonts': { icon: FolderHeart, color: '#8B5CF6' },
-    'media': { icon: FolderHeart, color: '#EF4444' },
+    'assets': { icon: FolderHeart, cssVar: '--icon-assets' },
+    'images': { icon: FolderHeart, cssVar: '--icon-assets' },
+    'img': { icon: FolderHeart, cssVar: '--icon-assets' },
+    'icons': { icon: FolderHeart, cssVar: '--icon-assets' },
+    'fonts': { icon: FolderHeart, cssVar: '--icon-fonts' },
+    'media': { icon: FolderHeart, cssVar: '--icon-assets' },
 
     // Styles
-    'styles': { icon: Palette, color: '#EC4899' },
-    'css': { icon: Palette, color: '#38BDF8' },
-    'scss': { icon: Palette, color: '#CF649A' },
-    'less': { icon: Palette, color: '#1D365D' },
+    'styles': { icon: Palette, cssVar: '--icon-styles' },
+    'css': { icon: Palette, cssVar: '--icon-css' },
+    'scss': { icon: Palette, cssVar: '--icon-scss' },
+    'less': { icon: Palette, cssVar: '--icon-less' },
 
     // Public
-    'public': { icon: FolderTree, color: '#10B981' },
-    'static': { icon: FolderTree, color: '#10B981' },
+    'public': { icon: FolderTree, cssVar: '--icon-public' },
+    'static': { icon: FolderTree, cssVar: '--icon-public' },
 
     // Types
-    'types': { icon: FolderDot, color: '#3178C6' },
-    '@types': { icon: FolderDot, color: '#3178C6' },
-    'typings': { icon: FolderDot, color: '#3178C6' },
-    'interfaces': { icon: FolderDot, color: '#3178C6' },
+    'types': { icon: FolderDot, cssVar: '--icon-types' },
+    '@types': { icon: FolderDot, cssVar: '--icon-types' },
+    'typings': { icon: FolderDot, cssVar: '--icon-types' },
+    'interfaces': { icon: FolderDot, cssVar: '--icon-types' },
 
     // Hooks / Utils
-    'hooks': { icon: FolderSync, color: '#61DAFB' },
-    'composables': { icon: FolderSync, color: '#42B883' },
-    'utils': { icon: FolderKanban, color: '#6366F1' },
-    'utilities': { icon: FolderKanban, color: '#6366F1' },
-    'helpers': { icon: FolderKanban, color: '#6366F1' },
+    'hooks': { icon: FolderSync, cssVar: '--icon-hooks' },
+    'composables': { icon: FolderSync, cssVar: '--icon-composables' },
+    'utils': { icon: FolderKanban, cssVar: '--icon-utils' },
+    'utilities': { icon: FolderKanban, cssVar: '--icon-utils' },
+    'helpers': { icon: FolderKanban, cssVar: '--icon-utils' },
 
     // Data
-    'data': { icon: Database, color: '#0EA5E9' },
-    'database': { icon: Database, color: '#0EA5E9' },
-    'db': { icon: Database, color: '#0EA5E9' },
-    'models': { icon: Database, color: '#0EA5E9' },
-    'schema': { icon: Database, color: '#0EA5E9' },
-    'migrations': { icon: Database, color: '#F59E0B' },
-    'prisma': { icon: Database, color: '#2D3748' },
+    'data': { icon: Database, cssVar: '--icon-data' },
+    'database': { icon: Database, cssVar: '--icon-data' },
+    'db': { icon: Database, cssVar: '--icon-data' },
+    'models': { icon: Database, cssVar: '--icon-data' },
+    'schema': { icon: Database, cssVar: '--icon-data' },
+    'migrations': { icon: Database, cssVar: '--icon-test' },
+    'prisma': { icon: Database, cssVar: '--icon-prisma' },
 
     // Features / Modules 
-    'features': { icon: Layers, color: '#8B5CF6' },
-    'modules': { icon: Layers, color: '#8B5CF6' },
-    'domains': { icon: Layers, color: '#8B5CF6' },
+    'features': { icon: Layers, cssVar: '--icon-features' },
+    'modules': { icon: Layers, cssVar: '--icon-features' },
+    'domains': { icon: Layers, cssVar: '--icon-features' },
 
     // Docs
-    'docs': { icon: FolderSearch, color: '#10B981' },
-    'documentation': { icon: FolderSearch, color: '#10B981' },
+    'docs': { icon: FolderSearch, cssVar: '--icon-docs' },
+    'documentation': { icon: FolderSearch, cssVar: '--icon-docs' },
 
     // Security
-    '.ssh': { icon: FolderKey, color: '#EF4444' },
-    'keys': { icon: FolderKey, color: '#EF4444' },
-    'certs': { icon: FolderLock, color: '#EF4444' },
-    'secrets': { icon: FolderLock, color: '#EF4444' },
+    '.ssh': { icon: FolderKey, cssVar: '--icon-security' },
+    'keys': { icon: FolderKey, cssVar: '--icon-security' },
+    'certs': { icon: FolderLock, cssVar: '--icon-security' },
+    'secrets': { icon: FolderLock, cssVar: '--icon-security' },
 
     // Scripts
-    'scripts': { icon: FolderInput, color: '#22C55E' },
-    'bin': { icon: FolderInput, color: '#22C55E' },
-    'tools': { icon: FolderCog, color: '#6B7280' },
+    'scripts': { icon: FolderInput, cssVar: '--icon-scripts' },
+    'bin': { icon: FolderInput, cssVar: '--icon-scripts' },
+    'tools': { icon: FolderCog, cssVar: '--icon-tools' },
 
     // Hidden
-    '.vscode': { icon: FolderCog, color: '#0078D4' },
-    '.idea': { icon: FolderCog, color: '#000000' },
-    '.husky': { icon: FolderDot, color: '#42B883' },
-    '.cache': { icon: FolderArchive, color: '#6B7280' },
+    '.vscode': { icon: FolderCog, cssVar: '--icon-vscode' },
+    '.idea': { icon: FolderCog, cssVar: '--icon-idea' },
+    '.husky': { icon: FolderDot, cssVar: '--icon-husky' },
+    '.cache': { icon: FolderArchive, cssVar: '--icon-dependencies' },
 
     // CI/CD
-    '.circleci': { icon: FolderSync, color: '#343434' },
-    '.jenkins': { icon: FolderSync, color: '#D24939' },
-    'workflows': { icon: FolderCheck, color: '#2088FF' },
+    '.circleci': { icon: FolderSync, cssVar: '--icon-circleci' },
+    '.jenkins': { icon: FolderSync, cssVar: '--icon-jenkins' },
+    'workflows': { icon: FolderCheck, cssVar: '--icon-workflows' },
 };
 
-// Extended file extension mapping for proper colors
-const EXTENSION_COLOR_MAP: Record<string, string> = {
+// Extended file extension mapping with CSS variable references
+const EXTENSION_CSS_VAR_MAP: Record<string, string> = {
+    'ts': '--icon-ts', 'tsx': '--icon-ts', 'js': '--icon-js', 'jsx': '--icon-jsx',
+    'py': '--icon-py', 'ipynb': '--icon-ipynb', 'rs': '--icon-rs', 'go': '--icon-go',
+    'rb': '--icon-rb', 'php': '--icon-php', 'java': '--icon-java', 'kt': '--icon-kt',
+    'c': '--icon-c', 'h': '--icon-c', 'cpp': '--icon-cpp', 'cs': '--icon-cs',
+    'swift': '--icon-swift', 'dart': '--icon-dart', 'html': '--icon-html', 'css': '--icon-css-file',
+    'scss': '--icon-scss', 'sass': '--icon-scss', 'vue': '--icon-vue', 'svelte': '--icon-svelte',
+    'json': '--icon-json', 'yaml': '--icon-yaml', 'yml': '--icon-yaml', 'xml': '--icon-xml',
+    'md': '--icon-md', 'sql': '--icon-sql', 'sh': '--icon-sh',
+};
+
+// Fallback colors for SSR and when CSS vars are not available
+const EXTENSION_COLOR_FALLBACKS: Record<string, string> = {
     'ts': '#3178C6', 'tsx': '#3178C6', 'js': '#F7DF1E', 'jsx': '#61DAFB',
     'py': '#3776AB', 'ipynb': '#F37626', 'rs': '#DEA584', 'go': '#00ADD8',
     'rb': '#CC342D', 'php': '#777BB4', 'java': '#ED8B00', 'kt': '#7F52FF',
@@ -212,6 +224,72 @@ const EXTENSION_TYPE_MAP: Record<string, FileIconType> = {
 };
 
 /**
+ * Helper to get CSS variable value
+ */
+function getCSSVariableValue(variableName: string): string {
+    if (typeof window === 'undefined') {
+        // Fallback for SSR - return hex colors based on variable name
+        const fallbacks: Record<string, string> = {
+            '--icon-source': '#3B82F6',
+            '--icon-lib': '#6366F1',
+            '--icon-git': '#F97316',
+            '--icon-github': '#6366F1',
+            '--icon-config': '#8B5CF6',
+            '--icon-settings': '#8B5CF6',
+            '--icon-components': '#22C55E',
+            '--icon-ui': '#22C55E',
+            '--icon-pages': '#3B82F6',
+            '--icon-routes': '#3B82F6',
+            '--icon-api': '#EC4899',
+            '--icon-graphql': '#E10098',
+            '--icon-test': '#F59E0B',
+            '--icon-cypress': '#17202C',
+            '--icon-playwright': '#2EAD33',
+            '--icon-build': '#6B7280',
+            '--icon-next': '#000000',
+            '--icon-nuxt': '#00DC82',
+            '--icon-dependencies': '#6B7280',
+            '--icon-assets': '#EF4444',
+            '--icon-fonts': '#8B5CF6',
+            '--icon-styles': '#EC4899',
+            '--icon-css': '#38BDF8',
+            '--icon-scss': '#CF649A',
+            '--icon-less': '#1D365D',
+            '--icon-public': '#10B981',
+            '--icon-types': '#3178C6',
+            '--icon-hooks': '#61DAFB',
+            '--icon-composables': '#42B883',
+            '--icon-utils': '#6366F1',
+            '--icon-data': '#0EA5E9',
+            '--icon-prisma': '#2D3748',
+            '--icon-features': '#8B5CF6',
+            '--icon-docs': '#10B981',
+            '--icon-security': '#EF4444',
+            '--icon-scripts': '#22C55E',
+            '--icon-tools': '#6B7280',
+            '--icon-vscode': '#0078D4',
+            '--icon-idea': '#000000',
+            '--icon-husky': '#42B883',
+            '--icon-circleci': '#343434',
+            '--icon-jenkins': '#D24939',
+            '--icon-workflows': '#2088FF',
+            '--icon-default': '#60A5FA'
+        };
+        return fallbacks[variableName] ?? '#6B7280';
+    }
+
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    if (value) {
+        // Convert HSL to hex if needed
+        if (value.includes(' ')) {
+            return `hsl(${value})`;
+        }
+        return value;
+    }
+    return '#6B7280';
+}
+
+/**
  * Get display icon configuration for a folder name
  */
 export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
@@ -221,13 +299,13 @@ export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
     if (config) {
         return {
             Icon: config.icon,
-            color: config.color
+            color: getCSSVariableValue(config.cssVar)
         };
     }
 
     return {
         Icon: isOpen ? FolderOpen : Folder,
-        color: '#60A5FA'
+        color: getCSSVariableValue('--icon-default')
     };
 }
 
@@ -246,7 +324,8 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
     const lowerName = fileName.toLowerCase();
     const ext = lowerName.split('.').pop() ?? '';
 
-    const color = EXTENSION_COLOR_MAP[ext] ?? '#6B7280';
+    const cssVar = EXTENSION_CSS_VAR_MAP[ext];
+    const color = cssVar ? getCSSVariableValue(cssVar) : (EXTENSION_COLOR_FALLBACKS[ext] ?? '#6B7280');
     const type = EXTENSION_TYPE_MAP[ext];
     const defaultStyle = defaultStyles[ext as DefaultExtensionType];
 

@@ -224,7 +224,7 @@ const PromptCommandMenu: React.FC<{
                         aria-label={`Use prompt: ${prompt.title}`} aria-selected={i === selectedIndex} role="option"
                     >
                         <div className="font-medium">{prompt.title}</div>
-                        <div className="text-[10px] text-zinc-500 truncate">{prompt.content}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{prompt.content}</div>
                     </button>
                 ))}
             </motion.div>
@@ -250,9 +250,9 @@ const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
 
 const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const modes = [
-        { id: 'fast', label: 'Fast', icon: Zap, color: 'text-yellow-500' },
-        { id: 'agent', label: 'Agent', icon: Bot, color: 'text-blue-500' },
-        { id: 'thinking', label: 'Thinking', icon: Cpu, color: 'text-purple-500' }
+        { id: 'fast', label: 'Fast', icon: Zap, color: 'text-yellow' },
+        { id: 'agent', label: 'Agent', icon: Bot, color: 'text-primary' },
+        { id: 'thinking', label: 'Thinking', icon: Cpu, color: 'text-purple' }
     ] as const;
 
     const current = modes.find(m => m.id === ctrl.systemMode) ?? modes[1];
@@ -292,7 +292,7 @@ const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const isEnhancing = ctrl.isEnhancing;
     const btnClass = cn(
         "p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5",
-        isEnhancing ? "bg-amber-500/20 text-amber-400 animate-pulse" : (isEnhancable ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300" : "bg-muted/30 text-muted-foreground/50 cursor-not-allowed")
+        isEnhancing ? "bg-warning/20 text-warning animate-pulse" : (isEnhancable ? "bg-warning/10 text-warning hover:bg-warning/20 hover:text-amber-300" : "bg-muted/30 text-muted-foreground/50 cursor-not-allowed")
     );
     return (
         <button onClick={() => { void ctrl.handleEnhancePrompt(); }} disabled={!isEnhancable || isEnhancing} className={btnClass} title={ctrl.t('input.enhancePrompt')} aria-label={ctrl.t('input.enhancePrompt')}>

@@ -15,10 +15,10 @@ interface ModelSelectionModalProps {
 }
 
 const ReasonSection = ({ reason, t }: { reason: string, t: (k: string) => string }) => (
-    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-4">
-        <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
+    <div className="bg-warning/10 border border-warning/20 rounded-xl p-4 flex gap-4">
+        <AlertTriangle className="w-6 h-6 text-warning shrink-0" />
         <div>
-            <h4 className="text-sm font-bold text-amber-500 uppercase tracking-wider mb-1">
+            <h4 className="text-sm font-bold text-warning uppercase tracking-wider mb-1">
                 {t('agent.interruptionReason')}
             </h4>
             <p className="text-sm text-foreground/80 leading-relaxed">
@@ -136,9 +136,9 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
                             <Loader2 className="w-8 h-8 animate-spin text-primary" />
                         </div>
                     ) : error ? (
-                        <div className="h-[200px] flex flex-col items-center justify-center bg-red-500/5 border border-red-500/20 rounded-xl p-4 text-center">
-                            <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
-                            <p className="text-sm text-red-500/80 mb-4">{t('agent.failedLoadModels')}</p>
+                        <div className="h-[200px] flex flex-col items-center justify-center bg-destructive/5 border border-destructive/20 rounded-xl p-4 text-center">
+                            <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
+                            <p className="text-sm text-destructive/80 mb-4">{t('agent.failedLoadModels')}</p>
                             <button
                                 onClick={() => void fetchModels()}
                                 className="px-4 py-2 bg-muted/30 hover:bg-muted/40 rounded-lg text-xs font-bold"

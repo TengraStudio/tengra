@@ -41,7 +41,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData, time
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t('statistics.chats')}</CardTitle>
-                        <Activity className="w-4 h-4 text-emerald-500/50" />
+                        <Activity className="w-4 h-4 text-success/50" />
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -57,7 +57,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData, time
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t('statistics.totalTokens')}</CardTitle>
-                        <TrendingUp className="w-4 h-4 text-blue-400/50" />
+                        <TrendingUp className="w-4 h-4 text-primary/50" />
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -68,11 +68,11 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData, time
                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
                             <div>
                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">In</div>
-                                <div className="text-xs font-bold text-blue-400 tabular-nums">{formatNumber(statsData?.promptTokens ?? 0)}</div>
+                                <div className="text-xs font-bold text-primary tabular-nums">{formatNumber(statsData?.promptTokens ?? 0)}</div>
                             </div>
                             <div>
                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Out</div>
-                                <div className="text-xs font-bold text-emerald-400 tabular-nums">{formatNumber(statsData?.completionTokens ?? 0)}</div>
+                                <div className="text-xs font-bold text-success tabular-nums">{formatNumber(statsData?.completionTokens ?? 0)}</div>
                             </div>
                         </div>
                     </div>
@@ -86,7 +86,7 @@ export const OverviewCards: React.FC<OverviewCardsProps> = ({ t, statsData, time
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{t('statistics.onlineTime')}</CardTitle>
-                        <Clock className="w-4 h-4 text-purple-400/50" />
+                        <Clock className="w-4 h-4 text-purple/50" />
                     </div>
                 </CardHeader>
                 <CardContent>

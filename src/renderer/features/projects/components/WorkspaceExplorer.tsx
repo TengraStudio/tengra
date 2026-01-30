@@ -135,8 +135,8 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
 
     const mountIcon = (mount: WorkspaceMount) => (
         mount.type === 'ssh'
-            ? <Server className="w-3.5 h-3.5 text-indigo-400" />
-            : <Folder className="w-3.5 h-3.5 text-emerald-400" />
+            ? <Server className="w-3.5 h-3.5 text-indigo" />
+            : <Folder className="w-3.5 h-3.5 text-success" />
     );
 
 
@@ -162,7 +162,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
             </div>
 
             {!hasMounts && (
-                <div className="flex-1 flex flex-col items-center justify-center text-sm text-zinc-500 gap-2 opacity-60">
+                <div className="flex-1 flex flex-col items-center justify-center text-sm text-muted-foreground gap-2 opacity-60">
                     <Folder className="w-8 h-8 opacity-20" />
                     <span className="text-xs font-medium">{t('workspace.noMounts')}</span>
                 </div>
@@ -197,21 +197,21 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 <div className="flex-1 min-w-0 flex items-center gap-2">
                                     <div className="text-xs font-bold uppercase tracking-wider truncate text-muted-foreground/70">{mount.name}</div>
                                     {mount.type === 'ssh' && (
-                                        <span className="px-1 py-0.5 rounded-[3px] bg-indigo-500/20 text-indigo-300 text-[9px] font-bold border border-indigo-500/30">SSH</span>
+                                        <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-indigo-300 text-[9px] font-bold border border-indigo/30">SSH</span>
                                     )}
                                     {mount.type !== 'local' && (
                                         <div className={cn(
                                             "w-1.5 h-1.5 rounded-full",
-                                            mountStatus[mount.id] === 'connected' ? "bg-emerald-500" :
-                                                mountStatus[mount.id] === 'connecting' ? "bg-amber-500 animate-pulse" :
-                                                    "bg-red-500/50"
+                                            mountStatus[mount.id] === 'connected' ? "bg-success" :
+                                                mountStatus[mount.id] === 'connecting' ? "bg-warning animate-pulse" :
+                                                    "bg-destructive/50"
                                         )} title={mountStatus[mount.id]} />
                                     )}
                                 </div>
 
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onRemoveMount(mount.id); }}
-                                    className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-red-400 transition-all"
+                                    className="p-1 rounded opacity-0 group-hover/mount:opacity-100 hover:text-destructive transition-all"
                                     title={t('workspace.removeMount')}
                                 >
                                     <X className="w-3 h-3" />
@@ -270,7 +270,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                                 }
                                 setContextMenu(null);
                             }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-red-300 transition-colors"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
                             {t('workspace.removeMount')}
@@ -308,7 +308,7 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                             </button>
                             <button
                                 onClick={() => handleContextAction('delete')}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-red-300 transition-colors"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
                                 {t('common.delete')}

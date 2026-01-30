@@ -79,7 +79,7 @@ export const AccountManager: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
                 {message && (
-                    <div className={`p-3 rounded-md text-sm font-medium ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'}`}>
+                    <div className={`p-3 rounded-md text-sm font-medium ${message.type === 'success' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                         {message.text}
                     </div>
                 )}

@@ -18,17 +18,17 @@ interface HeaderProps {
 
 const GeneratorHeader = ({ t, isLoading, projectPath, onFetch }: HeaderProps) => (
     <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
-        <div className="p-2 rounded-xl bg-green-500/20 border border-green-500/30">
-            <GitCommit size={20} className="text-green-400" />
+        <div className="p-2 rounded-xl bg-success/20 border border-success/30">
+            <GitCommit size={20} className="text-success" />
         </div>
         <div className="flex-1">
             <h2 className="font-semibold text-foreground">{t('git.commitGenerator')}</h2>
-            <p className="text-xs text-zinc-500">{t('git.generatorSubtitle')}</p>
+            <p className="text-xs text-muted-foreground">{t('git.generatorSubtitle')}</p>
         </div>
         <button
             onClick={onFetch}
             disabled={isLoading || !projectPath}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success/20 border border-success/30 text-success text-sm font-medium disabled:opacity-50"
         >
             {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
             {t('git.generate')}
@@ -46,20 +46,20 @@ interface SuggestionAreaProps {
 
 const SuggestionArea = ({ t, suggestion, setSuggestion, onCopy, isCopied }: SuggestionAreaProps) => (
     <div className="space-y-2">
-        <label className="text-xs text-zinc-500">{t('git.suggestedMessage')}</label>
+        <label className="text-xs text-muted-foreground">{t('git.suggestedMessage')}</label>
         <div className="relative">
             <textarea
                 value={suggestion}
                 onChange={(e) => setSuggestion(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-green-500/50 resize-none"
+                className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none"
                 rows={3}
             />
             <button
                 onClick={onCopy}
-                className="absolute top-2 right-2 p-1.5 rounded hover:bg-white/10 text-zinc-400 hover:text-foreground transition-colors"
+                className="absolute top-2 right-2 p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('git.copy')}
             >
-                {isCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
             </button>
         </div>
     </div>
@@ -144,15 +144,15 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
         <div className="bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
             <GeneratorHeader t={t} isLoading={isLoading} projectPath={projectPath} onFetch={() => { void fetchStagedDiff(); }} />
             <div className="p-4 space-y-4">
-                {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
-                {!projectPath && <div className="text-center py-8 text-zinc-500 text-sm">{t('git.selectProject')}</div>}
+                {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
+                {!projectPath && <div className="text-center py-8 text-muted-foreground text-sm">{t('git.selectProject')}</div>}
                 {suggestion && (
                     <SuggestionArea t={t} suggestion={suggestion} setSuggestion={setSuggestion} onCopy={() => { void copyToClipboard(); }} isCopied={isCopied} />
                 )}
                 {diff && (
                     <div className="space-y-2">
-                        <label className="text-xs text-zinc-500">{t('git.stagedChanges')}</label>
-                        <pre className="bg-black/30 border border-white/5 rounded-lg p-3 text-xs font-mono text-zinc-400 max-h-48 overflow-y-auto">
+                        <label className="text-xs text-muted-foreground">{t('git.stagedChanges')}</label>
+                        <pre className="bg-black/30 border border-white/5 rounded-lg p-3 text-xs font-mono text-muted-foreground max-h-48 overflow-y-auto">
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
                         </pre>
@@ -161,7 +161,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             </div>
             {suggestion && (
                 <div className="flex gap-3 p-4 border-t border-white/5">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 text-zinc-400 text-sm font-medium hover:bg-white/10">{t('git.cancel')}</button>
+                    <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 text-muted-foreground text-sm font-medium hover:bg-white/10">{t('git.cancel')}</button>
                     <button onClick={() => { void executeCommit(); }} className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-foreground text-sm font-medium">{t('git.commit')}</button>
                 </div>
             )}

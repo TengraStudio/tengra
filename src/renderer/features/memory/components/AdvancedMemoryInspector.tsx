@@ -67,14 +67,14 @@ import { cn } from '@/lib/utils';
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats';
 
 const CATEGORY_CONFIG: Record<MemoryCategory, { label: string; color: string; icon: LucideIcon }> = {
-    preference: { label: 'Preference', color: 'bg-blue-500/10 text-blue-400', icon: Settings },
-    personal: { label: 'Personal', color: 'bg-pink-500/10 text-pink-400', icon: Brain },
-    project: { label: 'Project', color: 'bg-emerald-500/10 text-emerald-400', icon: Lightbulb },
-    technical: { label: 'Technical', color: 'bg-orange-500/10 text-orange-400', icon: Zap },
-    workflow: { label: 'Workflow', color: 'bg-purple-500/10 text-purple-400', icon: ArrowRight },
-    relationship: { label: 'Relationship', color: 'bg-cyan-500/10 text-cyan-400', icon: GitMerge },
-    fact: { label: 'Fact', color: 'bg-gray-500/10 text-gray-400', icon: HelpCircle },
-    instruction: { label: 'Instruction', color: 'bg-yellow-500/10 text-yellow-400', icon: Sparkles },
+    preference: { label: 'Preference', color: 'bg-primary/10 text-primary', icon: Settings },
+    personal: { label: 'Personal', color: 'bg-pink/10 text-pink', icon: Brain },
+    project: { label: 'Project', color: 'bg-success/10 text-success', icon: Lightbulb },
+    technical: { label: 'Technical', color: 'bg-orange/10 text-orange', icon: Zap },
+    workflow: { label: 'Workflow', color: 'bg-purple/10 text-purple', icon: ArrowRight },
+    relationship: { label: 'Relationship', color: 'bg-cyan/10 text-cyan', icon: GitMerge },
+    fact: { label: 'Fact', color: 'bg-muted/10 text-muted-foreground', icon: HelpCircle },
+    instruction: { label: 'Instruction', color: 'bg-yellow/10 text-yellow', icon: Sparkles },
 };
 
 export const AdvancedMemoryInspector: React.FC = () => {
@@ -380,32 +380,32 @@ export const AdvancedMemoryInspector: React.FC = () => {
                         label="Pending"
                         value={stats.pendingValidation}
                         icon={Clock}
-                        color="text-yellow-500"
+                        color="text-yellow"
                         highlight={stats.pendingValidation > 0}
                     />
                     <StatCard
                         label="Confirmed"
                         value={stats.byStatus.confirmed}
                         icon={CheckCircle}
-                        color="text-emerald-500"
+                        color="text-success"
                     />
                     <StatCard
                         label="Archived"
                         value={stats.byStatus.archived}
                         icon={Archive}
-                        color="text-gray-500"
+                        color="text-muted-foreground"
                     />
                     <StatCard
                         label="Avg. Confidence"
                         value={`${(stats.averageConfidence * 100).toFixed(0)}%`}
                         icon={Gauge}
-                        color="text-blue-500"
+                        color="text-primary"
                     />
                     <StatCard
                         label="Contradictions"
                         value={stats.contradictions}
                         icon={AlertTriangle}
-                        color="text-orange-500"
+                        color="text-orange"
                         highlight={stats.contradictions > 0}
                     />
                 </div>
@@ -766,7 +766,7 @@ const PendingMemoryCard = ({
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
     return (
-        <Card className="group p-4 bg-muted/20 border-white/5 hover:bg-muted/30 transition-all hover:border-yellow-500/30 relative overflow-hidden">
+        <Card className="group p-4 bg-muted/20 border-white/5 hover:bg-muted/30 transition-all hover:border-yellow/30 relative overflow-hidden">
             {/* Confidence indicator */}
             <div
                 className="absolute left-0 top-0 bottom-0 w-1"
@@ -787,7 +787,7 @@ const PendingMemoryCard = ({
                             {config.label}
                         </Badge>
                         {memory.requiresUserValidation && (
-                            <Badge variant="outline" className="border-yellow-500/30 text-yellow-500 text-[10px]">
+                            <Badge variant="outline" className="border-yellow/30 text-yellow text-[10px]">
                                 Needs Review
                             </Badge>
                         )}
@@ -840,10 +840,10 @@ const PendingMemoryCard = ({
                     >
                         <ChevronDown className={cn("w-3 h-3 transition-transform", expanded && "rotate-180")} />
                         {memory.potentialContradictions.length > 0 && (
-                            <span className="text-orange-500">{memory.potentialContradictions.length} potential contradiction(s)</span>
+                            <span className="text-orange">{memory.potentialContradictions.length} potential contradiction(s)</span>
                         )}
                         {memory.similarMemories.length > 0 && (
-                            <span className="text-blue-500">{memory.similarMemories.length} similar memor{memory.similarMemories.length === 1 ? 'y' : 'ies'}</span>
+                            <span className="text-primary">{memory.similarMemories.length} similar memor{memory.similarMemories.length === 1 ? 'y' : 'ies'}</span>
                         )}
                     </button>
                 )}
@@ -851,15 +851,15 @@ const PendingMemoryCard = ({
                 {expanded && (
                     <div className="space-y-2 pt-2 border-t border-white/5">
                         {memory.potentialContradictions.map((c, i) => (
-                            <div key={i} className="p-2 rounded bg-orange-500/10 text-[11px]">
-                                <span className="text-orange-400 font-bold">Contradiction: </span>
+                            <div key={i} className="p-2 rounded bg-orange/10 text-[11px]">
+                                <span className="text-orange font-bold">Contradiction: </span>
                                 <span className="text-muted-foreground">{c.existingContent}</span>
                                 <p className="mt-1 text-orange-300/70 italic">{c.conflictExplanation}</p>
                             </div>
                         ))}
                         {memory.similarMemories.map((s, i) => (
-                            <div key={i} className="p-2 rounded bg-blue-500/10 text-[11px]">
-                                <span className="text-blue-400 font-bold">Similar ({(s.similarityScore * 100).toFixed(0)}%): </span>
+                            <div key={i} className="p-2 rounded bg-primary/10 text-[11px]">
+                                <span className="text-primary font-bold">Similar ({(s.similarityScore * 100).toFixed(0)}%): </span>
                                 <span className="text-muted-foreground">{s.content}</span>
                             </div>
                         ))}
@@ -942,7 +942,7 @@ const ConfirmedMemoryCard = ({
                             </Badge>
                         )}
                         {memory.validatedBy === 'user' && (
-                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 text-[10px]">
+                            <Badge variant="outline" className="border-success/30 text-success text-[10px]">
                                 <Check className="w-3 h-3 mr-1" />
                                 User Verified
                             </Badge>

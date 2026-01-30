@@ -25,10 +25,10 @@ const ActivityItem = memo(({ log }: { log: ActivityLog }) => (
         </span>
         <span className={cn(
             "font-black uppercase tracking-tighter text-[9px]",
-            log.type === 'info' && "text-blue-400",
-            log.type === 'llm' && "text-purple-400",
-            log.type === 'tool' && "text-yellow-400",
-            log.type === 'success' && "text-emerald-400",
+            log.type === 'info' && "text-primary",
+            log.type === 'llm' && "text-purple",
+            log.type === 'tool' && "text-yellow",
+            log.type === 'success' && "text-success",
             log.type === 'error' && "text-destructive"
         )}>
             [{log.type}]

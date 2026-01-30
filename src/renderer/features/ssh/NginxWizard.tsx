@@ -47,7 +47,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             const remotePath = `/etc/nginx/sites-available/${fileName}`;
 
             // Step 1: Write to temp file first (since /etc/nginx is likely protected)
-            const tempPath = `/tmp/orbit_nginx_${fileName}`;
+            const tempPath = `/tmp/Tandem_nginx_${fileName}`;
             await window.electron.ssh.writeFile(connectionId, tempPath, config);
 
             // Step 2: Try to move with sudo (User will see errors if they don't have sudo or if it fails)
@@ -125,7 +125,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
                 </div>
 
                 {status && (
-                    <div className={`p-4 rounded-lg text-sm flex items-start gap-3 border ${status.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                    <div className={`p-4 rounded-lg text-sm flex items-start gap-3 border ${status.type === 'success' ? 'bg-success/10 border-success/20 text-success' :
                         status.type === 'error' ? 'bg-destructive/10 border-destructive/20 text-destructive' :
                             'bg-primary/10 border-primary/20 text-primary'
                         }`}>
@@ -146,3 +146,4 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
         </div>
     );
 };
+

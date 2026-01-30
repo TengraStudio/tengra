@@ -226,7 +226,7 @@ export const ProjectDashboard = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
                                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                                     {t('projectDashboard.techStack')}
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ export const ProjectDashboard = ({
 
                             <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
                                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-success" />
                                     {t('projectDashboard.langDist')}
                                 </h3>
                                 <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
@@ -257,7 +257,7 @@ export const ProjectDashboard = ({
                                                         <span className="text-muted-foreground">{percentage}%</span>
                                                     </div>
                                                     <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-emerald-500/50 rounded-full" style={{ width: `${percentage}%` }} />
+                                                        <div className="h-full bg-success/50 rounded-full" style={{ width: `${percentage}%` }} />
                                                     </div>
                                                 </div>
                                             );
@@ -269,7 +269,7 @@ export const ProjectDashboard = ({
                         {analysis.todos.length > 0 && (
                             <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
                                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-yellow" />
                                     {t('projectDashboard.todoList')}
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -388,7 +388,7 @@ export const ProjectDashboard = ({
                                             >
                                                 <FileCode size={12} className={activeFile === file.path ? 'text-primary' : 'opacity-50'} />
                                                 <span className="truncate flex-1">{file.name}</span>
-                                                <button onClick={(e) => closeFile(e, file.path)} className="opacity-0 group-hover:opacity-100 hover:text-red-400 p-0.5 rounded">
+                                                <button onClick={(e) => closeFile(e, file.path)} className="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5 rounded">
                                                     <X size={12} />
                                                 </button>
                                             </div>

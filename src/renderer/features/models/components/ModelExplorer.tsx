@@ -304,15 +304,15 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 <div className="flex items-center justify-between">
                     <div className="flex gap-3">
                         <button onClick={() => { setActiveSource('all'); setPage(0); }} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
-                        <button onClick={() => { setActiveSource('ollama'); setPage(0); }} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-orange-500/10 text-orange-500 border-orange-500/20" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+                        <button onClick={() => { setActiveSource('ollama'); setPage(0); }} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-orange/10 text-orange border-orange/20" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                             <Database className="w-3.5 h-3.5" />
                             <span>Ollama</span>
-                            <span className="ml-1 opacity-50 px-1.5 py-0.5 bg-orange-500/10 rounded-md text-[10px]">{ollamaLibrary.length} {t('modelExplorer.libraryModels')}</span>
+                            <span className="ml-1 opacity-50 px-1.5 py-0.5 bg-orange/10 rounded-md text-[10px]">{ollamaLibrary.length} {t('modelExplorer.libraryModels')}</span>
                         </button>
-                        <button onClick={() => { setActiveSource('huggingface'); setPage(0); }} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:text-yellow-500" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+                        <button onClick={() => { setActiveSource('huggingface'); setPage(0); }} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-yellow/10 text-yellow-600 border-yellow/20 dark:text-yellow" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                             <Box className="w-3.5 h-3.5" />
                             <span>HuggingFace</span>
-                            <span className="ml-1 opacity-50 px-1.5 py-0.5 bg-yellow-500/10 rounded-md text-[10px]">{totalHf.toLocaleString()} {t('modelExplorer.models')}</span>
+                            <span className="ml-1 opacity-50 px-1.5 py-0.5 bg-yellow/10 rounded-md text-[10px]">{totalHf.toLocaleString()} {t('modelExplorer.models')}</span>
                         </button>
                     </div>
 
@@ -389,11 +389,11 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                     <div className="p-7 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-2">
-                                                <div className={cn("text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm", isOllama ? "bg-orange-500/20 text-orange-400 border border-orange-500/20" : "bg-yellow-500/20 text-yellow-500 border border-yellow-500/20")}>
+                                                <div className={cn("text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm", isOllama ? "bg-orange/20 text-orange border border-orange/20" : "bg-yellow/20 text-yellow border border-yellow/20")}>
                                                     {isOllama ? 'OLLAMA' : 'HUGGINGFACE'}
                                                 </div>
                                                 {isInstalled(mId) && (
-                                                    <div className="text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 shadow-sm">
+                                                    <div className="text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] bg-success/20 text-success border border-success/20 shadow-sm">
                                                         {t('modelExplorer.pulled')}
                                                     </div>
                                                 )}
@@ -602,13 +602,13 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                 const isPulling = pullingOllama === fullModelName;
 
                                                 return (
-                                                    <div key={tag} className="p-5 rounded-2xl border border-border/50 bg-muted/20 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all group">
+                                                    <div key={tag} className="p-5 rounded-2xl border border-border/50 bg-muted/20 hover:border-orange/40 hover:bg-orange/5 transition-all group">
                                                         <div className="flex items-center justify-between mb-4">
                                                             <div className="flex items-center gap-3">
-                                                                <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-lg text-xs font-black uppercase tracking-widest font-mono">{tag}</span>
+                                                                <span className="px-3 py-1 bg-orange/20 text-orange rounded-lg text-xs font-black uppercase tracking-widest font-mono">{tag}</span>
                                                                 <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-50">{t('modelExplorer.localPull')}</span>
                                                             </div>
-                                                            <Database className="w-4 h-4 text-orange-500/50" />
+                                                            <Database className="w-4 h-4 text-orange/50" />
                                                         </div>
 
                                                         <button
@@ -616,7 +616,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                                             disabled={!!pullingOllama}
                                                             className={cn(
                                                                 "w-full py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50",
-                                                                isPulling ? "bg-orange-500 text-foreground animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-orange-600 group-hover:text-foreground"
+                                                                isPulling ? "bg-orange text-foreground animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-orange-600 group-hover:text-foreground"
                                                             )}
                                                         >
                                                             {isPulling ? (
@@ -644,10 +644,10 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
 
 function BadgeQ({ quantization }: { quantization: string }) {
     let color = "bg-muted text-muted-foreground";
-    if (quantization.includes("Q4")) { color = "bg-emerald-500/10 text-emerald-500"; }
-    if (quantization.includes("Q5")) { color = "bg-blue-500/10 text-blue-500"; }
-    if (quantization.includes("Q6") || quantization.includes("Q8")) { color = "bg-purple-500/10 text-purple-500"; }
-    if (quantization.includes("Q2") || quantization.includes("Q3")) { color = "bg-red-500/10 text-red-500"; }
+    if (quantization.includes("Q4")) { color = "bg-success/10 text-success"; }
+    if (quantization.includes("Q5")) { color = "bg-primary/10 text-primary"; }
+    if (quantization.includes("Q6") || quantization.includes("Q8")) { color = "bg-purple/10 text-purple"; }
+    if (quantization.includes("Q2") || quantization.includes("Q3")) { color = "bg-destructive/10 text-destructive"; }
 
     return (
         <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", color)}>

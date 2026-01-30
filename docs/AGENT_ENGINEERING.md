@@ -1,10 +1,10 @@
 # Agent Engineering
 
-This document details the architecture and implementation of the AI agents within Orbit.
+This document details the architecture and implementation of the AI agents within Tandem.
 
 ## Agent Architecture
 
-Orbit uses a multi-layered agent architecture designed for high autonomy and reliability.
+Tandem uses a multi-layered agent architecture designed for high autonomy and reliability.
 
 ### 1. Decision Engine
 The agents are powered by state-of-the-art LLMs (Anthropic, Gemini, OpenAI) accessed via a unified proxy layer. The decision-making process follows a "think-before-act" pattern, where the agent generates an internal monologue before emitting tool calls.

@@ -98,7 +98,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                     />
                 </div>
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs text-balance">
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-destructive text-xs text-balance">
                         {error}
                     </div>
                 )}

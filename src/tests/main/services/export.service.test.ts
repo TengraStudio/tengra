@@ -103,7 +103,7 @@ describe('ExportService', () => {
             it('should include export footer', () => {
                 const content = service.getExportContent(mockChat, { format: 'markdown' });
 
-                expect(content).toContain('*Exported from Orbit');
+                expect(content).toContain('*Exported from Tandem');
             });
         });
 

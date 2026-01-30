@@ -151,7 +151,7 @@ export class ExportService {
             this.addMarkdownMessage(lines, msg, options);
         }
 
-        lines.push('---', `*Exported from Orbit on ${new Date().toLocaleString()}*`);
+        lines.push('---', `*Exported from tandem on ${new Date().toLocaleString()}*`);
         return lines.join('\n');
     }
 
@@ -215,23 +215,53 @@ export class ExportService {
     <title>${this.escapeHTML(title)}</title>
     <style>
         * { box-sizing: border-box; }
+        :root {
+            --bg-primary: hsl(0 0% 10%);
+            --bg-secondary: hsl(0 0% 14%);
+            --bg-tertiary: hsl(0 0% 15%);
+            --bg-code: hsl(0 0% 20%);
+            --bg-pre: hsl(0 0% 5%);
+            --text-primary: hsl(0 0% 88%);
+            --text-secondary: hsl(0 0% 60%);
+            --text-muted: hsl(0 0% 40%);
+            --border-color: hsl(0 0% 20%);
+            --accent-user: hsl(239 84% 67%);
+            --accent-assistant: hsl(142 71% 45%);
+            --accent-system: hsl(48 96% 53%);
+            --accent-user-light: hsl(239 84% 73%);
+            --accent-assistant-light: hsl(142 71% 55%);
+            --accent-system-light: hsl(48 96% 60%);
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: hsl(0 0% 100%);
+                --bg-secondary: hsl(0 0% 96%);
+                --bg-tertiary: hsl(0 0% 94%);
+                --bg-code: hsl(0 0% 90%);
+                --bg-pre: hsl(0 0% 95%);
+                --text-primary: hsl(0 0% 10%);
+                --text-secondary: hsl(0 0% 40%);
+                --text-muted: hsl(0 0% 60%);
+                --border-color: hsl(0 0% 85%);
+            }
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background: #1a1a1a;
-            color: #e0e0e0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
         }
-        h1 { color: #fff; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h1 { color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
         .metadata {
-            background: #252525;
+            background: var(--bg-secondary);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 0.9em;
-            color: #999;
+            color: var(--text-secondary);
         }
         .message {
             margin: 20px 0;
@@ -239,16 +269,16 @@ export class ExportService {
             border-radius: 12px;
         }
         .message.user {
-            background: #2a2a3e;
-            border-left: 4px solid #6366f1;
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent-user);
         }
         .message.assistant {
-            background: #1e2e1e;
-            border-left: 4px solid #22c55e;
+            background: var(--bg-tertiary);
+            border-left: 4px solid var(--accent-assistant);
         }
         .message.system {
-            background: #2e2e1e;
-            border-left: 4px solid #eab308;
+            background: var(--bg-tertiary);
+            border-left: 4px solid var(--accent-system);
             font-style: italic;
         }
         .role {
@@ -256,17 +286,17 @@ export class ExportService {
             margin-bottom: 8px;
             text-transform: capitalize;
         }
-        .role.user { color: #818cf8; }
-        .role.assistant { color: #4ade80; }
-        .role.system { color: #facc15; }
+        .role.user { color: var(--accent-user-light); }
+        .role.assistant { color: var(--accent-assistant-light); }
+        .role.system { color: var(--accent-system-light); }
         .timestamp {
             font-size: 0.75em;
-            color: #666;
+            color: var(--text-muted);
             margin-left: 10px;
         }
         .content { white-space: pre-wrap; word-wrap: break-word; }
         .tool-calls {
-            background: #1a1a1a;
+            background: var(--bg-primary);
             padding: 10px;
             border-radius: 6px;
             margin-top: 10px;
@@ -274,13 +304,13 @@ export class ExportService {
             font-size: 0.85em;
         }
         code {
-            background: #333;
+            background: var(--bg-code);
             padding: 2px 6px;
             border-radius: 4px;
             font-family: 'Fira Code', 'Consolas', monospace;
         }
         pre {
-            background: #0d0d0d;
+            background: var(--bg-pre);
             padding: 15px;
             border-radius: 8px;
             overflow-x: auto;
@@ -288,9 +318,9 @@ export class ExportService {
         .footer {
             margin-top: 40px;
             text-align: center;
-            color: #666;
+            color: var(--text-muted);
             font-size: 0.85em;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border-color);
             padding-top: 20px;
         }
     </style>
@@ -300,7 +330,7 @@ export class ExportService {
     ${options.includeMetadata ? this.generateHTMLMetadata(chat) : ''}
     ${messages}
     <div class="footer">
-        Exported from Orbit on ${new Date().toLocaleString()}
+        Exported from Tandem on ${new Date().toLocaleString()}
     </div>
 </body>
 </html>`;
@@ -418,7 +448,7 @@ export class ExportService {
 
         // Footer
         lines.push(`───────────────────────────────────────────────────────────────`);
-        lines.push(`Exported from Orbit on ${new Date().toLocaleString()}`);
+        lines.push(`Exported from Tandem on ${new Date().toLocaleString()}`);
 
         return lines.join('\n');
     }

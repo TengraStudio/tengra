@@ -120,9 +120,9 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-4 pt-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{type}</span>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                        <span className="text-[10px] font-bold text-success uppercase tracking-wider">{type}</span>
                     </div>
                     <div className="text-[10px] font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {projectRoot}

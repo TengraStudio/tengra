@@ -30,8 +30,8 @@ interface Theme {
 const BUILT_IN_THEMES: Theme[] = [
     {
         id: 'black',
-        name: 'Orbit Black',
-        author: 'Orbit Team',
+        name: 'Tandem Black',
+        author: 'Tandem Team',
         description: 'The default pure black theme',
         preview: '#000000',
         colors: { primary: '#0ea5e9', background: '#000000', foreground: '#ffffff', accent: '#0c4a6e' },
@@ -41,8 +41,8 @@ const BUILT_IN_THEMES: Theme[] = [
     },
     {
         id: 'white',
-        name: 'Orbit White',
-        author: 'Orbit Team',
+        name: 'Tandem White',
+        author: 'Tandem Team',
         description: 'Clean and minimal white theme',
         preview: '#ffffff',
         colors: { primary: '#4f46e5', background: '#ffffff', foreground: '#000000', accent: '#eef2ff' },
@@ -117,7 +117,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 >
                     <div className="absolute top-2 right-2 flex gap-1">
                         {theme.isPremium && (
-                            <span className="px-2 py-0.5 bg-amber-500/90 text-primary-foreground text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>
+                            <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>
                         )}
                         {isActive && (
                             <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center gap-1">
@@ -142,7 +142,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                 <div className="p-3 bg-card/40 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-1">
                         <h3 className="font-medium text-sm truncate">{theme.name}</h3>
-                        <div className="flex items-center gap-1 text-amber-500">
+                        <div className="flex items-center gap-1 text-warning">
                             <Star className="w-3 h-3 fill-current" />
                             <span className="text-xs">{theme.rating}</span>
                         </div>
@@ -249,7 +249,7 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
                         <div className="p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <h2 className="text-xl font-bold">{selectedTheme.name}</h2>
-                                <div className="flex items-center gap-1 text-amber-500">
+                                <div className="flex items-center gap-1 text-warning">
                                     <Star className="w-4 h-4 fill-current" />
                                     <span>{selectedTheme.rating}</span>
                                 </div>
@@ -295,3 +295,4 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
 };
 
 export default ThemeStore;
+

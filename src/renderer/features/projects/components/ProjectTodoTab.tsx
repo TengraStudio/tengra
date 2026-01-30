@@ -24,7 +24,7 @@ interface TodoFile {
     items: TodoItem[]
 }
 
-const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage', '.orbit', 'vendor'];
+const IGNORED_FOLDERS = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.idea', '.vscode', 'coverage', '.Tandem', 'vendor'];
 const TODO_FILENAMES = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md'];
 
 export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }) => {
@@ -218,7 +218,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                     <div>
                         <h2 className="text-sm font-bold text-foreground">{t('projectDashboard.projectTasks')}</h2>
                         <div className="text-xs text-muted-foreground flex gap-2">
-                            <span className="text-emerald-500">{totalStats.completed} {t('common.done')}</span>
+                            <span className="text-success">{totalStats.completed} {t('common.done')}</span>
                             <span className="text-muted-foreground/20">•</span>
                             <span className="text-muted-foreground/60">{totalStats.pending} {t('projectDashboard.pending')}</span>
                         </div>
@@ -336,7 +336,7 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
                                                         onClick={() => void handleToggle(todo)}
                                                     >
                                                         {todo.completed ? (
-                                                            <CheckSquare className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                                            <CheckSquare className="w-5 h-5 text-success shrink-0 mt-0.5" />
                                                         ) : (
                                                             <Square className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-0.5" />
                                                         )}
@@ -368,3 +368,4 @@ export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ projectRoot, t }
         </div>
     );
 };
+

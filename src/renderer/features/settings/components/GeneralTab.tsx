@@ -1,4 +1,4 @@
-﻿import { Language } from '@renderer/i18n';
+import { Language } from '@renderer/i18n';
 import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
 import React from 'react';
 
@@ -80,7 +80,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                 {/* Updates Section */}
                 <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <Download className="w-4 h-4 text-blue-400" />
+                        <Download className="w-4 h-4 text-primary" />
                         <span className="text-sm font-bold uppercase text-muted-foreground">Updates</span>
                     </div>
 
@@ -127,7 +127,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
                             <div>
                                 <span className="text-sm font-medium">Crash Reporting</span>
-                                <p className="text-xs text-muted-foreground mt-1">Send anonymous crash reports to help us improve Orbit.</p>
+                                <p className="text-xs text-muted-foreground mt-1">Send anonymous crash reports to help us improve Tandem.</p>
                             </div>
                             <div
                                 onClick={() => {
@@ -146,3 +146,4 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
         </div>
     );
 };
+

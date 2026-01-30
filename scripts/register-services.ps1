@@ -1,4 +1,4 @@
-# Orbit Services Startup Registration Script (User-Level, No Admin Required)
+# Tandem Services Startup Registration Script (User-Level, No Admin Required)
 # Uses Windows Registry HKCU\Software\Microsoft\Windows\CurrentVersion\Run
 
 param(
@@ -10,10 +10,10 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $Services = @{
-    "OrbitTokenService" = "orbit-token-service.exe"
-    "OrbitModelService" = "orbit-model-service.exe"
-    "OrbitQuotaService" = "orbit-quota-service.exe"
-    "OrbitMemoryService" = "orbit-memory-service.exe"
+    "TandemTokenService" = "tandem-token-service.exe"
+    "TandemModelService" = "tandem-model-service.exe"
+    "TandemQuotaService" = "tandem-quota-service.exe"
+    "TandemMemoryService" = "tandem-memory-service.exe"
 }
 
 $RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
@@ -25,11 +25,11 @@ $BinDir = Join-Path (Split-Path -Parent $ScriptDir) "resources\bin"
 # Fallback locations
 if (-not (Test-Path $BinDir)) {
     $LocalAppData = [Environment]::GetFolderPath("LocalApplicationData")
-    $BinDir = Join-Path $LocalAppData "Programs\Orbit\resources\bin"
+    $BinDir = Join-Path $LocalAppData "Programs\Tandem\resources\bin"
 }
 
 function Get-ServiceStatus {
-    Write-Host "`n=== Orbit Services Status ===" -ForegroundColor Cyan
+    Write-Host "`n=== Tandem Services Status ===" -ForegroundColor Cyan
     
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
@@ -59,8 +59,8 @@ function Get-ServiceStatus {
         
         # Check port file
         $AppData = [Environment]::GetFolderPath("ApplicationData")
-        $serviceName = $exe -replace 'orbit-','' -replace '\.exe$',''
-        $PortFile = Join-Path $AppData "Orbit\services\$serviceName.port"
+        $serviceName = $exe -replace 'tandem-','' -replace '\.exe$',''
+        $PortFile = Join-Path $AppData "Tandem\services\$serviceName.port"
         if (Test-Path $PortFile) {
             $port = Get-Content $PortFile
             Write-Host "  Listening on: " -NoNewline
@@ -70,7 +70,7 @@ function Get-ServiceStatus {
 }
 
 function Install-Services {
-    Write-Host "`n=== Installing Orbit Services ===" -ForegroundColor Cyan
+    Write-Host "`n=== Installing Tandem Services ===" -ForegroundColor Cyan
     
     if (-not (Test-Path $BinDir)) {
         Write-Host "Error: Binary directory not found at $BinDir" -ForegroundColor Red
@@ -79,7 +79,7 @@ function Install-Services {
     
     # Ensure services directory exists
     $AppData = [Environment]::GetFolderPath("ApplicationData")
-    $ServicesDir = Join-Path $AppData "Orbit\services"
+    $ServicesDir = Join-Path $AppData "Tandem\services"
     if (-not (Test-Path $ServicesDir)) {
         New-Item -ItemType Directory -Force -Path $ServicesDir | Out-Null
     }
@@ -121,7 +121,7 @@ function Install-Services {
 }
 
 function Uninstall-Services {
-    Write-Host "`n=== Uninstalling Orbit Services ===" -ForegroundColor Cyan
+    Write-Host "`n=== Uninstalling Tandem Services ===" -ForegroundColor Cyan
     
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
@@ -144,7 +144,7 @@ function Uninstall-Services {
     
     # Clean up port files
     $AppData = [Environment]::GetFolderPath("ApplicationData")
-    $ServicesDir = Join-Path $AppData "Orbit\services"
+    $ServicesDir = Join-Path $AppData "Tandem\services"
     if (Test-Path $ServicesDir) {
         Remove-Item -Path "$ServicesDir\*.port" -Force -ErrorAction SilentlyContinue
         Write-Host "Cleaned up port files" -ForegroundColor Gray

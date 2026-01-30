@@ -19,9 +19,10 @@ export const CommandFooter: React.FC<CommandFooterProps> = ({ t }) => {
                 {t('commandPalette.close')}
             </span>
             <div className="ml-auto flex items-center gap-2">
-                <span>Orbit Command Engine</span>
+                <span>Tandem Command Engine</span>
                 <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
             </div>
         </div>
     );
 };
+

@@ -55,9 +55,9 @@ const TaskItem = memo(({
 }) => {
     const getStatusIcon = (s: TaskHistoryItem['status']) => {
         switch (s) {
-            case 'completed': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+            case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
             case 'failed': return <XCircle className="w-4 h-4 text-destructive" />;
-            case 'paused': return <Pause className="w-4 h-4 text-yellow-500" />;
+            case 'paused': return <Pause className="w-4 h-4 text-yellow" />;
             default: return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
         }
     };

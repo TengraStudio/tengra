@@ -202,7 +202,7 @@ const ControlButtons: React.FC<ControlButtonsProps> = ({
             <button
                 onClick={onPause}
                 disabled={!isRunning || isPaused}
-                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-yellow-500/10 hover:border-yellow-500/30 hover:text-yellow-500 transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
+                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-yellow/10 hover:border-yellow/30 hover:text-yellow transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
                 title={t('agent.pause')}
             >
                 <Pause className="w-4 h-4" />
@@ -390,7 +390,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
                 onClick={onResume}
                 className={cn(
                     "px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-[0.98] flex items-center gap-2 text-white",
-                    isStuck ? "bg-orange-500 shadow-orange-500/20 hover:bg-orange-600" : "bg-yellow-500 shadow-yellow-500/20 hover:bg-yellow-600"
+                    isStuck ? "bg-orange shadow-orange-500/20 hover:bg-orange-600" : "bg-yellow shadow-yellow-500/20 hover:bg-yellow-600"
                 )}
             >
                 <Play className="w-3.5 h-3.5 fill-current" />

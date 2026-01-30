@@ -73,7 +73,7 @@ export function HyperparameterPanel({
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors"
             >
                 <div className="flex items-center gap-2">
-                    <Settings2 className="w-4 h-4 text-purple-400" />
+                    <Settings2 className="w-4 h-4 text-purple" />
                     <span className="text-sm font-medium">Hiperparametreler</span>
                 </div>
                 {isExpanded ? (
@@ -114,7 +114,7 @@ export function HyperparameterPanel({
                                     "[&::-webkit-slider-thumb]:w-4",
                                     "[&::-webkit-slider-thumb]:h-4",
                                     "[&::-webkit-slider-thumb]:rounded-full",
-                                    "[&::-webkit-slider-thumb]:bg-purple-500",
+                                    "[&::-webkit-slider-thumb]:bg-purple",
                                     "[&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(168,85,247,0.5)]",
                                     "[&::-webkit-slider-thumb]:transition-all",
                                     "[&::-webkit-slider-thumb]:hover:scale-110"

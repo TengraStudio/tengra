@@ -16,7 +16,7 @@ export const CodexLimitsSection: React.FC<CodexLimitsSectionProps> = ({
     return (
         <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-4 h-4 text-green-400" />
+                <Calendar className="w-4 h-4 text-success" />
                 <h3 className="text-sm font-bold uppercase text-muted-foreground">Codex</h3>
             </div>
             <div className="text-xs text-muted-foreground mb-4">

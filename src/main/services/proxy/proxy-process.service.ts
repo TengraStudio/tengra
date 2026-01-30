@@ -107,7 +107,7 @@ export class ProxyProcessManager {
             cwd: path.dirname(binaryPath),
             stdio: ['ignore', 'pipe', 'pipe'],
             windowsHide: true,
-            detached: true // Allow it to live beyond Orbit
+            detached: true // Allow it to live beyond Tandem
         });
 
         this.child.unref(); // Electron won't wait for it
@@ -182,8 +182,8 @@ export class ProxyProcessManager {
         }
 
         // IPC: Capture direct auth updates from Proxy (stdout)
-        if (line.includes('__ORBIT_AUTH_UPDATE__:')) {
-            const parts = line.split('__ORBIT_AUTH_UPDATE__:');
+        if (line.includes('__TANDEM_AUTH_UPDATE__:')) {
+            const parts = line.split('__TANDEM_AUTH_UPDATE__:');
             if (parts.length > 1 && parts[1]) {
                 const jsonContent = parts[1].trim();
                 void this.handleAuthUpdateFromProxy(jsonContent);
@@ -343,3 +343,4 @@ logging-to-file: false
         });
     }
 }
+

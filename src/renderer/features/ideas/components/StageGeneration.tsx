@@ -40,7 +40,7 @@ export const StageGeneration: React.FC<StageGenerationProps> = ({
                 </div>
             ) : (
                 <div className="flex items-center gap-4 text-primary">
-                    <Lightbulb className="w-6 h-6 text-amber-500" />
+                    <Lightbulb className="w-6 h-6 text-warning" />
                     <p className="font-bold">{t('ideas.generation.complete')}</p>
                 </div>
             )}

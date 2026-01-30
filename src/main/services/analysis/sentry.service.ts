@@ -46,7 +46,7 @@ export class SentryService {
 
             Sentry.init({
                 dsn: SENTRY_DSN,
-                release: `orbit@${app.getVersion()}`,
+                release: `tandem@${app.getVersion()}`,
                 environment: app.isPackaged ? 'production' : 'development',
                 // User-centric data is stripped by default
                 beforeSend(event) {

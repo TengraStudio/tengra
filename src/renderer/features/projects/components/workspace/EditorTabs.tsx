@@ -23,7 +23,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     closeTab
 }) => {
     return (
-        <div className="flex bg-[#09090b] overflow-x-auto border-b border-white/5 scrollbar-none">
+        <div className="flex bg-background overflow-x-auto border-b border-white/5 scrollbar-none">
             {openTabs.map((tab) => {
                 const isActive = tab.id === activeTabId;
                 const isDirty = tab.content !== tab.savedContent;
@@ -33,11 +33,11 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                         onClick={() => setActiveTabId(tab.id)}
                         className={cn(
                             "group flex items-center gap-2 px-3 py-2 text-xs border-r border-white/5 transition-all min-w-[120px] max-w-[200px]",
-                            isActive ? "bg-[#1e1e20] text-emerald-400 border-t-2 border-t-emerald-500" : "text-muted-foreground hover:bg-[#1e1e20]/50 hover:text-zinc-300 border-t-2 border-t-transparent"
+                            isActive ? "bg-muted text-success border-t-2 border-t-emerald-500" : "text-muted-foreground hover:bg-muted/50 hover:text-zinc-300 border-t-2 border-t-transparent"
                         )}
                     >
                         <span className={cn("truncate flex-1 text-left", isActive && "font-medium")}>{tab.name}</span>
-                        {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                        {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
                         <span
                             onClick={(event) => {
                                 event.stopPropagation();

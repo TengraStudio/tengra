@@ -24,7 +24,7 @@ test.describe('Application Launch', () => {
 
         // Check title (Update expected title as needed)
         console.warn(`Window title: ${title}`);
-        // expect(title).toContain('Orbit'); 
+        // expect(title).toContain('Tandem'); 
         // Title usually set in HTML or via setIsTitleVisible. 
         // The main.ts loads index.html.
 

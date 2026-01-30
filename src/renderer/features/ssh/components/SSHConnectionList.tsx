@@ -51,7 +51,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                             <span className={cn(
                                 "text-[10px] font-bold uppercase tracking-wider",
                                 conn.status === 'connected' ? "text-primary" :
-                                    conn.status === 'connecting' ? "text-amber-500" : "text-muted-foreground"
+                                    conn.status === 'connecting' ? "text-warning" : "text-muted-foreground"
                             )}>
                                 ● {conn.status}
                             </span>
@@ -61,7 +61,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                                         e.stopPropagation();
                                         onDisconnect(conn.id);
                                     }}
-                                    className="text-xs px-2 py-0.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded border border-red-500/20"
+                                    className="text-xs px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20"
                                 >
                                     {t('ssh.disconnect')}
                                 </button>
@@ -78,7 +78,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                                     </button>
                                     <button
                                         onClick={(e) => onDelete(conn.id, e)}
-                                        className="text-xs px-2 py-0.5 hover:bg-red-500/10 hover:text-red-500 text-muted-foreground rounded transition-colors"
+                                        className="text-xs px-2 py-0.5 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded transition-colors"
                                         title={t('ssh.deleteProfile')}
                                     >
                                         ×

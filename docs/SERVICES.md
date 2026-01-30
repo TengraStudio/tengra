@@ -1,10 +1,10 @@
 # Service Architecture
 
-Orbit is built on a modular, service-oriented architecture. By centralizing logic into domain-specific services, we maintain a codebase that is easy to test, debug, and extend.
+Tandem is built on a modular, service-oriented architecture. By centralizing logic into domain-specific services, we maintain a codebase that is easy to test, debug, and extend.
 
 ## BaseService and Lifecycle
 
-All services in Orbit inherit from a central `BaseService` class. This provides a consistent interface and set of utilities for every module in the system.
+All services in Tandem inherit from a central `BaseService` class. This provides a consistent interface and set of utilities for every module in the system.
 
 - **Initialization**: Every service has an `initialize()` method. This is where asynchronous setup—such as connecting to a database or starting a child process—should occur.
 - **Cleanup**: The `cleanup()` method is called when the application is shutting down. Services use this to close file handles, stop timers, or signal microservices to terminate.
@@ -18,7 +18,7 @@ We organize services into logical domains to minimize cross-dependencies and ens
 This domain handles the protection of user data and the management of authentication states.
 - **TokenService**: Monitors the health of OAuth tokens and coordinates background refreshes with the Rust microservice.
 - **AuthService**: Manages the local account database and handles the complex logic of token encryption.
-- **SecurityService**: Provides low-level cryptographic primitives, integrating with both Orbit's custom AES implementation and OS-level secure storage.
+- **SecurityService**: Provides low-level cryptographic primitives, integrating with both Tandem's custom AES implementation and OS-level secure storage.
 
 ### Data Domain
 Responsible for all persistent storage and data integrity.
@@ -37,7 +37,7 @@ Orchestrates the interaction with various AI models.
 
 ## Dependency Injection and Orchestration
 
-Orbit uses a centralized dependency injection pattern to manage service relationships. Instead of services instantiating their own dependencies, they are "injected" during the startup sequence.
+Tandem uses a centralized dependency injection pattern to manage service relationships. Instead of services instantiating their own dependencies, they are "injected" during the startup sequence.
 
 ### Registration Process
 During application startup, all services are registered in a central container. This process defines the order in which services are initialized, ensuring that low-level services (like `DatabaseService`) are ready before high-level services (like `AuthService`) attempt to use them.

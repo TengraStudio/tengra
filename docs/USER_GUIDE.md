@@ -1,17 +1,17 @@
-# Orbit User Guide
+# Tandem User Guide
 
-Welcome to Orbit, a professional AI-powered workspace built to streamline your development workflow. Orbit provides a unified interface for multiple AI providers while maintaining a strong focus on privacy and local execution.
+Welcome to Tandem, a professional AI-powered workspace built to streamline your development workflow. Tandem provides a unified interface for multiple AI providers while maintaining a strong focus on privacy and local execution.
 
 ## Getting Started
 
 ### Installation and First Run
-To get started with Orbit, download the appropriate installer for your operating system and follow the standard installation prompts. On the first launch, Orbit will perform a system check to detect local tools like Ollama or Git and configure the internal data directories.
+To get started with Tandem, download the appropriate installer for your operating system and follow the standard installation prompts. On the first launch, Tandem will perform a system check to detect local tools like Ollama or Git and configure the internal data directories.
 
 ### Connecting AI Providers
-Orbit supports a wide range of AI models. You can manage these connections in the Settings menu.
+Tandem supports a wide range of AI models. You can manage these connections in the Settings menu.
 
-- **Local Models**: If you have Ollama installed, Orbit will automatically detect your downloaded models. You can refresh the model list in the Settings dashboard to ensure the latest versions are available.
-- **Cloud Accounts**: To use models from providers like Anthropic or Google, navigate to the Accounts section in Settings. Orbit uses secure OAuth flows for account linking. For providers requiring API keys, your credentials will be encrypted and stored securely in the system keychain.
+- **Local Models**: If you have Ollama installed, Tandem will automatically detect your downloaded models. You can refresh the model list in the Settings dashboard to ensure the latest versions are available.
+- **Cloud Accounts**: To use models from providers like Anthropic or Google, navigate to the Accounts section in Settings. Tandem uses secure OAuth flows for account linking. For providers requiring API keys, your credentials will be encrypted and stored securely in the system keychain.
 
 ## Navigating the Workspace
 
@@ -24,14 +24,14 @@ The chat represents your primary interaction point with the AI.
 ### Managing Projects
 The Projects view allows you to organize your work by linking local folders or remote servers.
 - **Local Folders**: Link existing projects on your machine to enable deep semantic indexing and workspace-aware AI suggestions.
-- **Remote SSH Connections**: Orbit includes a built-in SSH manager as well as an SFTP browser. You can connect to remote servers by providing your connection details and credentials.
+- **Remote SSH Connections**: Tandem includes a built-in SSH manager as well as an SFTP browser. You can connect to remote servers by providing your connection details and credentials.
 
 ### The Agent Council
 For complex tasks that require more than a simple chat, you can utilize the Council. This feature allows you to engage specialized AI personas—such as a Planner, an Executor, or a Critic—that work together to solve a problem.
 
 ## Security and Privacy
 
-Orbit is designed with a local-first philosophy.
+Tandem is designed with a local-first philosophy.
 - **Data Sovereignty**: When using local models, your code and conversation history never leave your machine.
 - **Secure Persistence**: All sensitive data, including API tokens and session keys, are encrypted at rest using industry-standard AES-256-GCM.
 - **Controlled Access**: The AI agents can only interact with files and directories that you have explicitly granted access to within the project settings.

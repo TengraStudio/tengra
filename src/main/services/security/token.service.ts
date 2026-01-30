@@ -64,7 +64,7 @@ export class TokenService extends BaseService {
         // Start the native service process (wait for it to be ensuringly ready)
         await this.system.processManager.startService({
             name: 'token-service',
-            executable: 'orbit-token-service',
+            executable: 'Tandem-token-service',
             persistent: true // Keep running in background
         });
 
@@ -241,7 +241,7 @@ export class TokenService extends BaseService {
 
             let updatedCount = 0;
             for (const [id, data] of Object.entries(tokens)) {
-                // Verify account still exists in Orbit database
+                // Verify account still exists in Tandem database
                 const exists = await this.authService.accountExists(id);
                 if (!exists) {
                     appLogger.warn('TokenService', `Sync: Found monitored token for non-existent account ${id}. Requesting unregister...`);
@@ -336,7 +336,7 @@ export class TokenService extends BaseService {
 
         appLogger.info('TokenService', `Claude status - Access: ${!!account.accessToken}, Refresh: ${!!rt} (${prefix})`);
 
-        if (rt.startsWith('v1:') || rt.startsWith('orbit:v1:')) {
+        if (rt.startsWith('v1:') || rt.startsWith('Tandem:v1:')) {
             appLogger.warn('TokenService', 'Claude refresh token appears to be STILL ENCRYPTED!');
         }
     }
@@ -544,3 +544,4 @@ export class TokenService extends BaseService {
         }
     }
 }
+

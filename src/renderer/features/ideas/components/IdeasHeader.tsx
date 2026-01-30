@@ -149,7 +149,7 @@ export const IdeasHeader: React.FC<IdeasHeaderProps> = ({
                 {showBackButton && <BackButton onClick={handleNewSession} />}
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                        <Lightbulb className="w-7 h-7 text-amber-500" />
+                        <Lightbulb className="w-7 h-7 text-warning" />
                         {isHistoryView ? t('ideas.history.title') : t('ideas.title')}
                     </h1>
                     <p className="text-muted-foreground mt-1">

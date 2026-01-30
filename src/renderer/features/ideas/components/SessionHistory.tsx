@@ -56,9 +56,9 @@ const formatDate = (timestamp: number, t: (key: string, params?: Record<string, 
 const getStatusIcon = (status: string) => {
     switch (status) {
         case 'completed':
-            return <CheckCircle className="w-4 h-4 text-green-400" />;
+            return <CheckCircle className="w-4 h-4 text-success" />;
         case 'cancelled':
-            return <XCircle className="w-4 h-4 text-red-400" />;
+            return <XCircle className="w-4 h-4 text-destructive" />;
         case 'generating':
         case 'researching':
             return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
@@ -71,21 +71,21 @@ const getIdeaStatusBadge = (status: IdeaStatus, t: (key: string) => string) => {
     switch (status) {
         case 'approved':
             return (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/20 text-success">
                     <CheckCircle className="w-3 h-3" />
                     {t('ideas.status.approved')}
                 </span>
             );
         case 'rejected':
             return (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-destructive/20 text-destructive">
                     <ThumbsDown className="w-3 h-3" />
                     {t('ideas.status.rejected')}
                 </span>
             );
         default:
             return (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow/20 text-yellow">
                     <Clock className="w-3 h-3" />
                     {t('ideas.status.pending')}
                 </span>
@@ -594,11 +594,11 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
                     <p className="text-xs text-muted-foreground mt-1">Completed</p>
                 </div>
                 <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
-                    <p className="text-2xl font-bold text-green-500">{stats.approved}</p>
+                    <p className="text-2xl font-bold text-success">{stats.approved}</p>
                     <p className="text-xs text-muted-foreground mt-1">Approved Ideas</p>
                 </div>
                 <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
-                    <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
+                    <p className="text-2xl font-bold text-yellow">{stats.pending}</p>
                     <p className="text-xs text-muted-foreground mt-1">Pending Review</p>
                 </div>
             </div>

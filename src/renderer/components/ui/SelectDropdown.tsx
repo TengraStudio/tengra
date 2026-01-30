@@ -108,7 +108,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                                 zIndex: 10000,
                                 width: width || 'auto'
                             }}
-                            className="bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+                            className="bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
                             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                         >
                             <div className="max-h-[300px] overflow-y-auto custom-scrollbar py-1">
@@ -121,7 +121,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                                             "w-full px-4 py-2 text-left text-sm font-medium transition-all flex items-center justify-between group/item",
                                             opt.value === value
                                                 ? "bg-primary/15 text-primary"
-                                                : "text-zinc-400 hover:bg-white/5 hover:text-foreground"
+                                                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                         )}
                                     >
                                         <span className="truncate">{opt.label}</span>

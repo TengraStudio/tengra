@@ -98,7 +98,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
     ipcMain.handle('gallery:delete', async (_event, filePath) => {
         try {
             // Security check: ensure filePath is within galleryPath
-            if (!filePath.startsWith(galleryPath) && !filePath.includes('Orbit/Gallery')) {
+            if (!filePath.startsWith(galleryPath) && !filePath.includes('tandem/Gallery')) {
                 throw new Error('Unauthorized file deletion');
             }
             await fs.promises.unlink(filePath);

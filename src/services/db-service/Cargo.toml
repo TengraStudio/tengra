@@ -1,8 +1,8 @@
 [package]
-name = "orbit-db-service"
+name = "tandem-db-service"
 version = "0.1.0"
 edition = "2021"
-description = "Orbit Database Service - Windows Service hosting PGlite database"
+description = "Tandem Database Service - Windows Service hosting PGlite database"
 
 [dependencies]
 # Async runtime
@@ -38,5 +38,6 @@ directories = "5.0"
 base64 = "0.21"
 
 [[bin]]
-name = "orbit-db-service"
+name = "tandem-db-service"
 path = "src/main.rs"
+

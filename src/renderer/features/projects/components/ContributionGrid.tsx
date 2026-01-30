@@ -72,10 +72,10 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
 
         const intensity = Math.min(count / maxCommits, 1);
 
-        if (intensity < 0.25) { return 'bg-emerald-500/20 border border-emerald-500/30'; }
-        if (intensity < 0.5) { return 'bg-emerald-500/40 border border-emerald-500/50'; }
-        if (intensity < 0.75) { return 'bg-emerald-500/60 border border-emerald-500/70'; }
-        return 'bg-emerald-500 border border-emerald-400';
+        if (intensity < 0.25) { return 'bg-success/20 border border-success/30'; }
+        if (intensity < 0.5) { return 'bg-success/40 border border-success/50'; }
+        if (intensity < 0.75) { return 'bg-success/60 border border-success/70'; }
+        return 'bg-success border border-emerald-400';
     };
 
     const totalContributions = Object.values(commitCounts).reduce((sum, count) => sum + count, 0);
@@ -134,10 +134,10 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                 <span>Less</span>
                 <div className="flex gap-0.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-muted/10 border border-muted/20" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/20 border border-emerald-500/30" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-500/50" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/60 border border-emerald-500/70" />
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 border border-emerald-400" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-success/20 border border-success/30" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-success/40 border border-success/50" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-success/60 border border-success/70" />
+                    <div className="w-2.5 h-2.5 rounded-sm bg-success border border-emerald-400" />
                 </div>
                 <span>More</span>
             </div>

@@ -35,11 +35,11 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                     <span>{branchName}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    {status === 'ready' && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
-                    {status === 'busy' && <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
-                    {status === 'error' && <AlertCircle className="w-3 h-3 text-red-500" />}
+                    {status === 'ready' && <CheckCircle2 className="w-3 h-3 text-success" />}
+                    {status === 'busy' && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                    {status === 'error' && <AlertCircle className="w-3 h-3 text-destructive" />}
                     <span className={cn(
-                        status === 'ready' ? "text-emerald-500/80" : status === 'error' ? "text-red-500/80" : "text-blue-500/80"
+                        status === 'ready' ? "text-success/80" : status === 'error' ? "text-destructive/80" : "text-primary/80"
                     )}>
                         {status.toUpperCase()}
                     </span>

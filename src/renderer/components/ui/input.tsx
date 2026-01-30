@@ -10,7 +10,7 @@ const inputVariants = cva(
             variant: {
                 default: 'border-input',
                 error: 'border-destructive focus-visible:ring-destructive',
-                success: 'border-emerald-500 focus-visible:ring-emerald-500',
+                success: 'border-success focus-visible:ring-emerald-500',
             },
             size: {
                 sm: 'h-8 px-2 text-xs',

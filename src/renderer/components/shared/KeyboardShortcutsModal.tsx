@@ -127,7 +127,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 {/* Header */}
                 <div className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-muted/20">
                     <div className="flex items-center gap-2">
-                        <Keyboard className="w-5 h-5 text-purple-400" aria-hidden="true" />
+                        <Keyboard className="w-5 h-5 text-purple" aria-hidden="true" />
                         <h2 id="shortcuts-modal-title" className="text-lg font-medium text-foreground">{t('shortcuts.title')}</h2>
                     </div>
                     <button

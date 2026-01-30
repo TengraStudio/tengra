@@ -81,7 +81,7 @@ export function registerThemeIpc(): void {
         if (!json) { return false; }
 
         try {
-            const tempPath = path.join(os.tmpdir(), `orbit-theme-${themeId}-${Date.now()}.json`);
+            const tempPath = path.join(os.tmpdir(), `tandem-theme-${themeId}-${Date.now()}.json`);
             await fs.writeFile(tempPath, json);
             await shell.openPath(tempPath);
             return true;

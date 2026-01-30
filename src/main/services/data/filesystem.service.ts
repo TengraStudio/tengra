@@ -44,7 +44,7 @@ export class FileSystemService {
 
 
 
-    private ignorePatterns: string[] = ['node_modules', '.git', 'dist', 'build', '.orbit', '.DS_Store'];
+    private ignorePatterns: string[] = ['node_modules', '.git', 'dist', 'build', '.tandem', '.DS_Store'];
 
     updateIgnorePatterns(patterns: string[]) {
         this.ignorePatterns = [...new Set([...this.ignorePatterns, ...patterns])];

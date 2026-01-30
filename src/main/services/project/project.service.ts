@@ -453,7 +453,7 @@ export class ProjectService {
     private shouldIgnore(name: string): boolean {
         const lowerName = name.toLowerCase();
         const ignoredNames = [
-            'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.orbit',
+            'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.Tandem',
             '.vscode', '.idea', 'coverage', '.nyc_output', 'target', 'bin', 'obj',
             '.next', '.nuxt', '.cache', '__pycache__', '.pytest_cache', '.output',
             '.yarn', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'composer.lock',
@@ -886,3 +886,4 @@ export class ProjectService {
         }
     }
 }
+

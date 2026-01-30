@@ -41,18 +41,18 @@ export function OnboardingTour({ isOpen, onClose, onComplete, language = 'en' }:
         {
             title: t('onboarding.step2Title'),
             description: t('onboarding.step2Desc'),
-            icon: <Command className="w-8 h-8 text-blue-400" />,
+            icon: <Command className="w-8 h-8 text-primary" />,
             highlight: "Cmd+K"
         },
         {
             title: t('onboarding.step3Title'),
             description: t('onboarding.step3Desc'),
-            icon: <Layers className="w-8 h-8 text-purple-400" />
+            icon: <Layers className="w-8 h-8 text-purple" />
         },
         {
             title: t('onboarding.step4Title'),
             description: t('onboarding.step4Desc'),
-            icon: <ShieldCheck className="w-8 h-8 text-emerald-400" />
+            icon: <ShieldCheck className="w-8 h-8 text-success" />
         },
         {
             title: t('onboarding.step5Title'),

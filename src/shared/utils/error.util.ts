@@ -14,14 +14,14 @@ export enum AppErrorCode {
     NETWORK_ERROR = 'NETWORK_ERROR'
 }
 
-export class OrbitError extends Error {
+export class TandemError extends Error {
     constructor(
         message: string,
         public code: string = AppErrorCode.UNKNOWN,
         public context?: Record<string, unknown>
     ) {
         super(message);
-        this.name = 'OrbitError';
+        this.name = 'TandemError';
     }
 }
 

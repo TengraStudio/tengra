@@ -286,7 +286,7 @@ export const ja = {
             pushing: 'Push中...'
         },
         noIssues: 'プロジェクト内に重大な問題は見つかりませんでした。お見事！',
-        issuesDescription: 'Orbitは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。',
+        issuesDescription: 'Tandemは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。',
         issueType: 'タイプ',
         issueMessage: 'メッセージ',
         issueLocation: '場所',
@@ -541,7 +541,7 @@ export const ja = {
     },
     memory: {
         title: 'メモリインスペクター',
-        subtitle: 'Orbitが何を知り、何を覚えているかを視覚化して管理します。',
+        subtitle: 'Tandemが何を知り、何を覚えているかを視覚化して管理します。',
         searchPlaceholder: 'メモリを検索...',
         totalFacts: '総事実数',
         episodes: 'エピソード',
@@ -623,7 +623,7 @@ export const ja = {
         moreLines: 'さらに数行'
     },
     welcome: {
-        title: 'Orbit',
+        title: 'Tandem',
         tagline: '知性とエレガンスの融合。'
     },
     auth: {
@@ -633,7 +633,7 @@ export const ja = {
         // Manual Session Modal
         sessionKeyRequired: 'Claudeセッションキーが必要です',
         completeConnection: '{{email}} の接続を完了する',
-        sessionKeyDescription: 'クォータの追跡と直接対話を有効にするために、OrbitにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。',
+        sessionKeyDescription: 'クォータの追跡と直接対話を有効にするために、TandemにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。',
         howToFindKey: 'セッションキーの見つけ方',
         sessionKeyInstructions: {
             step1: 'claude.aiを開いてログインする',
@@ -758,7 +758,7 @@ export const ja = {
         creative: {
             title: 'クリエイティブ・ライティング',
             description: 'テキストやコンテンツを生成します。',
-            prompt: 'Orbitという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？'
+            prompt: 'Tandemという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？'
         },
         debug: {
             title: 'デバッグ',
@@ -780,7 +780,7 @@ export const ja = {
         user: 'ユーザー',
         assistant: 'アシスタント',
         copyAsHtml: 'HTMLとしてコピー',
-        orbitDrawing: 'Orbit 描画中...',
+        TandemDrawing: 'Tandem 描画中...',
         quotaExceeded: 'クォータ超過',
         quotaMessage: 'モデルの使用クォータを超えました。後でもう一度試すか、プランをアップグレードしてください。',
         resetsAt: 'リセット時刻:',
@@ -789,7 +789,7 @@ export const ja = {
         speakAloud: '読み上げる',
         convertToCode: 'コードに変換',
         approvePlan: 'プランを承認',
-        orbitThinking: 'Orbitが思考中',
+        TandemThinking: 'Tandemが思考中',
         showThought: '思考を表示',
         react: 'リアクション',
         runBenchmark: 'ベンチマークを実行',
@@ -825,7 +825,7 @@ export const ja = {
         fontDesc: 'アプリケーションのフォントとサイズをカスタマイズします。',
         fontFamily: 'フォントファミリー',
         fontSize: 'フォントサイズ',
-        previewText: 'Orbit AIで未来を形作ります。',
+        previewText: 'Tandem AIで未来を形作ります。',
         accessibility: 'アクセシビリティ',
         accessibilityDesc: '表示と視認性の設定',
         highContrast: '高コントラストモード',
@@ -899,11 +899,11 @@ export const ja = {
         unknownProject: '不明なプロジェクト'
     },
     about: {
-        description: 'Orbitは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。',
+        description: 'Tandemは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。',
         checkUpdates: 'アップデートを確認',
         privacyPolicy: 'プライバシーポリシー',
         github: 'GitHub',
-        copyright: '© 2025 Orbit',
+        copyright: '© 2025 Tandem',
         factoryReset: '工場出荷時リセット',
         factoryResetDesc: 'すべての設定とデータを削除してアプリケーションをリセットします。',
         updateCheckAlert: 'プロダクションビルドでのアップデート確認が有効です。'
@@ -959,7 +959,7 @@ export const ja = {
     tips: {
         title: 'ご存知でしたか？',
         tip1: 'CTRL+Nショートカットを使用して新しいチャットを作成できます。',
-        tip2: 'Orbitは開発用のリモートSSHサーバーへの接続をサポートしています。',
+        tip2: 'Tandemは開発用のリモートSSHサーバーへの接続をサポートしています。',
         tip3: 'ファイルをチャットに直接ドラッグ＆ドロップできます。',
         tip4: '「評議会」タブを使用して、コードに関するマルチエージェントの洞察を得ることができます。',
         tip5: '設定 > 外観 で体験をカスタマイズしてください。'
@@ -1165,7 +1165,7 @@ export const ja = {
         stats: '統計'
     },
     onboarding: {
-        welcome: 'Orbitへようこそ',
+        welcome: 'Tandemへようこそ',
         step1: 'AIプロバイダーを接続',
         step2: 'ワークスペースをセットアップ',
         step3: 'コーディングを開始',
@@ -1344,3 +1344,4 @@ export const ja = {
         path: 'パス:'
     }
 };
+

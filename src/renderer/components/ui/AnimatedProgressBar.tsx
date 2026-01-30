@@ -44,9 +44,9 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
 
     const variantClasses = {
         default: 'bg-primary',
-        success: 'bg-emerald-500',
-        warning: 'bg-amber-500',
-        error: 'bg-red-500',
+        success: 'bg-success',
+        warning: 'bg-warning',
+        error: 'bg-destructive',
         gradient: 'bg-gradient-to-r from-violet-500 via-primary to-cyan-500'
     };
 
