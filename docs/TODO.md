@@ -109,7 +109,6 @@ Implement the "Project System" for long-running autonomous tasks (replacing `bui
 - [x] Theme System Migration (Settings, Project, Ideas, Onboarding)
 - [x] Turkish localizations completed for migrated modules
 - [x] Project path migration from `project_id` to `project_path` (Backend & Frontend)
-- [x] Build and lint verification passed (Reduced warnings from 804 to 548)
-- [x] Refactor MCP tools into separate server modules
-- [x] Implement modular MCP Plugin Architecture (internal & external plugin support)
-*Last Updated: January 27, 2026 (Batch 11 Complete)*
+- [x] Refactor ModelSelector.tsx and ProjectWizardModal.tsx to reduce complexity and line counts
+- [x] Build and lint verification passed (Reduced warnings and resolved all critical ref access errors)
+*Last Updated: January 30, 2026 (Batch 13 Complete)*

@@ -1,20 +1,25 @@
-import { ArrowRight, Check, ChevronLeft, Code, Database, FolderOpen, Globe, Loader2, Plus, Server, Smartphone, Terminal } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { ArrowRight, Check, ChevronLeft, Code, Database, Globe, Loader2, Smartphone, Terminal } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
-import { cn } from '@/lib/utils';
 import { SSHFile, WorkspaceMount } from '@/types';
 
+import { WizardCreatingStep } from './WizardCreatingStep';
+import { WizardDetailsStep } from './WizardDetailsStep';
+import { WizardSelectionStep } from './WizardSelectionStep';
+import { WizardSSHBrowserStep } from './WizardSSHBrowserStep';
+import { WizardSSHConnectStep } from './WizardSSHConnectStep';
+
 interface ProjectWizardModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void
-    language: Language
+    isOpen: boolean;
+    onClose: () => void;
+    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void;
+    language: Language;
 }
 
-type Step = 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating'
+type Step = 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating';
 
 const CATEGORIES = [
     { id: 'web', nameKey: 'projectWizard.categories.web', icon: Globe, color: 'text-blue-400', bg: 'bg-blue-500/10' },
@@ -27,12 +32,7 @@ const CATEGORIES = [
 export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
     const { t } = useTranslation(language);
     const [step, setStep] = useState<Step>('selection');
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        category: 'web',
-        goal: ''
-    });
+    const [formData, setFormData] = useState({ name: '', description: '', category: 'web', goal: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -50,20 +50,11 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
     const [sshPath, setSshPath] = useState<string>('/');
     const [sshFiles, setSshFiles] = useState<SSHFile[]>([]);
 
-    // Reset state on open
     useEffect(() => {
         if (isOpen) {
             setStep('details');
             setFormData({ name: '', description: '', category: 'web', goal: '' });
-            setSshForm({
-                host: '',
-                port: '22',
-                username: '',
-                authType: 'password',
-                password: '',
-                privateKey: '',
-                passphrase: ''
-            });
+            setSshForm({ host: '', port: '22', username: '', authType: 'password', password: '', privateKey: '', passphrase: '' });
             setSshConnectionId(null);
             setSshPath('/');
             setSshFiles([]);
@@ -71,6 +62,23 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             setError(null);
         }
     }, [isOpen]);
+
+    const loadRemoteDirectory = useCallback(async (connId: string, path: string) => {
+        setIsLoading(true);
+        try {
+            const result = await window.electron.ssh.listDir(connId, path);
+            if (result.success && result.files) {
+                setSshFiles(result.files);
+                setSshPath(path);
+            } else {
+                setError(result.error || 'Failed to list directory');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to list directory');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     const handleImportLocal = async () => {
         setIsLoading(true);
@@ -121,23 +129,6 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         }
     };
 
-    const loadRemoteDirectory = async (connId: string, path: string) => {
-        setIsLoading(true);
-        try {
-            const result = await window.electron.ssh.listDir(connId, path);
-            if (result.success && result.files) {
-                setSshFiles(result.files);
-                setSshPath(path);
-            } else {
-                setError(result.error || 'Failed to list directory');
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to list directory');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleCreate = async () => {
         if (!formData.name) { return; }
         setIsLoading(true);
@@ -167,6 +158,50 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         }
     };
 
+    const renderStep = () => {
+        switch (step) {
+            case 'details':
+                return <WizardDetailsStep formData={formData} setFormData={setFormData} categories={CATEGORIES} error={error} />;
+            case 'selection':
+                return <WizardSelectionStep onImportLocal={handleImportLocal} onSSHConnect={() => setStep('ssh-connection')} onCreateNew={handleCreate} />;
+            case 'ssh-connection':
+                return <WizardSSHConnectStep sshForm={sshForm} setSshForm={setSshForm} />;
+            case 'ssh-browser':
+                return <WizardSSHBrowserStep sshPath={sshPath} setSshPath={setSshPath} sshFiles={sshFiles} sshConnectionId={sshConnectionId} loadRemoteDirectory={loadRemoteDirectory} />;
+            case 'creating':
+                return <WizardCreatingStep />;
+            default:
+                return null;
+        }
+    };
+
+    const handleNext = () => {
+        if (step === 'details') {
+            if (!formData.name) { return; }
+            setStep('selection');
+        } else if (step === 'ssh-connection') {
+            void handleSSHConnect();
+        } else if (step === 'ssh-browser') {
+            const sshMount: WorkspaceMount = {
+                id: sshConnectionId || `ssh-${Date.now()}`,
+                name: formData.name || `${sshForm.username}@${sshForm.host}`,
+                type: 'ssh',
+                rootPath: sshPath,
+                ssh: {
+                    host: sshForm.host,
+                    port: parseInt(sshForm.port) || 22,
+                    username: sshForm.username,
+                    authType: sshForm.authType,
+                    password: sshForm.authType === 'password' ? sshForm.password : undefined,
+                    privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
+                    passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
+                }
+            };
+            onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount]);
+            onClose();
+        }
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('projectWizard.title')} size="3xl">
             <div className="relative min-h-[500px] flex flex-col">
@@ -182,321 +217,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 )}
 
                 <AnimatePresence mode="wait">
-                    {step === 'details' && (
-                        <motion.div
-                            key="details"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6 flex-1 pt-4"
-                        >
-                            <div className="space-y-4">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('projectWizard.projectName')}</label>
-                                        <input
-                                            autoFocus
-                                            value={formData.name}
-                                            onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                            placeholder={t('projectWizard.namePlaceholder')}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-3 block opacity-70 tracking-widest">{t('projects.categoryLabel')}</label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                                            {CATEGORIES.map(cat => (
-                                                <button
-                                                    key={cat.id}
-                                                    onClick={() => setFormData(p => ({ ...p, category: cat.id }))}
-                                                    className={cn(
-                                                        "flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden",
-                                                        formData.category === cat.id
-                                                            ? "bg-primary/20 border-primary shadow-lg shadow-primary/10"
-                                                            : "bg-muted/30 border-border/50 hover:bg-muted/50 hover:border-border"
-                                                    )}
-                                                >
-                                                    {formData.category === cat.id && (
-                                                        <div className="absolute top-2 right-2">
-                                                            <Check className="w-3 h-3 text-primary" />
-                                                        </div>
-                                                    )}
-                                                    <div className={cn("p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-sm", cat.bg, cat.color)}>
-                                                        <cat.icon className="w-5 h-5" />
-                                                    </div>
-                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest truncate w-full px-1 text-center", formData.category === cat.id ? "text-primary" : "text-muted-foreground")}>
-                                                        {t(cat.nameKey)}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('projectWizard.description')}</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-                                            className="w-full h-24 bg-muted/10 border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary/50 resize-none text-foreground"
-                                            placeholder={t('projectWizard.descPlaceholder')}
-                                        />
-                                    </div>
-                                    {error && (
-                                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
-                                            {error}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {step === 'selection' && (
-                        <motion.div
-                            key="selection"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.05 }}
-                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                            className="flex flex-col items-center justify-center flex-1 h-full py-12"
-                        >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl mx-auto px-2">
-                                <button
-                                    onClick={() => void handleImportLocal()}
-                                    className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-primary/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-primary/10 overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary mb-6 ring-1 ring-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                                        <FolderOpen className="w-12 h-12" />
-                                    </div>
-                                    <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">{t('projectWizard.alreadyExists')}</h3>
-                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">{t('projectWizard.alreadyExistsDesc')}</p>
-                                    <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
-                                        <ArrowRight className="w-5 h-5 text-primary" />
-                                    </div>
-                                </button>
-
-                                <button
-                                    onClick={() => setStep('ssh-connection')}
-                                    className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-purple-500/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-24 h-24 rounded-3xl bg-purple-500/5 flex items-center justify-center text-purple-400 mb-6 ring-1 ring-purple-500/10 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                                        <Server className="w-12 h-12" />
-                                    </div>
-                                    <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">{t('projectWizard.sshTodo')}</h3>
-                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">{t('projectWizard.sshTodoDesc')}</p>
-                                </button>
-
-                                <button
-                                    onClick={() => void handleCreate()}
-                                    className="group relative h-72 bg-card hover:bg-accent/40 border border-border hover:border-blue-500/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-24 h-24 rounded-3xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 ring-1 ring-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                                        <Plus className="w-12 h-12" />
-                                    </div>
-                                    <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">{t('projectWizard.newCreateTodo')}</h3>
-                                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">{t('projectWizard.newCreateTodoDesc')}</p>
-                                    <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
-                                        <ArrowRight className="w-5 h-5 text-blue-400" />
-                                    </div>
-                                </button>
-                            </div>
-
-                        </motion.div>
-                    )}
-
-                    {step === 'ssh-connection' && (
-                        <motion.div
-                            key="ssh-connection"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6 flex-1 pt-4"
-                        >
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.host')}</label>
-                                        <input
-                                            autoFocus
-                                            value={sshForm.host}
-                                            onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
-                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                            placeholder={t('projectWizard.placeholder.example')}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.port')}</label>
-                                        <input
-                                            value={sshForm.port}
-                                            onChange={e => setSshForm(p => ({ ...p, port: e.target.value }))}
-                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                            placeholder={t('ssh.placeholders.port')}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.username')}</label>
-                                    <input
-                                        value={sshForm.username}
-                                        onChange={e => setSshForm(p => ({ ...p, username: e.target.value }))}
-                                        className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                        placeholder={t('ssh.placeholders.username')}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.authType')}</label>
-                                    <div className="flex bg-muted/10 rounded-lg p-1 border border-border/50">
-                                        <button
-                                            onClick={() => setSshForm(p => ({ ...p, authType: 'password' }))}
-                                            className={cn(
-                                                "flex-1 py-2 rounded-md text-xs font-medium transition-all",
-                                                sshForm.authType === 'password' ? "bg-muted/40 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            Password
-                                        </button>
-                                        <button
-                                            onClick={() => setSshForm(p => ({ ...p, authType: 'key' }))}
-                                            className={cn(
-                                                "flex-1 py-2 rounded-md text-xs font-medium transition-all",
-                                                sshForm.authType === 'key' ? "bg-muted/40 text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                            )}
-                                        >
-                                            Private Key
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {sshForm.authType === 'password' ? (
-                                    <div>
-                                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.password')}</label>
-                                        <input
-                                            type="password"
-                                            value={sshForm.password}
-                                            onChange={e => setSshForm(p => ({ ...p, password: e.target.value }))}
-                                            className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.privateKey')}</label>
-                                            <textarea
-                                                value={sshForm.privateKey}
-                                                onChange={e => setSshForm(p => ({ ...p, privateKey: e.target.value }))}
-                                                className="w-full h-24 bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground font-mono text-xs resize-none"
-                                                placeholder={t('ssh.placeholders.privateKey')}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">{t('common.passphrase')} (Optional)</label>
-                                            <input
-                                                type="password"
-                                                value={sshForm.passphrase}
-                                                onChange={e => setSshForm(p => ({ ...p, passphrase: e.target.value }))}
-                                                className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                                                placeholder="••••••••"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {step === 'ssh-browser' && (
-                        <motion.div
-                            key="ssh-browser"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-4 flex-1 pt-4 flex flex-col min-h-0"
-                        >
-                            <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
-                                <Terminal className="w-4 h-4 text-purple-400 shrink-0" />
-                                <input
-                                    value={sshPath}
-                                    onChange={e => setSshPath(e.target.value)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter' && sshConnectionId) {
-                                            void loadRemoteDirectory(sshConnectionId, sshPath);
-                                        }
-                                    }}
-                                    className="flex-1 bg-transparent text-sm text-foreground focus:outline-none font-mono"
-                                />
-                                <button
-                                    onClick={() => sshConnectionId && void loadRemoteDirectory(sshConnectionId, sshPath)}
-                                    className="p-1 hover:bg-muted/40 rounded-md transition-colors"
-                                >
-                                    <ArrowRight className="w-4 h-4 text-foreground/50" />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto bg-muted/10 rounded-xl border border-border/50 p-2 space-y-1">
-                                {sshPath !== '/' && (
-                                    <button
-                                        onClick={() => {
-                                            const parent = sshPath.split('/').slice(0, -1).join('/') || '/';
-                                            if (sshConnectionId) { void loadRemoteDirectory(sshConnectionId, parent); }
-                                        }}
-                                        className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
-                                    >
-                                        <FolderOpen className="w-4 h-4 text-yellow-500/70 group-hover:text-yellow-400" />
-                                        <span className="text-sm text-foreground/70 group-hover:text-foreground">..</span>
-                                    </button>
-                                )}
-                                {sshFiles.map((file, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => {
-                                            if (file.isDirectory && sshConnectionId) {
-                                                const newPath = sshPath === '/' ? `/${file.name}` : `${sshPath}/${file.name}`;
-                                                void loadRemoteDirectory(sshConnectionId, newPath);
-                                            }
-                                        }}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group",
-                                            !file.isDirectory && "opacity-50 cursor-default"
-                                        )}
-                                    >
-                                        {file.isDirectory ? (
-                                            <FolderOpen className="w-4 h-4 text-blue-400/70 group-hover:text-blue-400" />
-                                        ) : (
-                                            <Code className="w-4 h-4 text-foreground/30" />
-                                        )}
-                                        <span className="text-sm text-foreground/80 group-hover:text-foreground truncate">{file.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {step === 'creating' && (
-                        <motion.div
-                            key="creating"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex-1 flex flex-col items-center justify-center text-center space-y-6"
-                        >
-                            <div className="relative">
-                                <Loader2 className="w-16 h-16 animate-spin text-primary" />
-                                <Check className="w-6 h-6 text-primary absolute inset-0 m-auto opacity-0 animate-pulse" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-light text-foreground">{t('projectWizard.creating')}</h3>
-                                <p className="text-muted-foreground mt-2 max-w-[280px] mx-auto text-sm">
-                                    {t('projectWizard.configuring')}
-                                </p>
-                            </div>
-                        </motion.div>
-                    )}
+                    <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex-1 flex flex-col">
+                        {renderStep()}
+                    </motion.div>
                 </AnimatePresence>
 
                 {step !== 'creating' && (
@@ -505,6 +228,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                             onClick={() => {
                                 if (step === 'selection') { setStep('details'); }
                                 else if (step === 'ssh-connection') { setStep('selection'); }
+                                else if (step === 'ssh-browser') { setStep('ssh-connection'); }
                                 else { onClose(); }
                             }}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
@@ -514,56 +238,17 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                         </button>
 
                         <div className="flex gap-3">
-                            {step === 'details' && (
+                            {step !== 'selection' && (
                                 <button
-                                    onClick={() => {
-                                        if (!formData.name) { return; }
-                                        setStep('selection');
-                                    }}
-                                    disabled={!formData.name}
-                                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-primary/20"
+                                    onClick={handleNext}
+                                    disabled={isLoading || (step === 'details' && !formData.name) || (step === 'ssh-connection' && (!sshForm.host || !sshForm.username))}
+                                    className={cn(
+                                        "px-6 py-2.5 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg",
+                                        step === 'ssh-connection' ? "bg-purple-500 text-foreground shadow-purple-500/20" : "bg-primary text-primary-foreground shadow-primary/20"
+                                    )}
                                 >
-                                    {t('projectWizard.next')}
-                                    <ArrowRight className="w-4 h-4" />
-                                </button>
-                            )}
-
-                            {step === 'ssh-connection' && (
-                                <button
-                                    onClick={() => void handleSSHConnect()}
-                                    disabled={!sshForm.host || !sshForm.username || isLoading}
-                                    className="px-6 py-2.5 bg-purple-500 text-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-purple-500/20"
-                                >
-                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                                    {t('common.connect')}
-                                </button>
-                            )}
-
-                            {step === 'ssh-browser' && (
-                                <button
-                                    onClick={() => {
-                                        const sshMount: WorkspaceMount = {
-                                            id: sshConnectionId || `ssh-${Date.now()}`,
-                                            name: formData.name || `${sshForm.username}@${sshForm.host}`,
-                                            type: 'ssh',
-                                            rootPath: sshPath,
-                                            ssh: {
-                                                host: sshForm.host,
-                                                port: parseInt(sshForm.port) || 22,
-                                                username: sshForm.username,
-                                                authType: sshForm.authType,
-                                                password: sshForm.authType === 'password' ? sshForm.password : undefined,
-                                                privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
-                                                passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
-                                            }
-                                        };
-                                        onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount]);
-                                        onClose();
-                                    }}
-                                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
-                                >
-                                    {t('projectWizard.selectFolder')}
-                                    <Check className="w-4 h-4" />
+                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (step === 'ssh-browser' ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />)}
+                                    {step === 'ssh-connection' ? t('common.connect') : (step === 'ssh-browser' ? t('projectWizard.selectFolder') : t('projectWizard.next'))}
                                 </button>
                             )}
                         </div>

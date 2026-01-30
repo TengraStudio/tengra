@@ -28,8 +28,8 @@ const getAvailableModels = (t: (key: string, options?: Record<string, string | n
         if (Array.isArray(providerModels)) {
             providerModels.forEach((m) => {
                 models.push({
-                    provider: m.provider || '',
-                    model: m.id || m.name || '',
+                    provider: m.provider ?? '',
+                    model: m.id ?? m.name ?? '',
                     displayName: m.name ?? m.id ?? t('agent.unknownModel')
                 });
             });
@@ -136,7 +136,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                         {selectedModel?.displayName ?? t('agent.selectModel')}
                     </p>
                     <p className="text-[8px] text-muted-foreground uppercase leading-none">
-                        {selectedModel?.provider || t('agent.aiProvider')}
+                        {selectedModel?.provider ?? t('agent.aiProvider')}
                     </p>
                 </div>
             </div>
@@ -264,7 +264,7 @@ const RemoteModelSelector: React.FC<{
     <div className="w-[240px]">
         <FullModelSelector
             groupedModels={groupedModels}
-            selectedProvider={selectedProvider || selectedModel?.provider || ''}
+            selectedProvider={selectedProvider ?? selectedModel?.provider ?? ''}
             selectedModel={parentSelectedModel ?? selectedModel?.model ?? ''}
             onSelect={onSelect}
             settings={settings}
