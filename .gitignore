@@ -7,6 +7,24 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Lint/Type check output files
+lint*.txt
+*lint*.txt
+tsc*.txt
+type*.txt
+*summary*.txt
+*errors*.txt
+*warnings*.txt
+eslint*.txt
+current*.txt
+final*.txt
+temp*.txt
+fresh*.txt
+latest*.txt
+absolute*.txt
+fix*.txt
+misused*.txt
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
