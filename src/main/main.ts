@@ -49,7 +49,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
     const defaultWidth = 1280;
     const defaultHeight = 800;
 
-    const iconPath = path.join(__dirname, '../../src/renderer/assets/logo.png');
+    const iconPath = path.join(__dirname, '../../resources/icon.ico');
 
     const win = new BrowserWindow({
         width: windowSettings?.width ?? defaultWidth,
@@ -437,7 +437,7 @@ function setupTray() {
     if (tray) { return; } // Already set up
 
     try {
-        const iconPath = path.join(__dirname, '../../src/renderer/assets/logo.png');
+        const iconPath = path.join(__dirname, '../../resources/icon.ico');
         const icon = nativeImage.createFromPath(iconPath);
 
         tray = new Tray(icon);
