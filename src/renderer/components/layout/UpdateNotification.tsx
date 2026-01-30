@@ -98,8 +98,8 @@ export const UpdateNotification: React.FC = () => {
                     {status.state === 'downloading' && (
                         <div className="space-y-1">
                             <div className="flex justify-between">
-                                <span>{formatBytes(status.bytesPerSecond || 0)}/s</span>
-                                <span>{Math.round(status.progress || 0)}%</span>
+                                <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
+                                <span>{Math.round(status.progress ?? 0)}%</span>
                             </div>
                             <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
                                 <div

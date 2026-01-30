@@ -4,6 +4,43 @@ Track the evolution of Orbit.
 
 ---
 
+## 2026-01-30: 🏗️ UI COMPLEXITY REDUCTION & COMPONENT REFACTORING (Batch 13)
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Major refactoring of high-complexity UI components to improve maintainability and performance. Focused on breaking down monolithic components into smaller, reusable parts and resolving critical React ref access issues.
+
+### Key Achievements
+
+1. **ProjectWizardModal Refactoring**:
+    - Extracted 5 specialized step components: `WizardDetailsStep`, `WizardSelectionStep`, `WizardSSHConnectStep`, `WizardSSHBrowserStep`, `WizardCreatingStep`.
+    - Reduced main component line count by 60% and simplified state orchestration.
+    - Resolved all type safety issues in SSH form handling.
+
+2. **ModelSelector System Overhaul**:
+    - Fully decoupled logic from UI using custom hooks: `useModelCategories`, `useModelSelectorLogic`.
+    - Modularized the dropdown UI into `ModelSelectorTrigger`, `ModelSelectorContent`, and `ModelSelectorItem`.
+    - **Ref Safety**: Resolved "Cannot access refs during render" errors by properly destructuring and using ref callbacks.
+    - Type-hardened all model and category interfaces.
+
+3. **TerminalSession Hardening**:
+    - Resolved `setState` in effect warnings by implementing safe asynchronous updates.
+    - Extracted `TerminalErrorOverlay` to simplify the main render block.
+    - Met strict complexity requirements (<10) for core terminal management methods.
+
+4. **Lint & Type Pass**:
+    - Successfully ran `eslint --fix` across all modified directories.
+    - Standardized import sorting and simplified conditional logic (`||` → `??`).
+    - Verified 100% build compatibility with the refactored architecture.
+
+### Files Impacted
+- **Model Selector**: `src/renderer/features/models/components/ModelSelector.tsx`, `ModelsSelectorTrigger.tsx`, `ModelSelectorContent.tsx`, `ModelSelectorItem.tsx`
+- **Project Wizard**: `src/renderer/features/projects/components/ProjectWizardModal.tsx`, `WizardDetailsStep.tsx`, `WizardSelectionStep.tsx`, `WizardSSHConnectStep.tsx`, `WizardSSHBrowserStep.tsx`, `WizardCreatingStep.tsx`
+- **Terminal**: `src/renderer/features/terminal/components/TerminalSession.tsx`
+- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
+
+---
+
 ## 2026-01-27: 🗄️ DATABASE SERVICE COMPATIBILITY & INTELLIGENCE REFACTORING (Batch 12)
 
 **Status**: ✅ COMPLETED
