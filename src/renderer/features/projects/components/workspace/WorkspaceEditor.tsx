@@ -37,7 +37,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                     <CodeEditor
                         value={activeTab?.content ?? ''}
                         language={activeTab ? getLanguageFromExtension(activeTab.name) : 'typescript'}
-                        onChange={(val) => activeTab && updateTabContent(val || '')}
+                        onChange={(val) => activeTab && updateTabContent(val ?? '')}
                         className="h-full w-full"
                         showMinimap={true}
                         fontSize={16}

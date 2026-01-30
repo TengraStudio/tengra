@@ -263,7 +263,7 @@ export const TEXTMATE_SCOPES: Record<string, string> = {
  */
 export const getLanguageFromExtension = (filename: string): string => {
     // Handle special filenames first
-    const basename = filename.split('/').pop()?.split('\\').pop()?.toLowerCase() || '';
+    const basename = filename.split('/').pop()?.split('\\').pop()?.toLowerCase() ?? '';
 
     // Special file name mappings
     const specialFiles: Record<string, string> = {
@@ -294,9 +294,9 @@ export const getLanguageFromExtension = (filename: string): string => {
     }
 
     // Extract extension
-    const ext = basename.split('.').pop()?.toLowerCase() || '';
+    const ext = basename.split('.').pop()?.toLowerCase() ?? '';
 
-    return EXTENSION_TO_LANGUAGE[ext] || 'plaintext';
+    return EXTENSION_TO_LANGUAGE[ext] ?? 'plaintext';
 };
 
 /**

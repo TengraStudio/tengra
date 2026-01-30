@@ -35,7 +35,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
 
     // Handlers
     const handleSave = useCallback(async (newSettings?: AppSettings) => {
-        const toSave = newSettings || settings;
+        const toSave = newSettings ?? settings;
         if (!toSave) { return; }
         setIsLoading(true);
         try {

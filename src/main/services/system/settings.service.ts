@@ -252,11 +252,11 @@ export class SettingsService extends BaseService {
         loaded?: Partial<AppSettings[T]>,
         keyField: string = 'token'
     ): AppSettings[T] {
-        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown> | undefined) || {};
-        const loadedObj = (loaded || {}) as Record<string, unknown>;
+        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown> | undefined) ?? {};
+        const loadedObj = (loaded ?? {}) as Record<string, unknown>;
         const tokenVal = loadedObj[keyField] as string | undefined;
         const authToken = this.findTokenInAuth(authAccounts, String(provider));
-        const token = authToken || tokenVal || '';
+        const token = authToken !== '' ? authToken : (tokenVal ?? '');
         return {
             ...def,
             ...loadedObj,
@@ -515,7 +515,9 @@ export class SettingsService extends BaseService {
 
         const fuzzyAcc = authAccounts.find(a => (a.provider as string).startsWith(provider + '-'));
         if (fuzzyAcc) {
-            return ((fuzzyAcc.accessToken as string) || (fuzzyAcc.sessionToken as string) || '');
+            const accessTok = fuzzyAcc.accessToken as string | undefined;
+            const sessionTok = fuzzyAcc.sessionToken as string | undefined;
+            return accessTok ?? sessionTok ?? '';
         }
 
         return '';
@@ -526,7 +528,7 @@ export class SettingsService extends BaseService {
         for (const key of Object.keys(source)) {
             const sourceValue = source[key];
             if (sourceValue !== null && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
-                const targetValue = (target[key] as Record<string, unknown> | undefined) || {};
+                const targetValue = (target[key] as Record<string, unknown> | undefined) ?? {};
                 res[key] = { ...targetValue, ...sourceValue };
             } else {
                 res[key] = sourceValue;

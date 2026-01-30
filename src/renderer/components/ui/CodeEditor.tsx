@@ -85,7 +85,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const normalizedLanguage = normalizeLanguage(language);
 
     const updateDecorations = (editor: editor.IStandaloneCodeEditor) => {
-        if (!editor || !monacoComponents?.monaco) { return; }
+        if (!monacoComponents?.monaco) { return; }
         const model = editor.getModel();
         if (!model) { return; }
 

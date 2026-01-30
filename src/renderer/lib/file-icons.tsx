@@ -244,9 +244,9 @@ export function FolderIcon({ folderName, isOpen = false, className = 'w-4 h-4', 
  */
 export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileName: string; className?: string; size?: number }) {
     const lowerName = fileName.toLowerCase();
-    const ext = lowerName.split('.').pop() || '';
+    const ext = lowerName.split('.').pop() ?? '';
 
-    const color = EXTENSION_COLOR_MAP[ext] || '#6B7280';
+    const color = EXTENSION_COLOR_MAP[ext] ?? '#6B7280';
     const type = EXTENSION_TYPE_MAP[ext];
     const defaultStyle = defaultStyles[ext as DefaultExtensionType];
 
@@ -259,7 +259,7 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
                     type={type}
                     labelColor={color}
                     glyphColor="rgba(255,255,255,0.8)"
-                    {...(defaultStyle || {})}
+                    {...(defaultStyle ?? {})}
                     // @ts-expect-error - ReactFileIcon width prop typing
                     width={size}
                     height={size}

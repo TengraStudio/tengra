@@ -79,7 +79,7 @@ export class ProjectAgentService extends BaseService {
         this.emitUpdate();
     }
 
-    // eslint-disable-next-line complexity
+     
     private async executionLoop() {
         this.logInfo('Starting execution loop');
 

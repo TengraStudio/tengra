@@ -54,7 +54,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                         name: String(data.Names ?? ''),
                         image: String(data.Image ?? ''),
                         status: String(data.Status ?? ''),
-                        state: (String(data.State ?? '').toLowerCase() || 'unknown') as ContainerInfo['state'],
+                        state: (String(data.State ?? '').toLowerCase() ?? 'unknown') as ContainerInfo['state'],
                         ports: String(data.Ports ?? ''),
                         created: String(data.CreatedAt ?? '')
                     };
@@ -66,7 +66,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
             setContainers(parsed);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            setError(message || t('docker.failedLoad'));
+            setError(message !== '' ? message : t('docker.failedLoad'));
         } finally {
             setIsLoading(false);
         }
@@ -78,7 +78,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                 'logs', '--tail', '100', containerId
             ], process.cwd());
 
-            setLogs(result.stdout || result.stderr || t('docker.noLogs'));
+            setLogs(result.stdout ?? result.stderr ?? t('docker.noLogs'));
         } catch (err) {
             console.error('[DockerDashboard] Failed to parse message', err);
             setLogs(`Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -229,7 +229,7 @@ export function DockerDashboard({ isOpen = true, onOpenTerminal, language }: Doc
                         <span className="text-sm text-zinc-400">{t('docker.logs')}</span>
                     </div>
                     <pre className="flex-1 p-4 text-xs font-mono text-zinc-400 overflow-y-auto whitespace-pre-wrap">
-                        {selectedContainer ? logs || t('docker.loading') : t('docker.selectContainer')}
+                        {selectedContainer ? (logs !== '' ? logs : t('docker.loading')) : t('docker.selectContainer')}
                     </pre>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { Container } from '@main/core/container';
 import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
+import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
 import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
@@ -12,8 +13,8 @@ import { UsageTrackingService } from '@main/services/analysis/usage-tracking.ser
 import { BackupService } from '@main/services/data/backup.service';
 import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DataService } from '@main/services/data/data.service';
-import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { FileManagementService } from '@main/services/data/file.service';
 import { FileChangeTracker } from '@main/services/data/file-change-tracker.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
@@ -29,6 +30,7 @@ import { MarketResearchService } from '@main/services/external/market-research.s
 import { RuleService } from '@main/services/external/rule.service';
 import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
 import { AgentCouncilService } from '@main/services/llm/agent-council.service';
 import { BrainService } from '@main/services/llm/brain.service';
@@ -41,7 +43,6 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
-import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/llm/model-registry.service';
@@ -50,6 +51,7 @@ import { MultiModelComparisonService } from '@main/services/llm/multi-model-comp
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { getOllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
+import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
@@ -80,8 +82,6 @@ import { UpdateService } from '@main/services/system/update.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
-import { McpDeps } from '@main/mcp/server-utils';
-import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { Logger } from '@main/utils/logger';
 import { JsonObject } from '@shared/types/common';
 

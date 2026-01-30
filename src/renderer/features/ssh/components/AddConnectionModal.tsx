@@ -50,7 +50,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <input
                         type="number"
                         value={newConnection.port}
-                        onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) || 22 })}
+                        onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) ?? 22 })}
                         placeholder={t('ssh.placeholders.port')}
                     />
                 </div>
@@ -66,7 +66,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <label>{t('ssh.password')}</label>
                     <input
                         type="password"
-                        value={newConnection.password || ''}
+                        value={newConnection.password ?? ''}
                         onChange={e => setNewConnection({ ...newConnection, password: e.target.value })}
                         placeholder={t('ssh.placeholders.passwordOptional')}
                     />
@@ -74,7 +74,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                 <div className="form-group">
                     <label>{t('ssh.privateKey')}</label>
                     <textarea
-                        value={newConnection.privateKey || ''}
+                        value={newConnection.privateKey ?? ''}
                         onChange={e => setNewConnection({ ...newConnection, privateKey: e.target.value })}
                         placeholder={t('ssh.placeholders.privateKey')}
                         style={{ height: '80px', fontSize: '0.8em' }}
@@ -94,7 +94,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <div className="form-group">
                         <label>{t('ssh.profileName')}</label>
                         <input
-                            value={newConnection.name || ''}
+                            value={newConnection.name ?? ''}
                             onChange={e => setNewConnection({ ...newConnection, name: e.target.value })}
                             placeholder={t('ssh.placeholders.profileName')}
                         />

@@ -153,9 +153,9 @@ function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
     const evalCount = res.eval_count;
     if (!evalCount) { return undefined; }
     return {
-        promptTokens: Number(res.prompt_eval_count || 0),
+        promptTokens: Number(res.prompt_eval_count ?? 0),
         completionTokens: Number(evalCount),
-        totalTokens: Number(res.prompt_eval_count || 0) + Number(evalCount)
+        totalTokens: Number(res.prompt_eval_count ?? 0) + Number(evalCount)
     };
 }
 

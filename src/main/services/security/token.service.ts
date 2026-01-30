@@ -255,7 +255,7 @@ export class TokenService extends BaseService {
                 if (data.token.access_token) {
                     // Check if database already has this or newer (optional but good for log clarity)
                     const fullAccount = await this.authService.getActiveAccountFull(data.token.provider);
-                    if (fullAccount?.id === id && fullAccount?.expiresAt === data.token.expires_at) {
+                    if (fullAccount?.id === id && fullAccount.expiresAt === data.token.expires_at) {
                         // Already in sync
                         continue;
                     }

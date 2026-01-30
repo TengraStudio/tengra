@@ -77,7 +77,7 @@ export function useChatHistory(): ChatHistoryManager {
         const state = history[newIndex];
         isSavingRef.current = false;
 
-        return state ? { ...state } : null;
+        return { ...state };
     }, [history, historyIndex]);
 
     const redo = useCallback((): ChatHistoryState | null => {
@@ -89,7 +89,7 @@ export function useChatHistory(): ChatHistoryManager {
         const state = history[newIndex];
         isSavingRef.current = false;
 
-        return state ? { ...state } : null;
+        return { ...state };
     }, [history, historyIndex]);
 
     const clearHistory = useCallback(() => {

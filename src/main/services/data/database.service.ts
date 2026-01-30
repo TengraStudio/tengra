@@ -1,25 +1,24 @@
-import { v4 as uuidv4 } from 'uuid';
-
 import { appLogger } from '@main/logging/logger';
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
-import { CouncilSessionStatus } from '@shared/types/agent';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
+import { CouncilSessionStatus } from '@shared/types/agent';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { FileDiff } from '@shared/types/file-diff';
 import { Project } from '@shared/types/project';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
-import { DatabaseClientService } from './database-client.service';
-import { DataService } from './data.service';
 import { KnowledgeRepository } from './repositories/knowledge.repository';
 import { ProjectRepository } from './repositories/project.repository';
 import { SystemRepository } from './repositories/system.repository';
+import { DataService } from './data.service';
+import { DatabaseClientService } from './database-client.service';
 
 export type { AuditLogEntry, CouncilSessionStatus, FileDiff, JobState, PromptTemplate };
 
@@ -376,22 +375,22 @@ export class DatabaseService extends BaseService {
     // --- Usage Tracking Methods ---
 
     async addUsageRecord(record: { provider: string; model: string; timestamp: number }) {
-        if (!this._system) {
-            await this.initialize();
-        }
+        await this.ensureInitialized();
         return this._system.addUsageRecord(record);
     }
     async getUsageCount(since: number, provider?: string, model?: string) {
-        if (!this._system) {
-            await this.initialize();
-        }
+        await this.ensureInitialized();
         return this._system.getUsageCount(since, provider, model);
     }
     async cleanupUsageRecords(before: number) {
+        await this.ensureInitialized();
+        return this._system.cleanupUsageRecords(before);
+    }
+
+    private async ensureInitialized(): Promise<void> {
         if (!this._system) {
             await this.initialize();
         }
-        return this._system.cleanupUsageRecords(before);
     }
 
     // --- Prompt Templates Methods ---

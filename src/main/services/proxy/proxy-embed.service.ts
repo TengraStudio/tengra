@@ -100,7 +100,7 @@ export class ProxyEmbedService {
         }
 
         const binaryPath = await this.ensureBinary();
-        const configPath = options?.configPath || this.proxyService.settingsService.getSettingsPath();
+        const configPath = options?.configPath ?? this.proxyService.settingsService.getSettingsPath();
         this.currentConfigPath = configPath;
         this.currentPort = options?.port;
 

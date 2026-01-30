@@ -31,7 +31,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                const statusCode = res.statusCode || 0;
+                const statusCode = res.statusCode ?? 0;
                 resolve({
                     ok: statusCode >= 200 && statusCode < 300,
                     status: statusCode,

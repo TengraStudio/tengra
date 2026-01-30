@@ -244,10 +244,8 @@ export const PanelLayoutProvider: React.FC<{
         // Distribute initial panels
         for (const panel of initialPanels) {
             const group = groups[panel.position];
-            if (group) {
-                group.panels.push(panel);
-                group.activePanel = group.activePanel || panel.id;
-            }
+            group.panels.push(panel);
+            group.activePanel = group.activePanel ?? panel.id;
         }
 
         return { groups, activePanel: null };
@@ -273,7 +271,7 @@ export const PanelLayoutProvider: React.FC<{
                 if (index >= 0) {
                     group.panels = group.panels.filter(p => p.id !== panelId);
                     if (group.activePanel === panelId) {
-                        group.activePanel = group.panels[0]?.id || '';
+                        group.activePanel = group.panels[0]?.id ?? '';
                     }
                     break;
                 }

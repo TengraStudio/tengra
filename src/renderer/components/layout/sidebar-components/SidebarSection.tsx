@@ -86,7 +86,7 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
         return (
             <SidebarCollapsedSection
                 icon={icon}
-                tooltip={tooltip || title}
+                tooltip={tooltip ?? title}
                 badge={badge}
             >
                 {children}

@@ -121,7 +121,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="text-lg font-bold text-foreground truncate" title={stats.uptime}>
-                        {stats.uptime || t('ssh.unknown')}
+                        {stats.uptime !== '' ? stats.uptime : t('ssh.unknown')}
                     </div>
                     <p className="text-xs text-muted-foreground/40 mt-1">{t('ssh.serverUptime')}</p>
                 </CardContent>

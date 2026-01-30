@@ -2,10 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { AuthService } from '@main/services/security/auth.service';
-import { SettingsService } from '@main/services/system/settings.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,7 +54,7 @@ export class LocalImageService {
             try {
                 const account = await this.getAntigravityAccountWithQuota();
                 if (account) {
-                    appLogger.info('local-image.service', `Using Antigravity account: ${account.email || account.id} (quota: ${account.quotaPercentage}%)`);
+                    appLogger.info('local-image.service', `Using Antigravity account: ${account.email ?? account.id} (quota: ${account.quotaPercentage}%)`);
                     return await this.generateWithAntigravity(options, account);
                 } else {
                     appLogger.info('local-image.service', 'No Antigravity accounts with available quota');
@@ -104,7 +104,7 @@ export class LocalImageService {
             // Check quota for each account
             for (const account of antigravityAccounts) {
                 if (!account.accessToken) {
-                    appLogger.debug('local-image.service', `Skipping account ${account.email || account.id}: no access token`);
+                    appLogger.debug('local-image.service', `Skipping account ${account.email ?? account.id}: no access token`);
                     continue;
                 }
 
@@ -112,8 +112,8 @@ export class LocalImageService {
                     // Fetch quota data from Antigravity API
                     const quotaData = await this.quotaService.fetchAntigravityUpstreamForToken(account);
                     
-                    if (!quotaData || !quotaData.models) {
-                        appLogger.debug('local-image.service', `No quota data for account ${account.email || account.id}`);
+                    if (!quotaData?.models) {
+                        appLogger.debug('local-image.service', `No quota data for account ${account.email ?? account.id}`);
                         continue;
                     }
 
@@ -130,7 +130,7 @@ export class LocalImageService {
                     const imageModel = models['gemini-3-pro-image'] || models['imagen-3.0-generate-001'];
                     
                     if (!imageModel) {
-                        appLogger.debug('local-image.service', `Account ${account.email || account.id} doesn't have image model access`);
+                        appLogger.debug('local-image.service', `Account ${account.email ?? account.id} doesn't have image model access`);
                         continue;
                     }
 
@@ -148,7 +148,7 @@ export class LocalImageService {
 
                     // Return account if it has quota (>5%)
                     if (quotaPercentage > 5) {
-                        appLogger.info('local-image.service', `Account ${account.email || account.id} has ${quotaPercentage}% quota remaining`);
+                        appLogger.info('local-image.service', `Account ${account.email ?? account.id} has ${quotaPercentage}% quota remaining`);
                         return {
                             id: account.id,
                             email: account.email,
@@ -157,10 +157,10 @@ export class LocalImageService {
                             quotaPercentage
                         };
                     } else {
-                        appLogger.warn('local-image.service', `Account ${account.email || account.id} quota too low: ${quotaPercentage}%`);
+                        appLogger.warn('local-image.service', `Account ${account.email ?? account.id} quota too low: ${quotaPercentage}%`);
                     }
                 } catch (error) {
-                    appLogger.error('local-image.service', `Failed to check quota for ${account.email || account.id}: ${getErrorMessage(error as Error)}`);
+                    appLogger.error('local-image.service', `Failed to check quota for ${account.email ?? account.id}: ${getErrorMessage(error as Error)}`);
                 }
             }
 
@@ -183,7 +183,7 @@ export class LocalImageService {
         try {
             const { prompt } = options;
             
-            appLogger.info('local-image.service', `Calling Antigravity image generation with account ${account.email || account.id}`);
+            appLogger.info('local-image.service', `Calling Antigravity image generation with account ${account.email ?? account.id}`);
             
             // Call Antigravity image generation via LLMService
             // LLMService.chat() handles image models and saves them automatically
@@ -226,8 +226,8 @@ export class LocalImageService {
 
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
         const settings = this.settingsService.getSettings();
-        const model = settings.images?.ollamaModel || 'stable-diffusion-v1-5';
-        const baseUrl = settings.ollama.url || 'http://127.0.0.1:11434';
+        const model = settings.images?.ollamaModel ?? 'stable-diffusion-v1-5';
+        const baseUrl = settings.ollama.url ?? 'http://127.0.0.1:11434';
 
         try {
             // Ollama image generation is usually via a POST to /api/generate or /api/chat if it's a multimodal model

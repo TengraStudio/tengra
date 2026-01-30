@@ -19,7 +19,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
     const generateConfig = () => {
         const conf = `server {
     listen 80;
-    server_name ${domain || 'example.com'};
+    server_name ${domain !== '' ? domain : 'example.com'};
 
     location / {
         proxy_pass http://localhost:${backendPort};
@@ -59,7 +59,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             if (result.code === 0) {
                 setStatus({ type: 'success', message: t('ssh.nginx.status.success') });
             } else {
-                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr || 'Unknown error' }) });
+                setStatus({ type: 'error', message: t('ssh.nginx.status.error', { error: result.stderr ?? 'Unknown error' }) });
             }
         } catch (error) {
             setStatus({ type: 'error', message: `${t('common.error')}: ${error instanceof Error ? error.message : String(error)}` });

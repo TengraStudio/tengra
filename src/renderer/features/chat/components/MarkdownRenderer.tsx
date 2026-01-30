@@ -105,7 +105,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                             </code>
                         ) : (
                             <MonacoBlock
-                                language={match[1] || 'text'}
+                                language={match[1] ?? 'text'}
                                 code={codeString}
                                 isSpeaking={isSpeaking}
                                 onSpeak={() => { onSpeak?.(codeString); }}
@@ -116,7 +116,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt || 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+                            <img src={src} alt={alt ?? 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button

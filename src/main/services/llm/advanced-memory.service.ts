@@ -61,7 +61,7 @@ export class AdvancedMemoryService {
     }
 
     async initialize(): Promise<void> {
-        if (this.isInitialized) return;
+        if (this.isInitialized) { return; }
 
         // Load pending memories from database
         await this.loadPendingMemories();
@@ -192,9 +192,7 @@ export class AdvancedMemoryService {
             // Remove oldest pending memory
             const oldest = Array.from(this.stagingBuffer.values())
                 .sort((a, b) => a.extractedAt - b.extractedAt)[0];
-            if (oldest) {
-                this.stagingBuffer.delete(oldest.id);
-            }
+            this.stagingBuffer.delete(oldest.id);
         }
 
         const embedding = await this.embedding.generateEmbedding(content);
@@ -344,7 +342,7 @@ export class AdvancedMemoryService {
      */
     async rejectPendingMemory(id: string, reason?: string): Promise<void> {
         const pending = this.stagingBuffer.get(id);
-        if (!pending) return;
+        if (!pending) { return; }
 
         appLogger.info(SERVICE_NAME, `Memory rejected: "${pending.content.substring(0, 50)}..." ${reason ? `(${reason})` : ''}`);
 
@@ -432,11 +430,11 @@ export class AdvancedMemoryService {
         const similar = await this.searchMemoriesByVector(embedding, 10);
         const candidates: ContradictionCandidate[] = [];
 
-        if (similar.length === 0) return candidates;
+        if (similar.length === 0) { return candidates; }
 
         // Use LLM to detect contradictions
         const model = await this.getAvailableModel();
-        if (!model) return candidates;
+        if (!model) { return candidates; }
 
         const existingContents = similar.map(m => ({
             id: m.id,
@@ -645,13 +643,13 @@ Return only the merged fact, no explanation.`;
      * Run decay maintenance on all memories
      */
     async runDecayMaintenance(): Promise<void> {
-        if (!this.config.decay.enabled) return;
+        if (!this.config.decay.enabled) { return; }
 
         const allMemories = await this.getAllAdvancedMemories();
         const now = Date.now();
 
         for (const memory of allMemories) {
-            if (memory.status !== 'confirmed') continue;
+            if (memory.status !== 'confirmed') { continue; }
 
             const newImportance = this.calculateDecayedImportance(memory, now);
 
@@ -740,7 +738,7 @@ Return only the merged fact, no explanation.`;
             instruction: 0.9
         };
 
-        const categoryWeight = categoryWeights[pending.suggestedCategory] ?? 0.5;
+        const categoryWeight = categoryWeights[pending.suggestedCategory] || 0.5;
         const confidenceWeight = pending.extractionConfidence;
         const relevanceWeight = pending.relevanceScore;
         const noveltyWeight = pending.noveltyScore;
@@ -759,10 +757,10 @@ Return only the merged fact, no explanation.`;
         relevance: number,
         contradictionCount: number
     ): boolean {
-        if (this.config.requireUserValidation) return true;
-        if (contradictionCount > 0) return true;
-        if (confidence < 0.7) return true;
-        if (relevance < 0.5) return true;
+        if (this.config.requireUserValidation) { return true; }
+        if (contradictionCount > 0) { return true; }
+        if (confidence < 0.7) { return true; }
+        if (relevance < 0.5) { return true; }
         return false;
     }
 
@@ -770,8 +768,8 @@ Return only the merged fact, no explanation.`;
      * Check if a pending memory should be auto-confirmed
      */
     private shouldAutoConfirm(pending: PendingMemory): boolean {
-        if (pending.requiresUserValidation) return false;
-        if (pending.potentialContradictions.length > 0) return false;
+        if (pending.requiresUserValidation) { return false; }
+        if (pending.potentialContradictions.length > 0) { return false; }
 
         const combinedScore = (
             pending.extractionConfidence * 0.4 +
@@ -798,7 +796,7 @@ Return only the merged fact, no explanation.`;
             fact: 0.5
         };
 
-        return categoryRelevance[category] ?? 0.5;
+        return categoryRelevance[category];
     }
 
     /**
@@ -807,7 +805,7 @@ Return only the merged fact, no explanation.`;
     private async calculateNoveltyScore(content: string, embedding: number[]): Promise<number> {
         const similar = await this.searchMemoriesByVector(embedding, 3);
 
-        if (similar.length === 0) return 1.0; // Completely novel
+        if (similar.length === 0) { return 1.0; } // Completely novel
 
         const maxSimilarity = Math.max(
             ...similar.map(m => this.cosineSimilarity(embedding, m.embedding))
@@ -821,11 +819,11 @@ Return only the merged fact, no explanation.`;
      */
     private shouldExtractFacts(content: string): boolean {
         // Too short
-        if (content.length < 20) return false;
+        if (content.length < 20) { return false; }
 
         // Likely a command or question
-        if (content.startsWith('/')) return false;
-        if (content.endsWith('?') && content.length < 100) return false;
+        if (content.startsWith('/')) { return false; }
+        if (content.endsWith('?') && content.length < 100) { return false; }
 
         // Contains potential fact indicators
         const factIndicators = [
@@ -891,7 +889,7 @@ If no facts worth remembering, return [].`;
                 content: f.content,
                 category: f.category as MemoryCategory,
                 confidence: Math.min(1, Math.max(0, f.confidence)),
-                tags: f.tags || []
+                tags: f.tags
             }));
         } catch (error) {
             appLogger.error(SERVICE_NAME, `LLM extraction failed: ${error}`);
@@ -950,8 +948,8 @@ If no facts worth remembering, return [].`;
             totalImportance += memory.importance;
             contradictions += memory.contradictsIds.length;
 
-            if (memory.lastAccessedAt > oneDayAgo) recentlyAccessed++;
-            if (memory.createdAt > oneDayAgo) recentlyCreated++;
+            if (memory.lastAccessedAt > oneDayAgo) { recentlyAccessed++; }
+            if (memory.createdAt > oneDayAgo) { recentlyCreated++; }
         }
 
         return {
@@ -985,7 +983,7 @@ If no facts worth remembering, return [].`;
         const usedCategories = new Set<MemoryCategory>();
 
         for (const candidate of scoredCandidates) {
-            if (results.length >= limit) break;
+            if (results.length >= limit) { break; }
 
             const categoryPenalty = usedCategories.has(candidate.memory.category)
                 ? diversityFactor * 0.3
@@ -1008,15 +1006,15 @@ If no facts worth remembering, return [].`;
         context: RecallContext
     ): AdvancedSemanticFragment[] {
         return memories.filter(m => {
-            if (context.projectId && m.projectId !== context.projectId) return false;
-            if (context.categories && !context.categories.includes(m.category)) return false;
-            if (context.tags && !context.tags.some(t => m.tags.includes(t))) return false;
-            if (context.createdAfter && m.createdAt < context.createdAfter) return false;
-            if (context.createdBefore && m.createdAt > context.createdBefore) return false;
-            if (context.minConfidence && m.confidence < context.minConfidence) return false;
-            if (context.minImportance && m.importance < context.minImportance) return false;
-            if (!context.includeArchived && m.status === 'archived') return false;
-            if (!context.includePending && m.status === 'pending') return false;
+            if (context.projectId && m.projectId !== context.projectId) { return false; }
+            if (context.categories && !context.categories.includes(m.category)) { return false; }
+            if (context.tags && !context.tags.some(t => m.tags.includes(t))) { return false; }
+            if (context.createdAfter && m.createdAt < context.createdAfter) { return false; }
+            if (context.createdBefore && m.createdAt > context.createdBefore) { return false; }
+            if (context.minConfidence && m.confidence < context.minConfidence) { return false; }
+            if (context.minImportance && m.importance < context.minImportance) { return false; }
+            if (!context.includeArchived && m.status === 'archived') { return false; }
+            if (!context.includePending && m.status === 'pending') { return false; }
             return true;
         });
     }
@@ -1025,7 +1023,7 @@ If no facts worth remembering, return [].`;
      * Cosine similarity between two vectors
      */
     private cosineSimilarity(a: number[], b: number[]): number {
-        if (a.length !== b.length || a.length === 0) return 0;
+        if (a.length !== b.length || a.length === 0) { return 0; }
 
         let dotProduct = 0;
         let normA = 0;
@@ -1108,11 +1106,11 @@ If no facts worth remembering, return [].`;
     // ========================================================================
 
     private async getAvailableModel(): Promise<string | null> {
-        if (this.cachedOllamaModel) return this.cachedOllamaModel;
+        if (this.cachedOllamaModel) { return this.cachedOllamaModel; }
 
         try {
             const res = await fetch('http://127.0.0.1:11434/api/tags');
-            if (!res.ok) return null;
+            if (!res.ok) { return null; }
 
             const data = await res.json() as OllamaTagsResponse;
             const installed = data.models.map(m => m.name.toLowerCase());
@@ -1256,7 +1254,7 @@ If no facts worth remembering, return [].`;
      */
     async restoreMemory(id: string): Promise<boolean> {
         const memory = await this.getMemoryById(id);
-        if (!memory || memory.status !== 'archived') {
+        if (memory?.status !== 'archived') {
             return false;
         }
 

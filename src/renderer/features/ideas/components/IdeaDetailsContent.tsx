@@ -371,7 +371,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                         <div key={i} className="bg-muted/20 border border-border/50 rounded-xl p-4 flex flex-col group hover:bg-primary/5 hover:border-primary/20 transition-all">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-xl grayscale-[0.5] group-hover:grayscale-0 transition-all">
-                                    {p.avatarEmoji || '👤'}
+                                    {p.avatarEmoji ?? '👤'}
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-foreground">{p.name}</p>
@@ -708,7 +708,7 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
                         <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
                             <h3 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
                             <p className="text-sm text-foreground/70 leading-relaxed font-sans">
-                                {idea.marketResearch?.categoryAnalysis || 'Analysis pending deep dive...'}
+                                {idea.marketResearch?.categoryAnalysis ?? 'Analysis pending deep dive...'}
                             </p>
                         </div>
                         <MarketTrends trends={marketTrends} />

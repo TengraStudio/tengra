@@ -283,7 +283,7 @@ export class BackupService {
                 folderId: chatObj.folderId ? String(chatObj.folderId) : undefined,
                 projectId: chatObj.projectId ? String(chatObj.projectId) : undefined,
                 isGenerating: Boolean(chatObj.isGenerating),
-                metadata: (chatObj.metadata as JsonObject | null | undefined) || {}
+                metadata: (chatObj.metadata as JsonObject | null | undefined) ?? {}
             }));
             for (const chat of chats) {
                 await this.restoreSingleChat(chat, opts.mergeChats);

@@ -177,9 +177,7 @@ export class LRUCache<K = string, V = CacheEntry> {
 
         this.head = node;
 
-        if (!this.tail) {
-            this.tail = node;
-        }
+        this.tail ??= node;
     }
 
     private removeNode(node: CacheNode<K, V>): void {

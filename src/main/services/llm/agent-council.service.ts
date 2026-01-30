@@ -425,7 +425,7 @@ export class AgentCouncilService {
             ], model, undefined, provider);
 
             const content = response.content;
-            const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*}/);
+            const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) ?? content.match(/{[\s\S]*}/);
             const verdict = jsonMatch
                 ? safeJsonParse<{ status: string, feedback: string } | null>(jsonMatch[1] || jsonMatch[0], null)
                 : null;
