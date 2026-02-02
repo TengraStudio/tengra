@@ -1,19 +1,20 @@
-import { ScannerService } from '@main/services/analysis/scanner.service';
+import { randomBytes } from 'crypto';
+
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { EmbeddingService } from '@main/services/llm/embedding.service';
 
 interface ExchangeRateResponse {
     rates: Record<string, number>;
 }
 
+// QUAL-002-2: Extract configurable API URLs
+const EXCHANGE_RATE_API_BASE = 'https://open.er-api.com/v6/latest';
+
 export class UtilityService extends BaseService {
     private monitors: Map<string, NodeJS.Timeout> = new Map();
 
     constructor(
-        private db: DatabaseService,
-        _scanner: ScannerService,
-        _embedding: EmbeddingService
+        private db: DatabaseService
     ) {
         super('UtilityService');
     }
@@ -34,10 +35,16 @@ export class UtilityService extends BaseService {
     }
 
     // 16. Currency Converter (Simple static/ratio for demo or small API)
+    /**
+     * Gets the exchange rate between two currencies.
+     * Uses a free API for demonstration.
+     * @param from Source currency code (e.g. USD)
+     * @param to Target currency code (e.g. EUR)
+     */
     async getExchangeRate(from: string, to: string) {
         try {
             // Using a demo free API
-            const res = await fetch(`https://open.er-api.com/v6/latest/${from.toUpperCase()}`);
+            const res = await fetch(`${EXCHANGE_RATE_API_BASE}/${from.toUpperCase()}`);
             const data = await res.json() as ExchangeRateResponse;
             const rate = data.rates[to.toUpperCase()];
             // Standardized: return { rate } in data
@@ -51,6 +58,11 @@ export class UtilityService extends BaseService {
 
     // 19. Uptime Monitor (Register a ping check)
     // 31. Uptime Monitor
+    /**
+     * Starts monitoring a URL for uptime checks.
+     * @param url The URL to monitor.
+     * @param intervalSeconds Interval in seconds (default 60).
+     */
     startMonitor(url: string, intervalSeconds: number = 60) {
         const existing = this.monitors.get(url);
         if (existing) {
@@ -59,14 +71,13 @@ export class UtilityService extends BaseService {
 
         const interval = intervalSeconds * 1000;
         this.logInfo(`Monitoring ${url} every ${intervalSeconds}s`);
-        const timer = setInterval(() => {
-            fetch(url, { method: 'HEAD', mode: 'no-cors' })
-                .then(() => {
-                    this.logInfo(`${url} is UP`);
-                })
-                .catch((e) => {
-                    this.logError(`${url} is DOWN!`, e);
-                });
+        const timer = setInterval(async () => {
+            try {
+                await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                this.logInfo(`${url} is UP`);
+            } catch (e) {
+                this.logError(`${url} is DOWN!`, e);
+            }
         }, interval);
 
         this.monitors.set(url, timer);
@@ -75,8 +86,14 @@ export class UtilityService extends BaseService {
 
     // 29. Smart Reminders
     private reminders: Map<string, NodeJS.Timeout> = new Map();
+    /**
+     * Schedules a one-time callback reminder.
+     * @param text The text context for the reminder (passed back to callback).
+     * @param delayMs Delay in milliseconds.
+     * @param onTrigger Callback function to trigger.
+     */
     scheduleReminder(text: string, delayMs: number, onTrigger: (msg: string) => void) {
-        const id = Math.random().toString(36).substring(2, 9);
+        const id = randomBytes(4).toString('hex');
         const timeout = setTimeout(() => {
             onTrigger(text);
             this.reminders.delete(id);
@@ -85,6 +102,10 @@ export class UtilityService extends BaseService {
         return { success: true, data: { id }, message: `Reminder set for ${new Date(Date.now() + delayMs).toLocaleTimeString()}` };
     }
 
+    /**
+     * Cancels a scheduled reminder by ID.
+     * @param id The reminder ID to cancel.
+     */
     cancelReminder(id: string) {
         const reminder = this.reminders.get(id);
         if (reminder) {
@@ -96,6 +117,10 @@ export class UtilityService extends BaseService {
     }
 
     // 34. Ghost Mode (Productivity)
+    /**
+     * Toggles 'Ghost Mode' (Do Not Disturb simulation).
+     * @param enabled True to enable, false to disable.
+     */
     toggleGhostMode(enabled: boolean) {
         if (enabled) {
             return { success: true, message: 'Ghost Mode (DND) enabled. Notifications silenced.' };
@@ -105,6 +130,11 @@ export class UtilityService extends BaseService {
     }
 
     // 35. VirusTotal Integration
+    /**
+     * Checks a file hash against VirusTotal API.
+     * @param hash The file hash (MD5, SHA-1, or SHA-256).
+     * @param apiKey VirusTotal API Key.
+     */
     async checkVirusTotal(hash: string, apiKey?: string) {
         if (!apiKey) {
             return { success: false, error: 'VirusTotal API key required in arguments or settings' };
@@ -123,6 +153,11 @@ export class UtilityService extends BaseService {
     }
 
     // 36. Shodan Link
+    /**
+     * Looks up an IP address using Shodan.
+     * @param ip IP address to lookup.
+     * @param apiKey Shodan API Key.
+     */
     async lookupShodan(ip: string, apiKey?: string) {
         if (!apiKey) {
             return { success: false, error: 'Shodan API key required' };
@@ -139,16 +174,25 @@ export class UtilityService extends BaseService {
     }
 
     // 37. Plugin System (Simplified)
-    async loadPlugin(_path: string) {
+    async loadPlugin() {
         return { success: false, error: 'Plugin loading via eval is disabled for security reasons.' };
     }
 
     // 39. Long-term Memory
+    /**
+     * Stores a key-value memory pair.
+     * @param key Key string.
+     * @param value Value string.
+     */
     async storeMemory(key: string, value: string) {
         await this.db.storeMemory(key, value);
         return { success: true, message: `Memory stored for "${key}"` };
     }
 
+    /**
+     * Recalls a stored memory by key.
+     * @param key Key string.
+     */
     async recallMemory(key: string) {
         const value = await this.db.recallMemory(key);
         // Standardized: return { value } in data, or just the value in data?
@@ -159,16 +203,16 @@ export class UtilityService extends BaseService {
 
     // 40. Local RAG (Vector-based)
     // 40. Local RAG (Deprecated)
-    async indexDocument(_path: string) {
+    async indexDocument() {
         return { success: false, error: 'Deprecated. Use CodeIntelligenceService for indexing.' };
     }
 
-    async searchDocuments(_query: string) {
+    async searchDocuments() {
         return { success: false, error: 'Deprecated. Use ContextRetrievalService for search.' };
     }
 
     // 41. Codebase Scanner (Deprecated)
-    async scanCodebase(_dir: string) {
+    async scanCodebase() {
         return { success: false, error: 'Deprecated. Use CodeIntelligenceService for scanning.' };
     }
 }

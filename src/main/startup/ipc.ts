@@ -84,7 +84,8 @@ export function registerIpcHandlers(
         proxyService: services.proxyService,
         codeIntelligenceService: services.codeIntelligenceService,
         contextRetrievalService: services.contextRetrievalService,
-        databaseService: services.databaseService
+        databaseService: services.databaseService,
+        rateLimitService: services.rateLimitService
     });
 
     registerOllamaIpc({
@@ -140,7 +141,7 @@ export function registerIpcHandlers(
     });
 
     registerSshIpc(getMainWindow, services.sshService, services.rateLimitService);
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots);
+    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.rateLimitService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(services.modelCollaborationService);

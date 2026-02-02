@@ -41,8 +41,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
     return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<IpcResponse<T> | T> => {
         try {
             // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
-            // Safe cast: at runtime args come as any[], but we trust the handler signature matches what is sent
-            const result = await handler(event, ...(args as unknown as Args));
+            const result = await handler(event, ...(args as Args));
             // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
 
             if (wrapResponse) {
@@ -67,7 +66,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
 
                 if (errorObj instanceof TandemError) {
                     code = errorObj.code as AppErrorCode;
-                    context = errorObj.context as unknown as Record<string, JsonValue | Error>;
+                    context = errorObj.context as Record<string, JsonValue | Error>;
                 }
 
                 return {
@@ -110,7 +109,7 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unk
 ) => {
     return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<T> => {
         try {
-            return await handler(event, ...(args as unknown as Args));
+            return await handler(event, ...(args as Args));
         } catch (error) {
             appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(error as Error)}`);
             return defaultValue;

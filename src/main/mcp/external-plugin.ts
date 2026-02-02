@@ -9,6 +9,9 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 import { IMcpPlugin } from './plugin-base';
 
+// QUAL-002-6: Extract configurable timeout
+const MCP_REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+
 interface PendingRequest {
     resolve: (val: McpResponse) => void;
     reject: (err: Error) => void;
@@ -50,12 +53,27 @@ export class ExternalMcpPlugin implements IMcpPlugin {
         this.source = config.isRemote ? 'remote' : 'user';
     }
 
+    private readonly MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB limit
+
     async initialize(): Promise<void> {
         if (this.server && !this.server.killed) { return; }
 
         appLogger.info('MCP', `Launching external plugin: ${this.name} (${this.config.command})`);
 
-        const env = { ...process.env, ...this.config.env };
+        // SEC-005-2: Whitelist environment variables to prevent secret leakage
+        const SAFE_ENV_VARS = [
+            'PATH', 'Path', 'HOME', 'USER', 'LANG', 'TMP', 'TEMP',
+            'SystemRoot', 'COMSPEC', 'PATHEXT', 'WINDIR', 'APPDATA',
+            'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'TERM'
+        ];
+
+        const safeEnv: Record<string, string> = {};
+        for (const key of SAFE_ENV_VARS) {
+            const value = process.env[key];
+            if (value) { safeEnv[key] = value; }
+        }
+
+        const env = { ...safeEnv, ...this.config.env };
         const command = this.resolveCommand(this.config.command);
 
         this.server = spawn(command, this.config.args, {
@@ -109,6 +127,7 @@ export class ExternalMcpPlugin implements IMcpPlugin {
         }
 
         const id = randomUUID();
+        appLogger.info('MCP', `Dispatching ${this.name}.${actionName}`, { id, args });
         const request = {
             jsonrpc: '2.0',
             method: 'tools/call',
@@ -119,21 +138,25 @@ export class ExternalMcpPlugin implements IMcpPlugin {
         return new Promise((resolve) => {
             const timeout = setTimeout(() => {
                 this.requestQueue.delete(id);
-                resolve({ success: false, error: `MCP Request Timeout (30s): ${this.name}.${actionName}` });
-            }, 30000);
+                appLogger.warn('MCP', `Request Timeout: ${this.name}.${actionName}`, { id });
+                resolve({ success: false, error: `MCP Request Timeout (${MCP_REQUEST_TIMEOUT_MS / 1000}s): ${this.name}.${actionName}` });
+            }, MCP_REQUEST_TIMEOUT_MS);
 
             this.requestQueue.set(id, {
                 resolve: (msg: McpResponse) => {
                     clearTimeout(timeout);
                     if (msg.error) {
+                        appLogger.error('MCP', `Request Failed: ${this.name}.${actionName}`, msg.error);
                         resolve({ success: false, error: msg.error.message });
                     } else {
                         const content = msg.result?.content?.[0]?.text ?? null;
+                        appLogger.info('MCP', `Request Success: ${this.name}.${actionName}`, { id });
                         resolve({ success: true, data: content, service: this.name, action: actionName });
                     }
                 },
                 reject: (err: Error) => {
                     clearTimeout(timeout);
+                    appLogger.error('MCP', `Request Error: ${this.name}.${actionName}`, err);
                     resolve({ success: false, error: err.message });
                 }
             });
@@ -157,6 +180,13 @@ export class ExternalMcpPlugin implements IMcpPlugin {
     }
 
     private handleOutput(chunk: string) {
+        // SEC-005-1: prevent memory exhaustion from plugin output
+        if (this.buffer.length + chunk.length > this.MAX_BUFFER_SIZE) {
+            appLogger.error('MCP', `${this.name} exceeded max buffer size. terminating.`);
+            void this.dispose();
+            return;
+        }
+
         this.buffer += chunk;
         const lines = this.buffer.split('\n');
         this.buffer = lines.pop() ?? '';

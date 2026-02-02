@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { desktopCapturer, ipcMain } from 'electron';
 
 export function registerScreenshotIpc() {
@@ -13,7 +14,7 @@ export function registerScreenshotIpc() {
             }
             return primarySource.thumbnail.toDataURL();
         } catch (error) {
-            console.error('Screenshot error:', error);
+            appLogger.error('screenshot', 'Screenshot capture failed:', error as Error);
             throw error;
         }
     });

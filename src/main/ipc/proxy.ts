@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -39,7 +40,7 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         try {
             return await proxyService.quotaService.saveClaudeSession(sessionKey, accountId);
         } catch (error) {
-            console.error('Failed to save manual session:', error);
+            appLogger.error('proxy', 'Failed to save manual session:', error as Error);
             return { success: false, error: (error as Error).message };
         }
     });

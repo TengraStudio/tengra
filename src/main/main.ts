@@ -9,11 +9,7 @@ import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, protocol, shell,
 
 declare const __BUILD_TIME__: string;
 
-// Suppress Electron security warnings in development (CSP warnings due to Monaco Editor requiring unsafe-eval)
-// These warnings don't appear in packaged apps
-if (!app.isPackaged) {
-    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
-}
+
 
 // Set the application name early - this affects Task Manager display on Windows
 app.setName('Tandem');
@@ -68,7 +64,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
         icon: nativeImage.createFromPath(iconPath),
         webPreferences: {
             preload: path.join(__dirname, '../preload/preload.js'),
-            sandbox: false, // Required for some Node APIs if contextIsolation is false, but here it is true. keeping as is.
+            sandbox: true,
             contextIsolation: true,
             nodeIntegration: false
         }
@@ -80,7 +76,7 @@ function createWindow(settingsService?: SettingsService): BrowserWindow {
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
-                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: safe-file: https: http://localhost:* ws://localhost:*; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:;"
+                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:*; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https:;"
                 ]
             }
         });

@@ -249,7 +249,19 @@ export const webElectronMock: ElectronAPI = {
         }) => ({ success: true }),
         getProjects: async () => [],
         getFolders: async () => [],
-        createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => { },
+        createProject: async (_name: string, _path: string, _description: string, _mounts?: string) => ({
+            id: 'mock-project-id',
+            title: _name,
+            description: _description,
+            path: _path,
+            mounts: [],
+            chatIds: [],
+            councilConfig: { enabled: false, members: [], consensusThreshold: 0.7 },
+            status: 'active',
+            metadata: {},
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        } as Project),
         updateProject: async (_id: string, _updates: Partial<Project>) => { },
         deleteProject: async (_id: string, _deleteFiles?: boolean) => { },
         archiveProject: async (_id: string, _isArchived: boolean) => { },
@@ -546,6 +558,7 @@ export const webElectronMock: ElectronAPI = {
         stop: async () => { },
         getStatus: async () => null,
         retryStep: async (_index: number) => { },
+        getProfiles: async () => [],
         onUpdate: (_callback: (state: unknown) => void) => () => { }
     },
     extension: {

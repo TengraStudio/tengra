@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
@@ -96,7 +97,7 @@ export function registerOllamaIpc(options: {
             return { content: res.message.content, role: 'assistant' };
         } catch (err) {
             const message = getErrorMessage(err as Error);
-            console.error('[Main:Ollama] Chat Error:', message);
+            appLogger.error('OllamaIPC', 'Chat Error', err as Error);
             return { error: message };
         }
     });
@@ -108,7 +109,7 @@ export function registerOllamaIpc(options: {
             }
             return [];
         } catch (err) {
-            console.error('[Main:Ollama] getLibraryModels Error:', getErrorMessage(err as Error));
+            appLogger.error('OllamaIPC', 'getLibraryModels Error', err as Error);
             return [];
         }
     });

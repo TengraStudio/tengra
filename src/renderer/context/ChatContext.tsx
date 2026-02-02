@@ -106,14 +106,30 @@ function useHistorySync(
     historyManager: ReturnType<typeof useChatHistory>,
     isRestoringRef: React.MutableRefObject<boolean>
 ): void {
+    const saveTimeoutRef = useRef<NodeJS.Timeout>();
+    
     useEffect(() => {
         if (isRestoringRef.current) {
             isRestoringRef.current = false;
             return;
         }
-        if (chats.length > 0) {
-            historyManager.saveState(chats, currentChatId);
+        
+        // Debounce history saves (500ms)
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
         }
+        
+        if (chats.length > 0) {
+            saveTimeoutRef.current = setTimeout(() => {
+                historyManager.saveState(chats, currentChatId);
+            }, 500);
+        }
+        
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
     }, [chats, currentChatId, historyManager, isRestoringRef]);
 }
 

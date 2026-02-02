@@ -17,6 +17,10 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Agent } from 'undici';
 
+// QUAL-002-3, QUAL-002-4: Extract configurable provider URLs
+const GROQ_API_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OLLAMA_DEFAULT_BASE_URL = 'http://127.0.0.1:11434/v1';
+
 export interface LLMChatOptions {
     model?: string;
     tools?: ToolDefinition[];
@@ -76,7 +80,8 @@ export class LLMService {
 
     private groqApiKey: string = '';
     private proxyUrl: string = 'http://localhost:8317/v1';
-    private proxyKey: string = 'connected';
+    private proxyKey: string = '';
+    private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
     private imagePersistence: ImagePersistenceService;
 
@@ -108,6 +113,10 @@ export class LLMService {
         this.anthropicApiKey = this.configService.get('ANTHROPIC_API_KEY', '');
 
         this.groqApiKey = this.configService.get('GROQ_API_KEY', '');
+
+        // Internal default keys
+        this.proxyKey = this.configService.get('PROXY_API_KEY', 'connected');
+        this.opencodeApiKey = this.configService.get('OPENCODE_API_KEY', 'public');
     }
 
     // --- Configuration ---
@@ -298,7 +307,7 @@ export class LLMService {
     }
 
     private async chatOpenCodeRequest(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
-        const apiKey = 'public';
+        const apiKey = this.opencodeApiKey;
         const baseUrl = 'https://opencode.ai/zen/v1';
 
         if (model === 'gpt-5-nano') {
@@ -330,8 +339,8 @@ export class LLMService {
         return this.parseOpenCodeResponse(json);
     }
 
-    async * chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
-        const apiKey = 'public';
+    async * chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
+        const apiKey = this.opencodeApiKey;
         const baseUrl = 'https://opencode.ai/zen/v1';
 
         if (model === 'gpt-5-nano') {
@@ -417,7 +426,7 @@ export class LLMService {
         try {
             const body = this.buildOpenAIBody(messages, { model, provider: 'groq' });
             const response = await this.breakers.groq.execute(() =>
-                this.httpService.fetch('https://api.groq.com/openai/v1/chat/completions', {
+                this.httpService.fetch(GROQ_API_BASE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
                     body: JSON.stringify(body),
@@ -458,7 +467,7 @@ export class LLMService {
         } else if (p.includes('antigravity')) {
             return this.chatOpenAI(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp });
         } else if (p.includes('ollama')) {
-            return this.chatOpenAI(messages, { model, tools, baseUrl: 'http://127.0.0.1:11434/v1', apiKey: 'ollama', provider, temperature: temp });
+            return this.chatOpenAI(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp });
         } else {
             return this.chatOpenAI(messages, { model, tools, provider, temperature: temp });
         }
@@ -474,7 +483,7 @@ export class LLMService {
         } else if (p.includes('antigravity')) {
             yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp, systemMode });
         } else if (p.includes('ollama')) {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: 'http://127.0.0.1:11434/v1', apiKey: 'ollama', provider, temperature: temp, systemMode });
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp, systemMode });
         } else {
             yield* this.chatOpenAIStream(messages, { model, tools, provider, temperature: temp, systemMode });
         }

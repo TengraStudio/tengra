@@ -18,13 +18,28 @@ export interface ModelInfo {
     [key: string]: JsonValue | undefined;
 }
 
+export interface GroupedModels {
+    [provider: string]: {
+        label: string;
+        models: ModelInfo[];
+    }
+}
+
+// Simple in-memory cache for model fetches
+let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
+const CACHE_DURATION_MS = 60000; // 1 minute cache
+
 export async function fetchModels(): Promise<ModelInfo[]> {
     try {
-        // Fetch from unified source (Main Process aggregates Ollama, Copilot, Proxy/Antigravity, Llama)
+        // PERF-005-1: Return cached models if still fresh
+        if (modelCache && Date.now() - modelCache.timestamp < CACHE_DURATION_MS) {
+            return modelCache.data;
+        }
+
         // Fetch from unified source (Main Process aggregates Ollama, Copilot, Proxy/Antigravity, Llama)
         const models = await window.electron.modelRegistry.getAllModels().catch(() => []);
 
-        return models.map(m => {
+        const processedModels = models.map(m => {
             // Fall back to owned_by if provider is not set (common in OpenAI-compat APIs)
             const providerHint = m.provider || (m as { owned_by?: string }).owned_by;
             const categorized = categorizeModel(m.id || m.name, providerHint);
@@ -35,16 +50,17 @@ export async function fetchModels(): Promise<ModelInfo[]> {
                 name: m.name || categorized.label  // Set name for ModelSelector display
             };
         });
+
+        // Update cache
+        modelCache = {
+            data: processedModels,
+            timestamp: Date.now()
+        };
+
+        return processedModels;
     } catch (error) {
         console.error('Failed to fetch models:', error);
         return [];
-    }
-}
-
-export interface GroupedModels {
-    [provider: string]: {
-        label: string;
-        models: ModelInfo[];
     }
 }
 

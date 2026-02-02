@@ -8,6 +8,7 @@ import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
+import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { parseAIResponseContent } from '@main/utils/response-parser';
@@ -16,6 +17,7 @@ import { Message, ToolDefinition } from '@shared/types/chat';
 import { SystemMode } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
+
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
 import { estimateTokens } from '@shared/utils/token.util';
 import { app, ipcMain, IpcMainInvokeEvent, WebContents } from 'electron';
@@ -157,6 +159,7 @@ interface ChatIpcOptions {
     codeIntelligenceService: CodeIntelligenceService;
     contextRetrievalService: ContextRetrievalService;
     databaseService: DatabaseService;
+    rateLimitService?: RateLimitService;
 }
 
 class ChatIpcManager {
@@ -221,6 +224,18 @@ class ChatIpcManager {
     }
 
     async handleChatStream(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, optionsJson: JsonObject | undefined, chatId: string, projectId?: string, systemMode?: SystemMode }) {
+        if (this.options.rateLimitService) {
+            try {
+                await this.options.rateLimitService.waitForToken('chat:stream');
+            } catch (error) {
+                const msg = `Rate limit exceeded: ${getErrorMessage(error as Error)}`;
+                appLogger.warn('Chat', msg);
+                safeSend(event.sender, 'ollama:streamChunk', { chatId: params.chatId, type: 'error', content: msg });
+                safeSend(event.sender, 'ollama:streamChunk', { chatId: params.chatId, done: true });
+                return;
+            }
+        }
+
         const sanitized = this.sanitizeStreamInputs(params);
         const settings = this.options.settingsService.getSettings();
         const ollamaSettings = settings['ollama'] as JsonObject | undefined;
@@ -371,9 +386,7 @@ class ChatIpcManager {
         let totalCompletion = 0;
         let fullContent = '';
 
-        for await (const chunk of this.options.llmService.chatOpenAIStream(messages, {
-            model, tools, baseUrl: 'https://api.opencode.com/v1', apiKey: 'opencode', provider: 'opencode'
-        })) {
+        for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools)) {
             if (chunk.usage) {
                 totalPrompt = chunk.usage.prompt_tokens;
                 totalCompletion = chunk.usage.completion_tokens;

@@ -1,14 +1,20 @@
 import { resolve } from 'path';
 
+import { appLogger } from '@main/logging/logger';
 import { FileSystemService } from '@main/services/data/filesystem.service';
+import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { AISystemType } from '@shared/types/file-diff';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 
 export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
     fileSystemService: FileSystemService,
-    allowedRoots: Set<string>
+    allowedRoots: Set<string>,
+    rateLimitService?: RateLimitService
 ) {
+    // ... (lines 13-68 omitted for brevity, logic remains same)
+
     ipcMain.handle('files:selectDirectory', async () => {
         const win = getMainWindow();
         if (!win) { return { success: false }; }
@@ -38,14 +44,12 @@ export function registerFilesIpc(
 
     ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => {
         if (context?.aiSystem) {
-            // Use tracking-enabled writeFile for AI-initiated changes
             return await fileSystemService.writeFileWithTracking(filePath, content, {
                 aiSystem: context.aiSystem as AISystemType,
                 chatSessionId: context.chatSessionId,
                 changeReason: context.changeReason ?? 'AI file modification'
             });
         } else {
-            // Regular user-initiated file write
             return await fileSystemService.writeFile(filePath, content);
         }
     });
@@ -71,6 +75,15 @@ export function registerFilesIpc(
     });
 
     ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
+        if (rateLimitService) {
+            try {
+                await rateLimitService.waitForToken('files:search');
+            } catch (error) {
+                appLogger.warn('FilesIPC', `Rate limit exceeded for searchFilesStream: ${getErrorMessage(error as Error)}`);
+                return { success: false, error: 'Rate limit exceeded. Please wait before searching again.' };
+            }
+        }
+
         const win = getMainWindow();
         if (!win) { return { success: false }; }
 
@@ -88,7 +101,7 @@ export function registerFilesIpc(
                 win.webContents.send(`files:search-complete:${jobId}`);
             }
         }).catch((err: Error) => {
-            console.error('File search failed:', err);
+            appLogger.error('files', `File search failed: ${err.message}`);
         });
 
         return { success: true, jobId };

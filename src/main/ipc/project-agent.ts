@@ -37,4 +37,8 @@ export function registerProjectAgentIpc(
     ipcMain.handle('project:retry-step', async (_, index: number) => {
         await projectAgentService.retryStep(index);
     });
+
+    ipcMain.handle('project:get-profiles', async () => {
+        return await projectAgentService.getProfiles();
+    });
 }

@@ -29,10 +29,24 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 
     useEffect(() => {
         const area = textareaRef.current;
-        if (area) {
+        if (!area) { return; }
+        
+        // Auto-resize textarea
+        area.style.height = 'auto';
+        area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
+        
+        // ResizeObserver for more robust resizing
+        const resizeObserver = new ResizeObserver(() => {
             area.style.height = 'auto';
             area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
-        }
+        });
+        
+        resizeObserver.observe(area);
+        
+        // Cleanup
+        return () => {
+            resizeObserver.disconnect();
+        };
     }, [ctrl.input, textareaRef]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

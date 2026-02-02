@@ -3,9 +3,9 @@
  * Provides intelligent caching layer for frequently accessed database queries
  */
 
-import { Chat, Folder,Message, Project } from '@/types';
+import { Chat, Folder, Message, Project } from '@/types';
 
-import { chatCache, dbQueryCache,invalidateCache, projectCache, withCache } from './lru-cache.util';
+import { chatCache, dbQueryCache, invalidateCache, projectCache, withCache } from './lru-cache.util';
 
 export class CachedDatabase {
     /**
@@ -97,11 +97,11 @@ export class CachedDatabase {
      */
     static async createChat(chat: Chat): Promise<{ success: boolean }> {
         const result = await window.electron.db.createChat(chat);
-        
+
         // Invalidate related cache entries
         invalidateCache('chats:', chatCache);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
@@ -110,11 +110,11 @@ export class CachedDatabase {
      */
     static async updateChat(id: string, updates: Partial<Chat>): Promise<{ success: boolean }> {
         const result = await window.electron.db.updateChat(id, updates);
-        
+
         // Invalidate specific and related cache entries
         chatCache.delete(`chat:${id}`);
         invalidateCache('chats:', chatCache);
-        
+
         return result;
     }
 
@@ -123,13 +123,13 @@ export class CachedDatabase {
      */
     static async deleteChat(id: string): Promise<{ success: boolean }> {
         const result = await window.electron.db.deleteChat(id);
-        
+
         // Invalidate all related cache entries
         chatCache.delete(`chat:${id}`);
         chatCache.delete(`messages:${id}`);
         invalidateCache('chats:', chatCache);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
@@ -138,12 +138,12 @@ export class CachedDatabase {
      */
     static async addMessage(message: Message): Promise<{ success: boolean }> {
         const result = await window.electron.db.addMessage(message);
-        
+
         // Invalidate message cache for this chat
         chatCache.delete(`messages:${message.chatId}`);
         chatCache.delete(`chat:${message.chatId}`);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
@@ -152,25 +152,25 @@ export class CachedDatabase {
      */
     static async deleteMessages(chatId: string): Promise<{ success: boolean }> {
         const result = await window.electron.db.deleteMessages(chatId);
-        
+
         // Invalidate message cache
         chatCache.delete(`messages:${chatId}`);
         chatCache.delete(`chat:${chatId}`);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
     /**
      * Create project and invalidate cache
      */
-    static async createProject(name: string, path: string, description: string, mounts?: string): Promise<void> {
+    static async createProject(name: string, path: string, description: string, mounts?: string): Promise<Project> {
         const result = await window.electron.db.createProject(name, path, description, mounts);
-        
+
         // Invalidate project cache
         invalidateCache('projects:', projectCache);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
@@ -179,10 +179,10 @@ export class CachedDatabase {
      */
     static async updateProject(id: string, updates: Partial<Project>): Promise<void> {
         const result = await window.electron.db.updateProject(id, updates);
-        
+
         // Invalidate project cache
         invalidateCache('projects:', projectCache);
-        
+
         return result;
     }
 
@@ -191,11 +191,11 @@ export class CachedDatabase {
      */
     static async deleteProject(id: string, deleteFiles?: boolean): Promise<void> {
         const result = await window.electron.db.deleteProject(id, deleteFiles);
-        
+
         // Invalidate project cache
         invalidateCache('projects:', projectCache);
         invalidateCache('db:stats', dbQueryCache);
-        
+
         return result;
     }
 
@@ -204,10 +204,10 @@ export class CachedDatabase {
      */
     static async createFolder(name: string, color?: string): Promise<Folder> {
         const result = await window.electron.db.createFolder(name, color);
-        
+
         // Invalidate folder cache
         invalidateCache('folders:', dbQueryCache);
-        
+
         return result;
     }
 
@@ -216,10 +216,10 @@ export class CachedDatabase {
      */
     static async updateFolder(id: string, updates: Partial<Folder>): Promise<void> {
         const result = await window.electron.db.updateFolder(id, updates);
-        
+
         // Invalidate folder cache
         invalidateCache('folders:', dbQueryCache);
-        
+
         return result;
     }
 
@@ -228,11 +228,11 @@ export class CachedDatabase {
      */
     static async deleteFolder(id: string): Promise<void> {
         const result = await window.electron.db.deleteFolder(id);
-        
+
         // Invalidate folder and chat caches
         invalidateCache('folders:', dbQueryCache);
         invalidateCache('chats:', chatCache); // Chats may reference folders
-        
+
         return result;
     }
 

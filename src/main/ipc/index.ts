@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { registerAgentIpc } from '@main/ipc/agent';
 import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
@@ -85,7 +86,7 @@ export function registerAllIpc(
                 const status = await services.ollamaHealthService.checkHealth();
                 getWin()?.webContents.send('ollama:connection-status', status.online);
             } catch (error) {
-                console.error('[IPC] Failed to check Ollama connection:', error);
+                appLogger.error('IPC', 'Failed to check Ollama connection', error as Error);
                 getWin()?.webContents.send('ollama:connection-status', false);
             }
         }

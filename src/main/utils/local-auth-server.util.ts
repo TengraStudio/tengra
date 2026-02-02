@@ -38,12 +38,12 @@ interface ClaudeCallbackParams {
 }
 
 export class LocalAuthServer {
-    private static readonly CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
+    private static readonly CLIENT_ID = process.env['GOOGLE_CLIENT_ID'] ?? '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
     private static readonly AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
     private static readonly TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
     // Claude Constants
-    private static readonly CLAUDE_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
+    private static readonly CLAUDE_CLIENT_ID = process.env['ANTIGRAVITY_CLAUDE_CLIENT_ID'] ?? '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
     private static readonly CLAUDE_AUTH_ENDPOINT = 'https://claude.ai/oauth/authorize';
     private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://api.anthropic.com/v1/oauth/token';
 

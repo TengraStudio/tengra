@@ -11,7 +11,13 @@ export class FolderRepository implements IRepository<Folder> {
         return this.db.getFolders();
     }
 
+    /**
+     * Find folder by ID using optimized direct query
+     * @param id - Folder ID to search for
+     * @returns Folder if found, null otherwise
+     */
     async findById(id: string): Promise<Folder | null> {
+        // PERF-003-2: Use direct WHERE query instead of loading all folders
         return (await this.db.getFolder(id)) ?? null;
     }
 

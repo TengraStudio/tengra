@@ -5,6 +5,7 @@ import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Language, useTranslation } from '@/i18n';
 import { SSHConnection } from '@/types';
 
@@ -57,9 +58,13 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             setTerminalOutput(p => { return p + `${t('ssh.connected', { host: newConnection.host })}\n`; });
             setShowAddModal(false);
             if (shouldSaveProfile) {
-                await window.electron.ssh.saveProfile({ ...newConnection, id: res.id ?? '', name: newConnection.name ?? newConnection.host }).catch(console.error);
+                await window.electron.ssh.saveProfile({ ...newConnection, id: res.id ?? '', name: newConnection.name ?? newConnection.host }).catch((err: Error) => {
+                    appLogger.error('SSHManager', 'Failed to save profile', err);
+                });
             }
-            await loadConnections().catch(console.error);
+            await loadConnections().catch((err: Error) => {
+                appLogger.error('SSHManager', 'Failed to load connections', err);
+            });
         } else {
             setTerminalOutput(p => { return p + `${t('ssh.connectionError', { error: res.error ?? 'Unknown' })}\n`; });
         }

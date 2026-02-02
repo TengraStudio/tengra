@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 
 import { BaseService } from '@main/services/base.service';
-import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolDefinition } from '@main/tools/tool-definitions';
 import { ToolExecutor } from '@main/tools/tool-executor';
@@ -634,6 +634,10 @@ export class ProjectAgentService extends BaseService {
 
     private async loadState() {
         // TODO: Load active task from DB if exists?
+    }
+
+    async getProfiles() {
+        return this.agentRegistryService.getAllProfiles();
     }
 
     private emitUpdate() {

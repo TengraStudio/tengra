@@ -157,7 +157,7 @@ export class SSHService extends EventEmitter {
         if (this.initPromise) { return this.initPromise; }
         this.initPromise = (async () => {
             try {
-                await fs.promises.mkdir(this.storagePath, { recursive: true });
+                await fs.promises.mkdir(this.storagePath, { recursive: true, mode: 0o700 });
                 try {
                     await fs.promises.access(this.profilesPath);
                 } catch {

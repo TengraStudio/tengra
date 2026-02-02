@@ -1838,7 +1838,7 @@ This is the INITIAL concept that will be further researched and developed.
 5. RELEVANT: Strictly stay within the ${categoryNames[category]} category. Do NOT focus on AI/ML unless it is essential to the core functionality of this specific category.
 
 💡 Creative direction: ${creativityHint}
-${customPrompt ? `\n\n=== USER CONSTRAINTS ===\n${customPrompt}\n` : ''}
+${customPrompt ? `\n\n=== USER CONSTRAINTS ===\n${this.sanitizeCustomPrompt(customPrompt)}\n` : ''}
 === THINK DEEPLY ===
 Before responding, carefully consider:
 - What SPECIFIC problem does this solve that isn't well-addressed?
@@ -2045,6 +2045,17 @@ Respond ONLY with valid JSON:
                 other: []
             };
         }
+    }
+
+    /**
+     * Sanitize custom prompt to prevent prompt injection
+     */
+    private sanitizeCustomPrompt(prompt: string): string {
+        return prompt
+            .replace(/```/g, '') // Remove code block markers
+            .replace(/===+/g, '---') // Prevent section marker injection
+            .replace(/(\r?\n){3,}/g, '\n\n') // Limit excessive newlines
+            .slice(0, 1000); // Limit length
     }
 
     private parseCompetitorResponse(content: string): {

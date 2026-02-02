@@ -4,6 +4,11 @@ import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, shell } from 'electron';
 
+const COMPACT_WIDTH = 400;
+const COMPACT_HEIGHT = 600;
+const DEFAULT_WIDTH = 1200;
+const DEFAULT_HEIGHT = 800;
+
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     registerWindowControlHandlers(getMainWindow);
     registerShellHandlers();
@@ -26,9 +31,9 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
         const win = getMainWindow();
         if (!win) { return; }
         if (enabled) {
-            win.setSize(400, 600);
+            win.setSize(COMPACT_WIDTH, COMPACT_HEIGHT);
         } else {
-            win.setSize(1200, 800);
+            win.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         }
     });
     ipcMain.on('window:resize', (_event, resolution: string) => {

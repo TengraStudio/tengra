@@ -5,6 +5,7 @@ import { CodexUsage, QuotaResponse } from '@shared/types/quota';
 import { Monitor } from 'lucide-react';
 import React, { memo, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { Language, useTranslation } from '@/i18n';
 import { Message, Project, TerminalTab } from '@/types';
@@ -53,7 +54,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     // Use state machine for coordinated state management
     const sm = useProjectListStateMachine({
         filteredProjects,
-        onError: (error) => console.error('[ProjectsPage] Operation failed:', error)
+        onError: (error: unknown) => appLogger.error('ProjectsPage', 'Operation failed', error instanceof Error ? error : new Error(String(error)))
     });
 
     // Adapter: Map state machine state to modal props

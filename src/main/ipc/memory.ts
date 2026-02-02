@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ipcMain } from 'electron';
 
@@ -9,7 +10,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
         try {
             return await memoryService.getAllMemories();
         } catch (e) {
-            console.error('[Memory IPC] Error getting memories:', e);
+            appLogger.error('[Memory IPC]', 'Error getting memories:', e as Error);
             return { facts: [], episodes: [], entities: [] };
         }
     });
@@ -20,7 +21,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
             const success = await memoryService.forgetFact(factId);
             return { success };
         } catch (e) {
-            console.error('[Memory IPC] Error deleting fact:', e);
+            appLogger.error('[Memory IPC]', 'Error deleting fact:', e as Error);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     });
@@ -31,7 +32,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
             const success = await memoryService.removeEntityFact(entityId);
             return { success };
         } catch (e) {
-            console.error('[Memory IPC] Error deleting entity:', e);
+            appLogger.error('[Memory IPC]', 'Error deleting entity:', e as Error);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     });
@@ -42,7 +43,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
             const fragment = await memoryService.rememberFact(content, 'manual', 'user-added', tags);
             return { success: true, id: fragment.id };
         } catch (e) {
-            console.error('[Memory IPC] Error adding fact:', e);
+            appLogger.error('[Memory IPC]', 'Error adding fact:', e as Error);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     });
@@ -53,7 +54,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
             const knowledge = await memoryService.setEntityFact(entityType, entityName, key, value);
             return { success: true, id: knowledge.id };
         } catch (e) {
-            console.error('[Memory IPC] Error setting entity fact:', e);
+            appLogger.error('[Memory IPC]', 'Error setting entity fact:', e as Error);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     });
@@ -65,7 +66,7 @@ export function registerMemoryIpc(memoryService: MemoryService) {
             const episodes = await memoryService.recallEpisodes(query, 5);
             return { facts, episodes };
         } catch (e) {
-            console.error('[Memory IPC] Error searching memories:', e);
+            appLogger.error('[Memory IPC]', 'Error searching memories:', e as Error);
             return { facts: [], episodes: [] };
         }
     });

@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { quoteShellArg,safeJsonParse } from '@shared/utils/sanitize.util';
 import * as pty from 'node-pty';
 
 
@@ -42,7 +42,20 @@ export class ProcessService extends EventEmitter {
 
         appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `);
 
-        const ptyProcess = pty.spawn(this.shell, ['-c', `${command} ${args.join(' ')} `], {
+        // Quote arguments to prevent injection
+        const safeArgs = args.map(quoteShellArg);
+
+        // Combine command and arguments safely
+        // Note: node-pty on Windows with 'bits' of shell usage might still be complex,
+        // but quoting individual args is safer than raw join.
+        // For pty.spawn with shell (powershell), we pass the command line string to -c (or implicit).
+        // pty.spawn(file, args, options)
+        // If file is 'powershell.exe', args should be the arguments to powershell.
+        // If we want to run a command inside, we usually do: powershell.exe -c "command arg1 arg2"
+
+        const commandLine = `${command} ${safeArgs.join(' ')}`;
+
+        const ptyProcess = pty.spawn(this.shell, ['-Command', commandLine], {
             name: 'xterm-color',
             cols: 80,
             rows: 30,

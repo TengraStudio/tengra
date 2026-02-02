@@ -72,51 +72,8 @@ function registerGitBatchHandlers(gitService: GitService) {
 }
 
 function registerStatusHandlers(gitService: GitService) {
-    // Get current branch
-    ipcMain.handle('git:getBranch', async (_event, cwd: string) => {
-        try {
-            const result = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
-            if (result.success && result.stdout) {
-                return { success: true, branch: result.stdout.trim() };
-            }
-            return { success: false, error: 'Not a git repository' };
-        } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) };
-        }
-    });
-
-    // Get repository status (clean/dirty)
-    ipcMain.handle('git:getStatus', async (_event, cwd: string) => {
-        try {
-            const result = await gitService.getStatus(cwd);
-            const isClean = result.length === 0;
-            return {
-                success: true,
-                isClean,
-                changes: result.length,
-                files: result
-            };
-        } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) };
-        }
-    });
-
-    // Get all branches
-    ipcMain.handle('git:getBranches', async (_event, cwd: string) => {
-        try {
-            const result = await gitService.getBranches(cwd);
-            if (result.success && result.stdout) {
-                const branches = result.stdout
-                    .split('\n')
-                    .filter(line => line.trim())
-                    .map(line => line.trim().replace(/^\*\s*/, ''));
-                return { success: true, branches };
-            }
-            return { success: false, branches: [] };
-        } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error), branches: [] };
-        }
-    });
+    // Note: getBranch, getStatus, getBranches are registered in registerGitBatchHandlers
+    // to support batching optimization
 
     // Check if directory is a git repository
     ipcMain.handle('git:isRepository', async (_event, cwd: string) => {

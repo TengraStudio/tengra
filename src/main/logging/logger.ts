@@ -64,7 +64,7 @@ class AppLogger {
         this.logDir = logDir ?? this.determineLogDir();
         this.logPath = path.join(this.logDir, 'app.log');
         if (!fs.existsSync(this.logDir)) {
-            fs.mkdirSync(this.logDir, { recursive: true });
+            fs.mkdirSync(this.logDir, { recursive: true, mode: 0o700 });
         }
         this.size = this.safeStatSize(this.logPath);
         this.initialized = true;

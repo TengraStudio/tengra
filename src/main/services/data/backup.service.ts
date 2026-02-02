@@ -92,7 +92,7 @@ export class BackupService {
 
     private async ensureBackupDir() {
         try {
-            await fs.promises.mkdir(this.backupDir, { recursive: true });
+            await fs.promises.mkdir(this.backupDir, { recursive: true, mode: 0o700 });
         } catch (error) {
             appLogger.error('BackupService', 'Failed to ensure backup dir:', error as Error);
         }
@@ -507,7 +507,7 @@ export class BackupService {
     private async saveAutoBackupConfig(): Promise<void> {
         try {
             const configDir = path.dirname(this.configPath);
-            await fs.promises.mkdir(configDir, { recursive: true });
+            await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
             await fs.promises.writeFile(this.configPath, JSON.stringify(this.autoBackupConfig, null, 2));
         } catch (error) {
             appLogger.error('BackupService', `Failed to save auto-backup config: ${getErrorMessage(error as Error)}`);

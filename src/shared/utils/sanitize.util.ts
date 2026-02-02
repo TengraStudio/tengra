@@ -253,3 +253,23 @@ export function sanitizeSqlInput(input: string): string {
 
     return sanitized.trim();
 }
+
+/**
+ * Safely quotes a string for use as a shell argument.
+ * Handles both Windows (PowerShell) and POSIX (sh/bash) styles roughly,
+ * but emphasizes PowerShell safety since that's the default shell in this app.
+ * 
+ * @param arg - The argument to quote
+ * @returns Quoted argument
+ */
+export function quoteShellArg(arg: string): string {
+    if (!arg || arg.trim() === '') {
+        return "''";
+    }
+
+    // Windows PowerShell safer quoting:
+    // Enclose in single quotes, escape existing single quotes by doubling them.
+    // This is generally safe for simple arguments in PowerShell.
+    // e.g. "foo'bar" -> "'foo''bar'"
+    return `'${arg.replace(/'/g, "''")}'`;
+}

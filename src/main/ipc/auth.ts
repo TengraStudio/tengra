@@ -55,33 +55,17 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         }
     });
 
-    ipcMain.handle('auth:get-linked-accounts', async (_event, provider?: string) => {
-        try {
-            if (provider) {
-                return await authService.getAccountsByProvider(provider);
-            }
-            return await authService.getAllAccounts();
-        } catch (error) {
-            console.error('Failed to get linked accounts:', error);
-            return [];
-        }
-    });
-
-    ipcMain.handle('auth:get-active-linked-account', async (_event, provider: string) => {
-        try {
-            return await authService.getActiveAccount(provider);
-        } catch (error) {
-            console.error('Failed to get active linked account:', error);
-            return null;
-        }
-    });
+    // Note: The following handlers are registered in batch handlers below for optimization
+    // - auth:get-linked-accounts
+    // - auth:get-active-linked-account
+    // - auth:has-linked-account
 
     ipcMain.handle('auth:set-active-linked-account', async (_event, provider: string, accountId: string) => {
         try {
             await authService.setActiveAccount(provider, accountId);
             return { success: true };
         } catch (error) {
-            console.error('Failed to set active linked account:', error);
+            appLogger.error('AuthIPC', 'Failed to set active linked account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
     });
@@ -91,7 +75,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             const account = await authService.linkAccount(provider, tokenData);
             return { success: true, account };
         } catch (error) {
-            console.error('Failed to link account:', error);
+            appLogger.error('AuthIPC', 'Failed to link account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
     });
@@ -101,7 +85,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             await authService.unlinkAccount(accountId);
             return { success: true };
         } catch (error) {
-            console.error('Failed to unlink account:', error);
+            appLogger.error('AuthIPC', 'Failed to unlink account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
     });
@@ -111,19 +95,12 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             await authService.unlinkAllForProvider(provider);
             return { success: true };
         } catch (error) {
-            console.error('Failed to unlink provider:', error);
+            appLogger.error('AuthIPC', 'Failed to unlink provider', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
     });
 
-    ipcMain.handle('auth:has-linked-account', async (_event, provider: string) => {
-        try {
-            return await authService.hasLinkedAccount(provider);
-        } catch (error) {
-            console.error('Failed to check linked account:', error);
-            return false;
-        }
-    });
+    // Note: auth:has-linked-account is registered in batch handlers below
 
     // Register commonly batched handlers
     registerBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
@@ -134,7 +111,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             }
             return (await authService.getAllAccounts()) as unknown as JsonValue;
         } catch (error) {
-            console.error('Failed to get linked accounts:', error);
+            appLogger.error('AuthIPC', 'Failed to get linked accounts (batched)', error as Error);
             return [];
         }
     });
@@ -144,7 +121,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         try {
             return (await authService.getActiveAccount(provider)) as unknown as JsonValue;
         } catch (error) {
-            console.error('Failed to get active linked account:', error);
+            appLogger.error('AuthIPC', 'Failed to get active linked account (batched)', error as Error);
             return null;
         }
     });
@@ -154,7 +131,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         try {
             return await authService.hasLinkedAccount(provider);
         } catch (error) {
-            console.error('Failed to check linked account:', error);
+            appLogger.error('AuthIPC', 'Failed to check linked account (batched)', error as Error);
             return false;
         }
     });

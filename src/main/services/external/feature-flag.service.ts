@@ -41,7 +41,7 @@ export class FeatureFlagService extends BaseService {
             try {
                 await fs.promises.access(configDir);
             } catch {
-                await fs.promises.mkdir(configDir, { recursive: true });
+                await fs.promises.mkdir(configDir, { recursive: true, mode: 0o700 });
             }
 
             // Load from disk

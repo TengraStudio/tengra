@@ -46,6 +46,18 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM folders WHERE id = ?').run(id);
     }
 
+    async getFolder(id: string): Promise<Folder | undefined> {
+        const row = await this.adapter.prepare('SELECT * FROM folders WHERE id = ?').get<JsonObject>(id);
+        if (!row) { return undefined; }
+        return {
+            id: String(row.id),
+            name: String(row.name),
+            color: row.color as string | undefined,
+            createdAt: Number(row.created_at),
+            updatedAt: Number(row.updated_at)
+        };
+    }
+
     // --- Prompts ---
     async getPrompts(): Promise<Prompt[]> {
         const rows = await this.adapter.prepare('SELECT * FROM prompts ORDER BY created_at DESC').all<JsonObject>();
@@ -57,6 +69,19 @@ export class SystemRepository extends BaseRepository {
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at)
         }));
+    }
+
+    async getPrompt(id: string): Promise<Prompt | undefined> {
+        const row = await this.adapter.prepare('SELECT * FROM prompts WHERE id = ?').get<JsonObject>(id);
+        if (!row) { return undefined; }
+        return {
+            id: String(row.id),
+            title: String(row.title),
+            content: String(row.content),
+            tags: this.parseJsonField(row.tags as string | null, [] as string[]),
+            createdAt: Number(row.created_at),
+            updatedAt: Number(row.updated_at)
+        };
     }
 
     async createPrompt(title: string, content: string, tags: string[] = []): Promise<Prompt> {

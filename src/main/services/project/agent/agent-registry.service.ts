@@ -1,6 +1,7 @@
-import { BaseService } from '@main/services/base.service';
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { AgentProfile } from '@shared/types/project-agent';
+
 import { PROJECT_AGENT_SYSTEM_PROMPT } from '../project-agent.prompts';
 
 export class AgentRegistryService extends BaseService {

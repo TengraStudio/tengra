@@ -21,6 +21,11 @@ const loadMermaid = async () => {
         mermaid.default.initialize({
             startOnLoad: false,
             theme: 'dark',
+            // Using 'loose' security level for better diagram support
+            // This allows HTML tags in diagrams. Safe because:
+            // 1. Diagram SVG output is sanitized with DOMPurify before rendering (line 44)
+            // 2. User diagrams are from LLM responses, not arbitrary external input
+            // 3. The diagrams are displayed in a controlled context
             securityLevel: 'loose',
             fontFamily: 'inherit'
         });

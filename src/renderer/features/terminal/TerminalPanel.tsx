@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
+import { appLogger } from '@main/logging/logger';
 import { useTheme } from '@/hooks/useTheme';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { getTerminalTheme } from '@/lib/terminal-theme';
@@ -242,7 +243,7 @@ export function TerminalPanel({ isOpen, onToggle, height, onHeightChange, projec
                     }, 100);
                 }
             } catch (error) {
-                console.error('[TerminalPanel] Failed to load shells:', error);
+                appLogger.error('TerminalPanel', 'Failed to load shells', error as Error);
                 isCreatingRef.current = false;
                 hasAutoCreatedRef.current = false;
             }

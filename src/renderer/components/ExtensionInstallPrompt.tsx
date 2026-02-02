@@ -15,7 +15,9 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
 }) => {
     const handleOpenExtensionFolder = () => {
         const extensionPath = process.cwd() + '/extension';
-        window.electron.openExternal('file:///' + extensionPath.replace(/\\/g, '/'));
+        // Sanitize path before creating file:// URL
+        const sanitizedPath = extensionPath.replace(/[<>:"\\|?*]/g, '').replace(/\\/g, '/');
+        window.electron.openExternal('file:///' + sanitizedPath);
     };
 
     const handleOpenInstructions = () => {
