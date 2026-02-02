@@ -154,38 +154,18 @@ export class HttpService extends BaseService {
             startTime: number;
         }
     ): Promise<Response> {
-        const { fetchOptions, retryCount, initialDelayMs, maxDelayMs, timeoutMs, requestId, startTime } = params;
+        const { retryCount, initialDelayMs, maxDelayMs, requestId, startTime, fetchOptions } = params;
         let currentDelay = initialDelayMs;
 
         for (let attempt = 0; attempt <= retryCount; attempt++) {
-            const isLastAttempt = (attempt === retryCount);
-            const controller = new AbortController();
-
-            // Respect external signal if present
-            const externalSignal = fetchOptions.signal;
-            if (externalSignal) {
-                if (externalSignal.aborted) {
-                    throw externalSignal.reason ?? new Error('Aborted');
-                }
-                externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
-            }
-
-            const timeoutId = setTimeout(() => controller.abort(new Error('Request timed out')), timeoutMs);
-
             try {
-                const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
-                clearTimeout(timeoutId);
-                await this.logResponse(requestId, url, response, startTime);
-
-                if (this.shouldRetryStatus(response.status) && !isLastAttempt) {
-                    throw new Error(`Server returned ${response.status}`);
-                }
-                return response;
+                return await this.performAttempt(url, attempt, params);
             } catch (error: unknown) {
-                clearTimeout(timeoutId);
-                if (this.isUserAbort(error)) { throw error; }
+                if (this.isUserAbort(error)) {
+                    throw error;
+                }
 
-                if (isLastAttempt) {
+                if (attempt === retryCount) {
                     this.logFailure({
                         requestId,
                         url,
@@ -205,6 +185,46 @@ export class HttpService extends BaseService {
         }
         throw new Error('Unreachable code in HttpService');
     }
+
+    private async performAttempt(url: string, attempt: number, params: {
+        fetchOptions: RequestInit;
+        retryCount: number;
+        timeoutMs: number;
+        requestId: string;
+        startTime: number;
+    }): Promise<Response> {
+        const { fetchOptions, retryCount, timeoutMs, requestId, startTime } = params;
+        const controller = new AbortController();
+
+        this.setupAbortion(controller, fetchOptions.signal);
+        const timeoutId = setTimeout(() => controller.abort(new Error('Request timed out')), timeoutMs);
+
+        try {
+            const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
+            clearTimeout(timeoutId);
+            await this.logResponse(requestId, url, response, startTime);
+
+            if (this.shouldRetryStatus(response.status) && attempt < retryCount) {
+                throw new Error(`Server returned ${response.status}`);
+            }
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    }
+
+    private setupAbortion(controller: AbortController, externalSignal?: AbortSignal | null): void {
+        if (!externalSignal) {
+            return;
+        }
+        if (externalSignal.aborted) {
+            controller.abort(externalSignal.reason);
+            return;
+        }
+        externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+    }
+
 
     private shouldRetryStatus(status: number): boolean {
         return status >= 500;

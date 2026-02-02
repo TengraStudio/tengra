@@ -1,11 +1,11 @@
 # Project Structure
 
-Orbit follows a strict organizational pattern to manage its multi-process architecture. This ensures a clear separation of concerns and makes the codebase easier to navigate for developers.
+Tandem follows a strict organizational pattern to manage its multi-process architecture. This ensures a clear separation of concerns and makes the codebase easier to navigate for developers.
 
 ## Repository Overview
 
 ```text
-orbit/
+Tandem/
 ├── brain/              # Task artifacts, plans, and persistent agent state
 ├── docs/               # Technical documentation and project guides
 ├── resources/          # Static assets, icons, and native binaries for distribution

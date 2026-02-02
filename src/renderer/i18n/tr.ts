@@ -836,7 +836,13 @@ export const tr = {
         databaseDesc: 'Uygulama verilerini ve önbelleği yönetin.',
         onboardingTour: 'BAŞLANGIÇ TURU',
         onboardingTourDesc: 'Uygulama özelliklerini tanıtan turu tekrar başlat.',
-        startTour: 'TURU BAŞLAT'
+        startTour: 'TURU BAŞLAT',
+        autoUpdate: 'Otomatik Güncelleme',
+        checkOnStartup: 'Başlangıçta Kontrol Et',
+        checkForUpdates: 'Güncelleme Kontrol Et',
+        privacy: 'Gizlilik',
+        crashReporting: 'Çökme Raporlaması',
+        crashReportingDesc: 'Tandem\'i geliştirmemize yardımcı olmak için anonim çökme raporları gönderin.'
     },
     appearance: {
         themeDesc: 'Uygulamanın renk temasını değiştirin.',
@@ -915,7 +921,23 @@ export const tr = {
         subscriptionActive: 'Abonelik aktif',
         codingTimeByProject: 'Projeye Göre Kodlama Süresi',
         timeSpentCodingInEachProject: 'Her projede kodlamaya harcanan süre',
-        unknownProject: 'Bilinmeyen Proje'
+        unknownProject: 'Bilinmeyen Proje',
+        copilotAccount: 'Copilot Hesabı',
+        seatsStatus: 'Koltuk Durumu',
+        usageStatus: 'Kullanım Durumu',
+        left: 'kaldı',
+        individual: 'Bireysel',
+        rateLimit: 'Hız Limiti',
+        apiUsage: 'API Kullanımı',
+        enterpriseStatus: 'Kurumsal Durum',
+        defaultAccount: 'Varsayılan Hesap',
+        active: 'AKTİF',
+        claudeAccount: 'Claude Hesabı',
+        fiveHourStatus: '5sa Durumu',
+        sevenDayStatus: '7g Durumu',
+        codexAccount: 'Codex Hesabı',
+        dailyStatus: 'Günlük Durum',
+        weeklyStatus: 'Haftalık Durum'
     },
     about: {
         description: 'Tandem, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.',
@@ -1022,7 +1044,24 @@ export const tr = {
         on: 'Açık',
         off: 'Kapalı',
         local: 'yerel',
-        cloud: 'bulut'
+        cloud: 'bulut',
+        // TaskNode keys
+        generatingPlan: 'Plan Oluşturuluyor...',
+        executingTask: 'Görev Yürütülüyor...',
+        waitingForApproval: 'Onay Bekleniyor',
+        console: 'Konsol',
+        plan: 'Plan',
+        newStep: 'Yeni adım',
+        describeBuild: 'Ne inşa etmek istediğinizi açıklayın...',
+        noDescription: 'Açıklama sağlanmadı.',
+        failedToGeneratePlan: 'Plan oluşturma başarısız',
+        failedToApprovePlan: 'Plan onaylama başarısız',
+        failedToStartTask: 'Görev başlatma başarısız',
+        failedToStopTask: 'Görev durdurma başarısız',
+        failedToRetryStep: 'Adımı yeniden deneme başarısız',
+        newTask: 'Yeni Görev',
+        addAction: 'Eylem Ekle',
+        overallProgress: 'Genel İlerleme'
     },
     modelComparison: {
         title: 'Model Karşılaştırma',
@@ -1312,6 +1351,8 @@ export const tr = {
             viewDetails: 'Detayları Görüntüle',
             approve: 'Onayla ve Proje Oluştur',
             reject: 'Reddet',
+            archive: 'Arşivle',
+            archiving: 'Arşivleniyor...',
             nameSuggestions: 'İsim Önerileri',
             valueProposition: 'Değer Önerisi',
             competitiveAdvantages: 'Rekabet Avantajları',
@@ -1373,7 +1414,8 @@ export const tr = {
             cancelled: 'İptal Edildi',
             pending: 'Beklemede',
             approved: 'Onaylandı',
-            rejected: 'Reddedildi'
+            rejected: 'Reddedildi',
+            archived: 'Arşivlendi'
         },
 
         // Errors

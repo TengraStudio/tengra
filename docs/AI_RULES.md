@@ -1,8 +1,18 @@
-# AI Agent Rules & Guidelines for Orbit
+# AI Agent Rules & Guidelines for Tandem
 
-This document contains mandatory rules and guidelines for all AI agents working on the Orbit project. Any AI (Claude, GPT, Gemini, Copilot, Cursor, etc.) contributing to this project MUST follow these rules.
+> **STOP!** Read the [MASTER COMMANDMENTS](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md) first.
+
+> **CRITICAL**: The [MASTER COMMANDMENTS](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md) are your core logic. You MUST also follow the **Boy Scout Rule**: Every edit MUST fix at least one existing lint warning or type issue in the file.
+
+## 🚨 CRITICAL SUMMARY (TL;DR)
+1.  **NO `any`**: TypeScript errors are failures.
+2.  **NO `console.log`**: Use `appLogger`.
+3.  **NO PLACEHOLDERS**: Write final, production-ready code.
+4.  **BUILD & LINT**: Never deliver code that fails `npm run build` or `npm run lint`.
+5.  **NASA RULES**: Max 150 lines per function. No `while(true)`.
 
 ---
+
 
 ## Table of Contents
 
@@ -24,9 +34,9 @@ This document contains mandatory rules and guidelines for all AI agents working 
 
 ## 1. Project Overview
 
-### What is Orbit?
+### What is OrTandembit?
 
-Orbit is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
+Tandem is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
 
 - **Multi-LLM Support**: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama)
 - **Local-First Architecture**: Runs AI models locally via Ollama/Llama.cpp
@@ -144,13 +154,15 @@ await service.doSomething(); // Ignored return
 - Keep type definitions simple and readable.
 
 ### Rule 9: Restrict Pointer Use
-- In TypeScript: Avoid `any` type completely.
+- In TypeScript: Avoid `any` and `unknown` types completely.
+- Use explicit interfaces or generics with constraints.
 - Use strict null checks (`strictNullChecks: true`).
 
 ### Rule 10: Compile with All Warnings
 - All code must pass `tsc --noEmit` without errors.
 - ESLint must pass with zero warnings.
 - Never use `// @ts-ignore` or `// eslint-disable`.
+- **Boy Scout Rule**: Every time you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
 
 ---
 
@@ -159,7 +171,7 @@ await service.doSomething(); // Ignored return
 ### 3.1 Directory Organization
 
 ```
-orbit/
+tandem/
 ├── src/
 │   ├── main/                 # Electron main process
 │   │   ├── services/         # Backend services (by domain)
@@ -478,21 +490,6 @@ ai?: {
 
 ---
 
-## 8. Authentication & Tokens
-
-### 8.1 Token Storage
-
-Tokens are stored encrypted in `%APPDATA%/Orbit/data/auth/`:
-
-```
-auth/
-├── antigravity-user@email.json   # Google OAuth
-├── codex-session.json            # OpenAI OAuth
-├── claude-session.json           # Claude session
-├── copilot_token.json            # GitHub token
-└── github-token.json             # GitHub PAT
-```
-
 ### 8.2 Provider Authentication
 
 | Provider | Auth Type | Refresh Mechanism |
@@ -626,7 +623,7 @@ type Status = 'pending' | 'complete' | 'failed';
 
 ### 10.6 Linting Priority
 
-**CRITICAL**: Agents MUST check [LINT_ISSUES.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/LINT_ISSUES.md) before starting work. Fixing the categorized issues in that file is currently the top priority for codebase maintenance.
+**CRITICAL**: Agents MUST check [LINT_ISSUES.md](file:///c:/Users/agnes/Desktop/projects/tandem/docs/LINT_ISSUES.md) before starting work. Fixing the categorized issues in that file is currently the top priority for codebase maintenance.
 ```
 
 ### 10.2 Async/Await Rules
@@ -1025,7 +1022,7 @@ ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW O
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ORBIT AI RULES SUMMARY                   │
+│                    TANDEM AI RULES SUMMARY                   │
 ├─────────────────────────────────────────────────────────────┤
 │ Logs:     logs/*.log only                                   │
 │ Tests:    src/tests/**/*.test.ts                           │

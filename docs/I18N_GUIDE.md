@@ -1,6 +1,6 @@
 # Internationalization (I18N) Guide
 
-Orbit is designed to be accessible to a global audience. This guide explains how to manage translations and add support for new languages.
+Tandem is designed to be accessible to a global audience. This guide explains how to manage translations and add support for new languages.
 
 ## Translation Workflow
 

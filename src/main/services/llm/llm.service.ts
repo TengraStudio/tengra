@@ -464,6 +464,22 @@ export class LLMService {
         }
     }
 
+    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, temperature?: number }) {
+        const p = (provider ?? '').toLowerCase();
+        const temp = options?.temperature;
+        const systemMode = options?.systemMode;
+
+        if (p.includes('opencode')) {
+            yield* this.chatOpenCodeStream(messages, model, tools);
+        } else if (p.includes('antigravity')) {
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp, systemMode });
+        } else if (p.includes('ollama')) {
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: 'http://127.0.0.1:11434/v1', apiKey: 'ollama', provider, temperature: temp, systemMode });
+        } else {
+            yield* this.chatOpenAIStream(messages, { model, tools, provider, temperature: temp, systemMode });
+        }
+    }
+
     async searchHFModels(query: string = '', limit: number = 20, page: number = 0, sort: string = 'downloads'): Promise<{ models: HFModel[], total: number }> {
         try {
             const { searchQuery, hfSort } = this.prepareHFSearchParams(query, sort);
@@ -626,11 +642,7 @@ export class LLMService {
     }) {
         const { model, tools, provider, stream = false, n = 1, temperature, systemMode } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
-        let finalModel = this.normalizeModelName(model, provider);
-
-        if (finalModel.endsWith('-thinking')) {
-            finalModel += '(8192)';
-        }
+        const finalModel = this.getPreparedModelName(model, provider);
 
         const body: Record<string, unknown> = {
             model: finalModel,
@@ -639,16 +651,7 @@ export class LLMService {
             stream
         };
 
-        // Reasoning Effort Logic for 'o1' and 'o3' class models
-        if (finalModel.startsWith('o1') || finalModel.startsWith('o3')) {
-            if (systemMode === 'thinking') {
-                body.reasoning_effort = 'high';
-            } else if (systemMode === 'fast') {
-                body.reasoning_effort = 'low';
-            } else {
-                body.reasoning_effort = 'medium'; // Default for Agent or unspecified
-            }
-        }
+        this.applyReasoningEffort(body, finalModel, systemMode);
 
         if (stream) {
             body.stream_options = { include_usage: true };
@@ -663,25 +666,46 @@ export class LLMService {
         }
 
         if (tools && tools.length > 0) {
-            // Strip 'required' field for compatibility with Go-based proxy services
-            // that don't fully support OpenAI function calling spec
-            const sanitizedTools = tools.map(tool => {
-                const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
-                if (params.required) {
-                    delete params.required;
-                }
-                return {
-                    ...tool,
-                    function: {
-                        ...tool.function,
-                        parameters: params
-                    }
-                };
-            });
-            body.tools = sanitizedTools;
+            body.tools = this.sanitizeTools(tools);
             body.tool_choice = 'auto';
         }
+
         return body;
+    }
+
+    private getPreparedModelName(model: string, provider?: string): string {
+        let finalModel = this.normalizeModelName(model, provider);
+        if (finalModel.endsWith('-thinking')) {
+            finalModel += '(8192)';
+        }
+        return finalModel;
+    }
+
+    private applyReasoningEffort(body: Record<string, unknown>, model: string, systemMode?: SystemMode): void {
+        const isReasoningModel = model.startsWith('o1') || model.startsWith('o3');
+        if (!isReasoningModel) { return; }
+
+        const effortMap: Record<string, string> = {
+            'thinking': 'high',
+            'fast': 'low'
+        };
+        body.reasoning_effort = effortMap[systemMode ?? ''] ?? 'medium';
+    }
+
+    private sanitizeTools(tools: ToolDefinition[]): unknown[] {
+        return tools.map(tool => {
+            const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
+            if (params.required) {
+                delete params.required;
+            }
+            return {
+                ...tool,
+                function: {
+                    ...tool.function,
+                    parameters: params
+                }
+            };
+        });
     }
 
     private createOpenAIRequest(body: unknown, apiKey: string) {

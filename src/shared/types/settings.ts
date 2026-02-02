@@ -174,6 +174,7 @@ export type AppSettings = {
         tokenRefreshInterval?: number // ms, default 5 minutes
         copilotRefreshInterval?: number // ms, default 15 minutes
     }
+    extensionWarningDismissed?: boolean // Browser extension warning dismissed
     [key: string]: JsonValue | undefined
 }
 

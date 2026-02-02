@@ -1,0 +1,266 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+
+import { getTerminalTheme } from '@/lib/terminal-theme';
+
+import { loadHistory, saveHistory } from '../utils/terminal-history';
+
+const initializedTerminals = new Set<string>();
+const initializingTerminals = new Set<string>();
+
+interface TerminalCleanups {
+    data?: () => void;
+    exit?: () => void;
+}
+
+interface TerminalConfig {
+    theme: ReturnType<typeof getTerminalTheme>;
+    fontFamily: string;
+    fontSize: number;
+    lineHeight: number;
+    letterSpacing: number;
+    cursorBlink: boolean;
+    cursorStyle: 'bar' | 'block' | 'underline';
+    convertEol: boolean;
+    scrollback: number;
+    fontWeight: '400' | '600';
+    fontWeightBold: '400' | '600';
+}
+
+const TERMINAL_CONFIG: TerminalConfig = {
+    theme: getTerminalTheme(),
+    fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+    fontSize: 13,
+    lineHeight: 1.4,
+    letterSpacing: 0.2,
+    cursorBlink: true,
+    cursorStyle: 'block',
+    convertEol: true,
+    scrollback: 10000,
+    fontWeight: '400',
+    fontWeightBold: '600'
+};
+
+const KEY_CODES: Record<string, string> = {
+    ARROW_UP: '\x1b[A',
+    ARROW_DOWN: '\x1b[B',
+    ENTER: '\r',
+    NEWLINE: '\n',
+    DELETE: '\x7f',
+    BACKSPACE: '\b',
+    CLEAR_LINE: '\x1b[2K\r'
+};
+
+interface LineBufferContext {
+    lineBuffer: string;
+    historyRef: React.MutableRefObject<string[]>;
+    historyIndexRef: React.MutableRefObject<number>;
+    currentInputRef: React.MutableRefObject<string>;
+    pidRef: React.MutableRefObject<string | null>;
+    addToHistory: (command: string) => void;
+}
+
+const handleArrowUp = (context: LineBufferContext): string => {
+    const { lineBuffer, historyRef, historyIndexRef, currentInputRef, pidRef } = context;
+
+    if (historyRef.current.length === 0) {
+        return lineBuffer;
+    }
+
+    if (historyIndexRef.current === -1) {
+        currentInputRef.current = lineBuffer;
+        historyIndexRef.current = historyRef.current.length - 1;
+    } else if (historyIndexRef.current > 0) {
+        historyIndexRef.current--;
+    }
+
+    const historyItem = historyRef.current[historyIndexRef.current] ?? '';
+    if (pidRef.current) {
+        void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+        void window.electron.terminal.write(pidRef.current, historyItem);
+    }
+    return historyItem;
+};
+
+const handleArrowDown = (context: LineBufferContext): string => {
+    const { historyRef, historyIndexRef, currentInputRef, pidRef } = context;
+
+    if (historyIndexRef.current === -1) {
+        return '';
+    }
+
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+        historyIndexRef.current++;
+        const historyItem = historyRef.current[historyIndexRef.current] ?? '';
+        if (pidRef.current) {
+            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+            void window.electron.terminal.write(pidRef.current, historyItem);
+        }
+        return historyItem;
+    } else {
+        historyIndexRef.current = -1;
+        if (pidRef.current) {
+            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
+            void window.electron.terminal.write(pidRef.current, currentInputRef.current);
+        }
+        return currentInputRef.current;
+    }
+};
+
+const handleCharInput = (data: string, lineBuffer: string): string => {
+    if (data === KEY_CODES.DELETE || data === KEY_CODES.BACKSPACE) {
+        return lineBuffer.slice(0, -1);
+    }
+    if (data.charCodeAt(0) >= 32 || data.length > 1) {
+        return lineBuffer + data;
+    }
+    return lineBuffer;
+};
+
+export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) => string) {
+    const terminalRef = useRef<HTMLDivElement>(null);
+    const pidRef = useRef<string | null>(null);
+    const isInitializedRef = useRef(false);
+    const terminalIdRef = useRef<string | null>(null);
+    const historyRef = useRef<string[]>(loadHistory(projectId));
+    const historyIndexRef = useRef<number>(-1);
+    const currentInputRef = useRef<string>('');
+    const cleanupsRef = useRef<TerminalCleanups>({});
+
+    const addToHistory = useCallback((command: string) => {
+        if (command.trim()) {
+            if (historyRef.current.length === 0 || historyRef.current[historyRef.current.length - 1] !== command) {
+                historyRef.current.push(command);
+                saveHistory(historyRef.current, projectId);
+            }
+        }
+        historyIndexRef.current = -1;
+        currentInputRef.current = '';
+    }, [projectId]);
+
+    useEffect(() => {
+        if (isInitializedRef.current || !terminalRef.current) {return;}
+
+        isInitializedRef.current = true;
+        const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        terminalIdRef.current = terminalId;
+
+        const term = new Terminal(TERMINAL_CONFIG);
+
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(terminalRef.current);
+
+        try {
+            if ((terminalRef.current as HTMLElement).offsetParent) {
+                fitAddon.fit();
+            }
+        } catch {
+            // Silently catch initial fit failure
+        }
+
+        let lineBuffer = '';
+
+        const initTerminal = async (): Promise<void> => {
+            const finalTerminalId = terminalIdRef.current;
+            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {return;}
+
+            initializingTerminals.add(finalTerminalId);
+
+            try {
+                const result = await window.electron.terminal.create({
+                    id: finalTerminalId,
+                    cwd: cwd ?? (typeof process !== 'undefined' ? process.cwd() : ''),
+                    cols: term.cols,
+                    rows: term.rows
+                });
+
+                if (!result.success) {
+                    const errorMessage = result.error ?? (t ? t('projectDashboard.terminalFailedSession') : 'Failed to start session');
+                    term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
+                    initializingTerminals.delete(finalTerminalId);
+                    return;
+                }
+
+                pidRef.current = finalTerminalId;
+                initializedTerminals.add(finalTerminalId);
+                initializingTerminals.delete(finalTerminalId);
+
+                const cleanupData = window.electron.terminal.onData(({ id, data }) => {
+                    if (pidRef.current && id === pidRef.current) {
+                        term.write(data);
+                    }
+                });
+
+                const cleanupExit = window.electron.terminal.onExit(({ id, code }) => {
+                    if (pidRef.current && id === pidRef.current) {
+                        term.write(`\r\n\x1b[33mTerminal exited with code ${code}\x1b[0m\r\n`);
+                    }
+                });
+
+                cleanupsRef.current = { data: cleanupData, exit: cleanupExit };
+
+                term.onData((data) => {
+                    if (!pidRef.current) {return;}
+
+                    if (data === KEY_CODES.ARROW_UP) {
+                        lineBuffer = handleArrowUp({ lineBuffer, historyRef, historyIndexRef, currentInputRef, pidRef, addToHistory });
+                        return;
+                    }
+
+                    if (data === KEY_CODES.ARROW_DOWN) {
+                        lineBuffer = handleArrowDown({ lineBuffer, historyRef, historyIndexRef, currentInputRef, pidRef, addToHistory });
+                        return;
+                    }
+
+                    if (data === KEY_CODES.ENTER || data === KEY_CODES.NEWLINE) {
+                        if (lineBuffer.trim()) {addToHistory(lineBuffer);}
+                        lineBuffer = '';
+                        historyIndexRef.current = -1;
+                    } else {
+                        lineBuffer = handleCharInput(data, lineBuffer);
+                    }
+
+                    if (pidRef.current) {
+                        window.electron.terminal.write(pidRef.current, data).catch(() => { });
+                    }
+                });
+
+                term.onResize(({ cols, rows }) => {
+                    if (pidRef.current) {
+                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(() => { });
+                    }
+                });
+
+            } catch {
+                term.write(`\r\n\x1b[31mFailed to start terminal\x1b[0m\r\n`);
+            }
+        };
+
+        void initTerminal();
+
+        const handleResize = (): void => {
+            if (terminalRef.current?.offsetParent) {
+                fitAddon.fit();
+            }
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            isInitializedRef.current = false;
+            window.removeEventListener('resize', handleResize);
+            const terminalId = pidRef.current ?? terminalIdRef.current;
+            if (terminalId) {
+                initializedTerminals.delete(terminalId);
+                initializingTerminals.delete(terminalId);
+                window.electron.terminal.kill(terminalId).catch(() => { });
+            }
+            if (cleanupsRef.current.data) {cleanupsRef.current.data();}
+            if (cleanupsRef.current.exit) {cleanupsRef.current.exit();}
+            term.dispose();
+        };
+    }, [cwd, projectId, t, addToHistory]);
+
+    return { terminalRef };
+}

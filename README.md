@@ -7,6 +7,7 @@ Tandem is a powerful, open-source AI assistant designed to streamline your devel
 
 ## Key Features
 - **Multi-Model Support**: Chat with Ollama (Local), Antigravity, Copilot, and more.
+- **Browser Extension**: AI-powered browser control with DOM manipulation, form filling, and content extraction.
 - **SSH Workspaces**: Edit files and manage projects on remote servers directly via SSH.
 - **Project Management**: Built-in task tracking and `TODO.md` integration.
 - **Git Integration**: AI-powered commit message generation.
@@ -32,6 +33,24 @@ npm run electron:dev
 # Build for production
 npm run electron:build
 ```
+
+## Browser Extension
+
+Tandem includes a powerful browser extension that enables AI to interact directly with web pages. See [`extension/README.md`](extension/README.md) for installation instructions.
+
+### Quick Setup
+1. Start the Tandem desktop app
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable **Developer mode**
+4. Click **Load unpacked** and select the `extension` folder
+5. Click the extension icon to start chatting with AI about any webpage
+
+The extension allows the AI to:
+- 📖 Read and extract page content
+- 🖱️ Click buttons and interact with elements  
+- ✍️ Fill forms automatically
+- 📊 Analyze and summarize web content
+- 🔒 All communication stays local on your computer
 
 ## Security & Privacy
 Tandem is built with privacy in mind. It uses a "Bring Your Own Key" (BYOK) model. No API keys or personal data are stored on our servers; everything remains on your local machine.

@@ -11,14 +11,14 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [editName, setEditName] = useState(project.title);
-    const [editDesc, setEditDesc] = useState(project.description ?? '');
+    const [editDesc, setEditDesc] = useState(project.description);
 
     const [prevProject, setPrevProject] = useState({ title: project.title, description: project.description });
 
     if (project.title !== prevProject.title || project.description !== prevProject.description) {
         setPrevProject({ title: project.title, description: project.description });
         setEditName(project.title);
-        setEditDesc(project.description ?? '');
+        setEditDesc(project.description);
     }
 
     const handleSaveName = async () => {
@@ -37,7 +37,7 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
     };
 
     const handleSaveDesc = async () => {
-        if (editDesc === (project.description ?? '')) {
+        if (editDesc === project.description) {
             setIsEditingDesc(false);
             return;
         }
@@ -45,7 +45,7 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
             await onUpdate?.({ description: editDesc });
             setIsEditingDesc(false);
         } catch (error) {
-            setEditDesc(project.description ?? '');
+            setEditDesc(project.description);
             console.error('Failed to update description', error);
         }
     };

@@ -15,8 +15,7 @@ interface ProjectEnvironmentTabProps {
     language: Language
 }
 
-export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ projectPath, language }) => {
-    const { t } = useTranslation(language);
+const useProjectEnv = (projectPath: string) => {
     const [envVars, setEnvVars] = useState<EnvVar[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -81,6 +80,33 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
         setEnvVars(prev => prev.filter((_, i) => i !== index));
         setHasChanges(true);
     };
+
+    return {
+        envVars,
+        loading,
+        saving,
+        hasChanges,
+        handleSave,
+        updateVar,
+        toggleVisibility,
+        addVar,
+        removeVar
+    };
+};
+
+export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ projectPath, language }) => {
+    const { t } = useTranslation(language);
+    const {
+        envVars,
+        loading,
+        saving,
+        hasChanges,
+        handleSave,
+        updateVar,
+        toggleVisibility,
+        addVar,
+        removeVar
+    } = useProjectEnv(projectPath);
 
     if (loading) {
         return (

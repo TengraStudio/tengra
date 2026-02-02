@@ -19,6 +19,22 @@ interface ResponsiveContainerProps {
     hideOnDesktop?: boolean
 }
 
+type DeviceType = 'mobile' | 'tablet' | 'desktop';
+type BreakpointType = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+
+const DEVICE_MAP: Record<BreakpointType, DeviceType> = {
+    'xs': 'mobile',
+    'sm': 'mobile',
+    'md': 'tablet',
+    'lg': 'desktop',
+    'xl': 'desktop',
+    '2xl': 'desktop'
+};
+
+function getDeviceType(breakpoint: BreakpointType): DeviceType {
+    return DEVICE_MAP[breakpoint];
+}
+
 /**
  * Container that adapts to screen size
  */
@@ -32,23 +48,25 @@ export function ResponsiveContainer({
     hideOnTablet,
     hideOnDesktop
 }: ResponsiveContainerProps) {
-    const breakpoint = useBreakpoint();
-    const isMobile = breakpoint === 'xs' || breakpoint === 'sm';
-    const isTablet = breakpoint === 'md';
-    const isDesktop = breakpoint === 'lg' || breakpoint === 'xl' || breakpoint === '2xl';
+    const breakpoint = useBreakpoint() as BreakpointType;
+    const device = getDeviceType(breakpoint);
 
-    if (hideOnMobile && isMobile) {return null;}
-    if (hideOnTablet && isTablet) {return null;}
-    if (hideOnDesktop && isDesktop) {return null;}
+    const hideConfig: Record<DeviceType, boolean | undefined> = {
+        mobile: hideOnMobile,
+        tablet: hideOnTablet,
+        desktop: hideOnDesktop
+    };
 
-    const responsiveClass = isMobile
-        ? mobileClassName
-        : isTablet
-          ? tabletClassName
-          : desktopClassName;
+    if (hideConfig[device]) { return null; }
+
+    const classConfig: Record<DeviceType, string | undefined> = {
+        mobile: mobileClassName,
+        tablet: tabletClassName,
+        desktop: desktopClassName
+    };
 
     return (
-        <div className={cn(className, responsiveClass)}>
+        <div className={cn(className, classConfig[device])}>
             {children}
         </div>
     );
@@ -70,24 +88,23 @@ export function ResponsiveGrid({
     gap = { mobile: 'gap-2', tablet: 'gap-4', desktop: 'gap-6' },
     className
 }: ResponsiveGridProps) {
-    const breakpoint = useBreakpoint();
-    const isMobile = breakpoint === 'xs' || breakpoint === 'sm';
-    const isTablet = breakpoint === 'md';
+    const breakpoint = useBreakpoint() as BreakpointType;
+    const device = getDeviceType(breakpoint);
 
-    const gridCols = isMobile
-        ? `grid-cols-${cols.mobile ?? 1}`
-        : isTablet
-          ? `grid-cols-${cols.tablet ?? 2}`
-          : `grid-cols-${cols.desktop ?? 3}`;
+    const colsConfig: Record<DeviceType, number> = {
+        mobile: cols.mobile ?? 1,
+        tablet: cols.tablet ?? 2,
+        desktop: cols.desktop ?? 3
+    };
 
-    const gridGap = isMobile
-        ? gap.mobile ?? 'gap-2'
-        : isTablet
-          ? gap.tablet ?? 'gap-4'
-          : gap.desktop ?? 'gap-6';
+    const gapConfig: Record<DeviceType, string> = {
+        mobile: gap.mobile ?? 'gap-2',
+        tablet: gap.tablet ?? 'gap-4',
+        desktop: gap.desktop ?? 'gap-6'
+    };
 
     return (
-        <div className={cn('grid', gridCols, gridGap, className)}>
+        <div className={cn('grid', `grid-cols-${colsConfig[device]}`, gapConfig[device], className)}>
             {children}
         </div>
     );

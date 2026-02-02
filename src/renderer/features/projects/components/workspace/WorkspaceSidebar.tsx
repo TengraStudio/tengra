@@ -2,7 +2,7 @@ import React from 'react';
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { Language } from '@/i18n';
-import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, Message,QuotaResponse } from '@/types';
+import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
 
 import { AIAssistantSidebar } from './AIAssistantSidebar';
 
@@ -10,7 +10,6 @@ interface WorkspaceSidebarProps {
     showAgentPanel: boolean
     agentPanelWidth: number
     setAgentPanelWidth: (w: number) => void
-    viewTab: 'editor' | 'council' | 'logs'
     selectedProvider: string
     selectedModel: string
     onSelectModel: (provider: string, model: string) => void
@@ -20,14 +19,6 @@ interface WorkspaceSidebarProps {
     codexUsage: { accounts: { usage: CodexUsage }[] } | null
     agentChatMessage: string
     setAgentChatMessage: (msg: string) => void
-    councilEnabled: boolean
-    toggleCouncil: () => void
-    agents: CouncilAgent[]
-    toggleAgent: (id: string) => void
-    addAgent: () => void
-    runCouncil: () => void | Promise<void>
-    activityLog: ActivityEntry[]
-    clearLogs: () => void
     t: (key: string) => string
     messages?: Message[]
     isLoading?: boolean
@@ -37,11 +28,10 @@ interface WorkspaceSidebarProps {
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     showAgentPanel, agentPanelWidth, setAgentPanelWidth,
-    viewTab, selectedProvider, selectedModel, onSelectModel,
+    selectedProvider, selectedModel, onSelectModel,
     settings, groupedModels, quotas, codexUsage,
     agentChatMessage, setAgentChatMessage,
-    councilEnabled, toggleCouncil, agents, toggleAgent, addAgent,
-    runCouncil, activityLog, clearLogs, t, messages, isLoading,
+    t, messages, isLoading,
     language, onSourceClick
 }) => {
     return (
@@ -69,7 +59,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             />
             <div className="h-full flex flex-col">
                 <AIAssistantSidebar
-                    viewTab={viewTab}
                     selectedProvider={selectedProvider}
                     selectedModel={selectedModel}
                     onSelectModel={onSelectModel}
@@ -79,14 +68,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                     codexUsage={codexUsage}
                     agentChatMessage={agentChatMessage}
                     setAgentChatMessage={setAgentChatMessage}
-                    councilEnabled={councilEnabled}
-                    toggleCouncil={toggleCouncil}
-                    agents={agents}
-                    toggleAgent={toggleAgent}
-                    addAgent={addAgent}
-                    runCouncil={() => { void runCouncil(); }}
-                    activityLog={activityLog}
-                    clearLogs={clearLogs}
                     t={t}
                     messages={messages}
                     isLoading={isLoading}

@@ -340,7 +340,7 @@ export const isMonacoNativeLanguage = (lang: string): boolean => {
  */
 export const needsTextMateGrammar = (lang: string): boolean => {
     const lowerLang = lang.toLowerCase();
-    return TEXTMATE_SCOPES[lowerLang] !== undefined;
+    return lowerLang in TEXTMATE_SCOPES;
 };
 
 /**

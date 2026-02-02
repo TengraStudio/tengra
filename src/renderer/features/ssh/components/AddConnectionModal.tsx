@@ -50,7 +50,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <input
                         type="number"
                         value={newConnection.port}
-                        onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) ?? 22 })}
+                        onChange={e => setNewConnection({ ...newConnection, port: parseInt(e.target.value) || 22 })}
                         placeholder={t('ssh.placeholders.port')}
                     />
                 </div>

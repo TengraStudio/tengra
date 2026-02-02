@@ -1,37 +1,32 @@
+import { ExtensionInstallPrompt } from '@renderer/components/ExtensionInstallPrompt';
 import { AppHeader } from '@renderer/components/layout/AppHeader';
+import { AppModals } from '@renderer/components/layout/AppModals';
 import { CommandPalette } from '@renderer/components/layout/CommandPalette';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';
 import { QuickActionBar } from '@renderer/components/layout/QuickActionBar';
 import { Sidebar } from '@renderer/components/layout/Sidebar';
+import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
-import { KeyboardShortcutsModal } from '@renderer/components/shared/KeyboardShortcutsModal';
-import { Modal } from '@renderer/components/ui/modal';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
+import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts';
-import { Language, useLanguage, useTranslation } from '@renderer/i18n';
+import { useLanguage, useTranslation } from '@renderer/i18n';
 import { ViewManager } from '@renderer/views/ViewManager';
-import { lazy, Suspense, useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useProject } from '@/context/ProjectContext';
-import { AnimatePresence } from '@/lib/framer-motion-compat';
-import { cn } from '@/lib/utils';
-import { Chat, Toast } from '@/types';
 
 import '@renderer/App.css';
-
-// Lazy load heavy components
-const SSHManager = lazy(() => import('@renderer/features/ssh/SSHManager').then(m => ({ default: m.SSHManager })));
-const AudioChatOverlay = lazy(() => import('@renderer/features/chat/components/AudioChatOverlay').then(m => ({ default: m.AudioChatOverlay })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     { id: 'code', icon: 'Code', iconColor: 'text-primary', title: t('templates.code.title'), description: t('templates.code.description'), prompt: t('templates.code.prompt') },
@@ -40,64 +35,19 @@ const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     { id: 'debug', icon: 'Bug', iconColor: 'text-rose-400', title: t('templates.debug.title'), description: t('templates.debug.description'), prompt: t('templates.debug.prompt') }
 ];
 
-interface AppModalsProps {
-    isAuthModalOpen: boolean
-    setIsAuthModalOpen: (open: boolean) => void
-    t: (key: string) => string
-    handleAntigravityLogout: () => Promise<void>
-    setSettingsCategory: (cat: SettingsCategory) => void
-    setCurrentView: (view: AppView) => void
-    showShortcuts: boolean
-    setShowShortcuts: (show: boolean) => void
-    isAudioOverlayOpen: boolean
-    setIsAudioOverlayOpen: (open: boolean) => void
-    isListening: boolean
-    startListening: () => void
-    stopListening: () => void
-    isSpeaking: boolean
-    handleStopSpeak: () => void
-    language: Language
-    showSSHManager: boolean
-    setShowSSHManager: (show: boolean) => void
-}
-
-/**
- * Main Application Component
- */
 export default function App() {
-    const { language, setLanguage } = useLanguage();
+    const { language } = useLanguage();
     const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } = useAuth();
     const { setInput, handleSend, processFile, createNewChat, currentChatId, setCurrentChatId, chats, setChats } = useChat();
     const { t } = useTranslation();
     const handleVoiceInput = useCallback((text: string) => { setInput(prev => prev + text); }, [setInput]);
     const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
-    const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
+    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
     const { projects, setSelectedProject } = useProject();
     const appState = useAppState();
 
-    useEffect(() => { window.TandemSpeak = handleSpeak; }, [handleSpeak]);
-
-    useEffect(() => {
-        // Apply text direction globally
-        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.lang = language;
-    }, [language]);
-
-    useEffect(() => {
-        // Detect language on first launch if not set
-        const detectLanguage = async () => {
-            const settings = await window.electron.getSettings();
-            if (!settings?.general?.language) {
-                const browserLang = window.navigator.language.split('-')[0];
-                const supported = ['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
-                if (supported.includes(browserLang)) {
-                    void setLanguage(browserLang as Language);
-                }
-            }
-        };
-        void detectLanguage();
-    }, [setLanguage]);
+    const { showExtensionWarning, setShowExtensionWarning } = useAppInitialization();
 
     const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
@@ -109,7 +59,7 @@ export default function App() {
             if (currentChatId) {
                 await window.electron.db.deleteMessages(currentChatId);
                 const updatedChats = await window.electron.db.getAllChats();
-                setChats(updatedChats as Chat[]);
+                setChats(updatedChats);
             }
         };
         void clear();
@@ -140,6 +90,18 @@ export default function App() {
     return (
         <ErrorBoundary fallback={<ErrorFallback error={new Error('App Error')} resetErrorBoundary={() => window.location.reload()} />}>
             <div className="app-container h-screen w-full overflow-hidden">
+                {showExtensionWarning && (
+                    <ExtensionInstallPrompt
+                        onClose={() => setShowExtensionWarning(false)}
+                        onDismiss={() => {
+                            void (async () => {
+                                await window.electron.extension.dismissWarning();
+                                setShowExtensionWarning(false);
+                            })();
+                        }}
+                    />
+                )}
+
                 <AppModals
                     isAuthModalOpen={isAuthModalOpen} setIsAuthModalOpen={setIsAuthModalOpen} t={t}
                     handleAntigravityLogout={handleAntigravityLogout} setSettingsCategory={setSettingsCategory}
@@ -205,59 +167,3 @@ export default function App() {
         </ErrorBoundary>
     );
 }
-
-function ToastsContainer({ toasts, removeToast }: { toasts: Toast[], removeToast: (id: string) => void }) {
-    return (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
-            {toasts.map(toast => (
-                <div key={toast.id} className={cn(
-                    'px-4 py-3 rounded-lg shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-full duration-300 pointer-events-auto flex items-center justify-center gap-3 min-w-[240px]',
-                    toast.type === 'success' ? 'bg-success/20 border-success/30 text-success' :
-                        toast.type === 'error' ? 'bg-destructive/20 border-destructive/30 text-destructive' : 'bg-zinc-800/80 border-white/10 text-foreground'
-                )}>
-                    <span className="text-lg">{toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}</span>
-                    <div className="text-sm font-medium">{toast.message}</div>
-                    <button onClick={() => { removeToast(toast.id); }} className="ms-auto opacity-50">×</button>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function AppModals({
-    isAuthModalOpen, setIsAuthModalOpen, t, handleAntigravityLogout, setSettingsCategory, setCurrentView,
-    showShortcuts, setShowShortcuts, isAudioOverlayOpen, setIsAudioOverlayOpen,
-    isListening, startListening, stopListening, isSpeaking, handleStopSpeak, language, showSSHManager, setShowSSHManager
-}: AppModalsProps) {
-    return (<>
-        <Modal
-            isOpen={isAuthModalOpen} onClose={() => { setIsAuthModalOpen(false); }} title={t('auth.authError')}
-            footer={<button onClick={() => {
-                void (async () => {
-                    await handleAntigravityLogout();
-                    setIsAuthModalOpen(false);
-                    setCurrentView('settings');
-                    setSettingsCategory('accounts');
-                })();
-            }} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">{t('auth.goToAccounts')}</button>}
-        >
-            <div className="space-y-4"><p className="text-sm text-muted-foreground">{t('auth.connectionFailed')}</p></div>
-        </Modal>
-        <AnimatePresence>{showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} />}</AnimatePresence>
-        <AnimatePresence>{isAudioOverlayOpen && (
-            <Suspense fallback={null}>
-                <AudioChatOverlay
-                    isOpen={isAudioOverlayOpen} onClose={() => { setIsAudioOverlayOpen(false); }} isListening={isListening}
-                    startListening={startListening} stopListening={stopListening} isSpeaking={isSpeaking}
-                    onStopSpeaking={() => { handleStopSpeak(); }} language={language}
-                />
-            </Suspense>
-        )}</AnimatePresence>
-        <AnimatePresence>{showSSHManager && (
-            <Suspense fallback={null}>
-                <SSHManager isOpen={showSSHManager} onClose={() => { setShowSSHManager(false); }} language={language} />
-            </Suspense>
-        )}</AnimatePresence>
-    </>);
-}
-

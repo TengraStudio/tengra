@@ -1,5 +1,5 @@
 import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components';
-import { Book, Folder as FolderIcon,MessageSquare, Rocket, Users } from 'lucide-react';
+import { Book, Folder as FolderIcon,MessageSquare, Rocket } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -50,15 +50,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             title={t('sidebar.projects')}
         >
             <Rocket className="w-4 h-4 shrink-0" />
-        </Button>
-        <Button
-            variant="ghost"
-            onClick={() => onChangeView('council')}
-            className={cn("nav-item justify-center", currentView === 'council' && "nav-item-active")}
-            title={t('sidebar.council')}
-        >
-            <Users className="w-4 h-4 shrink-0" />
-        </Button>
+        </Button> 
     </div>
 );
 
@@ -88,16 +80,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
             isActive={currentView === 'projects'}
             status={selectedProject ? 'online' : undefined}
             statusLabel={selectedProject ? 'Active' : undefined}
-        />
-        <SidebarMenuItem
-            id="council"
-            icon={<Users className="w-4 h-4" />}
-            label={t('sidebar.council')}
-            onClick={() => onChangeView('council')}
-            isActive={currentView === 'council'}
-            status="online"
-            statusLabel="Ready"
-        />
+        /> 
         <SidebarMenuItem
             id="prompts"
             icon={<Book className="w-4 h-4" />}

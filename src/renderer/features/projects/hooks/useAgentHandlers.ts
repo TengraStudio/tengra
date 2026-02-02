@@ -89,9 +89,9 @@ export const useAgentHandlers = ({
 
     useEffect(() => {
         const unsubscribe = window.electron.on('agent-event', (payload: unknown) => {
-            const typedPayload = payload as { type: string; data: Record<string, unknown> };
+            const typedPayload = payload as { type: string; data?: { taskId?: string; reason?: string } };
             if (typedPayload.type === 'agent:interrupt_required' && typedPayload.data?.taskId === selectedTaskId) {
-                setInterruptReason((typedPayload.data.reason as string) ?? 'Manual intervention required');
+                setInterruptReason(typedPayload.data.reason ?? 'Manual intervention required');
                 setIsInterruptModalOpen(true);
             }
         });

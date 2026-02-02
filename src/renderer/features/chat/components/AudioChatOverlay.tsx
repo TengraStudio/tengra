@@ -16,145 +16,118 @@ interface AudioChatOverlayProps {
     language: Language
 }
 
-export function AudioChatOverlay({
-    isOpen,
-    onClose,
-    isListening,
-    startListening,
-    stopListening,
-    isSpeaking,
-    onStopSpeaking,
-    language
-}: AudioChatOverlayProps) {
+type AudioState = 'listening' | 'speaking' | 'processing';
+
+interface StateConfig {
+    bgClass: string
+    blurClass: string
+    shadowStyle: string
+    icon: typeof Mic
+    iconClass?: string
+    title: string
+    desc: string
+}
+
+function getAudioState(isListening: boolean, isSpeaking: boolean): AudioState {
+    if (isListening) { return 'listening'; }
+    if (isSpeaking) { return 'speaking'; }
+    return 'processing';
+}
+
+function getStateConfig(state: AudioState, t: (key: string) => string): StateConfig {
+    const configs: Record<AudioState, StateConfig> = {
+        listening: { bgClass: 'bg-primary text-primary-foreground', blurClass: 'bg-primary/30', shadowStyle: '0 0 80px rgba(var(--primary), 0.4)', icon: Mic, title: t('audioChat.listening'), desc: t('audioChat.listeningDesc') },
+        speaking: { bgClass: 'bg-success text-foreground', blurClass: 'bg-success/30', shadowStyle: '0 0 80px rgba(16, 185, 129, 0.4)', icon: Volume2, title: t('audioChat.speaking'), desc: t('audioChat.speakingDesc') },
+        processing: { bgClass: 'bg-zinc-800 text-muted-foreground', blurClass: '', shadowStyle: 'none', icon: Loader2, iconClass: 'animate-spin opacity-50', title: t('audioChat.thinking'), desc: t('audioChat.thinkingDesc') },
+    };
+    return configs[state];
+}
+
+const PulseRings: React.FC<{ blurClass: string }> = ({ blurClass }) => (
+    <>
+        <motion.div animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3], rotate: [0, 90, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className={cn("absolute w-80 h-80 rounded-full blur-[80px]", blurClass)} />
+        <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0.1, 0.5] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className={cn("absolute w-64 h-64 rounded-full blur-[60px]", blurClass.replace('/30', '/20'))} />
+    </>
+);
+
+interface CentralIconProps {
+    isListening: boolean
+    config: StateConfig
+}
+
+const CentralIcon: React.FC<CentralIconProps> = ({ isListening, config }) => {
+    const Icon = config.icon;
+    return (
+        <motion.div
+            animate={{ scale: isListening ? [1, 1.05, 1] : 1, boxShadow: config.shadowStyle }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className={cn("w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-white/10", config.bgClass)}
+        >
+            <Icon className={cn("w-16 h-16 drop-shadow-lg", config.iconClass)} />
+        </motion.div>
+    );
+};
+
+interface ControlButtonProps {
+    onClick: () => void
+    className: string
+    icon: typeof Mic
+    label: string
+}
+
+const ControlButton: React.FC<ControlButtonProps> = ({ onClick, className, icon: Icon, label }) => (
+    <button onClick={onClick} className={cn("px-10 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95", className)}>
+        <Icon className="w-6 h-6" />
+        {label}
+    </button>
+);
+
+interface ControlsProps {
+    isListening: boolean
+    isSpeaking: boolean
+    startListening: () => void
+    stopListening: () => void
+    onStopSpeaking: () => void
+    t: (key: string) => string
+}
+
+const Controls: React.FC<ControlsProps> = ({ isListening, isSpeaking, startListening, stopListening, onStopSpeaking, t }) => (
+    <div className="flex gap-4">
+        {isSpeaking && <ControlButton onClick={onStopSpeaking} className="bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20" icon={StopCircle} label={t('audioChat.stopSpeaking')} />}
+        {!isListening && !isSpeaking && <ControlButton onClick={startListening} className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20" icon={Mic} label={t('audioChat.resumeListening')} />}
+        {isListening && <ControlButton onClick={stopListening} className="bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10" icon={StopCircle} label={t('audioChat.pauseListening')} />}
+    </div>
+);
+
+export function AudioChatOverlay({ isOpen, onClose, isListening, startListening, stopListening, isSpeaking, onStopSpeaking, language }: AudioChatOverlayProps) {
     const { t } = useTranslation(language);
 
-    // Auto-start listening when opened if not speaking
     useEffect(() => {
-        if (isOpen && !isListening && !isSpeaking) {
-            startListening();
-        }
+        if (isOpen && !isListening && !isSpeaking) { startListening(); }
     }, [isOpen, isSpeaking, isListening, startListening]);
 
     if (!isOpen) { return null; }
 
+    const state = getAudioState(isListening, isSpeaking);
+    const config = getStateConfig(state, t);
+    const showPulse = isListening || isSpeaking;
+
     return (
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-2xl"
-            >
-                <button
-                    onClick={onClose}
-                    className="absolute top-8 right-8 p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl"
-                >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-2xl">
+                <button onClick={onClose} className="absolute top-8 right-8 p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl">
                     <X className="w-8 h-8 text-foreground/50 hover:text-foreground" />
                 </button>
-
                 <div className="flex flex-col items-center gap-16 relative w-full max-w-lg mx-auto p-4">
-                    {/* Visualizer / Status Indicator */}
                     <div className="relative flex items-center justify-center">
-                        {/* Pulse Rings */}
-                        {(isListening || isSpeaking) && (
-                            <>
-                                <motion.div
-                                    animate={{
-                                        scale: [1, 1.8, 1],
-                                        opacity: [0.3, 0, 0.3],
-                                        rotate: [0, 90, 0]
-                                    }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                    className={cn(
-                                        "absolute w-80 h-80 rounded-full blur-[80px]",
-                                        isListening ? "bg-primary/30" : "bg-success/30"
-                                    )}
-                                />
-                                <motion.div
-                                    animate={{
-                                        scale: [1, 1.4, 1],
-                                        opacity: [0.5, 0.1, 0.5]
-                                    }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                                    className={cn(
-                                        "absolute w-64 h-64 rounded-full blur-[60px]",
-                                        isListening ? "bg-primary/20" : "bg-success/20"
-                                    )}
-                                />
-                            </>
-                        )}
-
-                        {/* Central Icon */}
-                        <motion.div
-                            animate={{
-                                scale: isListening ? [1, 1.05, 1] : 1,
-                                boxShadow: isListening
-                                    ? "0 0 80px rgba(var(--primary), 0.4)"
-                                    : (isSpeaking ? "0 0 80px rgba(16, 185, 129, 0.4)" : "none")
-                            }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                            className={cn(
-                                "w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-white/10",
-                                isListening ? "bg-primary text-primary-foreground" :
-                                    isSpeaking ? "bg-success text-foreground" :
-                                        "bg-zinc-800 text-muted-foreground"
-                            )}
-                        >
-                            {isListening ? (
-                                <Mic className="w-16 h-16 drop-shadow-lg" />
-                            ) : isSpeaking ? (
-                                <Volume2 className="w-16 h-16 drop-shadow-lg" />
-                            ) : (
-                                <Loader2 className="w-16 h-16 animate-spin opacity-50" />
-                            )}
-                        </motion.div>
+                        {showPulse && <PulseRings blurClass={config.blurClass} />}
+                        <CentralIcon isListening={isListening} config={config} />
                     </div>
-
-                    {/* Status Text */}
                     <div className="text-center space-y-6">
-                        <motion.h2
-                            key={isListening ? 'listen' : isSpeaking ? 'speak' : 'process'}
-                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            className="text-4xl font-black tracking-tight uppercase font-sans"
-                        >
-                            {isListening ? t('audioChat.listening') : isSpeaking ? t('audioChat.speaking') : t('audioChat.thinking')}
-                        </motion.h2>
-                        <p className="text-muted-foreground/80 text-xl max-w-[320px] mx-auto font-medium leading-relaxed">
-                            {isListening ? t('audioChat.listeningDesc') : isSpeaking ? t('audioChat.speakingDesc') : t('audioChat.thinkingDesc')}
-                        </p>
+                        <motion.h2 key={state} initial={{ opacity: 0, scale: 0.9, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="text-4xl font-black tracking-tight uppercase font-sans">{config.title}</motion.h2>
+                        <p className="text-muted-foreground/80 text-xl max-w-[320px] mx-auto font-medium leading-relaxed">{config.desc}</p>
                     </div>
-
-                    {/* Controls */}
-                    <div className="flex gap-4">
-                        {isSpeaking && (
-                            <button
-                                onClick={onStopSpeaking}
-                                className="px-10 py-4 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95"
-                            >
-                                <StopCircle className="w-6 h-6" />
-                                {t('audioChat.stopSpeaking')}
-                            </button>
-                        )}
-                        {!isListening && !isSpeaking && (
-                            <button
-                                onClick={startListening}
-                                className="px-10 py-4 rounded-2xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95"
-                            >
-                                <Mic className="w-6 h-6" />
-                                {t('audioChat.resumeListening')}
-                            </button>
-                        )}
-                        {isListening && (
-                            <button
-                                onClick={stopListening}
-                                className="px-10 py-4 rounded-2xl bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10 font-bold transition-all flex items-center gap-3 shadow-lg active:scale-95"
-                            >
-                                <StopCircle className="w-6 h-6" />
-                                {t('audioChat.pauseListening')}
-                            </button>
-                        )}
-                    </div>
+                    <Controls isListening={isListening} isSpeaking={isSpeaking} startListening={startListening} stopListening={stopListening} onStopSpeaking={onStopSpeaking} t={t} />
                 </div>
             </motion.div>
         </AnimatePresence>

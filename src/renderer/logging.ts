@@ -10,7 +10,7 @@ export function installRendererLogger() {
     installed = true;
 
     const logger = window.electron.log;
-    if (!logger) {return;}
+    if (!('log' in window.electron)) {return;}
 
     const original = {
         // eslint-disable-next-line no-console

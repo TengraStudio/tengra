@@ -299,47 +299,69 @@ BASIC INFO:
 - Category: ${idea.category}
 - Description: ${idea.description}
 `;
+        prompt += this.buildOptionalSections(idea);
+        prompt += this.buildScoringInstructions();
+
+        return prompt;
+    }
+
+    private buildOptionalSections(idea: ProjectIdea): string {
+        let sections = '';
 
         if (idea.valueProposition) {
-            prompt += `- Value Proposition: ${idea.valueProposition}\n`;
+            sections += `- Value Proposition: ${idea.valueProposition}\n`;
         }
 
         if (idea.longDescription) {
-            prompt += `\nDETAILED DESCRIPTION:\n${idea.longDescription.slice(0, 1000)}\n`;
+            sections += `\nDETAILED DESCRIPTION:\n${idea.longDescription.slice(0, 1000)}\n`;
         }
 
         if (idea.competitiveAdvantages?.length) {
-            prompt += `\nCOMPETITIVE ADVANTAGES:\n${idea.competitiveAdvantages.map(a => `- ${a}`).join('\n')}\n`;
+            sections += `\nCOMPETITIVE ADVANTAGES:\n${idea.competitiveAdvantages.map(a => `- ${a}`).join('\n')}\n`;
         }
 
-        if (idea.techStack) {
-            const techs: string[] = [];
-            if (idea.techStack.frontend.length) {
-                techs.push(`Frontend: ${idea.techStack.frontend.map(t => t.name).join(', ')}`);
-            }
-            if (idea.techStack.backend.length) {
-                techs.push(`Backend: ${idea.techStack.backend.map(t => t.name).join(', ')}`);
-            }
-            if (techs.length) {
-                prompt += `\nTECH STACK:\n${techs.join('\n')}\n`;
-            }
+        sections += this.buildTechStackSection(idea);
+        sections += this.buildRoadmapSection(idea);
+        sections += this.buildBusinessModelSection(idea);
+        sections += this.buildSwotSection(idea);
+
+        return sections;
+    }
+
+    private buildTechStackSection(idea: ProjectIdea): string {
+        if (!idea.techStack) { return ''; }
+
+        const techs: string[] = [];
+        if (idea.techStack.frontend.length) {
+            techs.push(`Frontend: ${idea.techStack.frontend.map(t => t.name).join(', ')}`);
+        }
+        if (idea.techStack.backend.length) {
+            techs.push(`Backend: ${idea.techStack.backend.map(t => t.name).join(', ')}`);
         }
 
-        if (idea.roadmap) {
-            prompt += `\nROADMAP:\n- MVP: ${idea.roadmap.mvp.description}\n- Total Duration: ${idea.roadmap.totalDuration}\n`;
-        }
+        return techs.length ? `\nTECH STACK:\n${techs.join('\n')}\n` : '';
+    }
 
-        if (idea.businessModel) {
-            prompt += `\nBUSINESS MODEL:\n- Type: ${idea.businessModel.monetizationType}\n`;
-        }
+    private buildRoadmapSection(idea: ProjectIdea): string {
+        if (!idea.roadmap) { return ''; }
+        return `\nROADMAP:\n- MVP: ${idea.roadmap.mvp.description}\n- Total Duration: ${idea.roadmap.totalDuration}\n`;
+    }
 
-        if (idea.swot) {
-            prompt += `\nSWOT ANALYSIS:\n`;
-            prompt += `Strengths: ${idea.swot.strengths.slice(0, 3).join(', ')}\n`;
-            prompt += `Weaknesses: ${idea.swot.weaknesses.slice(0, 3).join(', ')}\n`;
-        }
+    private buildBusinessModelSection(idea: ProjectIdea): string {
+        if (!idea.businessModel) { return ''; }
+        return `\nBUSINESS MODEL:\n- Type: ${idea.businessModel.monetizationType}\n`;
+    }
 
-        prompt += `
+    private buildSwotSection(idea: ProjectIdea): string {
+        if (!idea.swot) { return ''; }
+        let swot = `\nSWOT ANALYSIS:\n`;
+        swot += `Strengths: ${idea.swot.strengths.slice(0, 3).join(', ')}\n`;
+        swot += `Weaknesses: ${idea.swot.weaknesses.slice(0, 3).join(', ')}\n`;
+        return swot;
+    }
+
+    private buildScoringInstructions(): string {
+        return `
 Score this idea on these dimensions (0-100 each):
 1. INNOVATION: How unique and innovative is this idea?
 2. MARKET NEED: How clear and strong is the market need?
@@ -372,8 +394,6 @@ Respond in JSON:
     "confidence": "high|medium|low",
     "summary": "Brief evaluation summary"
 }`;
-
-        return prompt;
     }
 
     /**

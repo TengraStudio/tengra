@@ -1,5 +1,5 @@
-import { Copy, Globe, Sparkles, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Copy, Globe, LucideIcon, Sparkles, X } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -10,44 +10,62 @@ interface QuickActionBarProps {
     language: Language
 }
 
-export function QuickActionBar({ onExplain, onTranslate, language }: QuickActionBarProps) {
-    const { t } = useTranslation(language);
-    const [isVisible, setIsVisible] = useState(false);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [selectedText, setSelectedText] = useState('');
-    const barRef = useRef<HTMLDivElement>(null);
+interface SelectionState {
+    isVisible: boolean
+    position: { x: number; y: number }
+    selectedText: string
+}
 
+const ALLOWED_SELECTORS = ['.cm-editor', '.prose', '.message-content'];
+
+function isInAllowedArea(element: Element | null): boolean {
+    if (!element) { return false; }
+    return ALLOWED_SELECTORS.some(selector => element.closest(selector));
+}
+
+function getSelectionPosition(rect: DOMRect): { x: number; y: number } {
+    return { x: rect.left + rect.width / 2, y: rect.top - 10 };
+}
+
+function getSelectionData(): { text: string; rect: DOMRect; parent: Element | null } | null {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim() ?? '';
+    if (text.length <= 2) { return null; }
+    
+    const range = selection?.getRangeAt(0);
+    const rect = range?.getBoundingClientRect();
+    if (!rect) { return null; }
+    
+    return { text, rect, parent: selection?.anchorNode?.parentElement ?? null };
+}
+
+function handleTextSelection(setSelectionState: React.Dispatch<React.SetStateAction<SelectionState>>): void {
+    const data = getSelectionData();
+    if (!data) { return; }
+    
+    if (isInAllowedArea(data.parent)) {
+        setSelectionState({ isVisible: true, position: getSelectionPosition(data.rect), selectedText: data.text });
+    }
+}
+
+function handleSelectionClear(isVisible: boolean, setSelectionState: React.Dispatch<React.SetStateAction<SelectionState>>): void {
+    if (!isVisible) { return; }
+    setTimeout(() => {
+        const activeSelection = window.getSelection()?.toString().trim();
+        if (!activeSelection) {
+            setSelectionState(prev => ({ ...prev, isVisible: false }));
+        }
+    }, 100);
+}
+
+function useSelectionHandler(isVisible: boolean, setSelectionState: React.Dispatch<React.SetStateAction<SelectionState>>): void {
     useEffect(() => {
         const handleSelectionChange = () => {
-            const selection = window.getSelection();
-            const text = selection?.toString().trim();
-
+            const text = window.getSelection()?.toString().trim();
             if (text && text.length > 2) {
-                const range = selection?.getRangeAt(0);
-                const rect = range?.getBoundingClientRect();
-                const anchorNode = selection?.anchorNode;
-                const parentElement = anchorNode?.parentElement;
-
-                // Check if selection is within allowed areas
-                const isAllowedArea = parentElement?.closest('.cm-editor') ||
-                    parentElement?.closest('.prose') ||
-                    parentElement?.closest('.message-content');
-
-                if (rect && isAllowedArea) {
-                    setSelectedText(text);
-                    setPosition({
-                        x: rect.left + rect.width / 2,
-                        y: rect.top - 10
-                    });
-                    setIsVisible(true);
-                }
+                handleTextSelection(setSelectionState);
             } else {
-                if (isVisible) {
-                    setTimeout(() => {
-                        const activeSelection = window.getSelection()?.toString().trim();
-                        if (!activeSelection) { setIsVisible(false); }
-                    }, 100);
-                }
+                handleSelectionClear(isVisible, setSelectionState);
             }
         };
 
@@ -57,14 +75,55 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
             document.removeEventListener('mouseup', handleSelectionChange);
             document.removeEventListener('keyup', handleSelectionChange);
         };
-    }, [isVisible]);
+    }, [isVisible, setSelectionState]);
+}
 
-    const handleCopy = () => {
-        void navigator.clipboard.writeText(selectedText);
-        setIsVisible(false);
-    };
+interface ActionButtonProps {
+    onClick: () => void
+    icon: LucideIcon
+    iconClass: string
+    label: string
+}
 
-    if (!isVisible) { return null; }
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, icon: Icon, iconClass, label }) => (
+    <button
+        onClick={onClick}
+        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
+    >
+        <Icon className={`w-3.5 h-3.5 ${iconClass}`} />
+        <span>{label}</span>
+    </button>
+);
+
+export function QuickActionBar({ onExplain, onTranslate, language }: QuickActionBarProps) {
+    const { t } = useTranslation(language);
+    const [selectionState, setSelectionState] = useState<SelectionState>({
+        isVisible: false,
+        position: { x: 0, y: 0 },
+        selectedText: ''
+    });
+    const barRef = useRef<HTMLDivElement>(null);
+
+    useSelectionHandler(selectionState.isVisible, setSelectionState);
+
+    const hide = useCallback(() => setSelectionState(prev => ({ ...prev, isVisible: false })), []);
+
+    const handleCopy = useCallback(() => {
+        void navigator.clipboard.writeText(selectionState.selectedText);
+        hide();
+    }, [selectionState.selectedText, hide]);
+
+    const handleExplain = useCallback(() => {
+        onExplain(selectionState.selectedText);
+        hide();
+    }, [onExplain, selectionState.selectedText, hide]);
+
+    const handleTranslate = useCallback(() => {
+        onTranslate(selectionState.selectedText);
+        hide();
+    }, [onTranslate, selectionState.selectedText, hide]);
+
+    if (!selectionState.isVisible) { return null; }
 
     return (
         <AnimatePresence>
@@ -75,41 +134,22 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 exit={{ opacity: 0, y: 10, scale: 0.9 }}
                 style={{
                     position: 'fixed',
-                    left: position.x,
-                    top: position.y,
+                    left: selectionState.position.x,
+                    top: selectionState.position.y,
                     transform: 'translate(-50%, -100%)',
                     zIndex: 1000
                 }}
                 className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
                 onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
             >
-                <button
-                    onClick={() => { onExplain(selectedText); setIsVisible(false); }}
-                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
-                >
-                    <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    <span>{t('quickAction.explain')}</span>
-                </button>
+                <ActionButton onClick={handleExplain} icon={Sparkles} iconClass="text-primary" label={t('quickAction.explain')} />
                 <div className="w-px h-4 bg-border/50 mx-0.5" />
-                <button
-                    onClick={() => { onTranslate(selectedText); setIsVisible(false); }}
-                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/20 text-foreground rounded-lg transition-colors text-xs font-bold"
-                >
-                    <Globe className="w-3.5 h-3.5 text-success" />
-                    <span>{t('quickAction.translate')}</span>
-                </button>
+                <ActionButton onClick={handleTranslate} icon={Globe} iconClass="text-success" label={t('quickAction.translate')} />
                 <div className="w-px h-4 bg-border/50 mx-0.5" />
-                <button
-                    onClick={handleCopy}
-                    className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-                    title={t('common.copy')}
-                >
+                <button onClick={handleCopy} className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('common.copy')}>
                     <Copy className="w-3.5 h-3.5" />
                 </button>
-                <button
-                    onClick={() => setIsVisible(false)}
-                    className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
-                >
+                <button onClick={hide} className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors">
                     <X className="w-3.5 h-3.5" />
                 </button>
             </motion.div>

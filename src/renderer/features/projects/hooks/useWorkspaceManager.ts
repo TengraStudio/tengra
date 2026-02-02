@@ -8,20 +8,16 @@ interface UseWorkspaceManagerProps {
     logActivity: (title: string, detail?: string) => void
 }
 
-/**
- * useWorkspaceManager Hook
- * 
- * Centralizes state and logic for:
- * - Mount management (local/SSH)
- * - File operations (read/write/create/delete/rename)
- * - Tab management (open/close/save)
- * - Agent Council configuration
- */
-export function useWorkspaceManager({
-    project,
-    notify,
-    logActivity
-}: UseWorkspaceManagerProps) {
+interface FileOpenEntry {
+    mountId: string
+    path: string
+    name: string
+    isDirectory: boolean
+    initialLine?: number
+}
+
+// Helper hook for mount state initialization and sync
+function useMountState(project: Project): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
     const [mounts, setMounts] = useState<WorkspaceMount[]>(() => {
         if (Array.isArray(project.mounts) && project.mounts.length > 0) { return project.mounts; }
         return project.path ? [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }] : [];
@@ -42,18 +38,13 @@ export function useWorkspaceManager({
         }
     }
 
+    return [mounts, setMounts];
+}
+
+// Helper hook for SSH mount status sync
+function useMountStatusSync(mounts: WorkspaceMount[]): Record<string, 'connected' | 'disconnected' | 'connecting'> {
     const [mountStatus, setMountStatus] = useState<Record<string, 'connected' | 'disconnected' | 'connecting'>>({});
-    const [openTabs, setOpenTabs] = useState<EditorTab[]>([]);
-    const [activeTabId, setActiveEditorTabId] = useState<string | null>(null);
-    const [refreshSignal, setRefreshSignal] = useState(0);
-    const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig.enabled));
-    const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview');
 
-    const activeTab = useMemo(() => openTabs.find(t => t.id === activeTabId) ?? null, [openTabs, activeTabId]);
-
-
-
-    // SSH Connection Status Sync
     useEffect(() => {
         let cancelled = false;
         const syncStatus = async () => {
@@ -76,144 +67,104 @@ export function useWorkspaceManager({
         return () => { cancelled = true; };
     }, [mounts]);
 
-    const ensureMountReady = useCallback(async (mount: WorkspaceMount) => {
-        if (mount.type === 'local') { return true; }
-        if (!mount.ssh?.host || !mount.ssh?.username) {
+    return mountStatus;
+}
+
+// Helper hook for SSH operations
+function useSSHOperations(notify: (type: 'success' | 'error' | 'info', message: string) => void, mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>) {
+    const validateSSHMount = useCallback((mount: WorkspaceMount): boolean => {
+        if (!mount.ssh) {
             notify('error', 'SSH config is missing.');
             return false;
         }
+        if (!mount.ssh.host || !mount.ssh.username) {
+            notify('error', 'SSH config is missing.');
+            return false;
+        }
+        return true;
+    }, [notify]);
+
+    const ensureMountReady = useCallback(async (mount: WorkspaceMount): Promise<boolean> => {
+        if (mount.type === 'local') { return true; }
+        if (!validateSSHMount(mount)) { return false; }
         if (mountStatus[mount.id] === 'connected') { return true; }
-        setMountStatus(prev => ({ ...prev, [mount.id]: 'connecting' }));
+
+        const sshConfig = mount.ssh;
+        if (!sshConfig) { return false; }
         const result = await window.electron.ssh.connect({
             id: mount.id,
             name: mount.name,
-            host: mount.ssh.host,
-            port: mount.ssh.port ? Number(mount.ssh.port) : 22,
-            username: mount.ssh.username,
-            authType: mount.ssh.authType ?? (mount.ssh.privateKey ? 'key' : 'password'),
-            password: mount.ssh.password,
-            privateKey: mount.ssh.privateKey,
-            passphrase: mount.ssh.passphrase
+            host: sshConfig.host,
+            port: sshConfig.port ? Number(sshConfig.port) : 22,
+            username: sshConfig.username,
+            authType: sshConfig.authType ?? (sshConfig.privateKey ? 'key' : 'password'),
+            password: sshConfig.password,
+            privateKey: sshConfig.privateKey,
+            passphrase: sshConfig.passphrase
         });
         if (!result.success) {
-            setMountStatus(prev => ({ ...prev, [mount.id]: 'disconnected' }));
             notify('error', result.error ?? 'SSH connection failed.');
             return false;
         }
-        setMountStatus(prev => ({ ...prev, [mount.id]: 'connected' }));
         return true;
-    }, [mountStatus, notify]);
+    }, [mountStatus, notify, validateSSHMount]);
 
-    const openFile = useCallback(async (entry: { mountId: string, path: string, name: string, isDirectory: boolean, initialLine?: number }) => {
-        if (entry.isDirectory) { return; }
-        const mount = mounts.find(m => m.id === entry.mountId);
-        if (!mount) { return; }
+    return { ensureMountReady };
+}
 
-        const tabId = `${entry.mountId}:${entry.path}`;
-        const existing = openTabs.find(tab => tab.id === tabId);
-        if (existing) {
-            // If it has an initialLine, we should update the tab to trigger a scroll
-            if (entry.initialLine !== undefined) {
-                setOpenTabs(prev => prev.map(t => t.id === tabId ? { ...t, initialLine: entry.initialLine } : t));
-            }
-            setActiveEditorTabId(existing.id);
-            return;
+// Helper for detecting image files
+function isImageFile(fileName: string): boolean {
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+}
+
+// Extract content from result object
+function extractContentFromResult(result: ServiceResponse<string>): string {
+    return (result.data ?? result.content) ?? '';
+}
+
+// Handle image file reading
+async function readImageFile(mount: WorkspaceMount, filePath: string, notify: (type: 'success' | 'error' | 'info', message: string) => void): Promise<{ content: string; type: 'code' | 'image'; result: ServiceResponse<string> | undefined }> {
+    if (mount.type === 'local') {
+        const result = await window.electron.files.readImage(filePath);
+        if (result.success) {
+            return { content: extractContentFromResult(result), type: 'image', result };
         }
+        return { content: '', type: 'code', result };
+    }
+    notify('info', 'SSH image preview not supported yet.');
+    return { content: '', type: 'code', result: undefined };
+}
 
-        const isReady = await ensureMountReady(mount);
-        if (!isReady) { return; }
+// Handle code file reading
+async function readCodeFile(mount: WorkspaceMount, filePath: string): Promise<{ content: string; type: 'code' | 'image'; result: ServiceResponse<string> }> {
+    const result = mount.type === 'local' ? await window.electron.readFile(filePath) : await window.electron.ssh.readFile(mount.id, filePath);
+    const content = result.success ? extractContentFromResult(result) : '';
 
-        const ext = entry.name.split('.').pop()?.toLowerCase() ?? '';
-        const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
-
-        let result: ServiceResponse<string> | undefined;
-        let content = '';
-        let type: 'code' | 'image' = 'code';
-
-        if (isImage) {
-            if (mount.type === 'local') { result = await window.electron.files.readImage(entry.path); }
-            else { notify('info', 'SSH image preview not supported yet.'); return; }
-            if (result.success) {
-                const contentData = (result.data ?? result.content) ?? '';
-                content = contentData;
-                type = 'image';
-            }
-        } else {
-            result = (mount.type === 'local' ? await window.electron.readFile(entry.path) : await window.electron.ssh.readFile(mount.id, entry.path));
-            if (!result.success && result.error === 'File is binary' && mount.type === 'local') {
-                const imgResult = await window.electron.files.readImage(entry.path);
-                if (imgResult.success) { result = imgResult; type = 'image'; }
-            }
-            if (result.success) {
-                const contentData = (result.data ?? result.content) ?? '';
-                content = contentData;
-            }
+    if (!result.success && result.error === 'File is binary' && mount.type === 'local') {
+        const imgResult = await window.electron.files.readImage(filePath);
+        if (imgResult.success) {
+            return { content: extractContentFromResult(imgResult), type: 'image', result: imgResult };
         }
+    }
 
-        if (!result.success) { notify('error', result.error ?? 'Failed to read file.'); return; }
+    return { content, type: 'code', result };
+}
 
-        const tab: EditorTab = {
-            id: tabId,
-            mountId: entry.mountId,
-            path: entry.path,
-            name: entry.name,
-            content,
-            savedContent: content,
-            type,
-            isDirty: false,
-            initialLine: entry.initialLine
-        };
-        setOpenTabs(prev => [...prev, tab]);
-        setActiveEditorTabId(tabId);
-        setDashboardTab('editor');
-    }, [mounts, openTabs, ensureMountReady, notify]);
+// Helper for reading file content based on mount type
+async function readFileContent(mount: WorkspaceMount, filePath: string, notify: (type: 'success' | 'error' | 'info', message: string) => void): Promise<{ content: string; type: 'code' | 'image'; result: ServiceResponse<string> | undefined }> {
+    if (isImageFile(filePath)) {
+        return readImageFile(mount, filePath, notify);
+    }
+    return readCodeFile(mount, filePath);
+}
 
-    const saveActiveTab = useCallback(async () => {
-        const activeTab = openTabs.find(t => t.id === activeTabId);
-        if (!activeTab) { return; }
-        const mount = mounts.find(m => m.id === activeTab.mountId);
-        if (!mount) { return; }
-        const isReady = await ensureMountReady(mount);
-        if (!isReady) { return; }
-
-        const result = mount.type === 'local'
-            ? await window.electron.writeFile(activeTab.path, activeTab.content)
-            : await window.electron.ssh.writeFile(mount.id, activeTab.path, activeTab.content);
-
-        if (!result.success) { notify('error', result.error ?? 'Save failed.'); return; }
-        setOpenTabs(prev => prev.map(t => t.id === activeTab.id ? { ...t, savedContent: t.content } : t));
-        logActivity('Saved file', activeTab.path);
-        notify('success', 'File saved.');
-    }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity]);
-
-    const closeTab = useCallback((tabId: string) => {
-        const tab = openTabs.find(t => t.id === tabId);
-        if (tab && tab.content !== tab.savedContent) {
-            console.warn(`Close without saving "${tab.name}"?`);
-        }
-        setOpenTabs(prev => prev.filter(t => t.id !== tabId));
-        if (activeTabId === tabId) {
-            const remainingTabs = openTabs.filter(t => t.id !== tabId);
-            const next = remainingTabs.pop();
-            setActiveEditorTabId(next?.id ?? null);
-            if (!next) {
-                setDashboardTab('overview');
-            }
-        }
-    }, [activeTabId, openTabs]);
-
-    const persistMounts = useCallback(async (nextMounts: WorkspaceMount[]) => {
-        setMounts(nextMounts);
-        try {
-            await window.electron.db.updateProject(project.id, { mounts: JSON.stringify(nextMounts) });
-        } catch (error) {
-            console.error('Failed to save mounts', error);
-            notify('error', 'Failed to save mounts.');
-        }
-    }, [project.id, notify]);
+// Helper hook for file operations
+function useFileOperations(mounts: WorkspaceMount[], notify: (type: 'success' | 'error' | 'info', message: string) => void, logActivity: (title: string, detail?: string) => void) {
+    const [refreshSignal, setRefreshSignal] = useState(0);
 
     const createFile = useCallback(async (path: string, mount?: WorkspaceMount) => {
-        const targetMount = mount ?? mounts[0];
+        const targetMount = mount ?? (mounts.length > 0 ? mounts[0] : undefined);
         if (!targetMount) { return; }
         const result = targetMount.type === 'local' ? await window.electron.writeFile(path, '') : await window.electron.ssh.writeFile(targetMount.id, path, '');
         if (result.success) {
@@ -225,7 +176,7 @@ export function useWorkspaceManager({
     }, [mounts, logActivity, notify]);
 
     const createFolder = useCallback(async (path: string, mount?: WorkspaceMount) => {
-        const targetMount = mount ?? mounts[0];
+        const targetMount = mount ?? (mounts.length > 0 ? mounts[0] : undefined);
         if (!targetMount) { return; }
         const result = targetMount.type === 'local' ? await window.electron.createDirectory(path) : await window.electron.ssh.mkdir(targetMount.id, path);
         if (result.success) {
@@ -264,10 +215,127 @@ export function useWorkspaceManager({
         }
     }, [mounts, logActivity, notify]);
 
+    return { createFile, createFolder, renameEntry, deleteEntry, refreshSignal, setRefreshSignal };
+}
+
+// Helper hook for tab management
+function useTabManagement() {
+    const [openTabs, setOpenTabs] = useState<EditorTab[]>([]);
+    const [activeTabId, setActiveEditorTabId] = useState<string | null>(null);
+    const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview');
+
+    const activeTab = useMemo(() => openTabs.find(t => t.id === activeTabId) ?? null, [openTabs, activeTabId]);
+
+    const closeTab = useCallback((tabId: string) => {
+        const tab = openTabs.find(t => t.id === tabId);
+        if (tab && tab.content !== tab.savedContent) {
+            console.warn(`Close without saving "${tab.name}"?`);
+        }
+        setOpenTabs(prev => prev.filter(t => t.id !== tabId));
+        if (activeTabId === tabId) {
+            const remainingTabs = openTabs.filter(t => t.id !== tabId);
+            const next = remainingTabs.pop();
+            setActiveEditorTabId(next?.id ?? null);
+            if (!next) {
+                setDashboardTab('overview');
+            }
+        }
+    }, [activeTabId, openTabs]);
+
     const updateTabContent = useCallback((content: string) => {
         if (!activeTabId) { return; }
         setOpenTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, content } : t));
     }, [activeTabId]);
+
+    return { openTabs, activeTabId, setActiveEditorTabId, activeTab, closeTab, updateTabContent, dashboardTab, setDashboardTab, setOpenTabs };
+}
+
+/**
+ * useWorkspaceManager Hook
+ * 
+ * Centralizes state and logic for:
+ * - Mount management (local/SSH)
+ * - File operations (read/write/create/delete/rename)
+ * - Tab management (open/close/save)
+ * - Agent Council configuration
+ */
+export function useWorkspaceManager({
+    project,
+    notify,
+    logActivity
+}: UseWorkspaceManagerProps) {
+    const [mounts, setMounts] = useMountState(project);
+    const mountStatus = useMountStatusSync(mounts);
+    const { ensureMountReady } = useSSHOperations(notify, mountStatus);
+    const { createFile, createFolder, renameEntry, deleteEntry, refreshSignal, setRefreshSignal } = useFileOperations(mounts, notify, logActivity);
+    const { openTabs, activeTabId, setActiveEditorTabId, activeTab, closeTab, updateTabContent, dashboardTab, setDashboardTab, setOpenTabs } = useTabManagement();
+    const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig.enabled));
+
+    const openFile = useCallback(async (entry: FileOpenEntry) => {
+        if (entry.isDirectory) { return; }
+        const mount = mounts.find(m => m.id === entry.mountId);
+        if (!mount) { return; }
+
+        const tabId = `${entry.mountId}:${entry.path}`;
+        const existing = openTabs.find(tab => tab.id === tabId);
+        if (existing) {
+            if (entry.initialLine !== undefined) {
+                setOpenTabs(prev => prev.map(t => t.id === tabId ? { ...t, initialLine: entry.initialLine } : t));
+            }
+            setActiveEditorTabId(existing.id);
+            return;
+        }
+
+        const isReady = await ensureMountReady(mount);
+        if (!isReady) { return; }
+
+        const { content, type, result } = await readFileContent(mount, entry.path, notify);
+
+        if (!result?.success) { notify('error', result?.error ?? 'Failed to read file.'); return; }
+
+        const tab: EditorTab = {
+            id: tabId,
+            mountId: entry.mountId,
+            path: entry.path,
+            name: entry.name,
+            content,
+            savedContent: content,
+            type,
+            isDirty: false,
+            initialLine: entry.initialLine
+        };
+        setOpenTabs(prev => [...prev, tab]);
+        setActiveEditorTabId(tabId);
+        setDashboardTab('editor');
+    }, [mounts, openTabs, ensureMountReady, notify, setOpenTabs, setActiveEditorTabId, setDashboardTab]);
+
+    const saveActiveTab = useCallback(async () => {
+        const activeTabData = openTabs.find(t => t.id === activeTabId);
+        if (!activeTabData) { return; }
+        const mount = mounts.find(m => m.id === activeTabData.mountId);
+        if (!mount) { return; }
+        const isReady = await ensureMountReady(mount);
+        if (!isReady) { return; }
+
+        const result = mount.type === 'local'
+            ? await window.electron.writeFile(activeTabData.path, activeTabData.content)
+            : await window.electron.ssh.writeFile(mount.id, activeTabData.path, activeTabData.content);
+
+        if (!result.success) { notify('error', result.error ?? 'Save failed.'); return; }
+        setOpenTabs(prev => prev.map(t => t.id === activeTabData.id ? { ...t, savedContent: t.content } : t));
+        logActivity('Saved file', activeTabData.path);
+        notify('success', 'File saved.');
+    }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity, setOpenTabs]);
+
+    const persistMounts = useCallback(async (nextMounts: WorkspaceMount[]) => {
+        setMounts(nextMounts);
+        try {
+            await window.electron.db.updateProject(project.id, { mounts: JSON.stringify(nextMounts) });
+        } catch (error) {
+            console.error('Failed to save mounts', error);
+            notify('error', 'Failed to save mounts.');
+        }
+    }, [project.id, notify, setMounts]);
 
     return {
         mounts, mountStatus, openTabs, activeTabId, setActiveEditorTabId, refreshSignal, setRefreshSignal,

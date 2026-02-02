@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/utils';
@@ -14,6 +14,69 @@ interface GlassModalProps {
     showClose?: boolean
     closeOnBackdrop?: boolean
     closeOnEscape?: boolean
+}
+
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+const SIZE_CLASSES: Record<ModalSize, string> = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    full: 'max-w-[90vw] max-h-[90vh]'
+};
+
+function useEscapeKey(isOpen: boolean, closeOnEscape: boolean, onClose: () => void): void {
+    useEffect(() => {
+        if (!closeOnEscape || !isOpen) { return; }
+
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') { onClose(); }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isOpen, onClose, closeOnEscape]);
+}
+
+function useBodyScrollLock(isOpen: boolean): void {
+    useEffect(() => {
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
+}
+
+function useFocusTrap(isOpen: boolean, modalRef: React.RefObject<HTMLDivElement | null>): void {
+    const handleTab = useCallback((e: KeyboardEvent, first: HTMLElement, last: HTMLElement) => {
+        if (e.key !== 'Tab') { return; }
+
+        if (e.shiftKey && document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) { return; }
+
+        const focusableElements = modalRef.current?.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements?.[0] as HTMLElement | undefined;
+        const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement | undefined;
+
+        if (!firstElement || !lastElement) { return; }
+
+        const handler = (e: KeyboardEvent) => handleTab(e, firstElement, lastElement);
+
+        document.addEventListener('keydown', handler);
+        firstElement.focus();
+
+        return () => document.removeEventListener('keydown', handler);
+    }, [isOpen, modalRef, handleTab]);
 }
 
 /**
@@ -41,73 +104,11 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Handle escape key
-    useEffect(() => {
-        if (!closeOnEscape || !isOpen) {return;}
+    useEscapeKey(isOpen, closeOnEscape, onClose);
+    useBodyScrollLock(isOpen);
+    useFocusTrap(isOpen, modalRef);
 
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
-        };
-
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen, onClose, closeOnEscape]);
-
-    // Lock body scroll when modal is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [isOpen]);
-
-    // Focus trap
-    useEffect(() => {
-        if (!isOpen) {return;}
-
-        const focusableElements = modalRef.current?.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const firstElement = focusableElements?.[0] as HTMLElement;
-        const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement;
-
-        const handleTab = (e: KeyboardEvent) => {
-            if (e.key !== 'Tab') {return;}
-
-            if (e.shiftKey) {
-                if (document.activeElement === firstElement) {
-                    lastElement.focus();
-                    e.preventDefault();
-                }
-            } else {
-                if (document.activeElement === lastElement) {
-                    firstElement.focus();
-                    e.preventDefault();
-                }
-            }
-        };
-
-        document.addEventListener('keydown', handleTab);
-        firstElement.focus();
-
-        return () => document.removeEventListener('keydown', handleTab);
-    }, [isOpen]);
-
-    if (!isOpen) {return null;}
-
-    const sizeClasses = {
-        sm: 'max-w-sm',
-        md: 'max-w-md',
-        lg: 'max-w-lg',
-        xl: 'max-w-xl',
-        full: 'max-w-[90vw] max-h-[90vh]'
-    };
+    if (!isOpen) { return null; }
 
     return createPortal(
         <div
@@ -133,29 +134,12 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                     'relative w-full glass rounded-2xl shadow-2xl',
                     'animate-in fade-in-0 zoom-in-95 duration-300',
                     'border border-white/10',
-                    sizeClasses[size],
+                    SIZE_CLASSES[size],
                     className
                 )}
             >
                 {/* Header */}
-                {(title || showClose) && (
-                    <div className="flex items-center justify-between p-4 border-b border-white/10">
-                        {title && (
-                            <h2 id="modal-title" className="text-lg font-semibold gradient-text">
-                                {title}
-                            </h2>
-                        )}
-                        {showClose && (
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-white/10 transition-colors ripple"
-                                aria-label="Close modal"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
-                )}
+                <ModalHeader title={title} showClose={showClose} onClose={onClose} />
 
                 {/* Body */}
                 <div className="p-4 overflow-y-auto max-h-[70vh]">
@@ -168,3 +152,25 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 };
 
 GlassModal.displayName = 'GlassModal';
+
+interface ModalHeaderProps {
+    title?: string
+    showClose: boolean
+    onClose: () => void
+}
+
+const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) => {
+    const showHeader = title ?? showClose;
+    if (!showHeader) { return null; }
+
+    return (
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+            {title && <h2 id="modal-title" className="text-lg font-semibold gradient-text">{title}</h2>}
+            {showClose && (
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors ripple" aria-label="Close modal">
+                    <X className="w-5 h-5" />
+                </button>
+            )}
+        </div>
+    );
+};

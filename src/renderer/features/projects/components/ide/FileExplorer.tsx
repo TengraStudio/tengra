@@ -105,7 +105,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             try {
                 const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
                 // Handle ServiceResponse format: { success, data } or direct array
-                const files = (response && 'data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
+                const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
                 const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
                     name: f.name,
                     path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
@@ -129,7 +129,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
     return (
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
             {rootNodes.map(node => (
-                <FileTreeItem key={node.path} node={node} onSelect={onFileSelect || (() => { })} onFolderSelect={onFolderSelect} />
+                <FileTreeItem key={node.path} node={node} onSelect={onFileSelect ?? (() => { })} onFolderSelect={onFolderSelect} />
             ))}
             {rootNodes.length === 0 && (
                 <div className="p-4 text-xs text-muted-foreground text-center">{t('projectDashboard.emptyDir')}</div>

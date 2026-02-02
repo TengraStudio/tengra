@@ -13,6 +13,11 @@ interface AnimatedProgressBarProps {
     striped?: boolean
 }
 
+const getStripedClass = (striped: boolean, animated: boolean): string => {
+    if (!striped) { return ''; }
+    return animated ? 'progress-animated' : 'bg-stripes';
+};
+
 /**
  * AnimatedProgressBar Component
  * 
@@ -36,13 +41,13 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
 }) => {
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
-    const sizeClasses = {
+    const sizeClasses: Record<typeof size, string> = {
         sm: 'h-1',
         md: 'h-2',
         lg: 'h-3'
     };
 
-    const variantClasses = {
+    const variantClasses: Record<typeof variant, string> = {
         default: 'bg-primary',
         success: 'bg-success',
         warning: 'bg-warning',
@@ -66,8 +71,7 @@ export const AnimatedProgressBar: React.FC<AnimatedProgressBarProps> = React.mem
                     className={cn(
                         'h-full rounded-full transition-all duration-500 ease-out',
                         variantClasses[variant],
-                        striped && animated && 'progress-animated',
-                        striped && !animated && 'bg-stripes'
+                        getStripedClass(striped, animated)
                     )}
                     style={{ width: `${percentage}%` }}
                 />

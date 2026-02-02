@@ -34,16 +34,16 @@ export function useSSHConnections(isOpen: boolean) {
 
     const loadConnections = useCallback(async () => {
         try {
-            const profilesRaw = await window.electron.ssh.getProfiles() as SSHProfile[] || [];
-            const activeConns = await window.electron.ssh.getConnections() || [];
+            const profilesRaw = await window.electron.ssh.getProfiles() as SSHProfile[];
+            const activeConns = await window.electron.ssh.getConnections();
 
             const merged: SSHConnection[] = profilesRaw.map(p => {
                 const conn: SSHConnection = {
-                    id: p.id ?? '',
-                    name: p.name ?? '',
-                    host: p.host ?? '',
-                    port: p.port ?? 22,
-                    username: p.username ?? '',
+                    id: p.id,
+                    name: p.name,
+                    host: p.host,
+                    port: p.port,
+                    username: p.username,
                     status: 'disconnected' as const,
                     authType: p.privateKey ? 'key' : 'password'
                 };

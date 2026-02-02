@@ -83,21 +83,44 @@ function populateCategories(props: PopulateProps) {
     const favCat = cats.find(c => c.id === 'favorites');
 
     for (const [key, catId] of Object.entries(brandsMapping)) {
+        if (!(key in groupedModels)) { continue; }
         const group = groupedModels[key];
-        if (!group?.models) { continue; }
         const cat = cats.find(c => c.id === catId);
         if (!cat) { continue; }
 
         for (const m of group.models) {
             const modelItem = mapModelToItem(m, { searchLower, favorites, hidden, selectedModel, isModelDisabled });
-            if (!modelItem) { continue; }
+            if (modelItem === null) { continue; }
 
             cat.models.push(modelItem);
-            if (modelItem.pinned && favCat) {
+            if (modelItem.pinned && favCat !== undefined) {
                 favCat.models.push({ ...modelItem });
             }
         }
     }
+}
+
+function matchesSearch(m: ModelInfo, searchLower: string): boolean {
+    const id = m.id ?? '';
+    const label = m.label ?? m.name ?? id;
+    return searchLower === '' || label.toLowerCase().includes(searchLower) || id.toLowerCase().includes(searchLower);
+}
+
+function formatDisplayLabel(m: ModelInfo): string {
+    const id = m.id ?? '';
+    const label = m.label ?? m.name ?? id;
+    let displayLabel = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
+    if (displayLabel.startsWith('gpt-')) { displayLabel = displayLabel.toUpperCase(); }
+    return displayLabel;
+}
+
+function extractPricing(pricing: ModelInfo['pricing']): { input?: number; output?: number } | undefined {
+    if (!pricing || typeof pricing !== 'object' || Array.isArray(pricing)) { return undefined; }
+    const p = pricing as { input?: unknown; output?: unknown };
+    return {
+        input: typeof p.input === 'number' ? p.input : undefined,
+        output: typeof p.output === 'number' ? p.output : undefined
+    };
 }
 
 function mapModelToItem(
@@ -105,27 +128,17 @@ function mapModelToItem(
     ctx: { searchLower: string, favorites: Set<string>, hidden: Set<string>, selectedModel: string, isModelDisabled: (id: string, p: string) => boolean }
 ): ModelListItem | null {
     const id = m.id ?? '';
-    const label = m.label ?? m.name ?? id;
-    const matchesSearch = ctx.searchLower === '' || label.toLowerCase().includes(ctx.searchLower) || id.toLowerCase().includes(ctx.searchLower);
-
-    if (!matchesSearch || (ctx.hidden.has(id) && id !== ctx.selectedModel)) { return null; }
-
-    let displayLabel = label.replace(/^(github-|copilot-|ollama-|claude-|anthropic-)/i, '');
-    if (displayLabel.startsWith('gpt-')) { displayLabel = displayLabel.toUpperCase(); }
-
-    const modelType = typeof m.type === 'string' ? m.type : 'text';
-    const modelPricing = m.pricing && typeof m.pricing === 'object' && !Array.isArray(m.pricing)
-        ? { input: typeof m.pricing.input === 'number' ? m.pricing.input : undefined, output: typeof m.pricing.output === 'number' ? m.pricing.output : undefined }
-        : undefined;
+    if (!matchesSearch(m, ctx.searchLower)) { return null; }
+    if (ctx.hidden.has(id) && id !== ctx.selectedModel) { return null; }
 
     return {
         id,
-        label: displayLabel,
+        label: formatDisplayLabel(m),
         disabled: ctx.isModelDisabled(id, m.provider ?? ''),
         provider: m.provider ?? '',
-        type: modelType,
+        type: typeof m.type === 'string' ? m.type : 'text',
         contextWindow: m.contextWindow,
-        pricing: modelPricing,
+        pricing: extractPricing(m.pricing),
         pinned: ctx.favorites.has(id)
     };
 }

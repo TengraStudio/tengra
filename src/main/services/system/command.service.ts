@@ -74,39 +74,51 @@ export class CommandService {
         }
 
         if (options?.id) {
-            // If we need to track it, we should use the callback version of exec to get the child object
-            return new Promise((resolve) => {
-                const child = exec(command, {
-                    cwd: options.cwd ?? process.cwd(),
-                    timeout: options.timeout ?? this.maxTimeout,
-                    shell: options.shell ?? 'powershell.exe',
-                    maxBuffer: 10 * 1024 * 1024
-                }, (error, stdout, stderr) => {
-                    if (options.id) { this.activeProcesses.delete(options.id); }
-
-                    if (error) {
-                        resolve({
-                            success: false,
-                            stdout: stdout.trim(),
-                            stderr: stderr.trim(),
-                            exitCode: error.code,
-                            error: getErrorMessage(error)
-                        });
-                    } else {
-                        resolve({
-                            success: true,
-                            stdout: stdout.trim(),
-                            stderr: stderr.trim(),
-                            exitCode: 0
-                        });
-                    }
-                });
-
-                if (options.id) { this.activeProcesses.set(options.id, child); }
-            });
+            return this.executeTrackedCommand(command, options as { cwd?: string; timeout?: number; shell?: string; id: string });
         }
 
-        // Default legacy behavior
+        return this.executeDirectCommand(command, options);
+    }
+
+    private async executeTrackedCommand(
+        command: string,
+        options: { cwd?: string; timeout?: number; shell?: string; id: string }
+    ): Promise<CommandResult> {
+        return new Promise((resolve) => {
+            const child = exec(command, {
+                cwd: options.cwd ?? process.cwd(),
+                timeout: options.timeout ?? this.maxTimeout,
+                shell: options.shell ?? 'powershell.exe',
+                maxBuffer: 10 * 1024 * 1024
+            }, (error, stdout, stderr) => {
+                this.activeProcesses.delete(options.id);
+
+                if (error) {
+                    resolve({
+                        success: false,
+                        stdout: stdout.trim(),
+                        stderr: stderr.trim(),
+                        exitCode: error.code,
+                        error: getErrorMessage(error)
+                    });
+                } else {
+                    resolve({
+                        success: true,
+                        stdout: stdout.trim(),
+                        stderr: stderr.trim(),
+                        exitCode: 0
+                    });
+                }
+            });
+
+            this.activeProcesses.set(options.id, child);
+        });
+    }
+
+    private async executeDirectCommand(
+        command: string,
+        options?: { cwd?: string; timeout?: number; shell?: string }
+    ): Promise<CommandResult> {
         try {
             const { stdout, stderr } = await execAsync(command, {
                 cwd: options?.cwd ?? process.cwd(),

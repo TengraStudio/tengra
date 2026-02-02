@@ -271,18 +271,7 @@ export class ThemeService extends BaseService {
             }
 
             const themeObject = data.theme as JsonObject;
-            if (typeof themeObject !== 'object' || Array.isArray(themeObject)) {
-                throw new Error('Invalid theme format');
-            }
-
-            if (!themeObject.id || !themeObject.name || !themeObject.colors) {
-                throw new Error('Missing required theme properties');
-            }
-
-            const themeId = themeObject.id as string;
-            if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
-                throw new Error('Theme ID already exists');
-            }
+            this.validateImportedTheme(themeObject);
 
             return await this.addCustomTheme({
                 ...(themeObject as unknown as CustomTheme),
@@ -292,6 +281,21 @@ export class ThemeService extends BaseService {
         } catch (error) {
             this.logError('Failed to import theme', error);
             return null;
+        }
+    }
+
+    private validateImportedTheme(themeObject: JsonObject): void {
+        if (typeof themeObject !== 'object' || Array.isArray(themeObject)) {
+            throw new Error('Invalid theme format');
+        }
+
+        if (!themeObject.id || !themeObject.name || !themeObject.colors) {
+            throw new Error('Missing required theme properties');
+        }
+
+        const themeId = themeObject.id as string;
+        if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
+            throw new Error('Theme ID already exists');
         }
     }
 

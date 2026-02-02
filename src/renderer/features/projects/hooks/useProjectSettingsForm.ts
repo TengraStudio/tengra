@@ -5,12 +5,14 @@ import { Project } from '@/types';
 import { ProjectSettingsFormData } from '../components/settings/types';
 
 function getBuildState(config?: Project['buildConfig']) {
+    const defaults = { buildCommand: '', testCommand: '', lintCommand: '', outputDir: '', envFile: '' };
+    if (!config) { return defaults; }
     return {
-        buildCommand: config?.buildCommand ?? '',
-        testCommand: config?.testCommand ?? '',
-        lintCommand: config?.lintCommand ?? '',
-        outputDir: config?.outputDir ?? '',
-        envFile: config?.envFile ?? ''
+        buildCommand: config.buildCommand ?? defaults.buildCommand,
+        testCommand: config.testCommand ?? defaults.testCommand,
+        lintCommand: config.lintCommand ?? defaults.lintCommand,
+        outputDir: config.outputDir ?? defaults.outputDir,
+        envFile: config.envFile ?? defaults.envFile
     };
 }
 
@@ -45,11 +47,9 @@ function getInitialState(project: Project): ProjectSettingsFormData {
 }
 
 function checkBuildDirty(formData: ProjectSettingsFormData, config?: Project['buildConfig']): boolean {
-    return formData.buildCommand !== (config?.buildCommand ?? '') ||
-        formData.testCommand !== (config?.testCommand ?? '') ||
-        formData.lintCommand !== (config?.lintCommand ?? '') ||
-        formData.outputDir !== (config?.outputDir ?? '') ||
-        formData.envFile !== (config?.envFile ?? '');
+    const defaults = getBuildState(config);
+    const fields: (keyof typeof defaults)[] = ['buildCommand', 'testCommand', 'lintCommand', 'outputDir', 'envFile'];
+    return fields.some(field => formData[field] !== defaults[field]);
 }
 
 function checkDevDirty(formData: ProjectSettingsFormData, server?: Project['devServer']): boolean {

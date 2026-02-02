@@ -53,20 +53,37 @@ function buildNative() {
         } catch (e) {
             console.log('cl.exe not found in PATH. Attempting to locate VS Build Tools...');
 
-            // Known location based on user's system
-            const vcvarsPath = 'C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat';
+            // Try to locate vcvarsall.bat in common locations
+            const commonPaths = [
+                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2025\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2025\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\18\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Professional\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat',
+                'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvarsall.bat'
+            ];
 
-            if (fs.existsSync(vcvarsPath)) {
+            let vcvarsPath = commonPaths.find(p => fs.existsSync(p));
+
+            if (vcvarsPath) {
                 console.log(`Found vcvarsall.bat at: ${vcvarsPath}`);
                 // Chain the commands: setup env -> build
-                // Note: We don't set CC/CXX here, relying on vcvarsall to set PATH correctly
                 buildCmd = `call "${vcvarsPath}" x64 && cargo build --release`;
-                // Remove CC/CXX from env to avoid confusing cc-rs if they aren't in PATH yet (though vcvars should fix it)
                 delete env.CC;
                 delete env.CXX;
             } else {
-                console.warn('WARNING: vcvarsall.bat not found at expected location. Build may fail if cl.exe is required.');
-                // Try standard fallback just in case
+                console.warn('WARNING: vcvarsall.bat not found in common locations. Build may fail if cl.exe is required.');
+                // Try standard fallback
                 env.CC = 'cl.exe';
                 env.CXX = 'cl.exe';
             }

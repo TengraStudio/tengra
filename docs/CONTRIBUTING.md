@@ -1,12 +1,12 @@
-# Contributing to Orbit
+# Contributing to Tandem
 
-Thank you for your interest in contributing to Orbit! This document outlines the process for submitting code, reporting bugs, and suggesting improvements.
+Thank you for your interest in contributing to Tandem! This document outlines the process for submitting code, reporting bugs, and suggesting improvements.
 
 ## Getting Started
 
 1. **Fork the Repository**: Create a personal fork of the project.
-2. **Clone your Fork**: `git clone https://github.com/your-username/orbit.git`
-3. **Setup Environment**: Follow the [Development Guide](file:///c:/Users/agnes/Desktop/projects/orbit/docs/DEVELOPMENT.md) to set up your local environment.
+2. **Clone your Fork**: `git clone https://github.com/your-username/tandem.git`
+3. **Setup Environment**: Follow the [Development Guide](file:///c:/Users/agnes/Desktop/projects/tandem/docs/DEVELOPMENT.md) to set up your local environment.
 
 ## Development Workflow
 
@@ -28,7 +28,7 @@ Thank you for your interest in contributing to Orbit! This document outlines the
 - **Linting**: Follow the rules defined in `.eslintrc.json` and `.prettierrc`.
 - **Naming**: Use camelCase for variables and functions, PascalCase for classes and components.
 - **Documentation**: Use JSDoc for complex functions and provide Markdown documentation for major features in the `docs/` folder.
-- **Rules**: Adhere to the project's [AI Rules](file:///c:/Users/agnes/Desktop/projects/orbit/docs/AI_RULES.md) (inspired by NASA's Power of Ten).
+- **Rules**: Adhere to the project's [AI Rules](file:///c:/Users/agnes/Desktop/projects/tandem/docs/AI_RULES.md) (inspired by NASA's Power of Ten).
 
 ## Reporting Issues
 
@@ -45,4 +45,4 @@ Thank you for your interest in contributing to Orbit! This document outlines the
 
 ## License
 
-By contributing to Orbit, you agree that your contributions will be licensed under the project's existing license.
+By contributing to Tandem, you agree that your contributions will be licensed under the project's existing license.

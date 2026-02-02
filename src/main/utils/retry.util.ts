@@ -9,6 +9,9 @@ export { getSharedErrorMessage as getErrorMessage };
 /**
  * Configuration options for retry behavior.
  */
+/**
+ * Configuration options for retry behavior.
+ */
 export interface RetryOptions {
     maxRetries?: number
     baseDelayMs?: number
@@ -37,36 +40,40 @@ function defaultShouldRetry(error: CatchError, _attempt: number): boolean {
     if (!error || typeof error !== 'object') { return false; }
     const err = error as Record<string, JsonValue | undefined>;
 
-    // Network errors
-    if (err.code === 'ECONNRESET' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
-        return true;
-    }
-
-    // Rate limiting
-    if (err.status === 429) {
-        return true;
-    }
-
-    const response = (err.response && typeof err.response === 'object')
-        ? (err.response as Record<string, JsonValue | undefined>)
-        : undefined;
-    if (response?.status === 429) {
-        return true;
-    }
-
-    // Server errors (5xx)
-    const status = (typeof err.status === 'number' ? err.status : undefined) ?? (typeof response?.status === 'number' ? response.status : undefined);
-    if (status && status >= 500 && status < 600) {
-        return true;
-    }
-
-    // Axios/fetch specific network indicators
-    const message = typeof err.message === 'string' ? err.message : undefined;
-    if (message?.toLowerCase().includes('network') || message?.toLowerCase().includes('timeout')) {
-        return true;
-    }
+    if (isNetworkError(err)) { return true; }
+    if (isRateLimitError(err)) { return true; }
+    if (isServerError(err)) { return true; }
+    if (isGenericNetworkError(err)) { return true; }
 
     return false;
+}
+
+function isNetworkError(err: Record<string, JsonValue | undefined>): boolean {
+    return err.code === 'ECONNRESET' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT';
+}
+
+function isRateLimitError(err: Record<string, JsonValue | undefined>): boolean {
+    if (err.status === 429) { return true; }
+    const response = getErrorResponse(err);
+    return response?.status === 429;
+}
+
+function isServerError(err: Record<string, JsonValue | undefined>): boolean {
+    const response = getErrorResponse(err);
+    const status = (typeof err.status === 'number' ? err.status : undefined) ??
+        (typeof response?.status === 'number' ? response.status : undefined);
+    return !!status && status >= 500 && status < 600;
+}
+
+function isGenericNetworkError(err: Record<string, JsonValue | undefined>): boolean {
+    const message = typeof err.message === 'string' ? err.message : undefined;
+    return !!message && (message.toLowerCase().includes('network') || message.toLowerCase().includes('timeout'));
+}
+
+function getErrorResponse(err: Record<string, JsonValue | undefined>): Record<string, JsonValue | undefined> | undefined {
+    return (err.response && typeof err.response === 'object')
+        ? (err.response as Record<string, JsonValue | undefined>)
+        : undefined;
 }
 
 /**
@@ -140,25 +147,29 @@ export function retryable(options?: RetryOptions) {
 export function isNonRetryableError(error: CatchError): boolean {
     if (!error || typeof error !== 'object') { return false; }
     const err = error as Record<string, JsonValue | undefined>;
-    const response = (err.response && typeof err.response === 'object') ? err.response as Record<string, JsonValue | undefined> : undefined;
-    const status = (typeof err.status === 'number' ? err.status : undefined) ?? (typeof response?.status === 'number' ? response.status : undefined);
+
+    if (isClientError(err)) { return true; }
+    if (isAuthOrConfigError(error)) { return true; }
+
+    return false;
+}
+
+function isClientError(err: Record<string, JsonValue | undefined>): boolean {
+    const response = getErrorResponse(err);
+    const status = (typeof err.status === 'number' ? err.status : undefined) ??
+        (typeof response?.status === 'number' ? response.status : undefined);
 
     // Client errors that won't succeed on retry
-    if (status === 400 || status === 401 || status === 403 || status === 404) {
-        return true;
-    }
+    return status === 400 || status === 401 || status === 403 || status === 404;
+}
 
-    // API-specific non-retryable errors
+function isAuthOrConfigError(error: CatchError): boolean {
     const message = getSharedErrorMessage(error).toLowerCase();
-    if (
+    return (
         message.includes('invalid api key') ||
         message.includes('authentication') ||
         message.includes('unauthorized') ||
         message.includes('invalid model') ||
         message.includes('model not found')
-    ) {
-        return true;
-    }
-
-    return false;
+    );
 }

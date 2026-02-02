@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide provides solutions for common issues encountered during development and usage of Orbit.
+This guide provides solutions for common issues encountered during development and usage of Tandem.
 
 ## Common Issues
 
@@ -13,7 +13,7 @@ This guide provides solutions for common issues encountered during development a
 4. Restart the application to re-initialize the bidirectional sync.
 
 ### "STILL ENCRYPTED" Warnings
-**Problem**: Tokens appear as `v1:...` or `orbit:v1:...` in logs even when they should be decrypted.
+**Problem**: Tokens appear as `v1:...` or `Tandem:v1:...` in logs even when they should be decrypted.
 **Solution**: 
 - This often happens if the `SecurityService` fails to access the OS keychain (e.g., Electron `safeStorage` unavailable).
 - Check if you are running in an environment where the keychain is accessible.
@@ -35,7 +35,7 @@ This guide provides solutions for common issues encountered during development a
 
 ## Log Locations
 
-Orbit maintains Several log files for different processes:
+Tandem maintains Several log files for different processes:
 
 - **Main Process**: `logs/main.log` (Internal system events, service lifecycle).
 - **Renderer Process**: Accessible via DevTools (F12 or Ctrl+Shift+I).
@@ -46,10 +46,10 @@ Orbit maintains Several log files for different processes:
 
 ### Resetting the Database
 If the local database (PGlite) becomes corrupted:
-1. Close Orbit completely.
+1. Close Tandem completely.
 2. Navigate to your application data folder.
-3. Delete the `orbit.db` directory.
-4. Restart Orbit. Note that this will log you out of all accounts.
+3. Delete the `Tandem.db` directory.
+4. Restart Tandem. Note that this will log you out of all accounts.
 
 ### Clearing Cache
 To clear the frontend cache, use the `View -> Force Reload` menu option or press `Ctrl+F5`.

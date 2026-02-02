@@ -35,6 +35,7 @@ interface ModelSelectorProps {
     onRemoveModel?: (provider: string, model: string) => void;
     isFavorite?: (modelId: string) => boolean;
     toggleFavorite?: (modelId: string) => void;
+    isIconOnly?: boolean;
 }
 
 export function ModelSelector({
@@ -51,7 +52,8 @@ export function ModelSelector({
     language = 'en',
     onRemoveModel,
     isFavorite,
-    toggleFavorite
+    toggleFavorite,
+    isIconOnly
 }: ModelSelectorProps) {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
@@ -107,14 +109,14 @@ export function ModelSelector({
         return 32000;
     }, [selectedModel, currentModelInfo]);
 
-    const contextUsagePercent = Math.min(100, ((contextTokens ?? 0) / (contextLimit ?? 32000)) * 100);
+    const contextUsagePercent = Math.min(100, (contextTokens / contextLimit) * 100);
 
     const handleModelSelect = useCallback((p: string, id: string, m: boolean) => {
         onSelect(p, id, m);
         if (!m) { setIsOpen(false); setSearchQuery(''); }
     }, [onSelect]);
 
-    const currentCat = categories.find(c => c.models.some(m => m.id === selectedModel)) || categories.find(c => c.id === selectedProvider);
+    const currentCat = categories.find(c => c.models.some(m => m.id === selectedModel)) ?? categories.find(c => c.id === selectedProvider);
 
     return (
         <div className="relative">
@@ -129,6 +131,7 @@ export function ModelSelector({
                 contextTokens={contextTokens}
                 contextUsagePercent={contextUsagePercent}
                 t={t}
+                isIconOnly={isIconOnly}
             />
 
             <AnimatePresence>
@@ -140,7 +143,7 @@ export function ModelSelector({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: placement.startsWith('top') ? 5 : -5, scale: 0.95 }}
                             transition={{ duration: 0.1 }}
-                            style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 9999 }}
+                            style={{ position: strategy, top: y, left: x, zIndex: 9999 }}
                             className="w-72 max-h-[70vh] flex flex-col bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
                             onMouseDown={e => e.stopPropagation()}
                         >

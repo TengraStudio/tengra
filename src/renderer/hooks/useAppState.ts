@@ -8,7 +8,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'council' | 'memory' | 'ideas' | 'project-agent'
+export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
 
 export interface AppState {
     // View state

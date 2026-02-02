@@ -96,6 +96,24 @@ const ExportButton: React.FC<{ onExport: (format: 'markdown' | 'json') => void; 
     );
 };
 
+interface ActionVisibility {
+    showHistorySetup: boolean
+    showHistoryReview: boolean
+    showExport: boolean
+    showNewSession: boolean
+    showRefresh: boolean
+}
+
+function getActionVisibility(workflowStage: WorkflowStage, hasIdeas: boolean | undefined, onExport: ((format: 'markdown' | 'json') => void) | undefined): ActionVisibility {
+    return {
+        showHistorySetup: workflowStage === 'setup',
+        showHistoryReview: workflowStage === 'review',
+        showExport: workflowStage === 'review' && !!hasIdeas && !!onExport,
+        showNewSession: workflowStage === 'history' || workflowStage === 'review',
+        showRefresh: workflowStage === 'review'
+    };
+}
+
 const HeaderActions: React.FC<{
     workflowStage: WorkflowStage
     handleNewSession: () => void
@@ -105,28 +123,15 @@ const HeaderActions: React.FC<{
     onExport?: (format: 'markdown' | 'json') => void
     t: (key: string) => string
 }> = ({ workflowStage, handleNewSession, handleShowHistory, loadSessions, hasIdeas, onExport, t }) => {
-    const showHistoryButton = workflowStage === 'setup' || workflowStage === 'review';
-    const showNewSessionButton = workflowStage === 'history' || workflowStage === 'review';
-    const showRefreshButton = workflowStage === 'review';
-    const showExportButton = workflowStage === 'review' && hasIdeas && onExport;
+    const vis = getActionVisibility(workflowStage, hasIdeas, onExport);
 
     return (
         <div className="flex items-center gap-2">
-            {showHistoryButton && workflowStage === 'setup' && (
-                <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />
-            )}
-            {showExportButton && (
-                <ExportButton onExport={onExport} t={t} />
-            )}
-            {showNewSessionButton && (
-                <NewSessionButton onClick={handleNewSession} label={t('ideas.newSession')} />
-            )}
-            {showRefreshButton && (
-                <RefreshButton onClick={() => void loadSessions()} label={t('common.refresh')} />
-            )}
-            {showHistoryButton && workflowStage === 'review' && (
-                <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />
-            )}
+            {vis.showHistorySetup && <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />}
+            {vis.showExport && onExport && <ExportButton onExport={onExport} t={t} />}
+            {vis.showNewSession && <NewSessionButton onClick={handleNewSession} label={t('ideas.newSession')} />}
+            {vis.showRefresh && <RefreshButton onClick={() => void loadSessions()} label={t('common.refresh')} />}
+            {vis.showHistoryReview && <HistoryButton onClick={handleShowHistory} label={t('ideas.history.view')} />}
         </div>
     );
 };

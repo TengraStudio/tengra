@@ -17,6 +17,34 @@ import { OverviewCards } from './statistics/OverviewCards';
 import { ProjectBarChart } from './statistics/ProjectBarChart';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
 
+type StatsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+const PERIODS: StatsPeriod[] = ['daily', 'weekly', 'monthly', 'yearly'];
+
+interface PeriodSelectorProps {
+    period: StatsPeriod;
+    onChange: (p: StatsPeriod) => void;
+    t: (key: string) => string;
+}
+
+const PeriodSelector: React.FC<PeriodSelectorProps> = ({ period, onChange, t }) => (
+    <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
+        {PERIODS.map((p) => (
+            <button
+                key={p}
+                onClick={() => onChange(p)}
+                className={cn(
+                    "px-3 py-1 text-xs rounded-md capitalize transition-all",
+                    period === p
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'hover:bg-muted/30 text-muted-foreground'
+                )}
+            >
+                {t(`statistics.${p}`)}
+            </button>
+        ))}
+    </div>
+);
+
 interface StatisticsTabProps {
     statsLoading: boolean
     statsData: DetailedStats | null
@@ -24,17 +52,93 @@ interface StatisticsTabProps {
     copilotQuota: AccountWrapper<CopilotQuota> | null
     codexUsage: AccountWrapper<{ usage: CodexUsage }> | null
     claudeQuota: AccountWrapper<import('@shared/types/quota').ClaudeQuota> | null
-    statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly'
-    setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => void
+    statsPeriod: StatsPeriod
+    setStatsPeriod: (p: StatsPeriod) => void
     settings: AppSettings | null
     authStatus: { codex: boolean; claude: boolean; antigravity: boolean }
     setReloadTrigger?: (v: number | ((prev: number) => number)) => void
 }
 
+interface CodingTimeCardProps {
+    timeStats: TimeStats | null;
+    loadingTimeStats: boolean;
+    projects: Array<{ id: string; title: string }>;
+    statsPeriod: StatsPeriod;
+    setStatsPeriod: (p: StatsPeriod) => void;
+    t: (key: string) => string;
+}
+
+const CodingTimeCard: React.FC<CodingTimeCardProps> = ({ timeStats, loadingTimeStats, projects, statsPeriod, setStatsPeriod, t }) => {
+    if (!timeStats?.projectCodingTime || Object.keys(timeStats.projectCodingTime).length === 0) {
+        return null;
+    }
+
+    const projectsWithTime = Object.entries(timeStats.projectCodingTime)
+        .sort(([, a], [, b]) => b - a)
+        .map(([projectId, time]) => ({
+            id: projectId,
+            title: projects.find(p => p.id === projectId)?.title ?? t('statistics.unknownProject'),
+            time
+        }));
+
+    return (
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="text-lg font-semibold">{t('statistics.codingTimeByProject')}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">{t('statistics.timeSpentCodingInEachProject')}</p>
+                </div>
+                <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
+            </CardHeader>
+            <CardContent>
+                {loadingTimeStats ? (
+                    <div className="h-64 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <ProjectBarChart
+                        projects={projectsWithTime}
+                        maxTime={Math.max(...Object.values(timeStats.projectCodingTime), 0)}
+                    />
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
+interface TokenUsageCardProps {
+    statsLoading: boolean;
+    tokenTimeline?: DetailedStats['tokenTimeline'];
+    statsPeriod: StatsPeriod;
+    setStatsPeriod: (p: StatsPeriod) => void;
+    t: (key: string) => string;
+}
+
+const TokenUsageCard: React.FC<TokenUsageCardProps> = ({ statsLoading, tokenTimeline, statsPeriod, setStatsPeriod, t }) => (
+    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle className="text-lg font-semibold">{t('statistics.tokenUsageOverTime')}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">{t('statistics.visualizeTokenConsumption')}</p>
+            </div>
+            <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
+        </CardHeader>
+        <CardContent className="min-h-[300px]">
+            {statsLoading ? (
+                <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+            ) : (
+                <TokenUsageChart tokenTimeline={tokenTimeline ?? []} t={t} period={statsPeriod} />
+            )}
+        </CardContent>
+    </Card>
+);
+
 export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
     statsLoading, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, statsPeriod, setStatsPeriod, settings, setReloadTrigger
 }) => {
-    const { t } = useTranslation(settings?.general?.language || 'en');
+    const { t } = useTranslation(settings?.general.language ?? 'en');
     const [timeStats, setTimeStats] = useState<TimeStats | null>(null);
     const [loadingTimeStats, setLoadingTimeStats] = useState(false);
     const [projects, setProjects] = useState<Array<{ id: string; title: string }>>([]);
@@ -68,7 +172,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
         return <div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
 
-    const locale = settings?.general?.language === 'tr' ? 'tr-TR' : 'en-US';
+    const locale = settings?.general.language === 'tr' ? 'tr-TR' : 'en-US';
 
     return (
         <div className="space-y-6">
@@ -86,91 +190,22 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                 <CodexCard codexUsage={codexUsage} locale={locale} />
             </div>
 
-            {timeStats?.projectCodingTime && Object.keys(timeStats.projectCodingTime).length > 0 && (
-                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg font-semibold">{t('statistics.codingTimeByProject')}</CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">{t('statistics.timeSpentCodingInEachProject')}</p>
-                        </div>
-                        <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
-                            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
-                                <button
-                                    key={period}
-                                    onClick={() => setStatsPeriod(period)}
-                                    className={cn(
-                                        "px-3 py-1 text-xs rounded-md capitalize transition-all",
-                                        statsPeriod === period
-                                            ? 'bg-primary text-primary-foreground shadow-sm'
-                                            : 'hover:bg-muted/30 text-muted-foreground'
-                                    )}
-                                >
-                                    {t(`statistics.${period}`)}
-                                </button>
-                            ))}
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {loadingTimeStats ? (
-                            <div className="h-64 flex items-center justify-center">
-                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                            </div>
-                        ) : (
-                            <ProjectBarChart
-                                projects={Object.entries(timeStats?.projectCodingTime ?? {})
-                                    .sort(([, a], [, b]) => b - a)
-                                    .map(([projectId, time]) => {
-                                        const project = projects.find(p => p.id === projectId);
-                                        return {
-                                            id: projectId,
-                                            title: project?.title || t('statistics.unknownProject'),
-                                            time
-                                        };
-                                    })}
-                                maxTime={Math.max(...Object.values(timeStats?.projectCodingTime ?? {}), 0)}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-            )}
+            <CodingTimeCard
+                timeStats={timeStats}
+                loadingTimeStats={loadingTimeStats}
+                projects={projects}
+                statsPeriod={statsPeriod}
+                setStatsPeriod={setStatsPeriod}
+                t={t}
+            />
 
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-lg font-semibold">{t('statistics.tokenUsageOverTime')}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">{t('statistics.visualizeTokenConsumption')}</p>
-                    </div>
-                    <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
-                        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
-                            <button
-                                key={period}
-                                onClick={() => setStatsPeriod(period)}
-                                className={cn(
-                                    "px-3 py-1 text-xs rounded-md capitalize transition-all",
-                                    statsPeriod === period
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'hover:bg-muted/30 text-muted-foreground'
-                                )}
-                            >
-                                {t(`statistics.${period}`)}
-                            </button>
-                        ))}
-                    </div>
-                </CardHeader>
-                <CardContent className="min-h-[300px]">
-                    {statsLoading ? (
-                        <div className="h-64 flex items-center justify-center">
-                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                        </div>
-                    ) : (
-                        <TokenUsageChart
-                            tokenTimeline={statsData?.tokenTimeline ?? []}
-                            t={t}
-                            period={statsPeriod}
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            <TokenUsageCard
+                statsLoading={statsLoading}
+                tokenTimeline={statsData?.tokenTimeline}
+                statsPeriod={statsPeriod}
+                setStatsPeriod={setStatsPeriod}
+                t={t}
+            />
         </div>
     );
 });

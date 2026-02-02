@@ -1,7 +1,7 @@
 // LlamaService - Uses llama-server executable for fast CUDA inference
 // Communicates via HTTP API (OpenAI-compatible)
 
-import { ChildProcess,spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
@@ -136,6 +136,24 @@ export class LlamaService extends BaseService {
 
     private async startLlamaProcess(modelPath: string, serverPath: string): Promise<{ success: boolean; error?: string }> {
         // Build command arguments
+        const args = this.constructLlamaArgs(modelPath);
+
+        // Start server
+        const env = this.constructLlamaEnv();
+
+        this.serverProcess = spawn(serverPath, args, {
+            cwd: this.binDir,
+            env,
+            windowsHide: true
+        });
+
+        this.setupProcessListeners();
+
+        // Wait for server to start
+        return this.waitForServerStart(modelPath);
+    }
+
+    private constructLlamaArgs(modelPath: string): string[] {
         const args = [
             '--model', modelPath,
             '--port', this.serverPort.toString(),
@@ -153,8 +171,15 @@ export class LlamaService extends BaseService {
             args.push('--gpu-layers', '999');
         }
 
-        // Start server
-        const env: Record<string, string> = { ...process.env, PATH: this.binDir + ';' + process.env.PATH };
+        if (this.config.backend === 'cpu') {
+            args.push('--gpu-layers', '0');
+        }
+
+        return args;
+    }
+
+    private constructLlamaEnv(): NodeJS.ProcessEnv {
+        const env: Record<string, string> = { ...process.env as Record<string, string>, PATH: this.binDir + ';' + process.env.PATH };
 
         if (this.config.backend === 'vulkan') {
             env['GGML_VULKAN'] = '1';
@@ -162,15 +187,13 @@ export class LlamaService extends BaseService {
             env['GGML_CUDA'] = '1';
         } else if (this.config.backend === 'metal') {
             env['GGML_METAL'] = '1';
-        } else if (this.config.backend === 'cpu') {
-            args.push('--gpu-layers', '0');
         }
 
-        this.serverProcess = spawn(serverPath, args, {
-            cwd: this.binDir,
-            env,
-            windowsHide: true
-        });
+        return env;
+    }
+
+    private setupProcessListeners() {
+        if (!this.serverProcess) { return; }
 
         this.serverProcess.stdout?.on('data', (data) => {
             this.logInfo(`llama-server: ${data.toString()}`);
@@ -185,8 +208,9 @@ export class LlamaService extends BaseService {
             this.serverProcess = null;
             this.currentModelPath = null;
         });
+    }
 
-        // Wait for server to start
+    private async waitForServerStart(modelPath: string): Promise<{ success: boolean; error?: string }> {
         for (let i = 0; i < 60; i++) {
             await new Promise(r => setTimeout(r, 1000));
             if (await this.isServerRunning()) {
@@ -203,7 +227,7 @@ export class LlamaService extends BaseService {
 
     async stopServer(): Promise<void> {
         const proc = this.serverProcess;
-        if (!proc) {return;}
+        if (!proc) { return; }
 
         proc.kill('SIGTERM');
         await new Promise(r => setTimeout(r, 1000));
@@ -264,7 +288,7 @@ export class LlamaService extends BaseService {
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
                                 const jsonStr = line.slice(6).trim();
-                                if (jsonStr === '[DONE]') {continue;}
+                                if (jsonStr === '[DONE]') { continue; }
                                 const obj = safeJsonParse<{ choices?: Array<{ delta?: { content?: string } }> }>(jsonStr, {});
                                 const content = obj.choices?.[0]?.delta?.content;
                                 if (content) {

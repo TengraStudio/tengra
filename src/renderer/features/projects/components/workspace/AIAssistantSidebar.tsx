@@ -1,16 +1,14 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { ModelSelector } from '@renderer/features/models/components/ModelSelector';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
-import { CouncilPanel } from '@renderer/features/projects/components/workspace/CouncilPanel';
 import { ArrowLeft, Users } from 'lucide-react';
 import React from 'react';
 
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
-import { ActivityEntry, AppSettings, CodexUsage, CouncilAgent, Message, QuotaResponse } from '@/types';
+import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
 
 interface AIAssistantSidebarProps {
-    viewTab: 'editor' | 'council' | 'logs';
     selectedProvider: string;
     selectedModel: string;
     onSelectModel: (provider: string, model: string) => void;
@@ -20,15 +18,6 @@ interface AIAssistantSidebarProps {
     codexUsage: { accounts: { usage: CodexUsage }[] } | null;
     agentChatMessage: string;
     setAgentChatMessage: (val: string) => void;
-    // Council Props
-    councilEnabled: boolean;
-    toggleCouncil: () => void;
-    agents: CouncilAgent[];
-    toggleAgent: (id: string) => void;
-    addAgent: () => void;
-    runCouncil: () => void;
-    activityLog: ActivityEntry[];
-    clearLogs: () => void;
     t: (key: string) => string;
     messages?: Message[] | undefined;
     isLoading?: boolean | undefined;
@@ -41,11 +30,10 @@ interface AIAssistantSidebarProps {
  * 
  * The right panel of the workspace, which can show:
  * - AI Chat interface
- * - Agent Council dashboard
  * - Integrated Model Selection
  */
 export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
-    viewTab,
+
     selectedProvider,
     selectedModel,
     onSelectModel,
@@ -55,14 +43,6 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     codexUsage,
     agentChatMessage,
     setAgentChatMessage,
-    councilEnabled,
-    toggleCouncil,
-    agents,
-    toggleAgent,
-    addAgent,
-    runCouncil,
-    activityLog,
-    clearLogs,
     t,
     messages = [],
     isLoading,
@@ -97,66 +77,50 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
 
             {/* Content Area */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                {viewTab === 'council' ? (
-                    <CouncilPanel
-                        councilEnabled={councilEnabled}
-                        toggleCouncil={toggleCouncil}
-                        agents={agents}
-                        toggleAgent={toggleAgent}
-                        addAgent={addAgent}
-                        runCouncil={runCouncil}
-                        activityLog={activityLog}
-                        clearLogs={clearLogs}
-                        t={t}
-                        goal={agentChatMessage}
-                        setGoal={setAgentChatMessage}
-                    />
-                ) : (
-                    <div className="flex-1 flex flex-col min-h-0">
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                            {messages.length === 0 ? (
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                        <Users className="w-4 h-4 text-primary" />
-                                    </div>
-                                    <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
-                                        {t('agents.welcomeMessage')}
-                                    </div>
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {messages.length === 0 ? (
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                    <Users className="w-4 h-4 text-primary" />
                                 </div>
-                            ) : (
-                                messages.map((m: Message, idx: number) => (
-                                    <MessageBubble
-                                        key={m.id || idx}
-                                        message={m}
-                                        isLast={idx === messages.length - 1}
-                                        language={language as Language}
-                                        isStreaming={Boolean(isLoading && idx === messages.length - 1 && m.role === 'assistant')}
-                                        onSourceClick={onSourceClick}
-                                    />
-                                ))
-                            )}
-                        </div>
-
-                        {/* Chat Input Area */}
-                        <div className="p-3 border-t border-white/5 bg-background/50 shrink-0">
-                            <div className="flex gap-2 items-center">
-                                <input
-                                    type="text"
-                                    className="flex-1 bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/50"
-                                    placeholder={t('workspace.writeSomething')}
-                                    value={agentChatMessage}
-                                    onChange={(e) => setAgentChatMessage(e.target.value)}
-                                />
-                                <button
-                                    onClick={runCouncil}
-                                    className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-                                >
-                                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                                </button>
+                                <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
+                                    {t('agents.welcomeMessage')}
+                                </div>
                             </div>
+                        ) : (
+                            messages.map((m: Message, idx: number) => (
+                                <MessageBubble
+                                    key={m.id || idx}
+                                    message={m}
+                                    isLast={idx === messages.length - 1}
+                                    language={language as Language}
+                                    isStreaming={Boolean(isLoading && idx === messages.length - 1 && m.role === 'assistant')}
+                                    onSourceClick={onSourceClick}
+                                />
+                            ))
+                        )}
+                    </div>
+
+                    {/* Chat Input Area */}
+                    <div className="p-3 border-t border-white/5 bg-background/50 shrink-0">
+                        <div className="flex gap-2 items-center">
+                            <input
+                                type="text"
+                                className="flex-1 bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/50"
+                                placeholder={t('workspace.writeSomething')}
+                                value={agentChatMessage}
+                                onChange={(e) => setAgentChatMessage(e.target.value)}
+                            />
+                            <button
+                                onClick={() => { /* sendMessage() */ }}
+                                className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                            >
+                                <ArrowLeft className="w-4 h-4 rotate-180" />
+                            </button>
                         </div>
                     </div>
-                )}
+                </div>
             </div>
         </motion.div>
     );

@@ -13,6 +13,20 @@ interface TerminalComponentProps {
     projectId?: string | undefined  // For persistent command history
 }
 
+interface TerminalCleanups {
+    data: () => void
+    exit: () => void
+}
+
+interface TerminalStateRefs {
+    terminalInstanceRef: React.MutableRefObject<Terminal | null>
+    pidRef: React.MutableRefObject<string | null>
+    historyRef: React.MutableRefObject<string[]>
+    historyIndexRef: React.MutableRefObject<number>
+    currentInputRef: React.MutableRefObject<string>
+    lineBuffer: string
+}
+
 // Terminal history persistence keys
 const HISTORY_KEY_PREFIX = 'Tandem_terminal_history_';
 const MAX_HISTORY_SIZE = 500;
@@ -50,9 +64,183 @@ const saveHistory = (history: string[], projectId?: string) => {
 const initializedTerminals = new Set<string>();
 const initializingTerminals = new Set<string>();
 
-export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) => {
-    const { t } = useTranslation();
-    const terminalRef = useRef<HTMLDivElement>(null);
+// Helper to attach cleanups to terminal instance
+const attachCleanups = (term: Terminal, cleanups: TerminalCleanups) => {
+    const terminalWithCleanups = term as Terminal & { _cleanups?: TerminalCleanups };
+    terminalWithCleanups._cleanups = cleanups;
+};
+
+// Helper to get cleanups from terminal instance
+const getCleanups = (term: Terminal): TerminalCleanups | undefined => {
+    const terminalWithCleanups = term as Terminal & { _cleanups?: TerminalCleanups };
+    return terminalWithCleanups._cleanups;
+};
+
+// Initialize terminal instance with xterm configuration
+const createTerminalInstance = (): Terminal => {
+    return new Terminal({
+        theme: getTerminalTheme(),
+        fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+        fontSize: 13,
+        lineHeight: 1.4,
+        letterSpacing: 0.2,
+        cursorBlink: true,
+        cursorStyle: 'block',
+        convertEol: true,
+        scrollback: 10000,
+        fontWeight: '400',
+        fontWeightBold: '600'
+    });
+};
+
+// Initialize FitAddon and fit terminal to container
+const initializeFitAddon = (term: Terminal, containerRef: React.RefObject<HTMLDivElement>) => {
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+
+    if (containerRef.current) {
+        term.open(containerRef.current);
+        try {
+            if ((containerRef.current as HTMLElement).offsetParent) {
+                fitAddon.fit();
+            }
+        } catch {
+            console.warn('ide/Terminal: Initial fit failed');
+        }
+    }
+
+    return fitAddon;
+};
+
+// Handle up arrow key (navigate history backward)
+const handleHistoryUp = (
+    stateRefs: Pick<TerminalStateRefs, 'historyRef' | 'historyIndexRef' | 'currentInputRef'>,
+    pidRef: React.MutableRefObject<string | null>,
+    currentLineBuffer: string
+): string => {
+    const { historyRef, historyIndexRef, currentInputRef } = stateRefs;
+
+    if (historyRef.current.length > 0) {
+        if (historyIndexRef.current === -1) {
+            currentInputRef.current = currentLineBuffer;
+            historyIndexRef.current = historyRef.current.length - 1;
+        } else if (historyIndexRef.current > 0) {
+            historyIndexRef.current--;
+        }
+
+        const historyItem = historyRef.current[historyIndexRef.current] ?? '';
+        if (pidRef.current) {
+            void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
+            void window.electron.terminal.write(pidRef.current, historyItem);
+        }
+        return historyItem;
+    }
+
+    return currentLineBuffer;
+};
+
+// Handle down arrow key (navigate history forward)
+const handleHistoryDown = (
+    stateRefs: Pick<TerminalStateRefs, 'historyRef' | 'historyIndexRef' | 'currentInputRef'>,
+    pidRef: React.MutableRefObject<string | null>,
+    currentLineBuffer: string
+): string => {
+    const { historyRef, historyIndexRef, currentInputRef } = stateRefs;
+
+    if (historyIndexRef.current !== -1) {
+        if (historyIndexRef.current < historyRef.current.length - 1) {
+            historyIndexRef.current++;
+            const historyItem = historyRef.current[historyIndexRef.current] ?? '';
+            if (pidRef.current) {
+                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
+                void window.electron.terminal.write(pidRef.current, historyItem);
+            }
+            return historyItem;
+        } else {
+            historyIndexRef.current = -1;
+            if (pidRef.current) {
+                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
+                void window.electron.terminal.write(pidRef.current, currentInputRef.current);
+            }
+            return currentInputRef.current;
+        }
+    }
+
+    return currentLineBuffer;
+};
+
+// Update line buffer based on input character
+const updateLineBuffer = (lineBuffer: string, data: string): string => {
+    if (data === '\r' || data === '\n') {
+        return '';
+    } else if (data === '\x7f' || data === '\b') {
+        return lineBuffer.slice(0, -1);
+    } else if (data.charCodeAt(0) >= 32 || data.length > 1) {
+        return lineBuffer + data;
+    }
+
+    return lineBuffer;
+};
+
+// Setup terminal data handler with history support
+const setupTerminalDataHandler = (
+    term: Terminal,
+    stateRefs: Pick<TerminalStateRefs, 'historyRef' | 'historyIndexRef' | 'currentInputRef'>,
+    pidRef: React.MutableRefObject<string | null>,
+    addToHistory: (command: string) => void
+) => {
+    let lineBuffer = '';
+
+    term.onData(data => {
+        if (!pidRef.current) { return; }
+
+        // Handle up arrow
+        if (data === '\x1b[A') {
+            lineBuffer = handleHistoryUp(
+                stateRefs,
+                pidRef,
+                lineBuffer
+            );
+            return;
+        }
+
+        // Handle down arrow
+        if (data === '\x1b[B') {
+            lineBuffer = handleHistoryDown(
+                stateRefs,
+                pidRef,
+                lineBuffer
+            );
+            return;
+        }
+
+        // Track Enter key for history
+        if (data === '\r' || data === '\n') {
+            if (lineBuffer.trim()) {
+                addToHistory(lineBuffer);
+            }
+            stateRefs.historyIndexRef.current = -1;
+        }
+
+        // Update line buffer
+        lineBuffer = updateLineBuffer(lineBuffer, data);
+
+        // Send to terminal
+        if (pidRef.current) {
+            window.electron.terminal.write(pidRef.current, data).catch(err => {
+                console.error('[TerminalComponent] Write failed:', err);
+            });
+        }
+    });
+};
+
+const useTerminalInstance = (
+    terminalRef: React.RefObject<HTMLDivElement>,
+    projectId: string | undefined,
+    cwd: string | undefined,
+    addToHistory: (command: string) => void,
+    t: (key: string) => string
+) => {
     const pidRef = useRef<string | null>(null);
     const isInitializedRef = useRef(false);
     const terminalInstanceRef = useRef<Terminal | null>(null);
@@ -63,90 +251,26 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
     const historyIndexRef = useRef<number>(-1);
     const currentInputRef = useRef<string>('');
 
-    // Add command to history
-    const addToHistory = useCallback((command: string) => {
-        if (command.trim()) {
-            // Avoid duplicate consecutive entries
-            if (historyRef.current.length === 0 || historyRef.current[historyRef.current.length - 1] !== command) {
-                historyRef.current.push(command);
-                saveHistory(historyRef.current, projectId);
-            }
-        }
-        // Reset history navigation
-        historyIndexRef.current = -1;
-        currentInputRef.current = '';
-    }, [projectId]);
-
     useEffect(() => {
-        // Prevent multiple initializations
-        if (isInitializedRef.current) {
-            console.warn('[TerminalComponent] Already initialized, skipping');
-            return;
-        }
+        if (isInitializedRef.current || !terminalRef.current) { return; }
 
-        if (!terminalRef.current) {
-            console.warn('[TerminalComponent] No container ref, skipping');
-            return;
-        }
-
-        console.warn('[TerminalComponent] Initializing terminal');
         isInitializedRef.current = true;
-
-        // Generate a unique terminal ID for this mount
         const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         terminalIdRef.current = terminalId;
 
-        // Check if already initializing (shouldn't happen, but safety check)
-        if (initializingTerminals.has(terminalId) || initializedTerminals.has(terminalId)) {
-            console.warn(`[TerminalComponent] Terminal ${terminalId} already exists, generating new ID`);
-            terminalIdRef.current = `term-${projectId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        }
-
-        const term = new Terminal({
-            theme: getTerminalTheme(),
-            fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
-            fontSize: 13,
-            lineHeight: 1.4,
-            letterSpacing: 0.2,
-            cursorBlink: true,
-            cursorStyle: 'block',
-            convertEol: true,
-            scrollback: 10000,
-            fontWeight: '400',
-            fontWeightBold: '600'
-        });
-
+        const term = createTerminalInstance();
         terminalInstanceRef.current = term;
+        const fitAddon = initializeFitAddon(term, terminalRef);
 
-        const fitAddon = new FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(terminalRef.current);
-
-        try {
-            if ((terminalRef.current as HTMLElement).offsetParent) {
-                fitAddon.fit();
-            }
-        } catch {
-            console.warn('ide/Terminal: Initial fit failed');
-        }
-
-        // Track current line input for history navigation
-        let lineBuffer = '';
-
-        // Initialize backend process
         const initTerminal = async () => {
-            const finalTerminalId = terminalIdRef.current; // Final check before creating
-            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {
-                console.warn(`[TerminalComponent] Terminal ${finalTerminalId} already exists or is null, skipping`);
-                return;
-            }
+            const finalTerminalId = terminalIdRef.current;
+            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) { return; }
 
             initializingTerminals.add(finalTerminalId);
-
             try {
                 const result = await window.electron.terminal.create({
                     id: finalTerminalId,
-                    cwd: cwd ?? process.cwd?.() ?? '.',
+                    cwd: cwd ?? '.',
                     cols: term.cols,
                     rows: term.rows
                 });
@@ -162,112 +286,22 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
                 initializedTerminals.add(finalTerminalId);
                 initializingTerminals.delete(finalTerminalId);
 
-                // Setup listeners
                 const cleanupData = window.electron.terminal.onData(({ id, data }) => {
-                    try {
-                        if (pidRef.current && id === pidRef.current && term) {
-                            term.write(data);
-                        }
-                    } catch (error) {
-                        console.error('[TerminalComponent] Error writing data:', error);
-                    }
+                    if (pidRef.current && id === pidRef.current) { term.write(data); }
                 });
 
                 const cleanupExit = window.electron.terminal.onExit(({ id, code }) => {
-                    try {
-                        if (pidRef.current && id === pidRef.current && term) {
-                            term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
-                        }
-                    } catch (error) {
-                        console.error('[TerminalComponent] Error handling exit:', error);
+                    if (pidRef.current && id === pidRef.current) {
+                        term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
                     }
                 });
 
-                // Use a ref to store cleanups to call in useEffect cleanup
-                const cleanups = { data: cleanupData, exit: cleanupExit };
-                (term as unknown as { _cleanups: typeof cleanups })._cleanups = cleanups;
-
-                // Enhanced data handler with history support
-                term.onData(data => {
-                    if (!pidRef.current) { return; }
-
-                    // Handle special key sequences for history navigation
-                    if (data === '\x1b[A') {
-                        // Up arrow - go back in history
-                        if (historyRef.current.length > 0) {
-                            if (historyIndexRef.current === -1) {
-                                // Save current input
-                                currentInputRef.current = lineBuffer;
-                                historyIndexRef.current = historyRef.current.length - 1;
-                            } else if (historyIndexRef.current > 0) {
-                                historyIndexRef.current--;
-                            }
-
-                            // Clear current line and show history item
-                            const historyItem = historyRef.current[historyIndexRef.current] ?? '';
-                            if (pidRef.current) {
-                                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
-                                void window.electron.terminal.write(pidRef.current, historyItem);
-                            }
-                            lineBuffer = historyItem;
-                        }
-                        return;
-                    }
-
-                    if (data === '\x1b[B') {
-                        // Down arrow - go forward in history
-                        if (historyIndexRef.current !== -1) {
-                            if (historyIndexRef.current < historyRef.current.length - 1) {
-                                historyIndexRef.current++;
-                                const historyItem = historyRef.current[historyIndexRef.current] ?? '';
-                                if (pidRef.current) {
-                                    void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
-                                    void window.electron.terminal.write(pidRef.current, historyItem);
-                                }
-                                lineBuffer = historyItem;
-                            } else {
-                                // Restore original input
-                                historyIndexRef.current = -1;
-                                void window.electron.terminal.write(pidRef.current, '\x1b[2K\r');
-                                void window.electron.terminal.write(pidRef.current, currentInputRef.current);
-                                lineBuffer = currentInputRef.current;
-                            }
-                        }
-                        return;
-                    }
-
-                    // Track line input for Enter key
-                    if (data === '\r' || data === '\n') {
-                        // Command submitted - add to history
-                        if (lineBuffer.trim()) {
-                            addToHistory(lineBuffer);
-                        }
-                        lineBuffer = '';
-                        historyIndexRef.current = -1;
-                    } else if (data === '\x7f' || data === '\b') {
-                        // Backspace
-                        lineBuffer = lineBuffer.slice(0, -1);
-                    } else if (data.charCodeAt(0) >= 32 || data.length > 1) {
-                        // Regular character input (or paste)
-                        lineBuffer += data;
-                    }
-
-                    // Send to terminal
-                    if (pidRef.current) {
-                        window.electron.terminal.write(pidRef.current, data).catch(err => {
-                            console.error('[TerminalComponent] Write failed:', err);
-                        });
-                    }
-                });
+                attachCleanups(term, { data: cleanupData, exit: cleanupExit });
+                setupTerminalDataHandler(term, { historyRef, historyIndexRef, currentInputRef }, pidRef, addToHistory);
 
                 term.onResize(({ cols, rows }) => {
-                    if (pidRef.current) {
-                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(err => {
-                            console.error('[TerminalComponent] Resize failed:', err);
-                        });
-                    }
+                    if (pidRef.current) { window.electron.terminal.resize(pidRef.current, cols, rows).catch(() => { }); }
                 });
-
             } catch (error) {
                 term.write(`\r\n\x1b[31m${t('projectDashboard.terminalFailedStart')}\x1b[0m\r\n`);
                 console.error(error);
@@ -277,11 +311,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         void initTerminal();
 
         const handleResize = () => {
-            try {
-                if (terminalRef.current && (terminalRef.current as HTMLElement).offsetParent) {
-                    fitAddon.fit();
-                }
-            } catch {
+            try { if (terminalRef.current && (terminalRef.current as HTMLElement).offsetParent) { fitAddon.fit(); } } catch {
                 // Ignore fit errors on resize
             }
         };
@@ -290,35 +320,50 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         return () => {
             isInitializedRef.current = false;
             window.removeEventListener('resize', handleResize);
-
             const terminalId = pidRef.current ?? terminalIdRef.current;
             if (terminalId) {
-                // Remove from registry
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
-
-                // Kill the terminal session
                 window.electron.terminal.kill(terminalId).catch(err => {
                     console.error('[TerminalComponent] Failed to kill terminal on cleanup:', err);
                 });
             }
-
-            // Call individual cleanups
-            const cleanups = (term as unknown as { _cleanups?: { data: () => void, exit: () => void } })._cleanups;
+            const cleanups = getCleanups(term);
             if (cleanups) {
                 if (typeof cleanups.data === 'function') { cleanups.data(); }
                 if (typeof cleanups.exit === 'function') { cleanups.exit(); }
             }
-
-            try {
-                term.dispose();
-            } catch (err) {
+            try { term.dispose(); } catch (err) {
                 console.error('[TerminalComponent] Error disposing terminal:', err);
             }
             terminalInstanceRef.current = null;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Remove dependencies to prevent re-initialization on prop changes
+    }, [projectId, cwd, terminalRef, addToHistory, t]);
+
+    return { historyRef, historyIndexRef, currentInputRef };
+};
+
+export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) => {
+    const { t } = useTranslation();
+    const terminalRef = useRef<HTMLDivElement>(null);
+
+    // Command history logic
+    const historyRef = useRef<string[]>(loadHistory(projectId));
+    const historyIndexRef = useRef<number>(-1);
+    const currentInputRef = useRef<string>('');
+
+    const addToHistory = useCallback((command: string) => {
+        if (command.trim()) {
+            if (historyRef.current.length === 0 || historyRef.current[historyRef.current.length - 1] !== command) {
+                historyRef.current.push(command);
+                saveHistory(historyRef.current, projectId);
+            }
+        }
+        historyIndexRef.current = -1;
+        currentInputRef.current = '';
+    }, [projectId]);
+
+    useTerminalInstance(terminalRef, projectId, cwd, addToHistory, t);
 
     return (
         <div className="w-full h-full relative group" style={{ minHeight: '300px' }}>

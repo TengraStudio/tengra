@@ -41,6 +41,8 @@ export interface SystemEvents {
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
     // Project Agent
     'project:update': ProjectState
+    'project:step-update': { index: number; status: 'pending' | 'running' | 'completed' | 'failed'; message?: string }
+    'project:plan-proposed': { steps: string[] }
 }
 
 export type SystemEventKey = keyof SystemEvents

@@ -300,41 +300,9 @@ export class BackupService {
             const existing = await this.databaseService.getChat(chatId);
 
             if (existing && !merge) {
-                // Convert RestoreChatData to proper Chat update format
-                const chatUpdate: Partial<Chat> = {
-                    title: chat.title,
-                    model: chat.model,
-                    backend: chat.backend,
-                    createdAt: typeof chat.createdAt === 'string' ? new Date(chat.createdAt) :
-                        chat.createdAt instanceof Date ? chat.createdAt : new Date(),
-                    updatedAt: typeof chat.updatedAt === 'string' ? new Date(chat.updatedAt) :
-                        chat.updatedAt instanceof Date ? chat.updatedAt : new Date(),
-                    isPinned: chat.isPinned,
-                    isFavorite: chat.isFavorite,
-                    folderId: chat.folderId,
-                    projectId: chat.projectId,
-                    isGenerating: chat.isGenerating,
-                    metadata: chat.metadata
-                };
-                await this.databaseService.updateChat(chatId, chatUpdate);
+                await this.updateExistingChat(chatId, chat);
             } else if (!existing) {
-                // Map RestoreChatData to Chat
-                const newChat: Chat = {
-                    id: chat.id,
-                    title: chat.title,
-                    model: chat.model,
-                    backend: chat.backend,
-                    messages: [], // Messages are restored separately
-                    isPinned: chat.isPinned,
-                    isFavorite: chat.isFavorite,
-                    folderId: chat.folderId,
-                    projectId: chat.projectId,
-                    isGenerating: chat.isGenerating,
-                    metadata: chat.metadata,
-                    createdAt: chat.createdAt ? new Date(String(chat.createdAt)) : new Date(),
-                    updatedAt: chat.updatedAt ? new Date(String(chat.updatedAt)) : new Date()
-                };
-                await this.databaseService.createChat(newChat);
+                await this.createNewChat(chat);
             }
 
             if (chat.messages && Array.isArray(chat.messages)) {
@@ -344,6 +312,53 @@ export class BackupService {
             appLogger.error('BackupService', `Failed to restore chat`, err as Error);
         }
     }
+
+    private async updateExistingChat(chatId: string, chat: RestoreChatData): Promise<void> {
+        const chatUpdate: Partial<Chat> = {
+            title: chat.title,
+            model: chat.model,
+            backend: chat.backend,
+            createdAt: this.parseRestoreDate(chat.createdAt),
+            updatedAt: this.parseRestoreDate(chat.updatedAt),
+            isPinned: chat.isPinned,
+            isFavorite: chat.isFavorite,
+            folderId: chat.folderId,
+            projectId: chat.projectId,
+            isGenerating: chat.isGenerating,
+            metadata: chat.metadata
+        };
+        await this.databaseService.updateChat(chatId, chatUpdate);
+    }
+
+    private async createNewChat(chat: RestoreChatData): Promise<void> {
+        const newChat: Chat = {
+            id: chat.id,
+            title: chat.title,
+            model: chat.model,
+            backend: chat.backend,
+            messages: [],
+            isPinned: chat.isPinned,
+            isFavorite: chat.isFavorite,
+            folderId: chat.folderId,
+            projectId: chat.projectId,
+            isGenerating: chat.isGenerating,
+            metadata: chat.metadata,
+            createdAt: this.parseRestoreDate(chat.createdAt),
+            updatedAt: this.parseRestoreDate(chat.updatedAt)
+        };
+        await this.databaseService.createChat(newChat);
+    }
+
+    private parseRestoreDate(dateValue: string | number | Date | undefined): Date {
+        if (!dateValue) {
+            return new Date();
+        }
+        if (dateValue instanceof Date) {
+            return dateValue;
+        }
+        return new Date(dateValue);
+    }
+
 
     private async restoreChatMessages(messages: ChatMessage[], chatId: string): Promise<void> {
         for (const msg of messages) {

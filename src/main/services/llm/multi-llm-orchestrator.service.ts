@@ -137,13 +137,29 @@ export class MultiLLMOrchestrator extends EventEmitter {
      */
     private normalizeProvider(provider: string): string {
         const lower = provider.toLowerCase();
-        if (lower.includes('openai') || lower.includes('gpt')) { return 'openai'; }
-        if (lower.includes('anthropic') || lower.includes('claude')) { return 'anthropic'; }
-        if (lower.includes('groq')) { return 'groq'; }
-        if (lower.includes('gemini') || lower.includes('google') || lower.includes('antigravity')) { return 'gemini'; }
-        if (lower.includes('ollama')) { return 'ollama'; }
-        if (lower.includes('llama') && !lower.includes('ollama')) { return 'llama'; }
-        if (lower.includes('copilot') || lower.includes('github')) { return 'copilot'; }
+
+        const rules: Array<{ pattern: RegExp; normalized: string }> = [
+            { pattern: /openai|gpt/, normalized: 'openai' },
+            { pattern: /anthropic|claude/, normalized: 'anthropic' },
+            { pattern: /groq/, normalized: 'groq' },
+            { pattern: /gemini|google|antigravity/, normalized: 'gemini' },
+            { pattern: /ollama/, normalized: 'ollama' },
+            { pattern: /^llama/, normalized: 'llama' }, // only starts with llama but not ollama (ollama check above captures ollama)
+            { pattern: /copilot|github/, normalized: 'copilot' }
+        ];
+
+        // Llama special case: if it contains 'llama' but NOT 'ollama', it's 'llama'
+        // But since we check ordered list, if we check ollama first, we are good?
+        // Actually, if string is "ollama-llama3", /ollama/ matches.
+        // If string is "llama-cpp", /ollama/ fails.
+        // So simple order is enough.
+
+        for (const { pattern, normalized } of rules) {
+            if (pattern.test(lower)) {
+                return normalized;
+            }
+        }
+
         return lower;
     }
 

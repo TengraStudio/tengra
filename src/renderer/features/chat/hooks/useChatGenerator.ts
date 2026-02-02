@@ -42,6 +42,20 @@ interface PrepareMessagesOptions {
     systemMode: 'thinking' | 'agent' | 'fast'
 }
 
+interface ModelStreamResult {
+    model: string;
+    provider: string;
+    content: string;
+    reasoning?: string;
+    responseTime?: number;
+    error?: string;
+}
+
+interface ChatStreamChunk {
+    content?: string;
+    reasoning?: string;
+}
+
 const prepareMessages = (options: PrepareMessagesOptions) => {
     const { chatId, chats, userMessage, appSettings, selectedModel, selectedProvider, language, selectedPersona } = options;
     const dbRefChat = chats.find(c => c.id === chatId);
@@ -191,7 +205,7 @@ const executeToolTurnLoop = async (params: {
     const {
         chatId, assistantId, activeModel, selectedProvider,
         tools, fullOptions, projectId, autoReadEnabled, handleSpeak, t,
-        setStreamingStates, setChats, activeWorkspacePath, systemMode, chats
+        setStreamingStates, setChats, activeWorkspacePath, systemMode
     } = params;
 
     let currentAssistantId = assistantId;
@@ -377,88 +391,26 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
     const promises = models.map(async (modelInfo: SelectedModelInfo, index: number) => {
         const streamId = `${chatId}-model-${index}-${Date.now()}`;
         try {
+            const { allMessages, presetOptions } = prepareMessages({
+                chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
+                selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
+            });
+
             const tools = allTools.filter((tDefinition: ToolDefinition) => {
                 if (!tDefinition.function.name) { return false; }
                 if (modelInfo.provider === 'opencode') { return true; }
                 return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity';
             });
 
-            const { allMessages, presetOptions } = prepareMessages({
-                chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
-                selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
-            });
-
-            const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath, systemMode };
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools,
-                provider: modelInfo.provider, options: fullOptions,
+                provider: modelInfo.provider, options: { ...presetOptions, projectRoot: activeWorkspacePath, systemMode },
                 chatId: streamId, projectId, systemMode
             });
 
-            let variantContent = '';
-            let variantReasoning = '';
-            let lastUpdate = 0;
-
-            for await (const chunk of stream) {
-                if (chunk.content) { variantContent += chunk.content; }
-                if (chunk.reasoning) { variantReasoning += chunk.reasoning; }
-
-                setStreamingStates((prev: Record<string, StreamStreamingState>) => {
-                    const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
-                    const variants = { ...state.variants };
-                    variants[index] = { content: variantContent, reasoning: variantReasoning };
-                    const isMain = index === 0;
-                    return {
-                        ...prev,
-                        [chatId]: {
-                            ...state,
-                            content: isMain ? variantContent : state.content,
-                            reasoning: isMain ? variantReasoning : state.reasoning,
-                            variants
-                        }
-                    };
-                });
-
-                const now = Date.now();
-                if (now - lastUpdate > 200 || !chunk.content) {
-                    lastUpdate = now;
-                    setChats((prev: Chat[]) => prev.map(c => {
-                        if (c.id !== chatId) { return c; }
-                        return {
-                            ...c,
-                            messages: c.messages.map(m => {
-                                if (m.id !== assistantId) { return m; }
-                                const currentVariants = [...(m.variants ?? [])];
-                                if (!currentVariants[index]) {
-                                    currentVariants[index] = {
-                                        id: `${assistantId}-v${index}`,
-                                        content: '',
-                                        model: modelInfo.model,
-                                        provider: modelInfo.provider,
-                                        timestamp: new Date(),
-                                        label: modelInfo.model,
-                                        isSelected: index === 0
-                                    };
-                                }
-                                currentVariants[index] = { ...currentVariants[index], content: variantContent };
-                                const isMain = index === 0;
-                                return {
-                                    ...m,
-                                    content: isMain ? variantContent : m.content,
-                                    reasoning: isMain ? variantReasoning : m.reasoning,
-                                    variants: currentVariants
-                                };
-                            })
-                        };
-                    }));
-                }
-            }
-
-            return {
-                model: modelInfo.model, provider: modelInfo.provider,
-                content: variantContent, reasoning: variantReasoning,
-                responseTime: Math.round(performance.now() - streamStartTime)
-            };
+            return await handleModelStreamIteration({
+                stream, chatId, assistantId, index, modelInfo, setStreamingStates, setChats, streamStartTime, t, formatChatError
+            });
         } catch (e) {
             const errText = `${t('chat.error')}: ${formatChatError(e as CatchError)}`;
             return {
@@ -469,6 +421,106 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
     });
 
     const results = await Promise.all(promises);
+    await finalizeMultiModelResponse({
+        results, chatId, assistantId, t, setChats, streamStartTime, autoReadEnabled, handleSpeak
+    });
+}
+
+/**
+ * Handles the iteration of a single model stream in a multi-model setup
+ */
+async function handleModelStreamIteration(params: {
+    stream: AsyncIterable<ChatStreamChunk>,
+    chatId: string,
+    assistantId: string,
+    index: number,
+    modelInfo: SelectedModelInfo,
+    setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>,
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>,
+    streamStartTime: number,
+    t: (key: string) => string,
+    formatChatError: (err: CatchError) => string
+}) {
+    const { stream, chatId, assistantId, index, modelInfo, setStreamingStates, setChats, streamStartTime } = params;
+    let variantContent = '';
+    let variantReasoning = '';
+    let lastUpdate = 0;
+
+    for await (const chunk of stream) {
+        if (chunk.content) { variantContent += chunk.content; }
+        if (chunk.reasoning) { variantReasoning += chunk.reasoning; }
+
+        const isMain = index === 0;
+        setStreamingStates((prev: Record<string, StreamStreamingState>) => {
+            const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
+            const variants = { ...state.variants };
+            variants[index] = { content: variantContent, reasoning: variantReasoning };
+            return {
+                ...prev,
+                [chatId]: {
+                    ...state,
+                    content: isMain ? variantContent : state.content,
+                    reasoning: isMain ? variantReasoning : state.reasoning,
+                    variants
+                }
+            };
+        });
+
+        const now = Date.now();
+        if (now - lastUpdate > 200 || !chunk.content) {
+            lastUpdate = now;
+            setChats((prev: Chat[]) => prev.map(c => {
+                if (c.id !== chatId) { return c; }
+                return {
+                    ...c,
+                    messages: c.messages.map(m => {
+                        if (m.id !== assistantId) { return m; }
+                        const currentVariants = [...(m.variants ?? [])];
+                        if (!currentVariants[index]) {
+                            currentVariants[index] = {
+                                id: `${assistantId}-v${index}`,
+                                content: '',
+                                model: modelInfo.model,
+                                provider: modelInfo.provider,
+                                timestamp: new Date(),
+                                label: modelInfo.model,
+                                isSelected: isMain
+                            };
+                        }
+                        currentVariants[index] = { ...currentVariants[index], content: variantContent };
+                        return {
+                            ...m,
+                            content: isMain ? variantContent : m.content,
+                            reasoning: isMain ? variantReasoning : m.reasoning,
+                            variants: currentVariants
+                        };
+                    })
+                };
+            }));
+        }
+    }
+
+    return {
+        model: modelInfo.model, provider: modelInfo.provider,
+        content: variantContent, reasoning: variantReasoning,
+        responseTime: Math.round(performance.now() - streamStartTime)
+    };
+}
+
+/**
+ * Finalizes the multi-model response by updating chats and database
+ */
+async function finalizeMultiModelResponse(params: {
+    results: ModelStreamResult[],
+    chatId: string,
+    assistantId: string,
+    t: (key: string) => string,
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>,
+    streamStartTime: number,
+    autoReadEnabled: boolean,
+    handleSpeak: (id: string, content: string) => void
+}) {
+    const { results, chatId, assistantId, t, setChats, streamStartTime, autoReadEnabled, handleSpeak } = params;
     const finalResponseTime = Math.round(performance.now() - streamStartTime);
     const finalVariants = results.map((r, idx) => ({
         id: `${assistantId}-v${idx}`,
@@ -481,7 +533,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
         error: r.error
     }));
 
-    const finalContent = results[0]?.content || '';
+    const finalContent = results[0]?.content ?? '';
     const finalReasoning = results[0]?.reasoning;
 
     setChats((prev: Chat[]) => prev.map(c => {

@@ -3,12 +3,12 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(50);
 import {
-    AgentDefinition, AppSettings, AuthStatus,
-    Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota, CouncilSession,
+    AgentDefinition, AgentStartOptions, AppSettings, AuthStatus,
+    Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota,
     EntityKnowledge, EpisodicMemory, FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
     Message, OllamaLibraryModel,
     ProcessInfo,
-    Project, ProjectAnalysis, Prompt,
+    Project, ProjectAnalysis, ProjectState, Prompt,
     QuotaResponse, SemanticFragment,
     SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
 } from '@shared/types';
@@ -324,15 +324,7 @@ export interface ElectronAPI {
         }) => Promise<{ success: boolean }>
     }
 
-    council: {
-        createSession: (goal: string) => Promise<CouncilSession>
-        getSessions: () => Promise<CouncilSession[]>
-        getSession: (id: string) => Promise<CouncilSession | null>
-        addLog: (sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action') => Promise<void>
-        runStep: (sessionId: string) => void
-        startLoop: (sessionId: string) => void
-        stopLoop: (sessionId: string) => void
-    }
+
 
     audit: {
         getLogs: (startDate?: string, endDate?: string, category?: string) => Promise<Array<{ timestamp: number; action: string; category: string; details?: Record<string, IpcValue>; success: boolean; error?: string }>>
@@ -611,6 +603,24 @@ export interface ElectronAPI {
         onIdeaProgress: (callback: (progress: IpcValue) => void) => () => void
         onDeepResearchProgress: (callback: (progress: IpcValue) => void) => () => void
     }
+
+    projectAgent: {
+        start: (options: AgentStartOptions) => Promise<void>
+        generatePlan: (options: AgentStartOptions) => Promise<void>
+        approvePlan: (plan: string[]) => Promise<void>
+        stop: () => Promise<void>
+        getStatus: () => Promise<ProjectState>
+        retryStep: (index: number) => Promise<void>
+        onUpdate: (callback: (state: ProjectState) => void) => () => void
+    }
+
+    // Extension API
+    extension: {
+        shouldShowWarning: () => Promise<boolean>
+        dismissWarning: () => Promise<{ success: boolean; error?: string }>
+        getStatus: () => Promise<{ installed: boolean; shouldShowWarning: boolean }>
+        setInstalled: (installed: boolean) => Promise<{ success: boolean; error?: string }>
+    }
 }
 
 const api: ElectronAPI = {
@@ -834,16 +844,7 @@ const api: ElectronAPI = {
         }) => ipcRenderer.invoke('collaboration:setProviderConfig', provider, config)
     },
 
-    council: {
-        createSession: (goal: string) => ipcRenderer.invoke('council:create', goal),
-        getSessions: () => ipcRenderer.invoke('council:get-all'),
-        getSession: (id: string) => ipcRenderer.invoke('council:get', id),
-        addLog: (sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action') =>
-            ipcRenderer.invoke('council:log', sessionId, agentId, message, type),
-        runStep: (sessionId: string) => ipcRenderer.send('council:run-step', sessionId),
-        startLoop: (sessionId: string) => ipcRenderer.send('council:start-loop', sessionId),
-        stopLoop: (sessionId: string) => ipcRenderer.send('council:stop-loop', sessionId)
-    },
+
 
     agent: {
         getAll: () => ipcRenderer.invoke('agent:get-all'),
@@ -1210,9 +1211,29 @@ const api: ElectronAPI = {
         },
         onDeepResearchProgress: (callback) => {
             const listener = (_event: IpcRendererEvent, progress: IpcValue) => callback(progress);
-            ipcRenderer.on('ideas:deep-research-progress', listener);
             return () => ipcRenderer.removeListener('ideas:deep-research-progress', listener);
         }
+    },
+
+    projectAgent: {
+        start: (options) => ipcRenderer.invoke('project:start', options),
+        generatePlan: (options) => ipcRenderer.invoke('project:plan', options),
+        approvePlan: (plan) => ipcRenderer.invoke('project:approve', plan),
+        stop: () => ipcRenderer.invoke('project:stop'),
+        getStatus: () => ipcRenderer.invoke('project:get-status'),
+        retryStep: (index) => ipcRenderer.invoke('project:retry-step', index),
+        onUpdate: (callback) => {
+            const listener = (_event: IpcRendererEvent, state: IpcValue) => callback(state as unknown as ProjectState);
+            ipcRenderer.on('project:update', listener);
+            return () => ipcRenderer.removeListener('project:update', listener);
+        }
+    },
+
+    extension: {
+        shouldShowWarning: () => ipcRenderer.invoke('extension:shouldShowWarning'),
+        dismissWarning: () => ipcRenderer.invoke('extension:dismissWarning'),
+        getStatus: () => ipcRenderer.invoke('extension:getStatus'),
+        setInstalled: (installed: boolean) => ipcRenderer.invoke('extension:setInstalled', installed)
     }
 };
 

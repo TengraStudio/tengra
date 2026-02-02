@@ -1,9 +1,9 @@
 import { IpcRendererEvent } from 'electron';
 
 import {
-    AgentDefinition, AppSettings, AuthStatus, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota, CouncilSession,
+    AgentDefinition, AgentStartOptions, AppSettings, AuthStatus, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota,
     EntityKnowledge, EpisodicMemory, FileSearchResult, Folder, IdeaProgress, IdeaSession, IdeaSessionConfig, IpcValue, Message, Project,
-    ProjectAnalysis, ProjectIdea, ProjectStats, QuotaResponse, ResearchData, ResearchProgress,
+    ProjectAnalysis, ProjectIdea, ProjectState, ProjectStats, ProjectStep, QuotaResponse, ResearchData, ResearchProgress,
     SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
     SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
@@ -395,15 +395,7 @@ export interface ElectronAPI {
         removeAllListeners: () => void
     }
 
-    council: {
-        createSession: (goal: string) => Promise<CouncilSession>
-        getSessions: () => Promise<CouncilSession[]>
-        getSession: (id: string) => Promise<CouncilSession | null>
-        addLog: (sessionId: string, agentId: string, message: string, type: 'info' | 'error' | 'success' | 'plan' | 'action') => Promise<void>
-        runStep: (sessionId: string) => void
-        startLoop: (sessionId: string) => void
-        stopLoop: (sessionId: string) => void
-    }
+
 
     agent: {
         getAll: () => Promise<AgentDefinition[]>
@@ -689,6 +681,30 @@ export interface ElectronAPI {
     }
     // Backward compatibility for components using window.electron.on
     on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => () => void
+
+    projectAgent: {
+        start: (options: AgentStartOptions) => Promise<void>
+        generatePlan: (options: AgentStartOptions) => Promise<void>
+        approvePlan: (plan: string[] | ProjectStep[]) => Promise<void>
+        stop: () => Promise<void>
+        getStatus: () => Promise<ProjectState>
+        retryStep: (index: number) => Promise<void>
+        onUpdate: (callback: (state: ProjectState) => void) => () => void
+    }
+
+    /**
+     * Browser extension management APIs
+     */
+    extension: {
+        /** Check if extension warning should be shown */
+        shouldShowWarning: () => Promise<boolean>
+        /** Dismiss the extension warning permanently */
+        dismissWarning: () => Promise<{ success: boolean }>
+        /** Get extension installation status */
+        getStatus: () => Promise<{ installed: boolean; shouldShowWarning: boolean }>
+        /** Mark extension as installed/uninstalled */
+        setInstalled: (installed: boolean) => Promise<{ success: boolean }>
+    }
 }
 
 declare global {

@@ -32,17 +32,4 @@ export interface AgentLog {
     type: string
 }
 
-export type CouncilSessionStatus = 'created' | 'planning' | 'executing' | 'reviewing' | 'completed' | 'failed'
 
-// Session schema
-export interface CouncilSession {
-    id: string
-    goal: string
-    status: CouncilSessionStatus
-    createdAt: number
-    updatedAt: number
-    agents: AgentDefinition[]
-    plan?: string
-    solution?: string
-    logs: AgentLog[]
-}

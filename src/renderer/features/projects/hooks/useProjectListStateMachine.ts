@@ -80,153 +80,103 @@ const initialState: ProjectListState = {
 // Reducer
 // ============================================================================
 
+const handleStartEdit = (state: ProjectListState, action: Extract<ProjectListAction, { type: 'START_EDIT' }>): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    return { ...state, status: 'editing', targetProject: action.project, editForm: { title: action.project.title, description: action.project.description }, error: null };
+};
+
+const handleCancelEdit = (state: ProjectListState): ProjectListState =>
+    ({ ...state, status: 'idle', targetProject: null, editForm: { title: '', description: '' } });
+
+const handleStartDelete = (state: ProjectListState, project: Project): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    return { ...state, status: 'deleting', targetProject: project, error: null };
+};
+
+const handleCancelDelete = (state: ProjectListState): ProjectListState =>
+    ({ ...state, status: 'idle', targetProject: null });
+
+const handleStartArchive = (state: ProjectListState, project: Project): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    return { ...state, status: 'archiving', targetProject: project, error: null };
+};
+
+const handleCancelArchive = (state: ProjectListState): ProjectListState =>
+    ({ ...state, status: 'idle', targetProject: null });
+
+const handleStartBulkDelete = (state: ProjectListState): ProjectListState => {
+    if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
+    return { ...state, status: 'bulk_deleting', error: null };
+};
+
+const handleStartBulkArchive = (state: ProjectListState): ProjectListState => {
+    if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
+    return { ...state, status: 'bulk_archiving', error: null };
+};
+
+const handleStartCreate = (state: ProjectListState): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    return { ...state, status: 'creating', error: null };
+};
+
+const handleToggleSelection = (state: ProjectListState, id: string): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    const next = new Set(state.selectedProjectIds);
+    if (next.has(id)) { next.delete(id); } else { next.add(id); }
+    return { ...state, selectedProjectIds: next };
+};
+
+const handleSelectAll = (state: ProjectListState, ids: string[]): ProjectListState => {
+    if (state.status !== 'idle') { return state; }
+    return { ...state, selectedProjectIds: new Set(ids) };
+};
+
+const handleOperationStart = (state: ProjectListState, message?: string): ProjectListState =>
+    ({ ...state, status: 'loading', loadingMessage: message ?? null });
+
+const handleOperationSuccess = (): ProjectListState =>
+    ({ ...initialState, selectedProjectIds: new Set() });
+
+const handleOperationError = (state: ProjectListState, error: string): ProjectListState =>
+    ({ ...state, status: 'error', error, loadingMessage: null });
+
+// Simple action handlers that return a function
+type ActionHandler = (state: ProjectListState, action: ProjectListAction) => ProjectListState;
+
+const actionHandlers: Record<ProjectListAction['type'], ActionHandler> = {
+    'START_EDIT': (state, action) =>
+        action.type === 'START_EDIT' ? handleStartEdit(state, action) : state,
+    'UPDATE_EDIT_FORM': (state, action) =>
+        action.type === 'UPDATE_EDIT_FORM' ? { ...state, editForm: action.form } : state,
+    'CANCEL_EDIT': (state) => handleCancelEdit(state),
+    'START_DELETE': (state, action) =>
+        action.type === 'START_DELETE' ? handleStartDelete(state, action.project) : state,
+    'CANCEL_DELETE': (state) => handleCancelDelete(state),
+    'START_ARCHIVE': (state, action) =>
+        action.type === 'START_ARCHIVE' ? handleStartArchive(state, action.project) : state,
+    'CANCEL_ARCHIVE': (state) => handleCancelArchive(state),
+    'START_BULK_DELETE': (state) => handleStartBulkDelete(state),
+    'CANCEL_BULK_DELETE': (state) => ({ ...state, status: 'idle' }),
+    'START_BULK_ARCHIVE': (state) => handleStartBulkArchive(state),
+    'CANCEL_BULK_ARCHIVE': (state) => ({ ...state, status: 'idle' }),
+    'START_CREATE': (state) => handleStartCreate(state),
+    'CANCEL_CREATE': (state) => ({ ...state, status: 'idle' }),
+    'TOGGLE_SELECTION': (state, action) =>
+        action.type === 'TOGGLE_SELECTION' ? handleToggleSelection(state, action.id) : state,
+    'SELECT_ALL': (state, action) =>
+        action.type === 'SELECT_ALL' ? handleSelectAll(state, action.ids) : state,
+    'CLEAR_SELECTION': (state) => ({ ...state, selectedProjectIds: new Set() }),
+    'OPERATION_START': (state, action) =>
+        action.type === 'OPERATION_START' ? handleOperationStart(state, action.message) : state,
+    'OPERATION_SUCCESS': () => handleOperationSuccess(),
+    'OPERATION_ERROR': (state, action) =>
+        action.type === 'OPERATION_ERROR' ? handleOperationError(state, action.error) : state,
+    'RESET': () => initialState
+};
+
 function projectListReducer(state: ProjectListState, action: ProjectListAction): ProjectListState {
-    switch (action.type) {
-        case 'START_EDIT':
-            // Only allow edit from idle state
-            if (state.status !== 'idle') { return state; }
-            return {
-                ...state,
-                status: 'editing',
-                targetProject: action.project,
-                editForm: { title: action.project.title, description: action.project.description },
-                error: null
-            };
-
-        case 'UPDATE_EDIT_FORM':
-            return {
-                ...state,
-                editForm: action.form
-            };
-
-        case 'CANCEL_EDIT':
-            return {
-                ...state,
-                status: 'idle',
-                targetProject: null,
-                editForm: { title: '', description: '' }
-            };
-
-        case 'START_DELETE':
-            if (state.status !== 'idle') { return state; }
-            return {
-                ...state,
-                status: 'deleting',
-                targetProject: action.project,
-                error: null
-            };
-
-        case 'CANCEL_DELETE':
-            return {
-                ...state,
-                status: 'idle',
-                targetProject: null
-            };
-
-        case 'START_ARCHIVE':
-            if (state.status !== 'idle') { return state; }
-            return {
-                ...state,
-                status: 'archiving',
-                targetProject: action.project,
-                error: null
-            };
-
-        case 'CANCEL_ARCHIVE':
-            return {
-                ...state,
-                status: 'idle',
-                targetProject: null
-            };
-
-        case 'START_BULK_DELETE':
-            if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
-            return {
-                ...state,
-                status: 'bulk_deleting',
-                error: null
-            };
-
-        case 'CANCEL_BULK_DELETE':
-            return {
-                ...state,
-                status: 'idle'
-            };
-
-        case 'START_BULK_ARCHIVE':
-            if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
-            return {
-                ...state,
-                status: 'bulk_archiving',
-                error: null
-            };
-
-        case 'CANCEL_BULK_ARCHIVE':
-            return {
-                ...state,
-                status: 'idle'
-            };
-
-        case 'START_CREATE':
-            if (state.status !== 'idle') { return state; }
-            return {
-                ...state,
-                status: 'creating',
-                error: null
-            };
-
-        case 'CANCEL_CREATE':
-            return {
-                ...state,
-                status: 'idle'
-            };
-
-        case 'TOGGLE_SELECTION': {
-            // Allow selection changes only in idle state
-            if (state.status !== 'idle') { return state; }
-            const next = new Set(state.selectedProjectIds);
-            if (next.has(action.id)) {
-                next.delete(action.id);
-            } else {
-                next.add(action.id);
-            }
-            return { ...state, selectedProjectIds: next };
-        }
-
-        case 'SELECT_ALL':
-            if (state.status !== 'idle') { return state; }
-            return { ...state, selectedProjectIds: new Set(action.ids) };
-
-        case 'CLEAR_SELECTION':
-            return { ...state, selectedProjectIds: new Set() };
-
-        case 'OPERATION_START':
-            return {
-                ...state,
-                status: 'loading',
-                loadingMessage: action.message ?? null
-            };
-
-        case 'OPERATION_SUCCESS':
-            return {
-                ...initialState,
-                selectedProjectIds: new Set() // Clear selection on success
-            };
-
-        case 'OPERATION_ERROR':
-            return {
-                ...state,
-                status: 'error',
-                error: action.error,
-                loadingMessage: null
-            };
-
-        case 'RESET':
-            return initialState;
-
-        default:
-            return state;
-    }
+    const handler = actionHandlers[action.type];
+    return handler(state, action);
 }
 
 // ============================================================================
@@ -238,87 +188,13 @@ export interface UseProjectListStateMachineOptions {
     onError?: (error: string) => void
 }
 
-export function useProjectListStateMachine({ filteredProjects, onError }: UseProjectListStateMachineOptions) {
-    const [state, dispatch] = useReducer(projectListReducer, initialState);
-
-    // ========================================================================
-    // Action Creators (safe wrappers that check state before dispatching)
-    // ========================================================================
-
-    const startEdit = useCallback((project: Project, e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        dispatch({ type: 'START_EDIT', project });
-    }, []);
-
-    type EditFormInput = { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })
-
-    const updateEditForm = useCallback((formOrUpdater: EditFormInput) => {
-        if (typeof formOrUpdater === 'function') {
-            // It's an updater function - we need to get current state and call it
-            // Since we can't access state directly here, dispatch with current value
-            // This requires a special action pattern
-            dispatch({ type: 'UPDATE_EDIT_FORM', form: formOrUpdater(state.editForm) });
-        } else {
-            dispatch({ type: 'UPDATE_EDIT_FORM', form: formOrUpdater });
-        }
-    }, [state.editForm]);
-
-    const cancelEdit = useCallback(() => {
-        dispatch({ type: 'CANCEL_EDIT' });
-    }, []);
-
-    const startDelete = useCallback((project: Project, e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        dispatch({ type: 'START_DELETE', project });
-    }, []);
-
-    const cancelDelete = useCallback(() => {
-        dispatch({ type: 'CANCEL_DELETE' });
-    }, []);
-
-    const startArchive = useCallback((project: Project) => {
-        dispatch({ type: 'START_ARCHIVE', project });
-    }, []);
-
-    const cancelArchive = useCallback(() => {
-        dispatch({ type: 'CANCEL_ARCHIVE' });
-    }, []);
-
-    const startBulkDelete = useCallback(() => {
-        dispatch({ type: 'START_BULK_DELETE' });
-    }, []);
-
-    const cancelBulkDelete = useCallback(() => {
-        dispatch({ type: 'CANCEL_BULK_DELETE' });
-    }, []);
-
-    const startBulkArchive = useCallback(() => {
-        dispatch({ type: 'START_BULK_ARCHIVE' });
-    }, []);
-
-    const cancelBulkArchive = useCallback(() => {
-        dispatch({ type: 'CANCEL_BULK_ARCHIVE' });
-    }, []);
-
-    const toggleSelection = useCallback((id: string) => {
-        dispatch({ type: 'TOGGLE_SELECTION', id });
-    }, []);
-
-    const toggleSelectAll = useCallback(() => {
-        if (state.selectedProjectIds.size === filteredProjects.length) {
-            dispatch({ type: 'CLEAR_SELECTION' });
-        } else {
-            dispatch({ type: 'SELECT_ALL', ids: filteredProjects.map(p => p.id) });
-        }
-    }, [filteredProjects, state.selectedProjectIds.size]);
-
-    // ========================================================================
-    // Async Operation Handlers (with proper state transitions)
-    // ========================================================================
-
+const useProjectListOperations = (
+    state: ProjectListState,
+    dispatch: React.Dispatch<ProjectListAction>,
+    onError?: (error: string) => void
+) => {
     const executeUpdate = useCallback(async () => {
         if (state.status !== 'editing' || !state.targetProject) { return; }
-
         dispatch({ type: 'OPERATION_START', message: 'Updating project...' });
         try {
             await window.electron.db.updateProject(state.targetProject.id, state.editForm);
@@ -328,11 +204,10 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetProject, state.editForm, onError]);
+    }, [state.status, state.targetProject, state.editForm, dispatch, onError]);
 
     const executeDelete = useCallback(async (deleteFiles: boolean = false) => {
         if (state.status !== 'deleting' || !state.targetProject) { return; }
-
         dispatch({ type: 'OPERATION_START', message: 'Deleting project...' });
         try {
             await window.electron.db.deleteProject(state.targetProject.id, deleteFiles);
@@ -342,11 +217,10 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetProject, onError]);
+    }, [state.status, state.targetProject, dispatch, onError]);
 
     const executeArchive = useCallback(async () => {
         if (state.status !== 'archiving' || !state.targetProject) { return; }
-
         dispatch({ type: 'OPERATION_START', message: 'Archiving project...' });
         try {
             const newStatus = state.targetProject.status === 'archived' ? 'active' : 'archived';
@@ -357,11 +231,10 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetProject, onError]);
+    }, [state.status, state.targetProject, dispatch, onError]);
 
     const executeBulkDelete = useCallback(async (deleteFiles: boolean = false) => {
         if (state.status !== 'bulk_deleting' || state.selectedProjectIds.size === 0) { return; }
-
         dispatch({ type: 'OPERATION_START', message: `Deleting ${state.selectedProjectIds.size} projects...` });
         try {
             await window.electron.db.bulkDeleteProjects(Array.from(state.selectedProjectIds), deleteFiles);
@@ -371,11 +244,10 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedProjectIds, onError]);
+    }, [state.status, state.selectedProjectIds, dispatch, onError]);
 
     const executeBulkArchive = useCallback(async (isArchived: boolean = true) => {
         if (state.status !== 'bulk_archiving' || state.selectedProjectIds.size === 0) { return; }
-
         dispatch({ type: 'OPERATION_START', message: `Archiving ${state.selectedProjectIds.size} projects...` });
         try {
             await window.electron.db.bulkArchiveProjects(Array.from(state.selectedProjectIds), isArchived);
@@ -385,7 +257,7 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedProjectIds, onError]);
+    }, [state.status, state.selectedProjectIds, dispatch, onError]);
 
     const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]) => {
         dispatch({ type: 'OPERATION_START', message: 'Creating project...' });
@@ -405,56 +277,77 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
             onError?.(msg);
             return false;
         }
-    }, [onError]);
-
-    const reset = useCallback(() => {
-        dispatch({ type: 'RESET' });
-    }, []);
-
-    // ========================================================================
-    // Derived State
-    // ========================================================================
-
-    const isOperationInProgress = state.status === 'loading';
-    const canPerformActions = state.status === 'idle';
+    }, [dispatch, onError]);
 
     return {
-        // State
-        state,
-        isOperationInProgress,
-        canPerformActions,
+        executeUpdate,
+        executeDelete,
+        executeArchive,
+        executeBulkDelete,
+        executeBulkArchive,
+        executeCreate
+    };
+};
 
-        // Single project operations
+export function useProjectListStateMachine({ filteredProjects, onError }: UseProjectListStateMachineOptions) {
+    const [state, dispatch] = useReducer(projectListReducer, initialState);
+
+    // Action creators
+    const startEdit = useCallback((project: Project, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        dispatch({ type: 'START_EDIT', project });
+    }, []);
+
+    const updateEditForm = useCallback((formOrUpdater: { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })) => {
+        if (typeof formOrUpdater === 'function') {
+            dispatch({ type: 'UPDATE_EDIT_FORM', form: formOrUpdater(state.editForm) });
+        } else {
+            dispatch({ type: 'UPDATE_EDIT_FORM', form: formOrUpdater });
+        }
+    }, [state.editForm]);
+
+    const cancelEdit = useCallback(() => dispatch({ type: 'CANCEL_EDIT' }), []);
+    const startDelete = useCallback((project: Project, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        dispatch({ type: 'START_DELETE', project });
+    }, []);
+    const cancelDelete = useCallback(() => dispatch({ type: 'CANCEL_DELETE' }), []);
+    const startArchive = useCallback((project: Project) => dispatch({ type: 'START_ARCHIVE', project }), []);
+    const cancelArchive = useCallback(() => dispatch({ type: 'CANCEL_ARCHIVE' }), []);
+    const startBulkDelete = useCallback(() => dispatch({ type: 'START_BULK_DELETE' }), []);
+    const cancelBulkDelete = useCallback(() => dispatch({ type: 'CANCEL_BULK_DELETE' }), []);
+    const startBulkArchive = useCallback(() => dispatch({ type: 'START_BULK_ARCHIVE' }), []);
+    const cancelBulkArchive = useCallback(() => dispatch({ type: 'CANCEL_BULK_ARCHIVE' }), []);
+    const toggleSelection = useCallback((id: string) => dispatch({ type: 'TOGGLE_SELECTION', id }), []);
+    const toggleSelectAll = useCallback(() => {
+        if (state.selectedProjectIds.size === filteredProjects.length) {
+            dispatch({ type: 'CLEAR_SELECTION' });
+        } else {
+            dispatch({ type: 'SELECT_ALL', ids: filteredProjects.map(p => p.id) });
+        }
+    }, [filteredProjects, state.selectedProjectIds.size]);
+    const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
+
+    const executors = useProjectListOperations(state, dispatch, onError);
+
+    return {
+        state,
+        isOperationInProgress: state.status === 'loading',
+        canPerformActions: state.status === 'idle',
         startEdit,
         updateEditForm,
         cancelEdit,
-        executeUpdate,
-
         startDelete,
         cancelDelete,
-        executeDelete,
-
         startArchive,
         cancelArchive,
-        executeArchive,
-
-        // Bulk operations
         startBulkDelete,
         cancelBulkDelete,
-        executeBulkDelete,
-
         startBulkArchive,
         cancelBulkArchive,
-        executeBulkArchive,
-
-        // Selection
         toggleSelection,
         toggleSelectAll,
-
-        // Creation
-        executeCreate,
-
-        // Utility
-        reset
+        reset,
+        ...executors
     };
 }

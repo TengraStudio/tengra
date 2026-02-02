@@ -17,13 +17,17 @@ import { ipcMain } from 'electron';
 const LOG_TAG = 'AdvancedMemoryIPC';
 
 export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryService): void {
-    // =========================================================================
-    // PENDING MEMORIES (Staging Buffer)
-    // =========================================================================
+    registerPendingHandlers(advancedMemoryService);
+    registerExplicitHandlers(advancedMemoryService);
+    registerRecallHandlers(advancedMemoryService);
+    registerMaintenanceHandlers(advancedMemoryService);
+    registerExtractionHandlers(advancedMemoryService);
+    registerManagementHandlers(advancedMemoryService);
 
-    /**
-     * Get all pending memories awaiting validation
-     */
+    appLogger.info(LOG_TAG, 'Advanced memory IPC handlers registered');
+}
+
+function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:getPending', async () => {
         try {
             const pending = advancedMemoryService.getPendingMemories();
@@ -34,9 +38,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Confirm a pending memory (user validation)
-     */
     ipcMain.handle('advancedMemory:confirm', async (
         _event,
         id: string,
@@ -56,9 +57,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Reject a pending memory
-     */
     ipcMain.handle('advancedMemory:reject', async (_event, id: string, reason?: string) => {
         try {
             await advancedMemoryService.rejectPendingMemory(id, reason);
@@ -69,9 +67,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Confirm all pending memories that meet auto-confirm threshold
-     */
     ipcMain.handle('advancedMemory:confirmAll', async () => {
         try {
             const pending = advancedMemoryService.getPendingMemories();
@@ -91,9 +86,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Reject all pending memories
-     */
     ipcMain.handle('advancedMemory:rejectAll', async () => {
         try {
             const pending = advancedMemoryService.getPendingMemories();
@@ -108,14 +100,9 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error), rejected: 0 };
         }
     });
+}
 
-    // =========================================================================
-    // EXPLICIT MEMORY
-    // =========================================================================
-
-    /**
-     * Explicitly remember a fact (user said "remember this")
-     */
+function registerExplicitHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:remember', async (
         _event,
         content: string,
@@ -139,14 +126,9 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error) };
         }
     });
+}
 
-    // =========================================================================
-    // RECALL
-    // =========================================================================
-
-    /**
-     * Recall memories with full context awareness
-     */
+function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:recall', async (_event, context: RecallContext) => {
         try {
             const result = await advancedMemoryService.recall(context);
@@ -163,9 +145,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Simple recall for backwards compatibility
-     */
     ipcMain.handle('advancedMemory:search', async (_event, query: string, limit?: number) => {
         try {
             const memories = await advancedMemoryService.recallRelevantFacts(query, limit ?? 10);
@@ -175,14 +154,9 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error), data: [] };
         }
     });
+}
 
-    // =========================================================================
-    // STATISTICS & MAINTENANCE
-    // =========================================================================
-
-    /**
-     * Get memory statistics
-     */
+function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:getStats', async () => {
         try {
             const stats = await advancedMemoryService.getStatistics();
@@ -193,9 +167,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Run decay maintenance manually
-     */
     ipcMain.handle('advancedMemory:runDecay', async () => {
         try {
             await advancedMemoryService.runDecayMaintenance();
@@ -205,14 +176,9 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error) };
         }
     });
+}
 
-    // =========================================================================
-    // EXTRACTION
-    // =========================================================================
-
-    /**
-     * Extract facts from a message (for testing/manual extraction)
-     */
+function registerExtractionHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:extractFromMessage', async (
         _event,
         content: string,
@@ -231,14 +197,9 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error), data: [] };
         }
     });
+}
 
-    // =========================================================================
-    // DELETE & EDIT
-    // =========================================================================
-
-    /**
-     * Delete a single memory
-     */
+function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService): void {
     ipcMain.handle('advancedMemory:delete', async (_event, id: string) => {
         try {
             const success = await advancedMemoryService.deleteMemory(id);
@@ -249,9 +210,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Delete multiple memories
-     */
     ipcMain.handle('advancedMemory:deleteMany', async (_event, ids: string[]) => {
         try {
             const result = await advancedMemoryService.deleteMemories(ids);
@@ -262,9 +220,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Edit a memory
-     */
     ipcMain.handle('advancedMemory:edit', async (
         _event,
         id: string,
@@ -285,9 +240,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Archive a memory (soft delete)
-     */
     ipcMain.handle('advancedMemory:archive', async (_event, id: string) => {
         try {
             const success = await advancedMemoryService.archiveMemory(id);
@@ -298,9 +250,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Archive multiple memories
-     */
     ipcMain.handle('advancedMemory:archiveMany', async (_event, ids: string[]) => {
         try {
             const result = await advancedMemoryService.archiveMemories(ids);
@@ -311,9 +260,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Restore an archived memory
-     */
     ipcMain.handle('advancedMemory:restore', async (_event, id: string) => {
         try {
             const success = await advancedMemoryService.restoreMemory(id);
@@ -324,9 +270,6 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
         }
     });
 
-    /**
-     * Get a single memory by ID
-     */
     ipcMain.handle('advancedMemory:get', async (_event, id: string) => {
         try {
             const memory = await advancedMemoryService.getMemory(id);
@@ -336,6 +279,4 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
             return { success: false, error: String(error) };
         }
     });
-
-    appLogger.info(LOG_TAG, 'Advanced memory IPC handlers registered');
 }

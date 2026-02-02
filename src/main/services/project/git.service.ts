@@ -112,31 +112,35 @@ export class GitService {
         const lines = stdout.split('\n');
         let original = '';
         let modified = '';
-        let inOriginal = false;
-        let inModified = false;
+        let isContent = false;
 
         for (const line of lines) {
-            if (line.startsWith('---') || line.startsWith('+++')) { continue; }
             if (line.startsWith('@@')) {
-                inOriginal = true;
-                inModified = true;
+                isContent = true;
+                continue;
+            }
+            if (!isContent || line.startsWith('---') || line.startsWith('+++')) {
                 continue;
             }
 
-            if (inOriginal && inModified) {
-                if (line.startsWith('-') && !line.startsWith('--')) {
-                    original += line.substring(1) + '\n';
-                } else if (line.startsWith('+') && !line.startsWith('++')) {
-                    modified += line.substring(1) + '\n';
-                } else if (line.startsWith(' ')) {
-                    const context = line.substring(1);
-                    original += context + '\n';
-                    modified += context + '\n';
-                }
-            }
+            const { o, m } = this.processDiffLine(line);
+            original += o;
+            modified += m;
         }
 
         return { original: original.trim(), modified: modified.trim(), success: true };
+    }
+
+    private processDiffLine(line: string): { o: string, m: string } {
+        if (line.startsWith('-') && !line.startsWith('--')) {
+            return { o: line.substring(1) + '\n', m: '' };
+        } else if (line.startsWith('+') && !line.startsWith('++')) {
+            return { o: '', m: line.substring(1) + '\n' };
+        } else if (line.startsWith(' ')) {
+            const context = line.substring(1) + '\n';
+            return { o: context, m: context };
+        }
+        return { o: '', m: '' };
     }
 
     async getUnifiedDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ diff: string; success: boolean; error?: string }> {

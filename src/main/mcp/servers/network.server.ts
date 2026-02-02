@@ -5,14 +5,6 @@ import { SSHConnection } from '@main/services/project/ssh.service';
 export function buildNetworkServers(deps: McpDeps): McpService[] {
     return [
         {
-            name: 'web',
-            description: 'HTTP utilities',
-            actions: buildActions([
-                { name: 'fetch', description: 'Fetch web page HTML/text', handler: ({ url }) => deps.web.fetchWebPage(url as string) },
-                { name: 'search', description: 'Search the web', handler: ({ query, numResults }) => deps.web.searchWeb(query as string, numResults as number) }
-            ])
-        },
-        {
             name: 'ssh',
             description: 'SSH connections and remote commands',
             actions: buildActions([

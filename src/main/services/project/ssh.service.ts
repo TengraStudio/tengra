@@ -326,59 +326,7 @@ export class SSHService extends EventEmitter {
             const conn = new Client();
             const keepaliveInterval = config.keepaliveInterval ?? 30000;
 
-            conn.on('ready', () => {
-                (async () => {
-                    this.connections.set(config.id, conn);
-                    this.connectionDetails.set(config.id, { ...config, connected: true });
-
-                    // Initialize connection stats
-                    this.connectionStats.set(config.id, {
-                        bytesReceived: 0,
-                        bytesSent: 0,
-                        commandsExecuted: 0,
-                        connectedAt: Date.now(),
-                        lastActivity: Date.now()
-                    });
-
-                    // Setup keepalive
-                    const timer = setInterval(() => {
-                        conn.exec('echo keepalive', () => { });
-                    }, keepaliveInterval);
-                    this.keepaliveTimers.set(config.id, timer);
-
-                    // Update profile with connection history
-                    try {
-                        const profiles = await this.getSavedProfiles();
-                        const profileIndex = profiles.findIndex(p => p.id === config.id);
-                        if (profileIndex !== -1) {
-                            profiles[profileIndex].lastConnected = Date.now();
-                            profiles[profileIndex].connectionCount = (profiles[profileIndex].connectionCount ?? 0) + 1;
-                            await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-                        }
-                    } catch {
-                        // Ignore error updating history
-                    }
-
-                    this.emit('connected', config.id);
-                    resolve({ success: true });
-                })().catch(err => {
-                    appLogger.error('SSHService', `Error in ready handler for ${config.id}: ${getErrorMessage(err as Error)}`);
-                    resolve({ success: false, error: getErrorMessage(err as Error) });
-                });
-            }).on('error', (err: Error) => {
-                this.emit('error', { id: config.id, message: err.message });
-                resolve({ success: false, error: err.message });
-            }).on('close', () => {
-                // Cleanup
-                const timer = this.keepaliveTimers.get(config.id);
-                if (timer) { clearInterval(timer); }
-                this.keepaliveTimers.delete(config.id);
-                this.connections.delete(config.id);
-                this.connectionDetails.delete(config.id);
-                this.connectionStats.delete(config.id);
-                this.shellSessions.delete(config.id);
-                this.emit('disconnected', config.id);
-            });
+            this.setupConnectionHandlers(conn, config, keepaliveInterval, resolve);
 
             try {
                 // Decrypt credentials if needed
@@ -401,6 +349,77 @@ export class SSHService extends EventEmitter {
                 resolve({ success: false, error: getErrorMessage(error as Error) });
             }
         });
+    }
+
+    private setupConnectionHandlers(
+        conn: Client,
+        config: SSHConnection,
+        keepaliveInterval: number,
+        resolve: (val: { success: boolean; error?: string }) => void
+    ) {
+        conn.on('ready', () => {
+            this.handleConnectionReady(conn, config, keepaliveInterval)
+                .then(() => resolve({ success: true }))
+                .catch(err => {
+                    appLogger.error('SSHService', `Error in ready handler for ${config.id}: ${getErrorMessage(err as Error)}`);
+                    resolve({ success: false, error: getErrorMessage(err as Error) });
+                });
+        }).on('error', (err: Error) => {
+            this.emit('error', { id: config.id, message: err.message });
+            resolve({ success: false, error: err.message });
+        }).on('close', () => {
+            this.cleanupConnection(config.id);
+        });
+    }
+
+    private async handleConnectionReady(conn: Client, config: SSHConnection, keepaliveInterval: number) {
+        this.connections.set(config.id, conn);
+        this.connectionDetails.set(config.id, { ...config, connected: true });
+
+        // Initialize connection stats
+        this.connectionStats.set(config.id, {
+            bytesReceived: 0,
+            bytesSent: 0,
+            commandsExecuted: 0,
+            connectedAt: Date.now(),
+            lastActivity: Date.now()
+        });
+
+        // Setup keepalive
+        const timer = setInterval(() => {
+            conn.exec('echo keepalive', () => { });
+        }, keepaliveInterval);
+        this.keepaliveTimers.set(config.id, timer);
+
+        // Update profile with connection history
+        await this.updateConnectionHistory(config.id);
+
+        this.emit('connected', config.id);
+    }
+
+    private async updateConnectionHistory(connectionId: string) {
+        try {
+            const profiles = await this.getSavedProfiles();
+            const profileIndex = profiles.findIndex(p => p.id === connectionId);
+            if (profileIndex !== -1) {
+                profiles[profileIndex].lastConnected = Date.now();
+                profiles[profileIndex].connectionCount = (profiles[profileIndex].connectionCount ?? 0) + 1;
+                await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
+            }
+        } catch {
+            // Ignore error updating history
+        }
+    }
+
+    private cleanupConnection(connectionId: string) {
+        const timer = this.keepaliveTimers.get(connectionId);
+        if (timer) { clearInterval(timer); }
+        this.keepaliveTimers.delete(connectionId);
+        this.connections.delete(connectionId);
+        this.connectionDetails.delete(connectionId);
+        this.connectionStats.delete(connectionId);
+        this.shellSessions.delete(connectionId);
+        this.emit('disconnected', connectionId);
     }
 
     /**
@@ -524,27 +543,37 @@ export class SSHService extends EventEmitter {
                 if (err) { return resolve({ success: false, error: err.message }); }
                 sftp.readdir(validPath, (err, list) => {
                     if (err) { return resolve({ success: false, error: err.message }); }
-                    const files = list.map((entry) => {
-                        const permissions = typeof entry.longname === 'string'
-                            ? entry.longname.split(/\s+/)[0]
-                            : undefined;
-                        const size = entry.attrs.size;
-                        const mtime = entry.attrs.mtime;
-                        const isDirectory = typeof entry.attrs.isDirectory === 'function'
-                            ? entry.attrs.isDirectory()
-                            : (typeof entry.longname === 'string' ? entry.longname.startsWith('d') : false);
-                        return {
-                            name: entry.filename,
-                            isDirectory,
-                            size,
-                            mtime,
-                            permissions
-                        };
-                    });
+                    const files = list.map((entry) => this.mapSftpEntry(entry));
                     resolve({ success: true, files });
                 });
             });
         });
+    }
+
+    private mapSftpEntry(entry: {
+        filename: string;
+        longname: string;
+        attrs: {
+            size: number;
+            mtime: number;
+            isDirectory?: () => boolean;
+        };
+    }): SSHFile {
+        const permissions = typeof entry.longname === 'string'
+            ? entry.longname.split(/\s+/)[0]
+            : undefined;
+        const size = entry.attrs.size;
+        const mtime = entry.attrs.mtime;
+        const isDirectory = typeof entry.attrs.isDirectory === 'function'
+            ? entry.attrs.isDirectory()
+            : (typeof entry.longname === 'string' ? entry.longname.startsWith('d') : false);
+        return {
+            name: entry.filename,
+            isDirectory,
+            size,
+            mtime,
+            permissions
+        };
     }
 
     async readFile(connectionId: string, filePath: string): Promise<string> {

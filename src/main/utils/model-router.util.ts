@@ -96,59 +96,17 @@ export class ModelRouter {
     /**
      * Find the best provider for a model
      */
+    /**
+     * Find the best provider for a model
+     */
     route(modelId: string, options: RouterOptions = {}): RouteResult {
         const allModels = [...MODEL_REGISTRY, ...this.customModels];
 
         // Direct match
         const directMatch = allModels.find(m => m.id === modelId);
         if (directMatch) {
-            // Check if we should use preferred provider
-            if (options.preferredProvider && directMatch.provider !== options.preferredProvider) {
-                const equivalent = this.findEquivalent(modelId, options.preferredProvider);
-                if (equivalent) {
-                    return {
-                        provider: options.preferredProvider,
-                        model: equivalent,
-                        originalModel: modelId,
-                        reason: 'Routed to preferred provider'
-                    };
-                }
-            }
-
-            // Check provider health if requested
-            if (options.checkHealth) {
-                const health = getHealthCheckService();
-                const status = health.getStatus();
-                const providerHealth = status.services.find(s => s.name.toLowerCase() === directMatch.provider.toLowerCase());
-
-                if (providerHealth?.status === 'unhealthy' && options.fallbackEnabled) {
-                    const fallback = this.findFallback(modelId, directMatch.provider);
-                    if (fallback) {
-                        return {
-                            provider: fallback.provider,
-                            model: fallback.model,
-                            originalModel: modelId,
-                            reason: `Primary provider unhealthy, using fallback`
-                        };
-                    }
-                }
-            }
-
-            // Check rate limits if requested
-            if (options.checkQuota) {
-                const limiter = getRateLimiter(directMatch.provider);
-                if (limiter.getAvailableTokens() < 1 && options.fallbackEnabled) {
-                    const fallback = this.findFallback(modelId, directMatch.provider);
-                    if (fallback) {
-                        return {
-                            provider: fallback.provider,
-                            model: fallback.model,
-                            originalModel: modelId,
-                            reason: 'Rate limited, using fallback'
-                        };
-                    }
-                }
-            }
+            const routed = this.handleDirectMatch(directMatch, modelId, options);
+            if (routed) { return routed; }
 
             return {
                 provider: directMatch.provider,
@@ -178,13 +136,81 @@ export class ModelRouter {
         };
     }
 
+    private handleDirectMatch(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
+        return this.checkPreferredProvider(directMatch, modelId, options)
+            ?? this.checkHealthAndFallback(directMatch, modelId, options)
+            ?? this.checkQuotaAndFallback(directMatch, modelId, options);
+    }
+
+    private checkPreferredProvider(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
+        if (options.preferredProvider && directMatch.provider !== options.preferredProvider) {
+            const equivalent = this.findEquivalent(modelId, options.preferredProvider);
+            if (equivalent) {
+                return {
+                    provider: options.preferredProvider,
+                    model: equivalent,
+                    originalModel: modelId,
+                    reason: 'Routed to preferred provider'
+                };
+            }
+        }
+        return null;
+    }
+
+    private checkHealthAndFallback(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
+        if (options.checkHealth && options.fallbackEnabled && this.isProviderUnhealthy(directMatch.provider)) {
+            const fallback = this.findFallback(modelId, directMatch.provider);
+            if (fallback) {
+                return {
+                    provider: fallback.provider,
+                    model: fallback.model,
+                    originalModel: modelId,
+                    reason: 'Primary provider unhealthy, using fallback'
+                };
+            }
+        }
+        return null;
+    }
+
+    private checkQuotaAndFallback(directMatch: ModelInfo, modelId: string, options: RouterOptions): RouteResult | null {
+        if (options.checkQuota && options.fallbackEnabled && this.isProviderRateLimited(directMatch.provider)) {
+            const fallback = this.findFallback(modelId, directMatch.provider);
+            if (fallback) {
+                return {
+                    provider: fallback.provider,
+                    model: fallback.model,
+                    originalModel: modelId,
+                    reason: 'Rate limited, using fallback'
+                };
+            }
+        }
+        return null;
+    }
+
+    private isProviderUnhealthy(provider: string): boolean {
+        const health = getHealthCheckService();
+        const status = health.getStatus();
+        const providerHealth = status.services.find(s => s.name.toLowerCase() === provider.toLowerCase());
+        return providerHealth?.status === 'unhealthy';
+    }
+
+    private isProviderRateLimited(provider: string): boolean {
+        const limiter = getRateLimiter(provider);
+        return limiter.getAvailableTokens() < 1;
+    }
+
     /**
      * Find an equivalent model on a different provider
      */
     private findEquivalent(modelId: string, targetProvider: string): string | null {
+        if (!(modelId in MODEL_EQUIVALENTS)) {
+            return null;
+        }
         const equivalents = MODEL_EQUIVALENTS[modelId];
-        // Use optional chain with nullish coalescing
-        return equivalents?.[targetProvider] ?? null;
+        if (!(targetProvider in equivalents)) {
+            return null;
+        }
+        return equivalents[targetProvider];
     }
 
     /**

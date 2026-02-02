@@ -5,7 +5,7 @@
 **Target**: Full Dark/Light Mode Compatibility (Removal of hardcoded color classes)
 
 ## Executive Summary
-The Orbit codebase currently relies heavily on hardcoded Tailwind classes (e.g., `bg-white`, `text-gray-300`, `bg-black/90`). To confirm full compliance with the new dual-theme system (Orbit White / Orbit Black), these must be migrated to semantic `index.css` variables (e.g., `bg-background`, `text-muted-foreground`).
+The Tandem codebase currently relies heavily on hardcoded Tailwind classes (e.g., `bg-white`, `text-gray-300`, `bg-black/90`). To confirm full compliance with the new dual-theme system (Tandem White / Tandem Black), these must be migrated to semantic `index.css` variables (e.g., `bg-background`, `text-muted-foreground`).
 
 **Total Estimated Work**: ~1-2 Hours
 **Priority**: Medium (Fixes invisible text in Light Mode)

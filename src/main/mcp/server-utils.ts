@@ -7,7 +7,10 @@ import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ContentService } from '@main/services/external/content.service';
 import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
+import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
@@ -23,9 +26,6 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { ServiceResponse } from '@shared/types';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
-import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
-import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 
 export interface McpDeps {
     web: WebService

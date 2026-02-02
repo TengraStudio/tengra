@@ -14,6 +14,7 @@ export interface Attachment {
 
 export interface ToolCall {
     id: string
+    index?: number
     type: 'function'
     function: {
         name: string
@@ -110,7 +111,7 @@ export interface Toast {
     type: 'info' | 'success' | 'error' | 'warning'
 }
 
-export type SystemMode = 'thinking' | 'agent' | 'fast';
+export type SystemMode = 'thinking' | 'agent' | 'fast' | 'architect';
 
 export interface ChatRequest {
     messages: Message[]

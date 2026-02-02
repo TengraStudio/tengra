@@ -75,53 +75,9 @@ export class ContextWindowService {
         let removedCount = 0;
 
         if (strategy === 'recent-first') {
-            // Keep system messages and recent messages
-            const systemMessages = keepSystemMessages
-                ? messages.filter(m => m.role === 'system')
-                : [];
-
-            const nonSystemMessages = messages.filter(m => m.role !== 'system');
-
-            // Always keep the last N messages
-            const recentMessages = keepRecentMessages > 0
-                ? nonSystemMessages.slice(-keepRecentMessages)
-                : [];
-
-            const messagesToProcess = keepRecentMessages > 0
-                ? nonSystemMessages.slice(0, -keepRecentMessages)
-                : nonSystemMessages;
-
-            let currentTokens = systemMessages.reduce(
-                (sum, m) => sum + this.tokenEstimator.estimateMessageTokens(m),
-                0
-            );
-            currentTokens += recentMessages.reduce(
-                (sum, m) => sum + this.tokenEstimator.estimateMessageTokens(m),
-                0
-            );
-
-            const truncated: Message[] = [...systemMessages];
-
-            // Add messages from the end until we hit the limit
-            for (let i = messagesToProcess.length - 1; i >= 0; i--) {
-                const message = messagesToProcess[i];
-                const messageTokens = this.tokenEstimator.estimateMessageTokens(message);
-
-                if (currentTokens + messageTokens <= maxTokens) {
-                    truncated.push(message);
-                    currentTokens += messageTokens;
-                } else {
-                    removedCount++;
-                }
-            }
-
-            // Add recent messages at the end
-            truncated.push(...recentMessages);
-
-            // Reverse non-system messages to maintain chronological order
-            const systemCount = systemMessages.length;
-            const nonSystemTruncated = truncated.slice(systemCount, systemCount + messagesToProcess.length).reverse();
-            result = [...systemMessages, ...nonSystemTruncated, ...recentMessages];
+            const truncatedResult = this.truncateRecentFirst(messages, maxTokens, keepSystemMessages, keepRecentMessages);
+            result = truncatedResult.truncated;
+            removedCount = truncatedResult.removedCount;
         } else {
             // Importance-based (future enhancement)
             // For now, fall back to recent-first
@@ -140,6 +96,61 @@ export class ContextWindowService {
             truncated: result,
             removedCount,
             info
+        };
+    }
+
+    private truncateRecentFirst(
+        messages: Message[],
+        maxTokens: number,
+        keepSystemMessages: boolean,
+        keepRecentMessages: number
+    ): { truncated: Message[]; removedCount: number } {
+        // Keep system messages and recent messages
+        const systemMessages = keepSystemMessages
+            ? messages.filter(m => m.role === 'system')
+            : [];
+
+        const nonSystemMessages = messages.filter(m => m.role !== 'system');
+
+        // Always keep the last N messages
+        const recentMessages = keepRecentMessages > 0
+            ? nonSystemMessages.slice(-keepRecentMessages)
+            : [];
+
+        const messagesToProcess = keepRecentMessages > 0
+            ? nonSystemMessages.slice(0, -keepRecentMessages)
+            : nonSystemMessages;
+
+        let currentTokens = systemMessages.reduce(
+            (sum, m) => sum + this.tokenEstimator.estimateMessageTokens(m),
+            0
+        );
+        currentTokens += recentMessages.reduce(
+            (sum, m) => sum + this.tokenEstimator.estimateMessageTokens(m),
+            0
+        );
+
+        const processingList: Message[] = [];
+        let removedCount = 0;
+
+        // Add messages from the end until we hit the limit
+        for (let i = messagesToProcess.length - 1; i >= 0; i--) {
+            const message = messagesToProcess[i];
+            const messageTokens = this.tokenEstimator.estimateMessageTokens(message);
+
+            if (currentTokens + messageTokens <= maxTokens) {
+                processingList.push(message);
+                currentTokens += messageTokens;
+            } else {
+                removedCount++;
+            }
+        }
+
+        // Maintain chronological order for the non-system, non-recent part
+        const nonSystemTruncated = processingList.reverse();
+        return {
+            truncated: [...systemMessages, ...nonSystemTruncated, ...recentMessages],
+            removedCount
         };
     }
 

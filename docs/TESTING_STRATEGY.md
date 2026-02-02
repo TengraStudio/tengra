@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Orbit employs a multi-layered testing strategy to ensure stability across the main process, renderer process, and external microservices.
+Tandem employs a multi-layered testing strategy to ensure stability across the main process, renderer process, and external microservices.
 
 ## Unit Testing
 

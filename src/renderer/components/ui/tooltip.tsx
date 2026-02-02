@@ -3,10 +3,48 @@ import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/utils';
 
+type Side = 'top' | 'bottom' | 'left' | 'right';
+
+interface Position { top: number; left: number }
+
+type PositionCalculator = (triggerRect: DOMRect, tooltipRect: DOMRect, gap: number) => Position;
+
+const POSITION_CALCULATORS: Record<Side, PositionCalculator> = {
+    top: (tr, tt, gap) => ({
+        top: tr.top - tt.height - gap,
+        left: tr.left + (tr.width - tt.width) / 2
+    }),
+    bottom: (tr, tt, gap) => ({
+        top: tr.bottom + gap,
+        left: tr.left + (tr.width - tt.width) / 2
+    }),
+    left: (tr, tt, gap) => ({
+        top: tr.top + (tr.height - tt.height) / 2,
+        left: tr.left - tt.width - gap
+    }),
+    right: (tr, tt, gap) => ({
+        top: tr.top + (tr.height - tt.height) / 2,
+        left: tr.right + gap
+    })
+};
+
+function clampToViewport(pos: Position, tooltipRect: DOMRect, gap: number): Position {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    let { top, left } = pos;
+
+    if (left < 0) { left = gap; }
+    if (left + tooltipRect.width > viewportWidth) { left = viewportWidth - tooltipRect.width - gap; }
+    if (top < 0) { top = gap; }
+    if (top + tooltipRect.height > viewportHeight) { top = viewportHeight - tooltipRect.height - gap; }
+
+    return { top, left };
+}
+
 export interface TooltipProps {
     children: React.ReactElement
     content: string | React.ReactNode
-    side?: 'top' | 'bottom' | 'left' | 'right'
+    side?: Side
     delay?: number
     disabled?: boolean
     className?: string
@@ -21,7 +59,7 @@ export function Tooltip({
     className
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const [position, setPosition] = useState<Position>({ top: 0, left: 0 });
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const triggerRef = useRef<HTMLElement | null>(null);
     const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -49,42 +87,8 @@ export function Tooltip({
         const tooltipRect = tooltipRef.current.getBoundingClientRect();
         const gap = 8;
 
-        let top = 0;
-        let left = 0;
-
-        switch (side) {
-            case 'top':
-                top = triggerRect.top - tooltipRect.height - gap;
-                left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
-                break;
-            case 'bottom':
-                top = triggerRect.bottom + gap;
-                left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
-                break;
-            case 'left':
-                top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
-                left = triggerRect.left - tooltipRect.width - gap;
-                break;
-            case 'right':
-                top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
-                left = triggerRect.right + gap;
-                break;
-        }
-
-        // Keep tooltip within viewport
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-
-        if (left < 0) { left = gap; }
-        if (left + tooltipRect.width > viewportWidth) {
-            left = viewportWidth - tooltipRect.width - gap;
-        }
-        if (top < 0) { top = gap; }
-        if (top + tooltipRect.height > viewportHeight) {
-            top = viewportHeight - tooltipRect.height - gap;
-        }
-
-        setPosition({ top, left });
+        const rawPosition = POSITION_CALCULATORS[side](triggerRect, tooltipRect, gap);
+        setPosition(clampToViewport(rawPosition, tooltipRect, gap));
     }, [side]);
 
     useEffect(() => {

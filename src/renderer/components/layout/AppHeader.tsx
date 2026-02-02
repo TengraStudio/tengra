@@ -6,7 +6,6 @@
     Minus,
     Settings as SettingsIcon,
     Square,
-    Users,
     X
 } from 'lucide-react';
 import React from 'react';
@@ -32,7 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         chat: MessageSquare,
         projects: LayoutGrid,
         settings: SettingsIcon,
-        council: Users,
+
         mcp: Container
     };
 

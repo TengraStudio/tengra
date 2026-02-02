@@ -46,31 +46,62 @@ export const getPresetOptions = (appSettings: AppSettings | undefined, modelConf
     } : {};
 };
 
+const handleMetadataChunk = (chunk: StreamChunk): StreamChunkResult => {
+    return { updated: true, newSources: chunk.sources ?? [] };
+};
+
+const handleErrorChunk = (chunk: StreamChunk): StreamChunkResult => {
+    throw new Error(chunk.content);
+};
+
+const handleReasoningChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {
+    return { updated: true, newReasoning: current.reasoning + (chunk.content ?? '') };
+};
+
+const handleImagesChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {
+    const currentImages = current.images ?? [];
+    const newImages = [...currentImages, ...(chunk.images ?? [])];
+    return { updated: true, newImages };
+};
+
+const handleToolCallsChunk = (chunk: StreamChunk): StreamChunkResult => {
+    return { updated: true, newToolCalls: chunk.tool_calls };
+};
+
+const handleContentChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }, streamStartTime: number): StreamChunkResult => {
+    const newContent = current.content + (chunk.content ?? '');
+    const elapsed = (performance.now() - streamStartTime) / 1000;
+    const speed = elapsed > 0.5 ? (newContent.length / 4) / elapsed : null;
+    return { updated: true, newContent, speed };
+};
+
+type ChunkHandler = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }, streamStartTime: number) => StreamChunkResult;
+
+const chunkHandlers: Record<string, ChunkHandler> = {
+    metadata: handleMetadataChunk,
+    error: handleErrorChunk,
+    reasoning: handleReasoningChunk,
+    images: handleImagesChunk,
+    tool_calls: handleToolCallsChunk,
+    content: handleContentChunk,
+};
+
 export const processStreamChunk = (
     chunk: StreamChunk,
     current: { content: string, reasoning: string, sources: string[], images?: string[] },
     streamStartTime: number
 ): StreamChunkResult => {
-    if (chunk.type === 'metadata') {
-        return { updated: true, newSources: chunk.sources ?? [] };
+    const chunkType = chunk.type ?? 'content';
+    
+    if (chunkType in chunkHandlers) {
+        const handler = chunkHandlers[chunkType];
+        return handler(chunk, current, streamStartTime);
     }
-    if (chunk.type === 'error') { throw new Error(chunk.content); }
-    if (chunk.type === 'reasoning') {
-        return { updated: true, newReasoning: current.reasoning + (chunk.content ?? '') };
+    
+    // Default case: treat as content if there's content to append
+    if (!chunk.type && chunk.content) {
+        return handleContentChunk(chunk, current, streamStartTime);
     }
-    if (chunk.type === 'images') {
-        const currentImages = current.images ?? [];
-        const newImages = [...currentImages, ...(chunk.images ?? [])];
-        return { updated: true, newImages };
-    }
-    if (chunk.type === 'tool_calls') {
-        return { updated: true, newToolCalls: chunk.tool_calls };
-    }
-    if (chunk.type === 'content' || (!chunk.type && chunk.content)) {
-        const newContent = current.content + (chunk.content ?? '');
-        const elapsed = (performance.now() - streamStartTime) / 1000;
-        const speed = elapsed > 0.5 ? (newContent.length / 4) / elapsed : null;
-        return { updated: true, newContent, speed };
-    }
+    
     return { updated: false };
 };

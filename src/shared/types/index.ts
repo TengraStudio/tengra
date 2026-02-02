@@ -1,6 +1,9 @@
+export * from './project-agent';
 export * from '@/types/agent';
 export * from '@/types/ai';
 export * from '@/types/chat';
+export * from '@/types/common';
+export * from '@/types/db-api';
 export * from '@/types/file-diff';
 export * from '@/types/ideas';
 export * from '@/types/llm-provider-types';
@@ -14,10 +17,6 @@ export * from '@/types/system';
 export * from '@/types/templates';
 export * from '@/types/terminal';
 export * from '@/types/workspace';
-// Export common types
-export * from '@/types/common';
-// Export database API types
-export * from '@/types/db-api';
 
 
 

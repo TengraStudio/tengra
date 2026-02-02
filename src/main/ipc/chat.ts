@@ -319,33 +319,7 @@ class ChatIpcManager {
 
     private async handleCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, model: string, event: IpcMainInvokeEvent) {
         try {
-            let totalPrompt = 0;
-            let totalCompletion = 0;
-            let fullContent = '';
-
-            for await (const chunk of StreamParser.parseChatStream(streamBody)) {
-                if (chunk.usage) {
-                    totalPrompt = chunk.usage.prompt_tokens;
-                    totalCompletion = chunk.usage.completion_tokens;
-                }
-                const text = chunk.content ?? chunk.reasoning ?? '';
-                fullContent += text;
-
-                if (chunk.content || chunk.reasoning) {
-                    safeSend(event.sender, 'ollama:streamChunk', {
-                        chatId,
-                        content: chunk.content,
-                        reasoning: chunk.reasoning
-                    });
-                }
-            }
-
-            // Fallback estimation
-            if (totalCompletion === 0 && fullContent.length > 0) {
-                totalCompletion = estimateTokens(fullContent);
-                // We can't easily estimate prompt without the messages array here, but completion is better than nothing
-                // Or we could pass messages length? For now, let's just save completion.
-            }
+            const { totalPrompt, totalCompletion } = await this.processCopilotStream(streamBody, chatId, event);
 
             if (totalPrompt > 0 || totalCompletion > 0) {
                 await this.options.databaseService.addTokenUsage({
@@ -360,6 +334,36 @@ class ChatIpcManager {
             appLogger.error('Chat', `[CopilotStream] Error: ${getErrorMessage(error as Error)}`);
             throw error;
         }
+    }
+
+    private async processCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, event: IpcMainInvokeEvent) {
+        let totalPrompt = 0;
+        let totalCompletion = 0;
+        let fullContent = '';
+
+        for await (const chunk of StreamParser.parseChatStream(streamBody)) {
+            if (chunk.usage) {
+                totalPrompt = chunk.usage.prompt_tokens;
+                totalCompletion = chunk.usage.completion_tokens;
+            }
+            const text = chunk.content ?? chunk.reasoning ?? '';
+            fullContent += text;
+
+            if (chunk.content || chunk.reasoning) {
+                safeSend(event.sender, 'ollama:streamChunk', {
+                    chatId,
+                    content: chunk.content,
+                    reasoning: chunk.reasoning
+                });
+            }
+        }
+
+        // Fallback estimation
+        if (totalCompletion === 0 && fullContent.length > 0) {
+            totalCompletion = estimateTokens(fullContent);
+        }
+
+        return { totalPrompt, totalCompletion };
     }
 
     private async handleOpencodeStream(messages: Message[], model: string, tools: ToolDefinition[] | undefined, chatId: string, event: IpcMainInvokeEvent) {

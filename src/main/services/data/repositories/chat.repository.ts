@@ -1,6 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { JsonObject } from '@shared/types/common';
-import { DatabaseAdapter,SqlValue } from '@shared/types/database';
+import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -94,17 +94,38 @@ export class ChatRepository extends BaseRepository {
     }
 
     private collectChatUpdates(updates: Partial<Chat>, fields: string[], values: unknown[]) {
-        if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
-        if (updates.isGenerating !== undefined) { fields.push('is_Generating = ?'); values.push(updates.isGenerating ? 1 : 0); }
-        if (updates.backend !== undefined) { fields.push('backend = ?'); values.push(updates.backend); }
-        if (updates.model !== undefined) { fields.push('model = ?'); values.push(updates.model); }
-        if (updates.folderId !== undefined) { fields.push('folder_id = ?'); values.push(updates.folderId); }
-        if (updates.projectId !== undefined) { fields.push('project_id = ?'); values.push(updates.projectId); }
-        if (updates.isPinned !== undefined) { fields.push('is_pinned = ?'); values.push(updates.isPinned ? 1 : 0); }
-        if (updates.isFavorite !== undefined) { fields.push('is_favorite = ?'); values.push(updates.isFavorite ? 1 : 0); }
-        if (updates.metadata !== undefined) { fields.push('metadata = ?'); values.push(JSON.stringify(updates.metadata)); }
+        this.addFieldUpdating(fields, values, 'title', updates.title);
+        this.addFieldUpdating(fields, values, 'backend', updates.backend);
+        this.addFieldUpdating(fields, values, 'model', updates.model);
+        this.addFieldUpdating(fields, values, 'folder_id', updates.folderId);
+        this.addFieldUpdating(fields, values, 'project_id', updates.projectId);
+
+        if (updates.isGenerating !== undefined) {
+            fields.push('is_Generating = ?');
+            values.push(updates.isGenerating ? 1 : 0);
+        }
+        if (updates.isPinned !== undefined) {
+            fields.push('is_pinned = ?');
+            values.push(updates.isPinned ? 1 : 0);
+        }
+        if (updates.isFavorite !== undefined) {
+            fields.push('is_favorite = ?');
+            values.push(updates.isFavorite ? 1 : 0);
+        }
+        if (updates.metadata !== undefined) {
+            fields.push('metadata = ?');
+            values.push(JSON.stringify(updates.metadata));
+        }
+
         fields.push('updated_at = ?');
         values.push(Date.now());
+    }
+
+    private addFieldUpdating(fields: string[], values: unknown[], fieldName: string, value: unknown) {
+        if (value !== undefined) {
+            fields.push(`${fieldName} = ?`);
+            values.push(value);
+        }
     }
 
     async deleteChat(id: string) {
@@ -173,16 +194,7 @@ export class ChatRepository extends BaseRepository {
         const conditions: string[] = [];
         const params: SqlValue[] = [];
 
-        if (options.query) {
-            conditions.push('(c.title LIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content LIKE ?))');
-            params.push(`%${options.query}%`, `%${options.query}%`);
-        }
-        if (options.folderId) { conditions.push('c.folder_id = ?'); params.push(options.folderId); }
-        if (options.isPinned !== undefined) { conditions.push('c.is_pinned = ?'); params.push(options.isPinned ? 1 : 0); }
-        if (options.isFavorite !== undefined) { conditions.push('c.is_favorite = ?'); params.push(options.isFavorite ? 1 : 0); }
-
-        if (options.startDate) { conditions.push('c.created_at >= ?'); params.push(options.startDate); }
-        if (options.endDate) { conditions.push('c.created_at <= ?'); params.push(options.endDate); }
+        this.buildSearchConditions(options, conditions, params);
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
         const limitClause = options.limit ? `LIMIT ${options.limit}` : '';
@@ -190,6 +202,34 @@ export class ChatRepository extends BaseRepository {
 
         const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
         return rows.map(row => this.mapRowToChat(row));
+    }
+
+    private buildSearchConditions(options: SearchChatsOptions, conditions: string[], params: SqlValue[]) {
+        if (options.query) {
+            conditions.push('(c.title LIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content LIKE ?))');
+            params.push(`%${options.query}%`, `%${options.query}%`);
+        }
+        if (options.folderId) {
+            conditions.push('c.folder_id = ?');
+            params.push(options.folderId);
+        }
+        if (options.isPinned !== undefined) {
+            conditions.push('c.is_pinned = ?');
+            params.push(options.isPinned ? 1 : 0);
+        }
+        if (options.isFavorite !== undefined) {
+            conditions.push('c.is_favorite = ?');
+            params.push(options.isFavorite ? 1 : 0);
+        }
+
+        if (options.startDate) {
+            conditions.push('c.created_at >= ?');
+            params.push(options.startDate);
+        }
+        if (options.endDate) {
+            conditions.push('c.created_at <= ?');
+            params.push(options.endDate);
+        }
     }
 
     private mapRowToChat(row: JsonObject): Chat {
@@ -213,7 +253,7 @@ export class ChatRepository extends BaseRepository {
     async updateMessage(id: string, updates: JsonObject): Promise<{ success: boolean }> {
         try {
             const row = await this.adapter.prepare('SELECT metadata FROM messages WHERE id = ?').get<JsonObject>(id);
-            if (!row) {return { success: false };}
+            if (!row) { return { success: false }; }
 
             const currentMetadata = this.parseJsonField<JsonObject>(row.metadata as string | null, {});
             const newMetadata: JsonObject = { ...currentMetadata };

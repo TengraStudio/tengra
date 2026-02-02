@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { LinkedAccount } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -31,6 +32,15 @@ interface AntigravityAccount {
     quotaPercentage: number
 }
 
+interface QuotaModel {
+    displayName?: string;
+    quotaInfo?: {
+        remainingFraction?: number;
+        remainingQuota?: number;
+        totalQuota?: number;
+    }
+}
+
 export class LocalImageService {
     constructor(
         private settingsService: SettingsService,
@@ -50,23 +60,19 @@ export class LocalImageService {
         appLogger.info('local-image.service', `Generating image with preferred provider: ${preferredProvider}`);
 
         // Try Antigravity first if available
+        // Try Antigravity first if available
         if (this.authService && this.llmService && this.quotaService) {
-            try {
-                const account = await this.getAntigravityAccountWithQuota();
-                if (account) {
-                    appLogger.info('local-image.service', `Using Antigravity account: ${account.email ?? account.id} (quota: ${account.quotaPercentage}%)`);
-                    return await this.generateWithAntigravity(options, account);
-                } else {
-                    appLogger.info('local-image.service', 'No Antigravity accounts with available quota');
-                }
-            } catch (error) {
-                appLogger.warn('local-image.service', `Antigravity failed, falling back: ${getErrorMessage(error as Error)}`);
-            }
+            const result = await this.tryGenerateWithAntigravity(options);
+            if (result) { return result; }
         }
 
         // Fallback to preferred provider or Pollinations
         appLogger.info('local-image.service', `Falling back to ${preferredProvider === 'antigravity' ? 'pollinations' : preferredProvider}`);
-        switch (preferredProvider) {
+        return this.generateWithProvider(preferredProvider, options);
+    }
+
+    private async generateWithProvider(provider: string, options: ImageGenerationOptions): Promise<string> {
+        switch (provider) {
             case 'ollama':
                 return this.generateWithOllama(options);
             case 'sd-webui':
@@ -80,6 +86,9 @@ export class LocalImageService {
         }
     }
 
+    /**
+     * Find an Antigravity account with available quota for gemini-3-pro-image
+     */
     /**
      * Find an Antigravity account with available quota for gemini-3-pro-image
      */
@@ -103,65 +112,8 @@ export class LocalImageService {
 
             // Check quota for each account
             for (const account of antigravityAccounts) {
-                if (!account.accessToken) {
-                    appLogger.debug('local-image.service', `Skipping account ${account.email ?? account.id}: no access token`);
-                    continue;
-                }
-
-                try {
-                    // Fetch quota data from Antigravity API
-                    const quotaData = await this.quotaService.fetchAntigravityUpstreamForToken(account);
-
-                    if (!quotaData?.models) {
-                        appLogger.debug('local-image.service', `No quota data for account ${account.email ?? account.id}`);
-                        continue;
-                    }
-
-                    // Look for gemini-3-pro-image model
-                    const models = quotaData.models as Record<string, {
-                        displayName?: string;
-                        quotaInfo?: {
-                            remainingFraction?: number;
-                            remainingQuota?: number;
-                            totalQuota?: number;
-                        }
-                    }>;
-
-                    const imageModel = models['gemini-3-pro-image'] ?? models['imagen-3.0-generate-001'];
-
-                    if (!imageModel) {
-                        appLogger.debug('local-image.service', `Account ${account.email ?? account.id} doesn't have image model access`);
-                        continue;
-                    }
-
-                    // Calculate quota percentage
-                    let quotaPercentage = 100;
-                    const quotaInfo = imageModel.quotaInfo;
-
-                    if (quotaInfo) {
-                        if (typeof quotaInfo.remainingFraction === 'number') {
-                            quotaPercentage = Math.round(quotaInfo.remainingFraction * 100);
-                        } else if (typeof quotaInfo.remainingQuota === 'number' && typeof quotaInfo.totalQuota === 'number' && quotaInfo.totalQuota > 0) {
-                            quotaPercentage = Math.round((quotaInfo.remainingQuota / quotaInfo.totalQuota) * 100);
-                        }
-                    }
-
-                    // Return account if it has quota (>5%)
-                    if (quotaPercentage > 5) {
-                        appLogger.info('local-image.service', `Account ${account.email ?? account.id} has ${quotaPercentage}% quota remaining`);
-                        return {
-                            id: account.id,
-                            email: account.email,
-                            accessToken: account.accessToken,
-                            hasQuota: true,
-                            quotaPercentage
-                        };
-                    } else {
-                        appLogger.warn('local-image.service', `Account ${account.email ?? account.id} quota too low: ${quotaPercentage}%`);
-                    }
-                } catch (error) {
-                    appLogger.error('local-image.service', `Failed to check quota for ${account.email ?? account.id}: ${getErrorMessage(error as Error)}`);
-                }
+                const result = await this.checkAccountQuota(account);
+                if (result) { return result; }
             }
 
             appLogger.warn('local-image.service', 'No Antigravity accounts with sufficient quota');
@@ -170,6 +122,95 @@ export class LocalImageService {
             appLogger.error('local-image.service', `Failed to get Antigravity account: ${getErrorMessage(error as Error)}`);
             return null;
         }
+    }
+
+    private async checkAccountQuota(account: LinkedAccount): Promise<AntigravityAccount | null> {
+        if (!account.accessToken) {
+            appLogger.debug('local-image.service', `Skipping account ${account.email ?? account.id}: no access token`);
+            return null;
+        }
+
+        const quotaInfo = await this.fetchImageQuota(account);
+        if (!quotaInfo) {
+            return null;
+        }
+
+        // Calculate quota percentage
+        const quotaPercentage = this.calculateQuotaPercentage(quotaInfo);
+
+        // Return account if it has quota (>5%)
+        if (quotaPercentage > 5) {
+            appLogger.info('local-image.service', `Account ${account.email ?? account.id} has ${quotaPercentage}% quota remaining`);
+            return {
+                id: account.id,
+                email: account.email,
+                accessToken: account.accessToken,
+                hasQuota: true,
+                quotaPercentage
+            };
+        } else {
+            appLogger.warn('local-image.service', `Account ${account.email ?? account.id} quota too low: ${quotaPercentage}%`);
+        }
+        return null;
+    }
+
+    private async fetchImageQuota(account: LinkedAccount): Promise<{ remainingFraction?: number; remainingQuota?: number; totalQuota?: number } | null> {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const quotaData = await this.quotaService!.fetchAntigravityUpstreamForToken(account);
+
+            if (!quotaData?.models) {
+                appLogger.debug('local-image.service', `No quota data for account ${account.email ?? account.id}`);
+                return null;
+            }
+
+            const models = quotaData.models as Record<string, QuotaModel>;
+
+            const imageModel = this.extractImageModel(models);
+
+            if (!imageModel) {
+                appLogger.debug('local-image.service', `Account ${account.email ?? account.id} doesn't have image model access`);
+                return null;
+            }
+            return imageModel.quotaInfo ?? null;
+        } catch (error) {
+            appLogger.error('local-image.service', `Failed to check quota for ${account.email ?? account.id}: ${getErrorMessage(error as Error)}`);
+            return null;
+        }
+    }
+
+    private async tryGenerateWithAntigravity(options: ImageGenerationOptions): Promise<string | null> {
+        try {
+            const account = await this.getAntigravityAccountWithQuota();
+            if (account) {
+                appLogger.info('local-image.service', `Using Antigravity account: ${account.email ?? account.id} (quota: ${account.quotaPercentage}%)`);
+                return await this.generateWithAntigravity(options, account);
+            } else {
+                appLogger.info('local-image.service', 'No Antigravity accounts with available quota');
+            }
+        } catch (error) {
+            appLogger.warn('local-image.service', `Antigravity failed, falling back: ${getErrorMessage(error as Error)}`);
+        }
+        return null;
+    }
+
+    private calculateQuotaPercentage(quotaInfo: { remainingFraction?: number; remainingQuota?: number; totalQuota?: number } | undefined): number {
+        if (!quotaInfo) {
+            return 100;
+        }
+        if (typeof quotaInfo.remainingFraction === 'number') {
+            return Math.round(quotaInfo.remainingFraction * 100);
+        }
+        if (typeof quotaInfo.remainingQuota === 'number' && typeof quotaInfo.totalQuota === 'number' && quotaInfo.totalQuota > 0) {
+            return Math.round((quotaInfo.remainingQuota / quotaInfo.totalQuota) * 100);
+        }
+        return 100;
+    }
+
+    private extractImageModel(models: Record<string, QuotaModel>): QuotaModel | null {
+        if ('gemini-3-pro-image' in models) { return models['gemini-3-pro-image']; }
+        if ('imagen-3.0-generate-001' in models) { return models['imagen-3.0-generate-001']; }
+        return null;
     }
 
     /**
@@ -253,15 +294,8 @@ export class LocalImageService {
         const baseUrl = settings.images?.sdWebUIUrl ?? 'http://127.0.0.1:7860';
 
         try {
-            const response = await axios.post(`${baseUrl}/sdapi/v1/txt2img`, {
-                prompt: options.prompt,
-                negative_prompt: options.negativePrompt ?? 'text, watermark, low quality',
-                steps: options.steps ?? 20,
-                cfg_scale: options.cfgScale ?? 7,
-                width: options.width ?? 512,
-                height: options.height ?? 512,
-                seed: options.seed ?? -1
-            });
+            const body = this.buildSDRequestBody(options);
+            const response = await axios.post(`${baseUrl}/sdapi/v1/txt2img`, body);
 
             if (response.data.images && response.data.images.length > 0) {
                 const base64Data = response.data.images[0];
@@ -273,6 +307,18 @@ export class LocalImageService {
             appLogger.error('local-image.service', 'SD-WebUI generation failed', error as Error);
             throw error;
         }
+    }
+
+    private buildSDRequestBody(options: ImageGenerationOptions): Record<string, unknown> {
+        return {
+            prompt: options.prompt,
+            negative_prompt: options.negativePrompt ?? 'text, watermark, low quality',
+            steps: options.steps ?? 20,
+            cfg_scale: options.cfgScale ?? 7,
+            width: options.width ?? 512,
+            height: options.height ?? 512,
+            seed: options.seed ?? -1
+        };
     }
 
     private async generateWithComfyUI(_options: ImageGenerationOptions): Promise<string> {

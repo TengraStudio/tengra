@@ -1,0 +1,34 @@
+import { Globe } from 'lucide-react';
+
+import { Remote } from './types';
+
+interface RemotesProps {
+    remotes: Remote[];
+    t: (key: string) => string;
+}
+
+export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
+    if (remotes.length === 0) { return null; }
+    return (
+        <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
+            <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                {t('projectDashboard.remotes')}
+            </h3>
+            <div className="space-y-2">
+                {remotes.map((remote: Remote) => (
+                    <div key={remote.name} className="bg-muted/30 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                            <div className="text-sm font-semibold text-foreground">{remote.name}</div>
+                            <div className="text-xs text-muted-foreground">{remote.url}</div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {remote.fetch && <span>fetch</span>}
+                            {remote.push && <span>push</span>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};

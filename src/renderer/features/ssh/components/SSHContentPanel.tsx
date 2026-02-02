@@ -3,6 +3,7 @@ import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
 import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
+import React from 'react';
 
 import { Language } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -20,6 +21,19 @@ interface SSHContentPanelProps {
     language: Language
 }
 
+interface TabContentProps {
+    connectionId: string;
+    language: Language;
+}
+
+const TAB_COMPONENTS: Record<Exclude<TabId, 'terminal'>, React.FC<TabContentProps>> = {
+    dashboard: ({ connectionId }) => <StatsDashboard connectionId={connectionId} />,
+    packages: ({ connectionId }) => <PackageManager connectionId={connectionId} />,
+    logs: ({ connectionId }) => <SSHLogs connectionId={connectionId} active />,
+    management: ({ connectionId, language }) => <NginxWizard connectionId={connectionId} language={language} />,
+    files: ({ connectionId }) => <SFTPBrowser connectionId={connectionId} />
+};
+
 export function SSHContentPanel({
     activeTab,
     selectedConnectionId,
@@ -36,6 +50,24 @@ export function SSHContentPanel({
         );
     }
 
+    const renderContent = () => {
+        if (activeTab === 'terminal') {
+            return (
+                <SSHTerminal
+                    terminalOutput={terminalOutput}
+                    t={t}
+                    onExecute={onExecute}
+                    selectedConnectionId={selectedConnectionId}
+                />
+            );
+        }
+
+        if (!selectedConnectionId) {return null;}
+
+        const TabComponent = TAB_COMPONENTS[activeTab];
+        return <TabComponent connectionId={selectedConnectionId} language={language} />;
+    };
+
     return (
         <div className="flex-1 overflow-hidden relative">
             <AnimatePresence mode="wait">
@@ -47,24 +79,7 @@ export function SSHContentPanel({
                     transition={{ duration: 0.2 }}
                     className="h-full w-full"
                 >
-                    {activeTab === 'terminal' ? (
-                        <SSHTerminal
-                            terminalOutput={terminalOutput}
-                            t={t}
-                            onExecute={onExecute}
-                            selectedConnectionId={selectedConnectionId}
-                        />
-                    ) : activeTab === 'dashboard' && selectedConnectionId ? (
-                        <StatsDashboard connectionId={selectedConnectionId} />
-                    ) : activeTab === 'packages' && selectedConnectionId ? (
-                        <PackageManager connectionId={selectedConnectionId} />
-                    ) : activeTab === 'logs' && selectedConnectionId ? (
-                        <SSHLogs connectionId={selectedConnectionId} active={activeTab === 'logs'} />
-                    ) : activeTab === 'management' && selectedConnectionId ? (
-                        <NginxWizard connectionId={selectedConnectionId} language={language} />
-                    ) : selectedConnectionId ? (
-                        <SFTPBrowser connectionId={selectedConnectionId} />
-                    ) : null}
+                    {renderContent()}
                 </motion.div>
             </AnimatePresence>
         </div>

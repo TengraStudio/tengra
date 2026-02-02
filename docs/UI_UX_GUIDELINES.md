@@ -1,6 +1,6 @@
 # UI and UX Guidelines
 
-Orbit aims for a premium, high-performance aesthetic that feels both professional and state-of-the-art. This document outlines the design principles and component standards used throughout the application.
+Tandem aims for a premium, high-performance aesthetic that feels both professional and state-of-the-art. This document outlines the design principles and component standards used throughout the application.
 
 ## Core Philosophy
 

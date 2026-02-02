@@ -1,10 +1,9 @@
 import { useCallback, useState } from 'react';
 
-import { CouncilAgent, WorkspaceEntry } from '@/types';
+import { WorkspaceEntry } from '@/types';
 
 export function useProjectState() {
     const [selectedEntry, setSelectedEntry] = useState<WorkspaceEntry | null>(null);
-    const [viewTab, setViewTab] = useState<'editor' | 'council' | 'logs'>('editor');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [showAgentPanel, setShowAgentPanel] = useState(false);
     const [agentPanelWidth, setAgentPanelWidth] = useState(380);
@@ -16,12 +15,6 @@ export function useProjectState() {
     const [showMountModal, setShowMountModal] = useState(false);
     const [entryModal, setEntryModal] = useState<{ type: 'createFile' | 'createFolder' | 'rename' | 'delete'; entry: WorkspaceEntry } | null>(null);
     const [entryName, setEntryName] = useState('');
-
-    const [agents, setAgents] = useState<CouncilAgent[]>([
-        { id: '1', name: 'Architect', role: 'System Design & Structure', enabled: true, status: 'ready', kind: 'local' },
-        { id: '2', name: 'Developer', role: 'Implementation & Logic', enabled: true, status: 'ready', kind: 'local' },
-        { id: '3', name: 'Reviewer', role: 'Security & Optimization', enabled: true, status: 'ready', kind: 'cloud' }
-    ]);
 
     const [notifications, setNotifications] = useState<{ id: string; type: 'success' | 'error' | 'info'; message: string }[]>([]);
 
@@ -37,7 +30,6 @@ export function useProjectState() {
 
     return {
         selectedEntry, setSelectedEntry,
-        viewTab, setViewTab,
         sidebarCollapsed, setSidebarCollapsed,
         showAgentPanel, setShowAgentPanel,
         agentPanelWidth, setAgentPanelWidth,
@@ -48,7 +40,6 @@ export function useProjectState() {
         showMountModal, setShowMountModal,
         entryModal, setEntryModal,
         entryName, setEntryName,
-        agents, setAgents,
         notifications, notify, logActivity
     };
 }

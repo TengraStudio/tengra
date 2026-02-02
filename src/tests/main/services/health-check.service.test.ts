@@ -4,19 +4,19 @@
 import { HealthCheckService } from '@main/services/system/health-check.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('HealthCheckService', () => {
-    let service: HealthCheckService;
+let service: HealthCheckService;
 
-    beforeEach(() => {
-        vi.useFakeTimers();
-        service = new HealthCheckService();
-    });
+beforeEach(() => {
+    vi.useFakeTimers();
+    service = new HealthCheckService();
+});
 
-    afterEach(() => {
-        service.stop();
-        vi.useRealTimers();
-    });
+afterEach(() => {
+    service.stop();
+    vi.useRealTimers();
+});
 
+describe('HealthCheckService - Management', () => {
     describe('register', () => {
         it('should register a health check', () => {
             service.register('test-service', async () => true);
@@ -79,57 +79,59 @@ describe('HealthCheckService', () => {
             expect(checkFn).toHaveBeenCalledTimes(1);
         });
     });
+});
 
-    describe('getStatus', () => {
-        it('should return overall healthy when all checks pass', async () => {
-            service.register('service1', async () => true);
-            service.register('service2', async () => true);
+describe('HealthCheckService - Status Analysis', () => {
+    it('should return overall healthy when all checks pass', async () => {
+        service.register('service1', async () => true);
+        service.register('service2', async () => true);
 
-            service.start();
-            await vi.advanceTimersByTimeAsync(100);
+        service.start();
+        await vi.advanceTimersByTimeAsync(100);
 
-            const status = service.getStatus();
-            expect(status.overall).toBe('healthy');
-        });
-
-        it('should return degraded when non-critical check fails', async () => {
-            service.register('critical-service', async () => true, { critical: true });
-            service.register('optional-service', async () => false, { critical: false });
-
-            service.start();
-            await vi.advanceTimersByTimeAsync(100);
-
-            const status = service.getStatus();
-            expect(status.overall).toBe('degraded');
-        });
-
-        it('should return unhealthy when critical check fails', async () => {
-            service.register('critical-service', async () => false, { critical: true });
-            service.register('optional-service', async () => true, { critical: false });
-
-            service.start();
-            await vi.advanceTimersByTimeAsync(100);
-
-            const status = service.getStatus();
-            expect(status.overall).toBe('unhealthy');
-        });
-
-        it('should include timestamp', () => {
-            const status = service.getStatus();
-            expect(status.timestamp).toBeInstanceOf(Date);
-        });
-
-        it('should include latency for completed checks', async () => {
-            service.register('test-service', async () => true);
-
-            service.start();
-            await vi.advanceTimersByTimeAsync(100);
-
-            const status = service.getStatus();
-            expect(status.services[0]!.latencyMs).toBeDefined();
-        });
+        const status = service.getStatus();
+        expect(status.overall).toBe('healthy');
     });
 
+    it('should return degraded when non-critical check fails', async () => {
+        service.register('critical-service', async () => true, { critical: true });
+        service.register('optional-service', async () => false, { critical: false });
+
+        service.start();
+        await vi.advanceTimersByTimeAsync(100);
+
+        const status = service.getStatus();
+        expect(status.overall).toBe('degraded');
+    });
+
+    it('should return unhealthy when critical check fails', async () => {
+        service.register('critical-service', async () => false, { critical: true });
+        service.register('optional-service', async () => true, { critical: false });
+
+        service.start();
+        await vi.advanceTimersByTimeAsync(100);
+
+        const status = service.getStatus();
+        expect(status.overall).toBe('unhealthy');
+    });
+
+    it('should include timestamp', () => {
+        const status = service.getStatus();
+        expect(status.timestamp).toBeInstanceOf(Date);
+    });
+
+    it('should include latency for completed checks', async () => {
+        service.register('test-service', async () => true);
+
+        service.start();
+        await vi.advanceTimersByTimeAsync(100);
+
+        const status = service.getStatus();
+        expect(status.services[0]!.latencyMs).toBeDefined();
+    });
+});
+
+describe('HealthCheckService - On-Demand & Events', () => {
     describe('checkNow', () => {
         it('should run check immediately and return result', async () => {
             service.register('test-service', async () => true);
@@ -199,27 +201,22 @@ describe('HealthCheckService', () => {
         });
     });
 
-    describe('timeout handling', () => {
+    describe('timeout and error handling', () => {
         it('should mark service unhealthy on timeout', async () => {
-            // Use a check that takes longer than the timeout
             service.register('slow-service', async () => {
-                // This will never resolve before the timeout
                 return new Promise<boolean>((resolve) => {
                     setTimeout(() => resolve(true), 10000);
                 });
             }, { timeoutMs: 100 });
 
             service.start();
-            // Advance time past the timeout
             await vi.advanceTimersByTimeAsync(200);
 
             const status = service.getStatus();
             expect(status.services[0]!.status).toBe('unhealthy');
             expect(status.services[0]!.error).toContain('Timeout');
         });
-    });
 
-    describe('error handling', () => {
         it('should mark service unhealthy on error', async () => {
             service.register('error-service', async () => {
                 throw new Error('Service unavailable');
