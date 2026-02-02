@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { createServer, IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
 import { parse } from 'url';
 
@@ -200,6 +201,7 @@ export class ApiServerService extends BaseService {
 
         if (token !== this.apiToken) {
             this.sendJson(res, 401, {
+                success: false,
                 error: 'Unauthorized',
                 message: 'Invalid or missing API token'
             });
@@ -244,6 +246,7 @@ export class ApiServerService extends BaseService {
 
         // 404 Not Found
         this.sendJson(res, 404, {
+            success: false,
             error: 'Not Found',
             message: `Route ${pathname} not found`
         });
@@ -257,9 +260,11 @@ export class ApiServerService extends BaseService {
 
         if (origin?.startsWith('chrome-extension://') || origin?.startsWith('moz-extension://')) {
             res.setHeader('Access-Control-Allow-Origin', origin);
-        } else {
-            res.setHeader('Access-Control-Allow-Origin', '*');
+        } else if (origin?.match(/^http:\/\/(localhost|127\.0\.0\.1)/)) {
+            // Allow localhost for development
+            res.setHeader('Access-Control-Allow-Origin', origin);
         }
+        // Deny all other origins by not setting the header
 
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -275,12 +280,23 @@ export class ApiServerService extends BaseService {
     }
 
     /**
-     * Read request body as JSON
+     * Read request body as JSON with size limit
      */
-    private async readBody(req: IncomingMessage): Promise<JsonObject> {
+    private async readBody(req: IncomingMessage, maxSize = 2 * 1024 * 1024): Promise<JsonObject> {
         return new Promise((resolve, reject) => {
             let body = '';
+            let bytesReceived = 0;
+
             req.on('data', (chunk) => {
+                bytesReceived += chunk.length;
+
+                // Prevent DoS via large payloads
+                if (bytesReceived > maxSize) {
+                    req.destroy();
+                    reject(new Error(`Request body too large (max ${maxSize} bytes)`));
+                    return;
+                }
+
                 body += chunk.toString();
             });
             req.on('end', () => {
@@ -353,6 +369,15 @@ export class ApiServerService extends BaseService {
                 return;
             }
 
+            // SEC-008-2: Validate tool name format (alphanumeric, dots, hyphens, underscores only)
+            if (!/^[a-zA-Z0-9._-]+$/.test(toolName)) {
+                this.sendJson(res, 400, {
+                    success: false,
+                    error: 'Invalid toolName format. Only alphanumeric characters, dots, hyphens, and underscores allowed.'
+                });
+                return;
+            }
+
             appLogger.info(this.name, `Executing tool: ${toolName}`);
 
             const result = await this.options.toolExecutor.execute(toolName, args ?? {});
@@ -391,6 +416,33 @@ export class ApiServerService extends BaseService {
                 return;
             }
 
+            // SEC-008-3: Validate message structure
+            for (const msg of messages) {
+                if (!msg.role || typeof msg.role !== 'string') {
+                    this.sendJson(res, 400, {
+                        success: false,
+                        error: 'Invalid message: missing or invalid role'
+                    });
+                    return;
+                }
+                
+                if (!['user', 'assistant', 'system', 'tool'].includes(msg.role)) {
+                    this.sendJson(res, 400, {
+                        success: false,
+                        error: `Invalid message role: ${msg.role}`
+                    });
+                    return;
+                }
+                
+                if (msg.content !== undefined && typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
+                    this.sendJson(res, 400, {
+                        success: false,
+                        error: 'Invalid message: content must be string or array'
+                    });
+                    return;
+                }
+            }
+
             appLogger.info(this.name, `Chat request: model=${model}, provider=${provider}`);
 
             const response = await this.options.llmService.chatOpenAI(messages, {
@@ -424,6 +476,13 @@ export class ApiServerService extends BaseService {
      * Handle chat stream endpoint
      */
     private async handleChatStream(req: IncomingMessage, res: ServerResponse): Promise<void> {
+        // SEC-009-4: Add timeout for streaming
+        const STREAM_TIMEOUT_MS = 300000; // 5 minutes
+        const timeoutId = setTimeout(() => {
+            appLogger.warn(this.name, 'Stream timeout reached, closing connection');
+            res.end();
+        }, STREAM_TIMEOUT_MS);
+
         try {
             const body = await this.readBody(req);
             const { messages, model, provider } = body as {
@@ -433,6 +492,7 @@ export class ApiServerService extends BaseService {
             };
 
             if (!messages || !Array.isArray(messages)) {
+                clearTimeout(timeoutId);
                 this.sendJson(res, 400, {
                     success: false,
                     error: 'Missing or invalid messages parameter'
@@ -461,7 +521,9 @@ export class ApiServerService extends BaseService {
 
             res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
             res.end();
+            clearTimeout(timeoutId);
         } catch (error) {
+            clearTimeout(timeoutId);
             appLogger.error(
                 this.name,
                 `Streaming chat failed: ${getErrorMessage(error as Error)}`
@@ -491,7 +553,7 @@ export class ApiServerService extends BaseService {
         }
 
         this.wsServer.on('connection', (ws, _req) => {
-            const clientId = Math.random().toString(36).substring(7);
+            const clientId = randomBytes(8).toString('hex');
             appLogger.info(this.name, `WebSocket client connected: ${clientId}`);
 
             ws.on('message', (data) => {
@@ -544,12 +606,7 @@ export class ApiServerService extends BaseService {
      * Generate a random API token for session
      */
     private generateApiToken(): string {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let token = '';
-        for (let i = 0; i < 64; i++) {
-            token += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return token;
+        return randomBytes(32).toString('hex');
     }
 
     /**

@@ -225,6 +225,8 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
                 mermaid.initialize({
                     startOnLoad: false,
                     theme: 'dark',
+                    // Using 'loose' security level for better diagram support
+                    // Safe because SVG output is sanitized with DOMPurify (line 233)
                     securityLevel: 'loose',
                     fontFamily: 'inherit'
                 });

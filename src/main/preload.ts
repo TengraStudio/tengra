@@ -227,7 +227,7 @@ export interface ElectronAPI {
             costEstimate?: number
         }) => Promise<{ success: boolean }>
         getProjects: () => Promise<Project[]>
-        createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
+        createProject: (name: string, path: string, description: string, mounts?: string) => Promise<Project>
         updateProject: (id: string, updates: Partial<Project>) => Promise<void>
         deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>

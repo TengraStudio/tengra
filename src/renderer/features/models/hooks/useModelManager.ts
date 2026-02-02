@@ -1,6 +1,7 @@
 import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { AppSettings } from '@/types';
 
 export function useModelManager(
@@ -16,6 +17,7 @@ export function useModelManager(
     const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    // PERF-005-1: Cache model fetches to prevent redundant API calls
     const refreshModels = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -26,7 +28,7 @@ export function useModelManager(
             setProxyModels(fetched.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
             setGroupedModels(groupModels(fetched));
         } catch (error) {
-            console.error('Failed to refresh models:', error);
+            appLogger.error('ModelManager', 'Failed to refresh models', error as Error);
         } finally {
             setIsLoading(false);
         }

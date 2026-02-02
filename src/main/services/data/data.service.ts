@@ -51,9 +51,9 @@ export class DataService extends BaseService {
     }
 
     private ensureDirectories() {
-        if (!fs.existsSync(this.baseDir)) { fs.mkdirSync(this.baseDir, { recursive: true }); }
+        if (!fs.existsSync(this.baseDir)) { fs.mkdirSync(this.baseDir, { recursive: true, mode: 0o700 }); }
         Object.values(this.paths).forEach(p => {
-            if (!fs.existsSync(p)) { fs.mkdirSync(p, { recursive: true }); }
+            if (!fs.existsSync(p)) { fs.mkdirSync(p, { recursive: true, mode: 0o700 }); }
         });
     }
 

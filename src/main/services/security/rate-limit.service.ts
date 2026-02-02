@@ -26,6 +26,8 @@ export class RateLimitService extends BaseService {
         this.setLimit('anthropic', { requestsPerMinute: 50, maxBurst: 5 });
         this.setLimit('gemini', { requestsPerMinute: 60, maxBurst: 10 });
         this.setLimit('ssh:execute', { requestsPerMinute: 120, maxBurst: 20 });
+        this.setLimit('chat:stream', { requestsPerMinute: 60, maxBurst: 5 }); // 1 per sec roughly
+        this.setLimit('files:search', { requestsPerMinute: 20, maxBurst: 2 }); // Expensive op
 
         // Start cleanup interval to remove old buckets
         this.cleanupInterval = setInterval(() => {

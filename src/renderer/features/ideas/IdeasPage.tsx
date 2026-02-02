@@ -1,6 +1,7 @@
 /**
  * Main Ideas Page component with workflow state machine
  */
+import { appLogger } from '@main/logging/logger';
 import type { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchData } from '@shared/types/ideas';
 import type { Project } from '@shared/types/project';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -107,7 +108,7 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
                 setSelectedIdea(res.idea);
             }
         } catch (err) {
-            console.error('Regen failed:', err);
+            appLogger.error('IdeasPage', 'Regen failed', err as Error);
         } finally {
             setIsRegenerating(false);
         }
@@ -120,7 +121,7 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
         try {
             exportIdeas(currentSession, ideas, format);
         } catch (err) {
-            console.error('Export failed:', err);
+            appLogger.error('IdeasPage', 'Export failed', err as Error);
         }
     }, [currentSession, ideas]);
 
@@ -147,7 +148,9 @@ export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNav
 
     useEffect(() => {
         if (currentSession?.id) {
-            void loadIdeas(currentSession.id).catch(console.error);
+            void loadIdeas(currentSession.id).catch((err: Error) => {
+                appLogger.error('IdeasPage', 'Failed to load ideas', err);
+            });
         }
     }, [currentSession?.id, loadIdeas]);
 

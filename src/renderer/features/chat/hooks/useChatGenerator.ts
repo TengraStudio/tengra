@@ -1,3 +1,5 @@
+import { appLogger } from '@main/logging/logger';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { useState } from 'react';
 
 import { chatStream } from '@/lib/chat-stream';
@@ -261,9 +263,17 @@ const executeToolTurnLoop = async (params: {
             const toolResults: Message[] = [];
             for (const tc of result.finalToolCalls) {
                 try {
-                    const toolArgs = typeof tc.function.arguments === 'string'
-                        ? JSON.parse(tc.function.arguments)
-                        : tc.function.arguments;
+                    // Validate tool call arguments before parsing
+                    let toolArgs: Record<string, unknown>;
+                    if (typeof tc.function.arguments === 'string') {
+                        if (tc.function.arguments.length > 100000) {
+                            // Limit argument size to prevent DoS
+                            throw new Error('Tool arguments exceed maximum size limit');
+                        }
+                        toolArgs = safeJsonParse(tc.function.arguments, {});
+                    } else {
+                        toolArgs = tc.function.arguments;
+                    }
 
                     const toolExecResult = await window.electron.executeTools(tc.function.name, toolArgs, tc.id);
 
@@ -279,6 +289,8 @@ const executeToolTurnLoop = async (params: {
                     // Save tool message to DB
                     void window.electron.db.addMessage({ ...toolMsg, chatId, timestamp: Date.now() });
                 } catch (error) {
+                    const errorMsg = error instanceof Error ? error.message : 'Tool execution failed';
+                    appLogger.error('useChatGenerator', `Tool execution error: ${errorMsg}`, error as Error);
                     window.electron.log.error('Tool execution error', error as Error);
                 }
             }

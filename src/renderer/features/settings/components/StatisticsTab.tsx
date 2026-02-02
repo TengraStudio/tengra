@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import React, { memo,useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -150,7 +151,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                 const stats = await window.electron.db.getTimeStats();
                 setTimeStats(stats);
             } catch (error) {
-                console.error('Failed to load time stats:', error);
+                appLogger.error('StatisticsTab', 'Failed to load time stats', error as Error);
             } finally {
                 setLoadingTimeStats(false);
             }
@@ -162,7 +163,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
                 const projs = await window.electron.db.getProjects();
                 setProjects(projs);
             } catch (error) {
-                console.error('Failed to load projects:', error);
+                appLogger.error('StatisticsTab', 'Failed to load projects', error as Error);
             }
         };
         void loadProjects();

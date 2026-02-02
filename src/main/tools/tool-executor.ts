@@ -88,7 +88,8 @@ export class ToolExecutor {
     }
 
     private async handleFileRead(args: JsonObject): Promise<InternalToolResult> {
-        const path = String(args['path']);
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
         try {
             const content = await this.options.fileSystem.readFile(path);
             return { success: true, result: content as unknown as JsonValue };
@@ -98,8 +99,10 @@ export class ToolExecutor {
     }
 
     private async handleFileWrite(args: JsonObject): Promise<InternalToolResult> {
-        const path = String(args['path']);
-        const content = String(args['content']);
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        if (typeof args['content'] !== 'string') { return { success: false, error: "Missing 'content' argument" }; }
+        const path = args['path'];
+        const content = args['content'];
         try {
             await this.options.fileSystem.writeFile(path, content);
             return { success: true };
@@ -109,7 +112,8 @@ export class ToolExecutor {
     }
 
     private async handleListDir(args: JsonObject): Promise<InternalToolResult> {
-        const path = String(args['path']);
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
         try {
             const files = await this.options.fileSystem.listDirectory(path);
             return { success: true, result: files as unknown as JsonValue };
@@ -119,8 +123,9 @@ export class ToolExecutor {
     }
 
     private async handleCommand(args: JsonObject): Promise<InternalToolResult> {
-        const command = String(args['command']);
-        const cwd = args['cwd'] ? String(args['cwd']) : undefined;
+        if (typeof args['command'] !== 'string') { return { success: false, error: "Missing 'command' argument" }; }
+        const command = args['command'];
+        const cwd = (typeof args['cwd'] === 'string') ? args['cwd'] : undefined;
         try {
             const result = await this.options.command.executeCommand(command, { cwd });
             return { success: result.success, result: result.stdout as JsonValue, error: (result.stderr ?? result.error) ?? undefined };
@@ -130,7 +135,8 @@ export class ToolExecutor {
     }
 
     private async handleWebSearch(args: JsonObject): Promise<InternalToolResult> {
-        const query = String(args['query']);
+        if (typeof args['query'] !== 'string') { return { success: false, error: "Missing 'query' argument" }; }
+        const query = args['query'];
         try {
             const result = await this.options.web.searchWeb(query);
             return { success: result.success, result: result.results as JsonValue, error: result.error ?? undefined };

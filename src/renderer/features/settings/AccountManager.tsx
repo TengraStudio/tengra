@@ -1,6 +1,7 @@
 import { Check, Plus, RefreshCw, User, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -33,7 +34,7 @@ export const AccountManager: React.FC = () => {
             setAccounts(accounts);
             setActiveAccountId(activeAccount?.id ?? 'default');
         } catch (error) {
-            console.error('Failed to load accounts', error);
+            appLogger.error('AccountManager', 'Failed to load accounts', error as Error);
             showMessage(t('accounts.loadFailed'), 'error');
         }
     };

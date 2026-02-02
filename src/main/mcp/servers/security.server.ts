@@ -60,7 +60,21 @@ export function buildSecurityServers(deps: McpDeps): McpService[] {
                         const target = args.target as string;
                         const ports = args.ports as string | undefined;
                         const hostname = ensureAllowedTarget(deps, target);
-                        const portArg = ports ? `-p ${ports}` : '';
+
+                        // Strict hostname validation to prevent command injection
+                        if (!/^[a-zA-Z0-9.-]+$/.test(hostname)) {
+                            throw new Error('Invalid hostname format');
+                        }
+
+                        // Strict validation for ports to prevent command injection
+                        let portArg = '';
+                        if (ports) {
+                            if (!/^[0-9,-]+$/.test(ports)) {
+                                throw new Error('Invalid ports argument. Only numbers, commas, and dashes are allowed.');
+                            }
+                            portArg = `-p ${ports}`;
+                        }
+
                         const command = `nmap -Pn ${portArg} ${hostname}`.trim();
                         return deps.command.executeCommand(command);
                     })

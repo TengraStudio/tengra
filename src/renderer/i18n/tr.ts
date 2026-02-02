@@ -25,7 +25,13 @@ export const tr = {
         close: 'Kapat',
         pending: 'Beklemede',
         selectAll: 'Tümünü Seç',
-        itemsSelected: '{{count}} öğe seçildi'
+        itemsSelected: '{{count}} öğe seçildi',
+        // Hata mesajları
+        unknownError: 'Bilinmeyen hata oluştu',
+        operationFailed: 'İşlem başarısız',
+        invalidInput: 'Geçersiz giriş',
+        networkError: 'Ağ hatası',
+        permissionDenied: 'İzin reddedildi'
     },
     languages: {
         tr: 'Türkçe',
@@ -92,7 +98,16 @@ export const tr = {
         openCode: 'OpenCode',
         proxyCustom: 'Özel Proxy / Diğer',
         model: 'Model',
-        selectModel: 'Model Seçin'
+        selectModel: 'Model Seçin',
+        providerLabels: {
+            ollama: 'Ollama',
+            codex: 'OpenAI',
+            antigravity: 'Antigravity',
+            claude: 'Claude',
+            local: 'Yerel',
+            github: 'GitHub',
+            openai: 'OpenAI'
+        }
     },
     settings: {
         searchPlaceholder: 'Ayarlarda ara...',
@@ -678,7 +693,13 @@ export const tr = {
             api: 'API\'ler',
             development: 'Geliştirme',
             ai: 'Yapay Zeka'
-        }
+        },
+        // MCP Store - I18N-002-1
+        noToolsFound: 'Aramanızla eşleşen araç bulunamadı.',
+        searchingTools: 'Araçlar aranıyor...',
+        toolsAvailable: 'Kullanılabilir Araçlar',
+        installedTools: 'Yüklü Araçlar',
+        availableTools: 'Mevcut Araçlar'
     },
     workspace: {
         editor: 'Editör',
@@ -1213,7 +1234,16 @@ export const tr = {
         confidence: 'Güven',
         ago: 'önce',
         via: 'kaynak',
-        chatId: 'Sohbet ID'
+        chatId: 'Sohbet ID',
+        // Memory component placeholders - I18N-001-4
+        searchMemoriesPlaceholder: 'Hafızalarda ara...',
+        addMemoryPlaceholder: 'Yeni hafıza ekle...',
+        memoryContentPlaceholder: 'Hafıza içeriğini girin...',
+        memoryTagsPlaceholder: 'Etiketler ekleyin (virgülle ayrılmış)...',
+        memoryNotePlaceholder: 'Not ekleyin...',
+        memorySourcePlaceholder: 'Kaynak (opsiyonel)...',
+        memoryKeyPlaceholder: 'Hafıza anahtarı...',
+        memoryValuePlaceholder: 'Hafıza değeri...'
     },
     terminal: {
         noShellsFound: 'Kabuk bulunamadı',
@@ -1480,7 +1510,11 @@ export const tr = {
         },
 
         // Session setup
-        modelSelectorHint: 'AI modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.'
+        modelSelectorHint: 'AI modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.',
+        
+        // Idea Details Modal placeholders - I18N-001-3
+        detailsTitlePlaceholder: 'Fikir başlığı girin...',
+        detailsDescriptionPlaceholder: 'Fikir açıklaması girin...'
     },
     tools: {
         usingTool: 'Araç Kullanılıyor',
@@ -1493,7 +1527,22 @@ export const tr = {
         input: 'GİRDİ',
         output: 'ÇIKTI',
         filePreview: 'Dosya Önizleme',
-        path: 'Yol:'
+        path: 'Yol:',
+        // Task Node placeholders - I18N-001-2
+        taskTitlePlaceholder: 'Görev Başlığı (Opsiyonel)',
+        taskDescriptionPlaceholder: 'Ne yapmak istediğinizi açıklayın...'
+    },
+    build: {
+        // Build Section placeholders - I18N-001-5
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test'
+    },
+    devServer: {
+        // Dev Server placeholders - I18N-001-6
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000'
     }
 };
 

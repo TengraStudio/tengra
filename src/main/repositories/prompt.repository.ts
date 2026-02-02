@@ -13,8 +13,7 @@ export class PromptRepository implements IRepository<Prompt> {
     }
 
     async findById(id: string): Promise<Prompt | null> {
-        const prompts = await this.db.getPrompts();
-        return prompts.find(p => p.id === id) ?? null;
+        return (await this.db.getPrompt(id)) ?? null;
     }
 
     async create(item: Prompt): Promise<Prompt> {

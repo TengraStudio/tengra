@@ -33,7 +33,10 @@ export class FileSystemService {
 
     private isPathAllowed(filePath: string): boolean {
         const absolutePath = path.resolve(filePath);
-        return this.allowedRoots.some(root => absolutePath.startsWith(root));
+        return this.allowedRoots.some(root => {
+            if (absolutePath === root) { return true; }
+            return absolutePath.startsWith(root + path.sep);
+        });
     }
 
     private validatePath(filePath: string) {
@@ -280,9 +283,10 @@ export class FileSystemService {
 
     async copyFile(source: string, destination: string): Promise<ServiceResponse> {
         try {
+            this.validatePath(source);
+            this.validatePath(destination);
             const srcPath = path.resolve(source);
             const destPath = path.resolve(destination);
-            await fs.mkdir(path.dirname(destPath), { recursive: true });
             await fs.copyFile(srcPath, destPath);
             return { success: true };
         } catch (error) {
@@ -377,6 +381,7 @@ export class FileSystemService {
 
     async batchRename(dir: string, pattern: string, replacement: string): Promise<ServiceResponse> {
         try {
+            this.validatePath(dir);
             const files = await fs.readdir(dir);
             let count = 0;
             for (const file of files) {
@@ -394,6 +399,7 @@ export class FileSystemService {
 
     watchFolder(dir: string, callback?: (event: string, filename: string) => void): ServiceResponse<{ close: () => void }> {
         try {
+            this.validatePath(dir);
             const absoluteDir = path.resolve(dir);
             const watcher = watch(absoluteDir, { recursive: true }, (eventType, filename) => {
                 if (!filename) { return; }
@@ -415,6 +421,9 @@ export class FileSystemService {
     }
 
     async downloadFile(url: string, destPath: string): Promise<ServiceResponse<{ path: string }>> {
+        if (!this.isPathAllowed(destPath)) {
+            return { success: false, error: 'Access denied: Path is outside allowed directories' };
+        }
         return new Promise((resolve) => {
             const file = createWriteStream(destPath);
             https.get(url, (response: import('http').IncomingMessage) => {
@@ -432,6 +441,7 @@ export class FileSystemService {
 
     async getFileHash(filePath: string, algorithm: 'md5' | 'sha1' | 'sha256' = 'sha256'): Promise<ServiceResponse<string>> {
         try {
+            this.validatePath(filePath);
             const { createHash } = await import('crypto');
             const content = await fs.readFile(path.resolve(filePath));
             const hash = createHash(algorithm).update(content).digest('hex');
@@ -452,6 +462,7 @@ export class FileSystemService {
     }
 
     async searchFilesStream(rootPath: string, pattern: string, onResult: (path: string) => void): Promise<void> {
+        this.validatePath(rootPath);
         const walk = async (dir: string) => {
             try {
                 const entries = await fs.readdir(dir, { withFileTypes: true });

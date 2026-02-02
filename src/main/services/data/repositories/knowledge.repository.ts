@@ -10,6 +10,7 @@ import {
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
 
+import { appLogger } from '@main/logging/logger';
 import { CodeSymbolRecord, CodeSymbolSearchResult, EntityKnowledge, EpisodicMemory, SemanticFragment } from '../database.service';
 
 import { BaseRepository } from './base.repository';
@@ -21,7 +22,9 @@ export class KnowledgeRepository extends BaseRepository {
 
     // --- Code Symbols ---
     async findCodeSymbolsByName(projectPath: string, name: string): Promise<CodeSymbolSearchResult[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name LIKE ? COLLATE NOCASE LIMIT 50").all<JsonObject>(projectPath, `%${name}%`);
+        // Sanitize LIKE pattern to prevent wildcard injection
+        const sanitizedName = name.replace(/[%_]/g, '\\$&');
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 50").all<JsonObject>(projectPath, `%${sanitizedName}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -73,7 +76,9 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async searchCodeContentByText(projectPath: string, query: string): Promise<CodeSymbolSearchResult[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND (docstring LIKE ? COLLATE NOCASE OR name LIKE ? COLLATE NOCASE) LIMIT 100").all<JsonObject>(projectPath, `%${query}%`, `%${query}%`);
+        // Sanitize LIKE pattern to prevent wildcard injection
+        const sanitizedQuery = query.replace(/[%_]/g, '\\$&');
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND (docstring LIKE ? ESCAPE '\\' COLLATE NOCASE OR name LIKE ? ESCAPE '\\' COLLATE NOCASE) LIMIT 100").all<JsonObject>(projectPath, `%${sanitizedQuery}%`, `%${sanitizedQuery}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -108,7 +113,9 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async searchSemanticFragmentsByText(projectPath: string, query: string): Promise<SemanticFragment[]> {
-        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE project_path = ? AND content LIKE ? COLLATE NOCASE LIMIT 100").all<JsonObject>(projectPath, `%${query}%`);
+        // Sanitize LIKE pattern to prevent wildcard injection
+        const sanitizedQuery = query.replace(/[%_]/g, '\\$&');
+        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE project_path = ? AND content LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 100").all<JsonObject>(projectPath, `%${sanitizedQuery}%`);
         return rows.map(r => this.mapRowToFragment(r));
     }
 
@@ -301,42 +308,47 @@ export class KnowledgeRepository extends BaseRepository {
     // =========================================================================
 
     async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
-        const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
-        await this.adapter.prepare(`
-            INSERT INTO advanced_memories (
-                id, content, embedding, source, source_id, source_context,
-                category, tags, confidence, importance, initial_importance,
-                status, validated_at, validated_by, access_count, last_accessed_at,
-                related_memory_ids, contradicts_ids, merged_into_id,
-                project_id, context_tags, created_at, updated_at, expires_at, metadata
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            memory.id,
-            memory.content,
-            vec,
-            memory.source,
-            memory.sourceId,
-            memory.sourceContext ?? null,
-            memory.category,
-            JSON.stringify(memory.tags),
-            memory.confidence,
-            memory.importance,
-            memory.initialImportance,
-            memory.status,
-            memory.validatedAt ?? null,
-            memory.validatedBy ?? null,
-            memory.accessCount,
-            memory.lastAccessedAt,
-            JSON.stringify(memory.relatedMemoryIds),
-            JSON.stringify(memory.contradictsIds),
-            memory.mergedIntoId ?? null,
-            memory.projectId ?? null,
-            JSON.stringify(memory.contextTags ?? []),
-            memory.createdAt,
-            memory.updatedAt,
-            memory.expiresAt ?? null,
-            JSON.stringify(memory.metadata ?? {})
-        );
+        try {
+            const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+            await this.adapter.prepare(`
+                INSERT INTO advanced_memories (
+                    id, content, embedding, source, source_id, source_context,
+                    category, tags, confidence, importance, initial_importance,
+                    status, validated_at, validated_by, access_count, last_accessed_at,
+                    related_memory_ids, contradicts_ids, merged_into_id,
+                    project_id, context_tags, created_at, updated_at, expires_at, metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                memory.id,
+                memory.content,
+                vec,
+                memory.source,
+                memory.sourceId,
+                memory.sourceContext ?? null,
+                memory.category,
+                JSON.stringify(memory.tags),
+                memory.confidence,
+                memory.importance,
+                memory.initialImportance,
+                memory.status,
+                memory.validatedAt ?? null,
+                memory.validatedBy ?? null,
+                memory.accessCount,
+                memory.lastAccessedAt,
+                JSON.stringify(memory.relatedMemoryIds),
+                JSON.stringify(memory.contradictsIds),
+                memory.mergedIntoId ?? null,
+                memory.projectId ?? null,
+                JSON.stringify(memory.contextTags ?? []),
+                memory.createdAt,
+                memory.updatedAt,
+                memory.expiresAt ?? null,
+                JSON.stringify(memory.metadata ?? {})
+            );
+        } catch (error) {
+            appLogger.error('KnowledgeRepository', 'Failed to store advanced memory', error as Error);
+            throw error;
+        }
     }
 
     async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {

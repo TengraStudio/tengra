@@ -53,6 +53,17 @@ export class CommandService {
             return { allowed: false, reason: 'Command contains blocked operation' };
         }
 
+        // Warning for dangerous shell operators
+        // We don't block them outright because some legitimate commands might use them (like pipes),
+        // but we should at least be aware or stricter if needed.
+        // For now, let's block multiple command chaining which is a common vector.
+        const dangerousOperators = [';', '&&', '||'];
+        // Note: We used to block '&' and '|' but that breaks pipes and background tasks which might be used intentionally.
+        // Chaining via ; or && is more indicative of "do this THEN do that" which might unwantedly execute a second payload.
+        if (dangerousOperators.some(op => trimmed.includes(op))) {
+            return { allowed: false, reason: 'Command contains shell control operators which are not allowed.' };
+        }
+
         return { allowed: true };
     }
 

@@ -1,6 +1,7 @@
 ﻿import { ExternalLink, FolderOpen,Image, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Language,useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +26,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             // Sort by modification time (newest first)
             setImages(list.sort((a, b) => b.mtime - a.mtime));
         } catch (error) {
-            console.error('Failed to load gallery:', error);
+            appLogger.error('GalleryView', 'Failed to load gallery', error as Error);
         } finally {
             setLoading(false);
         }
@@ -38,7 +39,7 @@ export function GalleryView({ language }: GalleryViewProps) {
             await window.electron.gallery.delete(path);
             await loadImages();
         } catch (error) {
-            console.error('Failed to delete image:', error);
+            appLogger.error('GalleryView', 'Failed to delete image', error as Error);
         } finally {
             setDeleting(null);
         }
@@ -48,7 +49,7 @@ export function GalleryView({ language }: GalleryViewProps) {
         try {
             await window.electron.gallery.open(path);
         } catch (error) {
-            console.error('Failed to open image:', error);
+            appLogger.error('GalleryView', 'Failed to open image', error as Error);
         }
     };
 
@@ -56,7 +57,7 @@ export function GalleryView({ language }: GalleryViewProps) {
         try {
             await window.electron.gallery.reveal(path);
         } catch (error) {
-            console.error('Failed to reveal image:', error);
+            appLogger.error('GalleryView', 'Failed to reveal image', error as Error);
         }
     };
 

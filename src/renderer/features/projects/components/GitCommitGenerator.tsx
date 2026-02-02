@@ -2,6 +2,7 @@
 import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 
 interface GitCommitGeneratorProps {
@@ -110,7 +111,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
                 setSuggestion(fullContent.trim().replace(/^["']|["']$/g, ''));
             }
         } catch (err) {
-            console.error('Failed to generate commit message:', err);
+            appLogger.error('GitCommitGenerator', 'Failed to generate commit message', err as Error);
             setSuggestion('feat: update code');
         }
     };
@@ -122,7 +123,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
         } catch (err) {
-            console.error('Failed to copy:', err);
+            appLogger.error('GitCommitGenerator', 'Failed to copy', err as Error);
         }
     };
 

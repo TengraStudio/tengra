@@ -1,6 +1,7 @@
 import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -34,8 +35,8 @@ const useProjectEnv = (projectPath: string) => {
                 setEnvVars(vars);
             }
         } catch (error) {
-            console.error('Failed to load env vars:', error);
-        } finally {
+            appLogger.error('ProjectEnvironmentTab', 'Failed to load env vars', error as Error);
+        }finally {
             setLoading(false);
         }
     }, [projectPath]);
@@ -56,8 +57,8 @@ const useProjectEnv = (projectPath: string) => {
             await window.electron.ipcRenderer.invoke('project:saveEnv', projectPath, varsObj);
             setHasChanges(false);
         } catch (error) {
-            console.error('Failed to save env vars:', error);
-        } finally {
+            appLogger.error('ProjectEnvironmentTab', 'Failed to save env vars', error as Error);
+        }finally {
             setSaving(false);
         }
     };

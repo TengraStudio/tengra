@@ -77,7 +77,7 @@ export class MigrationService {
             try {
                 await fs.promises.access(dir);
             } catch {
-                await fs.promises.mkdir(dir, { recursive: true });
+                await fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
             }
             await fs.promises.writeFile(this.migrationsPath, JSON.stringify(this.applied, null, 2));
         } catch (e) {

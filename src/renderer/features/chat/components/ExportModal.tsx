@@ -1,6 +1,7 @@
 import { Download, FileText, X } from 'lucide-react';
 import React, { useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 import { Chat, Message } from '@/types';
 
@@ -55,7 +56,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                 onClose();
             }
         } catch (error) {
-            console.error('Export failed', error);
+            appLogger.error('ExportModal', 'Export failed', error as Error);
         } finally {
             setIsExporting(false);
         }

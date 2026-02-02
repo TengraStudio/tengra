@@ -364,7 +364,7 @@ export interface ElectronAPI {
         }) => Promise<{ success: boolean }>
         getProjects: () => Promise<Project[]>
         getFolders: () => Promise<Folder[]>
-        createProject: (name: string, path: string, description: string, mounts?: string) => Promise<void>
+        createProject: (name: string, path: string, description: string, mounts?: string) => Promise<Project>
         updateProject: (id: string, updates: Partial<Project>) => Promise<void>
         deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>
         archiveProject: (id: string, isArchived: boolean) => Promise<void>
@@ -689,6 +689,7 @@ export interface ElectronAPI {
         stop: () => Promise<void>
         getStatus: () => Promise<ProjectState>
         retryStep: (index: number) => Promise<void>
+        getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>
         onUpdate: (callback: (state: ProjectState) => void) => () => void
     }
 

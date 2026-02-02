@@ -2,6 +2,7 @@
 import { Activity, Clock, Cpu, HardDrive } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
@@ -35,7 +36,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
                     setStats(data);
                 }
             } catch (e) {
-                console.error(e);
+                appLogger.error('StatsDashboard', 'Failed to load stats', e as Error);
             }
         };
 

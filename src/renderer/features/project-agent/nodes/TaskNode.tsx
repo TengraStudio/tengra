@@ -1,13 +1,15 @@
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { Message } from '@shared/types/chat';
-import { AgentStartOptions, ProjectStep } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectStep } from '@shared/types/project-agent';
 import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
-import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, X, Zap } from 'lucide-react';
+import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, User, X, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
 import { ModelSelector } from '@/features/models/components/ModelSelector';
+import { useLanguage } from '@/i18n';
 import { LogConsole } from '@/features/project-agent/components/LogConsole';
 import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { cn } from '@/lib/utils';
@@ -28,6 +30,7 @@ export type TaskNodeData = {
     isExpanded?: boolean;
     isModelOpen?: boolean;
     systemMode?: 'thinking' | 'fast' | 'architect';
+    agentProfileId?: string;
 };
 
 interface TaskNodeActionProps {
@@ -52,11 +55,12 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
                 model: { provider: currentProviderId, model: currentModelId },
                 projectId: selectedProjectId,
                 attachments: data.attachments,
-                systemMode: data.systemMode
+                systemMode: data.systemMode,
+                agentProfileId: data.agentProfileId
             };
             await window.electron.projectAgent.generatePlan(options);
         } catch (error) {
-            console.error('Failed to generate plan:', error);
+            appLogger.error('TaskNode', 'Failed to generate plan', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
     }, [data.title, data.description, data.attachments, data.systemMode, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
@@ -75,7 +79,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             // OR we can update preload.
             await window.electron.projectAgent.approvePlan(data.plan.map(s => s.text));
         } catch (error) {
-            console.error('Failed to approve plan:', error);
+            appLogger.error('TaskNode', 'Failed to approve plan', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
     }, [data.plan, id, updateNodeData]);
@@ -92,11 +96,12 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
                 model: { provider: currentProviderId, model: currentModelId },
                 projectId: selectedProjectId,
                 attachments: data.attachments,
-                systemMode: data.systemMode
+                systemMode: data.systemMode,
+                agentProfileId: data.agentProfileId
             };
             await window.electron.projectAgent.start(options);
         } catch (error) {
-            console.error('Failed to start task:', error);
+            appLogger.error('TaskNode', 'Failed to start task', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
     }, [data.title, data.description, data.attachments, data.systemMode, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
@@ -106,7 +111,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             updateNodeData(id, { status: 'waiting' });
             await window.electron.projectAgent.stop();
         } catch (error) {
-            console.error('Failed to stop task:', error);
+            appLogger.error('TaskNode', 'Failed to stop task', error as Error);
         }
     }, [id, updateNodeData]);
 
@@ -115,7 +120,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             updateNodeData(id, { status: 'running', activeTab: 'logs' });
             await window.electron.projectAgent.retryStep(index);
         } catch (error) {
-            console.error('Failed to retry step:', error);
+            appLogger.error('TaskNode', 'Failed to retry step', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
     }, [id, updateNodeData]);
@@ -465,51 +470,114 @@ const TaskFooterButtons = ({
 
 const TaskFooterControls = ({
     isPlanner, isModelOpen, systemMode, currentProviderId, currentModelId, groupedModels,
-    onModelSelect, onOpenModelChange, onFileClick, onToggleThinking
+    onModelSelect, onOpenModelChange, onFileClick, onToggleThinking,
+    profiles, selectedProfileId, onProfileSelect
 }: {
     isPlanner: boolean; isModelOpen: boolean; systemMode?: string; currentProviderId: string; currentModelId: string; groupedModels?: GroupedModels;
     onModelSelect: (provider: string, model: string) => void; onOpenModelChange: (open: boolean) => void;
     onFileClick: () => void; onToggleThinking?: () => void;
-}) => (
-    <>
-        {isPlanner ? (
-            <div className="flex items-center gap-1">
-                <button onClick={onFileClick} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-md transition-colors">
-                    <Paperclip className="w-3.5 h-3.5" />
-                </button>
-                <div className={cn("scale-90 origin-left transition-all", isModelOpen ? "z-50" : "")}>
-                    <ModelSelector selectedProvider={currentProviderId} selectedModel={currentModelId} onSelect={onModelSelect} groupedModels={groupedModels} onOpenChange={onOpenModelChange} isIconOnly={true} />
-                </div>
-            </div>
-        ) : <div />}
-        <div className="flex items-center gap-2">
-            <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/10">
-                <Settings2 className="w-3.5 h-3.5" />
-            </button>
-            {isPlanner && (
-                <button
-                    onClick={onToggleThinking}
-                    className={cn(
-                        "flex items-center justify-center p-1 rounded-md transition-colors",
-                        systemMode === 'thinking' ? "bg-purple-500/20 text-purple-400" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+    profiles?: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void;
+}) => {
+    const selectedProfile = profiles?.find(p => p.id === selectedProfileId);
+
+    return (
+        <>
+            {isPlanner ? (
+                <div className="flex items-center gap-1">
+                    <button onClick={onFileClick} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-md transition-colors">
+                        <Paperclip className="w-3.5 h-3.5" />
+                    </button>
+                    <div className={cn("scale-90 origin-left transition-all", isModelOpen ? "z-50" : "")}>
+                        <ModelSelector selectedProvider={currentProviderId} selectedModel={currentModelId} onSelect={onModelSelect} groupedModels={groupedModels} onOpenChange={onOpenModelChange} isIconOnly={true} />
+                    </div>
+
+                    {/* Agent Profile Selector */}
+                    {profiles && profiles.length > 0 && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "flex items-center justify-center p-1.5 rounded-md transition-colors",
+                                        selectedProfile ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                                    )}
+                                    title={selectedProfile ? `Agent: ${selectedProfile.name}` : "Select Agent Profile"}
+                                >
+                                    <User className="w-3.5 h-3.5" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="w-56 p-1 bg-popover/95 backdrop-blur-xl">
+                                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent Profile</div>
+                                    <button
+                                        onClick={() => onProfileSelect?.('')}
+                                        className={cn(
+                                            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                                            !selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                                        )}
+                                    >
+                                        <div className="p-1 rounded bg-background/50">
+                                            <Sparkles className="w-3 h-3" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">Default Agent</span>
+                                            <span className="text-[10px] text-muted-foreground opacity-70">Standard system prompt</span>
+                                        </div>
+                                    </button>
+                                    {profiles.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => onProfileSelect?.(p.id)}
+                                            className={cn(
+                                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                                                p.id === selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                                            )}
+                                        >
+                                            <div className="p-1 rounded bg-background/50">
+                                                <User className="w-3 h-3" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium truncate">{p.name}</span>
+                                                <span className="text-[10px] text-muted-foreground opacity-70 truncate max-w-[140px]">{p.role}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     )}
-                    title={systemMode === 'thinking' ? "Thinking Mode: On" : "Thinking Mode: Off"}
-                >
-                    <Brain className="w-3.5 h-3.5" />
+                </div>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+                <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/10">
+                    <Settings2 className="w-3.5 h-3.5" />
                 </button>
-            )}
-        </div>
-    </>
-);
+                {isPlanner && (
+                    <button
+                        onClick={onToggleThinking}
+                        className={cn(
+                            "flex items-center justify-center p-1 rounded-md transition-colors",
+                            systemMode === 'thinking' ? "bg-purple-500/20 text-purple-400" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                        )}
+                        title={systemMode === 'thinking' ? "Thinking Mode: On" : "Thinking Mode: Off"}
+                    >
+                        <Brain className="w-3.5 h-3.5" />
+                    </button>
+                )}
+            </div>
+        </>
+    );
+};
 
 const TaskFooter = ({
     status, isModelOpen, currentProviderId, currentModelId, groupedModels, onModelSelect, onOpenModelChange,
-    onFileClick, onApprove, onStop, onPlan, onExecute, canRun, isPlanner, systemMode, onToggleThinking
+    onFileClick, onApprove, onStop, onPlan, onExecute, canRun, isPlanner, systemMode, onToggleThinking,
+    profiles, selectedProfileId, onProfileSelect
 }: {
     status: string; isModelOpen: boolean; currentProviderId: string; currentModelId: string; groupedModels?: GroupedModels;
     onModelSelect: (provider: string, model: string) => void; onOpenModelChange: (open: boolean) => void;
     onFileClick: () => void; onApprove: () => void; onStop: () => void; onPlan: () => void; onExecute: () => void;
-    canRun: boolean; isPlanner: boolean; systemMode?: string; onToggleThinking?: () => void
+    canRun: boolean; isPlanner: boolean; systemMode?: string; onToggleThinking?: () => void;
+    profiles?: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void;
 }) => (
     <div className="px-3 py-2 bg-black/20 rounded-b-lg border-t border-white/5 flex justify-between items-center text-[10px]">
         <div className="flex items-center gap-2">
@@ -524,6 +592,9 @@ const TaskFooter = ({
                 onOpenModelChange={onOpenModelChange}
                 onFileClick={onFileClick}
                 onToggleThinking={onToggleThinking}
+                profiles={profiles}
+                selectedProfileId={selectedProfileId}
+                onProfileSelect={onProfileSelect}
             />
             <TaskFooterButtons
                 status={status}
@@ -554,6 +625,7 @@ interface TaskBodyProps {
 const TaskInput = ({
     id, data, updateNodeData
 }: { id: string; data: TaskNodeData; updateNodeData: (id: string, data: Partial<TaskNodeData>) => void }) => {
+    const { t } = useLanguage();
     const removeAttachment = (index: number) => {
         const newAttachments = [...(data.attachments ?? [])];
         newAttachments.splice(index, 1);
@@ -564,7 +636,7 @@ const TaskInput = ({
         <div className="space-y-2">
             <input
                 className="w-full bg-transparent border-none p-0 text-sm font-semibold focus:outline-none focus:ring-0"
-                placeholder="Task Title (Optional)"
+                placeholder={t('tools.taskTitlePlaceholder')}
                 value={data.title ?? ''}
                 onChange={(e) => updateNodeData(id, { title: e.target.value })}
             />
@@ -582,7 +654,7 @@ const TaskInput = ({
             )}
             <textarea
                 className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-xs focus:outline-none focus:border-primary/50 resize-none nodrag"
-                placeholder="Describe what you want to build..."
+                placeholder={t('tools.taskDescriptionPlaceholder')}
                 rows={3}
                 value={data.description ?? ''}
                 onChange={(e) => updateNodeData(id, { description: e.target.value })}
@@ -638,9 +710,23 @@ const getTaskNodeClasses = (isExpanded: boolean, selected: boolean, status: stri
 };
 
 export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) => {
+    const { t } = useLanguage();
     const { updateNodeData, deleteElements } = useReactFlow();
     const { projects, selectedProject: globalSelectedProject } = useProjectManager();
     const { groupedModels, selectedModel: globalModelId, selectedProvider: globalProviderId } = useModel();
+    const [profiles, setProfiles] = React.useState<AgentProfile[]>([]);
+
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            try {
+                const fetched = await window.electron.projectAgent.getProfiles();
+                setProfiles(fetched || []);
+            } catch (err) {
+                appLogger.error('TaskNode', 'Failed to fetch agent profiles', err as Error);
+            }
+        };
+        void fetchProfiles();
+    }, []);
 
     const {
         activeTab, isExpanded, isModelOpen, isPlanner, isAction,
@@ -717,6 +803,9 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
                 canRun={!!(data.title ?? data.description)}
                 systemMode={data.systemMode}
                 onToggleThinking={() => updateNodeData(id, { systemMode: data.systemMode === 'thinking' ? 'fast' : 'thinking' })}
+                profiles={profiles}
+                selectedProfileId={data.agentProfileId}
+                onProfileSelect={(pid) => updateNodeData(id, { agentProfileId: pid })}
             />
             <input type="file" multiple className="hidden" ref={fileInputRef} onChange={(e) => void onFileChange(e)} />
             <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background transition-colors hover:!bg-primary" />

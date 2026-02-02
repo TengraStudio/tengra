@@ -63,6 +63,11 @@ export function normalizeOpenAIResponse(response: JsonValue, model: string): Nor
     };
 }
 
+/**
+ * Normalizes OpenAI usage data from API response
+ * @param usage - Raw usage object from API
+ * @returns Normalized usage with token counts
+ */
 function normalizeOpenAIUsage(usage: JsonObject | null): NormalizedResponse['usage'] {
     if (!usage) { return undefined; }
     return {
@@ -72,11 +77,21 @@ function normalizeOpenAIUsage(usage: JsonObject | null): NormalizedResponse['usa
     };
 }
 
+/**
+ * Normalizes OpenAI tool calls from API response
+ * @param toolCalls - Raw tool calls array from API
+ * @returns Array of normalized tool calls
+ */
 function normalizeOpenAIToolCalls(toolCalls: JsonValue | undefined): NormalizedToolCall[] | undefined {
     if (!toolCalls) { return undefined; }
     return (asArray(toolCalls) ?? []).map((t) => normalizeToolCall(t));
 }
 
+/**
+ * Extracts metadata from OpenAI response
+ * @param res - OpenAI response object
+ * @returns Metadata object with id, created timestamp, and system fingerprint
+ */
 function extractOpenAIMetadata(res: JsonObject): NormalizedResponse['metadata'] {
     return {
         id: res.id as string,
@@ -116,6 +131,11 @@ export function normalizeAnthropicResponse(response: JsonValue, model: string): 
     };
 }
 
+/**
+ * Normalizes Anthropic tool call from API response
+ * @param block - Tool use content block from Anthropic
+ * @returns Normalized tool call
+ */
 function normalizeAnthropicToolCall(block: JsonObject): NormalizedToolCall {
     return {
         id: (block.id as string | undefined) ?? `tool-${Date.now()}`,
@@ -149,6 +169,11 @@ export function normalizeOllamaResponse(response: JsonValue, model: string): Nor
     };
 }
 
+/**
+ * Normalizes Ollama usage data from API response
+ * @param res - Ollama response object
+ * @returns Normalized usage with token counts
+ */
 function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
     const evalCount = res.eval_count;
     if (!evalCount) { return undefined; }
@@ -159,6 +184,11 @@ function normalizeOllamaUsage(res: JsonObject): NormalizedResponse['usage'] {
     };
 }
 
+/**
+ * Extracts metadata from Ollama response
+ * @param res - Ollama response object
+ * @returns Metadata with duration metrics
+ */
 function extractOllamaMetadata(res: JsonObject): NormalizedResponse['metadata'] {
     return {
         totalDuration: res.total_duration as number,
@@ -184,6 +214,13 @@ export function normalizeResponse(response: JsonValue, provider: string, model: 
     return normalizeFallbackResponse(response, provider, model);
 }
 
+/**
+ * Normalizes a fallback response when provider is unknown
+ * @param response - Raw response from unknown provider
+ * @param provider - Provider name
+ * @param model - Model name
+ * @returns Normalized response with fallback handling
+ */
 function normalizeFallbackResponse(response: JsonValue, provider: string, model: string): NormalizedResponse {
     const resObj = asObject(response);
     if (resObj && Array.isArray(resObj.choices)) {
@@ -217,6 +254,11 @@ export function normalizeStreamChunk(chunk: JsonValue, provider: string): Normal
     }
 }
 
+/**
+ * Normalizes OpenAI stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with content and completion status
+ */
 function normalizeOpenAIStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     const resObj = asObject(chunk);
     const choiceObj = asArray(resObj?.choices)?.[0] as JsonObject | undefined;
@@ -233,6 +275,11 @@ function normalizeOpenAIStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     };
 }
 
+/**
+ * Extracts reasoning content from OpenAI delta
+ * @param delta - Delta object from stream chunk
+ * @returns Reasoning content if available
+ */
 function getOpenAIReasoning(delta: JsonObject | null): string | undefined {
     if (typeof delta?.reasoning_content === 'string') {
         return delta.reasoning_content;
@@ -240,6 +287,11 @@ function getOpenAIReasoning(delta: JsonObject | null): string | undefined {
     return typeof delta?.reasoning === 'string' ? delta.reasoning : undefined;
 }
 
+/**
+ * Normalizes Anthropic stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with text delta or completion status
+ */
 function normalizeAnthropicStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     const resObj = asObject(chunk);
     if (resObj?.type === 'content_block_delta') {
@@ -252,6 +304,11 @@ function normalizeAnthropicStreamChunk(chunk: JsonValue): NormalizedStreamChunk 
     return { done: resObj?.type === 'message_stop' };
 }
 
+/**
+ * Normalizes Ollama stream chunk from API
+ * @param chunk - Raw stream chunk data
+ * @returns Normalized chunk with message content or response
+ */
 function normalizeOllamaStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     const resObj = asObject(chunk);
     const message = resObj ? asObject(resObj.message) : null;
@@ -263,6 +320,11 @@ function normalizeOllamaStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     };
 }
 
+/**
+ * Normalizes default/fallback stream chunk
+ * @param chunk - Raw stream chunk from unknown provider
+ * @returns Normalized chunk with best-effort content extraction
+ */
 function normalizeDefaultStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     const resObj = asObject(chunk);
     const delta = asObject(resObj?.delta);
@@ -275,14 +337,23 @@ function normalizeDefaultStreamChunk(chunk: JsonValue): NormalizedStreamChunk {
     };
 }
 
+/**
+ * Extracts standard content from response or delta object
+ * @param res - Response object
+ * @param delta - Delta object
+ * @returns Content string if available
+ */
 function getStandardContent(res: JsonObject | null, delta: JsonObject | null): string | undefined {
     if (typeof res?.content === 'string') { return res.content; }
     if (typeof res?.text === 'string') { return res.text; }
     return typeof delta?.content === 'string' ? delta.content : undefined;
 }
 
-// Helpers
-
+/**
+ * Normalizes finish reason from various providers to standard format
+ * @param reason - Raw finish reason from API
+ * @returns Normalized finish reason
+ */
 function normalizeFinishReason(reason: string | undefined | null): NormalizedResponse['finishReason'] {
     if (!reason) { return undefined; }
 
@@ -303,6 +374,11 @@ function normalizeFinishReason(reason: string | undefined | null): NormalizedRes
     return mapping[lower] ?? 'stop';
 }
 
+/**
+ * Normalizes tool call from various API formats to standard format
+ * @param toolCall - Raw tool call object
+ * @returns Normalized tool call with consistent structure
+ */
 function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
     const tc = asObject(toolCall) ?? {};
     const fn = asObject(tc.function) ?? {};
@@ -322,11 +398,21 @@ function normalizeToolCall(toolCall: JsonValue): NormalizedToolCall {
     };
 }
 
+/**
+ * Safely casts value to JsonObject
+ * @param value - Value to cast
+ * @returns JsonObject if valid, null otherwise
+ */
 function asObject(value: JsonValue | undefined): JsonObject | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) { return null; }
     return value as JsonObject;
 }
 
+/**
+ * Safely casts value to array
+ * @param value - Value to cast
+ * @returns Array if valid, null otherwise
+ */
 function asArray(value: JsonValue | undefined): JsonValue[] | null {
     if (!Array.isArray(value)) { return null; }
     return value;

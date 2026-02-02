@@ -213,14 +213,14 @@ export class DatabaseService extends BaseService {
 
     // Folders
     async getFolders() { return this._system.getFolders(); }
-    async getFolder(id: string) { return (await this.getFolders()).find(f => f.id === id); }
+    async getFolder(id: string) { return this._system.getFolder(id); }
     async createFolder(name: string, color?: string) { return this._system.createFolder(name, color); }
     async updateFolder(id: string, updates: Partial<Folder>) { return this._system.updateFolder(id, updates); }
     async deleteFolder(id: string) { return this._system.deleteFolder(id); }
 
     // Prompts
     async getPrompts() { return this._system.getPrompts(); }
-    async getPrompt(id: string) { return (await this.getPrompts()).find(p => p.id === id); }
+    async getPrompt(id: string) { return this._system.getPrompt(id); }
     async createPrompt(title: string, content: string, tags: string[] = []) { return this._system.createPrompt(title, content, tags); }
     async updatePrompt(id: string, updates: Partial<Prompt>) { return this._system.updatePrompt(id, updates); }
     async deletePrompt(id: string) { return this._system.deletePrompt(id); }
@@ -233,8 +233,18 @@ export class DatabaseService extends BaseService {
     async updateProject(id: string, updates: Partial<Project>) { return this._projects.updateProject(id, updates); }
     async deleteProject(id: string, deleteFiles: boolean = false) { return this._projects.deleteProject(id, deleteFiles); }
     async archiveProject(id: string, isArchived: boolean) { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
-    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) { for (const id of ids) { await this.deleteProject(id, deleteFiles); } }
-    async bulkArchiveProjects(ids: string[], isArchived: boolean) { for (const id of ids) { await this.archiveProject(id, isArchived); } }
+    
+    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
+        for (const id of ids) {
+            await this.deleteProject(id, deleteFiles);
+        }
+    }
+    
+    async bulkArchiveProjects(ids: string[], isArchived: boolean) {
+        for (const id of ids) {
+            await this.archiveProject(id, isArchived);
+        }
+    }
 
     // Chats & Messages
     async createChat(chat: Chat) { return this._chats.createChat(chat); }

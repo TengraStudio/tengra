@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { Chat as DbChat, DatabaseService } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
@@ -120,13 +121,7 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
         return await databaseService.archiveChat(id, isArchived);
     }, { success: false }));
 
-    ipcMain.handle('db:getChat', createSafeIpcHandler('db:getChat', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.getChat(id);
-    }, null));
-
-    ipcMain.handle('db:getAllChats', createSafeIpcHandler('db:getAllChats', async () => {
-        return await databaseService.getAllChats();
-    }, []));
+    // Note: db:getChat, db:getAllChats are registered as batch handlers for optimization
 
     ipcMain.handle('db:deleteAllChats', createSafeIpcHandler('db:deleteAllChats', async () => {
         try {
@@ -263,14 +258,12 @@ async function attachEmbeddingToMessage(message: Message & { vector?: number[] }
         }
     } catch (error) {
         // Log but don't fail the message addition if embedding fails
-        console.error('[DB IPC] Failed to generate embedding for message:', error);
+        appLogger.error('db', '[DB IPC] Failed to generate embedding for message:', error as Error);
     }
 }
 
 function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate: (id?: string) => void, auditLogService?: AuditLogService) {
-    ipcMain.handle('db:getProjects', createSafeIpcHandler('db:getProjects', async () => {
-        return await databaseService.getProjects();
-    }, []));
+    // Note: db:getProjects is registered as batch handler for optimization
 
     ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mountsJson?: string) => {
         const result = await databaseService.createProject(name, path, desc, mountsJson, undefined);
@@ -401,9 +394,7 @@ function registerFolderHandlers(databaseService: DatabaseService) {
         return await databaseService.updateFolder(id, dbUpdates as JsonObject);
     }, null));
 
-    ipcMain.handle('db:getFolders', createSafeIpcHandler('db:getFolders', async () => {
-        return await databaseService.getFolders();
-    }, []));
+    // Note: db:getFolders is registered as batch handler for optimization
 }
 
 function registerPromptHandlers(databaseService: DatabaseService) {
@@ -426,9 +417,7 @@ function registerPromptHandlers(databaseService: DatabaseService) {
 }
 
 function registerStatsHandlers(databaseService: DatabaseService, _auditLogService?: AuditLogService) {
-    ipcMain.handle('db:getStats', createSafeIpcHandler('db:getStats', async () => {
-        return await databaseService.getStats();
-    }, { chatCount: 0, messageCount: 0, dbSize: 0 }));
+    // Note: db:getStats is registered as batch handler for optimization
 
     ipcMain.handle('db:getDetailedStats', createSafeIpcHandler('db:getDetailedStats', async (_event: IpcMainInvokeEvent, period: string) => {
         return await databaseService.getDetailedStats(period as "daily" | "weekly" | "monthly" | "yearly" | undefined);

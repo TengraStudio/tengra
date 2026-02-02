@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { ProcessService } from '@main/services/system/process.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
@@ -5,9 +6,20 @@ import { ipcMain } from 'electron';
 export const registerProcessIpc = (processService: ProcessService) => {
     ipcMain.handle('process:spawn', async (_, command: string, args: string[], cwd: string) => {
         try {
+            // Security: Validate command (SEC-001-3)
+            if (/[;&|`$(){}<>]/.test(command)) {
+                throw new Error('Invalid command: Shell control characters are not allowed');
+            }
+
+            // Note: processService.spawn handles argument quoting internally.
+
+            // However, we should validate that 'command' is just a command and not a shell string.
+            // If command contains spaces, it might be interpreted wrongly if not handled carefully.
+            // But usually 'command' here is the executable path/name.
+
             return processService.spawn(command, args, cwd);
         } catch (error) {
-            console.error('[IPC] process:spawn failed:', getErrorMessage(error as Error));
+            appLogger.error('process', '[IPC] process:spawn failed:', getErrorMessage(error as Error));
             return null;
         }
     });
@@ -16,7 +28,7 @@ export const registerProcessIpc = (processService: ProcessService) => {
         try {
             return processService.kill(id);
         } catch (error) {
-            console.error('[IPC] process:kill failed:', getErrorMessage(error as Error));
+            appLogger.error('process', '[IPC] process:kill failed:', getErrorMessage(error as Error));
             return false;
         }
     });
@@ -25,7 +37,7 @@ export const registerProcessIpc = (processService: ProcessService) => {
         try {
             return processService.getRunningTasks();
         } catch (error) {
-            console.error('[IPC] process:list failed:', getErrorMessage(error as Error));
+            appLogger.error('process', '[IPC] process:list failed:', getErrorMessage(error as Error));
             return [];
         }
     });
@@ -34,7 +46,7 @@ export const registerProcessIpc = (processService: ProcessService) => {
         try {
             return await processService.scanScripts(rootPath);
         } catch (error) {
-            console.error('[IPC] process:scan-scripts failed:', getErrorMessage(error as Error));
+            appLogger.error('process', '[IPC] process:scan-scripts failed:', getErrorMessage(error as Error));
             return {};
         }
     });

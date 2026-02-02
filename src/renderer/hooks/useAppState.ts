@@ -73,9 +73,12 @@ export function useAppState(): AppState {
         setToasts(prev => [...prev, { ...toast, id }]);
 
         // Auto-remove after 5 seconds
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 5000);
+        
+        // Store timer for cleanup if component unmounts
+        return () => clearTimeout(timer);
     }, []);
 
     const removeToast = useCallback((id: string) => {

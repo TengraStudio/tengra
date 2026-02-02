@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from '@shared/types/database';
+import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { ProjectStep } from '@shared/types/project-agent';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -94,15 +94,27 @@ export class UacRepository {
         return this.db.prepare(`SELECT * FROM uac_tasks WHERE id = ?`).get<UacTaskRecord>(id);
     }
 
+    /**
+     * Creates multiple steps for a task using batch insert for better performance
+     * @param taskId - Task ID to associate steps with
+     * @param steps - Array of steps to create
+     */
     async createSteps(taskId: string, steps: ProjectStep[]): Promise<void> {
         const now = Date.now();
-        // Since we don't have bulk insert in adapter yet, loop it (not ideal for perf but fine for <50 steps)
+        // PERF-003-3: Use batch insert with VALUES clause instead of loop
+        if (steps.length === 0) return;
+        
+        const placeholders = steps.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const params: SqlValue[] = [];
+        
         for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
-            await this.db.prepare(
-                `INSERT INTO uac_steps (id, task_id, index_num, text, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-            ).run(step.id, taskId, i, step.text, step.status, now, now);
+            params.push(step.id, taskId, i, step.text, step.status, now, now);
         }
+        
+        await this.db.prepare(
+            `INSERT INTO uac_steps (id, task_id, index_num, text, status, created_at, updated_at) VALUES ${placeholders}`
+        ).run(...params);
     }
 
     async updateStepStatus(id: string, status: string): Promise<void> {

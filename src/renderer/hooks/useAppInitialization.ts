@@ -15,9 +15,13 @@ export function useAppInitialization() {
     }, [language]);
 
     useEffect(() => {
+        const abortController = new AbortController();
+        
         const detectLanguage = async () => {
+            if (abortController.signal.aborted) { return; }
+            
             const settings = await window.electron.getSettings();
-            if (!settings?.general?.language) {
+            if (!abortController.signal.aborted && !settings?.general?.language) {
                 const browserLang = window.navigator.language.split('-')[0];
                 const supported = ['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
                 if (supported.includes(browserLang)) {
@@ -26,18 +30,32 @@ export function useAppInitialization() {
             }
         };
         void detectLanguage();
+        
+        return () => {
+            abortController.abort();
+        };
     }, [setLanguage]);
 
     useEffect(() => {
+        const abortController = new AbortController();
+        
         const checkExtensionWarning = async () => {
+            if (abortController.signal.aborted) { return; }
+            
             try {
                 const shouldShow = await window.electron.extension.shouldShowWarning();
-                setShowExtensionWarning(shouldShow);
+                if (!abortController.signal.aborted) {
+                    setShowExtensionWarning(shouldShow);
+                }
             } catch (error) {
                 console.error('[Extension] Failed to check warning status:', error);
             }
         };
         void checkExtensionWarning();
+        
+        return () => {
+            abortController.abort();
+        };
     }, []);
 
     return {

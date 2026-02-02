@@ -8,10 +8,16 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 
-const USER_AGENT = 'GithubCopilot/1.250.0';
-const API_VERSION = '2023-07-07';
-const EDITOR_PLUGIN_VERSION = 'copilot/1.250.0';
-const FALLBACK_VSCODE_VERSION = '1.107';
+// QUAL-002-1: Extract version constants
+const COPILOT_USER_AGENT = 'GithubCopilot/1.250.0';
+const COPILOT_API_VERSION = '2023-07-07';
+const COPILOT_EDITOR_PLUGIN_VERSION = 'copilot/1.250.0';
+const COPILOT_FALLBACK_VSCODE_VERSION = '1.107';
+
+const USER_AGENT = COPILOT_USER_AGENT;
+const API_VERSION = COPILOT_API_VERSION;
+const EDITOR_PLUGIN_VERSION = COPILOT_EDITOR_PLUGIN_VERSION;
+const FALLBACK_VSCODE_VERSION = COPILOT_FALLBACK_VSCODE_VERSION;
 
 export interface CopilotTokenResponse {
     token: string;
@@ -135,6 +141,10 @@ export class CopilotService extends BaseService {
         this.logInfo('Copilot service cleanup complete');
     }
 
+    /**
+     * Checks the GitHub API rate limits for the Copilot token.
+     * @param silent If true, suppresses log output unless limit is exhausted.
+     */
     public async checkRateLimit(silent: boolean = false): Promise<void> {
         try {
             const tokenToCheck = await this.getRateLimitToken(silent);
@@ -254,6 +264,10 @@ export class CopilotService extends BaseService {
         }
     }
 
+    /**
+     * Checks if the Copilot service is configured with valid tokens.
+     * @returns True if configured, false otherwise.
+     */
     isConfigured(): boolean {
         // fast check
         if (this.copilotAuthToken || this.copilotSessionToken) {
@@ -293,6 +307,11 @@ export class CopilotService extends BaseService {
 
         this.logInfo(`Token recovery result: Copilot=${!!this.copilotAuthToken}, GitHub=${!!this.githubToken}`);
     }
+    /**
+     * Ensures a valid Copilot session token is available, refreshing if necessary.
+     * @returns The active session token.
+     * @throws Error if authentication fails.
+     */
     public async ensureCopilotToken(): Promise<string> {
         if (this.copilotSessionToken && this.tokenExpiresAt > Date.now()) {
             return this.copilotSessionToken;
@@ -464,7 +483,7 @@ export class CopilotService extends BaseService {
             if (params.required) {
                 delete params.required;
             }
-            
+
             return {
                 type: 'function',
                 function: {

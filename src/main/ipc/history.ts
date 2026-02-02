@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { HistoryImportService } from '@main/services/external/history-import.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
@@ -7,7 +8,7 @@ export function registerHistoryIpc(historyImportService: HistoryImportService) {
         try {
             return await historyImportService.importChatHistory(provider);
         } catch (error) {
-            console.error('[IPC] history:import failed:', getErrorMessage(error as Error));
+            appLogger.error('history', `[IPC] history:import failed: ${getErrorMessage(error as Error)}`);
             return { success: false, message: getErrorMessage(error as Error) };
         }
     });
@@ -16,7 +17,7 @@ export function registerHistoryIpc(historyImportService: HistoryImportService) {
         try {
             return await historyImportService.importFromJson(jsonContent);
         } catch (error) {
-            console.error('[IPC] history:import-json failed:', getErrorMessage(error as Error));
+            appLogger.error('history', `[IPC] history:import-json failed: ${getErrorMessage(error as Error)}`);
             return { success: false, message: getErrorMessage(error as Error) };
         }
     });

@@ -12,6 +12,7 @@ import {
     useNodesState,
     useReactFlow
 } from '@xyflow/react';
+import { appLogger } from '@main/logging/logger';
 import {
     ChevronRight,
     Maximize,
@@ -256,7 +257,7 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
                     });
                 }
             } catch (error) {
-                console.error('[ProjectAgentView] Failed to fetch initial state:', error);
+                appLogger.error('ProjectAgentView', 'Failed to fetch initial state', error as Error);
             }
         };
 

@@ -3,12 +3,23 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { Folder, Project, TerminalTab } from '@/types';
 
+// PERF-002-1: Consolidate related state to reduce re-renders
+interface ProjectManagerState {
+    projects: Project[];
+    folders: Folder[];
+    selectedProject: Project | null;
+    terminalTabs: TerminalTab[];
+    activeTerminalId: string | null;
+}
+
 export function useProjectManager() {
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [folders, setFolders] = useState<Folder[]>([]);
-    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-    const [terminalTabs, setTerminalTabs] = useState<TerminalTab[]>([]);
-    const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null);
+    const [state, setState] = useState<ProjectManagerState>({
+        projects: [],
+        folders: [],
+        selectedProject: null,
+        terminalTabs: [],
+        activeTerminalId: null
+    });
 
     const handleOpenTerminal = useCallback((name: string, command?: string) => {
         const id = uuidv4();
@@ -20,14 +31,17 @@ export function useProjectManager() {
             history: [],
             command: command ?? ''
         };
-        setTerminalTabs(prev => [...prev, newTab]);
-        setActiveTerminalId(id);
+        setState(prev => ({
+            ...prev,
+            terminalTabs: [...prev.terminalTabs, newTab],
+            activeTerminalId: id
+        }));
     }, []);
 
     const loadFolders = useCallback(async () => {
         try {
             const data = await window.electron.db.getFolders();
-            setFolders(data);
+            setState(prev => ({ ...prev, folders: data }));
         } catch (e) {
             console.error('Failed to load folders:', e);
         }
@@ -50,19 +64,23 @@ export function useProjectManager() {
                         ? [{ id: `local-${project.id}`, name: 'Local', type: 'local' as const, rootPath: project.path }]
                         : []
             }));
-            setProjects(loadedProjects);
-
-            // Sync selectedProject if it exists
-            if (selectedProject) {
-                const updated = loadedProjects.find(p => p.id === selectedProject.id);
-                if (updated) {
-                    setSelectedProject(updated);
-                }
-            }
+            
+            setState(prev => {
+                // Sync selectedProject if it exists
+                const updatedSelected = prev.selectedProject
+                    ? loadedProjects.find(p => p.id === prev.selectedProject!.id) ?? prev.selectedProject
+                    : null;
+                
+                return {
+                    ...prev,
+                    projects: loadedProjects,
+                    selectedProject: updatedSelected
+                };
+            });
         } catch (e) {
             console.error('Failed to load projects:', e);
         }
-    }, [selectedProject]);
+    }, []);
 
     const handleCreateFolder = useCallback(async (name: string) => {
         try {
@@ -108,6 +126,33 @@ export function useProjectManager() {
         void fetchInitialData();
     }, [loadFolders, loadProjects]);
 
+    // Destructure state for return object
+    const { projects, folders, selectedProject, terminalTabs, activeTerminalId } = state;
+    
+    // Setters that update specific parts of state
+    const setProjects = useCallback((projects: Project[]) => {
+        setState(prev => ({ ...prev, projects }));
+    }, []);
+    
+    const setFolders = useCallback((folders: Folder[]) => {
+        setState(prev => ({ ...prev, folders }));
+    }, []);
+    
+    const setSelectedProject = useCallback((selectedProject: Project | null) => {
+        setState(prev => ({ ...prev, selectedProject }));
+    }, []);
+    
+    const setTerminalTabs = useCallback((tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => {
+        setState(prev => ({
+            ...prev,
+            terminalTabs: typeof tabs === 'function' ? tabs(prev.terminalTabs) : tabs
+        }));
+    }, []);
+    
+    const setActiveTerminalId = useCallback((id: string | null) => {
+        setState(prev => ({ ...prev, activeTerminalId: id }));
+    }, []);
+
     return useMemo(() => ({
         projects,
         setProjects,
@@ -126,6 +171,7 @@ export function useProjectManager() {
         handleOpenTerminal
     }), [
         projects, folders, selectedProject, terminalTabs, activeTerminalId,
+        setProjects, setFolders, setSelectedProject, setTerminalTabs, setActiveTerminalId,
         loadFolders, loadProjects, handleCreateFolder, handleDeleteFolder, handleOpenTerminal
     ]);
 }

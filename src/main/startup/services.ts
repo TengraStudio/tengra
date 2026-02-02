@@ -248,7 +248,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('fileSystemService', (fct) => new FileSystemService(Array.from(allowedFileRoots), fct as FileChangeTracker), ['fileChangeTracker']);
     container.register('httpService', () => new HttpService());
     container.register('rateLimitService', () => new RateLimitService());
-    container.register('utilityService', (dbs, scs, es) => new UtilityService(dbs as DatabaseService, scs as ScannerService, es as EmbeddingService), ['databaseService', 'scannerService', 'embeddingService']);
+    container.register('utilityService', (dbs) => new UtilityService(dbs as DatabaseService), ['databaseService']);
 
     // Extension detector service
     container.register('extensionDetectorService', (ss) => new ExtensionDetectorService(ss as SettingsService), ['settingsService']);

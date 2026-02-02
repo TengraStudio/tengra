@@ -1,5 +1,6 @@
-﻿import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+﻿import { appLogger } from '@main/logging/logger';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { renderIcon } from '@/lib/file-icons';
@@ -22,40 +23,56 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
     const [isOpen, setIsOpen] = useState(false);
     const [children, setChildren] = useState<FileNode[]>([]);
     const [loading, setLoading] = useState(false);
+    const toggleTimeoutRef = useRef<NodeJS.Timeout>();
 
-    const handleToggle = async (e: React.MouseEvent) => {
+    const handleToggle = useCallback(async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (node.isDirectory) {
-            onFolderSelect?.(node.path);
-
-            if (!isOpen && children.length === 0) {
-                setLoading(true);
-                try {
-                    const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
-                    // Handle ServiceResponse format: { success, data } or direct array
-                    const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
-                    const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
-                        name: f.name,
-                        path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
-                        isDirectory: f.isDirectory
-                    })).sort((a: FileNode, b: FileNode) => {
-                        if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
-                        return a.isDirectory ? -1 : 1;
-                    });
-                    setChildren(nodes);
-                    setIsOpen(true);
-                } catch (error) {
-                    console.error('Failed to load directory:', error);
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setIsOpen(!isOpen);
-            }
-        } else {
-            onSelect(node.path);
+        
+        // Debounce rapid folder clicks (300ms)
+        if (toggleTimeoutRef.current) {
+            clearTimeout(toggleTimeoutRef.current);
         }
-    };
+        
+        toggleTimeoutRef.current = setTimeout(async () => {
+            if (node.isDirectory) {
+                onFolderSelect?.(node.path);
+
+                if (!isOpen && children.length === 0) {
+                    setLoading(true);
+                    try {
+                        const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
+                        // Handle ServiceResponse format: { success, data } or direct array
+                        const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
+                        const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
+                            name: f.name,
+                            path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
+                            isDirectory: f.isDirectory
+                        })).sort((a: FileNode, b: FileNode) => {
+                            if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
+                            return a.isDirectory ? -1 : 1;
+                        });
+                        setChildren(nodes);
+                        setIsOpen(true);
+                    } catch (error) {
+                        appLogger.error('FileExplorer', 'Failed to load directory', error as Error);
+                    } finally {
+                        setLoading(false);
+                    }
+                } else {
+                    setIsOpen(!isOpen);
+                }
+            }
+        }, 300); // 300ms debounce
+    }, [node.path, node.isDirectory, isOpen, children.length, onFolderSelect]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (toggleTimeoutRef.current) {
+                clearTimeout(toggleTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Use the new centralized file icons system
     const icon = renderIcon(node.name, node.isDirectory, isOpen, { size: 14 });
@@ -116,7 +133,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
                 });
                 setRootNodes(nodes);
             } catch (error) {
-                console.error("Failed to load root:", error);
+                appLogger.error('FileExplorer', 'Failed to load root directory', error as Error);
             } finally {
                 setLoading(false);
             }

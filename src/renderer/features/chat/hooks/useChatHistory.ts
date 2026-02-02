@@ -36,10 +36,12 @@ export function useChatHistory(): ChatHistoryManager {
         // Prevent saving during undo/redo operations
         if (isSavingRef.current) {return;}
 
+        // PERF-005-4: Use shallow copy instead of deep copy for messages
+        // Messages are immutable in our architecture, so deep copy is unnecessary
         const newState: ChatHistoryState = {
             chats: chats.map(chat => ({
                 ...chat,
-                messages: [...chat.messages] // Deep copy messages
+                messages: chat.messages // Shallow copy is sufficient for immutable arrays
             })),
             currentChatId,
             timestamp: Date.now()

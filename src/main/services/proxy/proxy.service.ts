@@ -20,6 +20,18 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
 
+/**
+ * Check if file/directory exists using async fs.access
+ */
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export type QuotaInfo = {
   remainingQuota: number;
   totalQuota: number;
@@ -223,31 +235,35 @@ export class ProxyService extends BaseService {
     return LocalAuthServer.startAntigravityAuth(
       (data) => {
         void (async () => {
-          const now = Date.now();
-
-          let projectId: string | undefined;
           try {
-            projectId = await this.fetchAntigravityProjectID(data.access_token);
-            if (projectId) {
-              this.logInfo(`Discovered Antigravity project ID: ${projectId}`);
+            const now = Date.now();
+
+            let projectId: string | undefined;
+            try {
+              projectId = await this.fetchAntigravityProjectID(data.access_token);
+              if (projectId) {
+                this.logInfo(`Discovered Antigravity project ID: ${projectId}`);
+              }
+            } catch (e) {
+              this.logWarn('Failed to discover Antigravity project ID:', e as Error);
             }
-          } catch (e) {
-            this.logWarn('Failed to discover Antigravity project ID:', e as Error);
+
+            // Link account using individual fields
+            await this.authService.linkAccount(prefix, {
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+              expiresAt: now + (data.expires_in * 1000),
+              scope: data.scope,
+              email: data.email,
+              metadata: { ...data, project_id: projectId }
+            });
+
+            // Sync to file system so proxy picks it up immediately
+            await this.syncAuthFiles();
+          } catch (err) {
+            this.logError('Antigravity login failed', err as Error);
           }
-
-          // Link account using individual fields
-          await this.authService.linkAccount(prefix, {
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            expiresAt: now + (data.expires_in * 1000),
-            scope: data.scope,
-            email: data.email,
-            metadata: { ...data, project_id: projectId }
-          });
-
-          // Sync to file system so proxy picks it up immediately
-          await this.syncAuthFiles();
-        })().catch(err => this.logError('Antigravity login failed', err as Error));
+        })();
       },
       (err) => {
         this.logError(`${prefix} Auth failed:`, err as Error);
@@ -295,7 +311,7 @@ export class ProxyService extends BaseService {
 
   async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
     const dir = this.getAuthWorkDir();
-    const exists = await fs.promises.access(dir).then(() => true).catch(() => false);
+    const exists = await fileExists(dir);
     const filesMap = new Map<string, { name: string, provider: string }>();
 
     if (exists) {
@@ -353,7 +369,7 @@ export class ProxyService extends BaseService {
     }
 
     const filePath = path.join(this.getAuthWorkDir(), name);
-    const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+    const exists = await fileExists(filePath);
     if (exists) {
       await fs.promises.unlink(filePath);
       return { success: true };
@@ -363,7 +379,7 @@ export class ProxyService extends BaseService {
 
   async getAuthFileContent(name: string): Promise<JsonObject | null> {
     const filePath = path.join(this.getAuthWorkDir(), name);
-    const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+    const exists = await fileExists(filePath);
     if (!exists) { return null; }
     return await this.readAuthFile(name);
   }
@@ -638,7 +654,7 @@ export class ProxyService extends BaseService {
   private async cleanupAuthDirectory() {
     try {
       const dir = this.getAuthWorkDir();
-      const exists = await fs.promises.access(dir).then(() => true).catch(() => false);
+      const exists = await fileExists(dir);
       if (!exists) { return; }
 
       const files = await fs.promises.readdir(dir);
@@ -647,7 +663,11 @@ export class ProxyService extends BaseService {
       if (jsonFiles.length > 0) {
         this.logInfo(`Cleaning up ${jsonFiles.length} legacy auth files...`);
         for (const file of jsonFiles) {
-          await fs.promises.unlink(path.join(dir, file)).catch(() => { });
+          try {
+            await fs.promises.unlink(path.join(dir, file));
+          } catch {
+            // Ignore errors during cleanup
+          }
         }
       }
     } catch (e) {
@@ -726,7 +746,7 @@ export class ProxyService extends BaseService {
   async readAuthFile(fileName: string): Promise<JsonObject | null> {
     const filePath = path.join(this.getAuthWorkDir(), fileName);
     try {
-      const exists = await fs.promises.access(filePath).then(() => true).catch(() => false);
+      const exists = await fileExists(filePath);
       if (!exists) { return null; }
       const content = await fs.promises.readFile(filePath, 'utf8');
       return this.parseAuthContent(content, fileName);

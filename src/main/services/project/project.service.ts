@@ -44,6 +44,11 @@ export class ProjectService {
 
     constructor() { }
 
+    /**
+     * Starts watching a project directory for changes.
+     * @param rootPath The absolute path to the project root.
+     * @param onChange Callback triggered on file change events.
+     */
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
         appLogger.info(LOG_CONTEXT, `Starting watch on ${rootPath}`);
 
@@ -79,6 +84,12 @@ export class ProjectService {
         }
     }
 
+    /**
+     * Analyzes a project to determine its type, dependencies, structure, and stats.
+     * Results are cached for 5 minutes.
+     * @param rootPath The absolute path to the project root.
+     * @returns Detailed project analysis.
+     */
     async analyzeProject(rootPath: string): Promise<ProjectAnalysis> {
         // Handle Windows paths from renderer that might have leading slash (e.g. /C:/...)
         if (process.platform === 'win32' && rootPath.startsWith('/') && rootPath.charAt(2) === ':') {
@@ -291,6 +302,10 @@ export class ProjectService {
         return ['packages/*'];
     }
 
+    /**
+     * Analyzes a specific directory for package info and stats.
+     * @param dirPath The absolute path to the directory.
+     */
     async analyzeDirectory(dirPath: string): Promise<{
         hasPackageJson: boolean
         pkg: JsonObject

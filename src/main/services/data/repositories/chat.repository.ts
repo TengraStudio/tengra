@@ -197,8 +197,12 @@ export class ChatRepository extends BaseRepository {
         this.buildSearchConditions(options, conditions, params);
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-        const limitClause = options.limit ? `LIMIT ${options.limit}` : '';
+        const limitClause = options.limit ? `LIMIT ?` : '';
         const sql = `SELECT c.* FROM chats c ${whereClause} ORDER BY c.updated_at DESC ${limitClause}`;
+        
+        if (options.limit) {
+            params.push(options.limit);
+        }
 
         const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
         return rows.map(row => this.mapRowToChat(row));
@@ -206,8 +210,11 @@ export class ChatRepository extends BaseRepository {
 
     private buildSearchConditions(options: SearchChatsOptions, conditions: string[], params: SqlValue[]) {
         if (options.query) {
-            conditions.push('(c.title LIKE ? OR EXISTS (SELECT 1 FROM messages m WHERE m.chat_id = c.id AND m.content LIKE ?))');
-            params.push(`%${options.query}%`, `%${options.query}%`);
+            // Sanitize LIKE pattern to prevent wildcard injection
+            const sanitizedQuery = options.query.replace(/[%_]/g, '\\$&');
+            // PERF-003-5: Optimize EXISTS subquery with indexed join
+            conditions.push('(c.title LIKE ? ESCAPE \'\\\' OR c.id IN (SELECT m.chat_id FROM messages m WHERE m.content LIKE ? ESCAPE \'\\\'))');
+            params.push(`%${sanitizedQuery}%`, `%${sanitizedQuery}%`);
         }
         if (options.folderId) {
             conditions.push('c.folder_id = ?');
@@ -250,7 +257,7 @@ export class ChatRepository extends BaseRepository {
         };
     }
 
-    async updateMessage(id: string, updates: JsonObject): Promise<{ success: boolean }> {
+    async updateMessage(id: string, updates: JsonObject): Promise<{ success: boolean; error?: string }> {
         try {
             const row = await this.adapter.prepare('SELECT metadata FROM messages WHERE id = ?').get<JsonObject>(id);
             if (!row) { return { success: false }; }
@@ -276,7 +283,7 @@ export class ChatRepository extends BaseRepository {
             return { success: true };
         } catch (error) {
             appLogger.error('ChatRepository', `Failed to update message: ${getErrorMessage(error)} `);
-            return { success: false };
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
@@ -297,27 +304,27 @@ export class ChatRepository extends BaseRepository {
             ...(r.chat_title ? { chatTitle: String(r.chat_title) } : {})
         }));
     }
-    async deleteMessage(id: string): Promise<{ success: boolean }> {
+    async deleteMessage(id: string): Promise<{ success: boolean; error?: string }> {
         try {
             await this.adapter.prepare('DELETE FROM messages WHERE id = ?').run(id);
             return { success: true };
         } catch (error) {
             appLogger.error('ChatRepository', `Failed to delete message: ${getErrorMessage(error as Error)}`);
-            return { success: false };
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
-    async deleteMessagesByChatId(chatId: string): Promise<{ success: boolean }> {
+    async deleteMessagesByChatId(chatId: string): Promise<{ success: boolean; error?: string }> {
         try {
             await this.adapter.prepare('DELETE FROM messages WHERE chat_id = ?').run(chatId);
             return { success: true };
         } catch (error) {
             appLogger.error('ChatRepository', `Failed to delete messages by chat id: ${getErrorMessage(error as Error)}`);
-            return { success: false };
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
-    async deleteAllChats(): Promise<{ success: boolean }> {
+    async deleteAllChats(): Promise<{ success: boolean; error?: string }> {
         try {
             await this.adapter.transaction(async (tx) => {
                 await tx.prepare('DELETE FROM messages').run();
@@ -326,26 +333,25 @@ export class ChatRepository extends BaseRepository {
             return { success: true };
         } catch (error) {
             appLogger.error('ChatRepository', `Failed to delete all chats: ${getErrorMessage(error)}`);
-            return { success: false };
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 
-    async deleteChatsByTitle(title: string): Promise<{ success: boolean }> {
+    async deleteChatsByTitle(title: string): Promise<{ success: boolean; error?: string }> {
         try {
             const rows = await this.adapter.prepare('SELECT id FROM chats WHERE title = ?').all<{ id: string }>(title);
             const ids = rows.map(r => r.id);
             if (ids.length > 0) {
                 await this.adapter.transaction(async (tx) => {
-                    for (const id of ids) {
-                        await tx.prepare('DELETE FROM messages WHERE chat_id = ?').run(id);
-                        await tx.prepare('DELETE FROM chats WHERE id = ?').run(id);
-                    }
+                    const placeholders = ids.map(() => '?').join(',');
+                    await tx.prepare(`DELETE FROM messages WHERE chat_id IN (${placeholders})`).run(...ids);
+                    await tx.prepare(`DELETE FROM chats WHERE id IN (${placeholders})`).run(...ids);
                 });
             }
             return { success: true };
         } catch (error) {
             appLogger.error('ChatRepository', `Failed to delete chats by title: ${getErrorMessage(error)}`);
-            return { success: false };
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 }

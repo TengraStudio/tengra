@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
@@ -228,7 +229,7 @@ const setupTerminalDataHandler = (
         // Send to terminal
         if (pidRef.current) {
             window.electron.terminal.write(pidRef.current, data).catch(err => {
-                console.error('[TerminalComponent] Write failed:', err);
+                appLogger.error('TerminalComponent', 'Write failed', err as Error);
             });
         }
     });
@@ -304,7 +305,7 @@ const useTerminalInstance = (
                 });
             } catch (error) {
                 term.write(`\r\n\x1b[31m${t('projectDashboard.terminalFailedStart')}\x1b[0m\r\n`);
-                console.error(error);
+                appLogger.error('TerminalComponent', 'Failed to start terminal', error as Error);
             }
         };
 
@@ -325,7 +326,7 @@ const useTerminalInstance = (
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
                 window.electron.terminal.kill(terminalId).catch(err => {
-                    console.error('[TerminalComponent] Failed to kill terminal on cleanup:', err);
+                    appLogger.error('TerminalComponent', 'Failed to kill terminal on cleanup', err as Error);
                 });
             }
             const cleanups = getCleanups(term);
@@ -334,7 +335,7 @@ const useTerminalInstance = (
                 if (typeof cleanups.exit === 'function') { cleanups.exit(); }
             }
             try { term.dispose(); } catch (err) {
-                console.error('[TerminalComponent] Error disposing terminal:', err);
+                appLogger.error('TerminalComponent', 'Error disposing terminal', err as Error);
             }
             terminalInstanceRef.current = null;
         };

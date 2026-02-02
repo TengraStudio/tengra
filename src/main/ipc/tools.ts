@@ -21,7 +21,7 @@ export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: Com
             // Ensure the definitions are serializable by converting to plain JSON
             return JSON.parse(JSON.stringify(defs));
         } catch (e) {
-            console.error('[Main] tools:getDefinitions error:', e);
+            appLogger.error('tools', '[Main] tools:getDefinitions error:', e as Error);
             return [];
         }
     });

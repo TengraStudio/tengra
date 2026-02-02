@@ -25,7 +25,13 @@ export const en = {
         close: 'Close',
         pending: 'Pending',
         selectAll: 'Select All',
-        itemsSelected: '{{count}} items selected'
+        itemsSelected: '{{count}} items selected',
+        // Error messages
+        unknownError: 'Unknown error occurred',
+        operationFailed: 'Operation failed',
+        invalidInput: 'Invalid input',
+        networkError: 'Network error',
+        permissionDenied: 'Permission denied'
     },
     languages: {
         tr: 'Turkish',
@@ -686,9 +692,15 @@ export const en = {
             api: 'APIs',
             development: 'Development',
             ai: 'AI'
-        }
+        },
+        // MCP Store - I18N-002-1
+        noToolsFound: 'No tools found matching your search.',
+        searchingTools: 'Searching tools...',
+        toolsAvailable: 'Tools Available',
+        installedTools: 'Installed Tools',
+        availableTools: 'Available Tools'
     },
-    memory: {
+     memory: {
         title: 'Memory Inspector',
         subtitle: 'Visualize and manage what Tandem knows and remembers.',
         searchPlaceholder: 'Search memory...',
@@ -709,7 +721,16 @@ export const en = {
         confidence: 'Confidence',
         ago: 'ago',
         via: 'via',
-        chatId: 'Chat ID'
+        chatId: 'Chat ID',
+        // Memory component placeholders - I18N-001-4
+        searchMemoriesPlaceholder: 'Search memories...',
+        addMemoryPlaceholder: 'Add a new memory...',
+        memoryContentPlaceholder: 'Enter memory content...',
+        memoryTagsPlaceholder: 'Add tags (comma separated)...',
+        memoryNotePlaceholder: 'Add a note...',
+        memorySourcePlaceholder: 'Source (optional)...',
+        memoryKeyPlaceholder: 'Memory key...',
+        memoryValuePlaceholder: 'Memory value...'
     },
     terminal: {
         noShellsFound: 'No shells found',
@@ -1488,7 +1509,11 @@ export const en = {
         },
 
         // Session setup
-        modelSelectorHint: 'Use the model selector in the top bar to change the AI model.'
+        modelSelectorHint: 'Use the model selector in the top bar to change the AI model.',
+        
+        // Idea Details Modal placeholders - I18N-001-3
+        detailsTitlePlaceholder: 'Enter idea title...',
+        detailsDescriptionPlaceholder: 'Enter idea description...'
     },
     tools: {
         usingTool: 'Using Tool',
@@ -1501,7 +1526,22 @@ export const en = {
         input: 'INPUT',
         output: 'OUTPUT',
         filePreview: 'File Preview',
-        path: 'Path:'
+        path: 'Path:',
+        // Task Node placeholders - I18N-001-2
+        taskTitlePlaceholder: 'Task Title (Optional)',
+        taskDescriptionPlaceholder: 'Describe what you want to build...'
+    },
+    build: {
+        // Build Section placeholders - I18N-001-5
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test'
+    },
+    devServer: {
+        // Dev Server placeholders - I18N-001-6
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000'
     }
 };
 

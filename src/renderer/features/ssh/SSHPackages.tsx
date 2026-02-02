@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 import type { SSHPackageInfo } from '@/types/ssh';
 
@@ -21,7 +22,7 @@ export const SSHPackages: React.FC<SSHPackagesProps> = ({ connectionId, active }
             const data = await window.electron.ssh.getInstalledPackages(connectionId);
             setPackages(data);
         } catch (e) {
-            console.error('Failed to load packages', e);
+            appLogger.error('SSHPackages', 'Failed to load packages', e as Error);
         } finally {
             setLoading(false);
         }

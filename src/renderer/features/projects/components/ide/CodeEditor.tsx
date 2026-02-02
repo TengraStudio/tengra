@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { useEffect, useRef, useState } from 'react';
 
 interface CodeEditorProps {
@@ -135,7 +136,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 viewRef.current = view;
                 setIsLoading(false);
             } catch (err) {
-                console.error('Failed to initialize CodeMirror:', err);
+                appLogger.error('CodeEditor', 'Failed to initialize CodeMirror', err as Error);
                 setError(err instanceof Error ? err.message : 'Failed to load editor');
                 setIsLoading(false);
             }

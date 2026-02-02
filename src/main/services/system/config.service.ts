@@ -5,11 +5,22 @@ import { JsonValue } from '@shared/types/common';
 
 /**
  * Service for managing configuration values with priority-based resolution.
- * Configuration values are resolved in the following order:
- * 1. Runtime cache (highest priority)
- * 2. Environment variables
- * 3. Settings file
- * 4. Default value (lowest priority)
+ * 
+ * Configuration values are resolved in the following order (highest to lowest priority):
+ * 1. Runtime cache - Values set during app execution via setConfig()
+ * 2. Environment variables - process.env values from .env file or system
+ * 3. Settings file - Persisted user settings in settings.json
+ * 4. Default value - Fallback provided in get() call
+ * 
+ * This allows environment-specific configuration while preserving user preferences
+ * and ensuring the app has working defaults.
+ * 
+ * @example
+ * // Set runtime override
+ * configService.setConfig('API_URL', 'https://custom.api.com');
+ * 
+ * // Get with fallback
+ * const apiUrl = configService.get('API_URL', 'https://default.api.com');
  */
 export class ConfigService extends BaseService {
     private cache: Map<string, JsonValue> = new Map();

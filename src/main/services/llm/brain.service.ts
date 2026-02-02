@@ -193,6 +193,12 @@ export class BrainService {
      * Auto-extract user facts from conversation
      */
     async extractUserFactsFromMessage(message: string, _userId: string = this.userId): Promise<UserFact[]> {
+        // Sanitize message to prevent prompt injection
+        const sanitizedMessage = message
+            .replace(/```/g, '') // Remove code block markers
+            .replace(/(\r?\n){3,}/g, '\n\n') // Limit excessive newlines
+            .slice(0, 5000); // Limit length to prevent prompt overflow
+
         const prompt = `Extract ONLY user-related facts from this message. Focus on:
 - User identity (name, role, company)
 - User preferences (likes, dislikes, styles)
@@ -200,7 +206,7 @@ export class BrainService {
 - User goals (what they're building, learning)
 - User context (timezone, tools, platform)
 
-Message: "${message}"
+Message: "${sanitizedMessage}"
 
 Return ONLY facts about the USER (not about projects, not about conversations).
 Format as JSON array:

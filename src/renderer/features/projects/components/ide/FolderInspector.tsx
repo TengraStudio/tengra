@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { Activity, FileText, Folder, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -178,7 +179,7 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
                 const res = await window.electron.project.analyzeDirectory(folderPath);
                 setData(res);
             } catch (error) {
-                console.error('Failed to analyze folder:', error);
+                appLogger.error('FolderInspector', 'Failed to analyze folder', error as Error);
             } finally {
                 setLoading(false);
             }

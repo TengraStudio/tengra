@@ -896,6 +896,30 @@ export function getAdvancedMemoryMigrations(isTest: boolean): Migration[] {
                     CREATE INDEX IF NOT EXISTS idx_memory_rel_type ON memory_relationships(relationship_type);
                 `);
             }
+        },
+        {
+            id: 24,
+            name: 'Add Database Constraints and Indexes',
+            up: async (db: DatabaseAdapter) => {
+                // DB-002-4: Add indexes on messages.provider and messages.model
+                await db.exec(`
+                    CREATE INDEX IF NOT EXISTS idx_messages_provider ON messages(provider);
+                    CREATE INDEX IF NOT EXISTS idx_messages_model ON messages(model);
+                `);
+
+                // DB-002-5: Add index on token_usage.project_path
+                await db.exec(`
+                    CREATE INDEX IF NOT EXISTS idx_token_usage_project_path ON token_usage(project_path);
+                `);
+
+                // DB-002-3: Add UNIQUE constraint on entity_knowledge (entity_type, entity_name, key)
+                // Note: SQLite doesn't support adding constraints to existing tables
+                // This requires recreating the table, which is handled in a separate migration if needed
+                await db.exec(`
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_entity_knowledge_unique 
+                    ON entity_knowledge(entity_type, entity_name, key);
+                `);
+            }
         }
     ];
 }
