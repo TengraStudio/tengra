@@ -3,221 +3,116 @@ import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
 import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
-import { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
+import { SSHConnection } from '@/types';
 
 import { AddConnectionModal } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';
 import { SSHTerminal } from './components/SSHTerminal';
 import { useSSHConnections } from './hooks/useSSHConnections';
 
-interface SSHManagerProps {
-    isOpen: boolean
-    onClose: () => void
-    language: Language
-}
+interface SSHManagerProps { isOpen: boolean; onClose: () => void; language: Language; }
+interface SSHProfile { name?: string; host: string; port: number; username: string; password?: string; privateKey?: string; }
 
-interface SSHProfile {
-    host: string
-    port: number
-    username: string
-    password?: string
-    privateKey?: string
-}
+const SSHTabs: React.FC<{ activeTab: string, onTabChange: (id: string) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
+    <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
+        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }].map(tab => (
+            <button key={tab.id} onClick={() => { onTabChange(tab.id); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
+        ))}
+    </div>
+);
 
 export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const { t } = useTranslation(language);
-    const {
-        connections,
-        isConnecting,
-        setIsConnecting,
-        selectedConnectionId,
-        setSelectedConnectionId,
-        loadConnections,
-    } = useSSHConnections(isOpen);
-
+    const { connections, isConnecting, setIsConnecting, selectedConnectionId, setSelectedConnectionId, loadConnections } = useSSHConnections(isOpen);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newConnection, setNewConnection] = useState<{
-        host: string;
-        port: number;
-        username: string;
-        password?: string;
-        privateKey?: string;
-        name?: string;
-    }>({
-        name: '',
-        host: '',
-        port: 22,
-        username: '',
-        password: '',
-        privateKey: ''
-    });
+    const [newConnection, setNewConnection] = useState<SSHProfile>({ name: '', host: '', port: 22, username: '', password: '', privateKey: '' });
     const [shouldSaveProfile, setShouldSaveProfile] = useState(false);
-    const [terminalOutput, setTerminalOutput] = useState<string>('');
-
-    type TabId = 'terminal' | 'dashboard' | 'files' | 'packages' | 'logs' | 'management'
-    const [activeTab, setActiveTab] = useState<TabId>('terminal');
+    const [terminalOutput, setTerminalOutput] = useState('');
+    const [activeTab, setActiveTab] = useState('terminal');
 
     useEffect(() => {
-        if (isOpen) {
-            window.electron.ssh.onStdout((data) => {
-                const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
-                setTerminalOutput(prev => prev + str);
-            });
-            window.electron.ssh.onStderr((data) => {
-                const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
-                setTerminalOutput(prev => prev + str);
-            });
-            window.electron.ssh.onShellData((eventData) => {
-                setTerminalOutput(prev => prev + eventData.data);
-            });
+        if (!isOpen) {
+            return;
         }
-        // Cleanup is handled by the hook's removeAllListeners, 
-        // or we could add specific cleanup here if IPC supports it.
-        // Assuming global cleanup on unmount is sufficient.
+        const out = (d: string | Uint8Array) => {
+            const s = typeof d === 'string' ? d : new TextDecoder().decode(d);
+            setTerminalOutput(p => { return p + s; });
+        };
+        window.electron.ssh.onStdout(out);
+        window.electron.ssh.onStderr(out);
+        window.electron.ssh.onShellData(ed => {
+            setTerminalOutput(p => { return p + ed.data; });
+        });
     }, [isOpen]);
 
-    const handleAddConnection = async () => {
+    const handleAddConnection = useCallback(async () => {
         setIsConnecting(true);
         setTerminalOutput(`${t('ssh.connecting')} ${newConnection.host}...\n`);
-
-        const result = await window.electron.ssh.connect({
-            host: newConnection.host,
-            port: newConnection.port,
-            username: newConnection.username,
-            password: newConnection.password,
-            privateKey: newConnection.privateKey ? newConnection.privateKey : undefined
-        });
-
+        const res = await window.electron.ssh.connect({ ...newConnection, privateKey: newConnection.privateKey ?? undefined });
         setIsConnecting(false);
-
-        if (result.success) {
-            setTerminalOutput(prev => prev + `${t('ssh.connected', { host: newConnection.host })}\n`);
+        if (res.success) {
+            setTerminalOutput(p => { return p + `${t('ssh.connected', { host: newConnection.host })}\n`; });
             setShowAddModal(false);
-
             if (shouldSaveProfile) {
-                void window.electron.ssh.saveProfile({
-                    ...newConnection,
-                    id: result.id ?? '',
-                    name: newConnection.name ?? newConnection.host
-                }).catch(e => console.error('Save profile err', e));
+                await window.electron.ssh.saveProfile({ ...newConnection, id: res.id ?? '', name: newConnection.name ?? newConnection.host }).catch(console.error);
             }
-
-            void loadConnections().catch(e => console.error('Load conns err', e));
+            await loadConnections().catch(console.error);
         } else {
-            setTerminalOutput(prev => prev + `${t('ssh.connectionError', { error: result.error ?? 'Unknown error' })}\n`);
+            setTerminalOutput(p => { return p + `${t('ssh.connectionError', { error: res.error ?? 'Unknown' })}\n`; });
         }
-    };
+    }, [newConnection, shouldSaveProfile, t, setIsConnecting, loadConnections]);
 
-    const handleDeleteProfile = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        // Removed confirm as per lint, or we can use a custom modal. 
-        // For now, restoring confirm but suppressing lint if needed, or simply not suppressing 
-        // because "Unexpected confirm" is a warning.
-        // Replacing with a simpler check or ignoring lint.
-        // eslint-disable-next-line
-        if (confirm(t('ssh.confirmDelete') ?? 'Are you sure?')) {
-            await window.electron.ssh.deleteProfile(id);
+    const handleAddConnectionWrapper = useCallback(() => {
+        void handleAddConnection();
+    }, [handleAddConnection]);
+
+    const handleConnect = useCallback((c: SSHConnection) => {
+        void window.electron.ssh.connect(c).then(() => {
             void loadConnections();
+        });
+    }, [loadConnections]);
+
+    const handleDisconnect = useCallback((id: string) => {
+        void window.electron.ssh.disconnect(id);
+        setTerminalOutput(p => { return p + `${t('ssh.disconnected')}\n`; });
+    }, [t]);
+
+    const handleDelete = useCallback((id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        // eslint-disable-next-line no-alert
+        if (window.confirm(t('ssh.confirmDelete'))) {
+            void window.electron.ssh.deleteProfile(id).then(() => {
+                void loadConnections();
+            });
         }
-    };
+    }, [loadConnections, t]);
 
-    const handleDisconnect = async (id: string) => {
-        await window.electron.ssh.disconnect(id);
-        // updateConnectionStatus(id, 'disconnected') // Hook handles this via listener
-        setTerminalOutput(prev => prev + `${t('ssh.disconnected')}\n`);
-    };
-
-    const handleExecute = async (id: string, cmd: string) => {
-        if (!cmd.trim()) { return; }
-        await window.electron.ssh.shellWrite(id, cmd + '\n');
-    };
-
-    const handleConnectProfile = (conn: SSHProfile) => {
-        void window.electron.ssh.connect({
-            host: conn.host,
-            port: conn.port,
-            username: conn.username,
-            password: conn.password,
-            privateKey: conn.privateKey
-        }).then(() => loadConnections().catch(console.error));
-    };
-
-    if (!isOpen) { return null; }
+    if (!isOpen) {
+        return null;
+    }
 
     return (
         <div className="modal-overlay">
             <div className="modal-content ssh-manager bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden" style={{ width: '800px', height: '600px', display: 'flex', flexDirection: 'column' }}>
-                <div className="modal-header">
-                    <h2>{t('ssh.title')}</h2>
-                    <button className="close-btn" onClick={onClose}>×</button>
-                </div>
-
+                <div className="modal-header"><h2>{t('ssh.title')}</h2><button className="close-btn" onClick={onClose}>×</button></div>
                 <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                    <SSHConnectionList
-                        connections={connections}
-                        selectedId={selectedConnectionId}
-                        onSelect={setSelectedConnectionId}
-                        onConnect={(conn) => { void handleConnectProfile(conn); }}
-                        onDisconnect={(id) => { void handleDisconnect(id); }}
-                        onDelete={(id, e) => { void handleDeleteProfile(id, e); }}
-                        onAdd={() => setShowAddModal(true)}
-                        t={t}
-                    />
-
-                    {/* Terminal / Details Area */}
+                    <SSHConnectionList connections={connections} selectedId={selectedConnectionId} onSelect={setSelectedConnectionId} onConnect={handleConnect} onDisconnect={handleDisconnect} onDelete={handleDelete} onAdd={() => { setShowAddModal(true); }} t={t} />
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
-                            {[
-                                { id: 'terminal', label: t('ssh.terminal') },
-                                { id: 'dashboard', label: t('ssh.dashboard') },
-                                { id: 'files', label: t('ssh.files') },
-                                { id: 'packages', label: t('ssh.packages') },
-                                { id: 'logs', label: t('ssh.logs') },
-                                { id: 'management', label: t('ssh.management') }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as TabId)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent',
-                                        border: 'none',
-                                        color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)',
-                                        borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none',
-                                        whiteSpace: 'nowrap'
-                                    }}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-
+                        <SSHTabs activeTab={activeTab} onTabChange={setActiveTab} t={t} />
                         <div className="flex-1 overflow-hidden">
                             {activeTab === 'terminal' ? (
-                                <SSHTerminal
-                                    terminalOutput={terminalOutput}
-                                    t={t}
-                                    onExecute={(cmd) => {
-                                        if (selectedConnectionId) {
-                                            handleExecute(selectedConnectionId, cmd).catch(console.error);
-                                        } else {
-                                            setTerminalOutput(prev => prev + `${t('ssh.noServerConnected')}\n`);
-                                        }
-                                    }}
-                                    selectedConnectionId={selectedConnectionId}
-                                />
+                                <SSHTerminal terminalOutput={terminalOutput} t={t} onExecute={cmd => { if (selectedConnectionId) { void window.electron.ssh.shellWrite(selectedConnectionId, cmd + '\n'); } else { setTerminalOutput(p => { return p + `${t('ssh.noServerConnected')}\n`; }); } }} selectedConnectionId={selectedConnectionId} />
                             ) : !selectedConnectionId ? (
-                                <div className="flex-1 h-full flex items-center justify-center bg-background text-muted-foreground">
-                                    {t('ssh.selectConnection')}
-                                </div>
+                                <div className="flex-1 h-full flex items-center justify-center bg-background text-muted-foreground">{t('ssh.selectConnection')}</div>
                             ) : activeTab === 'dashboard' ? (
                                 <StatsDashboard connectionId={selectedConnectionId} />
                             ) : activeTab === 'packages' ? (
                                 <PackageManager connectionId={selectedConnectionId} />
                             ) : activeTab === 'logs' ? (
-                                <SSHLogs connectionId={selectedConnectionId} active={activeTab === 'logs'} />
+                                <SSHLogs connectionId={selectedConnectionId} active />
                             ) : activeTab === 'management' ? (
                                 <NginxWizard connectionId={selectedConnectionId} language={language} />
                             ) : (
@@ -226,18 +121,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                         </div>
                     </div>
                 </div>
-
-                <AddConnectionModal
-                    isOpen={showAddModal}
-                    onClose={() => setShowAddModal(false)}
-                    t={t}
-                    newConnection={newConnection}
-                    setNewConnection={setNewConnection}
-                    shouldSaveProfile={shouldSaveProfile}
-                    setShouldSaveProfile={setShouldSaveProfile}
-                    isConnecting={isConnecting}
-                    onConnect={() => { void handleAddConnection().catch(console.error); }}
-                />
+                <AddConnectionModal isOpen={showAddModal} onClose={() => { setShowAddModal(false); }} t={t} newConnection={newConnection} setNewConnection={setNewConnection} shouldSaveProfile={shouldSaveProfile} setShouldSaveProfile={setShouldSaveProfile} isConnecting={isConnecting} onConnect={handleAddConnectionWrapper} />
             </div>
         </div>
     );

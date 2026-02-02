@@ -46,6 +46,20 @@ interface IdeaDetailsContentProps {
     setShowLogoGenerator: (show: boolean) => void
 }
 
+type TabType = IdeaDetailsContentProps['activeTab'];
+
+interface OverviewTabProps {
+    idea: ProjectIdea
+    selectedName: string
+    selectedDescription: string
+    nameSuggestions: string[]
+    onNameSelect: (name: string) => void
+    onDescriptionChange: (description: string) => void
+    canGenerateLogo: boolean
+    showLogoGenerator: boolean
+    setShowLogoGenerator: (show: boolean) => void
+}
+
 const ValueProposition: React.FC<{ value?: string }> = ({ value }) => {
     const { t } = useTranslation();
     if (!value) { return null; }
@@ -612,6 +626,153 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
     );
 };
 
+const CoreConceptHeader: React.FC<{
+    isPending: boolean
+    isDifferent: boolean
+    onReset: () => void
+}> = ({ isPending, isDifferent, onReset }) => (
+    <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
+        Core Concept
+        {isPending && isDifferent && (
+            <button
+                onClick={onReset}
+                className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold normal-case"
+            >
+                Reset
+            </button>
+        )}
+    </h3>
+);
+
+const LogoGeneratorSection: React.FC<{
+    ideaId: string
+    selectedName: string
+    ideaTitle: string
+    showLogoGenerator: boolean
+    setShowLogoGenerator: (show: boolean) => void
+    t: (key: string) => string
+}> = ({ ideaId, selectedName, ideaTitle, showLogoGenerator, setShowLogoGenerator, t }) => (
+    <div className="space-y-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
+            <Sparkles className="w-4 h-4 text-primary" />
+            Visual Identity
+        </h3>
+        {showLogoGenerator ? (
+            <LogoGenerator ideaId={ideaId} ideaTitle={selectedName || ideaTitle} onClose={() => setShowLogoGenerator(false)} />
+        ) : (
+            <button
+                type="button"
+                onClick={() => setShowLogoGenerator(true)}
+                className="w-full aspect-[16/9] rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted/10"
+            >
+                <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-primary/20 to-accent/20 text-primary">
+                    <Sparkles className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold text-muted-foreground/60 group-hover:text-foreground transition-colors">{t('ideas.logo.generate')}</span>
+            </button>
+        )}
+    </div>
+);
+
+const OverviewTab: React.FC<OverviewTabProps> = ({
+    idea, selectedName, selectedDescription, nameSuggestions,
+    onNameSelect, onDescriptionChange, canGenerateLogo, showLogoGenerator, setShowLogoGenerator
+}) => {
+    const { t } = useTranslation();
+    const isPending = idea.status === 'pending';
+    const isDifferent = selectedDescription !== idea.description;
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-muted/20 border border-border/50 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <Sparkles className="w-32 h-32 text-primary" />
+                </div>
+                <CoreConceptHeader isPending={isPending} isDifferent={isDifferent} onReset={() => onDescriptionChange(idea.description)} />
+                {isPending ? (
+                    <textarea
+                        value={selectedDescription}
+                        onChange={(e) => onDescriptionChange(e.target.value)}
+                        className="w-full bg-transparent border border-border/30 rounded-lg px-3 py-2 text-lg text-foreground font-bold leading-relaxed relative z-10 focus:outline-none focus:border-primary/50 transition-all resize-none"
+                        rows={3}
+                        placeholder="Edit description..."
+                    />
+                ) : (
+                    <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">{idea.description}</p>
+                )}
+            </div>
+
+            <ValueProposition value={idea.valueProposition} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <NameSuggestions names={nameSuggestions} selectedName={selectedName} onSelect={onNameSelect} />
+                {canGenerateLogo && isPending && (
+                    <LogoGeneratorSection
+                        ideaId={idea.id}
+                        selectedName={selectedName}
+                        ideaTitle={idea.title}
+                        showLogoGenerator={showLogoGenerator}
+                        setShowLogoGenerator={setShowLogoGenerator}
+                        t={t}
+                    />
+                )}
+            </div>
+        </div>
+    );
+};
+
+const MarketTab: React.FC<{ idea: ProjectIdea; trends: MarketTrend[] }> = ({ idea, trends }) => (
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+        <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
+            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
+            <p className="text-sm text-foreground/70 leading-relaxed font-sans">
+                {idea.marketResearch?.categoryAnalysis ?? 'Analysis pending deep dive...'}
+            </p>
+        </div>
+        <MarketTrends trends={trends} />
+    </div>
+);
+
+const StrategyTab: React.FC<{ advantages: string[]; competitors: IdeaCompetitor[] }> = ({ advantages, competitors }) => (
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+        <CompetitiveAdvantages advantages={advantages} />
+        <IdeaCompetitorsSection competitors={competitors} />
+    </div>
+);
+
+const TechnologyTab: React.FC<{ techStack?: TechStack }> = ({ techStack }) => (
+    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+        <TechStackSection techStack={techStack} />
+    </div>
+);
+
+const RoadmapTab: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => (
+    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+        <RoadmapSection roadmap={roadmap} />
+    </div>
+);
+
+const UsersTab: React.FC<{ personas?: UserPersona[]; journey?: JourneyStep[] }> = ({ personas, journey }) => (
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+        <PersonasSection personas={personas} journey={journey} />
+    </div>
+);
+
+const BusinessTab: React.FC<{ ideaId: string; swot?: SWOTAnalysis; businessModel?: BusinessModel; marketingPlan?: MarketingPlan }> = ({
+    ideaId, swot, businessModel, marketingPlan
+}) => (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-in fade-in slide-in-from-right-2 duration-300">
+        <div className="xl:col-span-2">
+            <BusinessCaseSection swot={swot} businessModel={businessModel} marketingPlan={marketingPlan} />
+        </div>
+        <div className="xl:col-span-1">
+            <div className="sticky top-0">
+                <ResearchChat ideaId={ideaId} />
+            </div>
+        </div>
+    </div>
+);
+
 export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
     idea,
     activeTab,
@@ -623,145 +784,36 @@ export const IdeaDetailsContent: React.FC<IdeaDetailsContentProps> = ({
     showLogoGenerator,
     setShowLogoGenerator
 }) => {
-    const { t } = useTranslation();
     const nameSuggestions = idea.nameSuggestions ?? [];
     const competitiveAdvantages = idea.competitiveAdvantages ?? [];
     const marketTrends = idea.marketResearch?.trends ?? [];
-    // unused competitors removed
     const ideaCompetitors = idea.ideaCompetitors ?? [];
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'overview':
-                return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-muted/20 border border-border/50 rounded-2xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Sparkles className="w-32 h-32 text-primary" />
-                            </div>
-                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
-                                Core Concept
-                                {idea.status === 'pending' && selectedDescription !== idea.description && (
-                                    <button
-                                        onClick={() => onDescriptionChange(idea.description)}
-                                        className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold normal-case"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </h3>
-                            {idea.status === 'pending' ? (
-                                <textarea
-                                    value={selectedDescription}
-                                    onChange={(e) => onDescriptionChange(e.target.value)}
-                                    className="w-full bg-transparent border border-border/30 rounded-lg px-3 py-2 text-lg text-foreground font-bold leading-relaxed relative z-10 focus:outline-none focus:border-primary/50 transition-all resize-none"
-                                    rows={3}
-                                    placeholder="Edit description..."
-                                />
-                            ) : (
-                                <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">
-                                    {idea.description}
-                                </p>
-                            )}
-                        </div>
-
-                        <ValueProposition value={idea.valueProposition} />
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <NameSuggestions
-                                names={nameSuggestions}
-                                selectedName={selectedName}
-                                onSelect={onNameSelect}
-                            />
-                            {canGenerateLogo && idea.status === 'pending' && (
-                                <div className="space-y-3">
-                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
-                                        <Sparkles className="w-4 h-4 text-primary" />
-                                        Visual Identity
-                                    </h3>
-                                    {showLogoGenerator ? (
-                                        <LogoGenerator
-                                            ideaId={idea.id}
-                                            ideaTitle={selectedName || idea.title}
-                                            onClose={() => setShowLogoGenerator(false)}
-                                        />
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowLogoGenerator(true)}
-                                            className="w-full aspect-[16/9] rounded-xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden flex flex-col items-center justify-center gap-3 bg-muted/10"
-                                        >
-                                            <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center group-hover:scale-110 transition-transform bg-gradient-to-br from-primary/20 to-accent/20 text-primary">
-                                                <Sparkles className="w-5 h-5" />
-                                            </div>
-                                            <span className="text-xs font-bold text-muted-foreground/60 group-hover:text-foreground transition-colors">{t('ideas.logo.generate')}</span>
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            case 'market':
-                return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
-                            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
-                            <p className="text-sm text-foreground/70 leading-relaxed font-sans">
-                                {idea.marketResearch?.categoryAnalysis ?? 'Analysis pending deep dive...'}
-                            </p>
-                        </div>
-                        <MarketTrends trends={marketTrends} />
-                    </div>
-                );
-            case 'strategy':
-                return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <CompetitiveAdvantages advantages={competitiveAdvantages} />
-                        <IdeaCompetitorsSection competitors={ideaCompetitors} />
-                    </div>
-                );
-            case 'technology':
-                return (
-                    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-                        <TechStackSection techStack={idea.techStack} />
-                    </div>
-                );
-            case 'roadmap':
-                return (
-                    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-                        <RoadmapSection roadmap={idea.roadmap} />
-                    </div>
-                );
-            case 'users':
-                return (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <PersonasSection personas={idea.personas} journey={idea.userJourney} />
-                    </div>
-                );
-            case 'business':
-                return (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                        <div className="xl:col-span-2">
-                            <BusinessCaseSection
-                                swot={idea.swot}
-                                businessModel={idea.businessModel}
-                                marketingPlan={idea.marketingPlan}
-                            />
-                        </div>
-                        <div className="xl:col-span-1">
-                            <div className="sticky top-0">
-                                <ResearchChat ideaId={idea.id} />
-                            </div>
-                        </div>
-                    </div>
-                );
-        }
+    const TAB_CONTENT: Record<TabType, React.ReactNode> = {
+        overview: (
+            <OverviewTab
+                idea={idea}
+                selectedName={selectedName}
+                selectedDescription={selectedDescription}
+                nameSuggestions={nameSuggestions}
+                onNameSelect={onNameSelect}
+                onDescriptionChange={onDescriptionChange}
+                canGenerateLogo={canGenerateLogo}
+                showLogoGenerator={showLogoGenerator}
+                setShowLogoGenerator={setShowLogoGenerator}
+            />
+        ),
+        market: <MarketTab idea={idea} trends={marketTrends} />,
+        strategy: <StrategyTab advantages={competitiveAdvantages} competitors={ideaCompetitors} />,
+        technology: <TechnologyTab techStack={idea.techStack} />,
+        roadmap: <RoadmapTab roadmap={idea.roadmap} />,
+        users: <UsersTab personas={idea.personas} journey={idea.userJourney} />,
+        business: <BusinessTab ideaId={idea.id} swot={idea.swot} businessModel={idea.businessModel} marketingPlan={idea.marketingPlan} />,
     };
 
     return (
         <div className="p-8 overflow-y-auto max-h-full flex-1 custom-scrollbar">
-            {renderContent()}
+            {TAB_CONTENT[activeTab]}
         </div>
     );
 };

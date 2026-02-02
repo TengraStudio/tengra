@@ -69,8 +69,21 @@ interface EventControllers {
     setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const clearLoadingState = (setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>) => {
+    if (setIsLoading) { setIsLoading(false); }
+};
+
+const addActivityLog = (
+    setActivityLogs: React.Dispatch<React.SetStateAction<ActivityLog[]>>,
+    type: ActivityLog['type'],
+    message: string
+) => {
+    setActivityLogs(prev => [...prev, { id: generateUniqueId(), type, message, timestamp: new Date() }]);
+};
+
 const processLifecycleEvent = (type: string, data: EventData, ctrl: EventControllers) => {
     const { setStatus, setActivityLogs, setToolExecutions, setCurrentPlan, loadTaskHistory, setIsLoading } = ctrl;
+
     if (type === 'agent:task_started') {
         setActivityLogs([]);
         setToolExecutions([]);
@@ -83,45 +96,39 @@ const processLifecycleEvent = (type: string, data: EventData, ctrl: EventControl
             error: null,
             metrics: { tokensUsed: 0, llmCalls: 0, toolCalls: 0, estimatedCost: 0 }
         });
-        // Clear loading state when task actually starts
-        if (setIsLoading) {
-            setIsLoading(false);
-        }
+        clearLoadingState(setIsLoading);
         void loadTaskHistory();
-    }
-
-    // Ensure we only process events for the selected task from here on
-    if (data.taskId !== ctrl.selectedTaskId) {
         return;
     }
 
-    if (type === 'agent:task_paused') {
-        setStatus(prev => ({ ...prev, state: 'paused' }));
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'info', message: `Task paused${data.reason ? `: ${data.reason}` : ''}.`, timestamp: new Date() }]);
-        // Clear loading state on pause
-        if (setIsLoading) {
-            setIsLoading(false);
+    // Only process events for the selected task
+    if (data.taskId !== ctrl.selectedTaskId) { return; }
+
+    const eventHandlers: Partial<Record<string, () => void>> = {
+        'agent:task_paused': () => {
+            setStatus(prev => ({ ...prev, state: 'paused' }));
+            addActivityLog(setActivityLogs, 'info', `Task paused${data.reason ? `: ${data.reason}` : ''}.`);
+            clearLoadingState(setIsLoading);
+        },
+        'agent:task_resumed': () => {
+            setStatus(prev => ({ ...prev, state: 'thinking' }));
+            addActivityLog(setActivityLogs, 'info', 'Task resumed.');
+        },
+        'agent:task_completed': () => {
+            setStatus(prev => ({ ...prev, state: 'completed', progress: 100 }));
+            addActivityLog(setActivityLogs, 'success', 'Task completed successfully!');
+            clearLoadingState(setIsLoading);
+            void loadTaskHistory();
+        },
+        'agent:task_failed': () => {
+            setStatus(prev => ({ ...prev, state: 'failed', error: data.error ?? 'Unknown error' }));
+            addActivityLog(setActivityLogs, 'error', `Task failed: ${data.error ?? 'Unknown error'}`);
+            clearLoadingState(setIsLoading);
+            void loadTaskHistory();
         }
-    } else if (type === 'agent:task_resumed') {
-        setStatus(prev => ({ ...prev, state: 'thinking' }));
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'info', message: 'Task resumed.', timestamp: new Date() }]);
-    } else if (type === 'agent:task_completed') {
-        setStatus(prev => ({ ...prev, state: 'completed', progress: 100 }));
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'success', message: 'Task completed successfully!', timestamp: new Date() }]);
-        // Clear loading state on completion
-        if (setIsLoading) {
-            setIsLoading(false);
-        }
-        void loadTaskHistory();
-    } else if (type === 'agent:task_failed') {
-        setStatus(prev => ({ ...prev, state: 'failed', error: data.error ?? 'Unknown error' }));
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'error', message: `Task failed: ${data.error ?? 'Unknown error'}`, timestamp: new Date() }]);
-        // Clear loading state on failure
-        if (setIsLoading) {
-            setIsLoading(false);
-        }
-        void loadTaskHistory();
-    }
+    };
+
+    eventHandlers[type]?.();
 };
 
 const processToolEvent = (type: string, data: EventData, ctrl: EventControllers) => {
@@ -195,7 +202,7 @@ const processPlanEvent = (type: string, data: EventData, ctrl: EventControllers)
         });
     } else if (type === 'agent:step_started' && typeof data.stepIndex === 'number') {
         const stepIdx = data.stepIndex;
-        const progress = Math.round((stepIdx / (currentPlanStepsCount ?? 1)) * 100);
+        const progress = Math.round((stepIdx / (currentPlanStepsCount || 1)) * 100);
         setStatus(prev => ({ ...prev, state: 'executing', progress, currentStep: data.description ?? `Executing step ${stepIdx + 1}...` }));
         if (data.thoughts) {
             setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Step Reason: ${data.thoughts}`, timestamp: new Date() }]);
@@ -217,70 +224,115 @@ const handleLlmResponse = (data: EventData, ctrl: EventControllers) => {
             : content;
         setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `AI Response: ${displayContent}`, timestamp: new Date() }]);
     }
-    setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Received response from ${data.provider || 'unknown'} in ${duration.toFixed(1)}s${tokens}`, timestamp: new Date() }]);
+    setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Received response from ${data.provider ?? 'unknown'} in ${duration.toFixed(1)}s${tokens}`, timestamp: new Date() }]);
     if (data.metrics) {
         setStatus(prev => ({ ...prev, metrics: data.metrics }));
     }
 };
 
+const handlePlanAwaitingApproval = (data: EventData, ctrl: EventControllers) => {
+    const { setStatus, setActivityLogs } = ctrl;
+    setStatus(prev => ({ ...prev, state: 'waiting_approval' }));
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'info',
+        message: '📋 Execution plan ready. Waiting for your approval to proceed.',
+        timestamp: new Date()
+    }]);
+};
+
+const handlePlanApproved = (ctrl: EventControllers) => {
+    const { setActivityLogs } = ctrl;
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'success',
+        message: '✓ Plan approved. Starting execution...',
+        timestamp: new Date()
+    }]);
+};
+
+const handlePlanRejected = (data: EventData, ctrl: EventControllers) => {
+    const { setActivityLogs } = ctrl;
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'error',
+        message: `✗ Plan rejected${data.reason ? `: ${data.reason}` : ''}`,
+        timestamp: new Date()
+    }]);
+};
+
+const handleStateChanged = (data: EventData, ctrl: EventControllers) => {
+    const { setStatus } = ctrl;
+    if (data.state) {
+        setStatus(prev => ({ ...prev, state: data.state as string }));
+    }
+};
+
+const handleLlmRequest = (data: EventData, ctrl: EventControllers) => {
+    const { setActivityLogs } = ctrl;
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'llm',
+        message: `Calling LLM with ${data.provider ?? 'unknown'}...`,
+        timestamp: new Date()
+    }]);
+};
+
+const handleProviderChanged = (data: EventData, ctrl: EventControllers) => {
+    const { setActivityLogs } = ctrl;
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'info',
+        message: `Switched provider: ${data.fromProvider ?? 'unknown'} → ${data.toProvider ?? 'unknown'}${data.reason ? ` (${data.reason})` : ''}`,
+        timestamp: new Date()
+    }]);
+};
+
+const handleErrorOccurred = (data: EventData, ctrl: EventControllers) => {
+    const { setActivityLogs } = ctrl;
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'error',
+        message: data.message ?? 'Unknown error',
+        timestamp: new Date()
+    }]);
+};
+
+const handleResourceError = (data: EventData, ctrl: EventControllers) => {
+    const { setStatus, setActivityLogs } = ctrl;
+    const errorMsg = data.message ?? 'Insufficient system resources';
+    setActivityLogs(prev => [...prev, {
+        id: generateUniqueId(),
+        type: 'error',
+        message: `⚠️ Resource Error: ${errorMsg}. Task paused - please select a cloud-based model.`,
+        timestamp: new Date()
+    }]);
+    setStatus(prev => ({ ...prev, state: 'waiting_user', error: errorMsg }));
+};
+
+type TelemetryEventHandler = (data: EventData, ctrl: EventControllers) => void;
+
+const telemetryEventHandlers: Record<string, TelemetryEventHandler> = {
+    'agent:plan_awaiting_approval': handlePlanAwaitingApproval,
+    'agent:plan_approved': (data, ctrl) => handlePlanApproved(ctrl),
+    'agent:plan_rejected': handlePlanRejected,
+    'agent:state_changed': handleStateChanged,
+    'agent:llm_request': handleLlmRequest,
+    'agent:llm_response': handleLlmResponse,
+    'agent:provider_changed': handleProviderChanged,
+    'agent:error_occurred': handleErrorOccurred,
+    'agent:resource_error': handleResourceError
+};
+
 const processTelemetryEvent = (type: string, data: EventData, ctrl: EventControllers) => {
-    const { setStatus, setActivityLogs, selectedTaskId } = ctrl;
+    const { selectedTaskId } = ctrl;
     if (data.taskId !== selectedTaskId) {
         return;
     }
 
-    // Handle plan approval events
-    if (type === 'agent:plan_awaiting_approval') {
-        setStatus(prev => ({ ...prev, state: 'waiting_approval' }));
-        setActivityLogs(prev => [...prev, {
-            id: generateUniqueId(),
-            type: 'info',
-            message: '📋 Execution plan ready. Waiting for your approval to proceed.',
-            timestamp: new Date()
-        }]);
-        return;
-    }
-
-    if (type === 'agent:plan_approved') {
-        setActivityLogs(prev => [...prev, {
-            id: generateUniqueId(),
-            type: 'success',
-            message: '✓ Plan approved. Starting execution...',
-            timestamp: new Date()
-        }]);
-        return;
-    }
-
-    if (type === 'agent:plan_rejected') {
-        setActivityLogs(prev => [...prev, {
-            id: generateUniqueId(),
-            type: 'error',
-            message: `✗ Plan rejected${data.reason ? `: ${data.reason}` : ''}`,
-            timestamp: new Date()
-        }]);
-        return;
-    }
-
-    if (type === 'agent:state_changed' && data.state) {
-        setStatus(prev => ({ ...prev, state: data.state as string }));
-    } else if (type === 'agent:llm_request') {
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Calling LLM with ${data.provider || 'unknown'}...`, timestamp: new Date() }]);
-    } else if (type === 'agent:llm_response') {
-        handleLlmResponse(data, ctrl);
-    } else if (type === 'agent:provider_changed') {
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'info', message: `Switched provider: ${data.fromProvider ?? 'unknown'} → ${data.toProvider ?? 'unknown'}${data.reason ? ` (${data.reason})` : ''}`, timestamp: new Date() }]);
-    } else if (type === 'agent:error_occurred') {
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'error', message: data.message ?? 'Unknown error', timestamp: new Date() }]);
-    } else if (type === 'agent:resource_error') {
-        // Handle resource/memory errors with user-friendly message
-        const errorMsg = data.message ?? 'Insufficient system resources';
-        setActivityLogs(prev => [...prev, {
-            id: generateUniqueId(),
-            type: 'error',
-            message: `⚠️ Resource Error: ${errorMsg}. Task paused - please select a cloud-based model.`,
-            timestamp: new Date()
-        }]);
-        setStatus(prev => ({ ...prev, state: 'waiting_user', error: errorMsg }));
+    const handler = telemetryEventHandlers[type];
+    if (typeof handler === 'function') {
+        handler(data, ctrl);
     }
 };
 

@@ -20,6 +20,36 @@ export interface SidebarBadgeProps {
     className?: string
 }
 
+type BadgeVariant = 'default' | 'primary' | 'warning' | 'error' | 'success';
+type BadgeSize = 'sm' | 'md';
+
+const VARIANT_CLASSES: Record<BadgeVariant, string> = {
+    default: 'bg-muted text-muted-foreground',
+    primary: 'bg-primary text-primary-foreground',
+    warning: 'bg-warning text-foreground',
+    error: 'bg-destructive text-foreground',
+    success: 'bg-success text-foreground'
+};
+
+const SIZE_CLASSES: Record<BadgeSize, { dot: string; badge: string }> = {
+    sm: { dot: 'w-2 h-2', badge: 'min-w-[18px] h-[18px] px-1.5 text-[10px]' },
+    md: { dot: 'w-2.5 h-2.5', badge: 'min-w-[22px] h-[22px] px-2 text-xs' }
+};
+
+function formatBadgeValue(value: number | string, max: number): string | number {
+    return typeof value === 'number' && value > max ? `${max}+` : value;
+}
+
+interface DotBadgeProps {
+    size: BadgeSize
+    variant: BadgeVariant
+    className?: string
+}
+
+const DotBadge: React.FC<DotBadgeProps> = ({ size, variant, className }) => (
+    <span className={cn('rounded-full', SIZE_CLASSES[size].dot, VARIANT_CLASSES[variant], className)} />
+);
+
 export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
     value,
     max = 99,
@@ -29,33 +59,11 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
     animate = true,
     className
 }) => {
-    const variantClasses = {
-        default: 'bg-muted text-muted-foreground',
-        primary: 'bg-primary text-primary-foreground',
-        warning: 'bg-warning text-foreground',
-        error: 'bg-destructive text-foreground',
-        success: 'bg-success text-foreground'
-    };
-
-    const sizeClasses = {
-        sm: dot ? 'w-2 h-2' : 'min-w-[18px] h-[18px] px-1.5 text-[10px]',
-        md: dot ? 'w-2.5 h-2.5' : 'min-w-[22px] h-[22px] px-2 text-xs'
-    };
-
-    const displayValue = typeof value === 'number' && value > max
-        ? `${max}+`
-        : value;
-
     if (dot) {
-        return (
-            <span className={cn(
-                'rounded-full',
-                sizeClasses[size],
-                variantClasses[variant],
-                className
-            )} />
-        );
+        return <DotBadge size={size} variant={variant} className={className} />;
     }
+
+    const displayValue = formatBadgeValue(value, max);
 
     return (
         <AnimatePresence mode="wait">
@@ -66,8 +74,8 @@ export const SidebarBadge: React.FC<SidebarBadgeProps> = React.memo(({
                 exit={animate ? { scale: 0.5, opacity: 0 } : undefined}
                 className={cn(
                     'inline-flex items-center justify-center rounded-full font-semibold',
-                    sizeClasses[size],
-                    variantClasses[variant],
+                    SIZE_CLASSES[size].badge,
+                    VARIANT_CLASSES[variant],
                     className
                 )}
             >

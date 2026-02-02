@@ -26,21 +26,45 @@ export class TandemError extends Error {
 }
 
 /**
+ * Extracts error message from an object if present
+ */
+const getMessageFromObject = (obj: Record<string, unknown>): string | null => {
+    if (typeof obj.message === 'string') {
+        return obj.message;
+    }
+    if (typeof obj.error === 'string') {
+        return obj.error;
+    }
+
+    if (obj.error && typeof obj.error === 'object') {
+        const nested = obj.error as Record<string, unknown>;
+        if (typeof nested.message === 'string') {
+            return nested.message;
+        }
+    }
+
+    return null;
+};
+
+/**
  * Safely extracts error message from any caught value
  * Usage: catch (e) { const msg = getErrorMessage(e) }
  */
 export function getErrorMessage(error: unknown): string {
-    if (error instanceof Error) { return error.message; }
-    if (typeof error === 'string') { return error; }
+    if (error instanceof Error) {
+        return error.message;
+    }
+    if (typeof error === 'string') {
+        return error;
+    }
+
     if (error && typeof error === 'object') {
-        const err = error as Record<string, unknown>;
-        if (typeof err.message === 'string') { return err.message; }
-        if (typeof err.error === 'string') { return err.error; }
-        if (err.error && typeof err.error === 'object') {
-            const nestedErr = err.error as Record<string, unknown>;
-            if (typeof nestedErr.message === 'string') { return nestedErr.message; }
+        const msg = getMessageFromObject(error as Record<string, unknown>);
+        if (msg) {
+            return msg;
         }
     }
+
     const str = String(error);
     return str === '[object Object]' ? 'Unknown error' : str;
 }
@@ -49,25 +73,46 @@ export function getErrorMessage(error: unknown): string {
  * Normalizes any caught error into a structured AppError
  */
 export function toAppError(error: CatchError, defaultCode = 'UNKNOWN_ERROR'): AppError {
-    if (error && typeof error === 'object' && 'message' in error && 'code' in error) {
-        const err = error as Record<string, unknown>;
-        if (typeof err.message === 'string') {
-            return error as AppError;
-        }
+    // 1. Check if it's already an AppError
+    if (isAppError(error)) {
+        return error as AppError;
     }
 
+    // 2. Extract message and code
     const message = getErrorMessage(error);
-    const code = (error && typeof error === 'object' && 'code' in error)
-        ? (error as Record<string, unknown>).code as string
-        : defaultCode;
+    const code = getErrorCode(error) ?? defaultCode;
 
     const appError: AppError = { message, code };
 
+    // 3. Add stack if available
     if (error instanceof Error && error.stack) {
         appError.stack = error.stack;
     }
 
     return appError;
+}
+
+/**
+ * Type guard for AppError
+ */
+function isAppError(error: unknown): boolean {
+    return !!(
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        'code' in error &&
+        typeof (error as Record<string, unknown>).message === 'string'
+    );
+}
+
+/**
+ * Extracts error code from error object
+ */
+function getErrorCode(error: unknown): string | null {
+    if (error && typeof error === 'object' && 'code' in error) {
+        return String((error as Record<string, unknown>).code);
+    }
+    return null;
 }
 
 /**

@@ -111,7 +111,7 @@ export function ProjectOverviewHeader({
                             onClick={() => onEditDesc(true)}
                             className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
                         >
-                            {project.description ?? t('projects.noDescription')}
+                            {project.description}
                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}
@@ -164,7 +164,7 @@ export function ProjectStatsCards({ stats, analysis, t, formatBytes }: ProjectSt
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
                 <div className="text-[10px) font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.modules')}</div>
-                <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies ?? {}).length}</div>
+                <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
                 <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>

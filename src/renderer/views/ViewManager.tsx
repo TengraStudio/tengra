@@ -12,7 +12,7 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 // Lazy load feature modules
-const AgentDashboard = lazy(() => import('@/features/agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })));
+
 const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })));
 const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
 const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })));
@@ -23,7 +23,7 @@ const ProjectsView = lazy(() => import('./ViewManager/ProjectsView').then(m => (
 const SettingsView = lazy(() => import('./ViewManager/SettingsView').then(m => ({ default: m.SettingsView })));
 
 interface ViewManagerProps {
-    currentView: 'chat' | 'projects' | 'council' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
+    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
     messagesEndRef: React.RefObject<HTMLDivElement>
     fileInputRef: React.RefObject<HTMLInputElement>
     textareaRef: React.RefObject<HTMLTextAreaElement>
@@ -132,7 +132,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
         switch (currentView) {
             case 'chat': return <ChatSection {...props} />;
             case 'projects': return <ProjectsSection language={language} />;
-            case 'council': return <AgentDashboard language={language} />;
+
             case 'settings': return <SettingsSection />;
             case 'mcp': return (
                 <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">

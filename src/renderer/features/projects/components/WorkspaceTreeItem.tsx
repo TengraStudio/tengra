@@ -14,6 +14,18 @@ export interface FileNode {
 
 type MountFileEntry = { name: string; isDirectory: boolean }
 
+interface DirectoryExpandIconProps {
+    loading: boolean;
+    expanded: boolean;
+}
+
+const DirectoryExpandIcon: React.FC<DirectoryExpandIconProps> = ({ loading, expanded }) => {
+    if (loading) {
+        return <div className="w-3 h-3 border border-border/50 border-t-foreground/60 rounded-full animate-spin" />;
+    }
+    return expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />;
+};
+
 interface WorkspaceTreeItemProps {
     node: FileNode
     mount: WorkspaceMount
@@ -25,6 +37,14 @@ interface WorkspaceTreeItemProps {
     onEnsureMount?: ((mount: WorkspaceMount) => Promise<boolean> | boolean) | undefined
     onContextMenu?: ((e: React.MouseEvent, entry: WorkspaceEntry) => void) | undefined
     t: (key: string) => string
+}
+
+function mapFileEntries(fileList: unknown[], nodePath: string, mountType: WorkspaceMount['type']): FileNode[] {
+    return (fileList as MountFileEntry[]).map((item) => ({
+        name: item.name,
+        isDirectory: Boolean(item.isDirectory),
+        path: joinPath(nodePath, item.name, mountType)
+    }));
 }
 
 export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
@@ -50,21 +70,15 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 ? await window.electron.listDirectory(node.path)
                 : await window.electron.ssh.listDir(mount.id, node.path);
 
-            if (result?.success) {
-                // Handle both response formats: { files } or { data }
-                const fileList = (result as Record<string, unknown>).files || (result as Record<string, unknown>).data;
+            if (result.success) {
+                const fileList = (result as Record<string, unknown>).files ?? (result as Record<string, unknown>).data;
                 if (Array.isArray(fileList)) {
-                    const mapped = fileList.map((item: MountFileEntry) => ({
-                        name: item.name,
-                        isDirectory: Boolean(item.isDirectory),
-                        path: joinPath(node.path, item.name, mount.type)
-                    }));
-                    setChildren(sortNodes(mapped));
+                    setChildren(sortNodes(mapFileEntries(fileList, node.path, mount.type)));
                     setLoaded(true);
                 }
             }
-        } catch (error) {
-            console.error('Failed to load directory', error);
+        } catch {
+            // Directory loading failed silently
         } finally {
             setLoading(false);
         }
@@ -110,13 +124,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
             >
                 {node.isDirectory ? (
                     <span className="opacity-70 group-hover:opacity-100">
-                        {loading ? (
-                            <div className="w-3 h-3 border border-border/50 border-t-foreground/60 rounded-full animate-spin" />
-                        ) : expanded ? (
-                            <ChevronDown className="w-3 h-3" />
-                        ) : (
-                            <ChevronRight className="w-3 h-3" />
-                        )}
+                        <DirectoryExpandIcon loading={loading} expanded={expanded} />
                     </span>
                 ) : (
                     <span className="w-3" />

@@ -23,3 +23,33 @@ export interface ModelCategory {
     providerId: string;
     models: ModelListItem[];
 }
+
+export interface HFModel {
+    id: string
+    name: string
+    author: string
+    description: string
+    downloads: number
+    likes: number
+    tags: string[]
+    lastModified: string
+    provider: 'huggingface'
+}
+
+export interface OllamaLibraryModel {
+    name: string
+    description: string
+    tags: string[]
+    provider: 'ollama'
+    pulls?: string
+}
+
+export type UnifiedModel = HFModel | OllamaLibraryModel
+
+export interface HFFile {
+    path: string
+    size: number
+    oid: string
+    quantization: string
+}
+

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tandem Extension</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">
+                <img src="../assets/logo.png" alt="Tandem Logo" class="logo">
+                <div class="brand-info">
+                    <h1>Tandem</h1>
+                    <div class="status-wrapper">
+                        <div id="status-indicator" class="status-dot disconnected"></div>
+                        <span id="status-text" class="status-label">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="multi-tab-menu" class="icon-button" title="Multi-tab tools">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- System Alerts -->
+        <div class="alerts-container">
+            <div id="proxy-warning" class="alert warning hidden">
+                <div class="alert-icon">⚡</div>
+                <div class="alert-content">
+                    <strong>Proxy Offline</strong>
+                    <p>Start Tandem to enable AI.</p>
+                </div>
+            </div>
+
+            <div id="connection-error" class="alert error hidden">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                    <strong>API Error</strong>
+                    <button id="retry-connection">Reconnect</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div id="messages" class="messages-viewport">
+                <!-- Message items will be injected here -->
+                <div class="message system greeting">
+                    <div class="greeting-box">
+                        <h3>Hi, I'm Tandem.</h3>
+                        <p>Ask me anything about this page or use the actions below.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-container">
+            <!-- Smart Suggestions Entry -->
+            <div id="suggestions-teaser" class="suggestions-teaser hidden">
+                <span>💡 View Smart Suggestions</span>
+            </div>
+
+            <div class="chat-input-wrapper">
+                <textarea 
+                    id="message-input" 
+                    placeholder="Message Tandem..."
+                    rows="1"
+                ></textarea>
+                <button id="send-button" class="send-button" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <button id="extract-page" class="action-item" title="Extract page content">
+                    <span class="icon">📑</span>
+                    <span>Extract</span>
+                </button>
+                <button id="get-page-info" class="action-item" title="Get page info">
+                    <span class="icon">🔍</span>
+                    <span>Info</span>
+                </button>
+                <button id="clear-chat" class="action-item" title="Clear chat">
+                    <span class="icon">🗑️</span>
+                    <span>Clear</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Flyout Panels -->
+        <!-- Suggestions Panel -->
+        <div id="suggestions-panel" class="flyout-panel hidden">
+            <div class="panel-header">
+                <h3>Smart Actions</h3>
+                <button id="close-suggestions" class="close-btn">✕</button>
+            </div>
+            <div id="suggestions-list" class="panel-body list"></div>
+        </div>
+
+        <!-- Multi-tab Panel -->
+        <div id="multitab-panel" class="flyout-panel hidden">
+            <div class="panel-header">
+                <h3>Orchestration</h3>
+                <button id="close-multitab" class="close-btn">✕</button>
+            </div>
+            <div class="panel-body">
+                <div id="tab-stats" class="stats-card"></div>
+                <div class="panel-menu">
+                    <button id="get-all-tabs">📋 List Tabs</button>
+                    <button id="close-all-inactive">🗑️ cleanup</button>
+                    <button id="duplicate-current">📑 Duplicate</button>
+                </div>
+                <div class="panel-divider">Workflows</div>
+                <div class="panel-menu">
+                    <button id="extract-from-all">📊 Bulk Extract</button>
+                    <button id="compare-tabs">⚖️ Compare</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div class="status-bar">
+            <div class="model-pill">
+                <select id="model-selector" class="model-select">
+                    <!-- Models loaded via JS -->
+                </select>
+            </div>
+            <div class="connection-status">
+                <span class="status-tag">Connected</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

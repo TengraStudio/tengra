@@ -91,59 +91,26 @@ export async function startOllama(
 
         const installed = await isOllamaInstalled();
         if (!installed) {
-            return {
-                success: false,
-                message: 'Ollama kurulu değil. https://ollama.com adresinden indirin.'
-            };
+            return { success: false, message: 'Ollama kurulu değil. https://ollama.com adresinden indirin.' };
         }
 
         if (askPermission) {
-            const win = getMainWindow();
-            if (win) {
-                const result = await dialog.showMessageBox(win, {
-                    type: 'question',
-                    buttons: ['Evet', 'Hayır'],
-                    defaultId: 0,
-                    title: 'Ollama Başlat',
-                    message: 'Ollama başlatılsın mı?',
-                    detail: 'AI modellerini kullanmak için Ollama\'nın çalışıyor olması gerekiyor.'
-                });
-
-                if (result.response !== 0) {
-                    return { success: false, message: 'Kullanıcı Ollama başlatmayı reddetti' };
-                }
+            const allowed = await askUserPermission(getMainWindow);
+            if (!allowed) {
+                return { success: false, message: 'Kullanıcı Ollama başlatmayı reddetti' };
             }
         }
 
         appLogger.info('Ollama', 'Attempting to start Ollama...');
-
-        try {
-            // First try starting solely by command name
-            await execAsync(
-                'Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden',
-                { shell: 'powershell.exe' }
-            );
-        } catch (e) {
-            appLogger.warn('Ollama', `Failed to start via command: ${getErrorMessage(e as Error)}. Trying direct path...`);
-            try {
-                // Fallback to default installation path
-                await execAsync(
-                    'Start-Process -FilePath "$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe" -ArgumentList "serve" -WindowStyle Hidden',
-                    { shell: 'powershell.exe' }
-                );
-            } catch (e2) {
-                appLogger.error('Ollama', `Failed to start via path: ${getErrorMessage(e2 as Error)}`);
-                return { success: false, message: 'Ollama başlatılamadı' };
-            }
+        const commandSuccess = await executeStartCommand();
+        if (!commandSuccess) {
+            return { success: false, message: 'Ollama başlatılamadı' };
         }
 
-        // Wait for it to become ready
-        for (let i = 0; i < 30; i++) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            if (await isOllamaRunning()) {
-                appLogger.info('Ollama', 'Ollama started successfully');
-                return { success: true, message: 'Ollama başlatıldı' };
-            }
+        const ready = await waitForReady();
+        if (ready) {
+            appLogger.info('Ollama', 'Ollama started successfully');
+            return { success: true, message: 'Ollama başlatıldı' };
         }
 
         return { success: false, message: 'Ollama başlatılamadı. Lütfen manuel olarak başlatın.' };
@@ -152,4 +119,52 @@ export async function startOllama(
         appLogger.error('Ollama', `Unexpected error starting Ollama: ${message}`);
         return { success: false, message: `Ollama başlatma hatası: ${message}` };
     }
+}
+
+async function askUserPermission(getMainWindow: () => BrowserWindow | null): Promise<boolean> {
+    const win = getMainWindow();
+    if (!win) { return true; } // Implicit permission if no window? Or fail? Originally logic permitted if win exists
+
+    const result = await dialog.showMessageBox(win, {
+        type: 'question',
+        buttons: ['Evet', 'Hayır'],
+        defaultId: 0,
+        title: 'Ollama Başlat',
+        message: 'Ollama başlatılsın mı?',
+        detail: 'AI modellerini kullanmak için Ollama\'nın çalışıyor olması gerekiyor.'
+    });
+
+    return result.response === 0;
+}
+
+async function executeStartCommand(): Promise<boolean> {
+    try {
+        await execAsync(
+            'Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Hidden',
+            { shell: 'powershell.exe' }
+        );
+        return true;
+    } catch (e) {
+        appLogger.warn('Ollama', `Failed to start via command: ${getErrorMessage(e as Error)}. Trying direct path...`);
+        try {
+            await execAsync(
+                'Start-Process -FilePath "$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe" -ArgumentList "serve" -WindowStyle Hidden',
+                { shell: 'powershell.exe' }
+            );
+            return true;
+        } catch (e2) {
+            appLogger.error('Ollama', `Failed to start via path: ${getErrorMessage(e2 as Error)}`);
+            return false;
+        }
+    }
+}
+
+async function waitForReady(): Promise<boolean> {
+    for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (await isOllamaRunning()) {
+            return true;
+        }
+    }
+    return false;
 }

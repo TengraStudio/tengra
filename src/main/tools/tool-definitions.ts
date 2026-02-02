@@ -387,5 +387,49 @@ export const toolDefinitions: ToolDefinition[] = [
                 required: ['fact_id']
             }
         }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'update_plan_step',
+            description: 'Mevcut plandaki bir adımın durumunu günceller. İlerlemenizi kullanıcıya raporlamak için kullanın.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    index: {
+                        type: 'number',
+                        description: 'Güncellenecek adımın dizini (0-tabanlı).'
+                    },
+                    status: {
+                        type: 'string',
+                        enum: ['pending', 'running', 'completed', 'failed'],
+                        description: 'Adımın yeni durumu.'
+                    },
+                    message: {
+                        type: 'string',
+                        description: 'Adım hakkında isteğe bağlı durum mesajı (örn: "Dosya oluşturuldu ve test edildi").'
+                    }
+                },
+                required: ['index', 'status']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'propose_plan',
+            description: 'Kullanıcıya onay için bir uygulama planı sunar. Görevi analiz ettikten sonra bunu kullanın. Bu tool çağrıldığında döngü durur ve kullanıcı onayı beklenir.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    steps: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Uygulama adımlarının listesi.'
+                    }
+                },
+                required: ['steps']
+            }
+        }
     }
 ];

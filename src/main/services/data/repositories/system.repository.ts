@@ -3,7 +3,7 @@ import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AgentProfile, AuditLogEntry, CouncilLog, CouncilSession, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
+import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
 
 import { BaseRepository } from './base.repository';
 
@@ -82,63 +82,7 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM prompts WHERE id = ?').run(id);
     }
 
-    // --- Council ---
-    async getCouncilSessions(): Promise<CouncilSession[]> {
-        const rows = await this.adapter.prepare('SELECT * FROM council_sessions ORDER BY updated_at DESC').all<JsonObject>();
-        return rows.map(r => ({
-            id: String(r.id),
-            goal: String(r.goal),
-            status: String(r.status) as CouncilSession['status'],
-            plan: r.plan as string | undefined,
-            solution: r.solution as string | undefined,
-            createdAt: Number(r.created_at),
-            updatedAt: Number(r.updated_at),
-            logs: this.parseJsonField<CouncilLog[]>(r.logs as string | null, []),
-            agents: this.parseJsonField<AgentProfile[]>(r.agents as string | null, [])
-        }));
-    }
 
-    async createCouncilSession(goal: string, model: string = 'gpt-4o', provider: string = 'openai') {
-        const id = uuidv4();
-        const now = Date.now();
-        await this.adapter.prepare('INSERT INTO council_sessions (id, goal, status, logs, agents, created_at, updated_at, model, provider) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, goal, 'planning', '[]', '[]', now, now, model, provider);
-        return { id, goal, status: 'planning', logs: [], agents: [], createdAt: now, updatedAt: now, model, provider };
-    }
-
-    async getCouncilSession(id: string): Promise<CouncilSession | undefined> {
-        const row = await this.adapter.prepare('SELECT * FROM council_sessions WHERE id = ?').get<JsonObject>(id);
-        if (!row) { return undefined; }
-        return {
-            id: String(row.id),
-            goal: String(row.goal),
-            status: String(row.status) as CouncilSession['status'],
-            plan: row.plan as string | undefined,
-            solution: row.solution as string | undefined,
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at),
-            logs: this.parseJsonField<CouncilLog[]>(row.logs as string | null, []),
-            agents: this.parseJsonField<AgentProfile[]>(row.agents as string | null, [])
-        };
-    }
-
-    async updateCouncilStatus(id: string, status: string, plan?: string, solution?: string): Promise<void> {
-        const fields = ['status = ?', 'updated_at = ?'];
-        const params: (string | number)[] = [status, Date.now()];
-        if (plan !== undefined) { fields.push('plan = ?'); params.push(plan); }
-        if (solution !== undefined) { fields.push('solution = ?'); params.push(solution); }
-        params.push(id);
-        await this.adapter.prepare(`UPDATE council_sessions SET ${fields.join(', ')} WHERE id = ?`).run(...params);
-    }
-
-    async addCouncilLog(id: string, agentId: string, message: string, type: string): Promise<CouncilLog | void> {
-        const session = await this.getCouncilSession(id);
-        if (session) {
-            const logEntry: CouncilLog = { id: uuidv4(), sessionId: id, agentId, message, timestamp: Date.now(), type: type as CouncilLog['type'] };
-            const logs = [...session.logs, logEntry];
-            await this.adapter.prepare('UPDATE council_sessions SET logs = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(logs), Date.now(), id);
-            return logEntry;
-        }
-    }
 
     // --- Stats ---
     async getStats() {

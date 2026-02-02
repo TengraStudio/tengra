@@ -1,41 +1,28 @@
-# Rule Enforcement Protocol
+# ⚖️ RULE ENFORCEMENT & SELF-CORRECTION
 
-This document outlines what an AI agent should do when it detects or commits a rule violation.
+As an AI, you are responsible for monitoring your own compliance. If you break a commandment, you must fix it immediately.
 
-## Self-Correction Protocol
+## 🚨 SELF-CORRECTION PROTOCOL
+If you realize you have violated a rule (e.g., used `any`, left a `console.log`, or skipped a build check):
 
-If you realize you have made an error or violated a rule defined in the project's AI guidelines:
+1.  **HALT**: Stop whatever you are doing.
+2.  **AUDIT**: Re-read the specific rule in [MASTER COMMANDMENTS](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md).
+3.  **REVERT & FIX**: Undo the violation and implement the correct solution.
+4.  **LOG**: Append the violation to `logs/agent-violations.log`.
+5.  **REPORT**: Inform the user about the mistake and how it was fixed.
 
-1.  **Stop immediately.** Do not continue with the current action.
-2.  **Re-read the relevant rule.** Consult the appropriate file in `docs/AI_RULES.md` or the `.{agent}/rules/` directory.
-3.  **Correct the mistake.** Undo or fix the violating action before proceeding.
-4.  **Log the violation.** Append a short description of the violation to `logs/agent-violations.log`.
-
-### Violation Log Format
-
+## 📝 VIOLATION LOG FORMAT
+```text
+[ISO_TIMESTAMP] [AGENT] [RULE] [DESCRIPTION]
 ```
-[TIMESTAMP] [AGENT_TYPE] [RULE_VIOLATED] [DESCRIPTION]
-```
+*Example: `[2026-02-02T10:00:00Z] [CLAUDE] [ANY_TYPE] Used any in user.service.ts. Replaced with User interface.`*
 
-Example:
-```
-[2026-01-21T20:45:00Z] [GEMINI] [any-type] Used `any` in database.service.ts line 50. Corrected to `Record<string, unknown>`.
-```
+## 🚫 ZERO TOLERANCE
+The following are non-negotiable and failure to self-correct will lead to process termination:
+- **`any` / `unknown`** usage.
+- **`console.log`** usage.
+- **Skipping Build/Lint** before completion.
+- **Truncated code** payloads.
 
-## Unrecoverable Situations
+> "Accountability is the hallmark of a professional agent."
 
-If a rule violation cannot be easily corrected (e.g., a commit has already been pushed with an error), the agent MUST:
-
-1.  **Inform the user immediately.** Clearly state the violation and its potential impact.
-2.  **Propose a remediation plan.** Suggest a fix, such as a revert commit or a follow-up PR.
-3.  **Do not attempt to hide the error.**
-
-## Prohibited Actions Reminder
-
-The following actions are explicitly forbidden and must never be performed, regardless of context:
-
--   Using the `any` type in TypeScript.
--   Using `console.log` for logging.
--   Modifying files in protected paths (`.git/`, `node_modules/`, `vendor/`, `.env`).
--   Deleting a file to recreate it instead of using targeted edits.
--   Ignoring errors from `npm run build`, `npm run lint`, or `npm run type-check`.

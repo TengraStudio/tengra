@@ -1,11 +1,11 @@
-# Orbit Codebase Status Report
+# Tandem Codebase Status Report
 
 Date: January 21, 2026
 Version: 1.2.0 (Stable)
 
 ## Executive Summary
 
-Orbit is a high-performance, AI-native desktop assistant built on the Electron framework. It provides a unified workspace that integrates multiple cloud AI providers with local model execution. Key features include an autonomous agent council, secure SSH management, and a robust, cross-process token synchronization system.
+Tandem is a high-performance, AI-native desktop assistant built on the Electron framework. It provides a unified workspace that integrates multiple cloud AI providers with local model execution. Key features include an autonomous agent council, secure SSH management, and a robust, cross-process token synchronization system.
 
 ## Architecture and Current State
 

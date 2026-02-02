@@ -28,7 +28,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, 
             <CardHeader className="flex flex-row items-center justify-between relative z-10">
                 <div>
                     <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">{t('statistics.antigravityQuotas')}</CardTitle>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1 tracking-widest">Enterprise status</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1 tracking-widest">{t('statistics.enterpriseStatus')}</p>
                 </div>
                 {setReloadTrigger && (
                     <button onClick={() => setReloadTrigger((p: number) => p + 1)} className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all duration-300 border border-transparent hover:border-border shadow-lg">
@@ -42,9 +42,9 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, 
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                <div className="text-xs font-black text-foreground/90 uppercase tracking-widest">{acc.email ?? 'Default Account'}</div>
+                                <div className="text-xs font-black text-foreground/90 uppercase tracking-widest">{acc.email ?? t('statistics.defaultAccount')}</div>
                             </div>
-                            <div className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-primary/20 text-primary-foreground border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">ACTIVE</div>
+                            <div className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-primary/20 text-primary-foreground border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">{t('statistics.active')}</div>
                         </div>
                         <div className="max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

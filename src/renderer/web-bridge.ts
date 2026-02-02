@@ -1,5 +1,4 @@
 import type { ElectronAPI } from '@renderer/electron.d';
-import type { CouncilSession } from '@shared/types/agent';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
 import type { AuthStatus, IpcValue } from '@shared/types/common';
 import type { Project, ProjectAnalysis } from '@shared/types/project';
@@ -46,7 +45,7 @@ export const webElectronMock: ElectronAPI = {
     getLinkedAccounts: async (_provider?: string) => [],
     getActiveLinkedAccount: async (_provider: string) => null,
     setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
-    linkAccount: async (_provider: string, _tokenData) => ({ success: true }),
+    linkAccount: async (_provider: string, _tokenData: unknown) => ({ success: true }),
     unlinkAccount: async (_accountId: string) => ({ success: true }),
     unlinkProvider: async (_provider: string) => ({ success: true }),
     hasLinkedAccount: async (_provider: string) => false,
@@ -153,7 +152,7 @@ export const webElectronMock: ElectronAPI = {
             } as CodexUsage,
             accountId: 'mock-codex',
             email: 'mock@openai.com'
-        }]
+        } as { usage: CodexUsage; accountId: string; email: string }]
     }),
     checkUsageLimit: async (_provider: string, _model: string) => ({ allowed: true }),
     getUsageCount: async (_period: 'hourly' | 'daily' | 'weekly', _provider?: string, _model?: string) => 0,
@@ -162,8 +161,8 @@ export const webElectronMock: ElectronAPI = {
 
     getModels: async () => [],
     chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
-    chatOpenAI: async (_request) => ({ content: 'Mock response' }),
-    chatStream: async (_request) => { },
+    chatOpenAI: async (_request: unknown) => ({ content: 'Mock response' }),
+    chatStream: async (_request: unknown) => { },
     abortChat: () => { },
     onStreamChunk: (_callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => () => { },
     removeStreamChunkListener: (_callback?: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void) => { },
@@ -289,24 +288,6 @@ export const webElectronMock: ElectronAPI = {
         removeAllListeners: () => { },
         getSessions: async () => [],
         readBuffer: async (_sessionId: string) => ''
-    },
-
-    council: {
-        createSession: async (_goal: string) => ({
-            id: '1',
-            goal: _goal,
-            status: 'created',
-            agents: [],
-            logs: [],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        } as CouncilSession),
-        getSessions: async () => [],
-        getSession: async (_id: string) => null,
-        addLog: async (_sessionId: string, _agentId: string, _message: string, _type: 'info' | 'error' | 'success' | 'plan' | 'action') => { },
-        runStep: (_sessionId: string) => { },
-        startLoop: (_sessionId: string) => { },
-        stopLoop: (_sessionId: string) => { }
     },
 
     ssh: {
@@ -482,41 +463,41 @@ export const webElectronMock: ElectronAPI = {
     },
     advancedMemory: {
         getPending: async () => ({ success: true, data: [] }),
-        confirm: async (_id: string, _adjustments?) => ({ success: true, data: undefined }),
+        confirm: async (_id: string, _adjustments?: unknown) => ({ success: true, data: undefined }),
         reject: async (_id: string, _reason?: string) => ({ success: true }),
         confirmAll: async () => ({ success: true, confirmed: 0 }),
         rejectAll: async () => ({ success: true, rejected: 0 }),
-        remember: async (_content: string, _options?) => ({ success: true, data: undefined }),
-        recall: async (_context) => ({ success: true, data: { memories: [], totalMatches: 0 } }),
+        remember: async (_content: string, _options?: unknown) => ({ success: true, data: undefined }),
+        recall: async (_context: unknown) => ({ success: true, data: { memories: [], totalMatches: 0 } }),
         search: async (_query: string, _limit?: number) => ({ success: true, data: [] }),
         getStats: async () => ({ success: true, data: undefined }),
         runDecay: async () => ({ success: true }),
         extractFromMessage: async (_content: string, _sourceId: string, _projectId?: string) => ({ success: true, data: [] }),
         delete: async (_id: string) => ({ success: true }),
         deleteMany: async (_ids: string[]) => ({ success: true, deleted: 0, failed: [] }),
-        edit: async (_id: string, _updates) => ({ success: true, data: undefined }),
+        edit: async (_id: string, _updates: unknown) => ({ success: true, data: undefined }),
         archive: async (_id: string) => ({ success: true }),
         archiveMany: async (_ids: string[]) => ({ success: true, archived: 0, failed: [] }),
         restore: async (_id: string) => ({ success: true }),
         get: async (_id: string) => ({ success: true, data: undefined })
     },
     ideas: {
-        createSession: async (config) => ({ ...config, id: '1', ideasGenerated: 0, status: 'active', createdAt: Date.now(), updatedAt: Date.now() }),
-        getSession: async (_id) => null,
+        createSession: async (config: unknown) => ({ ...(config as Record<string, unknown>), id: '1', ideasGenerated: 0, status: 'active', createdAt: Date.now(), updatedAt: Date.now() }),
+        getSession: async (_id: string) => null,
         getSessions: async () => [],
-        cancelSession: async (_id) => ({ success: true }),
-        generateMarketPreview: async (_categories) => ({ success: true, data: [] }),
-        startResearch: async (_sessionId) => ({ success: true }),
-        startGeneration: async (_sessionId) => ({ success: true }),
-        enrichIdea: async (_ideaId) => ({ success: true }),
-        getIdea: async (_id) => null,
-        getIdeas: async (_sessionId) => [],
-        regenerateIdea: async (_ideaId) => ({ success: true, idea: null as unknown }),
-        approveIdea: async (_ideaId, _projectPath) => ({ success: true }),
-        rejectIdea: async (_ideaId) => ({ success: true }),
+        cancelSession: async (_id: string) => ({ success: true }),
+        generateMarketPreview: async (_categories: string[]) => ({ success: true, data: [] }),
+        startResearch: async (_sessionId: string) => ({ success: true }),
+        startGeneration: async (_sessionId: string) => ({ success: true }),
+        enrichIdea: async (_ideaId: string) => ({ success: true }),
+        getIdea: async (_id: string) => null,
+        getIdeas: async (_sessionId?: string) => [],
+        regenerateIdea: async (_ideaId: string) => ({ success: true, idea: undefined }),
+        approveIdea: async (_ideaId: string, _projectPath: string, _selectedName?: string) => ({ success: true }),
+        rejectIdea: async (_ideaId: string) => ({ success: true }),
         canGenerateLogo: async () => false,
-        generateLogo: async (_ideaId, _prompt) => ({ success: true, logoPath: '' }),
-        queryResearch: async (_ideaId, _question) => ({ success: true, answer: 'Mock research answer' }),
+        generateLogo: async (_ideaId: string, _prompt: string) => ({ success: true, logoPath: '' }),
+        queryResearch: async (_ideaId: string, _question: string) => ({ success: true, answer: 'Mock research answer' }),
         // Deep research handlers
         deepResearch: async (_topic: string, _category: string) => ({ success: true }),
         validateIdea: async (_title: string, _description: string, _category: string) => ({ success: true }),
@@ -557,7 +538,22 @@ export const webElectronMock: ElectronAPI = {
         invoke: async (_channel: string, ..._args: IpcValue[]) => ({}),
         removeAllListeners: (_channel: string) => { }
     },
-    on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { }
+    on: (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) => () => { },
+    projectAgent: {
+        start: async (_options: unknown) => { },
+        generatePlan: async (_options: unknown) => { },
+        approvePlan: async (_plan: string[] | unknown[]) => { },
+        stop: async () => { },
+        getStatus: async () => null,
+        retryStep: async (_index: number) => { },
+        onUpdate: (_callback: (state: unknown) => void) => () => { }
+    },
+    extension: {
+        shouldShowWarning: async () => false,
+        dismissWarning: async () => ({ success: true }),
+        getStatus: async () => ({ installed: false, shouldShowWarning: false }),
+        setInstalled: async (_installed: boolean) => ({ success: true })
+    }
 };
 
 if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).electron) {

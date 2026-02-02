@@ -1,4 +1,4 @@
-import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
@@ -29,6 +29,38 @@ export interface ErrorDisplayOptions {
 }
 
 /**
+ * Maps technical error messages to user-friendly messages
+ */
+function mapToUserFriendlyMessage(message: string): string {
+    if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
+        return 'Rate limit exceeded. Please wait a moment and try again.';
+    }
+    if (message.includes('401') || message.includes('unauthorized')) {
+        return 'Authentication failed. Please check your API keys.';
+    }
+    if (message.includes('network') || message.includes('fetch')) {
+        return 'Network error. Please check your connection.';
+    }
+    if (message.includes('timeout')) {
+        return 'Request timed out. Please try again.';
+    }
+    return message;
+}
+
+/**
+ * Shows toast notification if available
+ */
+function showErrorToast(message: string): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const customWindow = window as unknown as CustomWindow;
+    if (customWindow.showToast) {
+        customWindow.showToast({ type: 'error', message });
+    }
+}
+
+/**
  * Standardized error handler for renderer process.
  * Formats errors consistently and provides user-friendly messages.
  * 
@@ -46,50 +78,40 @@ export interface ErrorDisplayOptions {
  * }
  * ```
  */
+/**
+ * Gets the error message, with custom message taking precedence
+ */
+function resolveErrorMessage(error: unknown, customMessage?: string): string {
+    if (customMessage !== undefined && customMessage !== '') {
+        return customMessage;
+    }
+    return getErrorMessage(error);
+}
+
+/**
+ * Logs error to console with context
+ */
+function logError(context: string, error: unknown): void {
+    console.error(`[${context}] Error:`, error);
+}
+
 export function handleError(
     error: unknown,
     context: string,
     options: ErrorDisplayOptions = {}
 ): string {
-    const {
-        showToast = false,
-        logToConsole = true,
-        customMessage,
-        userFacing = true
-    } = options;
+    const { showToast = false, logToConsole = true, customMessage, userFacing = true } = options;
 
-    const message = customMessage || getErrorMessage(error);
-    // Error code can be used for analytics or error tracking in the future
-    void (error instanceof TandemError ? error.code : AppErrorCode.UNKNOWN);
-
+    const message = resolveErrorMessage(error, customMessage);
+    
     if (logToConsole) {
-        console.error(`[${context}] Error:`, error);
+        logError(context, error);
     }
 
-    // Format user-friendly message
-    let userMessage = message;
+    const userMessage = userFacing ? mapToUserFriendlyMessage(message) : message;
 
-    // Map technical errors to user-friendly messages
-    if (userFacing) {
-        if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
-            userMessage = 'Rate limit exceeded. Please wait a moment and try again.';
-        } else if (message.includes('401') || message.includes('unauthorized')) {
-            userMessage = 'Authentication failed. Please check your API keys.';
-        } else if (message.includes('network') || message.includes('fetch')) {
-            userMessage = 'Network error. Please check your connection.';
-        } else if (message.includes('timeout')) {
-            userMessage = 'Request timed out. Please try again.';
-        }
-    }
-
-    if (showToast && typeof window !== 'undefined') {
-        const customWindow = window as unknown as CustomWindow;
-        if (customWindow.showToast) {
-            customWindow.showToast({
-                type: 'error',
-                message: userMessage
-            });
-        }
+    if (showToast) {
+        showErrorToast(userMessage);
     }
 
     return userMessage;

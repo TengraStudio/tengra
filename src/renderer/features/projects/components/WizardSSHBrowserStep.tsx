@@ -1,7 +1,6 @@
 import { ArrowRight, Code, FolderOpen, Terminal } from 'lucide-react';
 import React from 'react';
 
-import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { SSHFile } from '@/types';
 
@@ -20,8 +19,6 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
     sshConnectionId,
     loadRemoteDirectory
 }) => {
-    const { t } = useTranslation();
-
     return (
         <div className="space-y-4 flex-1 pt-4 flex flex-col min-h-0">
             <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">

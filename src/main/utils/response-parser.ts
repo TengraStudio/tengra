@@ -6,110 +6,102 @@ import { JsonObject, JsonValue } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
+    value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /**
- * Parse content from various API response formats
+ * Handle string response part
  */
-export function parseAIResponseContent(response: JsonValue | undefined): string {
-    if (!response) { return ''; }
-
-    // If response is a string, try to parse it
-    if (typeof response === 'string') {
-        const trimmed = response.trim();
-        // Check if it looks like JSON
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            const parsed = safeJsonParse<JsonValue>(trimmed, null);
-            if (parsed) {
-                return parseAIResponseContent(parsed);
-            }
-        }
-        return trimmed;
+function handleStringContent(response: string): string {
+    const trimmed = response.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        const parsed = safeJsonParse<JsonValue>(trimmed, null);
+        if (parsed) {return parseAIResponseContent(parsed);}
     }
+    return trimmed;
+}
 
-    // Handle array (multiple response parts)
-    if (Array.isArray(response)) {
-        return response
-            .map(item => parseAIResponseContent(item))
-            .filter(Boolean)
-            .join('');
-    }
+/**
+ * Handle list format found in Copilot or other responses
+ */
+function handleListLike(list: unknown): string | null {
+    if (!Array.isArray(list)) {return null;}
+    return list
+        .filter((item): item is JsonObject => isJsonObject(item) && (item.type === 'output_text' || !!item.text))
+        .map((item) => (typeof item.text === 'string' ? item.text : ''))
+        .join('');
+}
 
-    if (!isJsonObject(response)) { return ''; }
-    const res = response;
-
-    // Handle new Copilot format: {content: [{type: 'output_text', text: '...'}], type: 'message'}
-    if (res.type === 'message' && Array.isArray(res.content)) {
-        return res.content
-            .filter((item) => isJsonObject(item) && (item.type === 'output_text' || item.text))
-            .map((item) => (isJsonObject(item) && typeof item.text === 'string' ? item.text : ''))
-            .join('');
-    }
-
-    // Handle content array directly
-    if (Array.isArray(res.content)) {
-        return res.content
-            .filter((item) => {
-                if (!item) { return false; }
-                if (typeof item === 'string') { return true; }
-                return isJsonObject(item) && (item.type === 'output_text' || item.text);
-            })
-            .map((item) => {
-                if (typeof item === 'string') { return item; }
-                if (!isJsonObject(item)) { return ''; }
-                return typeof item.text === 'string' ? item.text : '';
-            })
-            .join('');
-    }
-
-    // Handle standard OpenAI format
-    if (res.choices && Array.isArray(res.choices)) {
+/**
+ * Handle OpenAI chat completion format
+ */
+function handleOpenAIFormat(res: JsonObject): string | null {
+    if (Array.isArray(res.choices) && res.choices.length > 0) {
         const choice = res.choices[0];
         const message = isJsonObject(choice) ? choice.message : undefined;
         if (isJsonObject(message) && typeof message.content === 'string') {
             return message.content;
         }
     }
+    return null;
+}
 
-    // Handle message wrapper
-    if (res.message && typeof res.message === 'object') {
-        const m = isJsonObject(res.message) ? res.message : undefined;
-        if (m?.content !== undefined) {
-            return parseAIResponseContent(m.content);
-        }
+/**
+ * Handle various object property patterns
+ */
+function handleObjectProperties(res: JsonObject): string | null {
+    // Copilot format
+    if (res.type === 'message' && res.content) {
+        const contentVal = handleListLike(res.content);
+        if (contentVal !== null) {return contentVal;}
     }
 
-    // Handle output_text directly
-    if (typeof res.output_text === 'string') {
-        return res.output_text;
+    // Direct content array
+    if (res.content && Array.isArray(res.content)) {
+        const contentVal = handleListLike(res.content);
+        if (contentVal !== null) {return contentVal;}
     }
 
-    // Handle direct content string
-    if (typeof res.content === 'string') {
-        // Check if content is nested JSON
-        const c = res.content.trim();
-        const startsWithBrace = c.startsWith('{');
-        const hasContent = c.includes('"content"');
-        if (startsWithBrace && hasContent) {
-            const parsed = safeJsonParse(c, null);
-            if (parsed) {
-                return parseAIResponseContent(parsed);
-            }
-        }
-        return c;
+    // OpenAI format
+    const openAI = handleOpenAIFormat(res);
+    if (openAI !== null) {return openAI;}
+
+    // Recursive message wrapper
+    if (isJsonObject(res.message) && res.message.content !== undefined) {
+        return parseAIResponseContent(res.message.content as JsonValue);
     }
 
-    // Handle output array (some response formats)
-    if (Array.isArray(res.output)) {
-        return res.output
-            .filter((item) => isJsonObject(item) && (item.type === 'output_text' || item.text))
-            .map((item) => (isJsonObject(item) && typeof item.text === 'string' ? item.text : ''))
-            .join('');
+    return handleFallbackProperties(res);
+}
+
+/**
+ * Handle direct string fields or output arrays
+ */
+function handleFallbackProperties(res: JsonObject): string | null {
+    if (typeof res.output_text === 'string') {return res.output_text;}
+    if (typeof res.content === 'string') {return handleStringContent(res.content);}
+    if (res.output) {
+        const outVal = handleListLike(res.output);
+        if (outVal !== null) {return outVal;}
+    }
+    if (typeof res.text === 'string') {return res.text;}
+    return null;
+}
+
+/**
+ * Parse content from various API response formats
+ */
+export function parseAIResponseContent(response: JsonValue | undefined): string {
+    if (response === undefined || response === null) {return '';}
+
+    if (typeof response === 'string') {return handleStringContent(response);}
+
+    if (Array.isArray(response)) {
+        return response.map(item => parseAIResponseContent(item)).filter(Boolean).join('');
     }
 
-    // Fallback - if nothing else works
-    if (typeof res.text === 'string') { return res.text; }
-    if (res.role === 'assistant' && !res.content) { return ''; }
+    if (isJsonObject(response)) {
+        return handleObjectProperties(response) ?? '';
+    }
 
     return '';
 }
@@ -122,15 +114,12 @@ export function extractReasoning(response: JsonValue | undefined): { reasoning: 
 
     if (isJsonObject(response)) {
         const res = response;
-
-        // Check for reasoning in the response object
         if (typeof res.reasoning === 'string') {
             return { reasoning: res.reasoning, content };
         }
-
-        // Check for summary field (some formats use this for reasoning)
         if (Array.isArray(res.summary) && res.summary.length > 0) {
-            return { reasoning: res.summary.filter((item): item is string => typeof item === 'string').join('\n'), content };
+            const summaryParts = res.summary.filter((item): item is string => typeof item === 'string');
+            return { reasoning: summaryParts.join('\n'), content };
         }
     }
 

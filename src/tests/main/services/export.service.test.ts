@@ -29,191 +29,174 @@ vi.mock('fs', () => ({
     writeFileSync: vi.fn()
 }));
 
-describe('ExportService', () => {
-    let service: ExportService;
-    let mockChat: Chat;
+let service: ExportService;
+let mockChat: Chat;
 
-    beforeEach(() => {
-        service = new ExportService();
+beforeEach(() => {
+    service = new ExportService();
 
-        mockChat = {
-            id: 'test-chat-1',
-            title: 'Test Chat',
-            model: 'gpt-4',
-            messages: [
-                {
-                    id: 'msg-1',
+    mockChat = {
+        id: 'test-chat-1',
+        title: 'Test Chat',
+        model: 'gpt-4',
+        messages: [
+            {
+                id: 'msg-1',
+                role: 'user',
+                content: 'Hello, how are you?',
+                timestamp: new Date('2024-01-01T10:00:00Z')
+            } as Message,
+            {
+                id: 'msg-2',
+                role: 'assistant',
+                content: 'I am doing well, thank you!',
+                timestamp: new Date('2024-01-01T10:00:05Z')
+            } as Message
+        ],
+        createdAt: new Date('2024-01-01T09:00:00Z'),
+        updatedAt: new Date('2024-01-01T10:00:05Z')
+    };
+});
+
+describe('ExportService - Basic Formats', () => {
+    describe('markdown format', () => {
+        it('should generate markdown with title', () => {
+            const content = service.getExportContent(mockChat, { format: 'markdown' });
+            expect(content).toContain('# Test Chat');
+        });
+
+        it('should include messages', () => {
+            const content = service.getExportContent(mockChat, { format: 'markdown' });
+            expect(content).toContain('Hello, how are you?');
+            expect(content).toContain('I am doing well, thank you!');
+        });
+
+        it('should include metadata when enabled', () => {
+            const content = service.getExportContent(mockChat, {
+                format: 'markdown',
+                includeMetadata: true
+            });
+            expect(content).toContain('**Model:** gpt-4');
+            expect(content).toContain('**Messages:** 2');
+        });
+
+        it('should include timestamps when enabled', () => {
+            const content = service.getExportContent(mockChat, {
+                format: 'markdown',
+                includeTimestamps: true
+            });
+            expect(content).toContain('2024');
+        });
+
+        it('should include role labels', () => {
+            const content = service.getExportContent(mockChat, { format: 'markdown' });
+            expect(content).toContain('## You');
+            expect(content).toContain('## Assistant');
+        });
+
+        it('should include export footer', () => {
+            const content = service.getExportContent(mockChat, { format: 'markdown' });
+            expect(content).toContain('*Exported from Tandem');
+        });
+    });
+
+    describe('txt format', () => {
+        it('should generate plain text', () => {
+            const content = service.getExportContent(mockChat, { format: 'txt' });
+            expect(content).toContain('Test Chat');
+            expect(content).not.toContain('<');
+            expect(content).not.toContain('#');
+        });
+
+        it('should include role labels in uppercase', () => {
+            const content = service.getExportContent(mockChat, { format: 'txt' });
+            expect(content).toContain('[YOU]');
+            expect(content).toContain('[ASSISTANT]');
+        });
+
+        it('should include separator lines', () => {
+            const content = service.getExportContent(mockChat, { format: 'txt' });
+            expect(content).toContain('═══');
+            expect(content).toContain('───');
+        });
+    });
+});
+
+describe('ExportService - Web & API Formats', () => {
+    describe('html format', () => {
+        it('should generate valid HTML structure', () => {
+            const content = service.getExportContent(mockChat, { format: 'html' });
+            expect(content).toContain('<!DOCTYPE html>');
+            expect(content).toContain('<html lang="en">');
+            expect(content).toContain('</html>');
+        });
+
+        it('should include title in HTML', () => {
+            const content = service.getExportContent(mockChat, { format: 'html' });
+            expect(content).toContain('<title>Test Chat</title>');
+            expect(content).toContain('<h1>Test Chat</h1>');
+        });
+
+        it('should include styled messages', () => {
+            const content = service.getExportContent(mockChat, { format: 'html' });
+            expect(content).toContain('class="message user"');
+            expect(content).toContain('class="message assistant"');
+        });
+
+        it('should include CSS styles', () => {
+            const content = service.getExportContent(mockChat, { format: 'html' });
+            expect(content).toContain('<style>');
+            expect(content).toContain('.message');
+            expect(content).toContain('</style>');
+        });
+
+        it('should escape HTML in content', () => {
+            const chatWithHtml: Chat = {
+                ...mockChat,
+                messages: [{
+                    id: 'msg-html',
                     role: 'user',
-                    content: 'Hello, how are you?',
-                    timestamp: new Date('2024-01-01T10:00:00Z')
-                } as Message,
-                {
-                    id: 'msg-2',
-                    role: 'assistant',
-                    content: 'I am doing well, thank you!',
-                    timestamp: new Date('2024-01-01T10:00:05Z')
-                } as Message
-            ],
-            createdAt: new Date('2024-01-01T09:00:00Z'),
-            updatedAt: new Date('2024-01-01T10:00:05Z')
-        };
-    });
-
-    describe('getExportContent', () => {
-        describe('markdown format', () => {
-            it('should generate markdown with title', () => {
-                const content = service.getExportContent(mockChat, { format: 'markdown' });
-
-                expect(content).toContain('# Test Chat');
-            });
-
-            it('should include messages', () => {
-                const content = service.getExportContent(mockChat, { format: 'markdown' });
-
-                expect(content).toContain('Hello, how are you?');
-                expect(content).toContain('I am doing well, thank you!');
-            });
-
-            it('should include metadata when enabled', () => {
-                const content = service.getExportContent(mockChat, {
-                    format: 'markdown',
-                    includeMetadata: true
-                });
-
-                expect(content).toContain('**Model:** gpt-4');
-                expect(content).toContain('**Messages:** 2');
-            });
-
-            it('should include timestamps when enabled', () => {
-                const content = service.getExportContent(mockChat, {
-                    format: 'markdown',
-                    includeTimestamps: true
-                });
-
-                expect(content).toContain('2024');
-            });
-
-            it('should include role labels', () => {
-                const content = service.getExportContent(mockChat, { format: 'markdown' });
-
-                expect(content).toContain('## You');
-                expect(content).toContain('## Assistant');
-            });
-
-            it('should include export footer', () => {
-                const content = service.getExportContent(mockChat, { format: 'markdown' });
-
-                expect(content).toContain('*Exported from Tandem');
-            });
-        });
-
-        describe('html format', () => {
-            it('should generate valid HTML structure', () => {
-                const content = service.getExportContent(mockChat, { format: 'html' });
-
-                expect(content).toContain('<!DOCTYPE html>');
-                expect(content).toContain('<html lang="en">');
-                expect(content).toContain('</html>');
-            });
-
-            it('should include title in HTML', () => {
-                const content = service.getExportContent(mockChat, { format: 'html' });
-
-                expect(content).toContain('<title>Test Chat</title>');
-                expect(content).toContain('<h1>Test Chat</h1>');
-            });
-
-            it('should include styled messages', () => {
-                const content = service.getExportContent(mockChat, { format: 'html' });
-
-                expect(content).toContain('class="message user"');
-                expect(content).toContain('class="message assistant"');
-            });
-
-            it('should include CSS styles', () => {
-                const content = service.getExportContent(mockChat, { format: 'html' });
-
-                expect(content).toContain('<style>');
-                expect(content).toContain('.message');
-                expect(content).toContain('</style>');
-            });
-
-            it('should escape HTML in content', () => {
-                const chatWithHtml: Chat = {
-                    ...mockChat,
-                    messages: [{
-                        id: 'msg-html',
-                        role: 'user',
-                        content: 'Test <script>alert("xss")</script>',
-                        timestamp: new Date()
-                    } as Message]
-                };
-
-                const content = service.getExportContent(chatWithHtml, { format: 'html' });
-
-                expect(content).not.toContain('<script>');
-                expect(content).toContain('&lt;script&gt;');
-            });
-        });
-
-        describe('json format', () => {
-            it('should generate valid JSON', () => {
-                const content = service.getExportContent(mockChat, { format: 'json' });
-
-                expect(() => JSON.parse(content)).not.toThrow();
-            });
-
-            it('should include chat metadata', () => {
-                const content = service.getExportContent(mockChat, { format: 'json' });
-                const data = JSON.parse(content);
-
-                expect(data.title).toBe('Test Chat');
-                expect(data.model).toBe('gpt-4');
-                expect(data.messageCount).toBe(2);
-            });
-
-            it('should include messages', () => {
-                const content = service.getExportContent(mockChat, { format: 'json' });
-                const data = JSON.parse(content);
-
-                expect(data.messages).toHaveLength(2);
-                expect(data.messages[0].role).toBe('user');
-                expect(data.messages[1].role).toBe('assistant');
-            });
-
-            it('should include export timestamp', () => {
-                const content = service.getExportContent(mockChat, { format: 'json' });
-                const data = JSON.parse(content);
-
-                expect(data.exportedAt).toBeDefined();
-            });
-        });
-
-        describe('txt format', () => {
-            it('should generate plain text', () => {
-                const content = service.getExportContent(mockChat, { format: 'txt' });
-
-                expect(content).toContain('Test Chat');
-                expect(content).not.toContain('<');
-                expect(content).not.toContain('#');
-            });
-
-            it('should include role labels in uppercase', () => {
-                const content = service.getExportContent(mockChat, { format: 'txt' });
-
-                expect(content).toContain('[YOU]');
-                expect(content).toContain('[ASSISTANT]');
-            });
-
-            it('should include separator lines', () => {
-                const content = service.getExportContent(mockChat, { format: 'txt' });
-
-                expect(content).toContain('═══');
-                expect(content).toContain('───');
-            });
+                    content: 'Test <script>alert("xss")</script>',
+                    timestamp: new Date()
+                } as Message]
+            };
+            const content = service.getExportContent(chatWithHtml, { format: 'html' });
+            expect(content).not.toContain('<script>');
+            expect(content).toContain('&lt;script&gt;');
         });
     });
 
+    describe('json format', () => {
+        it('should generate valid JSON', () => {
+            const content = service.getExportContent(mockChat, { format: 'json' });
+            expect(() => JSON.parse(content)).not.toThrow();
+        });
+
+        it('should include chat metadata', () => {
+            const content = service.getExportContent(mockChat, { format: 'json' });
+            const data = JSON.parse(content);
+            expect(data.title).toBe('Test Chat');
+            expect(data.model).toBe('gpt-4');
+            expect(data.messageCount).toBe(2);
+        });
+
+        it('should include messages', () => {
+            const content = service.getExportContent(mockChat, { format: 'json' });
+            const data = JSON.parse(content);
+            expect(data.messages).toHaveLength(2);
+            expect(data.messages[0].role).toBe('user');
+            expect(data.messages[1].role).toBe('assistant');
+        });
+
+        it('should include export timestamp', () => {
+            const content = service.getExportContent(mockChat, { format: 'json' });
+            const data = JSON.parse(content);
+            expect(data.exportedAt).toBeDefined();
+        });
+    });
+});
+
+describe('ExportService - Specialized Content', () => {
     describe('system messages', () => {
         it('should exclude system messages by default', () => {
             const chatWithSystem: Chat = {
@@ -223,9 +206,7 @@ describe('ExportService', () => {
                     ...mockChat.messages
                 ]
             };
-
             const content = service.getExportContent(chatWithSystem, { format: 'markdown' });
-
             expect(content).not.toContain('System prompt');
         });
 
@@ -237,12 +218,10 @@ describe('ExportService', () => {
                     ...mockChat.messages
                 ]
             };
-
             const content = service.getExportContent(chatWithSystem, {
                 format: 'markdown',
                 includeSystemMessages: true
             });
-
             expect(content).toContain('System prompt');
         });
     });
@@ -266,12 +245,10 @@ describe('ExportService', () => {
                     }]
                 } as Message]
             };
-
             const content = service.getExportContent(chatWithTools, {
                 format: 'markdown',
                 includeToolCalls: true
             });
-
             expect(content).toContain('Tool Calls');
             expect(content).toContain('search');
         });
@@ -283,7 +260,6 @@ describe('ExportService', () => {
                 format: 'markdown',
                 title: 'Custom Export Title'
             });
-
             expect(content).toContain('# Custom Export Title');
         });
     });
@@ -302,9 +278,7 @@ describe('ExportService', () => {
                     timestamp: new Date()
                 } as Message]
             };
-
             const content = service.getExportContent(chatWithArrayContent, { format: 'markdown' });
-
             expect(content).toContain('First part');
             expect(content).toContain('Second part');
         });

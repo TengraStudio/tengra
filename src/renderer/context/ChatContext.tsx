@@ -7,10 +7,9 @@ import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useTranslation } from '@renderer/i18n';
 import { CatchError } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
-import React from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
-import { Project } from '@/types';
+import { Chat, Project } from '@/types';
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {
@@ -34,49 +33,100 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
+function formatRateLimitError(message: string): string {
+    try {
+        const jsonMatch = message.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {});
+            const errorMsg = errData.error?.message ?? errData.message ?? message;
+            if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
+                return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
+            }
+        }
+    } catch {
+        // Not JSON
+    }
+    return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
+}
+
+function handleChatError(e: CatchError): string {
+    if (!(e instanceof Error)) { return String(e ?? 'Unknown error'); }
+    const message = e.message;
+    const isRateLimit = message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota');
+    return isRateLimit ? formatRateLimitError(message) : message;
+}
+
+function isEditableElement(): boolean {
+    const activeTag = document.activeElement?.tagName.toLowerCase();
+    return activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable;
+}
+
+const isUndoKey = (e: KeyboardEvent): boolean => (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
+const isRedoKey = (e: KeyboardEvent): boolean => ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y');
+
+interface UndoRedoHandlers {
+    setChats: (chats: Chat[]) => void
+    setCurrentChatId: (id: string | null) => void
+}
+
+function useUndoRedoKeyboard(
+    historyManager: ReturnType<typeof useChatHistory>,
+    handlers: UndoRedoHandlers,
+    isRestoringRef: React.MutableRefObject<boolean>
+): void {
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isEditableElement()) { return; }
+
+            if (isUndoKey(e)) { applyHistoryState(historyManager.undo(), handlers, isRestoringRef, e); }
+            else if (isRedoKey(e)) { applyHistoryState(historyManager.redo(), handlers, isRestoringRef, e); }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [historyManager, handlers, isRestoringRef]);
+}
+
+function applyHistoryState(
+    state: { chats: Chat[]; currentChatId: string | null } | null,
+    handlers: UndoRedoHandlers,
+    isRestoringRef: React.MutableRefObject<boolean>,
+    e: KeyboardEvent
+): void {
+    if (!state) { return; }
+    e.preventDefault();
+    isRestoringRef.current = true;
+    handlers.setChats(state.chats);
+    handlers.setCurrentChatId(state.currentChatId);
+}
+
+function useHistorySync(
+    chats: Chat[],
+    currentChatId: string | null,
+    historyManager: ReturnType<typeof useChatHistory>,
+    isRestoringRef: React.MutableRefObject<boolean>
+): void {
+    useEffect(() => {
+        if (isRestoringRef.current) {
+            isRestoringRef.current = false;
+            return;
+        }
+        if (chats.length > 0) {
+            historyManager.saveState(chats, currentChatId);
+        }
+    }, [chats, currentChatId, historyManager, isRestoringRef]);
+}
+
 export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth();
     const { selectedModel, selectedProvider, selectedModels } = useModel();
     const { t } = useTranslation();
-
-    // Consume Project Context instead of re-instantiating the manager
-    const {
-        projects, selectedProject, setSelectedProject, loadProjects
-    } = useProject();
-
+    const { projects, selectedProject, setSelectedProject, loadProjects } = useProject();
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
-
-    // Chat History Manager for undo/redo
     const historyManager = useChatHistory();
+    const isRestoringRef = useRef(false);
 
-    const handleSpeakAdapter = useCallback((id: string, text: string) => {
-        handleSpeak(text, id);
-    }, [handleSpeak]);
-
-    // Helper functions for error formatting to reduce complexity
-    const formatRateLimitError = useCallback((message: string): string => {
-        try {
-            const jsonMatch = message.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {});
-                const errorMsg = errData.error?.message ?? errData.message ?? message;
-                if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
-                    return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
-                }
-            }
-        } catch {
-            // Not JSON
-        }
-        return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
-    }, []);
-
-    const handleChatError = useCallback((e: Error): string => {
-        const message = e.message;
-        if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota')) {
-            return formatRateLimitError(message);
-        }
-        return message;
-    }, [formatRateLimitError]);
+    const handleSpeakAdapter = useCallback((id: string, text: string) => { handleSpeak(text, id); }, [handleSpeak]);
 
     const chatManager = useChatManager({
         selectedModel,
@@ -84,67 +134,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         selectedModels,
         language,
         appSettings: appSettings ?? undefined,
-        autoReadEnabled: false, // Could be moved to settings/context
-        handleSpeak: handleSpeakAdapter, // Stable Adapter
-        formatChatError: (e: CatchError) => {
-            if (!(e instanceof Error)) {
-                return String(e ?? 'Unknown error');
-            }
-            return handleChatError(e);
-        },
+        autoReadEnabled: false,
+        handleSpeak: handleSpeakAdapter,
+        formatChatError: handleChatError,
         t,
         projectId: selectedProject?.id,
         activeWorkspacePath: selectedProject?.path
     });
 
-    // Track if we're currently restoring from history to avoid saving during undo/redo
-    const isRestoringRef = React.useRef(false);
+    const handlers = useMemo(() => ({
+        setChats: chatManager.setChats,
+        setCurrentChatId: chatManager.setCurrentChatId
+    }), [chatManager.setChats, chatManager.setCurrentChatId]);
 
-    // Save state to history when chats or currentChatId changes (but not during undo/redo)
-    useEffect(() => {
-        if (isRestoringRef.current) {
-            isRestoringRef.current = false;
-            return;
-        }
-        if (chatManager.chats.length > 0) {
-            historyManager.saveState(chatManager.chats, chatManager.currentChatId);
-        }
-    }, [chatManager.chats, chatManager.currentChatId, historyManager]);
-
-    // Handle undo/redo keyboard shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const activeTag = document.activeElement?.tagName.toLowerCase();
-            // Don't trigger undo/redo in input fields
-            if (activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable) {
-                return;
-            }
-
-            // Ctrl+Z or Cmd+Z for undo
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                isRestoringRef.current = true;
-                const state = historyManager.undo();
-                if (state) {
-                    chatManager.setChats(state.chats);
-                    chatManager.setCurrentChatId(state.currentChatId);
-                }
-            }
-            // Ctrl+Shift+Z or Cmd+Shift+Z for redo (or Ctrl+Y)
-            if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
-                e.preventDefault();
-                isRestoringRef.current = true;
-                const state = historyManager.redo();
-                if (state) {
-                    chatManager.setChats(state.chats);
-                    chatManager.setCurrentChatId(state.currentChatId);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [historyManager, chatManager]);
+    useHistorySync(chatManager.chats, chatManager.currentChatId, historyManager, isRestoringRef);
+    useUndoRedoKeyboard(historyManager, handlers, isRestoringRef);
 
     const undo = useCallback(() => {
         isRestoringRef.current = true;

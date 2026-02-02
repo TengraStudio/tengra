@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
-import { CouncilSession, Project } from '@/types';
+import { Project } from '@/types';
 
-import { useCouncilWS } from './useCouncilWS';
 import { useProjectActions } from './useProjectActions';
 import { useProjectState } from './useProjectState';
 import { useWorkspaceManager } from './useWorkspaceManager';
@@ -22,9 +21,6 @@ export function useProjectWorkspaceController({
     const { notify, logActivity } = ps;
 
     const wm = useWorkspaceManager({ project, notify, logActivity });
-
-    const [councilSession, setCouncilSession] = useState<CouncilSession | null>(null);
-    const { activityLog, setActivityLog } = useCouncilWS({ councilSession, notify });
 
     useEffect(() => {
         const handleProgress = (_event: unknown, ...args: unknown[]) => {
@@ -50,39 +46,18 @@ export function useProjectWorkspaceController({
         };
     }, [project.id, ps, t]);
 
-    const { handleUpdateProject, runCouncil } = useProjectActions({
+    const { handleUpdateProject } = useProjectActions({
         project,
         notify,
         t,
         agentChatMessage: ps.agentChatMessage,
-        setCouncilSession,
-        setActivityLog
     });
 
-    useEffect(() => {
-        if (wm.dashboardTab === 'council') {
-            const timer = setTimeout(() => ps.setViewTab('council'), 0);
-            return () => clearTimeout(timer);
-        } else if (wm.dashboardTab === 'overview' || wm.dashboardTab === 'editor') {
-            const timer = setTimeout(() => ps.setViewTab('editor'), 0);
-            return () => clearTimeout(timer);
-        }
-        return undefined;
-    }, [wm.dashboardTab, ps]);
-
-    const toggleAgent = (id: string) => {
-        ps.setAgents(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
-    };
 
     return {
         ps,
         wm,
-        councilSession,
-        activityLog,
-        setActivityLog,
         handleUpdateProject,
-        runCouncil,
-        toggleAgent,
         t
     };
 }

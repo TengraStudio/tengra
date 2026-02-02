@@ -32,28 +32,28 @@ export class AuthAPIService extends BaseService {
                     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
                     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-                if (req.method === 'OPTIONS') {
-                    res.writeHead(200);
-                    res.end();
-                    return;
-                }
+                    if (req.method === 'OPTIONS') {
+                        res.writeHead(200);
+                        res.end();
+                        return;
+                    }
 
-                // Authentication check
-                const authHeader = req.headers['authorization'];
-                if (this.apiKey && (!authHeader || authHeader !== `Bearer ${this.apiKey}`)) {
-                    res.writeHead(401, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Unauthorized' }));
-                    return;
-                }
+                    // Authentication check
+                    const authHeader = req.headers['authorization'];
+                    if (this.apiKey && (!authHeader || authHeader !== `Bearer ${this.apiKey}`)) {
+                        res.writeHead(401, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Unauthorized' }));
+                        return;
+                    }
 
-                if (req.url === '/api/auth/accounts' && req.method === 'GET') {
-                    await this.handleGetAccounts(req, res);
-                } else if (req.url?.startsWith('/api/auth/accounts/') && req.method === 'POST') {
-                    await this.handleUpdateAccount(req, res);
-                } else {
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'Not found' }));
-                }
+                    if (req.url === '/api/auth/accounts' && req.method === 'GET') {
+                        await this.handleGetAccounts(req, res);
+                    } else if (req.url?.startsWith('/api/auth/accounts/') && req.method === 'POST') {
+                        await this.handleUpdateAccount(req, res);
+                    } else {
+                        res.writeHead(404, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Not found' }));
+                    }
                 })();
             });
 
@@ -104,45 +104,8 @@ export class AuthAPIService extends BaseService {
     private async handleGetAccounts(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
             const accounts = await this.authService.getAllAccountsFull();
-
             // Transform to format expected by Go proxy
-            const authData = accounts
-                .map(acc => {
-                    const normalizedProvider = this.normalizeProviderName(acc.provider);
-                    // Go proxy expects 'claude' for model routing
-                    const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider;
-                    const isClaudeProvider = providerForGo === 'claude';
-                    const baseMetadata: JsonObject = { ...(acc.metadata ?? {}) };
-
-                    if (isClaudeProvider) {
-                        // Let Rust token-service own Claude refresh; proxy sees only access token
-                        delete (baseMetadata as { refresh_token?: unknown }).refresh_token;
-                        delete (baseMetadata as { refreshToken?: unknown }).refreshToken;
-                    }
-
-                    const metadata: JsonObject = {
-                        ...baseMetadata,
-                        type: providerForGo,
-                        auth_type: isClaudeProvider ? 'oauth' : (acc.metadata?.auth_type ?? 'oauth'),
-                        email: acc.email
-                    };
-
-                    return {
-                        id: acc.id || `${acc.provider}.json`,
-                        provider: providerForGo,
-                        type: providerForGo,
-                        email: acc.email,
-                        label: acc.displayName ?? acc.email ?? acc.provider,
-                        access_token: acc.accessToken,
-                        refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
-                        session_token: acc.sessionToken,
-                        expires_at: acc.expiresAt,
-                        scope: acc.scope,
-                        metadata,
-                        created_at: acc.createdAt,
-                        updated_at: acc.updatedAt
-                    };
-                });
+            const authData = accounts.map(acc => this.mapAccountToAuthData(acc));
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ accounts: authData }));
@@ -155,52 +118,131 @@ export class AuthAPIService extends BaseService {
 
     private async handleUpdateAccount(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
-            const urlParts = req.url?.split('/') ?? [];
-            const accountId = urlParts[urlParts.length - 1];
-
+            const accountId = this.extractAccountId(req);
             if (!accountId) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Missing account ID' }));
+                this.sendError(res, 400, 'Missing account ID');
                 return;
             }
 
-            let body = '';
-            for await (const chunk of req) {
-                body += chunk;
-            }
-
+            const body = await this.readRequestBody(req);
             const data = safeJsonParse(body, {} as JsonObject);
-            const dataKeys = Object.keys(data);
-            if (dataKeys.length === 0) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+
+            if (Object.keys(data).length === 0) {
+                this.sendError(res, 400, 'Invalid JSON body');
                 return;
             }
+
             appLogger.info('AuthAPIService', `Received update for account ${accountId}`);
 
-            const metadata = data.metadata as JsonObject | undefined;
-
-            // Map from Go proxy fields back to Tandem internal fields if needed
-            // Currently updateToken accepts Partial<TokenData>
-            await this.authService.updateToken(accountId, {
-                accessToken: (data.access_token ?? data.accessToken) as string | undefined,
-                refreshToken: (data.refresh_token ?? data.refreshToken) as string | undefined,
-                sessionToken: (data.session_token ?? data.sessionToken) as string | undefined,
-                expiresAt: (data.expires_at ?? data.expiresAt) as number | undefined,
-                // Fallback to metadata for profile fields if top-level is missing
-                email: (data.email ?? metadata?.email) as string | undefined,
-                displayName: (data.label ?? data.displayName ?? metadata?.label ?? metadata?.displayName) as string | undefined,
-                avatarUrl: (data.avatar_url ?? data.avatarUrl ?? metadata?.avatar_url ?? metadata?.avatarUrl) as string | undefined,
-                metadata
-            });
+            const tokenData = this.mapToTokenData(data);
+            await this.authService.updateToken(accountId, tokenData);
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));
         } catch (error) {
             appLogger.error('AuthAPIService', `Failed to update account: ${error}`);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Internal server error' }));
+            this.sendError(res, 500, 'Internal server error');
         }
+    }
+
+    private extractAccountId(req: http.IncomingMessage): string | undefined {
+        const urlParts = req.url?.split('/') ?? [];
+        return urlParts[urlParts.length - 1];
+    }
+
+    private async readRequestBody(req: http.IncomingMessage): Promise<string> {
+        let body = '';
+        for await (const chunk of req) {
+            body += chunk;
+        }
+        return body;
+    }
+
+    private mapToTokenData(data: JsonObject) {
+        const metadata = data.metadata as JsonObject | undefined;
+        return {
+            accessToken: this.getString(data, 'access_token', 'accessToken'),
+            refreshToken: this.getString(data, 'refresh_token', 'refreshToken'),
+            sessionToken: this.getString(data, 'session_token', 'sessionToken'),
+            expiresAt: this.getNumber(data, 'expires_at', 'expiresAt'),
+            email: this.getString(data, 'email') ?? this.getString(metadata, 'email'),
+            displayName: this.getString(data, 'label', 'displayName') ?? this.getString(metadata, 'label', 'displayName'),
+            avatarUrl: this.getString(data, 'avatar_url', 'avatarUrl') ?? this.getString(metadata, 'avatar_url', 'avatarUrl'),
+            metadata
+        };
+    }
+
+    private getString(obj: JsonObject | undefined, ...keys: string[]): string | undefined {
+        if (!obj) { return undefined; }
+        for (const key of keys) {
+            if (typeof obj[key] === 'string') { return obj[key] as string; }
+        }
+        return undefined;
+    }
+
+    private getNumber(obj: JsonObject | undefined, ...keys: string[]): number | undefined {
+        if (!obj) { return undefined; }
+        for (const key of keys) {
+            const val = obj[key];
+            if (typeof val === 'number') { return val; }
+            if (typeof val === 'string') {
+                const parsed = Number(val);
+                if (!isNaN(parsed)) { return parsed; }
+            }
+        }
+        return undefined;
+    }
+
+    private sendError(res: http.ServerResponse, statusCode: number, message: string) {
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+    }
+
+    private mapAccountToAuthData(acc: import('@main/services/data/database.service').LinkedAccount) {
+        const normalizedProvider = this.normalizeProviderName(acc.provider);
+        // Go proxy expects 'claude' for model routing
+        const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider;
+        const isClaudeProvider = providerForGo === 'claude';
+
+        const metadata = this.prepareMetadata(acc.metadata, providerForGo, isClaudeProvider, acc.email);
+
+        return {
+            id: acc.id,
+            provider: providerForGo,
+            type: providerForGo,
+            email: acc.email,
+            label: acc.displayName ?? acc.email ?? acc.provider,
+            access_token: acc.accessToken,
+            refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
+            session_token: acc.sessionToken,
+            expires_at: acc.expiresAt,
+            scope: acc.scope,
+            metadata,
+            created_at: acc.createdAt,
+            updated_at: acc.updatedAt
+        };
+    }
+
+    private prepareMetadata(
+        existingMetadata: JsonObject | undefined,
+        providerForGo: string,
+        isClaudeProvider: boolean,
+        email?: string
+    ): JsonObject {
+        const baseMetadata: JsonObject = { ...(existingMetadata ?? {}) };
+
+        if (isClaudeProvider) {
+            // Let Rust token-service own Claude refresh; proxy sees only access token
+            delete (baseMetadata as { refresh_token?: unknown }).refresh_token;
+            delete (baseMetadata as { refreshToken?: unknown }).refreshToken;
+        }
+
+        return {
+            ...baseMetadata,
+            type: providerForGo,
+            auth_type: isClaudeProvider ? 'oauth' : (existingMetadata?.auth_type ?? 'oauth'),
+            email: email
+        };
     }
 
     private normalizeProviderName(provider: string): string {

@@ -1,10 +1,10 @@
-# GitHub Copilot Instructions for Orbit
+# GitHub Copilot Instructions for Tandem
 
 This file provides custom instructions for GitHub Copilot when working on this project.
 
 ## Project Overview
 
-Orbit is an Electron + React + TypeScript application for AI-powered development assistance. It uses a multi-process architecture with a Node.js main process and React renderer.
+Tandem is an Electron + React + TypeScript application for AI-powered development assistance. It uses a multi-process architecture with a Node.js main process and React renderer.
 
 ## Code Style Requirements
 

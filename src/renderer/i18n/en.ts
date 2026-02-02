@@ -92,7 +92,16 @@ export const en = {
         openCode: 'OpenCode',
         proxyCustom: 'Custom Proxy / Other',
         model: 'Model',
-        selectModel: 'Select Model'
+        selectModel: 'Select Model',
+        providerLabels: {
+            ollama: 'Ollama',
+            codex: 'OpenAI',
+            antigravity: 'Antigravity',
+            claude: 'Claude',
+            local: 'Local',
+            github: 'GitHub',
+            openai: 'OpenAI'
+        }
     },
     settings: {
         searchPlaceholder: 'Search settings...',
@@ -866,7 +875,13 @@ export const en = {
         databaseDesc: 'Manage application data and cache.',
         onboardingTour: 'ONBOARDING TOUR',
         onboardingTourDesc: 'Restart the tour introducing application features.',
-        startTour: 'START TOUR'
+        startTour: 'START TOUR',
+        autoUpdate: 'Auto-Update',
+        checkOnStartup: 'Check on Startup',
+        checkForUpdates: 'Check for Updates',
+        privacy: 'Privacy',
+        crashReporting: 'Crash Reporting',
+        crashReportingDesc: 'Send anonymous crash reports to help us improve Tandem.'
     },
     appearance: {
         themeDesc: 'Change the application color theme.',
@@ -945,7 +960,23 @@ export const en = {
         subscriptionActive: 'Subscription active',
         codingTimeByProject: 'Coding Time by Project',
         timeSpentCodingInEachProject: 'Time spent coding in each project',
-        unknownProject: 'Unknown Project'
+        unknownProject: 'Unknown Project',
+        copilotAccount: 'Copilot Account',
+        seatsStatus: 'Seats Status',
+        usageStatus: 'Usage Status',
+        left: 'left',
+        individual: 'Individual',
+        rateLimit: 'Rate Limit',
+        apiUsage: 'API Usage',
+        enterpriseStatus: 'Enterprise Status',
+        defaultAccount: 'Default Account',
+        active: 'ACTIVE',
+        claudeAccount: 'Claude Account',
+        fiveHourStatus: '5hr Status',
+        sevenDayStatus: '7d Status',
+        codexAccount: 'Codex Account',
+        dailyStatus: 'Daily Status',
+        weeklyStatus: 'Weekly Status'
     },
     about: {
         description: 'Tandem is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.',
@@ -1052,7 +1083,24 @@ export const en = {
         on: 'On',
         off: 'Off',
         local: 'local',
-        cloud: 'cloud'
+        cloud: 'cloud',
+        // TaskNode keys
+        generatingPlan: 'Generating Plan...',
+        executingTask: 'Executing Task...',
+        waitingForApproval: 'Waiting for Approval',
+        console: 'Console',
+        plan: 'Plan',
+        newStep: 'New step',
+        describeBuild: 'Describe what you want to build...',
+        noDescription: 'No description provided.',
+        failedToGeneratePlan: 'Failed to generate plan',
+        failedToApprovePlan: 'Failed to approve plan',
+        failedToStartTask: 'Failed to start task',
+        failedToStopTask: 'Failed to stop task',
+        failedToRetryStep: 'Failed to retry step',
+        newTask: 'New Task',
+        addAction: 'Add Action',
+        overallProgress: 'Overall Progress'
     },
     modelComparison: {
         title: 'Model Comparison',
@@ -1311,6 +1359,8 @@ export const en = {
             viewDetails: 'View Details',
             approve: 'Approve & Create Project',
             reject: 'Reject',
+            archive: 'Archive',
+            archiving: 'Archiving...',
             nameSuggestions: 'Name Suggestions',
             valueProposition: 'Value Proposition',
             competitiveAdvantages: 'Competitive Advantages',
@@ -1372,7 +1422,8 @@ export const en = {
             cancelled: 'Cancelled',
             pending: 'Pending',
             approved: 'Approved',
-            rejected: 'Rejected'
+            rejected: 'Rejected',
+            archived: 'Archived'
         },
 
         // Errors

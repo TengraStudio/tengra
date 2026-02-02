@@ -21,7 +21,7 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-describe('IPC Batch Utility', () => {
+describe('IPC Batch Utility - Registration', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.resetModules();
@@ -80,13 +80,32 @@ describe('IPC Batch Utility', () => {
 
             registerBatchIpc();
 
-             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:invoke', expect.any(Function));
-             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:invokeSequential', expect.any(Function));
-             
             expect(ipcMain.handle).toHaveBeenCalledWith('batch:getChannels', expect.any(Function));
         });
+    });
+
+    describe('makeBatchable', () => {
+        it('should make an existing handler batchable', async () => {
+            const { makeBatchable, isBatchable } = await import('@main/utils/ipc-batch.util');
+
+            const existingHandler = vi.fn().mockResolvedValue({ data: 'test' });
+            makeBatchable('existing:handler', existingHandler);
+
+            expect(isBatchable('existing:handler')).toBe(true);
+        });
+    });
+});
+
+describe('IPC Batch Utility - Parallel Execution', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.resetModules();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
     });
 
     describe('batch:invoke handler', () => {
@@ -180,6 +199,17 @@ describe('IPC Batch Utility', () => {
             expect(response.results[0].error).toContain('Handler failed');
         });
     });
+});
+
+describe('IPC Batch Utility - Sequential & Metadata', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.resetModules();
+    });
+
+    afterEach(() => {
+        vi.resetModules();
+    });
 
     describe('batch:invokeSequential handler', () => {
         it('should execute requests sequentially', async () => {
@@ -227,17 +257,6 @@ describe('IPC Batch Utility', () => {
 
             expect(channels).toContain('channel:a');
             expect(channels).toContain('channel:b');
-        });
-    });
-
-    describe('makeBatchable', () => {
-        it('should make an existing handler batchable', async () => {
-            const { makeBatchable, isBatchable } = await import('@main/utils/ipc-batch.util');
-
-            const existingHandler = vi.fn().mockResolvedValue({ data: 'test' });
-            makeBatchable('existing:handler', existingHandler);
-
-            expect(isBatchable('existing:handler')).toBe(true);
         });
     });
 });

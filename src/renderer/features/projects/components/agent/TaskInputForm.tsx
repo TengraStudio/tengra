@@ -294,7 +294,7 @@ const LocalModelSelectorSection: React.FC<{
         availableModels={availableModels}
         onSelect={onSelectModelFallback}
         dropdownRef={modelDropdownRef}
-        disabled={isRunning ?? isLoading}
+        disabled={isRunning || isLoading}
         t={t}
     />
 );
@@ -384,7 +384,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         return <LoadingButton t={t} />;
     }
 
-    if (isStuck ?? isPaused) {
+    if (isStuck || isPaused) {
         return (
             <button
                 onClick={onResume}

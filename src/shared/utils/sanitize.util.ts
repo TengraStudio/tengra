@@ -187,10 +187,10 @@ export function sanitizeStringArray(
  * @returns Sanitized object
  */
 export function sanitizeObject<T extends Record<string, unknown>>(
-    obj: T,
+    obj: T | null | undefined,
     options: Parameters<typeof sanitizeString>[1] = {}
-): T {
-    if (!obj) {
+): T | null | undefined {
+    if (obj === null || obj === undefined) {
         return obj;
     }
 

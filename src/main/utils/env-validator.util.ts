@@ -85,6 +85,15 @@ export function validateEnvironmentVariables(envExamplePath?: string): Validatio
     }
 
     // Check each variable
+    checkVariables(expectedVars, result);
+
+    // Log results
+    logValidationResults(result);
+
+    return result;
+}
+
+function checkVariables(expectedVars: EnvVarConfig[], result: ValidationResult) {
     for (const varConfig of expectedVars) {
         const value = process.env[varConfig.name];
 
@@ -97,8 +106,9 @@ export function validateEnvironmentVariables(envExamplePath?: string): Validatio
             }
         }
     }
+}
 
-    // Log results
+function logValidationResults(result: ValidationResult) {
     if (result.missing.length > 0) {
         appLogger.error(
             'EnvValidator',
@@ -118,8 +128,6 @@ export function validateEnvironmentVariables(envExamplePath?: string): Validatio
     if (result.valid && result.warnings.length === 0) {
         appLogger.info('EnvValidator', 'All environment variables are configured');
     }
-
-    return result;
 }
 
 /**

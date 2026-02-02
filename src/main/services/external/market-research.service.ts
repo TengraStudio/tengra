@@ -312,11 +312,8 @@ export class MarketResearchService extends BaseService {
             return await this.searchProductHuntWeb(category);
         }
 
-        const products: ProductHuntProduct[] = [];
         const categoryTopic = this.getCategoryProductHuntTopic(category);
-
         try {
-            // Product Hunt GraphQL API
             const response = await fetch('https://api.producthunt.com/v2/api/graphql', {
                 method: 'POST',
                 headers: {
@@ -330,19 +327,8 @@ export class MarketResearchService extends BaseService {
                             posts(first: 10, topic: "${categoryTopic}", order: VOTES) {
                                 edges {
                                     node {
-                                        id
-                                        name
-                                        tagline
-                                        description
-                                        url
-                                        votesCount
-                                        topics {
-                                            edges {
-                                                node {
-                                                    name
-                                                }
-                                            }
-                                        }
+                                        id, name, tagline, description, url, votesCount,
+                                        topics { edges { node { name } } },
                                         createdAt
                                     }
                                 }
@@ -353,45 +339,50 @@ export class MarketResearchService extends BaseService {
             });
 
             if (response.ok) {
-                const data = await response.json() as {
-                    data?: {
-                        posts?: {
-                            edges?: Array<{
-                                node: {
-                                    id: string
-                                    name: string
-                                    tagline: string
-                                    description?: string
-                                    url: string
-                                    votesCount: number
-                                    topics?: { edges?: Array<{ node: { name: string } }> }
-                                    createdAt?: string
-                                }
-                            }>
-                        }
-                    }
-                };
-
-                const posts = data.data?.posts?.edges ?? [];
-                for (const edge of posts) {
-                    const node = edge.node;
-                    products.push({
-                        id: node.id,
-                        name: node.name,
-                        tagline: node.tagline,
-                        description: node.description,
-                        url: node.url,
-                        votesCount: node.votesCount,
-                        topics: node.topics?.edges?.map(t => t.node.name) ?? [],
-                        launchedAt: node.createdAt
-                    });
-                }
+                const data = await response.json();
+                return this.parseProductHuntResponse(data);
             }
         } catch (error) {
             this.logWarn('Product Hunt search failed', getErrorMessage(error as Error));
         }
 
-        return products;
+        return [];
+    }
+
+    private parseProductHuntResponse(data: unknown): ProductHuntProduct[] {
+        const typedData = data as {
+            data?: {
+                posts?: {
+                    edges?: Array<{
+                        node: {
+                            id: string
+                            name: string
+                            tagline: string
+                            description?: string
+                            url: string
+                            votesCount: number
+                            topics?: { edges?: Array<{ node: { name: string } }> }
+                            createdAt?: string
+                        }
+                    }>
+                }
+            }
+        };
+
+        const posts = typedData.data?.posts?.edges ?? [];
+        return posts.map((edge) => {
+            const node = edge.node;
+            return {
+                id: node.id,
+                name: node.name,
+                tagline: node.tagline,
+                description: node.description,
+                url: node.url,
+                votesCount: node.votesCount,
+                topics: node.topics?.edges?.map((t) => t.node.name) ?? [],
+                launchedAt: node.createdAt
+            };
+        });
     }
 
     /**
@@ -431,74 +422,63 @@ export class MarketResearchService extends BaseService {
             return await this.searchCrunchbaseWeb(categoryName);
         }
 
-        const companies: CrunchbaseCompany[] = [];
-
         try {
-            // Crunchbase API endpoint
             const response = await fetch(
-                `https://api.crunchbase.com/api/v4/searches/organizations?` +
-                `user_key=${this.crunchbaseApiKey}`,
+                `https://api.crunchbase.com/api/v4/searches/organizations?user_key=${this.crunchbaseApiKey}`,
                 {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         field_ids: ['identifier', 'short_description', 'funding_total', 'founded_on', 'num_employees_enum', 'categories'],
-                        query: [
-                            {
-                                type: 'predicate',
-                                field_id: 'categories',
-                                operator_id: 'includes',
-                                values: [categoryName]
-                            }
-                        ],
-                        order: [
-                            {
-                                field_id: 'funding_total',
-                                sort: 'desc'
-                            }
-                        ],
+                        query: [{ type: 'predicate', field_id: 'categories', operator_id: 'includes', values: [categoryName] }],
+                        order: [{ field_id: 'funding_total', sort: 'desc' }],
                         limit: 10
                     })
                 }
             );
 
             if (response.ok) {
-                const data = await response.json() as {
-                    entities?: Array<{
-                        properties?: {
-                            identifier?: { value?: string }
-                            short_description?: string
-                            funding_total?: { value_usd?: number }
-                            founded_on?: { value?: string }
-                            num_employees_enum?: string
-                            categories?: Array<{ value?: string }>
-                        }
-                    }>
-                };
-
-                for (const entity of data.entities ?? []) {
-                    const props = entity.properties;
-                    if (props) {
-                        companies.push({
-                            name: props.identifier?.value ?? 'Unknown',
-                            description: props.short_description ?? '',
-                            fundingTotal: props.funding_total?.value_usd
-                                ? `$${(props.funding_total.value_usd / 1_000_000).toFixed(1)}M`
-                                : undefined,
-                            foundedOn: props.founded_on?.value,
-                            numEmployees: props.num_employees_enum,
-                            categories: props.categories?.map(c => c.value ?? '').filter(Boolean) ?? []
-                        });
-                    }
-                }
+                const data = await response.json();
+                return this.parseCrunchbaseResponse(data);
             }
         } catch (error) {
             this.logWarn('Crunchbase search failed', getErrorMessage(error as Error));
         }
 
-        return companies;
+        return [];
+    }
+
+    private parseCrunchbaseResponse(data: unknown): CrunchbaseCompany[] {
+        const typedData = data as {
+            entities?: Array<{
+                properties?: {
+                    identifier?: { value?: string }
+                    short_description?: string
+                    funding_total?: { value_usd?: number }
+                    founded_on?: { value?: string }
+                    num_employees_enum?: string
+                    categories?: Array<{ value?: string }>
+                }
+            }>
+        };
+
+        const entities = typedData.entities ?? [];
+        return entities
+            .map((entity) => entity.properties)
+            .filter((props): props is NonNullable<typeof props> => !!props)
+            .map((props) => ({
+                name: props.identifier?.value ?? 'Unknown',
+                description: props.short_description ?? '',
+                fundingTotal: this.formatFundingTotal(props.funding_total?.value_usd),
+                foundedOn: props.founded_on?.value,
+                numEmployees: props.num_employees_enum,
+                categories: props.categories?.map((c) => c.value ?? '').filter(Boolean) ?? []
+            }));
+    }
+
+    private formatFundingTotal(valueUsd?: number): string | undefined {
+        if (!valueUsd) { return undefined; }
+        return `$${(valueUsd / 1_000_000).toFixed(1)}M`;
     }
 
     /**

@@ -614,7 +614,7 @@ export class QuotaService {
 
                 appLogger.info('QuotaService', `Trying Anthropic OAuth usage endpoint: ${oauthUrl}`);
                 const oauthData = await this.fetchWithNet(oauthUrl, oauthHeaders);
-                if (oauthData && typeof oauthData === 'object' && !Array.isArray(oauthData)) { 
+                if (oauthData && typeof oauthData === 'object' && !Array.isArray(oauthData)) {
                     return oauthData as Record<string, unknown>;
                 }
             } catch (e) {
@@ -798,41 +798,30 @@ export class QuotaService {
         const primaryWindow = rateLimit ? this.asObject(rateLimit.primary_window) : null;
         const secondaryWindow = rateLimit ? this.asObject(rateLimit.secondary_window) : null;
 
-        const totalRequests = this.findNumberByKeys(d, ['total_requests', 'totalRequests', 'request_count', 'requests_used', 'requests']);
-        const totalTokens = this.findNumberByKeys(d, ['total_tokens', 'totalTokens', 'token_count', 'tokens_used', 'tokens']);
-        const remainingRequests = this.findNumberByKeys(d, ['remaining_requests', 'remainingRequests', 'requests_remaining']);
-        const remainingTokens = this.findNumberByKeys(d, ['remaining_tokens', 'remainingTokens', 'tokens_remaining']);
-        const dailyUsage = this.findNumberByKeys(d, ['daily_usage', 'dailyUsage', 'daily_used', 'usage_daily', 'requests_daily', 'requests_today', 'cap_usage', 'usage']);
-        const dailyLimit = this.findNumberByKeys(d, ['daily_limit', 'dailyLimit', 'limit_daily', 'daily_quota', 'cap_limit', 'limit']);
-        const weeklyUsage = this.findNumberByKeys(d, ['weekly_usage', 'weeklyUsage', 'weekly_used', 'usage_weekly', 'requests_weekly']);
-        const weeklyLimit = this.findNumberByKeys(d, ['weekly_limit', 'weeklyLimit', 'limit_weekly', 'weekly_quota']);
+        const result: Record<string, number | string | undefined | null> = {
+            totalRequests: this.findNumberByKeys(d, ['total_requests', 'totalRequests', 'request_count', 'requests_used', 'requests']),
+            totalTokens: this.findNumberByKeys(d, ['total_tokens', 'totalTokens', 'token_count', 'tokens_used', 'tokens']),
+            remainingRequests: this.findNumberByKeys(d, ['remaining_requests', 'remainingRequests', 'requests_remaining']),
+            remainingTokens: this.findNumberByKeys(d, ['remaining_tokens', 'remainingTokens', 'tokens_remaining']),
+            dailyUsage: this.findNumberByKeys(d, ['daily_usage', 'dailyUsage', 'daily_used', 'usage_daily', 'requests_daily', 'requests_today', 'cap_usage', 'usage']),
+            dailyLimit: this.findNumberByKeys(d, ['daily_limit', 'dailyLimit', 'limit_daily', 'daily_quota', 'cap_limit', 'limit']),
+            weeklyUsage: this.findNumberByKeys(d, ['weekly_usage', 'weeklyUsage', 'weekly_used', 'usage_weekly', 'requests_weekly']),
+            weeklyLimit: this.findNumberByKeys(d, ['weekly_limit', 'weeklyLimit', 'limit_weekly', 'weekly_quota']),
+            dailyUsedPercent: this.toNumber(primaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.primary_window.used_percent']),
+            weeklyUsedPercent: this.toNumber(secondaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.used_percent']),
+            dailyResetAt: this.normalizeResetAt(primaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.primary_window.reset_at'])),
+            weeklyResetAt: this.normalizeResetAt(secondaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.reset_at'])),
+            resetAt: this.normalizeResetAt(
+                this.findStringByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt']) ??
+                this.findNumberByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt'])
+            ),
+        };
 
-        const dailyUsedPercent = this.toNumber(primaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.primary_window.used_percent']);
-        const weeklyUsedPercent = this.toNumber(secondaryWindow?.used_percent ?? null) ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.used_percent']);
+        const filtered = Object.fromEntries(
+            Object.entries(result).filter(([, v]) => v !== undefined)
+        ) as CodexUsage;
 
-        const dailyResetAt = this.normalizeResetAt(primaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.primary_window.reset_at']));
-        const weeklyResetAt = this.normalizeResetAt(secondaryWindow?.reset_at ?? this.findNumberByKeys(d, ['rate_limit.secondary_window.reset_at']));
-        const resetAt = this.normalizeResetAt(
-            this.findStringByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt']) ??
-            this.findNumberByKeys(d, ['reset_at', 'resetAt', 'reset_time', 'resetTime', 'next_reset', 'renew_at', 'renewAt'])
-        );
-
-        const result: CodexUsage = {};
-        if (totalRequests !== null) { result.totalRequests = totalRequests; }
-        if (totalTokens !== null) { result.totalTokens = totalTokens; }
-        if (remainingRequests !== null) { result.remainingRequests = remainingRequests; }
-        if (remainingTokens !== null) { result.remainingTokens = remainingTokens; }
-        if (dailyUsage !== null) { result.dailyUsage = dailyUsage; }
-        if (dailyLimit !== null) { result.dailyLimit = dailyLimit; }
-        if (weeklyUsage !== null) { result.weeklyUsage = weeklyUsage; }
-        if (weeklyLimit !== null) { result.weeklyLimit = weeklyLimit; }
-        if (dailyUsedPercent !== null) { result.dailyUsedPercent = dailyUsedPercent; }
-        if (weeklyUsedPercent !== null) { result.weeklyUsedPercent = weeklyUsedPercent; }
-        if (dailyResetAt) { result.dailyResetAt = dailyResetAt; }
-        if (weeklyResetAt) { result.weeklyResetAt = weeklyResetAt; }
-        if (resetAt) { result.resetAt = resetAt; }
-
-        return Object.keys(result).length > 0 ? result : null;
+        return Object.keys(filtered).length > 0 ? filtered : null;
     }
 
     private async fetchCodexUsageFromWham(accessToken: string): Promise<JsonObject | null> {
@@ -854,66 +843,75 @@ export class QuotaService {
 
     private parseQuotaResponse(data: { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> }): QuotaResponse | null {
         if (!data.models) { return null; }
-        const models: ModelQuotaItem[] = [];
-        for (const [key, val] of Object.entries(data.models)) {
-            // Filter out unwanted internal/restricted models
-            if (['chat_23310', 'chat_20706', 'rev19-uic3-1p', 'tab_flash_lite_preview'].includes(key)) {
-                appLogger.info('QuotaService', `parseQuotaResponse: Skipping filtered model: ${key}`);
-                continue;
-            }
-            try {
-                // Removed restrictive filtering for 'chat_' and 'rev' prefixes
-                let percentage = 100;
-                let reset = '-';
-                let quotaInfo: QuotaInfo | undefined;
 
-                if (val.quotaInfo) {
-                    const q = val.quotaInfo;
-                    if (typeof q.remainingFraction === 'number') {
-                        percentage = Math.round(q.remainingFraction * 100);
-                    } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
-                        percentage = Math.round((q.remainingQuota / q.totalQuota) * 100);
-                    } else if (q.resetTime) {
-                        percentage = 0;
-                    }
-
-                    if (q.resetTime) {
-                        try {
-                            reset = new Date(q.resetTime).toLocaleString('tr-TR', {
-                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                            });
-                        } catch {
-                            // ignore
-                        }
-                    }
-                    quotaInfo = {
-                        remainingQuota: q.remainingQuota,
-                        totalQuota: q.totalQuota,
-                        remainingFraction: q.remainingFraction,
-                        resetTime: q.resetTime
-                    };
+        const filteredModels = Object.entries(data.models)
+            .filter(([key]) => {
+                if (['chat_23310', 'chat_20706', 'rev19-uic3-1p', 'tab_flash_lite_preview'].includes(key)) {
+                    appLogger.info('QuotaService', `parseQuotaResponse: Skipping filtered model: ${key}`);
+                    return false;
                 }
+                return true;
+            });
 
-                models.push({
-                    id: key,
-                    name: val.displayName ?? key,
-                    object: 'model',
-                    owned_by: 'antigravity',
-                    provider: 'antigravity',
-                    percentage,
-                    reset,
-                    permission: [],
-                    quotaInfo
-                });
-            } catch {
-                // ignore
-            }
-        }
+        const models: ModelQuotaItem[] = filteredModels
+            .map(([key, val]) => {
+                try {
+                    return this.mapAntigravityModel(key, val);
+                } catch {
+                    return null;
+                }
+            })
+            .filter((m): m is ModelQuotaItem => m !== null);
 
         return {
             status: models.length > 0 ? `${Math.round(models.reduce((sum, m) => sum + m.percentage, 0) / models.length)}%` : 'Available',
             next_reset: models.length > 0 ? models[0].reset : '-',
             models: models.sort((a, b) => a.name.localeCompare(b.name))
+        };
+    }
+
+    private mapAntigravityModel(key: string, val: { displayName?: string; quotaInfo?: QuotaInfo }): ModelQuotaItem {
+        let percentage = 100;
+        let reset = '-';
+        let quotaInfo: QuotaInfo | undefined;
+
+        if (val.quotaInfo) {
+            const q = val.quotaInfo;
+            if (typeof q.remainingFraction === 'number') {
+                percentage = Math.round(q.remainingFraction * 100);
+            } else if (typeof q.remainingQuota === 'number' && typeof q.totalQuota === 'number' && q.totalQuota > 0) {
+                percentage = Math.round((q.remainingQuota / q.totalQuota) * 100);
+            } else if (q.resetTime) {
+                percentage = 0;
+            }
+
+            if (q.resetTime) {
+                try {
+                    reset = new Date(q.resetTime).toLocaleString('tr-TR', {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                } catch {
+                    // ignore
+                }
+            }
+            quotaInfo = {
+                remainingQuota: q.remainingQuota,
+                totalQuota: q.totalQuota,
+                remainingFraction: q.remainingFraction,
+                resetTime: q.resetTime
+            };
+        }
+
+        return {
+            id: key,
+            name: val.displayName ?? key,
+            object: 'model',
+            owned_by: 'antigravity',
+            provider: 'antigravity',
+            percentage,
+            reset,
+            permission: [],
+            quotaInfo
         };
     }
 
@@ -938,51 +936,60 @@ export class QuotaService {
     }
 
 
-    private findNumberByKeys(root: JsonValue, keys: string[]): number | null {
+    private findInObject<T>(
+        root: JsonValue,
+        keys: string[],
+        predicate: (val: JsonValue) => T | null,
+        maxDepth: number = 4
+    ): T | null {
         const queue: Array<{ value: JsonValue; depth: number }> = [{ value: root, depth: 0 }];
         while (queue.length > 0) {
             const current = queue.shift();
-            if (!current) { continue; }
+            if (!current || !current.value || typeof current.value !== 'object') {
+                continue;
+            }
+
             const { value, depth } = current;
-            if (!value || typeof value !== 'object') { continue; }
-            if (depth >= 4) { continue; }
-            const v = value as JsonObject;
-            for (const key of keys) {
-                const candidate = v[key];
-                if (candidate !== undefined && candidate !== null) {
-                    const num = Number(candidate);
-                    if (!Number.isNaN(num)) { return num; }
+            const obj = value as JsonObject;
+
+            // Search current level keys if not array
+            if (!Array.isArray(obj)) {
+                for (const key of keys) {
+                    const candidate = obj[key];
+                    if (candidate !== undefined && candidate !== null) {
+                        const result = predicate(candidate);
+                        if (result !== null) { return result; }
+                    }
                 }
             }
-            const children = Array.isArray(value) ? value : Object.values(value);
-            for (const child of children) {
-                if (child && typeof child === 'object') { queue.push({ value: child, depth: depth + 1 }); }
+
+            // Go deeper
+            if (depth < maxDepth) {
+                const children = Array.isArray(obj) ? (obj as unknown as JsonValue[]) : Object.values(obj);
+                for (const child of children) {
+                    if (child && typeof child === 'object') {
+                        queue.push({ value: child, depth: depth + 1 });
+                    }
+                }
             }
         }
         return null;
     }
 
+    private findNumberByKeys(root: JsonValue, keys: string[]): number | null {
+        return this.findInObject(root, keys, (val) => {
+            const num = Number(val);
+            return !Number.isNaN(num) ? num : null;
+        });
+    }
+
     private findStringByKeys(root: JsonValue, keys: string[]): string | null {
-        const queue: Array<{ value: JsonValue; depth: number }> = [{ value: root, depth: 0 }];
-        while (queue.length > 0) {
-            const current = queue.shift();
-            if (!current) { continue; }
-            const { value, depth } = current;
-            if (!value || typeof value !== 'object') { continue; }
-            if (!Array.isArray(value)) {
-                const v = value as JsonObject;
-                for (const key of keys) {
-                    const candidate = v[key];
-                    if (typeof candidate === 'string' && candidate.trim()) { return candidate.trim(); }
-                }
+        return this.findInObject(root, keys, (val) => {
+            if (typeof val === 'string' && val.trim()) {
+                return val.trim();
             }
-            if (depth >= 4) { continue; }
-            const children = Array.isArray(value) ? value : Object.values(value);
-            for (const child of children) {
-                if (child && typeof child === 'object') { queue.push({ value: child, depth: depth + 1 }); }
-            }
-        }
-        return null;
+            return null;
+        });
     }
 
     private normalizeResetAt(value: JsonValue): string | null {

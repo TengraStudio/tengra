@@ -1,4 +1,4 @@
-import { Archive, CheckCircle, FolderOpen, XCircle } from 'lucide-react';
+import { Archive, CheckCircle, FolderOpen, LucideIcon, XCircle } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -14,6 +14,39 @@ interface ApprovalFooterProps {
     isRejecting: boolean
     isArchiving: boolean
 }
+
+interface ActionButtonProps {
+    onClick: () => void
+    disabled: boolean
+    Icon: LucideIcon
+    label: string
+    loadingLabel?: string
+    isLoading?: boolean
+    shortcut?: string
+    colorScheme: 'destructive' | 'primary' | 'accent'
+}
+
+const COLOR_SCHEMES = {
+    destructive: 'bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/20',
+    primary: 'bg-primary/10 hover:bg-primary/20 text-primary border-primary/20',
+    accent: 'bg-accent/10 hover:bg-accent/20 text-accent border-accent/20'
+};
+
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, disabled, Icon, label, loadingLabel, isLoading, shortcut, colorScheme }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className={`px-4 py-2 ${COLOR_SCHEMES[colorScheme]} border rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm group`}
+        title={shortcut}
+    >
+        <Icon className="w-4 h-4" />
+        {isLoading ? loadingLabel : label}
+        {shortcut && !isLoading && (
+            <kbd className={`hidden group-hover:inline-block ml-1 px-1.5 py-0.5 text-[10px] bg-${colorScheme}/20 rounded font-mono`}>{shortcut}</kbd>
+        )}
+    </button>
+);
 
 export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
     projectPath,
@@ -45,9 +78,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                         />
                         <button
                             type="button"
-                            onClick={() => {
-                                void handleSelectFolder();
-                            }}
+                            onClick={() => void handleSelectFolder()}
                             className="px-4 py-2 bg-muted/30 hover:bg-muted/50 text-foreground rounded-lg transition-colors border border-border/50"
                         >
                             <FolderOpen className="w-5 h-5" />
@@ -56,46 +87,34 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                 </div>
 
                 <div className="flex gap-2">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void onReject();
-                        }}
+                    <ActionButton
+                        onClick={() => void onReject()}
                         disabled={isRejecting || isApproving}
-                        className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm group"
-                        title="Ctrl+Backspace"
-                    >
-                        <XCircle className="w-4 h-4" />
-                        {t('ideas.idea.reject')}
-                        <kbd className="hidden group-hover:inline-block ml-1 px-1.5 py-0.5 text-[10px] bg-destructive/20 rounded font-mono">Ctrl+⌫</kbd>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void handleApprove();
-                        }}
+                        Icon={XCircle}
+                        label={t('ideas.idea.reject')}
+                        shortcut="Ctrl+⌫"
+                        colorScheme="destructive"
+                    />
+                    <ActionButton
+                        onClick={() => void handleApprove()}
                         disabled={!projectPath || isApproving || isRejecting || isArchiving}
-                        className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm group"
-                        title="Ctrl+Enter"
-                    >
-                        <CheckCircle className="w-4 h-4" />
-                        {isApproving ? t('ideas.idea.creating') : t('ideas.idea.approve')}
-                        {!isApproving && <kbd className="hidden group-hover:inline-block ml-1 px-1.5 py-0.5 text-[10px] bg-primary/20 rounded font-mono">Ctrl+↵</kbd>}
-                    </button>
-
+                        Icon={CheckCircle}
+                        label={t('ideas.idea.approve')}
+                        loadingLabel={t('ideas.idea.creating')}
+                        isLoading={isApproving}
+                        shortcut="Ctrl+↵"
+                        colorScheme="primary"
+                    />
                     {onArchive && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void onArchive();
-                            }}
+                        <ActionButton
+                            onClick={() => void onArchive()}
                             disabled={isArchiving || isApproving || isRejecting}
-                            className="px-4 py-2 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 font-bold text-sm"
-                            title="Archive Idea"
-                        >
-                            <Archive className="w-4 h-4" />
-                            {isArchiving ? 'Archiving...' : 'Archive'}
-                        </button>
+                            Icon={Archive}
+                            label={t('ideas.idea.archive')}
+                            loadingLabel={t('ideas.idea.archiving')}
+                            isLoading={isArchiving}
+                            colorScheme="accent"
+                        />
                     )}
                 </div>
             </div>

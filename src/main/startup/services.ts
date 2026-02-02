@@ -1,3 +1,4 @@
+import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
 import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services';
 import { appLogger } from '@main/logging/logger';
@@ -32,7 +33,6 @@ import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
-import { AgentCouncilService } from '@main/services/llm/agent-council.service';
 import { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
@@ -52,6 +52,7 @@ import { OllamaService } from '@main/services/llm/ollama.service';
 import { getOllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
+import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
@@ -71,6 +72,7 @@ import { TokenService } from '@main/services/security/token.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { ExtensionDetectorService } from '@main/services/system/extension-detector.service';
 import { getHealthCheckService, HealthCheckService } from '@main/services/system/health-check.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { NetworkService } from '@main/services/system/network.service';
@@ -115,7 +117,7 @@ export interface Services {
     embeddingService: EmbeddingService;
     dockerService: DockerService;
     screenshotService: ScreenshotService;
-    agentCouncilService: AgentCouncilService;
+
     ollamaHealthService: ReturnType<typeof getOllamaHealthService>;
     llamaService: LlamaService;
     huggingFaceService: HuggingFaceService;
@@ -162,8 +164,11 @@ export interface Services {
     projectScaffoldService: ProjectScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
     projectAgentService: ProjectAgentService;
+    agentRegistryService: AgentRegistryService;
     exportService: ExportService;
     mcpPluginService: McpPluginService;
+    apiServerService: ApiServerService;
+    extensionDetectorService: ExtensionDetectorService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -244,6 +249,9 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('httpService', () => new HttpService());
     container.register('rateLimitService', () => new RateLimitService());
     container.register('utilityService', (dbs, scs, es) => new UtilityService(dbs as DatabaseService, scs as ScannerService, es as EmbeddingService), ['databaseService', 'scannerService', 'embeddingService']);
+
+    // Extension detector service
+    container.register('extensionDetectorService', (ss) => new ExtensionDetectorService(ss as SettingsService), ['settingsService']);
 }
 
 function registerDataServices() {
@@ -386,7 +394,8 @@ function registerProjectServices() {
     }, ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService', 'brainService']);
 
     // Project Agent Service
-    container.register('projectAgentService', (ds, ls, ebs) => new ProjectAgentService(ds as DataService, ls as LLMService, ebs as EventBusService), ['dataService', 'llmService', 'eventBusService']);
+    container.register('agentRegistryService', () => new AgentRegistryService());
+    container.register('projectAgentService', (dbs, ls, ebs, ars) => new ProjectAgentService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService']);
 
     // Proxy Services
     container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
@@ -414,28 +423,7 @@ function registerProjectServices() {
 
     container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
 
-    // Agent Council Bundle
-    container.register('councilDeps1', (ls, dbs, fss, ps, cis) => ({
-        ls: ls as LLMService,
-        dbs: dbs as DatabaseService,
-        fss: fss as FileSystemService,
-        ps: ps as ProcessService,
-        cis: cis as CodeIntelligenceService
-    }), ['llmService', 'databaseService', 'fileSystemService', 'processService', 'codeIntelligenceService']);
-    container.register('agentCouncilService', (d1, ws, cos, es, bs) => {
-        const d = d1 as { ls: LLMService, dbs: DatabaseService, fss: FileSystemService, ps: ProcessService, cis: CodeIntelligenceService };
-        return new AgentCouncilService({
-            llm: d.ls,
-            db: d.dbs,
-            fs: d.fss,
-            process: d.ps,
-            codeIntel: d.cis,
-            web: ws as WebService,
-            collaboration: cos as CollaborationService,
-            embedding: es as EmbeddingService,
-            brain: bs as BrainService
-        });
-    }, ['councilDeps1', 'webService', 'collaborationService', 'embeddingService', 'brainService']);
+
 }
 
 function registerAnalysisServices() {
@@ -532,7 +520,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         utilityService: container.resolve<UtilityService>('utilityService'),
         dockerService: createLazyServiceProxy<DockerService>('dockerService'),
         screenshotService: container.resolve<ScreenshotService>('screenshotService'),
-        agentCouncilService: container.resolve<AgentCouncilService>('agentCouncilService'),
+
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
@@ -574,9 +562,12 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
         projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
+        agentRegistryService: container.resolve<AgentRegistryService>('agentRegistryService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
         exportService: container.resolve<ExportService>('exportService'),
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
-        localImageService: container.resolve<LocalImageService>('localImageService')
+        localImageService: container.resolve<LocalImageService>('localImageService'),
+        extensionDetectorService: container.resolve<ExtensionDetectorService>('extensionDetectorService'),
+        apiServerService: null as unknown as ApiServerService // Will be created in main.ts after ToolExecutor
     };
 }

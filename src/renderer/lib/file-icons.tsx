@@ -294,9 +294,9 @@ function getCSSVariableValue(variableName: string): string {
  */
 export function getFolderIconInfo(folderName: string, isOpen: boolean = false) {
     const lowerName = folderName.toLowerCase();
-    const config = SPECIAL_FOLDER_ICONS[lowerName];
 
-    if (config) {
+    if (lowerName in SPECIAL_FOLDER_ICONS) {
+        const config = SPECIAL_FOLDER_ICONS[lowerName];
         return {
             Icon: config.icon,
             color: getCSSVariableValue(config.cssVar)
@@ -327,7 +327,7 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
     const cssVar = EXTENSION_CSS_VAR_MAP[ext];
     const color = cssVar ? getCSSVariableValue(cssVar) : (EXTENSION_COLOR_FALLBACKS[ext] ?? '#6B7280');
     const type = EXTENSION_TYPE_MAP[ext];
-    const defaultStyle = defaultStyles[ext as DefaultExtensionType];
+    const defaultStyle = (ext as DefaultExtensionType) in defaultStyles ? defaultStyles[ext as DefaultExtensionType] : undefined;
 
     return (
         <div className={className} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>

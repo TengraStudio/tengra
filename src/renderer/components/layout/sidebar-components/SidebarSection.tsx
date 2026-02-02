@@ -5,6 +5,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
+type BadgeVariant = 'default' | 'warning' | 'error' | 'success';
+
+const BADGE_CLASSES: Record<BadgeVariant, string> = {
+    default: 'bg-muted text-muted-foreground',
+    warning: 'bg-warning/20 text-warning',
+    error: 'bg-destructive/20 text-destructive',
+    success: 'bg-success/20 text-success'
+};
+
 export interface SidebarSectionProps {
     /** Unique identifier for persistence */
     id: string
@@ -17,7 +26,7 @@ export interface SidebarSectionProps {
     /** Badge content (number or string) */
     badge?: number | string
     /** Badge variant for styling */
-    badgeVariant?: 'default' | 'warning' | 'error' | 'success'
+    badgeVariant?: BadgeVariant
     /** Called when expansion state changes */
     onExpandedChange?: (expanded: boolean) => void
     /** Whether to persist state to localStorage */
@@ -30,6 +39,14 @@ export interface SidebarSectionProps {
     isCollapsed?: boolean
     /** Tooltip for collapsed mode */
     tooltip?: string
+}
+
+function getInitialExpandedState(persistState: boolean, storageKey: string, defaultExpanded: boolean): boolean {
+    if (persistState && typeof window !== 'undefined') {
+        const stored = localStorage.getItem(storageKey);
+        return stored !== null ? safeJsonParse<boolean>(stored, defaultExpanded) : defaultExpanded;
+    }
+    return defaultExpanded;
 }
 
 export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
@@ -46,19 +63,11 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
     isCollapsed = false,
     tooltip
 }) => {
-    // State management with localStorage persistence
     const storageKey = `sidebar-section-${id}`;
-    const [isExpanded, setIsExpanded] = useState(() => {
-        if (persistState && typeof window !== 'undefined') {
-            const stored = localStorage.getItem(storageKey);
-            return stored !== null ? safeJsonParse<boolean>(stored, defaultExpanded) : defaultExpanded;
-        }
-        return defaultExpanded;
-    });
+    const [isExpanded, setIsExpanded] = useState(() => 
+        getInitialExpandedState(persistState, storageKey, defaultExpanded)
+    );
 
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    // Persist state
     useEffect(() => {
         if (persistState && typeof window !== 'undefined') {
             localStorage.setItem(storageKey, JSON.stringify(isExpanded));
@@ -73,109 +82,65 @@ export const SidebarSection: React.FC<SidebarSectionProps> = React.memo(({
         });
     }, [onExpandedChange]);
 
-    // Badge styling
-    const badgeClasses = {
-        default: 'bg-muted text-muted-foreground',
-        warning: 'bg-warning/20 text-warning',
-        error: 'bg-destructive/20 text-destructive',
-        success: 'bg-success/20 text-success'
-    };
-
-    // Collapsed mode - render as icon button with flyout
     if (isCollapsed) {
-        return (
-            <SidebarCollapsedSection
-                icon={icon}
-                tooltip={tooltip ?? title}
-                badge={badge}
-            >
-                {children}
-            </SidebarCollapsedSection>
-        );
+        return <SidebarCollapsedSection icon={icon} tooltip={tooltip ?? title} badge={badge}>{children}</SidebarCollapsedSection>;
     }
 
     return (
         <div className={cn('sidebar-section', className)}>
-            {/* Section Header */}
-            <button
-                id={`section-header-${id}`}
-                onClick={toggleExpanded}
-                className={cn(
-                    'sidebar-section-header',
-                    'w-full flex items-center justify-between',
-                    'px-3 py-2 mx-0.5 rounded-lg', // increased padding/rounding
-                    'text-[11px] font-semibold uppercase tracking-wider',
-                    'text-muted-foreground/70 hover:text-foreground', // higher contrast on hover
-                    'hover:bg-background/40 hover:backdrop-blur-sm transition-all duration-200', // glass effect
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
-                    'group',
-                    isExpanded && 'text-foreground bg-background/20' // active state style
-                )}
-                aria-expanded={isExpanded}
-            >
-                <div className="flex items-center gap-2">
-                    {/* Chevron */}
-                    <motion.div
-                        animate={{ rotate: isExpanded ? 0 : -90 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className={cn("bg-muted/50 rounded-sm p-0.5", isExpanded && "bg-transparent")} // boxed chevron for clarity
-                    >
-                        <ChevronDown className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
-                    </motion.div>
-
-                    {/* Icon */}
-                    {icon && (
-                        <span className="opacity-70 group-hover:opacity-100 transition-opacity">
-                            {icon}
-                        </span>
-                    )}
-
-                    {/* Title */}
-                    <span>{title}</span>
-                </div>
-
-                {/* Badge */}
-                {badge !== undefined && (
-                    <span className={cn(
-                        'px-1.5 py-0.5 rounded-full text-[9px] font-medium border border-transparent',
-                        badgeClasses[badgeVariant],
-                        "group-hover:border-border/20 group-hover:shadow-sm transition-all"
-                    )}>
-                        {badge}
-                    </span>
-                )}
-            </button>
-
-            {/* Section Content with CSS Grid Animation for stability */}
-            <div
-                className={cn(
-                    "sidebar-section-content",
-                    isExpanded && "expanded"
-                )}
-                aria-hidden={!isExpanded}
-                aria-labelledby={`section-header-${id}`}
-            >
-                <div ref={contentRef} className="py-1 space-y-0.5">
-                    {children}
-                </div>
-            </div>
+            <SectionHeader id={id} title={title} icon={icon} badge={badge} badgeVariant={badgeVariant} isExpanded={isExpanded} onToggle={toggleExpanded} />
+            <SectionContent isExpanded={isExpanded} id={id}>{children}</SectionContent>
         </div>
     );
-}, (prev, next) => {
-    // Custom comparison to prevent re-renders from unstable children references
-    // if the actual functional state hasn't changed.
-    return (
-        prev.id === next.id &&
-        prev.title === next.title &&
-        prev.isCollapsed === next.isCollapsed &&
-        prev.badge === next.badge &&
-        prev.badgeVariant === next.badgeVariant &&
-        prev.defaultExpanded === next.defaultExpanded &&
-        prev.className === next.className &&
-        // If children reference is the same, we're definitely good
-        (prev.children === next.children)
-    );
-});
+}, (prev, next) => prev.id === next.id && prev.title === next.title && prev.isCollapsed === next.isCollapsed && prev.badge === next.badge && prev.badgeVariant === next.badgeVariant && prev.defaultExpanded === next.defaultExpanded && prev.className === next.className && (prev.children === next.children));
+
+interface SectionHeaderProps {
+    id: string
+    title: string
+    icon?: React.ReactNode
+    badge?: number | string
+    badgeVariant: SidebarSectionProps['badgeVariant']
+    isExpanded: boolean
+    onToggle: () => void
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, badgeVariant, isExpanded, onToggle }) => (
+    <button
+        id={`section-header-${id}`}
+        onClick={onToggle}
+        className={cn(
+            'sidebar-section-header w-full flex items-center justify-between',
+            'px-3 py-2 mx-0.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider',
+            'text-muted-foreground/70 hover:text-foreground hover:bg-background/40 hover:backdrop-blur-sm transition-all duration-200',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group',
+            isExpanded && 'text-foreground bg-background/20'
+        )}
+        aria-expanded={isExpanded}
+    >
+        <div className="flex items-center gap-2">
+            <motion.div animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2, ease: "easeInOut" }} className={cn("bg-muted/50 rounded-sm p-0.5", isExpanded && "bg-transparent")}>
+                <ChevronDown className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
+            </motion.div>
+            {icon && <span className="opacity-70 group-hover:opacity-100 transition-opacity">{icon}</span>}
+            <span>{title}</span>
+        </div>
+        {badge !== undefined && (
+            <span className={cn('px-1.5 py-0.5 rounded-full text-[9px] font-medium border border-transparent', BADGE_CLASSES[badgeVariant ?? 'default'], "group-hover:border-border/20 group-hover:shadow-sm transition-all")}>{badge}</span>
+        )}
+    </button>
+);
+
+interface SectionContentProps {
+    isExpanded: boolean
+    id: string
+    children: React.ReactNode
+}
+
+const SectionContent: React.FC<SectionContentProps> = ({ isExpanded, id, children }) => (
+    <div className={cn("sidebar-section-content", isExpanded && "expanded")} aria-hidden={!isExpanded} aria-labelledby={`section-header-${id}`}>
+        <div className="py-1 space-y-0.5">{children}</div>
+    </div>
+);
 
 // Collapsed mode component with flyout
 const SidebarCollapsedSection: React.FC<{

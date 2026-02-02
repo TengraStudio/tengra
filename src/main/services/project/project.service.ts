@@ -88,7 +88,7 @@ export class ProjectService {
 
         // Cache Check (5 min TTL)
         const cached = this.analysisCache.get(rootPath);
-        if (cached && (Date.now() - cached.timestamp < 300000)) {
+        if (cached !== undefined && (Date.now() - cached.timestamp < 300000)) {
             appLogger.debug(LOG_CONTEXT, 'Returning cached project analysis for:', rootPath);
             return cached.data;
         }
@@ -259,37 +259,30 @@ export class ProjectService {
 
         for (const file of codeFiles) {
             try {
-                const content = await fs.readFile(file, 'utf-8');
-                const lines = content.split('\n');
-                const fileName = path.relative(rootPath, file);
-
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    const lowerLine = line.toLowerCase();
-
-                    // Scan for errors
-                    if (lowerLine.includes('console.error(') || lowerLine.includes('fixme:') || lowerLine.includes('bug:')) {
-                        issues.push({
-                            type: 'error',
-                            message: line.trim(),
-                            file: fileName,
-                            line: i + 1
-                        });
-                    } else if (lowerLine.includes('console.warn(') || lowerLine.includes('warning:')) {
-                        issues.push({
-                            type: 'warning',
-                            message: line.trim(),
-                            file: fileName,
-                            line: i + 1
-                        });
-                    }
-
-                    if (issues.length >= 50) { break; }
-                }
+                await this.scanFileIssues(file, rootPath, issues);
+                if (issues.length >= 50) { break; }
             } catch { /* ignore */ }
             if (issues.length >= 50) { break; }
         }
         return issues;
+    }
+
+    private async scanFileIssues(file: string, rootPath: string, issues: ProjectIssue[]) {
+        const content = await fs.readFile(file, 'utf-8');
+        const lines = content.split('\n');
+        const fileName = path.relative(rootPath, file);
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const lowerLine = line.toLowerCase();
+
+            if (lowerLine.includes('console.error(') || lowerLine.includes('fixme:') || lowerLine.includes('bug:')) {
+                issues.push({ type: 'error', message: line.trim(), file: fileName, line: i + 1 });
+            } else if (lowerLine.includes('console.warn(') || lowerLine.includes('warning:')) {
+                issues.push({ type: 'warning', message: line.trim(), file: fileName, line: i + 1 });
+            }
+            if (issues.length >= 50) { break; }
+        }
     }
 
     private async findPackages(_rootPath: string, _configType: string): Promise<string[]> {
@@ -530,9 +523,9 @@ export class ProjectService {
     }
 
     private detectNodeFrameworks(pkg: JsonObject, frameworks: string[]) {
-        const deps = { 
-            ...(typeof pkg.dependencies === 'object' && pkg.dependencies ? pkg.dependencies as JsonObject : {}), 
-            ...(typeof pkg.devDependencies === 'object' && pkg.devDependencies ? pkg.devDependencies as JsonObject : {}) 
+        const deps = {
+            ...(typeof pkg.dependencies === 'object' && pkg.dependencies ? pkg.dependencies as JsonObject : {}),
+            ...(typeof pkg.devDependencies === 'object' && pkg.devDependencies ? pkg.devDependencies as JsonObject : {})
         };
         const depKeys = Object.keys(deps);
 

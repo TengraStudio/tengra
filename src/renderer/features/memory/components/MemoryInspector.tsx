@@ -20,6 +20,38 @@ import { useMemory } from '../hooks/useMemory';
 
 type TabType = 'facts' | 'episodes' | 'entities';
 
+interface DeleteResult { success: boolean; error?: string }
+
+interface TabContentProps {
+    activeTab: TabType
+    facts: SemanticFragment[]
+    episodes: EpisodicMemory[]
+    entities: EntityKnowledge[]
+    deleteFact: (id: string) => Promise<DeleteResult>
+    deleteEntity: (id: string) => Promise<DeleteResult>
+    t: (key: string) => string
+}
+
+const TabContent: React.FC<TabContentProps> = ({
+    activeTab, facts, episodes, entities, deleteFact, deleteEntity, t
+}) => {
+    if (activeTab === 'facts') {
+        return facts.length === 0
+            ? <EmptyState icon={Brain} title={t('memory.noFactsFound')} description={t('memory.factsDescription')} />
+            : <>{facts.map(fact => <FactCard key={fact.id} fact={fact} onDelete={() => void deleteFact(fact.id)} />)}</>;
+    }
+
+    if (activeTab === 'episodes') {
+        return episodes.length === 0
+            ? <EmptyState icon={History} title={t('memory.noEpisodesRecorded')} description={t('memory.episodesDescription')} />
+            : <>{episodes.map(episode => <EpisodeCard key={episode.id} episode={episode} />)}</>;
+    }
+
+    return entities.length === 0
+        ? <EmptyState icon={User} title={t('memory.noEntitiesDetected')} description={t('memory.entitiesDescription')} />
+        : <>{entities.map(entity => <EntityCard key={entity.id} entity={entity} onDelete={() => void deleteEntity(entity.id)} />)}</>;
+};
+
 export const MemoryInspector: React.FC = () => {
     const { t } = useTranslation();
     const {
@@ -30,18 +62,10 @@ export const MemoryInspector: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('facts');
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddFact, setShowAddFact] = useState(false);
-    const [newFactContent, setNewFactContent] = useState('');
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         void search(searchQuery);
-    };
-
-    const handleAddFact = async () => {
-        if (!newFactContent.trim()) {return;}
-        await addFact(newFactContent);
-        setNewFactContent('');
-        setShowAddFact(false);
     };
 
     if (isLoading && facts.length === 0 && episodes.length === 0 && entities.length === 0) {
@@ -149,67 +173,26 @@ export const MemoryInspector: React.FC = () => {
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full">
                         <div className="grid grid-cols-1 gap-4 pb-6">
-                            {activeTab === 'facts' && (
-                                <>
-                                    {facts.length === 0 ? (
-                                        <EmptyState icon={Brain} title={t('memory.noFactsFound')} description={t('memory.factsDescription')} />
-                                    ) : (
-                                        facts.map(fact => (
-                                            <FactCard key={fact.id} fact={fact} onDelete={() => void deleteFact(fact.id)} />
-                                        ))
-                                    )}
-                                </>
-                            )}
-
-                            {activeTab === 'episodes' && (
-                                <>
-                                    {episodes.length === 0 ? (
-                                        <EmptyState icon={History} title={t('memory.noEpisodesRecorded')} description={t('memory.episodesDescription')} />
-                                    ) : (
-                                        episodes.map(episode => (
-                                            <EpisodeCard key={episode.id} episode={episode} />
-                                        ))
-                                    )}
-                                </>
-                            )}
-
-                            {activeTab === 'entities' && (
-                                <>
-                                    {entities.length === 0 ? (
-                                        <EmptyState icon={User} title={t('memory.noEntitiesDetected')} description={t('memory.entitiesDescription')} />
-                                    ) : (
-                                        entities.map(entity => (
-                                            <EntityCard key={entity.id} entity={entity} onDelete={() => void deleteEntity(entity.id)} />
-                                        ))
-                                    )}
-                                </>
-                            )}
+                            <TabContent
+                                activeTab={activeTab}
+                                facts={facts}
+                                episodes={episodes}
+                                entities={entities}
+                                deleteFact={deleteFact}
+                                deleteEntity={deleteEntity}
+                                t={t}
+                            />
                         </div>
                     </ScrollArea>
                 </div>
             </div>
 
-            {/* Add Fact Modal (Simplistic) */}
-            {showAddFact && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <Card className="w-full max-w-md p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Plus className="w-5 h-5 text-primary" />
-                            Add Manual Fact
-                        </h2>
-                        <textarea
-                            value={newFactContent}
-                            onChange={(e) => setNewFactContent(e.target.value)}
-                            className="w-full h-32 bg-muted/50 border border-white/5 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
-                            placeholder={t('memory.factPlaceholder')}
-                        />
-                        <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={() => setShowAddFact(false)}>{t('common.cancel')}</Button>
-                            <Button onClick={() => void handleAddFact()} disabled={!newFactContent.trim()}>{t('memory.addMemory')}</Button>
-                        </div>
-                    </Card>
-                </div>
-            )}
+            <AddFactModal
+                isOpen={showAddFact}
+                onClose={() => setShowAddFact(false)}
+                onAdd={addFact}
+                t={t}
+            />
         </div>
     );
 };
@@ -301,6 +284,47 @@ const EntityCard = ({ entity, onDelete }: { entity: EntityKnowledge, onDelete: (
         </div>
     </Card>
 );
+
+interface AddFactModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onAdd: (content: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+    t: (key: string) => string;
+}
+
+const AddFactModal: React.FC<AddFactModalProps> = ({ isOpen, onClose, onAdd, t }) => {
+    const [content, setContent] = useState('');
+    
+    if (!isOpen) { return null; }
+    
+    const handleSubmit = async () => {
+        if (!content.trim()) { return; }
+        await onAdd(content);
+        setContent('');
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <Card className="w-full max-w-md p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-primary" />
+                    Add Manual Fact
+                </h2>
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="w-full h-32 bg-muted/50 border border-white/5 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
+                    placeholder={t('memory.factPlaceholder')}
+                />
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+                    <Button onClick={() => void handleSubmit()} disabled={!content.trim()}>{t('memory.addMemory')}</Button>
+                </div>
+            </Card>
+        </div>
+    );
+};
 
 const EmptyState = ({ icon: Icon, title, description }: { icon: LucideIcon, title: string, description: string }) => (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/10 rounded-2xl border border-dashed border-white/5">

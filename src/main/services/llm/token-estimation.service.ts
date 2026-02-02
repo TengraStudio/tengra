@@ -87,51 +87,30 @@ export class TokenEstimationService {
     getContextWindowSize(model: string): number {
         const modelLower = model.toLowerCase();
 
-        // GPT-4 models
-        if (modelLower.includes('gpt-4-turbo') || modelLower.includes('gpt-4o')) {
-            return 128000;
-        }
-        if (modelLower.includes('gpt-4')) {
-            return 8192; // Default GPT-4
+        const limits: Array<{ pattern: string[]; limit: number }> = [
+            { pattern: ['gemini-1.5-pro', 'gemini-1.5-flash'], limit: 2000000 },
+            { pattern: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3'], limit: 200000 },
+            { pattern: ['gpt-4-turbo', 'gpt-4o'], limit: 128000 },
+            { pattern: ['llama-3.1-70b', 'llama-3.1-405b'], limit: 131072 },
+            { pattern: ['claude-2'], limit: 100000 },
+            { pattern: ['gemini-pro'], limit: 32768 },
+            { pattern: ['gpt-3.5'], limit: 16385 },
+            { pattern: ['llama-2'], limit: 4096 }
+        ];
+
+        for (const { pattern, limit } of limits) {
+            if (pattern.some(p => modelLower.includes(p))) {
+                return limit;
+            }
         }
 
-        // GPT-3.5 models
-        if (modelLower.includes('gpt-3.5')) {
-            return 16385;
-        }
+        if (this.isStandardModel(modelLower)) { return 8192; }
 
-        // Claude models
-        if (modelLower.includes('claude-3-5-sonnet') || modelLower.includes('claude-3-opus')) {
-            return 200000;
-        }
-        if (modelLower.includes('claude-3')) {
-            return 200000;
-        }
-        if (modelLower.includes('claude-2')) {
-            return 100000;
-        }
-
-        // Gemini models
-        if (modelLower.includes('gemini-1.5-pro') || modelLower.includes('gemini-1.5-flash')) {
-            return 2000000; // 2M tokens
-        }
-        if (modelLower.includes('gemini-pro')) {
-            return 32768;
-        }
-
-        // Llama models (common sizes)
-        if (modelLower.includes('llama-3.1-70b') || modelLower.includes('llama-3.1-405b')) {
-            return 131072;
-        }
-        if (modelLower.includes('llama-3')) {
-            return 8192;
-        }
-        if (modelLower.includes('llama-2')) {
-            return 4096;
-        }
-
-        // Default fallback
         return 8192;
+    }
+
+    private isStandardModel(model: string): boolean {
+        return model.includes('gpt-4') || model.includes('llama-3');
     }
 
     /**

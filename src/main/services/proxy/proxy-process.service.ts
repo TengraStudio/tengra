@@ -32,6 +32,7 @@ export class ProxyProcessManager {
     private stderrBuffer = '';
     private startupTime: number = Date.now();
     private authApiKey: string = '';
+    private isProxyRunning: boolean = false;
 
     constructor(
         private settingsService: SettingsService,
@@ -49,43 +50,53 @@ export class ProxyProcessManager {
         const binaryPath = this.getBinaryPath();
         appLogger.info('Proxy', `Binary path: ${binaryPath}`);
 
-        const exists = await fs.promises.access(binaryPath).then(() => true).catch(() => false);
-        if (!exists) {
-            appLogger.error('Proxy', `Binary not found at: ${binaryPath}`);
+        if (!(await this.verifyBinaryExists(binaryPath))) {
             return { running: false, error: `Binary not found at ${binaryPath}` };
         }
 
         this.currentPort = options?.port ?? 8317;
 
         // Check if port is already in use (e.g., from a previous detached proxy instance)
-        const portInUse = await this.isPortInUse(this.currentPort);
-        if (portInUse) {
-            appLogger.info('Proxy', `Port ${this.currentPort} already in use, checking if it's our proxy...`);
-            const isOurProxy = await this.verifyExistingProxy(this.currentPort);
-            if (isOurProxy) {
-                appLogger.info('Proxy', `Existing proxy detected on port ${this.currentPort}, reusing it`);
-                return { running: true, port: this.currentPort };
-            }
-            appLogger.warn('Proxy', `Port ${this.currentPort} in use by unknown process, attempting to find alternative or waiting...`);
-            // Wait a bit and retry - the old proxy might be shutting down
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const stillInUse = await this.isPortInUse(this.currentPort);
-            if (stillInUse) {
-                appLogger.error('Proxy', `Port ${this.currentPort} still in use, cannot start proxy`);
-                return { running: false, port: this.currentPort, error: `Port ${this.currentPort} is already in use` };
-            }
+        const portStatus = await this.ensurePortAvailability(this.currentPort);
+        if (portStatus.running) {
+            this.isProxyRunning = true;
+            return { running: true, port: this.currentPort };
         }
-        // Store persistence preference if needed, though we rely on detached: true and not calling stop() on exit for persistence.
-        // If we want to handle explicit stop vs app-shutdown stop, we might need a flag.
-        // For now, detached: true makes it independent.
+        if (portStatus.error) {
+            appLogger.error('Proxy', `Port ${this.currentPort} still in use, cannot start proxy`);
+            return { running: false, port: this.currentPort, error: portStatus.error };
+        }
 
         // Get the auth API port to pass to the proxy
-        const authAPIPort = this.authAPIService.getPort();
+        const authAPIPort = this.setupAuthAPI();
         if (authAPIPort === 0) {
             appLogger.error('Proxy', 'AuthAPIService not initialized - port is 0');
             return { running: false, error: 'AuthAPIService not initialized' };
         }
         appLogger.info('Proxy', `Using HTTP auth API on port ${authAPIPort}`);
+
+        // Generate YAML config for the proxy binary (separate from settings.json)
+        const proxyConfigPath = await this.generateProxyConfigFile(this.currentPort);
+
+        this.spawnProxyProcess(binaryPath, proxyConfigPath, authAPIPort, options?.persistent);
+
+        this.isProxyRunning = true;
+        return this.getStatus();
+    }
+
+    private async verifyBinaryExists(binaryPath: string): Promise<boolean> {
+        try {
+            await fs.promises.access(binaryPath);
+            return true;
+        } catch {
+            appLogger.error('Proxy', `Binary not found at: ${binaryPath}`);
+            return false;
+        }
+    }
+
+    private setupAuthAPI(): number {
+        const authAPIPort = this.authAPIService.getPort();
+        if (authAPIPort === 0) { return 0; }
 
         // Generate and set API key for the Auth API
         this.authApiKey = crypto.randomBytes(32).toString('hex');
@@ -93,15 +104,13 @@ export class ProxyProcessManager {
         if (authApi.setApiKey) {
             authApi.setApiKey(this.authApiKey);
         }
+        return authAPIPort;
+    }
 
-        // Generate YAML config for the proxy binary (separate from settings.json)
-        const proxyConfigPath = await this.generateProxyConfigFile(this.currentPort);
-
-        const isPersistent = options?.persistent === true;
-
+    private spawnProxyProcess(binaryPath: string, configPath: string, authPort: number, persistent?: boolean) {
         this.child = spawn(binaryPath, [
-            '-config', proxyConfigPath,
-            '-auth-api-port', authAPIPort.toString(),
+            '-config', configPath,
+            '-auth-api-port', authPort.toString(),
             '-auth-api-key', this.authApiKey
         ], {
             cwd: path.dirname(binaryPath),
@@ -119,13 +128,11 @@ export class ProxyProcessManager {
             appLogger.warn('Proxy', `Proxy exited: ${code}`);
         });
 
-        // If it is persistent, we might want to tag it or log it
-        if (isPersistent) {
+        appLogger.info('Proxy', `Proxy started with PID: ${this.child.pid}`);
+
+        if (persistent) {
             appLogger.info('Proxy', 'Proxy started in persistent mode (detached)');
         }
-
-        appLogger.info('Proxy', `Proxy started with PID: ${this.child.pid}`);
-        return this.getStatus();
     }
 
     async stop(_force: boolean = false): Promise<ProxyEmbedStatus> {
@@ -144,6 +151,7 @@ export class ProxyProcessManager {
             this.child.kill();
             this.child = null;
         }
+        this.isProxyRunning = false;
 
         return this.getStatus();
     }
@@ -151,7 +159,7 @@ export class ProxyProcessManager {
 
 
     getStatus(): ProxyEmbedStatus {
-        return { running: !!this.child, pid: this.child?.pid, port: this.currentPort };
+        return { running: this.isProxyRunning || !!this.child, pid: this.child?.pid, port: this.currentPort };
     }
 
     private getBinaryPath(): string {
@@ -262,20 +270,59 @@ logging-to-file: false
                 return;
             }
 
-            const tokenData = {
-                accessToken: (data.access_token ?? data.accessToken ?? undefined) as string | undefined,
-                refreshToken: (data.refresh_token ?? data.refreshToken ?? undefined) as string | undefined,
-                sessionToken: (data.session_token ?? data.sessionToken ?? data.session_key ?? undefined) as string | undefined,
-                email: (data.email ?? undefined) as string | undefined,
-                expiresAt: (data.expires_at ?? data.expiresAt ?? undefined) as number | undefined,
-                scope: (data.scope ?? undefined) as string | undefined,
-                metadata: data
-            };
+            const tokenData = this.constructTokenData(data);
             await this.authService.linkAccount(provider, tokenData);
             appLogger.info('Proxy', `Successfully saved direct auth update to Database for ${provider}`);
         } catch (e) {
             appLogger.error('Proxy', `Failed to process direct auth update: ${e}`);
         }
+    }
+
+    private constructTokenData(data: JsonObject) {
+        return {
+            accessToken: this.getString(data, 'access_token', 'accessToken'),
+            refreshToken: this.getString(data, 'refresh_token', 'refreshToken'),
+            sessionToken: this.getString(data, 'session_token', 'sessionToken', 'session_key'),
+            email: this.getString(data, 'email'),
+            expiresAt: this.getNumber(data, 'expires_at', 'expiresAt'),
+            scope: this.getString(data, 'scope'),
+            metadata: data
+        };
+    }
+
+    private getString(obj: JsonObject, ...keys: string[]): string | undefined {
+        for (const key of keys) {
+            if (typeof obj[key] === 'string') { return obj[key] as string; }
+        }
+        return undefined;
+    }
+
+    private getNumber(obj: JsonObject, ...keys: string[]): number | undefined {
+        for (const key of keys) {
+            if (typeof obj[key] === 'number') { return obj[key] as number; }
+        }
+        return undefined;
+    }
+
+    private async ensurePortAvailability(port: number): Promise<{ running?: boolean; error?: string }> {
+        const portInUse = await this.isPortInUse(port);
+        if (!portInUse) { return {}; }
+
+        appLogger.info('Proxy', `Port ${port} already in use, checking if it's our proxy...`);
+        const isOurProxy = await this.verifyExistingProxy(port);
+        if (isOurProxy) {
+            appLogger.info('Proxy', `Existing proxy detected on port ${port}, reusing it`);
+            return { running: true };
+        }
+
+        appLogger.warn('Proxy', `Port ${port} in use by unknown process, attempting to find alternative or waiting...`);
+        // Wait a bit and retry - the old proxy might be shutting down
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const stillInUse = await this.isPortInUse(port);
+        if (stillInUse) {
+            return { error: `Port ${port} is already in use` };
+        }
+        return {};
     }
 
     /**

@@ -57,7 +57,7 @@ const motionComponentCache: Record<string, ForwardRefExoticComponent<MotionProps
 // Motion proxy that creates components on demand
 export const motion = new Proxy({} as Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>>, {
     get: (_, tag: string) => {
-        if (!motionComponentCache[tag]) {
+        if (!(tag in motionComponentCache)) {
             motionComponentCache[tag] = createMotionComponent(tag) as unknown as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>;
         }
         return motionComponentCache[tag];

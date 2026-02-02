@@ -113,7 +113,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                             onClick={() => { setIsEditingDesc(true); }}
                             className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
                         >
-                            {project.description ?? (t('projects.noDescription') ?? 'No description provided')}
+                            {project.description || t('projects.noDescription')}
                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}

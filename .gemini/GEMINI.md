@@ -1,12 +1,12 @@
-# Orbit AI Assistant - Gemini Project Rules
+# 👑 TANDEM AGENT COMMANDMENTS (GEMINI EDITION)
+
+> **STRICT ADHERENCE REQUIRED.** Failure to follow rules results in termination of the session.
 
 ## MANDATORY: Read Documentation First
 
-Before making ANY code changes, you MUST read these files:
-- docs/AI_RULES.md - Complete coding standards and rules
-- docs/ARCHITECTURE.md - System architecture
-- docs/SERVICES.md - Service patterns
-- docs/TODO.md - Current tasks and known issues
+1.  Read the [.agent/rules/MASTER_COMMANDMENTS.md](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md)
+2.  Follow the [AI_RULES.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/AI_RULES.md)
+3.  Check [TODO.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/TODO.md) before every task.
 
 ## Quick Reference
 

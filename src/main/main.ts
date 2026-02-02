@@ -28,8 +28,10 @@ if (process.platform === 'win32') {
     app.setAppUserModelId('com.tandem.app');
 }
 
+import { ApiServerService } from '@main/api/api-server.service';
 import { appLogger, LogLevel } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
+import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { registerIpcHandlers } from '@main/startup/ipc';
 import { container, createServices } from '@main/startup/services';
@@ -287,11 +289,11 @@ app.whenReady().then(async () => {
     }
 
     appLogger.info('Main', 'Starting Database initialization...');
-    await services.databaseService.initialize()
+    void services.databaseService.initialize()
         .then(() => appLogger.info('Main', 'Database initialization completed'))
         .catch(e => {
             appLogger.error('Main', `Failed to initialize database service: ${e}`);
-            throw e; // Critical failure
+            // Non-critical for startup, but functionality will be limited
         });
 
     // Debug: Check what tokens are available (Now safe to call)
@@ -320,6 +322,7 @@ app.whenReady().then(async () => {
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
+        eventBus: services.eventBusService,
         command: services.commandService,
         web: services.webService,
         screenshot: services.screenshotService,
@@ -344,6 +347,24 @@ app.whenReady().then(async () => {
         localImage: services.localImageService
     });
     appLogger.info('Main', 'ToolExecutor initialized');
+
+    // Initialize API Server for browser extension
+    appLogger.info('Main', 'Initializing API Server...');
+
+    // ProxyProcessManager is already imported statically at the top
+    const proxyProcessManager = services.proxyService['processManager'] as ProxyProcessManager;
+    const apiServerService = new ApiServerService({
+        port: 42069,
+        settingsService: services.settingsService,
+        proxyProcessManager: proxyProcessManager,
+        toolExecutor: toolExecutor,
+        llmService: services.llmService,
+        modelRegistry: services.modelRegistryService
+    });
+
+    services.apiServerService = apiServerService;
+    await apiServerService.initialize();
+    appLogger.info('Main', `API Server running on port ${apiServerService.getPort()}`);
 
     // Register all IPC handlers BEFORE creating window to prevent race conditions
     // registerWindowIpc(() => mainWindow) // This will be handled by registerIpcHandlers

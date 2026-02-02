@@ -139,18 +139,29 @@ export class StreamParser {
 
     private static *handleOpenCodePayload(json: StreamPayload): Generator<StreamChunk> {
         const type = json.type;
-        if (!type || !json.delta) {
-            if (type === 'response.output_item.done' && json.item?.content) {
-                yield* this.handleOpenCodeDone(json.item.content);
-            }
+        appLogger.info('stream-parser.util', `[StreamParser] OpenCode Event: ${type}`);
+
+        if (this.isOpenCodeDoneEvent(json)) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            yield* this.handleOpenCodeDone(json.item!.content!);
             return;
         }
 
-        if (type === 'response.output_text.delta') {
+        if (!type || !json.delta) { return; }
+
+        yield* this.dispatchOpenCodeDelta(json);
+    }
+
+    private static isOpenCodeDoneEvent(json: StreamPayload): boolean {
+        return json.type === 'response.output_item.done' && !!json.item?.content;
+    }
+
+    private static *dispatchOpenCodeDelta(json: StreamPayload): Generator<StreamChunk> {
+        if (json.type === 'response.output_text.delta' && json.delta) {
             yield* this.handleOpenCodeText(json.delta);
-        } else if (type === 'response.reasoning_summary_text.delta') {
+        } else if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
             yield* this.handleOpenCodeReasoning(json.delta);
-        } else if (type === 'response.function_call_arguments.delta') {
+        } else if (json.type === 'response.function_call_arguments.delta') {
             yield this.createOpenCodeToolCall(json);
         }
     }

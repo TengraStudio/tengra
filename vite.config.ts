@@ -122,10 +122,7 @@ export default defineConfig({
         extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']
     },
     define: {
-        // Shim Node.js globals for dependencies that expect them in browser context
-        '__dirname': '""',
-        '__filename': '""',
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
         '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
     },
     build: {

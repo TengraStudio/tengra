@@ -56,8 +56,8 @@ export const validators = {
     },
 
     url: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined || value === '') {return [];}
-        if (typeof value !== 'string') {return [{ path, message: 'Must be a string', value }];}
+        if (value === undefined || value === '') { return []; }
+        if (typeof value !== 'string') { return [{ path, message: 'Must be a string', value }]; }
         try {
             new URL(value);
             return [];
@@ -67,7 +67,7 @@ export const validators = {
     },
 
     port: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined) {return [];}
+        if (value === undefined) { return []; }
         if (typeof value !== 'number' || value < 1 || value > 65535) {
             return [{ path, message: 'Must be a valid port (1-65535)', value }];
         }
@@ -75,8 +75,8 @@ export const validators = {
     },
 
     email: (value: JsonValue | undefined, path: string): ValidationError[] => {
-        if (value === undefined || value === '') {return [];}
-        if (typeof value !== 'string') {return [{ path, message: 'Must be a string', value }];}
+        if (value === undefined || value === '') { return []; }
+        if (typeof value !== 'string') { return [{ path, message: 'Must be a string', value }]; }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value as string)) {
             return [{ path, message: 'Must be a valid email address', value }];
@@ -127,7 +127,28 @@ export type Schema = Record<string, SchemaField>
 /**
  * Validate a config object against a schema
  */
+/**
+ * Validate a config object against a schema
+ */
 export function validateConfig(config: JsonObject, schema: Schema, basePath = ''): ValidationResult {
+    const errors: ValidationError[] = [];
+    const warnings: ValidationWarning[] = [];
+
+    const fieldValidation = validateSchemaFields(config, schema, basePath);
+    errors.push(...fieldValidation.errors);
+    warnings.push(...fieldValidation.warnings);
+
+    const unknownKeysWarnings = validateUnknownKeys(config, schema, basePath);
+    warnings.push(...unknownKeysWarnings);
+
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings
+    };
+}
+
+function validateSchemaFields(config: JsonObject, schema: Schema, basePath: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
 
@@ -135,34 +156,56 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
         const path = basePath ? `${basePath}.${key}` : key;
         const value = config[key];
 
-        // Check required
-        if (field.required && (value === undefined || value === null)) {
-            errors.push({ path, message: 'This field is required' });
-            continue;
-        }
+        const fieldResult = validateField(value, field, path);
+        errors.push(...fieldResult.errors);
+        warnings.push(...fieldResult.warnings);
+    }
 
-        // Type validation
-        if (value !== undefined) {
-            const typeErrors = validateType(value, field.type, path);
-            errors.push(...typeErrors);
-        }
+    return { errors, warnings };
+}
 
-        // Custom validators
-        if (field.validators && value !== undefined) {
-            for (const validator of field.validators) {
-                errors.push(...validator(value, path));
-            }
-        }
+function validateField(value: JsonValue | undefined, field: SchemaField, path: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
+    if (field.required && (value === undefined || value === null)) {
+        return { errors: [{ path, message: 'This field is required' }], warnings: [] };
+    }
 
-        // Nested object validation
-        if (field.type === 'object' && field.children && value) {
-            const nestedResult = validateConfig(value as JsonObject, field.children, path);
-            errors.push(...nestedResult.errors);
-            warnings.push(...nestedResult.warnings);
+    if (value === undefined) {
+        return { errors: [], warnings: [] };
+    }
+
+    const errors: ValidationError[] = [];
+    const warnings: ValidationWarning[] = [];
+
+    // Type validation
+    errors.push(...validateType(value, field.type, path));
+
+    // Custom validators
+    if (field.validators) {
+        for (const validator of field.validators) {
+            errors.push(...validator(value, path));
         }
     }
 
-    // Check for unknown keys
+    // Nested object validation
+    if (field.type === 'object' && field.children !== undefined) {
+        const nested = validateNestedConfig(value, field.children, path);
+        errors.push(...nested.errors);
+        warnings.push(...nested.warnings);
+    }
+
+    return { errors, warnings };
+}
+
+function validateNestedConfig(value: JsonValue, children: Record<string, SchemaField>, path: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
+    if (typeof value === 'object' && !Array.isArray(value)) {
+        const nestedResult = validateConfig(value as JsonObject, children, path);
+        return { errors: nestedResult.errors, warnings: nestedResult.warnings };
+    }
+    return { errors: [], warnings: [] };
+}
+
+function validateUnknownKeys(config: JsonObject, schema: Schema, basePath: string): ValidationWarning[] {
+    const warnings: ValidationWarning[] = [];
     for (const key of Object.keys(config)) {
         const path = basePath ? `${basePath}.${key}` : key;
         if (!(key in schema)) {
@@ -173,12 +216,7 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
             });
         }
     }
-
-    return {
-        valid: errors.length === 0,
-        errors,
-        warnings
-    };
+    return warnings;
 }
 
 function validateType(value: JsonValue, type: string, path: string): ValidationError[] {

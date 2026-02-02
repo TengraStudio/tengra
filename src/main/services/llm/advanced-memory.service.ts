@@ -101,16 +101,16 @@ export class AdvancedMemoryService {
             const pendingMemories: PendingMemory[] = [];
 
             for (const fact of extracted) {
-                const pending = await this.createPendingMemory(
-                    fact.content,
-                    'user_implicit',
+                const pending = await this.createPendingMemory({
+                    content: fact.content,
+                    source: 'user_implicit',
                     sourceId,
-                    content,
-                    fact.category,
-                    fact.confidence,
-                    fact.tags,
+                    sourceContext: content,
+                    category: fact.category,
+                    extractionConfidence: fact.confidence,
+                    tags: fact.tags,
                     projectId
-                );
+                });
 
                 if (pending) {
                     pendingMemories.push(pending);
@@ -177,16 +177,17 @@ export class AdvancedMemoryService {
     /**
      * Create a pending memory in the staging buffer
      */
-    private async createPendingMemory(
-        content: string,
-        source: MemorySource,
-        sourceId: string,
-        sourceContext: string,
-        category: MemoryCategory,
-        extractionConfidence: number,
-        tags: string[],
-        projectId?: string
-    ): Promise<PendingMemory | null> {
+    private async createPendingMemory(params: {
+        content: string;
+        source: MemorySource;
+        sourceId: string;
+        sourceContext: string;
+        category: MemoryCategory;
+        extractionConfidence: number;
+        tags: string[];
+        projectId?: string;
+    }): Promise<PendingMemory | null> {
+        const { content, source, sourceId, sourceContext, category, extractionConfidence, tags, projectId } = params;
         // Check staging buffer limit
         if (this.stagingBuffer.size >= this.config.maxPendingMemories) {
             // Remove oldest pending memory
@@ -281,15 +282,55 @@ export class AdvancedMemoryService {
             return null;
         }
 
-        const now = Date.now();
+        const memory = await this.createMemoryFromPending(pending, validatedBy, adjustments);
+
+        // Handle contradictions
+        await this.handleContradictions(memory);
+
+        // Handle consolidation with similar memories
+        const consolidationResult = await this.attemptConsolidation(memory, pending.similarMemories);
+
+        if (consolidationResult.action === 'merged' && consolidationResult.resultingMemoryId) {
+            await this.removeFromStaging(id);
+            return null;
+        }
+
+        // Store and cleanup
+        await this.storeAdvancedMemory(memory);
+        await this.removeFromStaging(id);
+
+        appLogger.info(SERVICE_NAME, `Memory confirmed (${validatedBy}): "${memory.content.substring(0, 50)}..."`);
+        return memory;
+    }
+
+    private async createMemoryFromPending(
+        pending: PendingMemory,
+        validatedBy: 'user' | 'auto',
+        adjustments?: {
+            content?: string;
+            category?: MemoryCategory;
+            tags?: string[];
+            importance?: number;
+        }
+    ): Promise<AdvancedSemanticFragment> {
         const content = adjustments?.content ?? pending.content;
+        const embedding = await this.resolveEmbedding(pending, adjustments?.content);
+        const importance = adjustments?.importance ?? this.calculateInitialImportance(pending);
 
-        // Re-generate embedding if content changed
-        const embedding = adjustments?.content
-            ? await this.embedding.generateEmbedding(content)
-            : pending.embedding;
+        return this.assembleMemoryFragment({ pending, content, embedding, importance, validatedBy, adjustments });
+    }
 
-        const memory: AdvancedSemanticFragment = {
+    private assembleMemoryFragment(params: {
+        pending: PendingMemory;
+        content: string;
+        embedding: number[];
+        importance: number;
+        validatedBy: 'user' | 'auto';
+        adjustments?: { category?: MemoryCategory; tags?: string[] };
+    }): AdvancedSemanticFragment {
+        const { pending, content, embedding, importance, validatedBy, adjustments } = params;
+        const now = Date.now();
+        return {
             id: pending.id,
             content,
             embedding,
@@ -299,8 +340,8 @@ export class AdvancedMemoryService {
             category: adjustments?.category ?? pending.suggestedCategory,
             tags: adjustments?.tags ?? pending.suggestedTags,
             confidence: validatedBy === 'user' ? 1.0 : pending.extractionConfidence,
-            importance: adjustments?.importance ?? this.calculateInitialImportance(pending),
-            initialImportance: adjustments?.importance ?? this.calculateInitialImportance(pending),
+            importance,
+            initialImportance: importance,
             status: 'confirmed',
             validatedAt: now,
             validatedBy,
@@ -312,29 +353,18 @@ export class AdvancedMemoryService {
             createdAt: now,
             updatedAt: now
         };
+    }
 
-        // Handle contradictions
-        await this.handleContradictions(memory);
-
-        // Handle consolidation with similar memories
-        const consolidationResult = await this.attemptConsolidation(memory, pending.similarMemories);
-
-        if (consolidationResult.action === 'merged' && consolidationResult.resultingMemoryId) {
-            // Memory was merged, remove from staging
-            this.stagingBuffer.delete(id);
-            await this.deletePendingMemory(id);
-            return null;
+    private async resolveEmbedding(pending: PendingMemory, newContent?: string): Promise<number[]> {
+        if (newContent) {
+            return await this.embedding.generateEmbedding(newContent);
         }
+        return pending.embedding;
+    }
 
-        // Store the memory
-        await this.storeAdvancedMemory(memory);
-
-        // Remove from staging buffer
+    private async removeFromStaging(id: string): Promise<void> {
         this.stagingBuffer.delete(id);
         await this.deletePendingMemory(id);
-
-        appLogger.info(SERVICE_NAME, `Memory confirmed (${validatedBy}): "${content.substring(0, 50)}..."`);
-        return memory;
     }
 
     /**
@@ -1005,18 +1035,41 @@ If no facts worth remembering, return [].`;
         memories: AdvancedSemanticFragment[],
         context: RecallContext
     ): AdvancedSemanticFragment[] {
-        return memories.filter(m => {
-            if (context.projectId && m.projectId !== context.projectId) { return false; }
-            if (context.categories && !context.categories.includes(m.category)) { return false; }
-            if (context.tags && !context.tags.some(t => m.tags.includes(t))) { return false; }
-            if (context.createdAfter && m.createdAt < context.createdAfter) { return false; }
-            if (context.createdBefore && m.createdAt > context.createdBefore) { return false; }
-            if (context.minConfidence && m.confidence < context.minConfidence) { return false; }
-            if (context.minImportance && m.importance < context.minImportance) { return false; }
-            if (!context.includeArchived && m.status === 'archived') { return false; }
-            if (!context.includePending && m.status === 'pending') { return false; }
-            return true;
-        });
+        return memories.filter(m => this.matchesRecallFilters(m, context));
+    }
+
+    private matchesRecallFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
+        return (
+            this.matchesBasicFilters(m, context) &&
+            this.matchesTimeFilters(m, context) &&
+            this.matchesScoreFilters(m, context) &&
+            this.matchesStatusFilters(m, context)
+        );
+    }
+
+    private matchesBasicFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
+        if (context.projectId && m.projectId !== context.projectId) { return false; }
+        if (context.categories && !context.categories.includes(m.category)) { return false; }
+        if (context.tags && !context.tags.some(t => m.tags.includes(t))) { return false; }
+        return true;
+    }
+
+    private matchesTimeFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
+        if (context.createdAfter && m.createdAt < context.createdAfter) { return false; }
+        if (context.createdBefore && m.createdAt > context.createdBefore) { return false; }
+        return true;
+    }
+
+    private matchesScoreFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
+        if (context.minConfidence && m.confidence < context.minConfidence) { return false; }
+        if (context.minImportance && m.importance < context.minImportance) { return false; }
+        return true;
+    }
+
+    private matchesStatusFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
+        if (!context.includeArchived && m.status === 'archived') { return false; }
+        if (!context.includePending && m.status === 'pending') { return false; }
+        return true;
     }
 
     /**

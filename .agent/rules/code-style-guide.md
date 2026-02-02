@@ -2,52 +2,44 @@
 trigger: always_on
 ---
 
-# Orbit AI Agent Rules
+# 🚀 TANDEM AI AGENT: MASTER COMMANDMENTS
 
-## MANDATORY: Documentation First
+You are an expert software engineer working on **Tandem**. You MUST follow these rules without exception. "I forgot" is not an excuse.
 
-Before doing ANY work, you MUST read and follow these documents:
+## 🛑 THE NEVER-LIST (STRICT PROHIBITIONS)
+- **NEVER** use `any` or `unknown`. If you find them, fix them.
+- **NEVER** use `console.log`. Use `appLogger` only.
+- **NEVER** use `// @ts-ignore` or `// eslint-disable`.
+- **NEVER** use placeholders like `// ... rest of code`. Write the FULL logic.
+- **NEVER** delete a file to recreate it. Use `edit_file` with precise chunks.
+- **NEVER** use relative paths for internal modules. Use aliases (`@/`, `@main/`, `@shared/`).
+- **NEVER** commit or push without running `npm run build`, `npm run lint`, and `npm run type-check`.
 
-### Required Reading (in order):
-1. `docs/AI_RULES.md` - Complete coding standards and rules
-2. `docs/ARCHITECTURE.md` - System architecture
-3. `docs/SERVICES.md` - Service patterns
-4. `docs/TODO.md` - Current tasks and known issues
+## 💎 THE ALWAYS-LIST (MANDATORY ACTIONS)
+- **ALWAYS** follow the **Boy Scout Rule**: Every edit MUST fix at least one existing lint warning or type issue in the file.
+- **ALWAYS** check `docs/AI_RULES.md` before starting a new domain.
+- **ALWAYS** utilize available **Skills** and **MCP Tools** (e.g., `core`, `git`, `project`) for specialized tasks.
+- **ALWAYS** follow NASA's Power of Ten rules (checked by ESLint).
+- **ALWAYS** use `useMemo` and `useCallback` for any computation or function in React components.
+- **ALWAYS** implement `dispose()` or cleanup for resources and effects.
+- **ALWAYS** batch IPC calls. Never call IPC in a loop.
+- **ALWAYS** update `docs/TODO.md` (mark `[x]`, DO NOT DELETE) and `docs/CHANGELOG.md`.
 
-### Key Rules Summary:
+## 🛠 REQUIRED WORKFLOW
+1.  **Understand**: Read the task and relevant code.
+2.  **Verify Rules**: Check if your plan violates any NASA or Tandem rules.
+3.  **Execute**: Make targeted, clean edits. No placeholders.
+4.  **Validate**: 
+    - `npm run build`
+    - `npm run lint`
+    - `npm run type-check`
+5.  **Document**: Update TODO and CHANGELOG.
+6.  **Deliver**: Submit your changes only after all checks pass.
 
-**Build Before Commit:**
-```
-npm run build → npm run lint → npm run type-check → commit → push
-```
+## 📏 CODE STANDARDS
+- **Function Length**: Max 150 lines (ESLint enforced).
+- **Complexity**: Keep cyclomatic complexity low (< 10).
+- **Imports**: Sorted by `simple-import-sort`.
+- **Naming**: `kebab-case.service.ts`, `kebab-case.component.tsx`.
 
-**Never Do:**
-- Use `any` and `unknown` type
-- Use `console.log` (use `appLogger`)
-- Delete file to recreate (use targeted edits)
-- Ignore lint/type errors
-- Access forbidden paths (.git/, node_modules/, vendor/, .env)
-
-**Always Do:**
-- Follow NASA's Power of Ten rules
-- Mark TODO.md items as `[x]` (don't delete)
-- Update CHANGELOG.md for changes
-- Use path aliases (@/, @main/, @shared/)
-- Write clean, documented code
-
-**Performance Standards:**
-- Mandatory `React.lazy()` for heavy components
-- Mandatory `useMemo`/`useCallback` for computations
-- Batch IPC calls and virtualize lists > 50 items
-- Lazy service instantiation in main process
-- Offload heavy tasks to worker threads
-- Implement `dispose()`/cleanup for all resources
-
-## For Full Details
-
-See `docs/AI_RULES.md` for complete guidelines including:
-- Section 11a: Forbidden Tools
-- Section 11b: Forbidden Paths
-- Section 11c: File Editing Rules
-- Section 11d: Tool Transmission Rules
-- Section 13: AI Workflow Rules
+> "Failure to follow these rules is a failure of the mission." - Tandem Command

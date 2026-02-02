@@ -1,24 +1,26 @@
-# Prohibited Actions for All Agents
+# 🚫 PROHIBITED ACTIONS (ZERO TOLERANCE)
 
-This is a universal list of actions that are FORBIDDEN for all AI agents working on this project.
+The following actions are strictly FORBIDDEN. Violating these rules will result in immediate rejection of the work.
 
-## Forbidden Type Usage
+## 1. Type Integrity
+- **NO `any`**: Strictly forbidden. No exceptions.
+- **NO `unknown`**: Strictly forbidden. Use specific types, interfaces, or generics.
+- **NO `@ts-ignore` / `@ts-nocheck`**: Fix the type. Do not hide it.
+- **NO `eslint-disable`**: If the rule is there, follow it.
 
--   **`any`**: The use of the `any` type is strictly forbidden. Use specific types, generics, or `unknown` with type guards.
--   **`@ts-ignore`**: Never suppress TypeScript errors with comments. Fix the underlying type issue.
--   **`eslint-disable`**: Never disable ESLint rules inline. If a rule is consistently problematic, it should be discussed and the config updated.
+## 2. Code Quality
+- **NO `console.log`**: Use `appLogger` for everything.
+- **NO PLACEHOLDERS**: Never leave `// TODO`, `// ...`, or truncated code in your output. Every file you edit must be fully functional.
+- **NO BULK REWRITES**: Do not overwrite a 500-line file to change 5 lines. Use targeted `edit_file` chunks.
+- **NO VAR**: Use `const` (preferred) or `let`.
 
-## Forbidden Logging
+## 3. Environment & Security
+- **NO SENSITIVE ACCESS**: Never touch `.env`, `.git/`, or keys/certificates.
+- **NO ROOT CONFIG TAMPERING**: Do not change `package.json`, `tsconfig.json`, or `eslint.config.mjs` unless explicitly instructed.
+- **NO EXTERNAL REQUESTS**: Do not use `fetch` or `axios` to domains not explicitly allowed in the project.
 
--   **`console.log`**: All logging must go through `appLogger`. Use `appLogger.info`, `appLogger.warn`, `appLogger.error`, or `appLogger.debug`.
+## 4. Workflow Integrity
+- **NO SILENT FAILURES**: If a command fails, STOP and report. Do not try to "wing it".
+- **NO DELETING HISTORY**: Never delete completed items in `TODO.md` or existing entries in `CHANGELOG.md`.
 
-## Forbidden File Operations
-
--   **Full file deletion for editing**: Never delete a file and recreate it to make changes. Use targeted, line-by-line edits.
--   **Writing to protected paths**: Never modify `.git/`, `node_modules/`, `vendor/`, or any `.env` file.
-
-## Forbidden Workflow Actions
-
--   **Committing without building**: All code must pass `npm run build`, `npm run lint`, and `npm run type-check` before being committed.
--   **Deleting TODO items**: When a task in `docs/TODO.md` is complete, mark it with `[x]`. NEVER delete the line.
--   **Ignoring build errors**: If a build or lint command fails, do not proceed. Fix the errors first.
+> "Rules are not suggestions; they are the framework of our success."

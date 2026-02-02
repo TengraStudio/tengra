@@ -39,7 +39,7 @@ const getStatusColor = (flags: AgentStatusFlags) => {
 const getStatusIconElement = (flags: Omit<AgentStatusFlags, 'isPaused'>) => {
     if (flags.isRunning) { return <Loader2 className="w-5 h-5 animate-spin" />; }
     if (flags.isCompleted) { return <CheckCircle className="w-5 h-5" />; }
-    if (flags.isFailed ?? flags.isStuck ?? flags.isInterrupted) { return <AlertCircle className="w-5 h-5" />; }
+    if (flags.isFailed || flags.isStuck || flags.isInterrupted) { return <AlertCircle className="w-5 h-5" />; }
     return <Sparkles className="w-5 h-5" />;
 };
 

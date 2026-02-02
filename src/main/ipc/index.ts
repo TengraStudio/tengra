@@ -6,10 +6,10 @@ import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
-import { registerCouncilIpc } from '@main/ipc/council';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
+import { registerExtensionIpc } from '@main/ipc/extension';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -149,12 +149,15 @@ export function registerAllIpc(
     registerGitIpc(services.gitService);
     registerPromptTemplatesIpc(services.promptTemplatesService);
     registerHistoryIpc(services.historyImportService);
-    registerCouncilIpc(services.agentCouncilService, services.databaseService);
+
     registerTerminalIpc(getWin);
 
     // External Integrations
     registerToolsIpc(toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher);
+
+    // Browser Extension
+    registerExtensionIpc(services.extensionDetectorService);
 
     // Backup & Restore
     registerBackupIpc(services.backupService);

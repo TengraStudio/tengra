@@ -1,6 +1,6 @@
 # Technology Stack
 
-Orbit is built on a polyglot architecture designed for high performance, security, and extensibility. We choose our tools based on their ability to solve specific domain problems effectively while maintaining a cohesive system.
+Tandem is built on a polyglot architecture designed for high performance, security, and extensibility. We choose our tools based on their ability to solve specific domain problems effectively while maintaining a cohesive system.
 
 ## Core Runtime
 
@@ -23,7 +23,7 @@ To provide a code editing experience that feels native to developers, we integra
 
 ## Specialized Microservices
 
-Orbit offloads specific tasks to independent microservices built with systems-level languages. This isolation prevents the Main process from becoming a bottleneck and allows for easier scaling of intensive tasks.
+Tandem offloads specific tasks to independent microservices built with systems-level languages. This isolation prevents the Main process from becoming a bottleneck and allows for easier scaling of intensive tasks.
 
 ### Rust Microservices (Axum and Tokio)
 Our Rust services handle computationally heavy or sensitive tasks. Rust was chosen for its memory safety and high concurrency performance.

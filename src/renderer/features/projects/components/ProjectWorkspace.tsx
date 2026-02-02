@@ -65,8 +65,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     isLoading
 }) => {
     const {
-        ps, wm, activityLog, setActivityLog,
-        handleUpdateProject, runCouncil, toggleAgent, t
+        ps, wm,
+        handleUpdateProject, t
     } = useProjectWorkspaceController({ project, language });
 
 
@@ -135,7 +135,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     showAgentPanel={ps.showAgentPanel}
                     agentPanelWidth={ps.agentPanelWidth}
                     setAgentPanelWidth={ps.setAgentPanelWidth}
-                    viewTab={ps.viewTab}
                     selectedProvider={selectedProvider}
                     selectedModel={selectedModel}
                     onSelectModel={onSelectModel}
@@ -145,14 +144,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     codexUsage={codexUsage ?? null}
                     agentChatMessage={ps.agentChatMessage}
                     setAgentChatMessage={ps.setAgentChatMessage}
-                    councilEnabled={wm.councilEnabled}
-                    toggleCouncil={() => wm.setCouncilEnabled(!wm.councilEnabled)}
-                    agents={ps.agents}
-                    toggleAgent={toggleAgent}
-                    addAgent={() => ps.notify('info', 'Agent creation coming soon')}
-                    runCouncil={() => { void runCouncil(); }}
-                    activityLog={activityLog}
-                    clearLogs={() => setActivityLog([])}
                     t={t}
                     messages={messages}
                     isLoading={isLoading}

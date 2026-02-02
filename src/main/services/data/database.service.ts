@@ -5,7 +5,6 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
-import { CouncilSessionStatus } from '@shared/types/agent';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { FileDiff } from '@shared/types/file-diff';
@@ -17,10 +16,11 @@ import { ChatRepository } from './repositories/chat.repository';
 import { KnowledgeRepository } from './repositories/knowledge.repository';
 import { ProjectRepository } from './repositories/project.repository';
 import { SystemRepository } from './repositories/system.repository';
+import { UacRepository } from './repositories/uac.repository';
 import { DataService } from './data.service';
 import { DatabaseClientService } from './database-client.service';
 
-export type { AuditLogEntry, CouncilSessionStatus, FileDiff, JobState, PromptTemplate };
+export type { AuditLogEntry, FileDiff, JobState, PromptTemplate };
 
 /**
  * LinkedAccount represents a single authenticated account for a provider.
@@ -73,9 +73,7 @@ export interface EpisodicMemory {
     timestamp: number;
 }
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
-export interface CouncilLog { id: string; sessionId: string; agentId: string; message: string; timestamp: number; type: 'info' | 'error' | 'success' | 'plan' | 'action' | 'thought' | 'result' }
-export interface AgentProfile { id: string; name: string; role: string; bio?: string; avatar?: string; description?: string }
-export interface CouncilSession { id: string; goal: string; status: CouncilSessionStatus; logs: CouncilLog[]; agents: AgentProfile[]; plan?: string | undefined; solution?: string | undefined; createdAt: number; updatedAt: number; model?: string; provider?: string; }
+
 
 export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
 
@@ -101,11 +99,13 @@ export class DatabaseService extends BaseService {
     private _projects!: ProjectRepository;
     private _knowledge!: KnowledgeRepository;
     private _system!: SystemRepository;
+    private _uac!: UacRepository;
 
     get chats() { return this._chats; }
     get projects() { return this._projects; }
     get knowledge() { return this._knowledge; }
     get system() { return this._system; }
+    get uac() { return this._uac; }
 
     constructor(
         private dataService: DataService,
@@ -135,6 +135,8 @@ export class DatabaseService extends BaseService {
             this._projects = new ProjectRepository(adapter);
             this._knowledge = new KnowledgeRepository(adapter);
             this._system = new SystemRepository(adapter);
+            this._uac = new UacRepository(adapter);
+            await this._uac.ensureTables();
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
@@ -325,12 +327,7 @@ export class DatabaseService extends BaseService {
     async getEntityKnowledge(name: string) { return this._knowledge.getEntityKnowledge(name); }
     async getAllEntityKnowledge() { return this._knowledge.getAllEntityKnowledge(); }
 
-    // Council Sessions
-    async getCouncilSessions() { return this._system.getCouncilSessions(); }
-    async createCouncilSession(goal: string, model?: string, provider?: string) { return this._system.createCouncilSession(goal, model, provider); }
-    async getCouncilSession(id: string) { return this._system.getCouncilSession(id); }
-    async updateCouncilStatus(id: string, status: string, plan?: string, solution?: string) { return this._system.updateCouncilStatus(id, status, plan, solution); }
-    async addCouncilLog(id: string, aid: string, msg: string, type: string) { return this._system.addCouncilLog(id, aid, msg, type); }
+
 
     // Stats & Tracking
     async getStats() { return this._system.getStats(); }

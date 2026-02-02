@@ -1,11 +1,11 @@
 # Development Guide
 
-This guide provides the necessary information to set up, develop, and test Orbit. We prioritize stability and security by following strict coding standards and a rigorous build process.
+This guide provides the necessary information to set up, develop, and test Tandem. We prioritize stability and security by following strict coding standards and a rigorous build process.
 
 ## Environment Setup
 
 ### Prerequisites
-To build and run Orbit locally, you need the following tools:
+To build and run Tandem locally, you need the following tools:
 - **Node.js**: v18.0.0 or higher is required for the main application.
 - **Git**: Ensure you have the latest version for version control.
 - **Go**: v1.21+ is required to compile the `cliproxy-embed` microservice.
@@ -22,7 +22,7 @@ To build and run Orbit locally, you need the following tools:
 
 ## Coding Standards
 
-Orbit follows high-integrity software standards to ensure the application remains reliable over time.
+Tandem follows high-integrity software standards to ensure the application remains reliable over time.
 
 ### Core Principles
 - **Type Safety**: The use of `any` or `unknown` is forbidden. Always define specific interfaces or use narrowed types.
@@ -37,7 +37,7 @@ Orbit follows high-integrity software standards to ensure the application remain
 
 ## Architecture and Style
 
-- **Service Layer**: Services are the backbone of Orbit. They should be modular, domain-specific, and reside in `src/main/services/`.
+- **Service Layer**: Services are the backbone of Tandem. They should be modular, domain-specific, and reside in `src/main/services/`.
 - **Path Aliasing**: Use the following aliases to keep imports clean:
     - `@main/`: `src/main/`
     - `@renderer/`: `src/renderer/`

@@ -79,7 +79,7 @@ const TaskItem = memo(({
                         "text-sm font-medium truncate",
                         isSelected ? "text-primary-foreground" : "text-foreground"
                     )}>
-                        {task.description ?? t('agent.untitled_task')}
+                        {task.description}
                     </span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">

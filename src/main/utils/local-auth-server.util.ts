@@ -104,32 +104,32 @@ export class LocalAuthServer {
                             return;
                         }
 
-                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
+                        const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
 
-                    if (url.pathname === '/callback') {
-                        const code = url.searchParams.get('code');
-                        const error = url.searchParams.get('error');
+                        if (url.pathname === '/callback') {
+                            const code = url.searchParams.get('code');
+                            const error = url.searchParams.get('error');
 
-                        if (error) {
-                            console.error('[LocalAuthServer] Callback error:', error);
-                            res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
-                            onError(new Error(error));
-                            server.close();
-                            return;
+                            if (error) {
+                                console.error('[LocalAuthServer] Callback error:', error);
+                                res.writeHead(400, { 'Content-Type': 'text/html' });
+                                res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
+                                onError(new Error(error));
+                                server.close();
+                                return;
+                            }
+
+                            if (code) {
+                                res.writeHead(200, { 'Content-Type': 'text/html' });
+                                res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tandem.</p><script>setTimeout(() => window.close(), 1000)</script>');
+
+                                await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
+                                server.close();
+                            }
+                        } else {
+                            res.writeHead(404);
+                            res.end();
                         }
-
-                        if (code) {
-                            res.writeHead(200, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tandem.</p><script>setTimeout(() => window.close(), 1000)</script>');
-
-                            await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
-                            server.close();
-                        }
-                    } else {
-                        res.writeHead(404);
-                        res.end();
-                    }
                     } catch (err) {
                         console.error('[LocalAuthServer] Server handler error:', err);
                     }
@@ -187,39 +187,39 @@ export class LocalAuthServer {
                         const address = server.address() as AddressInfo | null;
                         if (!address) { return; }
 
-                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
+                        const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
 
-                    if (url.pathname === '/callback') {
-                        const code = url.searchParams.get('code');
-                        const callbackState = url.searchParams.get('state');
-                        const error = url.searchParams.get('error');
+                        if (url.pathname === '/callback') {
+                            const code = url.searchParams.get('code');
+                            const callbackState = url.searchParams.get('state');
+                            const error = url.searchParams.get('error');
 
-                        if (error) {
-                            console.error('[LocalAuthServer] Claude Callback error:', error);
-                            res.writeHead(400, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
-                            onError(new Error(error));
-                            server.close();
-                            return;
+                            if (error) {
+                                console.error('[LocalAuthServer] Claude Callback error:', error);
+                                res.writeHead(400, { 'Content-Type': 'text/html' });
+                                res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
+                                onError(new Error(error));
+                                server.close();
+                                return;
+                            }
+
+                            if (code) {
+                                await LocalAuthServer.handleClaudeCallback({
+                                    code,
+                                    verifier,
+                                    redirectUri: `http://localhost:${address.port}/callback`,
+                                    callbackState,
+                                    oauthState,
+                                    onSuccess,
+                                    onError,
+                                    res
+                                });
+                                server.close();
+                            }
+                        } else {
+                            res.writeHead(404);
+                            res.end();
                         }
-
-                        if (code) {
-                            await LocalAuthServer.handleClaudeCallback({
-                                code,
-                                verifier,
-                                redirectUri: `http://localhost:${address.port}/callback`,
-                                callbackState,
-                                oauthState,
-                                onSuccess,
-                                onError,
-                                res
-                            });
-                            server.close();
-                        }
-                    } else {
-                        res.writeHead(404);
-                        res.end();
-                    }
                     } catch (err) {
                         console.error('[LocalAuthServer] Server handler error:', err);
                     }
@@ -392,28 +392,7 @@ export class LocalAuthServer {
                         if (Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
                         appLogger.info('LocalAuthServer', 'Token exchange successful');
 
-                        // Handle Claude's nested email field
-                        if (json.account?.email_address) {
-                            json.email = json.account.email_address;
-                            appLogger.info('LocalAuthServer', `Captured email from Claude account info: ${json.email}`);
-                        }
-
-                        // Fallback to id_token decoding (used by Codex/OpenAI and others)
-                        if (!json.email && json.id_token) {
-                            try {
-                                const claims = LocalAuthServer.decodeJwt(json.id_token);
-                                if (claims['email']) {
-                                    json.email = String(claims['email']);
-                                    appLogger.info('LocalAuthServer', `Captured email from decoded id_token: ${json.email}`);
-                                }
-                            } catch {
-                                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT in Claude flow');
-                            }
-                        }
-
-                        if (json.email) {
-                            appLogger.info('LocalAuthServer', `Captured email directly from response: ${json.email}`);
-                        }
+                        json.email = LocalAuthServer.extractEmailFromTokenData(json);
 
                         resolve(json);
                     } catch (e) {
@@ -427,6 +406,35 @@ export class LocalAuthServer {
             request.write(body.toString());
             request.end();
         });
+    }
+
+    private static extractEmailFromTokenData(json: AuthCallbackData & { account?: { email_address?: string }; id_token?: string }): string | undefined {
+        // Handle Claude's nested email field
+        if (json.account?.email_address) {
+            appLogger.info('LocalAuthServer', `Captured email from Claude account info: ${json.account.email_address}`);
+            return json.account.email_address;
+        }
+
+        // Fallback to id_token decoding (used by Codex/OpenAI and others)
+        if (!json.email && json.id_token) {
+            try {
+                const claims = LocalAuthServer.decodeJwt(json.id_token);
+                if (claims['email']) {
+                    const email = String(claims['email']);
+                    appLogger.info('LocalAuthServer', `Captured email from decoded id_token: ${email}`);
+                    return email;
+                }
+            } catch {
+                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT in Claude flow');
+            }
+        }
+
+        if (json.email) {
+            appLogger.info('LocalAuthServer', `Captured email directly from response: ${json.email}`);
+            return json.email;
+        }
+
+        return undefined;
     }
 }
 

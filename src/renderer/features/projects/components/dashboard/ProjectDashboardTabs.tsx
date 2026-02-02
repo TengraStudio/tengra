@@ -110,7 +110,7 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
                     />
                     <button
                         onClick={() => { void handleSearch(); }}
-                        disabled={isSearching ?? searchQuery.trim().length < 2}
+                        disabled={isSearching || searchQuery.trim().length < 2}
                         className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
                     >
                         {isSearching ? t('common.searching') : t('common.search')}

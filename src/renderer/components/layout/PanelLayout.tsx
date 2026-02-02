@@ -255,10 +255,8 @@ export const PanelLayoutProvider: React.FC<{
         setState(prev => {
             const newGroups = { ...prev.groups };
             const group = newGroups[panel.position];
-            if (group) {
-                group.panels = [...group.panels, panel];
-                group.activePanel = panel.id;
-            }
+            group.panels = [...group.panels, panel];
+            group.activePanel = panel.id;
             return { ...prev, groups: newGroups };
         });
     }, []);
@@ -314,9 +312,7 @@ export const PanelLayoutProvider: React.FC<{
         setState(prev => {
             const newGroups = { ...prev.groups };
             const group = newGroups[groupId];
-            if (group) {
-                group.activePanel = panelId;
-            }
+            group.activePanel = panelId;
             return { ...prev, groups: newGroups, activePanel: panelId };
         });
     }, []);
@@ -325,9 +321,7 @@ export const PanelLayoutProvider: React.FC<{
         setState(prev => {
             const newGroups = { ...prev.groups };
             const group = newGroups[groupId];
-            if (group) {
-                group.collapsed = !group.collapsed;
-            }
+            group.collapsed = !group.collapsed;
             return { ...prev, groups: newGroups };
         });
     }, []);
@@ -336,9 +330,7 @@ export const PanelLayoutProvider: React.FC<{
         setState(prev => {
             const newGroups = { ...prev.groups };
             const group = newGroups[groupId];
-            if (group) {
-                group.size = Math.max(50, Math.min(size, 600));
-            }
+            group.size = Math.max(50, Math.min(size, 600));
             return { ...prev, groups: newGroups };
         });
     }, []);
@@ -360,16 +352,68 @@ export const PanelLayoutProvider: React.FC<{
     );
 };
 
+interface SidebarProps {
+    group: PanelGroup;
+    size: number;
+    onResize: (delta: number) => void;
+    direction: 'left' | 'right';
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ group, size, onResize, direction }) => {
+    if (group.panels.length === 0 || group.collapsed) { return null; }
+    
+    return direction === 'left' ? (
+        <>
+            <PanelGroupView group={group} style={{ width: size }} className="flex-shrink-0" />
+            <Resizer direction="horizontal" onResize={onResize} />
+        </>
+    ) : (
+        <>
+            <Resizer direction="horizontal" onResize={onResize} />
+            <PanelGroupView group={group} style={{ width: size }} className="flex-shrink-0" />
+        </>
+    );
+};
+
+interface BottomPanelViewProps {
+    group: PanelGroup;
+    size: number;
+    onResize: (delta: number) => void;
+}
+
+const BottomPanelView: React.FC<BottomPanelViewProps> = ({ group, size, onResize }) => {
+    if (group.panels.length === 0 || group.collapsed) { return null; }
+    
+    return (
+        <>
+            <Resizer direction="vertical" onResize={onResize} />
+            <PanelGroupView group={group} style={{ height: size }} className="flex-shrink-0" />
+        </>
+    );
+};
+
+interface CenterAreaProps {
+    group: PanelGroup;
+    children?: React.ReactNode;
+}
+
+const CenterArea: React.FC<CenterAreaProps> = ({ group, children }) => (
+    <div className="flex-1 flex min-h-0 overflow-hidden">
+        {group.panels.length > 0 ? (
+            <PanelGroupView group={group} className="flex-1" />
+        ) : (
+            <div className="flex-1 overflow-auto">{children}</div>
+        )}
+    </div>
+);
+
 // Main Layout Component
 export const PanelLayout: React.FC<{
     children?: React.ReactNode
     className?: string
 }> = ({ children, className }) => {
     const { state, resizeGroup } = usePanelLayout();
-    const left = state.groups.left;
-    const right = state.groups.right;
-    const bottom = state.groups.bottom;
-    const center = state.groups.center;
+    const { left, right, bottom, center } = state.groups;
 
     const handleLeftResize = useCallback((delta: number) => {
         resizeGroup('left', (left.size ?? DEFAULT_SIZES.left) + delta);
@@ -385,60 +429,13 @@ export const PanelLayout: React.FC<{
 
     return (
         <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
-            {/* Main horizontal layout */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left sidebar */}
-                {left.panels.length > 0 && !left.collapsed && (
-                    <>
-                        <PanelGroupView
-                            group={left}
-                            style={{ width: left.size ?? DEFAULT_SIZES.left }}
-                            className="flex-shrink-0"
-                        />
-                        <Resizer direction="horizontal" onResize={handleLeftResize} />
-                    </>
-                )}
-
-                {/* Center + Bottom */}
+                <Sidebar group={left} size={left.size ?? DEFAULT_SIZES.left} onResize={handleLeftResize} direction="left" />
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                    {/* Center area */}
-                    <div className="flex-1 flex min-h-0 overflow-hidden">
-                        {center.panels.length > 0 ? (
-                            <PanelGroupView
-                                group={center}
-                                className="flex-1"
-                            />
-                        ) : (
-                            <div className="flex-1 overflow-auto">
-                                {children}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Bottom panel */}
-                    {bottom.panels.length > 0 && !bottom.collapsed && (
-                        <>
-                            <Resizer direction="vertical" onResize={handleBottomResize} />
-                            <PanelGroupView
-                                group={bottom}
-                                style={{ height: bottom.size ?? DEFAULT_SIZES.bottom }}
-                                className="flex-shrink-0"
-                            />
-                        </>
-                    )}
+                    <CenterArea group={center}>{children}</CenterArea>
+                    <BottomPanelView group={bottom} size={bottom.size ?? DEFAULT_SIZES.bottom} onResize={handleBottomResize} />
                 </div>
-
-                {/* Right sidebar */}
-                {right.panels.length > 0 && !right.collapsed && (
-                    <>
-                        <Resizer direction="horizontal" onResize={handleRightResize} />
-                        <PanelGroupView
-                            group={right}
-                            style={{ width: right.size ?? DEFAULT_SIZES.right }}
-                            className="flex-shrink-0"
-                        />
-                    </>
-                )}
+                <Sidebar group={right} size={right.size ?? DEFAULT_SIZES.right} onResize={handleRightResize} direction="right" />
             </div>
         </div>
     );

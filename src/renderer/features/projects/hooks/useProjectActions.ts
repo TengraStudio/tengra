@@ -1,4 +1,4 @@
-import { ActivityEntry, CouncilSession, Project } from '@/types';
+import { Project } from '@/types';
 
 export interface ProjectActionsProps {
     project: Project
@@ -6,8 +6,6 @@ export interface ProjectActionsProps {
     t: (key: string) => string
     onUpdateProject?: (updates: Partial<Project>) => Promise<void>
     agentChatMessage?: string
-    setCouncilSession: (session: CouncilSession | null) => void
-    setActivityLog: (log: ActivityEntry[] | ((prev: ActivityEntry[]) => ActivityEntry[])) => void
 }
 
 export function useProjectActions({
@@ -15,9 +13,7 @@ export function useProjectActions({
     notify,
     t,
     onUpdateProject,
-    agentChatMessage,
-    setCouncilSession,
-    setActivityLog
+    agentChatMessage: _agentChatMessage,
 }: ProjectActionsProps) {
     const handleUpdateProject = async (updates: Partial<Project>) => {
         try {
@@ -30,27 +26,7 @@ export function useProjectActions({
         }
     };
 
-    const runCouncil = async () => {
-        if (!agentChatMessage) {
-            notify('error', 'Please provide a message for the agents');
-            return;
-        }
-
-        try {
-            notify('info', t('projectDashboard.startingCouncil'));
-            const session = await window.electron.ipcRenderer.invoke('council:create', agentChatMessage) as CouncilSession;
-            setCouncilSession(session);
-            setActivityLog([]);
-            window.electron.ipcRenderer.send('council:start-loop', session.id);
-            notify('success', t('projectDashboard.councilStarted'));
-        } catch (error) {
-            console.error('[ProjectActions] Start Council failed:', error);
-            notify('error', t('projectDashboard.councilFailed'));
-        }
-    };
-
     return {
-        handleUpdateProject,
-        runCouncil
+        handleUpdateProject
     };
 }

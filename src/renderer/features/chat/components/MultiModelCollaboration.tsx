@@ -20,14 +20,16 @@ interface MultiModelCollaborationProps {
 
 type Strategy = 'consensus' | 'voting' | 'best-of-n' | 'chain-of-thought'
 
+interface ModelResponse {
+    provider: string
+    model: string
+    content: string
+    latency: number
+}
+
 interface CollaborationResult {
     response?: string
-    responses: Array<{
-        provider: string
-        model: string
-        content: string
-        latency: number
-    }>
+    responses: ModelResponse[]
     consensus?: string
     bestResponse?: {
         provider: string
@@ -35,6 +37,72 @@ interface CollaborationResult {
         content: string
     }
 }
+
+interface ModelItemProps {
+    model: { provider: string; model: string }
+    onRemove: () => void
+    disabled: boolean
+}
+
+const ModelItem: React.FC<ModelItemProps> = ({ model, onRemove, disabled }) => (
+    <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+        <span className="flex-1 text-sm">{model.provider}/{model.model}</span>
+        <Button variant="ghost" size="sm" onClick={onRemove} disabled={disabled}>
+            Remove
+        </Button>
+    </div>
+);
+
+interface ResponseCardProps {
+    response: ModelResponse
+}
+
+const ResponseCard: React.FC<ResponseCardProps> = ({ response }) => (
+    <Card className="p-3">
+        <div className="flex items-start justify-between mb-2">
+            <span className="text-sm font-medium">{response.provider}/{response.model}</span>
+            <span className="text-xs text-muted-foreground">{response.latency}ms</span>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-3">{response.content}</p>
+    </Card>
+);
+
+interface FinalResultProps {
+    results: CollaborationResult
+}
+
+const FinalResult: React.FC<FinalResultProps> = ({ results }) => {
+    if (!results.consensus && !results.bestResponse) { return null; }
+
+    return (
+        <div className="space-y-2">
+            <label className="text-sm font-medium">Final Result</label>
+            <Card className="p-4 bg-primary/5">
+                {results.consensus && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Consensus</span>
+                        </div>
+                        <p className="text-sm">{results.consensus}</p>
+                    </div>
+                )}
+                {results.bestResponse && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle2 className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Best Response</span>
+                        </div>
+                        <p className="text-sm mb-2">{results.bestResponse.content}</p>
+                        <p className="text-xs text-muted-foreground">
+                            From: {results.bestResponse.provider}/{results.bestResponse.model}
+                        </p>
+                    </div>
+                )}
+            </Card>
+        </div>
+    );
+};
 
 export function MultiModelCollaboration({
     messages,
@@ -102,19 +170,12 @@ export function MultiModelCollaboration({
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Selected Models</label>
                     {selectedModels.map((model, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                            <span className="flex-1 text-sm">
-                                {model.provider}/{model.model}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveModel(index)}
-                                disabled={isRunning}
-                            >
-                                Remove
-                            </Button>
-                        </div>
+                        <ModelItem
+                            key={index}
+                            model={model}
+                            onRemove={() => handleRemoveModel(index)}
+                            disabled={isRunning}
+                        />
                     ))}
                     <Button
                         variant="outline"
@@ -182,51 +243,12 @@ export function MultiModelCollaboration({
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Individual Responses</label>
                             {results.responses.map((response, index: number) => (
-                                <Card key={index} className="p-3">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <span className="text-sm font-medium">
-                                            {response.provider}/{response.model}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {response.latency}ms
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-3">
-                                        {response.content}
-                                    </p>
-                                </Card>
+                                <ResponseCard key={index} response={response} />
                             ))}
                         </div>
 
                         {/* Consensus/Best Response */}
-                        {(results.consensus || results.bestResponse) && (
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Final Result</label>
-                                <Card className="p-4 bg-primary/5">
-                                    {results.consensus && (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <CheckCircle2 className="w-4 h-4 text-primary" />
-                                                <span className="text-sm font-medium">Consensus</span>
-                                            </div>
-                                            <p className="text-sm">{results.consensus}</p>
-                                        </div>
-                                    )}
-                                    {results.bestResponse && (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <CheckCircle2 className="w-4 h-4 text-primary" />
-                                                <span className="text-sm font-medium">Best Response</span>
-                                            </div>
-                                            <p className="text-sm mb-2">{results.bestResponse.content}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                From: {results.bestResponse.provider}/{results.bestResponse.model}
-                                            </p>
-                                        </div>
-                                    )}
-                                </Card>
-                            </div>
-                        )}
+                        <FinalResult results={results} />
                     </div>
                 )}
             </Card>

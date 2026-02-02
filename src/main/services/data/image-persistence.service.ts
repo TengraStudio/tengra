@@ -56,30 +56,7 @@ export class ImagePersistenceService {
     async saveImage(imageData: string, metadata?: ImageMetadata): Promise<string> {
         try {
             this.ensureGalleryExists();
-            let buffer: Buffer;
-            let extension = 'png'; // Default
-
-            if (imageData.startsWith('data:')) {
-                // Handle Data URI
-                const matches = imageData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-                if (matches?.length !== 3) {
-                    throw new Error('Invalid base64 string');
-                }
-                const type = matches[1];
-                buffer = Buffer.from(matches[2], 'base64');
-
-                if (type.includes('jpeg')) { extension = 'jpg'; }
-                else if (type.includes('webp')) { extension = 'webp'; }
-
-            } else if (imageData.startsWith('http')) {
-                // Handle URL
-                buffer = await this.downloadImage(imageData);
-                // Try to infer extension from URL or header? For now default png/jpg
-                if (imageData.includes('.jpg') || imageData.includes('.jpeg')) { extension = 'jpg'; }
-                if (imageData.includes('.webp')) { extension = 'webp'; }
-            } else {
-                throw new Error('Unknown image data format');
-            }
+            const { buffer, extension } = await this.processImageData(imageData);
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const random = crypto.randomBytes(4).toString('hex');
@@ -89,40 +66,80 @@ export class ImagePersistenceService {
             await fs.promises.writeFile(filePath, buffer);
             appLogger.info('ImagePersistence', `Saved generated image to ${filePath}`);
 
-            // Save metadata to database if available
             if (this.databaseService && metadata) {
-                try {
-                    const db = this.databaseService.getDatabase();
-                    await db.prepare(
-                        `INSERT INTO gallery_items (
-                            path, prompt, negative_prompt, seed, steps, cfg_scale, width, height, model, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-                    ).run(
-                        filename,
-                        metadata.prompt ?? null,
-                        metadata.negative_prompt ?? null,
-                        metadata.seed ?? null,
-                        metadata.steps ?? null,
-                        metadata.cfg_scale ?? null,
-                        metadata.width ?? null,
-                        metadata.height ?? null,
-                        metadata.model ?? null,
-                        Date.now()
-                    );
-                } catch (error) {
-                    appLogger.error('ImagePersistence', `Failed to save image metadata: ${getErrorMessage(error as Error)}`);
-                }
+                await this.saveMetadataToDB(filename, metadata);
             }
 
-            // Return safe-file URI for Electron/Browser usage
             return `safe-file:///${filePath.replace(/\\/g, '/')}`;
-
         } catch (error) {
             const message = getErrorMessage(error as Error);
             appLogger.error('ImagePersistence', `Failed to save image: ${message}`);
-            return imageData; // Fallback to original if save fails
+            return imageData;
         }
     }
+
+    private async processImageData(imageData: string): Promise<{ buffer: Buffer; extension: string }> {
+        if (imageData.startsWith('data:')) {
+            return this.processDataUri(imageData);
+        }
+        if (imageData.startsWith('http')) {
+            return this.processHttpImage(imageData);
+        }
+        throw new Error('Unknown image data format');
+    }
+
+    private processDataUri(dataUri: string): { buffer: Buffer; extension: string } {
+        const matches = dataUri.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+        if (matches?.length !== 3) {
+            throw new Error('Invalid base64 string');
+        }
+        const type = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        let extension = 'png';
+        if (type.includes('jpeg')) { extension = 'jpg'; }
+        else if (type.includes('webp')) { extension = 'webp'; }
+        return { buffer, extension };
+    }
+
+    private async processHttpImage(url: string): Promise<{ buffer: Buffer; extension: string }> {
+        const buffer = await this.downloadImage(url);
+        let extension = 'png';
+        if (url.includes('.jpg') || url.includes('.jpeg')) { extension = 'jpg'; }
+        else if (url.includes('.webp')) { extension = 'webp'; }
+        return { buffer, extension };
+    }
+
+    private async saveMetadataToDB(filename: string, metadata: ImageMetadata): Promise<void> {
+        if (!this.databaseService) { return; }
+        try {
+            const db = this.databaseService.getDatabase();
+            const values = this.prepareMetadataValues(filename, metadata);
+            await db.prepare(
+                `INSERT INTO gallery_items (
+                    path, prompt, negative_prompt, seed, steps, cfg_scale, width, height, model, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(...values);
+        } catch (error) {
+            appLogger.error('ImagePersistence', `Failed to save image metadata: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
+    private prepareMetadataValues(filename: string, metadata: ImageMetadata): (string | number | null)[] {
+        return [
+            filename,
+            metadata.prompt ?? null,
+            metadata.negative_prompt ?? null,
+            metadata.seed ?? null,
+            metadata.steps ?? null,
+            metadata.cfg_scale ?? null,
+            metadata.width ?? null,
+            metadata.height ?? null,
+            metadata.model ?? null,
+            Date.now()
+        ];
+    }
+
+
 
     private downloadImage(url: string): Promise<Buffer> {
         return new Promise((resolve, reject) => {

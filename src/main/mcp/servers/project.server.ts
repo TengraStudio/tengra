@@ -11,14 +11,6 @@ export function buildProjectServers(deps: McpDeps): McpService[] {
             ])
         },
         {
-            name: 'git',
-            description: 'Git helpers',
-            actions: buildActions([
-                { name: 'status', description: 'Get git status', handler: ({ repoPath }) => deps.git.getStatus(repoPath as string) },
-                { name: 'log', description: 'Get git log', handler: ({ repoPath, limit }) => deps.git.getLog(repoPath as string, limit as number) }
-            ])
-        },
-        {
             name: 'docker',
             description: 'Docker utilities',
             actions: buildActions([

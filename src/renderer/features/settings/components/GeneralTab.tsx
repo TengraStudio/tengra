@@ -12,6 +12,20 @@ interface GeneralTabProps {
     t: (key: string) => string
 }
 
+interface ToggleSwitchProps {
+    enabled: boolean
+    onToggle: () => void
+}
+
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onToggle }) => (
+    <div
+        onClick={onToggle}
+        className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${enabled ? 'bg-primary' : 'bg-gray-600'}`}
+    >
+        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+    </div>
+);
+
 export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral, handleSave, t }) => {
     const languageOptions = [
         { value: 'tr', label: t('languages.tr') },
@@ -86,23 +100,13 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <span className="text-sm font-medium">Auto-Update</span>
-                            <div
-                                onClick={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })}
-                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${autoUpdate.enabled ? 'bg-primary' : 'bg-gray-600'}`}
-                            >
-                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${autoUpdate.enabled ? 'translate-x-5' : ''}`} />
-                            </div>
+                            <span className="text-sm font-medium">{t('general.autoUpdate')}</span>
+                            <ToggleSwitch enabled={autoUpdate.enabled} onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })} />
                         </div>
 
                         <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <span className="text-sm font-medium">Check on Startup</span>
-                            <div
-                                onClick={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })}
-                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${autoUpdate.checkOnStartup ? 'bg-primary' : 'bg-gray-600'}`}
-                            >
-                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${autoUpdate.checkOnStartup ? 'translate-x-5' : ''}`} />
-                            </div>
+                            <span className="text-sm font-medium">{t('general.checkOnStartup')}</span>
+                            <ToggleSwitch enabled={autoUpdate.checkOnStartup} onToggle={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })} />
                         </div>
                     </div>
 
@@ -112,7 +116,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-foreground text-xs font-bold uppercase rounded-lg transition-all"
                         >
                             <RefreshCw className="w-3 h-3" />
-                            Check for Updates
+                            {t('general.checkForUpdates')}
                         </button>
                     </div>
                 </div>
@@ -120,25 +124,23 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                 {/* Privacy Section */}
                 <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-bold uppercase text-muted-foreground">Privacy</span>
+                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.privacy')}</span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
                             <div>
-                                <span className="text-sm font-medium">Crash Reporting</span>
-                                <p className="text-xs text-muted-foreground mt-1">Send anonymous crash reports to help us improve Tandem.</p>
+                                <span className="text-sm font-medium">{t('general.crashReporting')}</span>
+                                <p className="text-xs text-muted-foreground mt-1">{t('general.crashReportingDesc')}</p>
                             </div>
-                            <div
-                                onClick={() => {
+                            <ToggleSwitch
+                                enabled={settings?.crashReporting?.enabled ?? false}
+                                onToggle={() => {
                                     if (!settings) { return; }
                                     const current = settings.crashReporting ?? { enabled: false };
                                     void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } });
                                 }}
-                                className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${settings?.crashReporting?.enabled ? 'bg-primary' : 'bg-gray-600'}`}
-                            >
-                                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${settings?.crashReporting?.enabled ? 'translate-x-5' : ''}`} />
-                            </div>
+                            />
                         </div>
                     </div>
                 </div>

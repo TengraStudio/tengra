@@ -90,6 +90,29 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         };
     }, [isDragging, isSidebarCollapsed, setIsSidebarCollapsed, sidebarWidth, isRTL]);
 
+    const handleResizeKeyDown = useCallback((e: React.KeyboardEvent) => {
+        const step = e.shiftKey ? 50 : 10;
+        const baseWidth = isSidebarCollapsed ? 60 : sidebarWidth;
+        
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const isIncrease = (e.key === 'ArrowRight') !== isRTL;
+            const change = isIncrease ? step : -step;
+            const newWidth = Math.max(60, Math.min(800, baseWidth + change));
+            setSidebarWidth(newWidth);
+            localStorage.setItem('sidebarWidth', newWidth.toString());
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            setIsSidebarCollapsed?.(!isSidebarCollapsed);
+        }
+    }, [isSidebarCollapsed, sidebarWidth, isRTL, setIsSidebarCollapsed]);
+
+    const handleResizeDoubleClick = useCallback(() => {
+        setSidebarWidth(280);
+        localStorage.setItem('sidebarWidth', '280');
+        if (isSidebarCollapsed) {
+            setIsSidebarCollapsed?.(false);
+        }
+    }, [isSidebarCollapsed, setIsSidebarCollapsed]);
+
     return (
         <div
             ref={containerRef}
@@ -112,35 +135,8 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                 aria-valuemin={60}
                 aria-valuemax={800}
                 onMouseDown={handleMouseDown}
-                onKeyDown={(e) => {
-                    const step = e.shiftKey ? 50 : 10;
-                    if (e.key === 'ArrowLeft') {
-                        // ArrowLeft reduces width in LTR, increases in RTL (moving away from edge?)
-                        // If LTR: Left = smaller width.
-                        // If RTL: Left = Larger width (moving away from Right edge).
-                        const change = isRTL ? step : -step;
-                        const baseWidth = isSidebarCollapsed ? 60 : sidebarWidth;
-                        const newWidth = Math.max(60, Math.min(800, baseWidth + change));
-                        setSidebarWidth(newWidth);
-                        localStorage.setItem('sidebarWidth', newWidth.toString());
-                    } else if (e.key === 'ArrowRight') {
-                        // ArrowRight increases in LTR, decreases in RTL
-                        const change = isRTL ? -step : step;
-                        const baseWidth = isSidebarCollapsed ? 60 : sidebarWidth;
-                        const newWidth = Math.max(60, Math.min(800, baseWidth + change));
-                        setSidebarWidth(newWidth);
-                        localStorage.setItem('sidebarWidth', newWidth.toString());
-                    } else if (e.key === 'Enter' || e.key === ' ') {
-                        setIsSidebarCollapsed?.(!isSidebarCollapsed);
-                    }
-                }}
-                onDoubleClick={() => {
-                    setSidebarWidth(280);
-                    localStorage.setItem('sidebarWidth', '280');
-                    if (isSidebarCollapsed) {
-                        setIsSidebarCollapsed?.(false);
-                    }
-                }}
+                onKeyDown={handleResizeKeyDown}
+                onDoubleClick={handleResizeDoubleClick}
                 className={cn(
                     "w-4 -ms-2 relative z-50 cursor-col-resize flex flex-col justify-center items-center group outline-none select-none touch-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
                 )}

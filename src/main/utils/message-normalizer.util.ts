@@ -174,29 +174,36 @@ export class MessageNormalizer {
     static normalizeOpenCodeResponsesMessages(messages: Array<Message | ChatMessage>): Array<{ role: 'user' | 'assistant'; content: OpenCodeContentPart[] }> {
         if (!Array.isArray(messages)) { return []; }
         return messages.map(msg => {
+            const role = (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant';
             const contentParts: OpenCodeContentPart[] = [];
-            this.addContentToOpenCodeParts(contentParts, msg.content);
+            this.addContentToOpenCodeParts(contentParts, msg.content, role);
 
             return {
-                role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+                role,
                 content: contentParts
             };
         }).filter(m => m.content.length > 0);
     }
 
-    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content']): void {
+    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'], role: 'user' | 'assistant'): void {
         const text = typeof content === 'string' ? content : '';
+        const textType = role === 'assistant' ? 'output_text' : 'input_text';
 
         if (text) {
-            parts.push({ type: 'input_text', text });
+            parts.push({ type: textType as 'input_text', text });
         } else if (Array.isArray(content)) {
-            for (const part of content) {
-                if (part.type === 'text' && part.text) {
-                    parts.push({ type: 'input_text', text: part.text });
-                }
-                if (part.type === 'image_url' && part.image_url?.url) {
-                    parts.push({ type: 'input_image', image_url: { url: part.image_url.url } });
-                }
+            this.processOpenCodeArrayContent(parts, content, textType);
+        }
+    }
+
+    private static processOpenCodeArrayContent(parts: OpenCodeContentPart[], content: { type: string; text?: string; image_url?: { url: string } }[], textType: string): void {
+        for (const part of content) {
+            if (part.type === 'text' && part.text) {
+                parts.push({ type: textType as 'input_text', text: part.text });
+            }
+            if (part.type === 'image_url' && part.image_url?.url) {
+                // Images are typically input only
+                parts.push({ type: 'input_image', image_url: { url: part.image_url.url } });
             }
         }
     }
