@@ -78,11 +78,25 @@ interface ToolExecutionRow {
 }
 
 /**
+ * Database row type for agent_provider_history table
+ */
+interface ProviderHistoryRow {
+    id: string;
+    task_id: string;
+    provider: string;
+    model: string;
+    attempt_number: number;
+    status: string;
+    error: string | null;
+    timestamp: string;
+}
+
+/**
  * Persistence service for agent state
  * Provides transactional operations for zero-loss task resumption
  */
 export class AgentPersistenceService extends BaseService {
-    private schemaInitialized: boolean = false;
+    private writeQueue: Promise<void> = Promise.resolve();
 
     constructor(private databaseService: DatabaseService) {
         super('AgentPersistenceService');
@@ -97,7 +111,6 @@ export class AgentPersistenceService extends BaseService {
 
         try {
             await this.runMigrations();
-            this.schemaInitialized = true;
             this.logInfo('Agent persistence initialized successfully');
         } catch (error) {
             this.logError('Failed to initialize agent persistence', error as Error);
@@ -162,7 +175,23 @@ export class AgentPersistenceService extends BaseService {
      * @throws Error if database update fails
      */
     async updateTaskState(taskId: string, state: Partial<AgentTaskState>): Promise<void> {
-        this.logDebug(`Updating task ${taskId}`);
+        // AGENT-001-4: Use queue to prevent race conditions during concurrent updates
+        return new Promise((resolve, reject) => {
+            this.writeQueue = this.writeQueue.then(async () => {
+                try {
+                    await this.executeTaskUpdate(taskId, state);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }).catch(() => {
+                // Ensure queue continues
+            });
+        });
+    }
+
+    private async executeTaskUpdate(taskId: string, state: Partial<AgentTaskState>): Promise<void> {
+        this.logDebug(`Executing atomic update for task ${taskId}`);
 
         try {
             const updates: string[] = [];
@@ -529,11 +558,31 @@ export class AgentPersistenceService extends BaseService {
     /**
      * Record provider attempt
      */
-    async recordProviderAttempt(_taskId: string, _attempt: ProviderAttempt): Promise<void> {
+    async recordProviderAttempt(taskId: string, attempt: ProviderAttempt): Promise<void> {
         try {
-            // TODO: Implement insertion
-            // const attemptId = randomUUID();
-            // await this.databaseService.execute(...)
+            const db = this.databaseService.getDatabase();
+
+            // Get last attempt number for this task to increment it
+            const lastAttempt = await db.prepare(
+                'SELECT MAX(attempt_number) as max_attempt FROM agent_provider_history WHERE task_id = ?'
+            ).get<{ max_attempt: number | null }>(taskId);
+
+            const nextAttemptNumber = (lastAttempt?.max_attempt ?? 0) + 1;
+            const id = randomUUID();
+
+            await db.prepare(
+                `INSERT INTO agent_provider_history (id, task_id, provider, model, attempt_number, status, error, timestamp)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).run(
+                id,
+                taskId,
+                attempt.provider,
+                attempt.model,
+                nextAttemptNumber,
+                attempt.status,
+                attempt.error ?? null,
+                new Date().toISOString()
+            );
         } catch (error) {
             this.logError(`Failed to record provider attempt`, error as Error);
         }
@@ -544,8 +593,20 @@ export class AgentPersistenceService extends BaseService {
      */
     async getProviderHistory(taskId: string): Promise<ProviderAttempt[]> {
         try {
-            // TODO: Implement query
-            return []; // Placeholder
+            const db = this.databaseService.getDatabase();
+            const rows = await db.prepare(
+                `SELECT * FROM agent_provider_history WHERE task_id = ? ORDER BY timestamp ASC`
+            ).all(taskId) as ProviderHistoryRow[];
+
+            return rows.map(row => ({
+                provider: row.provider,
+                model: row.model,
+                accountIndex: 0, // Not explicitly stored in history yet, but required by interface
+                startedAt: new Date(row.timestamp),
+                status: row.status as ProviderAttempt['status'],
+                error: row.error ?? undefined,
+                requestCount: 1 // Default for individual attempts
+            }));
         } catch (error) {
             this.logError(`Failed to get provider history for task ${taskId}`, error as Error);
             return [];
@@ -559,14 +620,20 @@ export class AgentPersistenceService extends BaseService {
     /**
      * Record agent error
      */
-    async recordError(_taskId: string, _error: AgentError): Promise<void> {
+    async recordError(taskId: string, error: AgentError): Promise<void> {
         try {
-            // TODO: Implement insertion
-            // await this.databaseService.execute(
-            //     `INSERT INTO agent_errors (id, task_id, error_type, message, state_when_occurred)
-            //      VALUES (?, ?, ?, ?, ?)`,
-            //     [error.id, taskId, error.type, error.message, error.state]
-            // );
+            const db = this.databaseService.getDatabase();
+            await db.prepare(
+                `INSERT INTO agent_errors (id, task_id, error_type, message, state_when_occurred, timestamp)
+                 VALUES (?, ?, ?, ?, ?, ?)`
+            ).run(
+                error.id,
+                taskId,
+                error.type,
+                error.message,
+                JSON.stringify(error.state),
+                new Date().toISOString()
+            );
         } catch (err) {
             this.logError(`Failed to record error`, err as Error);
         }
@@ -594,7 +661,7 @@ export class AgentPersistenceService extends BaseService {
             return;
         }
 
-        // Create tables (simplified schema for SQLite/PGlite)
+        // Create tables
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_tasks (
                 id TEXT PRIMARY KEY,
@@ -658,6 +725,34 @@ export class AgentPersistenceService extends BaseService {
                 payload TEXT,
                 state_before TEXT,
                 state_after TEXT,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
+            )
+        `);
+
+        // Create agent_provider_history table
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS agent_provider_history (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                attempt_number INTEGER,
+                status TEXT,
+                error TEXT,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
+            )
+        `);
+
+        // Create agent_errors table
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS agent_errors (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                error_type TEXT NOT NULL,
+                message TEXT,
+                state_when_occurred TEXT,
                 timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
@@ -765,6 +860,14 @@ export class AgentPersistenceService extends BaseService {
         if (row.images) {
             try {
                 message.images = JSON.parse(row.images);
+            } catch {
+                // Ignore parse errors
+            }
+        }
+
+        if (row.tool_calls) {
+            try {
+                message.toolCalls = JSON.parse(row.tool_calls);
             } catch {
                 // Ignore parse errors
             }

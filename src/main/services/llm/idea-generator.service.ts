@@ -50,7 +50,7 @@ const DELAY_MULTIPLIER = Number.parseInt(process.env.IDEA_DELAY_MULTIPLIER ?? '0
  * Orchestrates the AI-powered project idea generation pipeline
  */
 export class IdeaGeneratorService extends BaseService {
-    private initialized = false;
+    // private initialized = false; // Removed as unused
 
     constructor(
         private deps: {
@@ -77,7 +77,6 @@ export class IdeaGeneratorService extends BaseService {
         try {
             const db = await this.getDb();
             await this.ensureTables(db);
-            this.initialized = true;
             appLogger.info(this.name, 'Idea generator service initialized');
         } catch (error) {
             appLogger.error(this.name, 'Failed to initialize idea generator service', error as Error);
@@ -90,7 +89,6 @@ export class IdeaGeneratorService extends BaseService {
      */
     async cleanup(): Promise<void> {
         appLogger.info(this.name, 'Cleaning up idea generator service...');
-        this.initialized = false;
         appLogger.info(this.name, 'Idea generator service cleaned up');
     }
 

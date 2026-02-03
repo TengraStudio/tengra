@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import {
     AdvancedSemanticFragment,
     ContradictionCandidate,
@@ -10,7 +11,6 @@ import {
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
 
-import { appLogger } from '@main/logging/logger';
 import { CodeSymbolRecord, CodeSymbolSearchResult, EntityKnowledge, EpisodicMemory, SemanticFragment } from '../database.service';
 
 import { BaseRepository } from './base.repository';
@@ -518,5 +518,148 @@ export class KnowledgeRepository extends BaseRepository {
             similarMemories: this.parseJsonField<SimilarMemoryCandidate[]>(r.similar_memories as string | null, []),
             projectId: r.project_id as string | undefined
         };
+    }
+
+    // =========================================================================
+    // CLEAN-001-4: Orphaned Data Cleanup
+    // =========================================================================
+
+    /**
+     * CLEAN-001-4: Clean up all knowledge data associated with a deleted project
+     * Should be called when a project is deleted to prevent orphaned data
+     */
+    async cleanupProjectData(projectPath: string): Promise<{ deletedCounts: Record<string, number> }> {
+        const deletedCounts: Record<string, number> = {};
+
+        try {
+            // Clean up code symbols
+            const codeSymbolsResult = await this.adapter.prepare(
+                'DELETE FROM code_symbols WHERE project_path = ?'
+            ).run(projectPath);
+            deletedCounts.codeSymbols = codeSymbolsResult.rowsAffected ?? 0;
+
+            // Clean up semantic fragments
+            const fragmentsResult = await this.adapter.prepare(
+                'DELETE FROM semantic_fragments WHERE project_path = ?'
+            ).run(projectPath);
+            deletedCounts.semanticFragments = fragmentsResult.rowsAffected ?? 0;
+
+            // Clean up file diffs
+            const diffsResult = await this.adapter.prepare(
+                'DELETE FROM file_diffs WHERE project_path = ?'
+            ).run(projectPath);
+            deletedCounts.fileDiffs = diffsResult.rowsAffected ?? 0;
+
+            // Clean up advanced memories
+            const memoriesResult = await this.adapter.prepare(
+                'DELETE FROM advanced_memories WHERE project_id = ?'
+            ).run(projectPath);
+            deletedCounts.advancedMemories = memoriesResult.rowsAffected ?? 0;
+
+            // Clean up pending memories
+            const pendingResult = await this.adapter.prepare(
+                'DELETE FROM pending_memories WHERE project_id = ?'
+            ).run(projectPath);
+            deletedCounts.pendingMemories = pendingResult.rowsAffected ?? 0;
+
+            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for project ${projectPath}`, deletedCounts as unknown as JsonObject);
+            return { deletedCounts };
+        } catch (error) {
+            appLogger.error('KnowledgeRepository', `Failed to cleanup project data for ${projectPath}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * CLEAN-001-4: Clean up episodic memories associated with a deleted chat
+     */
+    async cleanupChatData(chatId: string): Promise<number> {
+        try {
+            const result = await this.adapter.prepare(
+                'DELETE FROM episodic_memories WHERE chat_id = ?'
+            ).run(chatId);
+            const deletedCount = result.rowsAffected ?? 0;
+
+            if (deletedCount > 0) {
+                appLogger.info('KnowledgeRepository', `Cleaned up ${deletedCount} episodic memories for chat ${chatId}`);
+            }
+            return deletedCount;
+        } catch (error) {
+            appLogger.error('KnowledgeRepository', `Failed to cleanup chat data for ${chatId}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * CLEAN-001-4: Find and clean up orphaned data (data referencing non-existent projects/chats)
+     * This is a maintenance operation that should be run periodically
+     * @param existingProjectPaths - List of currently existing project paths
+     * @param existingChatIds - List of currently existing chat IDs
+     */
+    async cleanupOrphanedData(
+        existingProjectPaths: string[],
+        existingChatIds: string[]
+    ): Promise<{ orphanedCounts: Record<string, number> }> {
+        const orphanedCounts: Record<string, number> = {};
+
+        try {
+            // If we have no existing projects, don't delete everything - that's probably an error
+            if (existingProjectPaths.length === 0) {
+                appLogger.warn('KnowledgeRepository', 'No existing projects provided, skipping project orphan cleanup');
+            } else {
+                const projectPlaceholders = existingProjectPaths.map(() => '?').join(',');
+
+                // Clean orphaned code symbols
+                const codeResult = await this.adapter.prepare(
+                    `DELETE FROM code_symbols WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
+                ).run(...existingProjectPaths);
+                orphanedCounts.codeSymbols = codeResult.rowsAffected ?? 0;
+
+                // Clean orphaned semantic fragments
+                const fragResult = await this.adapter.prepare(
+                    `DELETE FROM semantic_fragments WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
+                ).run(...existingProjectPaths);
+                orphanedCounts.semanticFragments = fragResult.rowsAffected ?? 0;
+
+                // Clean orphaned file diffs
+                const diffResult = await this.adapter.prepare(
+                    `DELETE FROM file_diffs WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
+                ).run(...existingProjectPaths);
+                orphanedCounts.fileDiffs = diffResult.rowsAffected ?? 0;
+
+                // Clean orphaned advanced memories
+                const memResult = await this.adapter.prepare(
+                    `DELETE FROM advanced_memories WHERE project_id IS NOT NULL AND project_id NOT IN (${projectPlaceholders})`
+                ).run(...existingProjectPaths);
+                orphanedCounts.advancedMemories = memResult.rowsAffected ?? 0;
+
+                // Clean orphaned pending memories
+                const pendResult = await this.adapter.prepare(
+                    `DELETE FROM pending_memories WHERE project_id IS NOT NULL AND project_id NOT IN (${projectPlaceholders})`
+                ).run(...existingProjectPaths);
+                orphanedCounts.pendingMemories = pendResult.rowsAffected ?? 0;
+            }
+
+            // Clean orphaned episodic memories
+            if (existingChatIds.length === 0) {
+                appLogger.warn('KnowledgeRepository', 'No existing chats provided, skipping chat orphan cleanup');
+            } else {
+                const chatPlaceholders = existingChatIds.map(() => '?').join(',');
+                const episodicResult = await this.adapter.prepare(
+                    `DELETE FROM episodic_memories WHERE chat_id IS NOT NULL AND chat_id NOT IN (${chatPlaceholders})`
+                ).run(...existingChatIds);
+                orphanedCounts.episodicMemories = episodicResult.rowsAffected ?? 0;
+            }
+
+            const totalOrphaned = Object.values(orphanedCounts).reduce((a, b) => a + b, 0);
+            if (totalOrphaned > 0) {
+                appLogger.info('KnowledgeRepository', `Cleaned up ${totalOrphaned} orphaned records`, orphanedCounts as unknown as JsonObject);
+            }
+
+            return { orphanedCounts };
+        } catch (error) {
+            appLogger.error('KnowledgeRepository', 'Failed to cleanup orphaned data', error as Error);
+            throw error;
+        }
     }
 }

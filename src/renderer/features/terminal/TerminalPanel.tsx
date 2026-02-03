@@ -1,10 +1,10 @@
+import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@renderer/i18n';
 import { ChevronDown, Maximize2, Minimize2, Plus, Terminal, TerminalSquare, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
-import { appLogger } from '@main/logging/logger';
 import { useTheme } from '@/hooks/useTheme';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { getTerminalTheme } from '@/lib/terminal-theme';
@@ -24,8 +24,12 @@ const useTerminalSession = (tab: TerminalTab, containerRef: React.RefObject<HTML
     const [isReady, setIsReady] = useState(false);
     const [hasError, setHasError] = useState(false);
     const isInitializedRef = useRef(false);
+    // CLEAN-002-2: Track mounted state to prevent state updates after unmount
+    const isMountedRef = useRef(true);
 
     useEffect(() => {
+        isMountedRef.current = true;
+
         if (initializedTerminals.has(tab.id) || initializingTerminals.has(tab.id) || !containerRef.current || isInitializedRef.current) {
             return;
         }
@@ -42,24 +46,29 @@ const useTerminalSession = (tab: TerminalTab, containerRef: React.RefObject<HTML
         let sessionCreated = false;
         const setupEvents = (id: string) => {
             term.onResize(s => {
-                if (sessionCreated) {
+                if (sessionCreated && isMountedRef.current) {
                     void window.electron.terminal.resize(id, s.cols, s.rows);
                 }
             });
             term.onData(d => {
-                if (sessionCreated) {
+                if (sessionCreated && isMountedRef.current) {
                     void window.electron.terminal.write(id, d);
                 }
             });
         };
 
         const createBackendSession = async (cols: number, rows: number) => {
+            // CLEAN-002-2: Check if still mounted before async operations
+            if (!isMountedRef.current) {return null;}
             if (!(await window.electron.terminal.isAvailable())) {
-                term.write('\r\n\x1b[31m[ERROR] Terminal service not available.\x1b[0m\r\n');
+                if (isMountedRef.current) {
+                    term.write('\r\n\x1b[31m[ERROR] Terminal service not available.\x1b[0m\r\n');
+                }
                 return null;
             }
+            if (!isMountedRef.current) {return null;}
             const result = await window.electron.terminal.create({ id: tab.id, shell: tab.type, ...(projectPath ? { cwd: projectPath } : {}), cols, rows });
-            if (!result.success) {
+            if (!result.success && isMountedRef.current) {
                 term.write(`\r\n\x1b[31m[ERROR] ${result.error}\x1b[0m\r\n`);
                 return null;
             }
@@ -72,12 +81,22 @@ const useTerminalSession = (tab: TerminalTab, containerRef: React.RefObject<HTML
                 return;
             }
             await new Promise(r => { setTimeout(r, 50); });
+            // CLEAN-002-2: Check if still mounted after delay
+            if (!isMountedRef.current) {
+                initializingTerminals.delete(tab.id);
+                return;
+            }
             try {
                 if (containerRef.current?.offsetParent) {
                     fitAddon.fit();
                 }
             } catch { /* ignore */ }
             const res = await createBackendSession(term.cols || 80, term.rows || 24);
+            // CLEAN-002-2: Check if still mounted after async operation
+            if (!isMountedRef.current) {
+                initializingTerminals.delete(tab.id);
+                return;
+            }
             if (!res) {
                 setHasError(true);
                 initializingTerminals.delete(tab.id);
@@ -89,17 +108,28 @@ const useTerminalSession = (tab: TerminalTab, containerRef: React.RefObject<HTML
             setupEvents(tab.id);
             try {
                 const b = await window.electron.terminal.readBuffer(tab.id);
-                if (b) {
+                // CLEAN-002-2: Check if still mounted before writing
+                if (b && isMountedRef.current) {
                     term.write(b);
                 }
             } catch { /* ignore */ }
-            setIsReady(true);
+            // CLEAN-002-2: Only update state if still mounted
+            if (isMountedRef.current) {
+                setIsReady(true);
+            }
         };
 
         void initSession();
 
         return () => {
+            // CLEAN-002-2: Mark as unmounted first
+            isMountedRef.current = false;
             isInitializedRef.current = false;
+
+            // CLEAN-002-2: Clean up terminal references
+            xtermRef.current = null;
+            fitAddonRef.current = null;
+
             if (sessionCreated) {
                 initializedTerminals.delete(tab.id);
                 void window.electron.terminal.kill(tab.id);

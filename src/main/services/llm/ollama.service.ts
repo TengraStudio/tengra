@@ -151,8 +151,11 @@ export class OllamaService {
             });
 
             req.on('error', reject);
-            req.setTimeout(0, () => {
-                // No timeout
+            req.setTimeout(options.timeout ?? 0, () => {
+                if (options.timeout && options.timeout > 0) {
+                    req.destroy();
+                    reject(new Error('Streaming request timeout'));
+                }
             });
 
             this.currentRequest = req;

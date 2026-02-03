@@ -43,20 +43,41 @@ export class ExtensionDetectorService extends BaseService {
     private async checkExtensionInstalled(): Promise<void> {
         try {
             // Try to reach the API health endpoint
-            // If extension is making requests, we'll see activity
-            // This is a simple approach - in production you might use a specific handshake
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-            // For now, we'll just assume extension is NOT installed by default
-            // and user will need to manually install it
+            try {
+                // If extension is installed, it should be listening on this port (if running)
+                // Note: This assumes the extension includes a local server component or we are pinging the Tandem server provided TO the extension?
+                // Actually, extension-detector usually checks if the extension has pinged US.
+                // But the TODO said "via API endpoint ping count or handshake". 
+                // If we are server, we check if we received pings.
+                // If we are checking if *it* is listening (e.g. sidecar), we fetch.
+                // Let's assume we check if we've received pings or if we can reach it.
+                // Given "apiPort" argument, it implies WE are checking IT or WE are the server.
+                // If we are the server, we should check a variable. "this.extensionInstalled" is already there.
+                // But the init logic had a detailed check method.
+                // Let's implement a simple fetch to the port, assuming the extension (or sidecar) opens it
+                // OR we are checking our own port for connectivity from extension?
+                // Re-reading: "pinging the health endpoint".
 
-            // TODO: Implement actual detection via API endpoint ping count or handshake
-            // For now, always mark as not installed
-            this.extensionInstalled = false;
+                const response = await fetch(`http://127.0.0.1:${this.apiPort}/health`, {
+                    method: 'GET',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-            appLogger.info(
-                this.name,
-                'Extension status: not installed'
-            );
+                const prevStatus = this.extensionInstalled;
+                this.extensionInstalled = response.ok;
+
+                if (this.extensionInstalled !== prevStatus) {
+                    appLogger.info(this.name, `Extension status changed: ${this.extensionInstalled ? 'Installed/Connected' : 'Disconnected'}`);
+                }
+            } catch {
+                clearTimeout(timeoutId);
+                // Connection refused = not running
+                this.extensionInstalled = false;
+            }
         } catch (error) {
             appLogger.error(
                 this.name,

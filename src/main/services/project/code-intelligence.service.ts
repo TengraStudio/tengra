@@ -215,7 +215,7 @@ export class CodeIntelligenceService {
         }
     }
 
-    private async chunkAndIndexFile(projectId: string, rootPath: string, filePath: string, content: string) {
+    private async chunkAndIndexFile(_projectId: string, rootPath: string, filePath: string, content: string) {
         // Simple sliding window
         // Chunk size ~500 chars, overlap 100
         const CHUNK_SIZE = 1000;
@@ -412,6 +412,34 @@ export class CodeIntelligenceService {
         return todos;
     }
 
+    /**
+     * Optimized project-wide TODO scan
+     * Consolidates files and line items into a simplified structure
+     */
+    async scanProjectTodos(rootPath: string): Promise<Array<{ path: string; relativePath: string; items: Array<{ id: string; text: string; completed: boolean; line: number; filePath: string; relativePath: string }> }>> {
+        const results: FileSearchResult[] = await this.scanTodos(rootPath);
+        const fileMap = new Map<string, { path: string; relativePath: string; items: Array<{ id: string; text: string; completed: boolean; line: number; filePath: string; relativePath: string }> }>();
+
+        for (const item of results) {
+            let entry = fileMap.get(item.file);
+            if (!entry) {
+                const relativePath = path.relative(rootPath, item.file).replace(/\\/g, '/');
+                entry = { path: item.file, relativePath, items: [] };
+                fileMap.set(item.file, entry);
+            }
+            entry.items.push({
+                id: `${item.file}-${item.line}`,
+                text: item.text,
+                completed: false, // Default for non-checkbox items
+                line: item.line,
+                filePath: item.file,
+                relativePath: entry.relativePath
+            });
+        }
+
+        return Array.from(fileMap.values());
+    }
+
     // 2.4.47 Code Structure (Outline)
     async getFileDimensions(filePath: string): Promise<FileSearchResult[]> {
         try {
@@ -449,12 +477,19 @@ export class CodeIntelligenceService {
                 } else if (entry.isFile() && /\.(ts|js|py|kt|java|go|rs|cpp|h|gradle)$/.test(entry.name)) {
                     const content = await fs.readFile(fullPath, 'utf-8');
                     const lines = content.split('\n');
+
+                    const todoRegex = /(:?\/\/|#)\s*(TODO|FIXME|BUG|HACK|NOTE|XXX)\b\s*:?(.*)/i;
+
                     lines.forEach((line, index) => {
-                        if (line.includes('// TODO') || line.includes('# TODO')) {
+                        const match = line.match(todoRegex);
+                        if (match) {
+                            const type = match[2].toUpperCase(); // TODO, FIXME, etc.
+                            const text = match[3].trim() || line.trim();
                             results.push({
                                 file: fullPath,
                                 line: index + 1,
-                                text: line.trim()
+                                text: text,
+                                type: type
                             });
                         }
                     });

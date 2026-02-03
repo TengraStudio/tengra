@@ -94,6 +94,22 @@ export class UacRepository {
         return this.db.prepare(`SELECT * FROM uac_tasks WHERE id = ?`).get<UacTaskRecord>(id);
     }
 
+    async getActiveTask(projectPath: string): Promise<UacTaskRecord | undefined> {
+        return this.db.prepare(
+            `SELECT * FROM uac_tasks WHERE project_path = ? AND status IN ('running', 'planning', 'paused', 'waiting_for_approval') ORDER BY updated_at DESC LIMIT 1`
+        ).get<UacTaskRecord>(projectPath);
+    }
+
+    /**
+     * Get any active task across all projects for app restart resumption
+     * Returns the most recently updated active task from any project
+     */
+    async getAnyActiveTask(): Promise<UacTaskRecord | undefined> {
+        return this.db.prepare(
+            `SELECT * FROM uac_tasks WHERE status IN ('running', 'planning', 'paused', 'waiting_for_approval') ORDER BY updated_at DESC LIMIT 1`
+        ).get<UacTaskRecord>();
+    }
+
     /**
      * Creates multiple steps for a task using batch insert for better performance
      * @param taskId - Task ID to associate steps with
@@ -102,16 +118,16 @@ export class UacRepository {
     async createSteps(taskId: string, steps: ProjectStep[]): Promise<void> {
         const now = Date.now();
         // PERF-003-3: Use batch insert with VALUES clause instead of loop
-        if (steps.length === 0) return;
-        
+        if (steps.length === 0) { return; }
+
         const placeholders = steps.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
         const params: SqlValue[] = [];
-        
+
         for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
             params.push(step.id, taskId, i, step.text, step.status, now, now);
         }
-        
+
         await this.db.prepare(
             `INSERT INTO uac_steps (id, task_id, index_num, text, status, created_at, updated_at) VALUES ${placeholders}`
         ).run(...params);

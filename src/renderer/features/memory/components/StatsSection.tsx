@@ -1,6 +1,5 @@
 import { MemoryStatistics } from '@shared/types/advanced-memory';
 import { Archive, CheckCircle, Clock, Gauge, X } from 'lucide-react';
-import React from 'react';
 
 import { StatCard } from './MemorySubComponents';
 

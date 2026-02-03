@@ -25,7 +25,8 @@
       "Bash(dir:*)",
       "Bash(powershell:*)",
       "Bash(ls:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(npx eslint:*)"
     ]
   },
   "mcpServers": {

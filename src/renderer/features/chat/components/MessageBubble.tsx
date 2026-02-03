@@ -536,7 +536,6 @@ interface MessageBubbleInnerProps {
     isStreaming?: boolean
     displayContent: string
     quotaDetails: QuotaDetails | null
-    _images?: string[]
     message: Message
     contentProps: MessageBubbleContentProps
     actionsContextProps: MessageActionsContextProps
@@ -571,17 +570,17 @@ const BubbleContentSection = memo(({ contentProps, message, showToggle, setShowR
 });
 BubbleContentSection.displayName = 'BubbleContentSection';
 
-const MessageBubbleInner = memo(({ isUser, isStreaming, displayContent, quotaDetails, _images, message, contentProps, actionsContextProps }: MessageBubbleInnerProps) => {
+const MessageBubbleInner = memo(({ isUser, isStreaming, displayContent, quotaDetails, message, contentProps, actionsContextProps }: MessageBubbleInnerProps) => {
     const { showToggle, showActions } = createToggleVisibilityFlags(displayContent, isUser, quotaDetails, actionsContextProps.lineCount);
     const bubbleClass = isUser ? "bg-muted/10 px-4 py-3 rounded-tr-sm border border-border/50 text-foreground/90" : "bg-transparent";
-    
+
     return (
         <div className={cn("rounded-2xl px-0 py-1 text-[15px] leading-[1.65] whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden", bubbleClass)}>
             {isStreaming && <ResponseProgress />}
-            <BubbleContentSection 
-                contentProps={contentProps} 
-                message={message} 
-                showToggle={showToggle} 
+            <BubbleContentSection
+                contentProps={contentProps}
+                message={message}
+                showToggle={showToggle}
                 setShowRawMarkdown={actionsContextProps.setShowRawMarkdown}
                 isContentExpanded={actionsContextProps.isContentExpanded}
                 setIsContentExpanded={actionsContextProps.setIsContentExpanded}
@@ -597,7 +596,11 @@ MessageBubbleInner.displayName = 'MessageBubbleInner';
 // --- Main Hook Logic ---
 
 const useMessageContent = (raw: Message['content'], reasoning: string | undefined, streaming: string | undefined) => useMemo(() => {
-    let content = typeof raw === 'string' ? raw : (Array.isArray(raw) ? raw.map((c) => typeof c === 'string' ? c : (c.text ?? '')).join('') : '');
+    let content = typeof raw === 'string' ? raw : (Array.isArray(raw) ? raw.map((c) => {
+        if (typeof c === 'string') { return c; }
+        if (c.type === 'text') { return c.text; }
+        return '';
+    }).join('') : '');
     let r = reasoning ?? null;
     if (!r) {
         const m = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content);
@@ -646,9 +649,18 @@ MessageFooter.displayName = 'MessageFooter';
 const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: (key: string) => string; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => {
     const { displayContent } = useMessageContent(variant.content, undefined, undefined);
     const [isContentExpanded, setIsContentExpanded] = useState(false);
-    const lineCount = displayContent.split('\n').length;
-    const visibleContent = (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded) ? displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...' : displayContent;
-    const is429 = displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED');
+    // PERF-002-2: Memoize expensive computations in variant card
+    const lineCount = useMemo(() => displayContent.split('\n').length, [displayContent]);
+    const visibleContent = useMemo(() => {
+        if (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded) {
+            return displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...';
+        }
+        return displayContent;
+    }, [displayContent, lineCount, isContentExpanded]);
+    const is429 = useMemo(() =>
+        displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED'),
+        [displayContent]
+    );
     const quota = useQuotaDetails(is429, displayContent, t);
 
     return (
@@ -943,7 +955,7 @@ const SingleMessageView = memo(({ message, isLast, backend, isStreaming, languag
     const setIsContentExpanded = (v: boolean) => setState(s => ({ ...s, isContentExpanded: v }));
 
     const { thought, plan, displayContent } = useMessageContent(message.content, message.reasoning, streamingReasoning);
-    
+
     const autoExpandDone = useRef(false);
     useEffect(() => {
         if (isLast && thought && !displayContent && !isThoughtExpanded && !autoExpandDone.current) {
@@ -954,14 +966,25 @@ const SingleMessageView = memo(({ message, isLast, backend, isStreaming, languag
         }
     }, [isLast, thought, displayContent, isThoughtExpanded]);
 
-    const lineCount = displayContent.split('\n').length;
-    const visibleContent = (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded && !isUser) 
-        ? displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...' 
-        : displayContent;
-    const is429 = displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED') || displayContent.includes('Rate limit') || displayContent.includes('quota');
+    // PERF-002-2: Memoize expensive computations
+    const lineCount = useMemo(() => displayContent.split('\n').length, [displayContent]);
+    const visibleContent = useMemo(() => {
+        if (lineCount > COLLAPSE_THRESHOLD && !isContentExpanded && !isUser) {
+            return displayContent.split('\n').slice(0, COLLAPSE_THRESHOLD).join('\n') + '\n...';
+        }
+        return displayContent;
+    }, [displayContent, lineCount, isContentExpanded, isUser]);
+    const is429 = useMemo(() =>
+        displayContent.includes('429') || displayContent.includes('RESOURCE_EXHAUSTED') ||
+        displayContent.includes('Rate limit') || displayContent.includes('quota'),
+        [displayContent]
+    );
     const quota = useQuotaDetails(is429, displayContent, t);
-    const images = (message.images ?? []).filter((img): img is string => typeof img === 'string');
-    const hasReactions = (message.reactions?.length ?? 0) > 0;
+    const images = useMemo(() =>
+        (message.images ?? []).filter((img): img is string => typeof img === 'string'),
+        [message.images]
+    );
+    const hasReactions = useMemo(() => (message.reactions?.length ?? 0) > 0, [message.reactions]);
 
     const contentCtx: ContentRenderContext = {
         isUser,
@@ -1014,6 +1037,59 @@ const SingleMessageView = memo(({ message, isLast, backend, isStreaming, languag
 });
 SingleMessageView.displayName = 'SingleMessageView';
 
+const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
+    // 1. Primitive props check
+    if (prev.isLast !== next.isLast ||
+        prev.isStreaming !== next.isStreaming ||
+        prev.isFocused !== next.isFocused ||
+        prev.backend !== next.backend ||
+        prev.language !== next.language ||
+        prev.streamingSpeed !== next.streamingSpeed ||
+        prev.streamingReasoning !== next.streamingReasoning ||
+        prev.id !== next.id) {
+        return false;
+    }
+
+    // 2. Message object check
+    const pm = prev.message;
+    const nm = next.message;
+
+    if (pm === nm) { return true; } // Reference equality
+
+    // Field-level check for relevant properties
+    if (pm.id !== nm.id ||
+        pm.role !== nm.role ||
+        pm.timestamp !== nm.timestamp ||
+        pm.model !== nm.model ||
+        pm.provider !== nm.provider ||
+        pm.isBookmarked !== nm.isBookmarked ||
+        pm.rating !== nm.rating) {
+        return false;
+    }
+
+    // Deep check for content (string or array of parts)
+    if (typeof pm.content === 'string' && typeof nm.content === 'string') {
+        if (pm.content !== nm.content) { return false; }
+    } else {
+        if (JSON.stringify(pm.content) !== JSON.stringify(nm.content)) { return false; }
+    }
+
+    // Deep check for Arrays
+    if (JSON.stringify(pm.images) !== JSON.stringify(nm.images)) { return false; }
+    if (JSON.stringify(pm.sources) !== JSON.stringify(nm.sources)) { return false; }
+
+    // Check reactions length (optimization) or deep check
+    if ((pm.reactions?.length ?? 0) !== (nm.reactions?.length ?? 0)) { return false; }
+    if (JSON.stringify(pm.reactions) !== JSON.stringify(nm.reactions)) { return false; }
+
+    // Check variants length
+    if ((pm.variants?.length ?? 0) !== (nm.variants?.length ?? 0)) { return false; }
+
+    // We intentionally ignore callback prop changes (onSpeak, etc) assuming they are stable
+    // or that their instability should not force a re-render if data is same.
+    return true;
+};
+
 export const MessageBubble = memo(({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) => {
     const { t } = useTranslation(language);
     const variants = message.variants ?? [];
@@ -1059,6 +1135,6 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
             onSourceClick={onSourceClick}
         />
     );
-});
+}, areMessagePropsEqual);
 MessageBubble.displayName = 'MessageBubble';
 

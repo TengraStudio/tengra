@@ -61,11 +61,8 @@ export default defineConfig({
                                 'crypto',
                                 'fs/promises',
                                 'node-pty',
-                                '@electric-sql/pglite',
-                                '@electric-sql/pglite/vector',
                                 '@primno/dpapi',
                                 'ssh2',
-                                'better-sqlite3',
                                 'ws',
                                 'bufferutil',
                                 'utf-8-validate'

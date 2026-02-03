@@ -6,6 +6,7 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { SecurityService } from '@main/services/security/security.service';
+import { validateCommand } from '@main/utils/command-validator.util';
 import { SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats } from '@shared/types/ssh';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -449,6 +450,11 @@ export class SSHService extends EventEmitter {
     }
 
     async executeCommand(connectionId: string, command: string, options?: SSHExecOptions): Promise<{ stdout: string; stderr: string; code: number }> {
+        const validation = validateCommand(command);
+        if (!validation.allowed) {
+            throw new Error(`Command blocked: ${validation.reason}`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) { throw new Error('Not connected'); }
 
@@ -505,6 +511,11 @@ export class SSHService extends EventEmitter {
         onStderr: (data: string) => void,
         options?: SSHExecOptions
     ): Promise<number> {
+        const validation = validateCommand(command);
+        if (!validation.allowed) {
+            throw new Error(`Command blocked: ${validation.reason}`);
+        }
+
         const conn = this.connections.get(connectionId);
         if (!conn) { throw new Error('Not connected'); }
 

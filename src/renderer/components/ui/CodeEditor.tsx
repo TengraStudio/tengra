@@ -71,8 +71,7 @@ const useInlineCompletions = (monacoRef: React.MutableRefObject<Monaco | null>, 
         }
         const monaco = monacoRef.current;
         const prov = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            provideInlineCompletions: async (model: editor.ITextModel, pos: any) => {
+            provideInlineCompletions: async (model: editor.ITextModel, pos: { lineNumber: number; column: number }) => {
                 const before = model.getValueInRange({ startLineNumber: 1, startColumn: 1, endLineNumber: pos.lineNumber, endColumn: pos.column });
                 if (before.trim().length === 0) {
                     return { items: [] };

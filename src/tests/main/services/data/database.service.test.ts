@@ -8,34 +8,15 @@ vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }
 }));
 
-// Mock query implementation with robust SQL normalization
+// Mock query implementation
 const mockQuery = vi.fn().mockImplementation(async (sql: string, _params: any[]) => {
-    // Default response
     const rows: any[] = [];
-
-    // Normalize SQL for easier matching (collapse whitespace)
     const normalizedSql = typeof sql === 'string' ? sql.replace(/\s+/g, ' ').trim() : '';
 
-    // Project operations
-    if (normalizedSql.includes('SELECT') && normalizedSql.includes('projects') && normalizedSql.includes('id = $1')) {
-        // By default return active project
+    if (normalizedSql.includes('SELECT') && normalizedSql.includes('projects') && (normalizedSql.includes('id = $1') || normalizedSql.includes('id = ?'))) {
         return { rows: [{ id: '1', title: 'Test', path: '/path', status: 'active' }], affectedRows: 1 };
     }
     return { rows, affectedRows: 0 };
-});
-
-vi.mock('@electric-sql/pglite', () => {
-    return {
-        PGlite: class {
-            exec = vi.fn().mockResolvedValue({});
-            query = mockQuery;
-            prepare = vi.fn().mockReturnValue({ run: vi.fn(), get: vi.fn(), all: vi.fn() });
-            transaction = vi.fn((cb: (tx: unknown) => unknown) => cb(this));
-            close = vi.fn().mockResolvedValue(undefined);
-            waitReady = Promise.resolve();
-        },
-        vector: vi.fn()
-    };
 });
 
 import { DatabaseClientService } from '@main/services/data/database-client.service';
@@ -69,9 +50,7 @@ describe('DatabaseService', () => {
         } as unknown as DatabaseClientService;
 
         service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient);
-        // Initialize calls initDatabase
         await service.initialize();
-        // Reset query calls from init so we can assert on test logic
         mockQuery.mockClear();
     });
 

@@ -19,15 +19,41 @@ vi.mock('electron', () => ({
     }
 }));
 
-// Mock fs/promises
+// Mock fs and fs/promises
+vi.mock('fs', async () => {
+    return {
+        existsSync: vi.fn(),
+        readFileSync: vi.fn(),
+        writeFileSync: vi.fn(),
+        mkdirSync: vi.fn(),
+        statSync: vi.fn().mockReturnValue({ size: 0 }),
+        promises: {
+            copyFile: vi.fn().mockResolvedValue(undefined),
+            readFile: vi.fn(),
+            unlink: vi.fn()
+        }
+    };
+});
+
+// Mock fs/promises alias if needed, but the above might cover import * as fs
 vi.mock('fs/promises', () => ({
-    copyFile: vi.fn().mockResolvedValue(undefined)
+    copyFile: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn(),
+    unlink: vi.fn()
 }));
 
 let service: SecurityService;
+let fsMock: any;
 
-beforeEach(() => {
+beforeEach(async () => {
     vi.clearAllMocks();
+    fsMock = await import('fs');
+
+    // Default setup: Key file does not exist, safeStorage available
+    fsMock.existsSync.mockReturnValue(false);
+
+    // safeStorage is already mocked at top
+
     const mockDataService = {
         getPath: vi.fn().mockReturnValue('/tmp')
     } as any;
@@ -99,6 +125,28 @@ describe('SecurityService - Encryption and Hashing', () => {
             expect(decrypted).toBe(original);
         });
 
+        it('should use Tandem:v1 format when master key is available', () => {
+            // Force master key to be loaded (it should be by default in test due to migrateLegacyKey/generateNewMasterKey logic simulation or mock)
+            // In the beforeEach, we create service. initialize() calls loadOrCreateMasterKey.
+            // We need to ensure initialize is called or manually set up the key if checking internal state isn't possible.
+            // However, we can check the output format.
+            // Note: In the mock at the top, we mocked electron safeStorage.
+            // The service tries to load/create master key.
+            // Let's call initialize first to ensure key is set up.
+            void service.initialize();
+
+            const original = 'Sensitive Data';
+            const encrypted = service.encryptSync(original);
+            // We expect the custom encryption to be used because we are in a node env (test) 
+            // but we need to ensure the service thinks it has a master key.
+            // The mock for fs.existsSync returns undefined by default in strict mocks, or false? 
+            // We verify the output format.
+            expect(encrypted).toMatch(/^Tandem:v1:/);
+
+            const decrypted = service.decryptSync(encrypted);
+            expect(decrypted).toBe(original);
+        });
+
         it('should return null for empty input in decryptSync', () => {
             expect(service.decryptSync('')).toBeNull();
         });
@@ -106,10 +154,10 @@ describe('SecurityService - Encryption and Hashing', () => {
 
     describe('stripMetadata', () => {
         it('should copy file to output path', async () => {
-            const fs = await import('fs/promises');
+            const fsPromises = (await import('fs')).promises;
             const result = await service.stripMetadata('/input/file.jpg', '/output/file.jpg');
             expect(result.success).toBe(true);
-            expect(fs.copyFile).toHaveBeenCalledWith('/input/file.jpg', '/output/file.jpg');
+            expect(fsPromises.copyFile).toHaveBeenCalledWith('/input/file.jpg', '/output/file.jpg');
         });
     });
 });

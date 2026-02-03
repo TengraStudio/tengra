@@ -1,6 +1,6 @@
 import { JsonValue } from '@shared/types/common';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
-import { ProjectState } from '@shared/types/project-agent';
+import { OrchestratorState, ProjectState } from '@shared/types/project-agent';
 
 export interface ModelUpdateEvent {
     provider: string
@@ -43,6 +43,7 @@ export interface SystemEvents {
     'project:update': ProjectState
     'project:step-update': { index: number; status: 'pending' | 'running' | 'completed' | 'failed'; message?: string }
     'project:plan-proposed': { steps: string[] }
+    'orchestrator:update': OrchestratorState
 }
 
 export type SystemEventKey = keyof SystemEvents

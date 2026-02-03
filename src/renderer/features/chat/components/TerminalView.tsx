@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -182,6 +182,17 @@ const TerminalBody: React.FC<TerminalBodyProps> = ({ command, isExecuting, resul
 export function TerminalView({ toolCallId, command, result, isExecuting, expanded, onToggleExpand }: TerminalViewProps) {
     const { t } = useTranslation();
     const [showMarkdown, setShowMarkdown] = useState(false);
+
+    useEffect(() => {
+        return () => {
+            if (isExecuting) {
+                void (async () => {
+                    const success = await window.electron.killTool(toolCallId);
+                    if (success) { appLogger.warn('TerminalView', `Process auto-killed on unmount: ${toolCallId}`); }
+                })();
+            }
+        };
+    }, [isExecuting, toolCallId]);
 
     const resultData = result?.result as CommandExecutionResult | undefined;
     const { stdout, stderr, error } = resultData ?? {};

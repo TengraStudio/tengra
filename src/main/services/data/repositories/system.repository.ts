@@ -1,6 +1,7 @@
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
+import { AgentProfile } from '@shared/types/project-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
@@ -278,7 +279,7 @@ export class SystemRepository extends BaseRepository {
             account.sessionToken ?? null,
             account.expiresAt ?? null,
             account.scope ?? null,
-            account.isActive, // Pass boolean directly for PGlite
+            account.isActive,
             account.metadata ? JSON.stringify(account.metadata) : null,
             account.createdAt,
             account.updatedAt
@@ -337,5 +338,46 @@ export class SystemRepository extends BaseRepository {
 
     async deleteJobState(id: string) {
         await this.adapter.prepare('DELETE FROM scheduler_state WHERE id = ?').run(id);
+    }
+
+    // --- Agent Profiles ---
+    async getAgentProfiles(): Promise<AgentProfile[]> {
+        const rows = await this.adapter.prepare('SELECT * FROM agent_profiles ORDER BY name').all<JsonObject>();
+        return rows.map(row => ({
+            id: String(row.id),
+            name: String(row.name),
+            role: String(row.role),
+            persona: String(row.persona ?? ''),
+            systemPrompt: String(row.system_prompt ?? ''),
+            skills: this.parseJsonField(row.skills as string | null, [] as string[])
+        }));
+    }
+
+    async saveAgentProfile(profile: AgentProfile): Promise<void> {
+        const now = Date.now();
+        await this.adapter.prepare(`
+            INSERT INTO agent_profiles (id, name, role, persona, system_prompt, skills, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = EXCLUDED.name,
+                role = EXCLUDED.role,
+                persona = EXCLUDED.persona,
+                system_prompt = EXCLUDED.system_prompt,
+                skills = EXCLUDED.skills,
+                updated_at = EXCLUDED.updated_at
+        `).run(
+            profile.id,
+            profile.name,
+            profile.role,
+            profile.persona,
+            profile.systemPrompt,
+            JSON.stringify(profile.skills),
+            now,
+            now
+        );
+    }
+
+    async deleteAgentProfile(id: string): Promise<void> {
+        await this.adapter.prepare('DELETE FROM agent_profiles WHERE id = ?').run(id);
     }
 }

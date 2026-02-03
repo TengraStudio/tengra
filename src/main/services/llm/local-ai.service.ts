@@ -35,11 +35,9 @@ export interface OllamaChatResponse {
 
 export class LocalAIService {
     private llamaProcess: ChildProcess | null = null;
-    private llamaModelPath: string | null = null;
     private llamaPort: number = 8080;
 
-    constructor(private settingsService: SettingsService) {
-    }
+    constructor(private settingsService: SettingsService) { }
 
     // --- Ollama Ops ---
 
@@ -70,7 +68,7 @@ export class LocalAIService {
                 appLogger.info('local-ai.service', '[LocalAI] Triggered headless ollama serve via PATH');
             }
         } catch (_e) {
-            console.error('[LocalAI] Critical failure during Ollama auto-start:', _e);
+            appLogger.error('local-ai.service', 'Critical failure during Ollama auto-start', _e as Error);
         }
     }
 
@@ -108,7 +106,6 @@ export class LocalAIService {
             windowsHide: true,
             stdio: 'ignore'
         });
-        this.llamaModelPath = modelPath;
         return true;
     }
 
@@ -116,11 +113,8 @@ export class LocalAIService {
         if (this.llamaProcess) {
             this.llamaProcess.kill();
             this.llamaProcess = null;
-            this.llamaModelPath = null;
         }
     }
-
-    // --- Llama.cpp Ops ---
 
     async checkCudaSupport(): Promise<{ hasCuda: boolean; detail?: string }> {
         return new Promise((resolve) => {

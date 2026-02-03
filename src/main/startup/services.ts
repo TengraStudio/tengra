@@ -56,9 +56,10 @@ import { AgentRegistryService } from '@main/services/project/agent/agent-registr
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
-import { ProjectService } from '@main/services/project/project.service';
+import { MultiAgentOrchestratorService } from '@main/services/project/orchestrator.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
+import { ProjectService } from '@main/services/project/project.service';
 import { SSHService } from '@main/services/project/ssh.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
@@ -164,6 +165,7 @@ export interface Services {
     projectScaffoldService: ProjectScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
     projectAgentService: ProjectAgentService;
+    multiAgentOrchestratorService: MultiAgentOrchestratorService;
     agentRegistryService: AgentRegistryService;
     exportService: ExportService;
     mcpPluginService: McpPluginService;
@@ -296,8 +298,8 @@ function registerLLMServices() {
     container.register('ollamaService', (ss) => new OllamaService(ss as SettingsService), ['settingsService']);
     container.register('llmService', (hs, cs, krs, rls, ts) => new LLMService(hs as HttpService, cs as ConfigService, krs as KeyRotationService, rls as RateLimitService, ts as TokenService), ['httpService', 'configService', 'keyRotationService', 'rateLimitService', 'tokenService']);
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(os as OllamaService, ls as LLMService, lms as LlamaService, ss as SettingsService), ['ollamaService', 'llmService', 'llamaService', 'settingsService']);
-    container.register('memoryService', (dbs, es, ls, pm) => new MemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
     container.register('advancedMemoryService', (dbs, es, ls) => new AdvancedMemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService), ['databaseService', 'embeddingService', 'llmService']);
+    container.register('memoryService', (ams) => new MemoryService(ams as AdvancedMemoryService), ['advancedMemoryService']);
     container.register('brainService', (dbs, es, ls, pm) => new BrainService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService, pm as ProcessManagerService), ['databaseService', 'embeddingService', 'llmService', 'processManagerService']);
     container.register('agentService', (dbs) => new AgentService(dbs as DatabaseService), ['databaseService']);
     container.register('modelCollaborationService', (ls) => new ModelCollaborationService(ls as LLMService), ['llmService']);
@@ -394,12 +396,13 @@ function registerProjectServices() {
     }, ['databaseService', 'llmService', 'marketResearchService', 'projectScaffoldService', 'authService', 'eventBusService', 'localImageService', 'brainService']);
 
     // Project Agent Service
-    container.register('agentRegistryService', () => new AgentRegistryService());
+    container.register('agentRegistryService', (dbs) => new AgentRegistryService(dbs as DatabaseService), ['databaseService']);
     container.register('projectAgentService', (dbs, ls, ebs, ars) => new ProjectAgentService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService']);
+    container.register('multiAgentOrchestratorService', (dbs, ls, ebs, ars) => new MultiAgentOrchestratorService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService']);
 
     // Proxy Services
-    container.register('proxyProcessManager', (ss, ds, sec, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, sec as SecurityService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'securityService', 'authService', 'authAPIService']);
-    container.register('quotaService', (ss, as, pm, ts, ds) => new QuotaService(ss as SettingsService, as as AuthService, pm as ProcessManagerService, ts as TokenService, ds as DataService), ['settingsService', 'authService', 'processManagerService', 'tokenService', 'dataService']);
+    container.register('proxyProcessManager', (ss, ds, as, aapi) => new ProxyProcessManager(ss as SettingsService, ds as DataService, as as AuthService, aapi as AuthAPIService), ['settingsService', 'dataService', 'authService', 'authAPIService']);
+    container.register('quotaService', (ss, as, pm, ts) => new QuotaService(ss as SettingsService, as as AuthService, pm as ProcessManagerService, ts as TokenService), ['settingsService', 'authService', 'processManagerService', 'tokenService']);
 
     container.register('proxyCore', (ss, ds, sec, as, ebs) => ({
         ss: ss as SettingsService,
@@ -564,6 +567,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         agentRegistryService: container.resolve<AgentRegistryService>('agentRegistryService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
+        multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>('multiAgentOrchestratorService'),
         exportService: container.resolve<ExportService>('exportService'),
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
         localImageService: container.resolve<LocalImageService>('localImageService'),

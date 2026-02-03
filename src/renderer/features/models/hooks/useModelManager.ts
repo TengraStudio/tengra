@@ -1,7 +1,7 @@
+import { appLogger } from '@main/logging/logger';
 import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { AppSettings } from '@/types';
 
 export function useModelManager(

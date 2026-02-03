@@ -1,8 +1,8 @@
 
+import { appLogger } from '@main/logging/logger';
 import { Layers, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { SSHPackageInfo } from '@/types/ssh';

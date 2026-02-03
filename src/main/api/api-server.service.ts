@@ -20,6 +20,7 @@ export interface ApiServerOptions {
     toolExecutor: ToolExecutor;
     llmService: LLMService;
     modelRegistry?: import('@main/services/llm/model-registry.service').ModelRegistryService;
+    rateLimitService: import('@main/services/security/rate-limit.service').RateLimitService;
 }
 
 /**
@@ -149,8 +150,22 @@ export class ApiServerService extends BaseService {
             return;
         }
 
-        // All other endpoints require auth
         if (!this.checkAuth(req, res)) {
+            return;
+        }
+
+        // SEC-009-3: API Rate Limiting
+        // Use auth token as key if available, otherwise IP? Actually just use a global 'api' bucket for now
+        // or per-token if we had multiple. Since we generate one token per session, it's effectively per-session.
+        // Let's use a shared 'api:request' bucket to protect the server generally, 
+        // effectively limiting the extension's call rate.
+        if (!this.options.rateLimitService.tryAcquire('api:request')) {
+            appLogger.warn(this.name, `API rate limit exceeded`);
+            this.sendJson(res, 429, {
+                success: false,
+                error: 'Too Many Requests',
+                message: 'Rate limit exceeded'
+            });
             return;
         }
 
@@ -160,6 +175,20 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle public routes that don't require authentication
+     * 
+     * @openapi
+     * /health:
+     *   get:
+     *     description: Server health check
+     *     responses:
+     *       200:
+     *         description: Server is healthy
+     * /api/proxy/status:
+     *   get:
+     *     description: Get status of the proxy process
+     * /api/auth/token:
+     *   get:
+     *     description: Get the current API token (local only)
      */
     private handlePublicRoutes(pathname: string, method: string, res: ServerResponse): boolean {
         // Health check endpoint
@@ -213,6 +242,29 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle private routes that require authentication
+     * 
+     * @openapi
+     * /api/tools/list:
+     *   get:
+     *     description: List available MCP tools
+     * /api/models:
+     *   get:
+     *     description: List available LLM models
+     * /api/tools/execute:
+     *   post:
+     *     description: Execute a specific tool
+     *     body: { toolName: string, args: object }
+     * /api/chat/message:
+     *   post:
+     *     description: Send a chat message to LLM
+     *     body: { messages: Message[], model?: string, provider?: string }
+     * /api/chat/stream:
+     *   post:
+     *     description: Stream chat response (SSE)
+     * /api/vision/analyze:
+     *   post:
+     *     description: Analyze image with vision model
+     *     body: { image: string, prompt: string }
      */
     private async handlePrivateRoutes(pathname: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
         const method = req.method ?? 'GET';
@@ -403,7 +455,7 @@ export class ApiServerService extends BaseService {
         try {
             const body = await this.readBody(req);
             const { messages, model, provider } = body as {
-                messages?: Message[];
+                messages?: unknown;
                 model?: string;
                 provider?: string;
             };
@@ -417,35 +469,19 @@ export class ApiServerService extends BaseService {
             }
 
             // SEC-008-3: Validate message structure
-            for (const msg of messages) {
-                if (!msg.role || typeof msg.role !== 'string') {
-                    this.sendJson(res, 400, {
-                        success: false,
-                        error: 'Invalid message: missing or invalid role'
-                    });
-                    return;
-                }
-                
-                if (!['user', 'assistant', 'system', 'tool'].includes(msg.role)) {
-                    this.sendJson(res, 400, {
-                        success: false,
-                        error: `Invalid message role: ${msg.role}`
-                    });
-                    return;
-                }
-                
-                if (msg.content !== undefined && typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
-                    this.sendJson(res, 400, {
-                        success: false,
-                        error: 'Invalid message: content must be string or array'
-                    });
-                    return;
-                }
+            try {
+                this.validateChatMessages(messages as unknown[]);
+            } catch (error) {
+                this.sendJson(res, 400, {
+                    success: false,
+                    error: (error as Error).message
+                });
+                return;
             }
 
             appLogger.info(this.name, `Chat request: model=${model}, provider=${provider}`);
 
-            const response = await this.options.llmService.chatOpenAI(messages, {
+            const response = await this.options.llmService.chatOpenAI(messages as Message[], {
                 model: model ?? 'gpt-4o',
                 provider: provider ?? 'openai'
             });
@@ -486,7 +522,7 @@ export class ApiServerService extends BaseService {
         try {
             const body = await this.readBody(req);
             const { messages, model, provider } = body as {
-                messages?: Message[];
+                messages?: unknown;
                 model?: string;
                 provider?: string;
             };
@@ -510,7 +546,7 @@ export class ApiServerService extends BaseService {
             });
 
             // Start streaming
-            const stream = this.options.llmService.chatOpenAIStream(messages, {
+            const stream = this.options.llmService.chatOpenAIStream(messages as Message[], {
                 model: model ?? 'gpt-4o',
                 provider: provider ?? 'openai'
             });
@@ -762,5 +798,27 @@ export class ApiServerService extends BaseService {
      */
     isRunning(): boolean {
         return this.httpServer !== null && this.wsServer !== null;
+    }
+
+    private validateChatMessages(messages: unknown[]): void {
+        for (const msg of messages) {
+            if (typeof msg !== 'object' || msg === null) {
+                throw new Error('Invalid message: must be an object');
+            }
+
+            const m = msg as Record<string, unknown>;
+
+            if (!m.role || typeof m.role !== 'string') {
+                throw new Error('Invalid message: missing or invalid role');
+            }
+
+            if (!['user', 'assistant', 'system', 'tool'].includes(m.role as string)) {
+                throw new Error(`Invalid message role: ${m.role}`);
+            }
+
+            if (m.content !== undefined && typeof m.content !== 'string' && !Array.isArray(m.content)) {
+                throw new Error('Invalid message: content must be string or array');
+            }
+        }
     }
 }

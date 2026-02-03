@@ -6,7 +6,7 @@ import {
     ProjectAnalysis, ProjectIdea, ProjectState, ProjectStats, ProjectStep, QuotaResponse, ResearchData, ResearchProgress,
     SemanticFragment,
     SSHConfig, SSHConnection, SSHFile,
-    SSHPackageInfo, SSHSystemStats, ToolCall, ToolDefinition, ToolResult
+    SSHPackageInfo, SSHSystemStats, TodoFile, ToolCall, ToolDefinition, ToolResult
 } from '@/shared/types';
 import {
     AdvancedSemanticFragment,
@@ -15,12 +15,6 @@ import {
     PendingMemory,
     RecallContext
 } from '@/shared/types/advanced-memory';
-
-export interface TodoItem {
-    file: string
-    line: number
-    text: string
-}
 
 export interface FileEntry {
     name: string
@@ -193,7 +187,7 @@ export interface ElectronAPI {
     getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>
 
     code: {
-        scanTodos: (rootPath: string) => Promise<TodoItem[]>
+        scanTodos: (rootPath: string) => Promise<TodoFile[]>
         findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>
         searchFiles: (rootPath: string, query: string, projectId?: string, isRegex?: boolean) => Promise<FileSearchResult[]>
         indexProject: (rootPath: string, projectId: string) => Promise<void>

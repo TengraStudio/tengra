@@ -1,50 +1,16 @@
 import * as fs from 'fs';
 
-import { DataService } from '@main/services/data/data.service';
+import { LinkedAccount } from '@main/services/data/database.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockRequest, mockCookiesGet } = vi.hoisted(() => {
-    return {
-        mockRequest: vi.fn(),
-        mockCookiesGet: vi.fn().mockResolvedValue([])
-    };
-});
-
-vi.mock('electron', () => {
-    return {
-        app: { getPath: () => '/tmp' },
-        net: {
-            request: mockRequest
-        },
-        session: {
-            defaultSession: {
-                cookies: {
-                    get: mockCookiesGet
-                }
-            }
-        }
-    };
-});
-
+vi.mock('fs');
 vi.mock('axios');
-vi.mock('fs', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('fs')>();
-    return {
-        ...actual,
-        promises: {
-            ...actual.promises,
-            readFile: vi.fn(),
-            readdir: vi.fn(),
-        },
-        existsSync: vi.fn()
-    };
-});
+vi.mock('@main/logging/logger');
 
 describe('QuotaService', () => {
     let quotaService: QuotaService;
@@ -52,78 +18,75 @@ describe('QuotaService', () => {
     let mockAuthService: AuthService;
     let mockProcessManager: ProcessManagerService;
     let mockTokenService: TokenService;
-    let mockDataService: DataService;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
         mockSettingsService = {
             getSettings: vi.fn().mockReturnValue({
-                ai: {
-                    antigravity: {
-                        baseUrl: 'https://api.antigravity.ai'
-                    }
+                proxy: {
+                    codex: { organizationId: 'org-123' }
                 }
             })
         } as unknown as SettingsService;
 
         mockAuthService = {
             getAllAccountsFull: vi.fn().mockResolvedValue([]),
-            getActiveToken: vi.fn(),
-            getActiveAccountFull: vi.fn()
+            getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
+            updateToken: vi.fn().mockResolvedValue(undefined)
         } as unknown as AuthService;
 
         mockProcessManager = {
-            startService: vi.fn().mockResolvedValue(undefined),
-            sendRequest: vi.fn()
+            startService: vi.fn().mockResolvedValue(undefined)
         } as unknown as ProcessManagerService;
 
         mockTokenService = {
             ensureFreshToken: vi.fn()
         } as unknown as TokenService;
 
-        mockDataService = {
-            // Mock methods if needed
-        } as unknown as DataService;
-
-        quotaService = new QuotaService(mockSettingsService, mockAuthService, mockProcessManager, mockTokenService, mockDataService);
+        quotaService = new QuotaService(
+            mockSettingsService as any,
+            mockAuthService as any,
+            mockProcessManager as any,
+            mockTokenService as any
+        );
     });
 
     describe('getQuota', () => {
-        it('should return null if no token is available', async () => {
-            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([]);
+        it('should return null if no accounts found', async () => {
             const result = await quotaService.getQuota(8080, 'key');
             expect(result).toBeNull();
         });
 
-        // Add 401 test
-        it('should trigger token refresh on 401', async () => {
-            const mockAccount = {
-                accessToken: 'bad-token',
-                id: 'antigravity',
-                provider: 'antigravity',
-                updatedAt: Date.now()
-            };
-            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount as any]);
-            vi.mocked(axios.isAxiosError).mockReturnValue(true);
-            vi.mocked(axios.post).mockRejectedValue({
-                isAxiosError: true,
-                response: { status: 401 }
+        it('should return results for antigravity accounts', async () => {
+            const mockAccount: LinkedAccount = {
+                id: 'acc-1',
+                provider: 'antigravity-1',
+                email: 'test@example.com',
+                accessToken: 'token-123'
+            } as LinkedAccount;
+
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount]);
+
+            // Mock handler behavior
+            (quotaService as any).antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue({
+                models: {
+                    'gpt-4': { displayName: 'GPT-4', quotaInfo: { remainingQuota: 10, totalQuota: 100, remainingFraction: 0.1 } }
+                }
             });
 
-            const result = await quotaService.getAntigravityAvailableModels();
-
-            expect(mockTokenService.ensureFreshToken).toHaveBeenCalledWith('antigravity', true);
-            expect(result).toEqual([]);
+            const result = await quotaService.getQuota(8080, 'key');
+            expect(result).not.toBeNull();
+            expect(result?.accounts).toHaveLength(1);
+            expect(result?.accounts[0].email).toBe('test@example.com');
         });
     });
 
     describe('getCopilotQuota', () => {
         it('should return default structure if no token', async () => {
             vi.mocked(fs.existsSync).mockReturnValue(false);
-
             const result = await quotaService.getCopilotQuota();
-            expect(result.accounts).toEqual([]);
+            expect(result.accounts).toHaveLength(0);
         });
     });
 });

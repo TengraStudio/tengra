@@ -78,3 +78,17 @@ export interface ProjectAnalysis {
     todos: string[]
     issues?: ProjectIssue[]
 }
+export interface TodoItem {
+    id: string;
+    text: string;
+    completed: boolean;
+    line: number;
+    filePath: string;
+    relativePath: string;
+}
+
+export interface TodoFile {
+    path: string;
+    relativePath: string;
+    items: TodoItem[];
+}

@@ -126,40 +126,6 @@ export class PromptTemplatesService extends BaseService {
      * Render a template with variables
      */
     renderTemplate(templateId: string, variables: Record<string, string>): string | null {
-        // Need to ensure custom templates are loaded in TemplateManager or just find it directly
-        // TemplateManager logic was mainly "findById" which maps to our methods
-        // But TemplateManager had its own internal state in the original code? 
-        // Let's look at `templateManager.render`: it calls `findById`.
-        // The `templateManager` instance in this class is just a helper but we are not populating it?
-        // Original code: `this.templateManager = new TemplateManager()` then never added templates to it?
-        // Wait, `templateManager` in `prompt-templates.util.ts` has methods like `getAllTemplates`.
-        // The original service was keeping its own `customTemplates` array and using `templateManager` JUST for `render` method logic?
-        // `templateManager.render` calls `this.findById` which looks at its internal array.
-        // So `this.templateManager` in the original code was probably EMPTY of custom templates unless they were added?
-        // Actually looking at original code:
-        // `renderTemplate` calls `this.getTemplate(templateId)` from SERVICE, getting it from service's array.
-        // Then calls `this.templateManager.render(templateId, variables)`.
-        // BUT `templateManager.render` calls `this.findById` on itself // If `templateManager` is empty of custom templates, it won't find it if it's a custom one.
-        // The original code might have been buggy or `TemplateManager` logic was:
-        // `render` calls `findById`.
-        // If `BUILTIN_TEMPLATES` are in `TemplateManager` (yes via `getAllTemplates` spreading `BUILTIN_TEMPLATES`), then builtins work.
-        // But custom templates? `TemplateManager` has `customTemplates` array.
-        // In original service, `this.customTemplates` was populated from disk.
-        // But `this.templateManager` was NEW. It had EMPTY custom templates.
-        // So `renderTemplate` for CUSTOM templates would FAIL in original code unless I missed where it syncs.
-        // Ah, `renderTemplate` in original code:
-        /*
-        renderTemplate(templateId: string, variables: Record<string, string>): string | null {
-            const template = this.getTemplate(templateId) // Finds in Service
-            if (!template) { return null }
-            const result = this.templateManager.render(templateId, variables)
-            return result.content
-        }
-        */
-        // If `templateManager` doesn't know about the custom template, `render` throws "Template not found".
-        // So strict migration suggests I should fix this bug too if it exists.
-        // Or maybe I should just use `renderTemplate` utility function directly instead of `TemplateManager` class instance.
-
         const template = this.getTemplate(templateId);
         if (!template) {
             return null;

@@ -3,7 +3,7 @@
  * Estimates token counts for messages and tracks actual usage
  */
 
-import { Message } from '@shared/types/chat';
+import { Message, TextContent } from '@shared/types/chat';
 
 export interface TokenUsage {
     inputTokens: number
@@ -24,12 +24,22 @@ export interface TokenEstimate {
  * Uses a simple heuristic: ~4 characters per token for English text
  * This is a conservative estimate
  */
-const CHARS_PER_TOKEN = 4;
 
 /**
  * Token Estimation Service
  */
 export class TokenEstimationService {
+    private dynamicLimits = new Map<string, number>();
+
+    /**
+     * Register a dynamic context window limit for a specific model ID
+     */
+    registerModelLimit(modelId: string, limit: number): void {
+        if (limit > 0) {
+            this.dynamicLimits.set(modelId.toLowerCase(), limit);
+        }
+    }
+
     /**
      * Estimate tokens for a single message
      */
@@ -41,13 +51,33 @@ export class TokenEstimationService {
         } else if (Array.isArray(message.content)) {
             // Sum up text content from all parts
             content = message.content
-                .filter(part => part.type === 'text' && part.text)
-                .map(part => part.text ?? '')
+                .filter((part): part is TextContent => part.type === 'text')
+                .map(part => part.text)
                 .join(' ');
+        } else {
+            // Fallback for any other unexpected types
+            try {
+                content = String(message.content);
+            } catch {
+                content = '';
+            }
         }
 
-        // Rough estimation: ~4 chars per token
-        return Math.ceil(content.length / CHARS_PER_TOKEN);
+        if (!content) { return 0; }
+
+        // Better heuristic:
+        // 1. Count words (approximate by whitespace)
+        // 2. Count characters for non-space sequences
+        // Averaging both gives a more stable estimate across different languages/styles
+        const words = content.trim().split(/\s+/).length;
+        const chars = content.length;
+
+        // Roughly: 1 word = 1.3 tokens, OR length / 4. 
+        // We use a blend: max(words * 1.35, chars / 3.8) to be slightly conservative (overestimate)
+        const tokensByWords = Math.ceil(words * 1.35);
+        const tokensByChars = Math.ceil(chars / 3.8);
+
+        return Math.max(tokensByWords, tokensByChars);
     }
 
     /**
@@ -77,7 +107,18 @@ export class TokenEstimationService {
      * Estimate tokens for a string (useful for input validation)
      */
     estimateStringTokens(text: string): number {
-        return Math.ceil(text.length / CHARS_PER_TOKEN);
+        if (!text) { return 0; }
+
+        // Consistent heuristic with estimateMessageTokens
+        const words = text.trim().split(/\s+/).length;
+        const chars = text.length;
+
+        // Roughly: 1 word = 1.35 tokens, OR length / 3.8. 
+        // We use a blend: max(words * 1.35, chars / 3.8) to be slightly conservative
+        const tokensByWords = Math.ceil(words * 1.35);
+        const tokensByChars = Math.ceil(chars / 3.8);
+
+        return Math.max(tokensByWords, tokensByChars);
     }
 
     /**
@@ -87,11 +128,18 @@ export class TokenEstimationService {
     getContextWindowSize(model: string): number {
         const modelLower = model.toLowerCase();
 
+        // Check dynamic limits first (e.g., from ModelRegistry)
+        const dynamicLimit = this.dynamicLimits.get(modelLower);
+        if (dynamicLimit !== undefined) {
+            return dynamicLimit;
+        }
+
         const limits: Array<{ pattern: string[]; limit: number }> = [
             { pattern: ['gemini-1.5-pro', 'gemini-1.5-flash'], limit: 2000000 },
             { pattern: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3'], limit: 200000 },
-            { pattern: ['gpt-4-turbo', 'gpt-4o'], limit: 128000 },
+            { pattern: ['gpt-4o', 'gpt-4-turbo', 'o1-'], limit: 128000 },
             { pattern: ['llama-3.1-70b', 'llama-3.1-405b'], limit: 131072 },
+            { pattern: ['gpt-4o-mini'], limit: 128000 },
             { pattern: ['claude-2'], limit: 100000 },
             { pattern: ['gemini-pro'], limit: 32768 },
             { pattern: ['gpt-3.5'], limit: 16385 },

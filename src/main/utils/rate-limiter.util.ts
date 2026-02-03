@@ -123,6 +123,10 @@ const DEFAULT_LIMITS: Record<string, RateLimiterOptions> = {
     ollama: { maxTokens: 100, refillRate: 100, refillIntervalMs: 60000 },    // Local, generous
     copilot: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 },     // Conservative
     antigravity: { maxTokens: 20, refillRate: 20, refillIntervalMs: 60000 }, // Conservative
+    db: { maxTokens: 100, refillRate: 100, refillIntervalMs: 60000 },        // 100 writes per minute
+    tools: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 },       // 30 tool calls per minute
+    git: { maxTokens: 60, refillRate: 60, refillIntervalMs: 60000 },         // 60 git operations per minute
+    terminal: { maxTokens: 120, refillRate: 120, refillIntervalMs: 60000 }, // 120 writes per minute (pasted blocks/fast typing)
     default: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 }
 };
 

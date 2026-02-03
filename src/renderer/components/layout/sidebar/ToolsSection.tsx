@@ -1,9 +1,9 @@
-import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components';
+import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
 import { Container, Plug, Terminal } from 'lucide-react';
 import React from 'react';
 
 import { AppView } from '@/hooks/useAppState';
-import { Language,useTranslation } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 
 interface ToolsSectionProps {
     isCollapsed: boolean;
@@ -47,7 +47,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
                 icon={<Container className="w-4 h-4" />}
                 label="Docker"
                 description="Container management"
-                onClick={() => { /* TODO: Add Docker view */ }}
+                onClick={() => onChangeView('docker')}
                 status="idle"
             />
             <SidebarMenuItem
@@ -55,7 +55,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
                 icon={<Terminal className="w-4 h-4" />}
                 label="Terminal"
                 description="Command line access"
-                onClick={() => { /* TODO: Add Terminal */ }}
+                onClick={() => onChangeView('terminal')}
             />
         </SidebarSection>
     );

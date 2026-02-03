@@ -4,6 +4,113 @@ Track the evolution of Tandem.
 
 ---
 
+## 2026-02-04: 🤖 BATCH 6: MULTI-AGENT ORCHESTRATION v2
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Implemented a sophisticated multi-agent orchestration system and persistent agent profiles. This update allows for coordinated workflows between specialized agents (Planner, Worker, Reviewer) and ensures that agent personalities and system prompts are persisted across sessions.
+
+### 🤖 Multi-Agent Orchestration
+- **Orchestration Service**: Created `MultiAgentOrchestratorService` to manage complex, multi-step tasks using a "Planner-Worker" architecture.
+- **Planner Phase**: Implemented an "Architect" agent that breaks down high-level user goals into granular tasks and assigns them to specialized agent profiles.
+- **Worker Phase**: Developed an execution loop that cycles through assigned steps, utilizing specific agent personas for targeted implementation.
+- **Interactive Approval**: Added a "Waiting for Approval" state, allowing users to review and modify agent-generated plans before execution begins.
+
+### 👥 Persistent Agent Profiles
+- **Database Persistence**: Implemented `agent_profiles` table and `SystemRepository` methods for saving, retrieving, and deleting agent configurations.
+- **Agent Registry**: Refactored `AgentRegistryService` to serve as a persistent store for specialized agent personas (e.g., Senior Architect, Full-Stack Engineer).
+- **Profile Management**: Exposed profile registration and deletion via `ProjectAgentService` and IPC, enabling future UI-driven agent customization.
+
+### 🛡️ Type Safety & Integration
+- **Strict Typing**: Achieved 100% type safety for orchestrated messages and state updates, utilizing strictly defined interfaces and avoiding `any`/`unknown`.
+- **Event-Driven UI**: Enhanced the system-wide `EventBus` to propagate real-time orchestration updates to the frontend.
+- **IPC Layer**: Finalized new IPC handlers (`orchestrator:start`, `orchestrator:approve`, `orchestrator:get-state`) for seamless communication with the renderer.
+
+---
+
+## 2026-02-04: 🧠 BATCH 5: MEMORY CORE & DATABASE EVOLUTION
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Full consolidation of memory services and finalization of the Rust-based database migration. Unified the RAG system and removed redundant legacy binary dependencies.
+
+### 🧠 Memory Core & RAG
+- **Service Consolidation**: Merged `MemoryService` into `AdvancedMemoryService`, creating a single source of truth for all memory operations (Semantic, Episodic, Entity, Personality).
+- **Unified Vector Ops**: Integrated all vector storage and search operations with the Rust `db-service`, eliminating the need for the legacy `memory-service` binary.
+- **RAG Hardening**: Implemented a content-validation staging buffer for new memories to reduce noise and improve retrieval quality.
+
+### 🗄️ Database Service Evolution
+- **Migration Finalization**: Successfully transitioned all database operations to the standalone Rust service.
+- **Dependency Cleanup**: Removed legacy `@electric-sql/pglite` and `better-sqlite3` dependencies from the project.
+- **Orphan Cleanup**: Deleted legacy migration files (`migrations.ts`, `db-migration.service.ts`) and the deprecated native `memory-service` implementation.
+
+### 🛡️ Quality & Performance
+- **Zero Any Policy**: Overhauled `AdvancedMemoryService` to achieve 100% type safety, removing all `any` and `unknown` casts.
+- **Startup Optimization**: Optimized the service initialization sequence in `startup/services.ts`.
+- **Build Pass**: Confirmed 0 build errors and 0 type-check warnings across the entire main process.
+
+---
+
+**Summary**: Refactored the LLM service to eliminate hardcoded model names and context window- ### Security & Type Safety
+- Implemented rate limiting for API requests using `RateLimitService` token bucket (SEC-009)
+- Added validation for Agent Profile registration to prevent system profile overwrites (AGENT-001)
+- Refactored `Message.content` and `UACNode` to use discriminated union types for strict type safety (TYPE-001)
+- Implemented content filtering in `LLMService` to prevent sensitive data leaks (LLM-001)
+- Added authorization checks for provider rotation, window IPC, and logging IPC (SEC-013)
+- Fixed listener memory leaks in SSH IPC service (IPC-001)
+- **Access Control**: Implemented strict validation in `AgentRegistryService` to prevent unauthorized modification of system profiles (AGENT-001-3).
+- **Rate Limiting**: Added `tryAcquire` to `RateLimitService` and implemented API rate limiting in `ApiServerService` to protect against DoS attacks (SEC-009-3).
+- **LLM**: Implemented dynamic context window limits via `ModelRegistryService` integration.
+- **LLM**: Fixed `OllamaService` streaming timeouts and added `AbortSignal` support.
+
+### 🧠 LLM Intelligence & Scalability
+- **LLM-001-1**: Improved token counting accuracy using a hybrid word/character heuristic.
+- **LLM-001-4**: Fixed streaming timeouts in `OllamaService` by setting consistent defaults.
+- **Dynamic Context Windows**: Added `registerModelLimit` to `TokenEstimationService`. `ModelRegistryService` now automatically pushes context window metadata (fetched from the Rust service) to the estimator.
+- **Constant Extraction**: Completed the extraction of all default model names (`DEFAULT_MODELS`) across OpenAI, Anthropic, Groq, and Embedding providers.
+
+### 🧪 Testing & Reliability
+- **TEST-003-L1**: Built a comprehensive test suite for `OllamaService` with 100% coverage of connection and availability logic.
+- **Reliable History**: Implemented `MAX_MESSAGE_HISTORY` and `MAX_EVENT_HISTORY` limits in the Agent state machine to prevent memory bloat and context overflow.
+
+---
+
+
+### 🛡️ IPC & Security
+- **SEC-011-3**: Implemented rate limiting for Git operations (`commit`, `push`, `pull`, `stage`, `unstage`, `checkout`) to prevent rapid-fire process spawning.
+- **SEC-011-4**: Added rate limiting to all database write operations including chats, messages, projects, folders, and prompts.
+- **SEC-011-5**: Ensured tool execution is strictly rate-limited.
+- **SEC-011-6**: Added rate limiting and size validation (1MB) to `terminal:write` IPC handler.
+- **IPC-001-5**: Centralized rate limiting utility for write-heavy operations including token usage and usage recording.
+
+### 🧹 Quality & Stability
+- Fixed React Compiler errors in `TaskNode.tsx` by adding missing dependencies to `useCallback`.
+- Extracted `AgentProfileSelector` and `TaskMetaInfo` sub-components in `TaskNode.tsx` to reduce complexity.
+- Resolved multiple "Sort imports" and "Unnecessary conditional" lint warnings across the codebase.
+- Achieved 100% build pass rate on both TypeScript and Rust components.
+
+---
+
+## 2026-02-02: 🛡️ ELECTRON SECURITY HARDENING - PHASE 4
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Hardened the Electron application by implementing certificate validation and permission request handlers.
+
+### 🔐 Security Improvements (3 items completed)
+
+**Electron Security Hardening**:
+- **SEC-004-3**: Added `certificate-error` handler in the main process to deny all certificate errors by default, preventing potential MITM attacks.
+- **SEC-004-4**: Implemented `setPermissionRequestHandler` and `setPermissionCheckHandler` in the main process to deny all device and notification permission requests by default.
+
+**External Process Security**:
+- **SEC-005-4**: Implemented privilege escalation checks for SSH commands by creating a centralized `CommandValidator` and integrating it into `SSHService` and `CommandService`.
+
+**Cryptography Improvements**:
+- **SEC-007-3**: Implemented at-rest encryption for the application's master key using Electron's `safeStorage`, with automatic migration for legacy plain-text keys.
+
+---
+
 ## 2026-02-02: 🎯 COMPREHENSIVE SECURITY & CODE QUALITY IMPROVEMENTS - PHASE 3
 
 **Status**: ✅ COMPLETED

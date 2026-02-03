@@ -34,3 +34,8 @@ export interface AgentStartOptions {
     attachments?: Array<{ name: string; path: string; size: number }>;
     systemMode?: 'fast' | 'thinking' | 'architect';
 }
+
+export interface OrchestratorState extends ProjectState {
+    activeAgentId?: string;
+    assignments: Record<string, string>; // stepId -> agentProfileId
+}

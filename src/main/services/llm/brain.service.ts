@@ -14,6 +14,8 @@
  * - YES user identity, preferences, skills, goals
  */
 
+import * as crypto from 'crypto';
+
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
@@ -49,7 +51,7 @@ export class BrainService {
         private db: DatabaseService,
         private embedding: EmbeddingService,
         private llmService: LLMService,
-        private processManager: ProcessManagerService
+        _processManager: ProcessManagerService
     ) { }
 
     async initialize(): Promise<void> {
@@ -77,7 +79,7 @@ export class BrainService {
         }
 
         const embedding = await this.embedding.generateEmbedding(content);
-        const id = `user-fact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `user-fact-${crypto.randomUUID()}`;
         const now = Date.now();
 
         const fact: UserFact = {

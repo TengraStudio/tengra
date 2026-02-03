@@ -1,7 +1,7 @@
+import { appLogger } from '@main/logging/logger';
 import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 

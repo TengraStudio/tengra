@@ -9,12 +9,13 @@ import { ToolDefinition } from '@main/tools/tool-definitions';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
 import { Message, ToolCall } from '@shared/types/chat';
-import { AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 
 
 export class ProjectAgentService extends BaseService {
+    private static readonly MAX_HISTORY_SIZE = 100;
     private state: ProjectState = {
         status: 'idle',
         currentTask: '',
@@ -26,6 +27,7 @@ export class ProjectAgentService extends BaseService {
 
     private stateMachine: StateMachine<ProjectState['status'], string>;
     private currentTaskId: string | null = null;
+    private abortController: AbortController | null = null;
 
     constructor(
         private databaseService: DatabaseService,
@@ -127,6 +129,7 @@ export class ProjectAgentService extends BaseService {
 
         await this.stateMachine.transitionTo('running');
         this.shouldStop = false;
+        this.abortController = new AbortController();
 
         // create task in DB
         this.currentTaskId = await this.databaseService.uac.createTask(
@@ -173,6 +176,7 @@ export class ProjectAgentService extends BaseService {
 
         await this.stateMachine.transitionTo('planning');
         this.shouldStop = false;
+        this.abortController = new AbortController();
 
         // create task in DB
         this.currentTaskId = await this.databaseService.uac.createTask(
@@ -235,7 +239,7 @@ export class ProjectAgentService extends BaseService {
             content: `Plan approved:\n${planText}\n\nPlease proceed with execution following this plan.`,
             timestamp: new Date()
         } as Message;
-        this.state.history.push(approvalMsg);
+        this.pushToHistory(approvalMsg);
 
         if (this.currentTaskId) {
             // Update DB
@@ -251,6 +255,10 @@ export class ProjectAgentService extends BaseService {
 
     async stop(): Promise<void> {
         this.shouldStop = true;
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
         await this.stateMachine.transitionTo('idle');
         this.state.status = 'idle';
         if (this.currentTaskId) {
@@ -268,7 +276,7 @@ export class ProjectAgentService extends BaseService {
         step.status = 'pending';
         this.logInfo(`Retrying step ${index}: ${step.text}`);
 
-        this.state.history.push({
+        this.pushToHistory({
             id: randomUUID(),
             role: 'user',
             content: `Please retry step ${index}: "${step.text}". Previous attempt failed or was incomplete.`,
@@ -308,7 +316,7 @@ export class ProjectAgentService extends BaseService {
                 toolCallId: toolCall.id,
                 timestamp: new Date()
             } as Message;
-            this.state.history.push(msg);
+            this.pushToHistory(msg);
 
             if (this.currentTaskId) {
                 await this.databaseService.uac.addLog(
@@ -383,14 +391,14 @@ export class ProjectAgentService extends BaseService {
     ): Promise<boolean> {
         const { systemMode } = this.getModelConfig();
         const msg = this.createAssistantMessage();
-        this.state.history.push(msg);
+        this.pushToHistory(msg);
 
         await this.processMessageStream(msg, this.llmService.chatStream(
             this.state.history.slice(0, -1),
             modelId,
             toolDefs,
             providerId,
-            { systemMode }
+            { systemMode, signal: this.abortController?.signal }
         ));
 
         return this.handlePlanningResponse(msg);
@@ -423,7 +431,7 @@ export class ProjectAgentService extends BaseService {
             }
 
             this.logInfo('Model output text but no tool calls. Injecting directive to use propose_plan.');
-            this.state.history.push({
+            this.pushToHistory({
                 id: randomUUID(),
                 role: 'user',
                 content: "You provided a text response. Please strictly use the `propose_plan` tool to submit the plan. Do not just write it in the chat.",
@@ -548,13 +556,14 @@ export class ProjectAgentService extends BaseService {
         const { modelId, providerId } = this.getModelConfig();
         const msg = this.createAssistantMessage();
 
-        this.state.history.push(msg);
+        this.pushToHistory(msg);
 
         await this.processMessageStream(msg, this.llmService.chatStream(
             currentHistory,
             modelId,
             toolDefs,
-            providerId
+            providerId,
+            { signal: this.abortController?.signal }
         ));
 
         await this.finalizeStep(msg);
@@ -632,15 +641,147 @@ export class ProjectAgentService extends BaseService {
         // No-op - using DB now
     }
 
-    private async loadState() {
-        // TODO: Load active task from DB if exists?
+    /**
+     * Load any active task from DB on app restart to enable resumption
+     */
+    private async loadState(): Promise<void> {
+        try {
+            // Check if there's any active task across all projects
+            const activeTask = await this.databaseService.uac.getAnyActiveTask();
+
+            if (!activeTask) {
+                this.logDebug('No active task found to resume');
+                return;
+            }
+
+            this.logInfo(`Found active task to resume: ${activeTask.id} (${activeTask.status})`);
+
+            // Load task details
+            this.currentTaskId = activeTask.id;
+            const steps = await this.databaseService.uac.getSteps(activeTask.id);
+            const logs = await this.databaseService.uac.getLogs(activeTask.id);
+
+            // Reconstruct state from DB
+            this.state = {
+                status: activeTask.status as ProjectState['status'],
+                currentTask: activeTask.description,
+                plan: steps.map(s => ({
+                    id: s.id,
+                    text: s.text,
+                    status: s.status as ProjectStep['status']
+                })),
+                history: logs.map(l => ({
+                    id: l.id,
+                    role: l.role as Message['role'],
+                    content: l.content,
+                    timestamp: new Date(l.created_at),
+                    toolCalls: l.tool_call_id ? [] : undefined
+                })),
+                config: {
+                    task: activeTask.description,
+                    projectId: activeTask.project_path,
+                    agentProfileId: 'default'
+                }
+            };
+
+            // Sync state machine to current status
+            this.stateMachine.setState(this.state.status);
+            this.logInfo(`Restored state with status: ${this.state.status}`);
+
+            if (this.state.status === 'running') {
+                this.shouldStop = false;
+                this.abortController = new AbortController();
+                void this.executionLoop();
+            }
+
+            this.emitUpdate();
+        } catch (error) {
+            this.logError('Failed to load active task state', error as Error);
+        }
+    }
+
+    async resume(projectId: string): Promise<ProjectState | null> {
+        const activeTask = await this.databaseService.uac.getActiveTask(projectId);
+        if (!activeTask) {
+            return null;
+        }
+
+        this.currentTaskId = activeTask.id;
+        const steps = await this.databaseService.uac.getSteps(activeTask.id);
+        const logs = await this.databaseService.uac.getLogs(activeTask.id);
+
+        // Reconstruct state
+        this.state = {
+            status: activeTask.status as ProjectState['status'],
+            currentTask: activeTask.description,
+            plan: steps.map(s => ({
+                id: s.id,
+                text: s.text,
+                status: s.status as ProjectStep['status']
+            })),
+            history: logs.map(l => ({
+                id: l.id,
+                role: l.role as Message['role'],
+                content: l.content, // naive reconstruction
+                timestamp: new Date(l.created_at),
+                toolCalls: l.tool_call_id ? [] : undefined // TODO: reconstruct tool calls properly if needed
+            })),
+            config: {
+                task: activeTask.description,
+                projectId: projectId,
+                agentProfileId: 'default' // We might need to store this in DB task record
+            }
+        };
+
+        // Transition state machine
+        try {
+            // Force transition to current state
+            // accessing private property for restoration or just set status
+            // The state machine library might preventing jumping.
+            // But we can re-initialize it or just set it:
+
+            // Allow arbitrary transition for hydration
+            this.stateMachine.setState(this.state.status);
+
+            if (this.state.status === 'running') {
+                this.shouldStop = false;
+                this.abortController = new AbortController();
+                void this.executionLoop();
+            } else if (this.state.status === 'planning') {
+                this.shouldStop = false;
+                this.abortController = new AbortController();
+                // We can't easily resume planning loop without full context, 
+                // might be better to set to 'paused' or 'waiting_for_approval'
+            }
+
+            this.emitUpdate();
+            return this.state;
+        } catch (e) {
+            this.logError('Failed to resume state', e as Error);
+            return null;
+        }
     }
 
     async getProfiles() {
         return this.agentRegistryService.getAllProfiles();
     }
 
+    async registerProfile(profile: AgentProfile) {
+        return this.agentRegistryService.registerProfile(profile);
+    }
+
+    async deleteProfile(id: string) {
+        return this.agentRegistryService.deleteProfile(id);
+    }
+
     private emitUpdate() {
         this.eventBus.emit('project:update', this.state);
+    }
+
+    private pushToHistory(message: Message) {
+        this.state.history.push(message);
+        if (this.state.history.length > ProjectAgentService.MAX_HISTORY_SIZE) {
+            this.state.history = this.state.history.slice(-ProjectAgentService.MAX_HISTORY_SIZE);
+        }
     }
 }

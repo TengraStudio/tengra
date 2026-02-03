@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
 import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
@@ -5,7 +6,6 @@ import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { Language, useTranslation } from '@/i18n';
 import { SSHConnection } from '@/types';
 

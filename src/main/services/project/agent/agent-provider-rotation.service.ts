@@ -1,6 +1,6 @@
 /**
  * Agent Provider Rotation Service
- * 
+ *
  * Manages provider/model rotation and fallback chain
  * Integrates with AuthService to check user's configured providers
  */
@@ -17,6 +17,11 @@ interface FallbackChain {
     cloud: string[];  // e.g., ['openai', 'anthropic', 'google']
     local: string[];  // e.g., ['ollama', 'llamacpp']
 }
+
+/**
+ * TODO-001-4: Quota provider callback type for cross-domain access
+ */
+export type QuotaProvider = (provider: string) => Promise<number | undefined>;
 
 /**
  * Provider rotation service
@@ -36,11 +41,27 @@ export class AgentProviderRotationService extends BaseService {
         lastUsedAt?: Date;
     }> = new Map();
 
+    /** TODO-001-4: Optional quota provider callback for cross-domain quota access */
+    private quotaProvider: QuotaProvider | null = null;
+
     constructor(
         private keyRotationService: KeyRotationService,
         private authService: AuthService
     ) {
         super('AgentProviderRotationService');
+    }
+
+    /**
+     * SEC-013-2: Verify provider access authorization
+     */
+    private async verifyProviderAccess(provider: string): Promise<boolean> {
+        try {
+            const accounts = await this.authService.getAccountsByProvider(provider);
+            return accounts.some(a => a.isActive);
+        } catch (error) {
+            this.logError(`Access verification failed for ${provider}`, error as Error);
+            return false;
+        }
     }
 
     async initialize(): Promise<void> {
@@ -50,6 +71,31 @@ export class AgentProviderRotationService extends BaseService {
         await this.loadConfiguredProviders();
 
         this.logInfo('Provider rotation service initialized');
+    }
+
+    /**
+     * TODO-001-4: Set quota provider callback for cross-domain quota access
+     * This allows the proxy/quota service to inject its quota lookup
+     */
+    setQuotaProvider(provider: QuotaProvider): void {
+        this.quotaProvider = provider;
+        this.logInfo('Quota provider registered');
+    }
+
+    /**
+     * TODO-001-4: Get quota remaining for a provider
+     * Returns undefined if quota service is not available or provider not found
+     */
+    async getQuotaRemaining(provider: string): Promise<number | undefined> {
+        if (!this.quotaProvider) {
+            return undefined;
+        }
+        try {
+            return await this.quotaProvider(provider);
+        } catch (error) {
+            this.logError(`Failed to get quota for ${provider}`, error as Error);
+            return undefined;
+        }
     }
 
     // ========================================================================
@@ -89,6 +135,12 @@ export class AgentProviderRotationService extends BaseService {
      */
     async getInitialProvider(userSelectedProvider?: string): Promise<ProviderConfig> {
         const provider = userSelectedProvider ?? this.fallbackChain.cloud[0];
+
+        // SEC-013-2: Verify access
+        const isAuthorized = await this.verifyProviderAccess(provider);
+        if (!isAuthorized) {
+            throw new Error(`Provider ${provider} is not authorized or has no active accounts`);
+        }
 
         // Get model from settings or use default
         const model = await this.getDefaultModelForProvider(provider);
@@ -298,13 +350,15 @@ export class AgentProviderRotationService extends BaseService {
 
             const model = await this.getDefaultModelForProvider(account.provider);
             if (model) {
+                // TODO-001-4: Get quota remaining from quota service if available
+                const quotaRemaining = await this.getQuotaRemaining(account.provider);
                 models.push({
                     provider: account.provider,
                     model,
                     displayName: `${account.provider} - ${model}`,
                     type: 'cloud',
                     available: true,
-                    quotaRemaining: undefined // TODO: Get from quota service
+                    quotaRemaining
                 });
             }
         }
@@ -347,18 +401,109 @@ export class AgentProviderRotationService extends BaseService {
     }
 
     /**
-     * Get provider statistics
+     * TODO-001-6: Get provider statistics from in-memory health tracking
      */
-    async getProviderStats(_provider: string): Promise<{
+    async getProviderStats(provider: string): Promise<{
         requestCount: number;
         errorCount: number;
         lastError?: string;
+        lastUsedAt?: Date;
+        successRate: number;
     }> {
-        // TODO: Query from database
+        const health = this.accountHealth.get(provider);
+        if (!health) {
+            return {
+                requestCount: 0,
+                errorCount: 0,
+                successRate: 1.0 // Default to 100% for new providers
+            };
+        }
+
+        const totalRequests = health.successCount + health.errorCount;
+        const successRate = totalRequests > 0 ? health.successCount / totalRequests : 1.0;
+
         return {
-            requestCount: 0,
+            requestCount: totalRequests,
+            errorCount: health.errorCount,
+            lastError: health.lastError,
+            lastUsedAt: health.lastUsedAt,
+            successRate
+        };
+    }
+
+    /**
+     * TODO-001-6: Record a successful request for a provider
+     */
+    recordProviderSuccess(provider: string): void {
+        const health = this.accountHealth.get(provider) ?? {
+            successCount: 0,
             errorCount: 0
         };
+
+        health.successCount++;
+        health.lastUsedAt = new Date();
+
+        this.accountHealth.set(provider, health);
+        this.logDebug(`Recorded success for ${provider}: ${health.successCount} successes, ${health.errorCount} errors`);
+    }
+
+    /**
+     * TODO-001-6: Record a failed request for a provider
+     */
+    recordProviderError(provider: string, error: string): void {
+        const health = this.accountHealth.get(provider) ?? {
+            successCount: 0,
+            errorCount: 0
+        };
+
+        health.errorCount++;
+        health.lastError = error;
+        health.lastUsedAt = new Date();
+
+        this.accountHealth.set(provider, health);
+        this.logDebug(`Recorded error for ${provider}: ${error}`);
+    }
+
+    /**
+     * TODO-001-6: Get all provider statistics
+     */
+    async getAllProviderStats(): Promise<Map<string, {
+        requestCount: number;
+        errorCount: number;
+        lastError?: string;
+        lastUsedAt?: Date;
+        successRate: number;
+    }>> {
+        const allStats = new Map<string, {
+            requestCount: number;
+            errorCount: number;
+            lastError?: string;
+            lastUsedAt?: Date;
+            successRate: number;
+        }>();
+
+        for (const [provider, health] of this.accountHealth) {
+            const totalRequests = health.successCount + health.errorCount;
+            const successRate = totalRequests > 0 ? health.successCount / totalRequests : 1.0;
+
+            allStats.set(provider, {
+                requestCount: totalRequests,
+                errorCount: health.errorCount,
+                lastError: health.lastError,
+                lastUsedAt: health.lastUsedAt,
+                successRate
+            });
+        }
+
+        return allStats;
+    }
+
+    /**
+     * TODO-001-6: Reset statistics for a provider
+     */
+    resetProviderStats(provider: string): void {
+        this.accountHealth.delete(provider);
+        this.logInfo(`Reset stats for provider: ${provider}`);
     }
 
     // ========================================================================

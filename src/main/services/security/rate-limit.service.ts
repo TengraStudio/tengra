@@ -28,6 +28,9 @@ export class RateLimitService extends BaseService {
         this.setLimit('ssh:execute', { requestsPerMinute: 120, maxBurst: 20 });
         this.setLimit('chat:stream', { requestsPerMinute: 60, maxBurst: 5 }); // 1 per sec roughly
         this.setLimit('files:search', { requestsPerMinute: 20, maxBurst: 2 }); // Expensive op
+        this.setLimit('files:read', { requestsPerMinute: 300, maxBurst: 50 }); // High frequency allowed
+        this.setLimit('files:write', { requestsPerMinute: 100, maxBurst: 10 }); // More restricted
+        this.setLimit('api:request', { requestsPerMinute: 600, maxBurst: 50 }); // ~10/sec burst, 10/sec sustained high
 
         // Start cleanup interval to remove old buckets
         this.cleanupInterval = setInterval(() => {
@@ -111,6 +114,49 @@ export class RateLimitService extends BaseService {
         }
 
         throw new Error(`Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`);
+    }
+
+    /**
+     * Attempts to acquire a token immediately.
+     * Returns true if acquired, false if rate limited.
+     * Does not wait.
+     */
+    tryAcquire(provider: string): boolean {
+        if (!this.buckets.has(provider)) {
+            return true; // No limit set, allow
+        }
+
+        // We can't await refillBucket here since this must be synchronous-ish/non-blocking
+        // But refillBucket uses Date.now() so it doesn't actually block.
+        // We'll trust the lastRefill vs now math.
+
+        // Actually refillBucket IS synchronous in implementation (just async signature in typical generic services, 
+        // but here it returns void and uses no awaits). 
+        // Let's copy the logic or fix refillBucket signature if possible. 
+        // Looking at the file, refillBucket is private async refillBucket(provider: string) 
+        // BUT it doesn't await anything. 
+        // Let's just implement the logic inline for safety or cast call.
+
+        const bucket = this.buckets.get(provider);
+        if (!bucket) { return true; }
+
+        const now = Date.now();
+        const elapsed = now - bucket.lastRefill;
+        const msPerToken = 60000 / bucket.config.requestsPerMinute;
+        const newTokens = Math.floor(elapsed / msPerToken);
+
+        if (newTokens > 0) {
+            const maxTokens = bucket.config.maxBurst ?? bucket.config.requestsPerMinute;
+            bucket.tokens = Math.min(bucket.tokens + newTokens, maxTokens);
+            bucket.lastRefill = now;
+        }
+
+        if (bucket.tokens >= 1) {
+            bucket.tokens -= 1;
+            return true;
+        }
+
+        return false;
     }
 
     private async refillBucket(provider: string) {

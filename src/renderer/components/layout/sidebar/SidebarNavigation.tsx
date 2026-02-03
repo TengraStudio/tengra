@@ -1,11 +1,13 @@
 import { Bot, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
 import React from 'react';
 
+import { AppView } from '@/hooks/useAppState';
+
 import { SidebarItem } from './SidebarItem';
 
 interface SidebarNavigationProps {
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent') => void
+    currentView: AppView
+    onChangeView: (view: AppView) => void
     isCollapsed: boolean
     chatsCount: number
     t: (key: string) => string

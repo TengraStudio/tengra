@@ -1,5 +1,6 @@
 import { GitService } from '@main/services/project/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
 
@@ -254,7 +255,7 @@ function registerDiffHandlers(gitService: GitService) {
     // Stage file
     ipcMain.handle('git:stageFile', async (_event, cwd: string, filePath: string) => {
         try {
-            const result = await gitService.stageFile(cwd, filePath);
+            const result = await withRateLimit('git', () => gitService.stageFile(cwd, filePath));
             return { success: result.success, error: result.error };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -264,7 +265,7 @@ function registerDiffHandlers(gitService: GitService) {
     // Unstage file
     ipcMain.handle('git:unstageFile', async (_event, cwd: string, filePath: string) => {
         try {
-            const result = await gitService.unstageFile(cwd, filePath);
+            const result = await withRateLimit('git', () => gitService.unstageFile(cwd, filePath));
             return { success: result.success, error: result.error };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -363,7 +364,7 @@ function registerActionHandlers(gitService: GitService) {
     // Checkout branch
     ipcMain.handle('git:checkout', async (_event, cwd: string, branch: string) => {
         try {
-            const result = await gitService.checkout(cwd, branch);
+            const result = await withRateLimit('git', () => gitService.checkout(cwd, branch));
             return { success: result.success, error: result.error };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -373,7 +374,7 @@ function registerActionHandlers(gitService: GitService) {
     // Commit changes
     ipcMain.handle('git:commit', async (_event, cwd: string, message: string) => {
         try {
-            const result = await gitService.commit(cwd, message);
+            const result = await withRateLimit('git', () => gitService.commit(cwd, message));
             return { success: result.success, error: result.error };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -387,7 +388,8 @@ function registerActionHandlers(gitService: GitService) {
                 const branchResult = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
                 branch = branchResult.success && branchResult.stdout ? branchResult.stdout.trim() : 'main';
             }
-            const result = await gitService.push(cwd, remote, branch);
+            const targetBranch = branch;
+            const result = await withRateLimit('git', async () => gitService.push(cwd, remote, targetBranch));
             return { success: result.success, error: result.error, stdout: result.stdout, stderr: result.stderr };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -397,7 +399,7 @@ function registerActionHandlers(gitService: GitService) {
     // Pull from remote
     ipcMain.handle('git:pull', async (_event, cwd: string) => {
         try {
-            const result = await gitService.pull(cwd);
+            const result = await withRateLimit('git', () => gitService.pull(cwd));
             return { success: result.success, error: result.error, stdout: result.stdout, stderr: result.stderr };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };

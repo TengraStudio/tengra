@@ -2,6 +2,7 @@ import { appLogger } from '@main/logging/logger';
 import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
 
@@ -31,7 +32,7 @@ export function registerUsageIpc(usageTrackingService: UsageTrackingService, set
     });
 
     ipcMain.handle('usage:recordUsage', async (_event, provider: string, model: string) => {
-        await usageTrackingService.recordUsage(provider, model);
+        await withRateLimit('db', () => usageTrackingService.recordUsage(provider, model));
         return { success: true };
     });
 }

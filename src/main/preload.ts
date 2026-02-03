@@ -19,6 +19,7 @@ import {
     PendingMemory,
     RecallContext
 } from '@shared/types/advanced-memory';
+import { isProjectState } from '@shared/utils/type-guards.util';
 
 interface ModelDefinition {
     id: string
@@ -1223,7 +1224,11 @@ const api: ElectronAPI = {
         getStatus: () => ipcRenderer.invoke('project:get-status'),
         retryStep: (index) => ipcRenderer.invoke('project:retry-step', index),
         onUpdate: (callback) => {
-            const listener = (_event: IpcRendererEvent, state: IpcValue) => callback(state as unknown as ProjectState);
+            const listener = (_event: IpcRendererEvent, state: IpcValue) => {
+                if (isProjectState(state)) {
+                    callback(state);
+                }
+            };
             ipcRenderer.on('project:update', listener);
             return () => ipcRenderer.removeListener('project:update', listener);
         }

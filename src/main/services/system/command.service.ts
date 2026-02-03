@@ -1,11 +1,12 @@
 import { ChildProcess, exec, spawn } from 'child_process';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger';
+import { validateCommand } from '@main/utils/command-validator.util';
+import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 const execAsync = promisify(exec);
-
-import { JsonValue } from '@shared/types/common';
 
 interface CommandResult {
     success: boolean
@@ -19,16 +20,27 @@ interface CommandResult {
 export class CommandService {
     private maxTimeout: number = 60000; // 60 seconds default timeout
     private activeProcesses: Map<string, ChildProcess> = new Map();
-    private maxCommandLength = 10000;
+    private static readonly MAX_ACTIVE_PROCESSES = 50;
+
+    /**
+     * Clean up all active processes on service disposal
+     */
+    async dispose(): Promise<void> {
+        appLogger.info('CommandService', `Disposing service, killing ${this.activeProcesses.size} active processes`);
+        for (const id of this.activeProcesses.keys()) {
+            this.killCommand(id);
+        }
+        this.activeProcesses.clear();
+    }
 
     killCommand(id: string): boolean {
         const child = this.activeProcesses.get(id);
         if (child) {
             try {
                 // Kill process tree
-                const killCmd = `taskkill / PID ${child.pid} /T /F`;
+                const killCmd = `taskkill /PID ${child.pid} /T /F`;
                 exec(killCmd, (err) => {
-                    if (err) { console.error('Failed to kill process tree:', getErrorMessage(err as Error)); }
+                    if (err) { appLogger.error('CommandService', `Failed to kill process tree: ${getErrorMessage(err as Error)}`); }
                 });
                 // Also try direct kill safety net
                 child.kill();
@@ -43,28 +55,7 @@ export class CommandService {
     }
 
     private isCommandAllowed(command: string): { allowed: boolean; reason?: string } {
-        if (!command || command.length > this.maxCommandLength) {
-            return { allowed: false, reason: 'Command is empty or too long' };
-        }
-
-        const trimmed = command.trim();
-        const blockedTokens = ['rm -rf', 'del /f', 'format ', 'shutdown', 'poweroff', 'reboot', 'mkfs', 'reg delete'];
-        if (blockedTokens.some(token => trimmed.toLowerCase().includes(token))) {
-            return { allowed: false, reason: 'Command contains blocked operation' };
-        }
-
-        // Warning for dangerous shell operators
-        // We don't block them outright because some legitimate commands might use them (like pipes),
-        // but we should at least be aware or stricter if needed.
-        // For now, let's block multiple command chaining which is a common vector.
-        const dangerousOperators = [';', '&&', '||'];
-        // Note: We used to block '&' and '|' but that breaks pipes and background tasks which might be used intentionally.
-        // Chaining via ; or && is more indicative of "do this THEN do that" which might unwantedly execute a second payload.
-        if (dangerousOperators.some(op => trimmed.includes(op))) {
-            return { allowed: false, reason: 'Command contains shell control operators which are not allowed.' };
-        }
-
-        return { allowed: true };
+        return validateCommand(command);
     }
 
     async executeCommand(
@@ -95,6 +86,12 @@ export class CommandService {
         command: string,
         options: { cwd?: string; timeout?: number; shell?: string; id: string }
     ): Promise<CommandResult> {
+        if (this.activeProcesses.size >= CommandService.MAX_ACTIVE_PROCESSES) {
+            return {
+                success: false,
+                error: `Command blocked: Too many active processes (Limit: ${CommandService.MAX_ACTIVE_PROCESSES})`
+            };
+        }
         return new Promise((resolve) => {
             const child = exec(command, {
                 cwd: options.cwd ?? process.cwd(),
@@ -130,26 +127,39 @@ export class CommandService {
         command: string,
         options?: { cwd?: string; timeout?: number; shell?: string }
     ): Promise<CommandResult> {
+        if (this.activeProcesses.size >= CommandService.MAX_ACTIVE_PROCESSES) {
+            return {
+                success: false,
+                error: `Command blocked: Too many active processes (Limit: ${CommandService.MAX_ACTIVE_PROCESSES})`
+            };
+        }
+
+        const id = `direct-${Date.now()}`;
+        this.activeProcesses.set(id, {} as ChildProcess);
+
+        try {
+            return await this.runDirect(command, options);
+        } finally {
+            this.activeProcesses.delete(id);
+        }
+    }
+
+    private async runDirect(command: string, options?: { cwd?: string; timeout?: number; shell?: string }): Promise<CommandResult> {
         try {
             const { stdout, stderr } = await execAsync(command, {
                 cwd: options?.cwd ?? process.cwd(),
                 timeout: options?.timeout ?? this.maxTimeout,
                 shell: options?.shell ?? 'powershell.exe',
-                maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+                maxBuffer: 10 * 1024 * 1024
             });
-            return {
-                success: true,
-                stdout: stdout.trim(),
-                stderr: stderr.trim(),
-                exitCode: 0
-            };
+            return { success: true, stdout: stdout.trim(), stderr: stderr.trim(), exitCode: 0 };
         } catch (error) {
-            const execError = error as { stdout?: string; stderr?: string; code?: number; message: string };
+            const err = error as { stdout?: string; stderr?: string; code?: number };
             return {
                 success: false,
-                stdout: execError.stdout?.trim(),
-                stderr: execError.stderr?.trim(),
-                exitCode: execError.code,
+                stdout: err.stdout?.trim(),
+                stderr: err.stderr?.trim(),
+                exitCode: err.code,
                 error: getErrorMessage(error as Error)
             };
         }
@@ -178,6 +188,16 @@ export class CommandService {
             });
 
             if (options?.id) {
+                if (this.activeProcesses.size >= CommandService.MAX_ACTIVE_PROCESSES) {
+                    resolve({
+                        success: false,
+                        stdout: '',
+                        stderr: '',
+                        error: `Command blocked: Too many active processes (Limit: ${CommandService.MAX_ACTIVE_PROCESSES})`
+                    });
+                    child.kill(); // Ensure we don't leak the spawned process since we rejected it
+                    return;
+                }
                 this.activeProcesses.set(options.id, child);
             }
 

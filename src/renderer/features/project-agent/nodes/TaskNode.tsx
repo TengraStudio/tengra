@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { Message } from '@shared/types/chat';
 import { AgentProfile, AgentStartOptions, ProjectStep } from '@shared/types/project-agent';
@@ -5,13 +6,12 @@ import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
 import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, User, X, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
 import { ModelSelector } from '@/features/models/components/ModelSelector';
-import { useLanguage } from '@/i18n';
 import { LogConsole } from '@/features/project-agent/components/LogConsole';
 import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
+import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 
@@ -63,7 +63,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             appLogger.error('TaskNode', 'Failed to generate plan', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
 
     const handleApprove = useCallback(async () => {
         if (!data.plan) {
@@ -104,7 +104,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             appLogger.error('TaskNode', 'Failed to start task', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
 
     const handleStop = useCallback(async () => {
         try {
@@ -379,6 +379,63 @@ const ProgressBar = ({ plan }: { plan: ProjectStep[] }) => {
     );
 };
 
+const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: { profiles: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void }) => {
+    const selectedProfile = profiles.find(p => p.id === selectedProfileId);
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    className={cn(
+                        "flex items-center justify-center p-1.5 rounded-md transition-colors",
+                        selectedProfile ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                    )}
+                    title={selectedProfile ? `Agent: ${selectedProfile.name}` : "Select Agent Profile"}
+                >
+                    <User className="w-3.5 h-3.5" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-1 bg-popover/95 backdrop-blur-xl">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent Profile</div>
+                    <button
+                        onClick={() => onProfileSelect?.('')}
+                        className={cn(
+                            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                            !selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                        )}
+                    >
+                        <div className="p-1 rounded bg-background/50">
+                            <Sparkles className="w-3 h-3" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-medium">Default Agent</span>
+                            <span className="text-[10px] text-muted-foreground opacity-70">Standard system prompt</span>
+                        </div>
+                    </button>
+                    {profiles.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => onProfileSelect?.(p.id)}
+                            className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                                p.id === selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                            )}
+                        >
+                            <div className="p-1 rounded bg-background/50">
+                                <User className="w-3 h-3" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="font-medium truncate">{p.name}</span>
+                                <span className="text-[10px] text-muted-foreground opacity-70 truncate max-w-[140px]">{p.role}</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 const TaskHeader = ({
     isPlanner, isAction, label, selectedProject, projects,
     selectedProjectId, onProjectSelect, isExpanded, setIsExpanded, onDelete
@@ -478,8 +535,6 @@ const TaskFooterControls = ({
     onFileClick: () => void; onToggleThinking?: () => void;
     profiles?: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void;
 }) => {
-    const selectedProfile = profiles?.find(p => p.id === selectedProfileId);
-
     return (
         <>
             {isPlanner ? (
@@ -491,60 +546,7 @@ const TaskFooterControls = ({
                         <ModelSelector selectedProvider={currentProviderId} selectedModel={currentModelId} onSelect={onModelSelect} groupedModels={groupedModels} onOpenChange={onOpenModelChange} isIconOnly={true} />
                     </div>
 
-                    {/* Agent Profile Selector */}
-                    {profiles && profiles.length > 0 && (
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <button
-                                    className={cn(
-                                        "flex items-center justify-center p-1.5 rounded-md transition-colors",
-                                        selectedProfile ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
-                                    )}
-                                    title={selectedProfile ? `Agent: ${selectedProfile.name}` : "Select Agent Profile"}
-                                >
-                                    <User className="w-3.5 h-3.5" />
-                                </button>
-                            </PopoverTrigger>
-                            <PopoverContent align="start" className="w-56 p-1 bg-popover/95 backdrop-blur-xl">
-                                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent Profile</div>
-                                    <button
-                                        onClick={() => onProfileSelect?.('')}
-                                        className={cn(
-                                            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
-                                            !selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
-                                        )}
-                                    >
-                                        <div className="p-1 rounded bg-background/50">
-                                            <Sparkles className="w-3 h-3" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">Default Agent</span>
-                                            <span className="text-[10px] text-muted-foreground opacity-70">Standard system prompt</span>
-                                        </div>
-                                    </button>
-                                    {profiles.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => onProfileSelect?.(p.id)}
-                                            className={cn(
-                                                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
-                                                p.id === selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
-                                            )}
-                                        >
-                                            <div className="p-1 rounded bg-background/50">
-                                                <User className="w-3 h-3" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium truncate">{p.name}</span>
-                                                <span className="text-[10px] text-muted-foreground opacity-70 truncate max-w-[140px]">{p.role}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    )}
+                    {profiles && profiles.length > 0 && <AgentProfileSelector profiles={profiles} selectedProfileId={selectedProfileId} onProfileSelect={onProfileSelect} />}
                 </div>
             ) : <div />}
             <div className="flex items-center gap-2">
@@ -710,7 +712,6 @@ const getTaskNodeClasses = (isExpanded: boolean, selected: boolean, status: stri
 };
 
 export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) => {
-    const { t } = useLanguage();
     const { updateNodeData, deleteElements } = useReactFlow();
     const { projects, selectedProject: globalSelectedProject } = useProjectManager();
     const { groupedModels, selectedModel: globalModelId, selectedProvider: globalProviderId } = useModel();
@@ -720,7 +721,7 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
         const fetchProfiles = async () => {
             try {
                 const fetched = await window.electron.projectAgent.getProfiles();
-                setProfiles(fetched || []);
+                setProfiles(fetched);
             } catch (err) {
                 appLogger.error('TaskNode', 'Failed to fetch agent profiles', err as Error);
             }

@@ -1,12 +1,13 @@
 import { appLogger } from '@main/logging/logger';
 import { CommandService } from '@main/services/system/command.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
+import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { JsonObject } from '@shared/types/common';
 import { ipcMain } from 'electron';
 
 export function registerToolsIpc(toolExecutor: ToolExecutor, commandService: CommandService) {
     ipcMain.handle('tools:execute', async (_event, toolName: string, args: JsonObject) => {
-        return await toolExecutor.execute(toolName, args);
+        return await withRateLimit('tools', () => toolExecutor.execute(toolName, args));
     });
 
     ipcMain.handle('tools:kill', (_event, toolCallId: string) => {

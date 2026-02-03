@@ -63,7 +63,7 @@ const CURRENT_YEAR = new Date().getFullYear();
  */
 export class IdeaScoringService extends BaseService {
     private scoringCache: Map<string, IdeaScoreBreakdown> = new Map();
-    private initialized = false;
+    // private initialized = false;
 
     constructor(private llmService: LLMService) {
         super('IdeaScoringService');
@@ -77,9 +77,8 @@ export class IdeaScoringService extends BaseService {
 
         // Clear any existing cache
         this.scoringCache.clear();
-        this.initialized = true;
 
-        this.logInfo('Idea scoring service initialized with scoring cache');
+        this.logInfo('Idea scoring service initialized.');
     }
 
     /**
@@ -90,7 +89,6 @@ export class IdeaScoringService extends BaseService {
 
         // Clear scoring cache
         this.scoringCache.clear();
-        this.initialized = false;
 
         this.logInfo('Idea scoring service cleaned up');
     }

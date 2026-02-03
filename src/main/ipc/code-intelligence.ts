@@ -1,11 +1,10 @@
 import { appLogger } from '@main/logging/logger';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
-import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
 
 export const registerCodeIntelligenceIpc = (codeIntelligenceService: CodeIntelligenceService) => {
     ipcMain.handle('code:scanTodos', async (_, rootPath: string) => {
-        try { return await codeIntelligenceService.scanTodos(rootPath); }
+        try { return await codeIntelligenceService.scanProjectTodos(rootPath); }
         catch (e) { appLogger.error('CodeIntelligenceIPC', 'code:scanTodos failed', e as Error); return []; }
     });
 

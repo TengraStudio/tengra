@@ -1,5 +1,5 @@
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
-import { AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 
 export function registerProjectAgentIpc(
@@ -40,5 +40,13 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle('project:get-profiles', async () => {
         return await projectAgentService.getProfiles();
+    });
+
+    ipcMain.handle('project:register-profile', async (_, profile: AgentProfile) => {
+        return await projectAgentService.registerProfile(profile);
+    });
+
+    ipcMain.handle('project:delete-profile', async (_, id: string) => {
+        return await projectAgentService.deleteProfile(id);
     });
 }

@@ -171,7 +171,7 @@ export function useModelSelectorLogic({
         void checkLimits();
     }, [settings?.modelUsageLimits, groupedModels]);
 
-    const isCodexDisabled = useCallback((modelId: string, lowerModelId: string) => {
+    const isCodexDisabled = useCallback((_modelId: string, lowerModelId: string) => {
         const codexAccount = codexUsage?.accounts[0];
         if (!codexAccount) { return false; }
         return checkCodexUsageStatus(codexAccount, lowerModelId, settings);
@@ -222,6 +222,8 @@ export function useModelSelectorLogic({
         if (['local', 'lm_studio', 'ollama', 'gemini'].includes(p)) { return false; }
         return false;
     }, [isCodexDisabled, isCopilotDisabled, isClaudeDisabled, isAntigravityDisabled]);
+
+    // handleModelChange removed as unused
 
     const isModelDisabled = useCallback((modelId: string, provider: string) => {
         const p = provider.toLowerCase();

@@ -18,12 +18,14 @@ const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryIn
 const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })));
 const ProjectAgentView = lazy(() => import('@/features/project-agent/ProjectAgentView').then(m => ({ default: m.ProjectAgentView })));
 
+import { AppView } from '@renderer/hooks/useAppState';
+
 const ChatViewWrapper = lazy(() => import('./ViewManager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
 const ProjectsView = lazy(() => import('./ViewManager/ProjectsView').then(m => ({ default: m.ProjectsView })));
 const SettingsView = lazy(() => import('./ViewManager/SettingsView').then(m => ({ default: m.SettingsView })));
 
 interface ViewManagerProps {
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
+    currentView: AppView
     messagesEndRef: React.RefObject<HTMLDivElement>
     fileInputRef: React.RefObject<HTMLInputElement>
     textareaRef: React.RefObject<HTMLTextAreaElement>
@@ -142,6 +144,18 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspector /></Suspense>;
             case 'ideas': return <Suspense fallback={<LoadingState size="md" />}><IdeasPage language={language} onNavigateToProject={(id) => void onNavigateToProject?.(id)} /></Suspense>;
             case 'project-agent': return <Suspense fallback={<LoadingState size="md" />}><ProjectAgentView /></Suspense>;
+            case 'docker': return (
+                <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
+                    <Suspense fallback={<LoadingState size="md" />}><DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} /></Suspense>
+                </div>
+            );
+            case 'terminal': return (
+                <div className="h-full p-6 flex flex-col items-center justify-center bg-tech-grid opacity-50">
+                    <div className="text-muted-foreground text-sm font-mono border border-border/50 p-4 rounded-xl">
+                        [ Terminal Dashboard Placeholder ]
+                    </div>
+                </div>
+            );
             default: return null;
         }
     };

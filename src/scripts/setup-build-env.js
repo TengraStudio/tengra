@@ -1,5 +1,5 @@
 /**
- * Permanent build environment setup for better-sqlite3 and other native modules
+ * Permanent build environment setup for native modules (node-pty, etc.)
  * This script runs automatically before npm install to configure the build environment
  */
 

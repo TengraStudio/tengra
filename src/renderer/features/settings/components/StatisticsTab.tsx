@@ -1,7 +1,7 @@
-import { Loader2 } from 'lucide-react';
-import React, { memo,useEffect, useState } from 'react';
-
 import { appLogger } from '@main/logging/logger';
+import { Loader2 } from 'lucide-react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,8 @@ interface PeriodSelectorProps {
     t: (key: string) => string;
 }
 
-const PeriodSelector: React.FC<PeriodSelectorProps> = ({ period, onChange, t }) => (
+// PERF-002-3: Memoize PeriodSelector to prevent unnecessary re-renders
+const PeriodSelector: React.FC<PeriodSelectorProps> = memo(({ period, onChange, t }) => (
     <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
         {PERIODS.map((p) => (
             <button
@@ -44,7 +45,8 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ period, onChange, t }) 
             </button>
         ))}
     </div>
-);
+));
+PeriodSelector.displayName = 'PeriodSelector';
 
 interface StatisticsTabProps {
     statsLoading: boolean
@@ -69,18 +71,29 @@ interface CodingTimeCardProps {
     t: (key: string) => string;
 }
 
-const CodingTimeCard: React.FC<CodingTimeCardProps> = ({ timeStats, loadingTimeStats, projects, statsPeriod, setStatsPeriod, t }) => {
+// PERF-002-3: Memoize CodingTimeCard to prevent unnecessary re-renders
+const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loadingTimeStats, projects, statsPeriod, setStatsPeriod, t }) => {
+    // PERF-002-3: Memoize expensive computation of sorted projects with time
+    const projectsWithTime = useMemo(() => {
+        if (!timeStats?.projectCodingTime) { return []; }
+        return Object.entries(timeStats.projectCodingTime)
+            .sort(([, a], [, b]) => b - a)
+            .map(([projectId, time]) => ({
+                id: projectId,
+                title: projects.find(p => p.id === projectId)?.title ?? t('statistics.unknownProject'),
+                time
+            }));
+    }, [timeStats, projects, t]);
+
+    // PERF-002-3: Memoize max time calculation
+    const maxTime = useMemo(() => {
+        if (!timeStats?.projectCodingTime) { return 0; }
+        return Math.max(...Object.values(timeStats.projectCodingTime), 0);
+    }, [timeStats]);
+
     if (!timeStats?.projectCodingTime || Object.keys(timeStats.projectCodingTime).length === 0) {
         return null;
     }
-
-    const projectsWithTime = Object.entries(timeStats.projectCodingTime)
-        .sort(([, a], [, b]) => b - a)
-        .map(([projectId, time]) => ({
-            id: projectId,
-            title: projects.find(p => p.id === projectId)?.title ?? t('statistics.unknownProject'),
-            time
-        }));
 
     return (
         <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
@@ -99,13 +112,14 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = ({ timeStats, loadingTimeS
                 ) : (
                     <ProjectBarChart
                         projects={projectsWithTime}
-                        maxTime={Math.max(...Object.values(timeStats.projectCodingTime), 0)}
+                        maxTime={maxTime}
                     />
                 )}
             </CardContent>
         </Card>
     );
-};
+});
+CodingTimeCard.displayName = 'CodingTimeCard';
 
 interface TokenUsageCardProps {
     statsLoading: boolean;
@@ -115,7 +129,8 @@ interface TokenUsageCardProps {
     t: (key: string) => string;
 }
 
-const TokenUsageCard: React.FC<TokenUsageCardProps> = ({ statsLoading, tokenTimeline, statsPeriod, setStatsPeriod, t }) => (
+// PERF-002-3: Memoize TokenUsageCard to prevent unnecessary re-renders
+const TokenUsageCard: React.FC<TokenUsageCardProps> = memo(({ statsLoading, tokenTimeline, statsPeriod, setStatsPeriod, t }) => (
     <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -134,7 +149,8 @@ const TokenUsageCard: React.FC<TokenUsageCardProps> = ({ statsLoading, tokenTime
             )}
         </CardContent>
     </Card>
-);
+));
+TokenUsageCard.displayName = 'TokenUsageCard';
 
 export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
     statsLoading, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, statsPeriod, setStatsPeriod, settings, setReloadTrigger
@@ -169,11 +185,15 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
         void loadProjects();
     }, []);
 
+    // PERF-002-3: Memoize locale to prevent re-computation on every render
+    const locale = useMemo(() =>
+        settings?.general.language === 'tr' ? 'tr-TR' : 'en-US',
+        [settings?.general.language]
+    );
+
     if (statsLoading && !statsData) {
         return <div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     }
-
-    const locale = settings?.general.language === 'tr' ? 'tr-TR' : 'en-US';
 
     return (
         <div className="space-y-6">

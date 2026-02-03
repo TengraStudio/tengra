@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { TodoFile, TodoItem } from '../components/todo/types';
-import { parseTodoFile, scanDirectory } from '../utils/todo-utils';
 
 export function useProjectTodoLogic(projectRoot: string) {
     const [todoFiles, setTodoFiles] = useState<TodoFile[]>([]);
@@ -14,10 +13,7 @@ export function useProjectTodoLogic(projectRoot: string) {
         setLoading(true);
         setError(null);
         try {
-            const files = await scanDirectory(projectRoot);
-            const results = await Promise.all(files.map(file => parseTodoFile(file, projectRoot)));
-            const validFiles = results.filter((f): f is TodoFile => f !== null && f.items.length > 0);
-
+            const validFiles = await window.electron.code.scanTodos(projectRoot);
             setTodoFiles(validFiles);
 
             // Auto expand all by default
@@ -26,7 +22,7 @@ export function useProjectTodoLogic(projectRoot: string) {
             setExpandedFiles(expanded);
 
         } catch (err) {
-            console.error('Failed to fetch todos:', err);
+            window.electron.log.error('useProjectTodoLogic: fetchTodos failed', { error: err });
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);

@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { registerAgentIpc } from '@main/ipc/agent';
 import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
@@ -41,6 +40,7 @@ import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
 // Import all IPC registration functions
 import { registerWindowIpc } from '@main/ipc/window';
+import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';

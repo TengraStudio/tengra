@@ -1,5 +1,5 @@
 import { CornerUpRight, Folder as FolderIcon, MessageSquare, Pin, Trash2 } from 'lucide-react';
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Chat, Folder } from '@/types';
@@ -22,10 +22,20 @@ export const ChatListItem = memo<ChatListItemProps>(({
 }) => {
     const isActive = currentChatId === chat.id;
 
+    const handleSelect = useCallback(() => onSelect(chat.id), [chat.id, onSelect]);
+    const handleDelete = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete(chat.id);
+    }, [chat.id, onDelete]);
+    const handleTogglePin = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onTogglePin(chat.id, !chat.isPinned);
+    }, [chat.id, chat.isPinned, onTogglePin]);
+
     return (
         <div className="relative group chat-item">
             <button
-                onClick={() => onSelect(chat.id)}
+                onClick={handleSelect}
                 className={cn(
                     "w-full flex items-center gap-3 rounded-md transition-all duration-200 text-left px-3 py-2",
                     isActive
@@ -55,10 +65,10 @@ export const ChatListItem = memo<ChatListItemProps>(({
                         </div>
                     </div>
                 )}
-                <div onClick={(e) => { e.stopPropagation(); onTogglePin(chat.id, !chat.isPinned); }} className="p-1 hover:text-primary rounded-md cursor-pointer pointer-events-auto">
+                <div onClick={handleTogglePin} className="p-1 hover:text-primary rounded-md cursor-pointer pointer-events-auto">
                     <Pin className={cn("w-3 h-3", chat.isPinned && "fill-current")} />
                 </div>
-                <div onClick={(e) => { e.stopPropagation(); onDelete(chat.id); }} className="p-1 hover:text-destructive rounded-md cursor-pointer pointer-events-auto">
+                <div onClick={handleDelete} className="p-1 hover:text-destructive rounded-md cursor-pointer pointer-events-auto">
                     <Trash2 className="w-3 h-3" />
                 </div>
             </div>
